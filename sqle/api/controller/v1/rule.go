@@ -161,12 +161,12 @@ type UpdateRuleTemplateReqV1 struct {
 // @Id updateRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Param instance body v1.UpdateRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_id}/ [patch]
+// @router /v1/rule_templates/{rule_template_name}/ [patch]
 func UpdateRuleTemplate(c echo.Context) error {
-	// todo issue988 handle instance_name_list and rule_template_id
+	// todo issue988 handle instance_name_list
 	return nil
 	//templateName := c.Param("rule_template_name")
 	//req := new(UpdateRuleTemplateReqV1)
@@ -237,7 +237,6 @@ type GetRuleTemplateResV1 struct {
 }
 
 type RuleTemplateDetailResV1 struct {
-	Id        uint                          `json:"id"`
 	Name      string                        `json:"rule_template_name"`
 	Desc      string                        `json:"desc"`
 	DBType    string                        `json:"db_type"`
@@ -269,12 +268,11 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 // @Id getRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Success 200 {object} v1.GetRuleTemplateResV1
-// @router /v1/rule_templates/{rule_template_id}/ [get]
+// @router /v1/rule_templates/{rule_template_name}/ [get]
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
-	// todo issue988 handle rule_template_id
 	templateName := c.Param("rule_template_name")
 	template, exist, err := s.GetRuleTemplateDetailByName(templateName)
 	if err != nil {
@@ -296,12 +294,11 @@ func GetRuleTemplate(c echo.Context) error {
 // @Id deleteRuleTemplateV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_id}/ [delete]
+// @router /v1/rule_templates/{rule_template_name}/ [delete]
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
-	// todo issue988 handle rule_template_id
 	templateName := c.Param("rule_template_name")
 	template, exist, err := s.GetRuleTemplateByName(templateName)
 	if err != nil {
@@ -338,7 +335,6 @@ type GetRuleTemplatesResV1 struct {
 }
 
 type RuleTemplateResV1 struct {
-	Id        uint                          `json:"id"`
 	Name      string                        `json:"rule_template_name"`
 	Desc      string                        `json:"desc"`
 	DBType    string                        `json:"db_type"`
@@ -544,12 +540,12 @@ type CloneRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Param instance body v1.CloneRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_templates/{rule_template_id}/clone [post]
+// @router /v1/rule_templates/{rule_template_name}/clone [post]
 func CloneRuleTemplate(c echo.Context) error {
-	// todo issue988 handle instance_name_list and rule_template_id
+	// todo issue988 handle instance_name_list
 	return nil
 	//req := new(CloneRuleTemplateReqV1)
 	//if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -665,10 +661,10 @@ type UpdateProjectRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/rule_templates/{rule_template_id}/ [patch]
+// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [patch]
 func UpdateProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -679,7 +675,6 @@ type GetProjectRuleTemplateResV1 struct {
 }
 
 type RuleProjectTemplateDetailResV1 struct {
-	Id        uint                           `json:"id"`
 	Name      string                         `json:"rule_template_name"`
 	Desc      string                         `json:"desc"`
 	DBType    string                         `json:"db_type"`
@@ -698,9 +693,9 @@ type ProjectRuleTemplateInstance struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
-// @router /v1/projects/{project_name}/rule_templates/{rule_template_id}/ [get]
+// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [get]
 func GetProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -712,9 +707,9 @@ func GetProjectRuleTemplate(c echo.Context) error {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/rule_templates/{rule_template_id}/ [delete]
+// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [delete]
 func DeleteProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
@@ -726,7 +721,6 @@ type GetProjectRuleTemplatesResV1 struct {
 }
 
 type ProjectRuleTemplateResV1 struct {
-	Id        uint                           `json:"id"`
 	Name      string                         `json:"rule_template_name"`
 	Desc      string                         `json:"desc"`
 	DBType    string                         `json:"db_type"`
@@ -762,10 +756,10 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param rule_template_id path uint true "rule template id"
+// @Param rule_template_name path string true "rule template name"
 // @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/rule_templates/{rule_template_id}/clone [post]
+// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {
 	return nil
 }
