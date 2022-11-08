@@ -133,8 +133,9 @@ func (s *Storage) IsProjectManager(userName string, projectName string) (bool, e
 
 	err := s.db.Table("project_manager").
 		Joins("projects ON projects.id = project_manager.project_id").
-		Joins("users ON project_manager.user_id = users.login_name").
+		Joins("users ON project_manager.user_id = users.id").
 		Where("users.login_name = ?", userName).
+		Where("users.stats = 0").
 		Where("projects.name = ?", projectName).
 		Count(&count).Error
 
