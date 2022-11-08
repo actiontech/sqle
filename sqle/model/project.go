@@ -91,7 +91,7 @@ func (s *Storage) CreateProject(name string, desc string, createUserID uint) err
 	})
 }
 
-func (s *Storage) CheckUserCanUpdateProject(projectID uint, userID uint) (bool, error) {
+func (s *Storage) CheckUserCanUpdateProject(projectName string, userID uint) (bool, error) {
 	user, exist, err := s.GetUserByID(userID)
 	if err != nil || !exist {
 		return false, err
@@ -101,7 +101,7 @@ func (s *Storage) CheckUserCanUpdateProject(projectID uint, userID uint) (bool, 
 		return true, nil
 	}
 
-	project, exist, err := s.GetProjectByID(projectID)
+	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil || !exist {
 		return false, err
 	}
@@ -114,8 +114,8 @@ func (s *Storage) CheckUserCanUpdateProject(projectID uint, userID uint) (bool, 
 	return false, nil
 }
 
-func (s *Storage) UpdateProjectInfoByID(projectID uint, attr map[string]interface{}) error {
-	err := s.db.Table("projects").Where("id = ?", projectID).Update(attr).Error
+func (s *Storage) UpdateProjectInfoByID(projectName string, attr map[string]interface{}) error {
+	err := s.db.Table("projects").Where("name = ?", projectName).Update(attr).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -128,12 +128,14 @@ func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 	return p, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error) {
+func (s *Storage) IsProjectManager(userName string, projectName string) (bool, error) {
 	var count uint
 
 	err := s.db.Table("project_manager").
 		Joins("projects ON projects.id = project_manager.project_id").
-		Where("project_manager.user_id = ?", userID).
+		Joins("users ON project_manager.user_id = users.id").
+		Where("users.login_name = ?", userName).
+		Where("users.stats = 0").
 		Where("projects.name = ?", projectName).
 		Count(&count).Error
 
@@ -142,7 +144,7 @@ func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	var p *Project
-	err := s.db.Preload("CreateUser").Where("name = ?", projectName).First(p).Error
+	err := s.db.Preload("CreateUser").Preload("Managers").Where("name = ?", projectName).First(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
@@ -193,6 +195,6 @@ OR
 	var exist struct {
 		Exist bool `json:"exist"`
 	}
-	err := s.db.Debug().Raw(query).Find(&exist).Error
+	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
 	return exist.Exist, errors.New(errors.ConnectStorageError, err)
 }
