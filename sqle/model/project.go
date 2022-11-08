@@ -154,7 +154,7 @@ func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	query := s.db.Table("projects").Select("name")
 
 	var err error
-	if userName == DefaultAdminUser {
+	if userName != DefaultAdminUser {
 		err = query.Joins("JOIN project_user on project_user.project_id = projects.id").
 			Joins("JOIN users on users.id = project_user.user_id").
 			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
@@ -171,4 +171,28 @@ func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 		err = nil
 	}
 	return p, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsProjectMember(userName, projectName string) (bool, error) {
+	query := `
+SELECT EXISTS(
+SELECT users.login_name 
+FROM users
+JOIN project_user on project_user.user_id = users.id
+JOIN projects on project_user.project_id = projects.id
+JOIN user_group_users on users.id = user_group_users.user_id 
+JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+JOIN projects as p on project_user_group.project_id = p.id
+WHERE users.stat = 0
+AND( 
+	projects.name = ?
+OR
+	p.name = ?
+)) AS exist
+`
+	var exist struct {
+		Exist bool `json:"exist"`
+	}
+	err := s.db.Debug().Raw(query).Find(&exist).Error
+	return exist.Exist, errors.New(errors.ConnectStorageError, err)
 }

@@ -100,8 +100,18 @@ type ProjectDetailItem struct {
 // @Success 200 {object} v1.GetProjectDetailResV1
 // @router /v1/projects/{project_name}/ [get]
 func GetProjectDetailV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(c.Param("project_name"))
+	isMember, err := s.IsProjectMember(userName, projectName)
+	if errCommunityEditionDoesNotSupportCreateProject != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !isMember {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("you can only see the information of your project"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
