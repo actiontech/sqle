@@ -123,10 +123,11 @@ func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceDetailByNameAndProjectName(instName string, projectName string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("Roles").Preload("WorkflowTemplate").Preload("RuleTemplates").
-		Where("name = ?", name).First(instance).Error
+		Joins("JOIN projects on projects.id = instances.project_id").
+		Where("instances.name = ?", instName).Where("projects.name = ?", projectName).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
