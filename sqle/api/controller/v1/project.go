@@ -3,7 +3,6 @@ package v1
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -176,14 +175,14 @@ func UpdateProjectV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectIDStr := c.Param("filter_project")
-	projectID, err := strconv.ParseUint(projectIDStr, 10, 32)
+	projectName := c.Param("project_name")
+	err = CheckIsProjectManger(user.Name, projectName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project id should be uint but not"))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	sure, err := s.CheckUserCanUpdateProject(uint(projectID), user.ID)
+	sure, err := s.CheckUserCanUpdateProject(projectName, user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -196,7 +195,7 @@ func UpdateProjectV1(c echo.Context) error {
 		attr["desc"] = *req.Desc
 	}
 
-	return controller.JSONBaseErrorReq(c, s.UpdateProjectInfoByID(uint(projectID), attr))
+	return controller.JSONBaseErrorReq(c, s.UpdateProjectInfoByID(projectName, attr))
 }
 
 // DeleteProjectV1
