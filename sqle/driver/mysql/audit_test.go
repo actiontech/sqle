@@ -407,7 +407,7 @@ PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage,
-			"id11"))
+			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
 		`
@@ -1358,6 +1358,40 @@ func TestCheckObjectNameIsUpperAndLowerLetterMixed(t *testing.T) {
 		newTestResult().addResult(rule.Name, "Idx_test"))
 }
 
+func TestCheckFieldNotNUllMustContainDefaultValue(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue].Rule
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`create table exist_db.not_exist_tb_1(
+			id int auto_increment not null,
+			v1 varchar(255) not null default "unit test",
+			v2 varchar(255) not null,
+			V3 varchar(255) not null,
+			primary key (id)
+    )`, newTestResult().addResult(rule.Name, strings.Join([]string{"v2", "V3"}, ",")))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add column v4 int`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 add column v4 int not null `,
+		newTestResult().addResult(rule.Name, strings.Join([]string{"v4"}, ",")))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 change v1 v1 int not null default 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 change column v1 v4 int not null`,
+		newTestResult().addResult(rule.Name, strings.Join([]string{"v4"}, ",")))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 modify v1 int not null default 0`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`alter table exist_db.exist_tb_1 modify v1 int not null`,
+		newTestResult().addResult(rule.Name, strings.Join([]string{"v1"}, ",")))
+}
+
 func TestCheckPrimaryKey(t *testing.T) {
 	runDefaultRulesInspectCase(t, "create_table: primary key exist", DefaultMysqlInspect(),
 		`
@@ -1382,7 +1416,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKNotExist),
+		newTestResult().addResult(rulepkg.DDLCheckPKNotExist).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not auto increment(1)", DefaultMysqlInspect(),
@@ -2110,14 +2144,14 @@ PRIMARY KEY (id)
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 varchar(255) NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutDefault).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: auto increment column without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test";
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: blob column without default", DefaultMysqlInspect(),
@@ -2154,6 +2188,7 @@ PRIMARY KEY (id)
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 timestamp NOT NULL COMMENT "unit test";
 `,
 		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).
+			addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v3").
 			addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 }
@@ -2169,14 +2204,14 @@ v1 blob NOT NULL COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull),
+		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 ADD COLUMN v3 blob NOT NULL COMMENT "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull),
+		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v3"),
 	)
 }
 
