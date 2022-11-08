@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/log"
@@ -191,7 +191,7 @@ func Test_action_execute(t *testing.T) {
 	}
 
 	newDriver := func() (driver.Driver, error) {
-		drvMgr, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL, "")
+		drvMgr, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL, 0, "")
 		if err != nil {
 			return nil, err
 		}

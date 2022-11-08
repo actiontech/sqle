@@ -107,8 +107,8 @@ func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, bo
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
+func (s *Storage) GetRulesFromRuleTemplateByName(projectId uint, name string) ([]*Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectId, name)
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
 	}
@@ -133,7 +133,7 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 		return nil, nil
 	}
 	tplName := templates[0].Name
-	return s.GetRulesFromRuleTemplateByName(tplName)
+	return s.GetRulesFromRuleTemplateByName(instance.ProjectId, tplName)
 }
 
 func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string) (*RuleTemplate, bool, error) {
