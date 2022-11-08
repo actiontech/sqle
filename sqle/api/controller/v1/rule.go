@@ -542,7 +542,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByName(req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate,req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -551,31 +551,13 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByName(sourceTplName)
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectIdForGlobalRuleTemplate,sourceTplName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 	if !exist {
 		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
 			fmt.Errorf("source rule template %s is not exist", sourceTplName))))
-	}
-
-	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	ruleTemplate := &model.RuleTemplate{
@@ -592,10 +574,6 @@ func CloneRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
