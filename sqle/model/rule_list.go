@@ -35,7 +35,7 @@ LEFT JOIN instance_rule_template ON rule_templates.id = instance_rule_template.r
 LEFT JOIN instances ON instance_rule_template.instance_id = instances.id AND instances.deleted_at IS NULL
 WHERE
 rule_templates.deleted_at IS NULL
-AND project_id = :project_id
+AND rule_templates.project_id = :project_id
 
 {{- if .filter_instance_name }}
 AND instances.name = :filter_instance_name

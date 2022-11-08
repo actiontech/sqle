@@ -12,6 +12,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const ProjectIdForGlobalRuleTemplate = 0
+
 type Project struct {
 	Model
 	Name string

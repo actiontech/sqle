@@ -80,8 +80,6 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 	return templateRules, nil
 }
 
-const projectIdForGlobalRuleTemplate = 0
-
 // @Summary 添加全局规则模板
 // @Description create a global rule template
 // @Id createRuleTemplateV1
@@ -97,7 +95,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -152,7 +150,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, templateName)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -229,7 +227,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectNam
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectIdForGlobalRuleTemplate, templateName)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -264,7 +262,7 @@ func GetRuleTemplate(c echo.Context) error {
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate, templateName)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -331,7 +329,7 @@ func GetRuleTemplates(c echo.Context) error {
 	data := map[string]interface{}{
 		"limit":      req.PageSize,
 		"offset":     offset,
-		"project_id": projectIdForGlobalRuleTemplate,
+		"project_id": model.ProjectIdForGlobalRuleTemplate,
 	}
 	s := model.GetStorage()
 	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
@@ -542,7 +540,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByProjectIdAndName(projectIdForGlobalRuleTemplate,req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate,req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -551,7 +549,7 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectIdForGlobalRuleTemplate,sourceTplName)
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate,sourceTplName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}

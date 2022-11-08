@@ -91,7 +91,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.task = task
 
 	// d will be closed by drvMgr in Sqled.do().
-	drvMgr, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, "")
+	drvMgr, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, 0, "")
 	if err != nil {
 		goto Error
 	}
@@ -246,7 +246,7 @@ func (a *action) audit() (err error) {
 	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
-		drvMgr, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, "")
+		drvMgr, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, 0, "")
 		if err != nil {
 			return xerrors.Wrap(err, "new driver for generate rollback SQL")
 		}
@@ -460,7 +460,7 @@ ExecSQLs:
 	return execErr
 }
 
-func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, ruleTemplateName string) (driver.DriverManager, error) {
+func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, projectId uint, ruleTemplateName string) (driver.DriverManager, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
 	}
@@ -478,13 +478,14 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 	// 填充规则
 	{
 		if ruleTemplateName != "" {
-			modelRules, err = st.GetRulesFromRuleTemplateByName(ruleTemplateName)
+			modelRules, err = st.GetRulesFromRuleTemplateByName(projectId, ruleTemplateName)
 		} else {
 			if inst != nil {
 				modelRules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
 			} else {
 				templateName := st.GetDefaultRuleTemplateName(dbType)
-				modelRules, err = st.GetRulesFromRuleTemplateByName(templateName)
+				// 默认规则模板从全局模板里拿
+				modelRules, err = st.GetRulesFromRuleTemplateByName(model.ProjectIdForGlobalRuleTemplate, templateName)
 			}
 		}
 		if err != nil {
