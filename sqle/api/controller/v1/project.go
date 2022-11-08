@@ -104,7 +104,7 @@ func GetProjectDetailV1(c echo.Context) error {
 	userName := controller.GetUserName(c)
 	s := model.GetStorage()
 	isMember, err := s.IsProjectMember(userName, projectName)
-	if errCommunityEditionDoesNotSupportCreateProject != nil {
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !isMember {
