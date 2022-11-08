@@ -139,3 +139,60 @@ func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error
 
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
+	var p *Project
+	err := s.db.Preload("CreateUser").Where("name = ?", projectName).First(p).Error
+	if err == gorm.ErrRecordNotFound {
+		return p, false, nil
+	}
+	return p, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
+	var p []*Project
+	query := s.db.Table("projects").Select("name")
+
+	var err error
+	if userName != DefaultAdminUser {
+		err = query.Joins("JOIN project_user on project_user.project_id = projects.id").
+			Joins("JOIN users on users.id = project_user.user_id").
+			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
+			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
+			Joins("JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id").
+			Joins("RIGHT JOIN users as u on u.id = user_group_users.user_id").
+			Where("users.stat = 0").Where("u.stat = 0").
+			Where("users.login_name = ? OR u.login_name = ?", userName, userName).Find(&p).Error
+	} else {
+		err = query.Find(&p).Error
+	}
+
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	return p, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsProjectMember(userName, projectName string) (bool, error) {
+	query := `
+SELECT EXISTS(
+SELECT users.login_name 
+FROM users
+JOIN project_user on project_user.user_id = users.id
+JOIN projects on project_user.project_id = projects.id
+JOIN user_group_users on users.id = user_group_users.user_id 
+JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+JOIN projects as p on project_user_group.project_id = p.id
+WHERE users.stat = 0
+AND( 
+	projects.name = ?
+OR
+	p.name = ?
+)) AS exist
+`
+	var exist struct {
+		Exist bool `json:"exist"`
+	}
+	err := s.db.Debug().Raw(query).Find(&exist).Error
+	return exist.Exist, errors.New(errors.ConnectStorageError, err)
+}

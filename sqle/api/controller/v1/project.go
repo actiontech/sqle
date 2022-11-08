@@ -100,7 +100,34 @@ type ProjectDetailItem struct {
 // @Success 200 {object} v1.GetProjectDetailResV1
 // @router /v1/projects/{project_name}/ [get]
 func GetProjectDetailV1(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	s := model.GetStorage()
+	isMember, err := s.IsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !isMember {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("you can only see the information of your project"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project not exist"))
+	}
+
+	return c.JSON(http.StatusOK, GetProjectDetailResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: ProjectDetailItem{
+			Name:           project.Name,
+			Desc:           project.Desc,
+			CreateUserName: project.CreateUser.Name,
+			CreateTime:     &project.CreatedAt,
+		},
+	})
 }
 
 type CreateProjectReqV1 struct {
@@ -204,5 +231,19 @@ type ProjectTipResV1 struct {
 // @Success 200 {object} v1.GetProjectTipsResV1
 // @router /v1/project_tips [get]
 func GetProjectTipsV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	projects, err := s.GetProjectTips(controller.GetUserName(c))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	data := []ProjectTipResV1{}
+	for _, project := range projects {
+		data = append(data, ProjectTipResV1{
+			Name: project.Name,
+		})
+	}
+	return c.JSON(http.StatusOK, GetProjectTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    data,
+	})
 }
