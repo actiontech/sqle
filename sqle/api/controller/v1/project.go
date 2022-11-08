@@ -176,7 +176,7 @@ func UpdateProjectV1(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
-	err = CheckIsProjectManger(user.Name, projectName)
+	err = CheckIsProjectManager(user.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -262,7 +262,7 @@ func CheckIsProjectMember(userName, projectName string) error {
 	return nil
 }
 
-func CheckIsProjectManger(userName, projectName string) error {
+func CheckIsProjectManager(userName, projectName string) error {
 	if userName == model.DefaultAdminUser {
 		return nil
 	}
