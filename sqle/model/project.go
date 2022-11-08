@@ -121,7 +121,7 @@ func (s *Storage) UpdateProjectInfoByID(projectName string, attr map[string]inte
 
 func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 	p := &Project{}
-	err := s.db.Model(&Project{}).Preload("Managers").Where("id = ?", projectID).Find(p).Error
+	err := s.db.Model(&Project{}).Where("id = ?", projectID).Find(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
@@ -143,7 +143,7 @@ func (s *Storage) IsProjectManager(userName string, projectName string) (bool, e
 }
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
-	var p *Project
+	p := &Project{}
 	err := s.db.Preload("CreateUser").Preload("Managers").Where("name = ?", projectName).First(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
@@ -152,7 +152,7 @@ func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 }
 
 func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
-	var p []*Project
+	p := []*Project{}
 	query := s.db.Table("projects").Select("name")
 
 	var err error

@@ -251,6 +251,9 @@ func GetProjectTipsV1(c echo.Context) error {
 */
 
 func CheckIsProjectMember(userName, projectName string) error {
+	if userName == model.DefaultAdminUser {
+		return nil
+	}
 	s := model.GetStorage()
 	isMember, err := s.IsProjectMember(userName, projectName)
 	if err != nil {
