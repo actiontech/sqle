@@ -4122,12 +4122,6 @@ var doc = `{
                 "operationId": "getRuleTemplateListV1",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
