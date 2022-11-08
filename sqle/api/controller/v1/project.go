@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -103,12 +105,9 @@ func GetProjectDetailV1(c echo.Context) error {
 	projectName := c.Param("project_name")
 	userName := controller.GetUserName(c)
 	s := model.GetStorage()
-	isMember, err := s.IsProjectMember(userName, projectName)
+	err := CheckIsProjectMember(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !isMember {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("you can only see the information of your project"))
 	}
 
 	project, exist, err := s.GetProjectByName(projectName)
@@ -246,4 +245,35 @@ func GetProjectTipsV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
 	})
+}
+
+/*
+	统一报错
+*/
+
+func CheckIsProjectMember(userName, projectName string) error {
+	s := model.GetStorage()
+	isMember, err := s.IsProjectMember(userName, projectName)
+	if err != nil {
+		return err
+	}
+	if !isMember {
+		return errors.New(errors.UserNotPermission, fmt.Errorf("you can only see the information of your project"))
+	}
+	return nil
+}
+
+func CheckIsProjectManger(userName, projectName string) error {
+	if userName == model.DefaultAdminUser {
+		return nil
+	}
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(userName, projectName)
+	if err != nil {
+		return err
+	}
+	if !isManager {
+		return errors.New(errors.UserNotPermission, fmt.Errorf("only project administrators can perform this operation"))
+	}
+	return nil
 }

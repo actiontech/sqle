@@ -302,7 +302,7 @@ func getDbTypeQueryCond(dbType string) string {
 
 func (s *Storage) GetInstancesTipsByUserAndTypeAndTempId(user *User, dbType string, tempID uint32, projectName string) ([]*Instance, error) {
 
-	isProjectManager, err := s.IsProjectManager(user.ID, projectName)
+	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +402,7 @@ func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType strin
 func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName string) (
 	instances []*Instance, err error) {
 
-	isProjectManager, err := s.IsProjectManager(user.ID, projectName)
+	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +417,7 @@ func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName s
 func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType, projectName string, opCode ...int) (
 	instances []*Instance, err error) {
 
-	isProjectManager, err := s.IsProjectManager(user.ID, projectName)
+	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
 		return nil, err
 	}
