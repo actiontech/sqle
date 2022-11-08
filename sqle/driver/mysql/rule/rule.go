@@ -512,11 +512,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckFieldNotNUllMustContainDefaultValue,
-			Desc:     "字段约束为not null时必须带default默认值",
+			Desc:     "字段约束为not null时必须带默认值",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDDLConvention,
 		},
-		Message:      "not null字段不带default默认值会导致insert不带该字段时报错，以下not null字段没带default默认值:%v",
+		Message:      "字段约束为not null时必须带默认值，以下字段不规范:%v",
 		AllowOffline: true,
 		Func:         checkFieldNotNUllMustContainDefaultValue,
 	},
