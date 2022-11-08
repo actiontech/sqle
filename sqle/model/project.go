@@ -194,6 +194,6 @@ OR
 	var exist struct {
 		Exist bool `json:"exist"`
 	}
-	err := s.db.Debug().Raw(query).Find(&exist).Error
+	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
 	return exist.Exist, errors.New(errors.ConnectStorageError, err)
 }
