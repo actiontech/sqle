@@ -143,6 +143,14 @@ func CreateInstance(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	_, exist, err := s.GetInstanceByName(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -190,49 +198,34 @@ func CreateInstance(c echo.Context) error {
 		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
 	}
 
-	instance := &model.Instance{
-		DbType:            req.DBType,
-		Name:              req.Name,
-		User:              req.User,
-		Host:              req.Host,
-		Port:              req.Port,
-		Password:          req.Password,
-		Desc:              req.Desc,
-		AdditionalParams:  additionalParams,
-		MaintenancePeriod: maintenancePeriod,
-		SqlQueryConfig:    sqlQueryConfig,
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	// set default workflow template
-	// todo issue984 handle WorkflowTemplateName
-	//if req.WorkflowTemplateName == "" {
-	//	workflowTemplate, exist, err := s.GetWorkflowTemplateByName(model.DefaultWorkflowTemplate)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//	if exist {
-	//		instance.WorkflowTemplateId = workflowTemplate.ID
-	//	}
-	//} else {
-	//	workflowTemplate, exist, err := s.GetWorkflowTemplateByName(req.WorkflowTemplateName)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//	if !exist {
-	//		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("workflow template is not exist")))
-	//	}
-	//	instance.WorkflowTemplateId = workflowTemplate.ID
-	//}
+
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist")))
+	}
+
+	instance := &model.Instance{
+		DbType:             req.DBType,
+		Name:               req.Name,
+		User:               req.User,
+		Host:               req.Host,
+		Port:               req.Port,
+		Password:           req.Password,
+		Desc:               req.Desc,
+		AdditionalParams:   additionalParams,
+		MaintenancePeriod:  maintenancePeriod,
+		SqlQueryConfig:     sqlQueryConfig,
+		WorkflowTemplateId: project.WorkflowTemplateId,
+		ProjectId:          project.ID,
+	}
 
 	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// todo issue984 handle roles
-	//roles, err := s.GetAndCheckRoleExist(req.Roles)
-	//if err != nil {
-	//	return controller.JSONBaseErrorReq(c, err)
-	//}
 
 	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
 		return controller.JSONBaseErrorReq(c, errInstanceBind)
@@ -247,12 +240,6 @@ func CreateInstance(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// todo issue984 handle roles
-	//err = s.UpdateInstanceRoles(instance, roles...)
-	//if err != nil {
-	//	return controller.JSONBaseErrorReq(c, err)
-	//}
 
 	err = s.UpdateInstanceRuleTemplates(instance, templates...)
 	if err != nil {
