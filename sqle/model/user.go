@@ -140,8 +140,8 @@ func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetUserTipsByProject(projectID uint) ([]*User, error) {
-	if projectID == 0 {
+func (s *Storage) GetUserTipsByProject(projectName string) ([]*User, error) {
+	if projectName == "" {
 		return s.GetAllUserTip()
 	}
 
@@ -149,23 +149,20 @@ func (s *Storage) GetUserTipsByProject(projectID uint) ([]*User, error) {
 SELECT users.login_name 
 FROM users
 JOIN project_user on project_user.user_id = users.id
-WHERE users.stat = 0
-AND users.deleted_at IS NULL
-AND project_user.project_id = ?
-GROUP BY users.login_name
-UNION
-SELECT users.login_name
-FROM users 
+JOIN projects on project_user.project_id = projects.id
 JOIN user_group_users on users.id = user_group_users.user_id 
 JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+JOIN projects as p on project_user_group.project_id = p.id
 WHERE users.stat = 0
-AND users.deleted_at IS NULL
-AND project_user_group.project_id = ?
-GROUP BY users.login_name
+AND( 
+	projects.name = ?
+OR
+	p.name = ?
+)
 `
 
 	var users []*User
-	err := s.db.Raw(query, projectID, projectID).Scan(&users).Error
+	err := s.db.Raw(query, projectName, projectName).Scan(&users).Error
 
 	return users, errors.New(errors.ConnectStorageError, err)
 }
