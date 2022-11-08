@@ -104,6 +104,7 @@ const (
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
+	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 )
 
 // inspector DML rules
@@ -507,6 +508,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "char长度大于20时，必须使用varchar类型",
 		AllowOffline: true,
 		Func:         checkStringType,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckFieldNotNUllMustContainDefaultValue,
+			Desc:     "字段约束为not null时必须带默认值",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "字段约束为not null时必须带默认值，以下字段不规范:%v",
+		AllowOffline: true,
+		Func:         checkFieldNotNUllMustContainDefaultValue,
 	},
 	{
 		Rule: driver.Rule{
@@ -1752,6 +1764,72 @@ var RuleHandlers = []RuleHandler{
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
 	},
+}
+
+func checkFieldNotNUllMustContainDefaultValue(input *RuleHandlerInput) error {
+	names := make([]string, 0)
+
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		// 获取主键的列名
+		// 联合主键的情况，只需要取第一个字段的列名，因为自增字段必须是联合主键的第一个字段，否则建表会报错
+		var primaryKeyColName string
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp == ast.ConstraintPrimaryKey {
+				primaryKeyColName = constraint.Keys[0].Column.Name.O
+				break
+			}
+		}
+
+		for _, col := range stmt.Cols {
+			if col.Options == nil {
+				continue
+			}
+
+			// 跳过主键自增的列，因为主键自增的列不需要设置默认值
+			if (isFieldContainColumnOptionType(col, ast.ColumnOptionPrimaryKey) || primaryKeyColName == col.Name.Name.O) &&
+				isFieldContainColumnOptionType(col, ast.ColumnOptionAutoIncrement) {
+				continue
+			}
+
+			if isFieldContainColumnOptionType(col, ast.ColumnOptionNotNull) && !isFieldContainColumnOptionType(col, ast.ColumnOptionDefaultValue) {
+				names = append(names, col.Name.Name.String())
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, col := range spec.NewColumns {
+				if col.Options == nil {
+					continue
+				}
+
+				if isFieldContainColumnOptionType(col, ast.ColumnOptionPrimaryKey) && isFieldContainColumnOptionType(col, ast.ColumnOptionAutoIncrement) {
+					continue
+				}
+
+				if isFieldContainColumnOptionType(col, ast.ColumnOptionNotNull) && !isFieldContainColumnOptionType(col, ast.ColumnOptionDefaultValue) {
+					names = append(names, col.Name.Name.String())
+				}
+			}
+		}
+	default:
+		return nil
+	}
+
+	if len(names) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckFieldNotNUllMustContainDefaultValue, strings.Join(names, ","))
+	}
+
+	return nil
+}
+
+func isFieldContainColumnOptionType(field *ast.ColumnDef, optionType ast.ColumnOptionType) bool {
+	for _, option := range field.Options {
+		if option.Tp == optionType {
+			return true
+		}
+	}
+	return false
 }
 
 func checkSubQueryNestNum(in *RuleHandlerInput) error {
