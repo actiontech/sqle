@@ -356,10 +356,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 			AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		},
 	}
-	// todo issue984 handle WorkflowTemplateName
-	//if instance.WorkflowTemplate != nil {
-	//	instanceResV1.WorkflowTemplateName = instance.WorkflowTemplate.Name
-	//}
+
 	if len(instance.RuleTemplates) > 0 {
 		ruleTemplateNames := make([]string, 0, len(instance.RuleTemplates))
 		for _, rt := range instance.RuleTemplates {
@@ -367,14 +364,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 		}
 		instanceResV1.RuleTemplates = ruleTemplateNames
 	}
-	// todo issue984 handle Roles
-	//if len(instance.Roles) > 0 {
-	//	roleNames := make([]string, 0, len(instance.Roles))
-	//	for _, r := range instance.Roles {
-	//		roleNames = append(roleNames, r.Name)
-	//	}
-	//	instanceResV1.Roles = roleNames
-	//}
+
 	for _, param := range instance.AdditionalParams {
 		instanceResV1.AdditionalParams = append(instanceResV1.AdditionalParams, &InstanceAdditionalParamResV1{
 			Name:        param.Key,
@@ -399,7 +389,14 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 func GetInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceDetailByName(instanceName)
+	projectName := c.Param("project_name")
+	username := controller.GetUserName(c)
+	err := CheckIsProjectMember(username, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceDetailByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
