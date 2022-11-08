@@ -3,9 +3,11 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -285,9 +287,8 @@ func DeleteRuleTemplate(c echo.Context) error {
 }
 
 type GetRuleTemplatesReqV1 struct {
-	FilterInstanceName string `json:"filter_instance_name" query:"filter_instance_name"`
-	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetRuleTemplatesResV1 struct {
@@ -313,7 +314,6 @@ type GlobalRuleTemplateInstance struct {
 // @Id getRuleTemplateListV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param filter_instance_name query string false "filter instance name"
 // @Param page_index query uint32 false "page index"
 // @Param page_size query uint32 false "size of per page"
 // @Success 200 {object} v1.GetRuleTemplatesResV1
@@ -329,9 +329,9 @@ func GetRuleTemplates(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
-		"filter_instance_name": req.FilterInstanceName,
-		"limit":                req.PageSize,
-		"offset":               offset,
+		"limit":      req.PageSize,
+		"offset":     offset,
+		"project_id": projectIdForGlobalRuleTemplate,
 	}
 	s := model.GetStorage()
 	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
@@ -339,13 +339,43 @@ func GetRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// get project name and instance name
+	var instanceIds []uint
+	templateNameToInstanceIds := make(map[string][]uint)
+	for _, template := range ruleTemplates {
+		for _, instIdStr := range template.InstanceIds {
+			if instIdStr == "" {
+				continue
+			}
+			instId, err := strconv.Atoi(instIdStr)
+			if err != nil {
+				log.Logger().Errorf("unexpected instance id. id=%v", instIdStr)
+				continue
+			}
+			instanceIds = append(instanceIds, uint(instId))
+			templateNameToInstanceIds[template.Name] = append(templateNameToInstanceIds[template.Name], uint(instId))
+		}
+	}
+
+	instanceIdToProjectName, err := s.GetProjectNamesByInstanceIds(instanceIds)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
+		instances := make([]*GlobalRuleTemplateInstance, len(ruleTemplate.InstanceIds))
+		for i, instId := range templateNameToInstanceIds[ruleTemplate.Name] {
+			instances[i] = &GlobalRuleTemplateInstance{
+				ProjectName:  instanceIdToProjectName[instId].ProjectName,
+				InstanceName: instanceIdToProjectName[instId].InstanceName,
+			}
+		}
 		ruleTemplateReq := RuleTemplateResV1{
-			Name:   ruleTemplate.Name,
-			Desc:   ruleTemplate.Desc,
-			DBType: ruleTemplate.DBType,
-			//Instances: ruleTemplate.InstanceNames,
+			Name:      ruleTemplate.Name,
+			Desc:      ruleTemplate.Desc,
+			DBType:    ruleTemplate.DBType,
+			Instances: instances,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
