@@ -207,20 +207,6 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
 		return true, nil
 	}
 
-	project, _, err := s.GetProjectByID(instance.ProjectId)
-	if err != nil {
-		return false, err
-	}
-
-	isProjectManager, err := s.IsProjectManager(user.Name, project.Name)
-	if err != nil {
-		return false, err
-	}
-
-	if isProjectManager {
-		return true, nil
-	}
-
 	type countStruct struct {
 		Count int `json:"count"`
 	}

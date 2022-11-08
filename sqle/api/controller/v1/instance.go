@@ -404,14 +404,6 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertInstanceToRes(instance),
