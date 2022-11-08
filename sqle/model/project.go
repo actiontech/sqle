@@ -128,12 +128,13 @@ func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 	return p, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsProjectManager(userID uint, projectName string) (bool, error) {
+func (s *Storage) IsProjectManager(userName string, projectName string) (bool, error) {
 	var count uint
 
 	err := s.db.Table("project_manager").
 		Joins("projects ON projects.id = project_manager.project_id").
-		Where("project_manager.user_id = ?", userID).
+		Joins("users ON project_manager.user_id = users.login_name").
+		Where("users.user_id = ?", userName).
 		Where("projects.name = ?", projectName).
 		Count(&count).Error
 
