@@ -100,12 +100,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/roles/:role_name/", DeprecatedBy(apiV2), AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
 
-		// instance
-		v1Router.POST("/instances", v1.CreateInstance, AdminUserAllowed())
-		v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas, AdminUserAllowed())
-		v1Router.DELETE("/instances/:instance_name/", v1.DeleteInstance, AdminUserAllowed())
-		v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance, AdminUserAllowed())
-
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, AdminUserAllowed())
 		v1Router.POST("/rule_templates/:rule_template_name/clone", v1.CloneRuleTemplate, AdminUserAllowed())
@@ -160,8 +154,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/statistic/workflows/instance_type_percent", v1.GetWorkflowPercentCountedByInstanceTypeV1, AdminUserAllowed())
 
 		// project
-		v1Router.PATCH("/projects/:project_id/", v1.UpdateProjectV1)
-		v1Router.DELETE("/projects/:project_id/", v1.DeleteProjectV1)
+		v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
+		v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
 		v1Router.POST("/projects", v1.CreateProjectV1)
 		v1Router.GET("/projects", v1.GetProjectListV1)
 		v1Router.GET("/projects/:project_name/", v1.GetProjectDetailV1)
@@ -180,15 +174,19 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// instance
 	v1Router.GET("/instances", v1.GetInstances)
-	v1Router.GET("/instances/:instance_name/", v1.GetInstance)
+	v1Router.GET("/projects/:project_name/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.POST("/instances/connections", v1.BatchCheckInstanceConnections)
 	v1Router.GET("/instances/:instance_name/schemas", v1.GetInstanceSchemas)
-	v1Router.GET("/projects/:project_id/instance_tips", v1.GetInstanceTips)
+	v1Router.GET("/projects/:project_name/instance_tips", v1.GetInstanceTips)
 	v1Router.GET("/instances/:instance_name/rules", v1.GetInstanceRules)
 	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 	v1Router.GET("/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
+	v1Router.POST("/projects/:project_name/instances", v1.CreateInstance)
+	v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
+	v1Router.DELETE("/projects/:project_name/instances/:instance_name/", v1.DeleteInstance)
+	v1Router.PATCH("/instances/:instance_name/", v1.UpdateInstance)
 
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)

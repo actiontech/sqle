@@ -33,6 +33,7 @@ type Instance struct {
 	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:varchar(255); default:'{\"max_pre_query_rows\":100,\"query_timeout_second\":10}'"`
 
 	// relation table
+	// TODO　这个字段没用了，　应该删掉他
 	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
 	WorkflowTemplate *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
@@ -123,10 +124,11 @@ func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceDetailByName(name string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceDetailByNameAndProjectName(instName string, projectName string) (*Instance, bool, error) {
 	instance := &Instance{}
-	err := s.db.Preload("Roles").Preload("WorkflowTemplate").Preload("RuleTemplates").
-		Where("name = ?", name).First(instance).Error
+	err := s.db.Preload("WorkflowTemplate").Preload("RuleTemplates").
+		Joins("JOIN projects on projects.id = instances.project_id").
+		Where("instances.name = ?", instName).Where("projects.name = ?", projectName).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
