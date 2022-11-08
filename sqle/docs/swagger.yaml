@@ -5799,10 +5799,6 @@ paths:
       description: get all global rule template
       operationId: getRuleTemplateListV1
       parameters:
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
       - description: page index
         in: query
         name: page_index
