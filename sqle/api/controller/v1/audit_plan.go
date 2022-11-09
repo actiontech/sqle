@@ -237,7 +237,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	// check audit plan name
-	_, exist, err = s.GetAuditPlanByName(req.Name)
+	_, exist, err = s.GetAuditPlanFromProjectByName(projectName, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -378,14 +378,21 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
-	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	s := model.GetStorage()
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	s := model.GetStorage()
 
-	ap, exist, err := s.GetAuditPlanByName(apName)
+	apName := c.Param("audit_plan_name")
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, 0) // todo: refactor permissions.
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
