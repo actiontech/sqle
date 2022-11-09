@@ -232,14 +232,14 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplatesByNamesAndProjectID(instNames []string, projectID uint) ([]*RuleTemplate, error) {
 	templates := []*RuleTemplate{}
-	err := s.db.Where("name in (?)", names).Find(&templates).Error
+	err := s.db.Where("name in (?)", instNames).Where("project_id = ?", projectID).Find(&templates).Error
 	return templates, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemplates []*RuleTemplate, err error) {
-	ruleTemplates, err = s.GetRuleTemplatesByNames(templateNames)
+func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string, projectID uint) (ruleTemplates []*RuleTemplate, err error) {
+	ruleTemplates, err = s.GetRuleTemplatesByNamesAndProjectID(templateNames, projectID)
 	if err != nil {
 		return ruleTemplates, err
 	}
