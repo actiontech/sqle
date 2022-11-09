@@ -313,7 +313,7 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 }
 
 func (s *Storage) SaveUserAndAssociations(
-	user *User, userGroups []*UserGroup) (err error) {
+	user *User, userGroups []*UserGroup, managementPermissionCodes *[]uint) (err error) {
 	return s.Tx(func(txDB *gorm.DB) error {
 
 		// User
@@ -323,11 +323,18 @@ func (s *Storage) SaveUserAndAssociations(
 		}
 
 		// user groups
-
 		if userGroups != nil {
 			if err := txDB.Model(user).
 				Association("UserGroups").
 				Replace(userGroups).Error; err != nil {
+				txDB.Rollback()
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+
+		// permission
+		if managementPermissionCodes != nil {
+			if err := updateManagementPermission(txDB, user.ID, *managementPermissionCodes); err != nil {
 				txDB.Rollback()
 				return errors.ConnectStorageErrWrapper(err)
 			}
