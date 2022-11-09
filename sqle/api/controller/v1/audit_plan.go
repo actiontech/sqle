@@ -431,15 +431,22 @@ func UpdateAuditPlan(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, 0) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	storage := model.GetStorage()
-	ap, exist, err := storage.GetAuditPlanByName(apName)
+	ap, exist, err := storage.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -475,7 +482,7 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["params"] = ps
 	}
 
-	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
