@@ -86,9 +86,6 @@ func (s *Storage) GetManagementPermissionByUserIDs(userIDs []uint) (map[uint /*u
 
 	resp := map[uint][]uint{}
 	for _, permission := range p {
-		if resp[permission.UserId] == nil {
-			resp[permission.UserId] = []uint{}
-		}
 		resp[permission.UserId] = append(resp[permission.UserId], permission.PermissionCode)
 	}
 
