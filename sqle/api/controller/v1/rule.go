@@ -485,8 +485,8 @@ type GetRuleTemplateTipsResV1 struct {
 	Data []RuleTemplateTipResV1 `json:"data"`
 }
 
-// @Summary 获取规则模板提示
-// @Description get rule template tips
+// @Summary 获取全局规则模板提示
+// @Description get global rule template tips
 // @Id getRuleTemplateTipsV1
 // @Tags rule_template
 // @Security ApiKeyAuth
@@ -727,5 +727,18 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {
+	return nil
+}
+
+// @Summary 获取项目规则模板提示
+// @Description get rule template tips in project
+// @Id getProjectRuleTemplateTipsV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param filter_db_type query string false "filter db type"
+// @Success 200 {object} v1.GetRuleTemplateTipsResV1
+// @router /v1/projects/{project_name}/rule_template_tips [get]
+func GetProjectRuleTemplateTips(c echo.Context) error{
 	return nil
 }
