@@ -524,6 +524,12 @@ func GetAuditPlans(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	var offset uint32
 	if req.PageIndex >= 1 {
@@ -534,7 +540,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS})
+	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS}) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -549,6 +555,7 @@ func GetAuditPlans(c echo.Context) error {
 		"filter_audit_plan_instance_name": req.FilterAuditPlanInstanceName,
 		"current_user_name":               currentUser.Name,
 		"current_user_is_admin":           model.DefaultAdminUser == currentUser.Name,
+		"filter_project_name":             projectName,
 		"limit":                           req.PageSize,
 		"offset":                          offset,
 	}
