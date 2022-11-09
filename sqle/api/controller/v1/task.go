@@ -133,19 +133,13 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	}
 	s := model.GetStorage()
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+	// TODO 接口缺少项目ID, 下方函数无法正常调用, 先填一个临时变量占位
+	tempProjectName := "临时占位"
+	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, tempProjectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
@@ -673,7 +667,9 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctInstNames)
+	// TODO 接口缺失项目名, 用临时变量占位
+	tempName := "临时占位"
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, tempName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -685,14 +681,6 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	// check instances
 	if len(instances) != len(distinctInstNames) {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
@@ -803,14 +791,6 @@ func AuditTaskGroupV1(c echo.Context) error {
 	instances := make([]*model.Instance, 0)
 	for _, task := range tasks {
 		instances = append(instances, task.Instance)
-	}
-
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	l := log.NewEntry()
