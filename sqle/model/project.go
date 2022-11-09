@@ -3,8 +3,6 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
-
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -66,12 +64,10 @@ func (s *Storage) CreateProject(name string, desc string, createUserID uint) err
 	}
 
 	return s.TxExec(func(tx *sql.Tx) error {
-		templateIDStr, err := saveWorkflowTemplate(wt, tx)
+		templateID, err := saveWorkflowTemplate(wt, tx)
 		if err != nil {
 			return err
 		}
-		// 这里不会报错, templateIDStr是向数据库写入数据后返回的被修改行ID, 永远是个数字
-		templateID, _ := strconv.Atoi(templateIDStr)
 
 		result, err := tx.Exec("INSERT INTO projects (`name`, `desc`, `create_user_id`,`workflow_template_id`) values (?, ?, ?,?)", name, desc, createUserID, templateID)
 		if err != nil {
