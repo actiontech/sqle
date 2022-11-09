@@ -10,7 +10,7 @@ import (
 )
 
 // NOTE: related model:
-// - RoleOperation, ProjectMemberRole
+// - RoleOperation, ProjectMemberRole, ProjectMemberGroupRole
 type Role struct {
 	Model
 	Name string `gorm:"index"`
@@ -30,6 +30,15 @@ type ProjectMemberRole struct {
 	UserID     uint `json:"user_id" gorm:"not null"`
 	InstanceID uint `json:"instance_id" gorm:"not null"`
 	RoleID     uint `json:"role_id" gorm:"not null"`
+}
+
+// NOTE: related model:
+// - Role, UserGroup, Instance
+type ProjectMemberGroupRole struct {
+	Model
+	UserGroupID uint `json:"user_group_id" gorm:"not null"`
+	InstanceID  uint `json:"instance_id" gorm:"not null"`
+	RoleID      uint `json:"role_id" gorm:"not null"`
 }
 
 func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
