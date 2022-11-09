@@ -78,17 +78,17 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 }
 
 type CreateInstanceReqV1 struct {
-	Name                 string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
-	DBType               string                          `json:"db_type" form:"db_type" example:"mysql"`
-	User                 string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host                 string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
-	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc                 string                          `json:"desc" example:"this is a test instance"`
-	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	Name             string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host             string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc             string                          `json:"desc" example:"this is a test instance"`
+	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
+	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 type SQLQueryConfigReqV1 struct {
@@ -151,7 +151,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	_, exist, err := s.GetInstanceByName(req.Name)
+	_, exist, err := s.GetInstanceByNameAndProjectName(req.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -222,7 +222,7 @@ func CreateInstance(c echo.Context) error {
 		ProjectId:          project.ID,
 	}
 
-	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
+	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -248,56 +248,17 @@ func CreateInstance(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-// 1. admin user have all access to all instance
-// 2. non-admin user have access to instance which is bound to one of his roles
-func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) (bool, error) {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return true, nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return false, err
-	}
-	s := model.GetStorage()
-	access, err := s.UserCanAccessInstance(user, instance)
-	if err != nil {
-		return false, err
-	}
-	if !access {
-		return false, nil
-	}
-	return true, nil
-}
-
-func checkCurrentUserCanAccessInstances(c echo.Context, instances []*model.Instance) (bool, error) {
-	if len(instances) == 0 {
-		return false, nil
-	}
-
-	for _, instance := range instances {
-		can, err := checkCurrentUserCanAccessInstance(c, instance)
-		if err != nil {
-			return false, err
-		}
-		if !can {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 type InstanceResV1 struct {
-	Name                 string                          `json:"instance_name"`
-	DBType               string                          `json:"db_type" example:"mysql"`
-	Host                 string                          `json:"db_host" example:"10.10.10.10"`
-	Port                 string                          `json:"db_port" example:"3306"`
-	User                 string                          `json:"db_user" example:"root"`
-	Desc                 string                          `json:"desc" example:"this is a instance"`
-	MaintenanceTimes     []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
-	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
-	SQLQueryConfig       *SQLQueryConfigResV1            `json:"sql_query_config"`
+	Name             string                          `json:"instance_name"`
+	DBType           string                          `json:"db_type" example:"mysql"`
+	Host             string                          `json:"db_host" example:"10.10.10.10"`
+	Port             string                          `json:"db_port" example:"3306"`
+	User             string                          `json:"db_user" example:"root"`
+	Desc             string                          `json:"desc" example:"this is a instance"`
+	MaintenanceTimes []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list,omitempty"`
+	AdditionalParams []*InstanceAdditionalParamResV1 `json:"additional_params"`
+	SQLQueryConfig   *SQLQueryConfigResV1            `json:"sql_query_config"`
 }
 
 type SQLQueryConfigResV1 struct {
@@ -810,6 +771,14 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	instanceNames := make([]string, 0, len(req.Instances))
 	for _, instance := range req.Instances {
 		instanceNames = append(instanceNames, instance.Name)
@@ -818,20 +787,12 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 	distinctInstNames := utils.RemoveDuplicate(instanceNames)
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctInstNames)
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if len(distinctInstNames) != len(instances) {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 

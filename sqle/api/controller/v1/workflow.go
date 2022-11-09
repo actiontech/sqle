@@ -177,6 +177,14 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	templateName := c.Param("workflow_template_name")
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	workflowTemplate, exist, err := s.GetWorkflowTemplateByName(templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -187,7 +195,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	}
 	var instances []*model.Instance
 	if req.Instances != nil && len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances)
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
