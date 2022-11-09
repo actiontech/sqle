@@ -14,7 +14,7 @@ import (
 
 // Instance is a table for database info
 // NOTE: related model:
-// - ProjectMemberRole
+// - ProjectMemberRole, ProjectMemberGroupRole
 type Instance struct {
 	Model
 	ProjectId uint `gorm:"index; not null"`

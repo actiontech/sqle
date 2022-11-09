@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -136,6 +137,24 @@ func (s *Storage) IsProjectManager(userName string, projectName string) (bool, e
 		Where("users.login_name = ?", userName).
 		Where("users.stats = 0").
 		Where("projects.name = ?", projectName).
+		Where("users.deleted_at IS NULL").
+		Where("projects.deleted_at IS NULL").
+		Count(&count).Error
+
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
+	var count uint
+
+	err := s.db.Table("project_manager").
+		Joins("projects ON projects.id = project_manager.project_id").
+		Joins("JOIN users ON project_manager.user_id = users.id").
+		Where("users.id = ?", userID).
+		Where("users.stats = 0").
+		Where("project_manager.project_id = ?", projectID).
+		Where("users.deleted_at IS NULL").
+		Where("projects.deleted_at IS NULL").
 		Count(&count).Error
 
 	return count > 0, errors.New(errors.ConnectStorageError, err)

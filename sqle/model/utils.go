@@ -137,6 +137,7 @@ var autoMigrateList = []interface{}{
 	&CloudBeaverInstanceCache{},
 	&Project{},
 	&ProjectMemberRole{},
+	&ProjectMemberGroupRole{},
 	&ManagementPermission{},
 }
 
@@ -158,8 +159,13 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Model(ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
+	err = s.db.Model(&ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
 		"user_id", "instance_id", "role_id").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	err = s.db.Model(&ProjectMemberGroupRole{}).AddUniqueIndex("uniq_project_user_group_role_user_group_id_instance_id_role_id",
+		"user_group_id", "instance_id", "role_id").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}

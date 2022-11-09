@@ -7,14 +7,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// NOTE: related model:
+// - ProjectMemberGroupRole
 type UserGroup struct {
 	Model
 	Name  string  `json:"name" gorm:"index"`
 	Desc  string  `json:"desc" gorm:"column:description"`
 	Users []*User `gorm:"many2many:user_group_users"`
 	Stat  uint    `json:"stat" gorm:"comment:'0:active,1:disabled'"`
-	// todo issue960 remove Roles
-	Roles []*Role `gorm:"many2many:user_group_roles"`
 }
 
 func (ug *UserGroup) TableName() string {
