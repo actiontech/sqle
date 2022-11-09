@@ -159,7 +159,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	}
 
 	// project
-	// project
 	v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
 	v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
 	v1Router.POST("/projects", v1.CreateProjectV1)
@@ -177,7 +176,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/operations", v1.GetOperations)
 
 	// instance
-	v1Router.GET("projects/:project_name/instances", v1.GetInstances)
+	v1Router.GET("/projects/:project_name/instances", v1.GetInstances)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
@@ -187,7 +186,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/instances/:instance_name/rules", v1.GetInstanceRules)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
-	v1Router.POST("/projects/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.CreateInstance)
+	v1Router.POST("/projects/:project_name/instances", v1.CreateInstance)
 	v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
 	v1Router.DELETE("/projects/:project_name/instances/:instance_name/", v1.DeleteInstance)
 	v1Router.PATCH("/projects/:project_name/instances/:instance_name/", v1.UpdateInstance)
@@ -196,6 +195,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
 	v1Router.GET("/rule_template_tips", v1.GetRuleTemplateTips)
 	v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
+	v1Router.POST("/projects/:project_name/rule_templates", v1.CreateProjectRuleTemplate)
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
