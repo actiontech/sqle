@@ -107,13 +107,14 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Tags task
 // @Id createAndAuditTaskV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param instance_name formData string true "instance name"
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Success 200 {object} v1.GetAuditTaskResV1
-// @router /v1/tasks/audits [post]
+// @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
 	req := new(CreateAuditTaskReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -649,9 +650,10 @@ const MaximumDataSourceNum = 10
 // @Tags task
 // @Id createAuditTasksV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param req body v1.CreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
 // @Success 200 {object} v1.CreateAuditTasksGroupResV1
-// @router /v1/task_groups [post]
+// @router /v1/projects/{project_name}/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
 	req := new(CreateAuditTasksGroupReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
