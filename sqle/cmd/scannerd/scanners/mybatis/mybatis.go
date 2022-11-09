@@ -21,8 +21,7 @@ type MyBatis struct {
 	l *logrus.Entry
 	c *scanner.Client
 
-	needTrigger bool
-	sqls        []scanners.SQL
+	sqls []scanners.SQL
 
 	allSQL []driver.Node
 	getAll chan struct{}
@@ -30,12 +29,14 @@ type MyBatis struct {
 	apName         string
 	xmlDir         string
 	skipErrorQuery bool
+	skipAudit      bool
 }
 
 type Params struct {
 	XMLDir         string
 	APName         string
 	SkipErrorQuery bool
+	SkipAudit      bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
@@ -43,6 +44,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		xmlDir:         params.XMLDir,
 		apName:         params.APName,
 		skipErrorQuery: params.SkipErrorQuery,
+		skipAudit:      params.SkipAudit,
 		l:              l,
 		c:              c,
 		getAll:         make(chan struct{}),
@@ -74,7 +76,6 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 				RawText:     sql.Text,
 			}
 		}
-		mb.needTrigger = true
 		close(sqlCh)
 	}()
 	return sqlCh
@@ -82,10 +83,6 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	mb.sqls = append(mb.sqls, sqls...)
-
-	if !mb.needTrigger {
-		return nil
-	}
 
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(mb.sqls))
@@ -112,6 +109,10 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	err := mb.c.UploadReq(scanner.FullUpload, mb.apName, reqBody)
 	if err != nil {
 		return err
+	}
+
+	if mb.skipAudit {
+		return nil
 	}
 
 	reportID, err := mb.c.TriggerAuditReq(mb.apName)
