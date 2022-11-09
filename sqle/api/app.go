@@ -153,15 +153,19 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/statistic/workflows/status_count", v1.GetWorkflowStatusCountV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/instance_type_percent", v1.GetWorkflowPercentCountedByInstanceTypeV1, AdminUserAllowed())
 
-		// project
-		v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
-		v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
-		v1Router.POST("/projects", v1.CreateProjectV1)
-		v1Router.GET("/projects", v1.GetProjectListV1)
-		v1Router.GET("/projects/:project_name/", v1.GetProjectDetailV1)
-		v1Router.GET("/project_tips", v1.GetProjectTipsV1)
+		// other
+		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
 
 	}
+
+	// project
+	// project
+	v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
+	v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
+	v1Router.POST("/projects", v1.CreateProjectV1)
+	v1Router.GET("/projects", v1.GetProjectListV1)
+	v1Router.GET("/projects/:project_name/", v1.GetProjectDetailV1)
+	v1Router.GET("/project_tips", v1.GetProjectTipsV1)
 
 	// user
 	v1Router.GET("/user", v1.GetCurrentUser)
