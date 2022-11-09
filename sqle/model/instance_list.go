@@ -99,7 +99,7 @@ func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	result []*InstanceDetail, count uint64, err error) {
 
 	if data["filter_project_name"] == "" {
-		return nil, 0, errors.New(errors.DataInvalid, fmt.Errorf("project name can be empty"))
+		return nil, 0, errors.New(errors.DataInvalid, fmt.Errorf("project name can not be empty"))
 	}
 
 	if !IsDefaultAdminUser(user.Name) {
