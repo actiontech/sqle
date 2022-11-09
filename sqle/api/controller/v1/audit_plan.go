@@ -1050,9 +1050,16 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, 0) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1077,8 +1084,18 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		updateAttr["web_hook_template"] = *req.WebHookTemplate
 	}
 
+	// TODO: just get ap id.
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	storage := model.GetStorage()
-	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
 	return controller.JSONBaseErrorReq(c, err)
 }
 
