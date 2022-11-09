@@ -211,8 +211,16 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
+	projectName := c.Param("project_name")
+
 	// check user
 	currentUserName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUserName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	user, exist, err := s.GetUserByName(currentUserName)
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
@@ -232,7 +240,7 @@ func CreateAuditPlan(c echo.Context) error {
 	// check instance
 	var instanceType string
 	if req.InstanceName != "" {
-		inst, exist, err := s.GetInstanceByName(req.InstanceName)
+		inst, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
 		if !exist {
 			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 		} else if err != nil {
