@@ -610,14 +610,14 @@ func UpdateInstance(c echo.Context) error {
 }
 
 type GetInstancesReqV1 struct {
-	FilterInstanceName         string `json:"filter_instance_name" query:"filter_instance_name"`
-	FilterDBType               string `json:"filter_db_type" query:"filter_db_type"`
-	FilterDBHost               string `json:"filter_db_host" query:"filter_db_host"`
-	FilterDBPort               string `json:"filter_db_port" query:"filter_db_port"`
-	FilterDBUser               string `json:"filter_db_user" query:"filter_db_user"`
-	FilterRuleTemplateName     string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
-	PageIndex                  uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                   uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterInstanceName     string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterDBType           string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDBHost           string `json:"filter_db_host" query:"filter_db_host"`
+	FilterDBPort           string `json:"filter_db_port" query:"filter_db_port"`
+	FilterDBUser           string `json:"filter_db_user" query:"filter_db_user"`
+	FilterRuleTemplateName string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
+	PageIndex              uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize               uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetInstancesResV1 struct {
@@ -655,24 +655,28 @@ func GetInstances(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projectName := c.Param("project_name")
+	err = CheckIsProjectMember(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
-		"filter_instance_name":          req.FilterInstanceName,
-		"filter_db_host":                req.FilterDBHost,
-		"filter_db_port":                req.FilterDBPort,
-		"filter_db_user":                req.FilterDBUser,
-		// todo issue984 handle filter_workflow_template_name and filter_role_name
-		//"filter_workflow_template_name": req.FilterWorkflowTemplateName,
-		"filter_rule_template_name":     req.FilterRuleTemplateName,
-		//"filter_role_name":              req.FilterRoleName,
-		"filter_db_type":                req.FilterDBType,
-		"current_user_id":               user.ID,
-		"check_user_can_access":         user.Name != model.DefaultAdminUser,
-		"limit":                         req.PageSize,
-		"offset":                        offset,
+		"filter_instance_name":      req.FilterInstanceName,
+		"filter_project_name":       projectName,
+		"filter_db_host":            req.FilterDBHost,
+		"filter_db_port":            req.FilterDBPort,
+		"filter_db_user":            req.FilterDBUser,
+		"filter_rule_template_name": req.FilterRuleTemplateName,
+		"filter_db_type":            req.FilterDBType,
+		"current_user_id":           user.ID,
+		"check_user_can_access":     user.Name != model.DefaultAdminUser,
+		"limit":                     req.PageSize,
+		"offset":                    offset,
 	}
 
 	instances, count, err := s.GetInstancesByReq(data, user)
@@ -683,17 +687,14 @@ func GetInstances(c echo.Context) error {
 	instancesRes := []InstanceResV1{}
 	for _, instance := range instances {
 		instanceReq := InstanceResV1{
-			Name:                 instance.Name,
-			DBType:               instance.DbType,
-			Host:                 instance.Host,
-			Port:                 instance.Port,
-			User:                 instance.User,
-			Desc:                 instance.Desc,
-			// todo issue984
-			//WorkflowTemplateName: instance.WorkflowTemplateName.String,
-			MaintenanceTimes:     convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
-			RuleTemplates:        instance.RuleTemplateNames,
-			//Roles:                instance.RoleNames,
+			Name:             instance.Name,
+			DBType:           instance.DbType,
+			Host:             instance.Host,
+			Port:             instance.Port,
+			User:             instance.User,
+			Desc:             instance.Desc,
+			MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+			RuleTemplates:    instance.RuleTemplateNames,
 			SQLQueryConfig: &SQLQueryConfigResV1{
 				MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
 				QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
