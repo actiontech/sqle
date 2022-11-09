@@ -12,13 +12,12 @@ import (
 )
 
 type CreateUserReqV1 struct {
-	Name       string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
-	Password   string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
-	Email      string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
-	WeChatID   string   `json:"wechat_id" example:"UserID"`
-	UserGroups []string `json:"user_group_name_list" form:"user_group_name_list"`
-	// todo issue960 handle ManagementPermissionCodes in implementation
-	ManagementPermissionCodes []uint `json:"management_permission_code_list" form:"management_permission_code_list"`
+	Name                      string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
+	Password                  string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
+	Email                     string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
+	WeChatID                  string   `json:"wechat_id" example:"UserID"`
+	UserGroups                []string `json:"user_group_name_list" form:"user_group_name_list"`
+	ManagementPermissionCodes []uint   `json:"management_permission_code_list" form:"management_permission_code_list"`
 }
 
 // @Summary 创建用户
@@ -64,16 +63,15 @@ func CreateUser(c echo.Context) error {
 	}
 
 	return controller.JSONBaseErrorReq(c,
-		s.SaveUserAndAssociations(user, userGroups))
+		s.SaveUserAndAssociations(user, userGroups, &req.ManagementPermissionCodes))
 }
 
 type UpdateUserReqV1 struct {
-	Email      *string   `json:"email" valid:"omitempty,len=0|email" form:"email"`
-	WeChatID   *string   `json:"wechat_id" example:"UserID"`
-	IsDisabled *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
-	UserGroups *[]string `json:"user_group_name_list" form:"user_group_name_list"`
-	// todo issue960 handle ManagementPermissionCodes in implementation
-	ManagementPermissionCodes *[]uint `json:"management_permission_code_list,omitempty" form:"management_permission_code_list"`
+	Email                     *string   `json:"email" valid:"omitempty,len=0|email" form:"email"`
+	WeChatID                  *string   `json:"wechat_id" example:"UserID"`
+	IsDisabled                *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
+	UserGroups                *[]string `json:"user_group_name_list" form:"user_group_name_list"`
+	ManagementPermissionCodes *[]uint   `json:"management_permission_code_list,omitempty" form:"management_permission_code_list"`
 }
 
 // @Summary 更新用户信息
@@ -141,7 +139,7 @@ func UpdateUser(c echo.Context) error {
 
 	}
 
-	return controller.JSONBaseErrorReq(c, s.SaveUserAndAssociations(user, userGroups))
+	return controller.JSONBaseErrorReq(c, s.SaveUserAndAssociations(user, userGroups, req.ManagementPermissionCodes))
 }
 
 // @Summary 删除用户
@@ -241,28 +239,22 @@ type GetUserDetailResV1 struct {
 	Data UserDetailResV1 `json:"data"`
 }
 
-type ManagementPermission struct {
-	Code uint   `json:"code"`
-	Desc string `json:"desc"`
-}
-
 type UserDetailResV1 struct {
-	Name       string   `json:"user_name"`
-	Email      string   `json:"email"`
-	IsAdmin    bool     `json:"is_admin"`
-	WeChatID   string   `json:"wechat_id"`
-	LoginType  string   `json:"login_type"`
-	IsDisabled bool     `json:"is_disabled,omitempty"`
-	UserGroups []string `json:"user_group_name_list,omitempty"`
-	// todo issue960 handle ManagementPermissionCodes in implementation
-	ManagementPermissionList []*ManagementPermission `json:"management_permission_list,omitempty"`
+	Name                     string                       `json:"user_name"`
+	Email                    string                       `json:"email"`
+	IsAdmin                  bool                         `json:"is_admin"`
+	WeChatID                 string                       `json:"wechat_id"`
+	LoginType                string                       `json:"login_type"`
+	IsDisabled               bool                         `json:"is_disabled,omitempty"`
+	UserGroups               []string                     `json:"user_group_name_list,omitempty"`
+	ManagementPermissionList []*ManagementPermissionResV1 `json:"management_permission_list,omitempty"`
 }
 
-func convertUserToRes(user *model.User) UserDetailResV1 {
+func convertUserToRes(user *model.User, managementPermissionCodes []uint) UserDetailResV1 {
 	if user.UserAuthenticationType == "" {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
-	userReq := UserDetailResV1{
+	userResp := UserDetailResV1{
 		Name:       user.Name,
 		Email:      user.Email,
 		WeChatID:   user.WeChatID,
@@ -275,9 +267,11 @@ func convertUserToRes(user *model.User) UserDetailResV1 {
 	for i := range user.UserGroups {
 		userGroupNames[i] = user.UserGroups[i].Name
 	}
-	userReq.UserGroups = userGroupNames
+	userResp.UserGroups = userGroupNames
 
-	return userReq
+	userResp.ManagementPermissionList = generateManagementPermissionResV1s(managementPermissionCodes)
+
+	return userResp
 }
 
 // @Summary 获取用户信息
@@ -298,9 +292,15 @@ func GetUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
+
+	codes, err := s.GetManagementPermissionByUserID(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user),
+		Data:    convertUserToRes(user, codes),
 	})
 }
 
@@ -321,9 +321,15 @@ func GetCurrentUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
+
+	codes, err := s.GetManagementPermissionByUserID(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user),
+		Data:    convertUserToRes(user, codes),
 	})
 }
 
@@ -420,14 +426,13 @@ type GetUsersResV1 struct {
 }
 
 type UserResV1 struct {
-	Name       string   `json:"user_name"`
-	Email      string   `json:"email"`
-	WeChatID   string   `json:"wechat_id"`
-	LoginType  string   `json:"login_type"`
-	IsDisabled bool     `json:"is_disabled,omitempty"`
-	UserGroups []string `json:"user_group_name_list,omitempty"`
-	// todo issue960 handle ManagementPermissionCodes in implementation
-	ManagementPermissionList []*ManagementPermission `json:"management_permission_list,omitempty"`
+	Name                     string                       `json:"user_name"`
+	Email                    string                       `json:"email"`
+	WeChatID                 string                       `json:"wechat_id"`
+	LoginType                string                       `json:"login_type"`
+	IsDisabled               bool                         `json:"is_disabled,omitempty"`
+	UserGroups               []string                     `json:"user_group_name_list,omitempty"`
+	ManagementPermissionList []*ManagementPermissionResV1 `json:"management_permission_list,omitempty"`
 }
 
 // @Summary 获取用户信息列表
@@ -462,24 +467,34 @@ func GetUsers(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	usersReq := []UserResV1{}
+	userIDs := []uint{}
+	for _, user := range users {
+		userIDs = append(userIDs, uint(user.Id))
+	}
+	permission, err := s.GetManagementPermissionByUserIDs(userIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	usersRes := []UserResV1{}
 	for _, user := range users {
 		if user.LoginType == "" {
 			user.LoginType = string(model.UserAuthenticationTypeSQLE)
 		}
 		userReq := UserResV1{
-			Name:       user.Name,
-			Email:      user.Email,
-			WeChatID:   user.WeChatID.String,
-			LoginType:  user.LoginType,
-			IsDisabled: user.IsDisabled(),
-			UserGroups: user.UserGroupNames,
+			Name:                     user.Name,
+			Email:                    user.Email,
+			WeChatID:                 user.WeChatID.String,
+			LoginType:                user.LoginType,
+			IsDisabled:               user.IsDisabled(),
+			UserGroups:               user.UserGroupNames,
+			ManagementPermissionList: generateManagementPermissionResV1s(permission[uint(user.Id)]),
 		}
-		usersReq = append(usersReq, userReq)
+		usersRes = append(usersRes, userReq)
 	}
 	return c.JSON(http.StatusOK, &GetUsersResV1{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      usersReq,
+		Data:      usersRes,
 		TotalNums: count,
 	})
 }
@@ -502,7 +517,7 @@ type GetUserTipsResV1 struct {
 // @Tags user
 // @Id getUserTipListV1
 // @Security ApiKeyAuth
-// @Param filter_project query string false "project id"
+// @Param filter_project query string false "project name"
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
