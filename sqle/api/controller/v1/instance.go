@@ -423,7 +423,15 @@ func GetInstance(c echo.Context) error {
 func DeleteInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
