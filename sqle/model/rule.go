@@ -200,10 +200,10 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	return ruleMap
 }
 
-func (s *Storage) GetRuleTemplateTips(dbType string) ([]*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplateTips(projectId uint, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
-	db := s.db.Select("name, db_type")
+	db := s.db.Select("name, db_type").Where("project_id = ?", projectId)
 	if dbType != "" {
 		db = db.Where("db_type = ?", dbType)
 	}
