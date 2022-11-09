@@ -37,8 +37,7 @@ type User struct {
 	Password               string                 `json:"-" gorm:"-"`
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
-	// todo issue960 remove Roles
-	Roles            []*Role      `gorm:"many2many:user_role;"`
+
 	UserGroups       []*UserGroup `gorm:"many2many:user_group_users"`
 	Stat             uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 	ThirdPartyUserID string       `json:"third_party_user_id"`
@@ -203,7 +202,12 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
 	ok bool, err error) {
 
-	if IsDefaultAdminUser(user.Name) {
+	isManager, err := s.IsProjectManagerByID(user.ID, instance.ProjectId)
+	if err != nil {
+		return false, err
+	}
+
+	if IsDefaultAdminUser(user.Name) || isManager {
 		return true, nil
 	}
 
@@ -214,24 +218,23 @@ func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
 	query := `
 SELECT COUNT(1) AS count
 FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0 AND users.deleted_at IS NULL
+LEFT JOIN project_member_roles ON project_member_roles.instance_id = instances.id
+LEFT JOIN users ON users.id = project_member_roles.user_id
 WHERE instances.deleted_at IS NULL
+AND users.stat = 0 
+AND users.deleted_at IS NULL
 AND instances.id = ?
 AND users.id = ?
 GROUP BY instances.id
 UNION
 SELECT instances.id
 FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
-JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL
+LEFT JOIN project_member_group_roles ON project_member_group_roles.instance_id = instances.id
+JOIN user_group_users ON project_member_group_roles.user_group_id = user_group_users.user_group_id
+JOIN users ON users.id = user_group_users.user_id
 WHERE instances.deleted_at IS NULL
+AND users.stat = 0 
+AND users.deleted_at IS NULL
 AND instances.id = ?
 AND users.id = ?
 GROUP BY instances.id
