@@ -29,12 +29,14 @@ type MyBatis struct {
 	apName         string
 	xmlDir         string
 	skipErrorQuery bool
+	skipAudit      bool
 }
 
 type Params struct {
 	XMLDir         string
 	APName         string
 	SkipErrorQuery bool
+	SkipAudit      bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
@@ -42,6 +44,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		xmlDir:         params.XMLDir,
 		apName:         params.APName,
 		skipErrorQuery: params.SkipErrorQuery,
+		skipAudit:      params.SkipAudit,
 		l:              l,
 		c:              c,
 		getAll:         make(chan struct{}),
@@ -106,6 +109,10 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	err := mb.c.UploadReq(scanner.FullUpload, mb.apName, reqBody)
 	if err != nil {
 		return err
+	}
+
+	if mb.skipAudit {
+		return nil
 	}
 
 	reportID, err := mb.c.TriggerAuditReq(mb.apName)
