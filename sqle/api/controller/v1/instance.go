@@ -745,19 +745,21 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 // @router /v1/projects/{project_name}/instances/{instance_name}/connection [get]
 func CheckInstanceIsConnectableByName(c echo.Context) error {
 	s := model.GetStorage()
+
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
-	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
