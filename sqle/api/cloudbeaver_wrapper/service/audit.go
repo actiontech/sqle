@@ -55,7 +55,7 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		projectId = ruleTemplate.ProjectId
 	}
 
-	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, projectId, ruleTemplateName)
+	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, &projectId, ruleTemplateName)
 	if err != nil {
 		return false, nil, err
 	}

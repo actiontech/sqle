@@ -191,7 +191,7 @@ func Test_action_execute(t *testing.T) {
 	}
 
 	newDriver := func() (driver.Driver, error) {
-		drvMgr, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL, 0, "")
+		drvMgr, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL, nil, "")
 		if err != nil {
 			return nil, err
 		}
