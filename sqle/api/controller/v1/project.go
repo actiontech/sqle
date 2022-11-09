@@ -12,6 +12,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var (
+	errProjectNotExist = errors.New(errors.DataNotExist, fmt.Errorf("project is not exist"))
+)
+
 type GetProjectReqV1 struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
