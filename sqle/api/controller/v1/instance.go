@@ -464,16 +464,16 @@ func DeleteInstance(c echo.Context) error {
 }
 
 type UpdateInstanceReqV1 struct {
-	DBType               *string                         `json:"db_type" form:"db_type" example:"mysql"`
-	User                 *string                         `json:"db_user" form:"db_user" example:"root"`
-	Host                 *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
-	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
-	Desc                 *string                         `json:"desc" example:"this is a test instance"`
-	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	DBType           *string                         `json:"db_type" form:"db_type" example:"mysql"`
+	User             *string                         `json:"db_user" form:"db_user" example:"root"`
+	Host             *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
+	Password         *string                         `json:"db_password" form:"db_password" example:"123456"`
+	Desc             *string                         `json:"desc" example:"this is a test instance"`
+	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // UpdateInstance update instance
@@ -498,9 +498,17 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
-	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -512,7 +520,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceBind)
 	}
 
-	ruleTemplates, err := s.GetRuleTemplatesByNames(req.RuleTemplates)
+	ruleTemplates, err := s.GetRuleTemplatesByNamesAndProjectID(req.RuleTemplates, instance.ProjectId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -547,26 +555,8 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["db_password"] = password
 	}
 
-	// todo issue984 handle WorkflowTemplateName
-	//if req.WorkflowTemplateName != nil {
-	//	// Workflow template name empty is unbound instance workflow template.
-	//	if *req.WorkflowTemplateName == "" {
-	//		updateMap["workflow_template_id"] = 0
-	//	} else {
-	//		workflowTemplate, exist, err := s.GetWorkflowTemplateByName(*req.WorkflowTemplateName)
-	//		if err != nil {
-	//			return controller.JSONBaseErrorReq(c, err)
-	//		}
-	//		if !exist {
-	//			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-	//				fmt.Errorf("workflow template is not exist")))
-	//		}
-	//		updateMap["workflow_template_id"] = workflowTemplate.ID
-	//	}
-	//}
-
 	if req.RuleTemplates != nil {
-		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
+		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, instance.ProjectId)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -575,17 +565,6 @@ func UpdateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	// todo issue984 handle roles
-	//if req.Roles != nil {
-	//	roles, err := s.GetAndCheckRoleExist(req.Roles)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//	err = s.UpdateInstanceRoles(instance, roles...)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//}
 
 	if req.AdditionalParams != nil {
 		additionalParams := driver.AllAdditionalParams()[instance.DbType]
