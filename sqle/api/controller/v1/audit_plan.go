@@ -830,9 +830,9 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+	sqls, err := checkAndConvertToModelAuditPlanSQL(c, projectName, apName, req.SQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -860,9 +860,9 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+	sqls, err := checkAndConvertToModelAuditPlanSQL(c, projectName, apName, req.SQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -871,7 +871,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, true))
 }
 
-func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
+func checkAndConvertToModelAuditPlanSQL(c echo.Context, projectName, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	s := model.GetStorage()
 
 	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
@@ -879,7 +879,7 @@ func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs [
 		return nil, err
 	}
 
-	ap, exist, err := s.GetAuditPlanByName(apName)
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return nil, err
 	}
