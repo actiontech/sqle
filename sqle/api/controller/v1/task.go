@@ -132,10 +132,18 @@ func CreateAndAuditTask(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	// TODO 接口缺少项目ID, 下方函数无法正常调用, 先填一个临时变量占位
-	tempProjectName := "临时占位"
-	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, tempProjectName)
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -666,10 +674,16 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	// TODO 接口缺失项目名, 用临时变量占位
-	tempName := "临时占位"
-	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, tempName)
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
