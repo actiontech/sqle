@@ -621,15 +621,22 @@ type GetAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	storage := model.GetStorage()
 
-	ap, exist, err := storage.GetAuditPlanByName(apName)
+	ap, exist, err := storage.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
