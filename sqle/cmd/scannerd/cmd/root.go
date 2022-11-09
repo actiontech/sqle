@@ -2,6 +2,7 @@ package cmd
 
 import (
 	pkgScanner "github.com/actiontech/sqle/sqle/pkg/scanner"
+
 	"github.com/spf13/cobra"
 )
 
