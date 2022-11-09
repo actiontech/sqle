@@ -702,8 +702,15 @@ func GetAuditPlanReports(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -714,6 +721,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
+		"project_name":    projectName,
 		"audit_plan_name": apName,
 		"limit":           req.PageSize,
 		"offset":          offset,
