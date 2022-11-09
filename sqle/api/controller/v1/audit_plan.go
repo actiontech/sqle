@@ -211,12 +211,20 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
+	// check project
 	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
 
 	// check user
 	currentUserName := controller.GetUserName(c)
 
-	err := CheckIsProjectMember(currentUserName, projectName)
+	err = CheckIsProjectMember(currentUserName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -270,7 +278,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = inst.DbType
 
 		// check operation
-		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType)
+		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType) // todo: refactor permissions.
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -282,6 +290,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = req.InstanceType
 	}
 
+	// todo: check and select rule template binding in project.
 	// check rule template name
 	if req.RuleTemplateName != "" {
 		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
@@ -325,6 +334,7 @@ func CreateAuditPlan(c echo.Context) error {
 		RuleTemplateName: ruleTemplateName,
 		InstanceName:     req.InstanceName,
 		InstanceDatabase: req.InstanceDatabase,
+		ProjectId:        project.ID,
 	}
 	err = s.Save(ap)
 	if err != nil {

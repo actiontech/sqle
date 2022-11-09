@@ -239,7 +239,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/configurations/sql_query", v1.GetSQLQueryConfiguration)
 
 	// audit plan
-	v1Router.POST("/audit_plans", v1.CreateAuditPlan)
 	v1Router.DELETE("/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
 	v1Router.PATCH("/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
 	v1Router.GET("/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
@@ -256,6 +255,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 	v1Router.GET("/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
+
+	// project - audit plan
+	v1Router.POST("/projects/:project_name/audit_plans", v1.CreateAuditPlan)
 
 	// sql query
 	cloudbeaver_wrapper.StartApp(e)
