@@ -118,7 +118,7 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		})
 	}
 
-	err = server.Audit(at.logger, task, at.ap.RuleTemplateName)
+	err = server.Audit(at.logger, task, &at.ap.ProjectId, at.ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}
@@ -667,7 +667,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		})
 	}
 
-	err = server.HookAudit(at.logger, task, &TiDBAuditHook{}, at.ap.RuleTemplateName)
+	err = server.HookAudit(at.logger, task, &TiDBAuditHook{}, &at.ap.ProjectId, at.ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}

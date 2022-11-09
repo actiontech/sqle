@@ -107,8 +107,8 @@ func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, bo
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
+func (s *Storage) GetRulesFromRuleTemplateByName(projectId uint, name string) ([]*Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectId, name)
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
 	}
@@ -133,25 +133,27 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 		return nil, nil
 	}
 	tplName := templates[0].Name
-	return s.GetRulesFromRuleTemplateByName(tplName)
+	return s.GetRulesFromRuleTemplateByName(instance.ProjectId, tplName)
 }
 
-func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
-	err := s.db.Where("name = ?", name).First(t).Error
+	err := s.db.Where("name = ?", name).Where("project_id = ?", projectId).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
 	t := &RuleTemplate{Name: name}
 	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("Instances").
-		Where(t).First(t).Error
+		Where(t).
+		Where("project_id = ?", projectId).
+		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
