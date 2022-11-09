@@ -21,8 +21,7 @@ type MyBatis struct {
 	l *logrus.Entry
 	c *scanner.Client
 
-	needTrigger bool
-	sqls        []scanners.SQL
+	sqls []scanners.SQL
 
 	allSQL []driver.Node
 	getAll chan struct{}
@@ -74,7 +73,6 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 				RawText:     sql.Text,
 			}
 		}
-		mb.needTrigger = true
 		close(sqlCh)
 	}()
 	return sqlCh
@@ -82,10 +80,6 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	mb.sqls = append(mb.sqls, sqls...)
-
-	if !mb.needTrigger {
-		return nil
-	}
 
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(mb.sqls))
