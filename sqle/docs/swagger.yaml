@@ -5064,6 +5064,30 @@ paths:
       summary: 修改成员
       tags:
       - user
+  /v1/projects/{project_name}/rule_template_tips:
+    get:
+      description: get rule template tips in project
+      operationId: getProjectRuleTemplateTipsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTemplateTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目规则模板提示
+      tags:
+      - rule_template
   /v1/projects/{project_name}/rule_templates:
     get:
       description: get all rule template in a project
@@ -5231,6 +5255,85 @@ paths:
       summary: 克隆项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/task_groups:
+    post:
+      consumes:
+      - application/json
+      description: create tasks group.
+      operationId: createAuditTasksV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: parameters for creating audit tasks group
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditTasksGroupReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreateAuditTasksGroupResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建审核任务组
+      tags:
+      - task
+  /v1/projects/{project_name}/tasks/audits:
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+      operationId: createAndAuditTaskV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: formData
+        name: instance_name
+        required: true
+        type: string
+      - description: schema of instance
+        in: formData
+        name: instance_schema
+        type: string
+      - description: sqls for audit
+        in: formData
+        name: sql
+        type: string
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditTaskResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建Sql扫描任务并提交审核
+      tags:
+      - task
   /v1/projects/{project_name}/workflow_template:
     get:
       description: get workflow template detail
@@ -5777,7 +5880,7 @@ paths:
       - role
   /v1/rule_template_tips:
     get:
-      description: get rule template tips
+      description: get global rule template tips
       operationId: getRuleTemplateTipsV1
       parameters:
       - description: filter db type
@@ -5791,7 +5894,7 @@ paths:
             $ref: '#/definitions/v1.GetRuleTemplateTipsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取规则模板提示
+      summary: 获取全局规则模板提示
       tags:
       - rule_template
   /v1/rule_templates:
@@ -6325,31 +6428,6 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/task_groups:
-    post:
-      consumes:
-      - application/json
-      description: create tasks group.
-      operationId: createAuditTasksV1
-      parameters:
-      - description: parameters for creating audit tasks group
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateAuditTasksGroupReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.CreateAuditTasksGroupResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建审核任务组
-      tags:
-      - task
   /v1/task_groups/audit:
     post:
       consumes:
@@ -6388,50 +6466,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 审核任务组
-      tags:
-      - task
-  /v1/tasks/audits:
-    post:
-      consumes:
-      - multipart/form-data
-      description: |-
-        create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.
-        1. formData[sql]: sql content;
-        2. file[input_sql_file]: it is a sql file;
-        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
-      operationId: createAndAuditTaskV1
-      parameters:
-      - description: instance name
-        in: formData
-        name: instance_name
-        required: true
-        type: string
-      - description: schema of instance
-        in: formData
-        name: instance_schema
-        type: string
-      - description: sqls for audit
-        in: formData
-        name: sql
-        type: string
-      - description: input SQL file
-        in: formData
-        name: input_sql_file
-        type: file
-      - description: input mybatis XML file
-        in: formData
-        name: input_mybatis_xml_file
-        type: file
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditTaskResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建Sql扫描任务并提交审核
       tags:
       - task
   /v1/tasks/audits/{task_id}/:
