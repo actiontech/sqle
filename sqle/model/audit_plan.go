@@ -165,6 +165,11 @@ func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{
 	return errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) error {
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
 	if user.Name == DefaultAdminUser {
 		return true, nil
