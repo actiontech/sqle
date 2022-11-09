@@ -1123,15 +1123,21 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config [get]
 func GetAuditPlanNotifyConfig(c echo.Context) error {
-	apName := c.Param("audit_plan_name")
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	apName := c.Param("audit_plan_name")
+	err = CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS) // todo: refactor permissions.
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	ap, _, err := s.GetAuditPlanByName(apName)
+	ap, _, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 
 	return c.JSON(http.StatusOK, GetAuditPlanNotifyConfigResV1{
 		BaseRes: controller.NewBaseReq(err),
