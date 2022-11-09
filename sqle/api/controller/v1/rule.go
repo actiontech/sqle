@@ -501,7 +501,7 @@ func GetRuleTemplateTips(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	ruleTemplates, err := s.GetRuleTemplateTips(req.FilterDBType)
+	ruleTemplates, err := s.GetRuleTemplateTips(model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
