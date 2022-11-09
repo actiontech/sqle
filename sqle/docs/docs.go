@@ -2975,6 +2975,44 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/rule_template_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template tips in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取项目规则模板提示",
+                "operationId": "getProjectRuleTemplateTipsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTemplateTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/rule_templates": {
             "get": {
                 "security": [
@@ -3229,6 +3267,122 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/task_groups": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create tasks group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建审核任务组",
+                "operationId": "createAuditTasksV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "parameters for creating audit tasks group",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/tasks/audits": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建Sql扫描任务并提交审核",
+                "operationId": "createAndAuditTaskV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema of instance",
+                        "name": "instance_schema",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sql",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
                         }
                     }
                 }
@@ -4083,11 +4237,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get rule template tips",
+                "description": "get global rule template tips",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "获取规则模板提示",
+                "summary": "获取全局规则模板提示",
                 "operationId": "getRuleTemplateTipsV1",
                 "parameters": [
                     {
@@ -4950,46 +5104,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/task_groups": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create tasks group.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建审核任务组",
-                "operationId": "createAuditTasksV1",
-                "parameters": [
-                    {
-                        "description": "parameters for creating audit tasks group",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/task_groups/audit": {
             "post": {
                 "security": [
@@ -5041,68 +5155,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.AuditTaskGroupResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/tasks/audits": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建Sql扫描任务并提交审核",
-                "operationId": "createAndAuditTaskV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema of instance",
-                        "name": "instance_schema",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sqls for audit",
-                        "name": "sql",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input SQL file",
-                        "name": "input_sql_file",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input mybatis XML file",
-                        "name": "input_mybatis_xml_file",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
                         }
                     }
                 }
