@@ -150,6 +150,13 @@ func CreateAndAuditTask(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
 
 	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
@@ -698,6 +705,14 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+	}
+
 	l := log.NewEntry()
 	for _, instance := range instances {
 		driverManager, err := common.NewDriverManagerWithoutAudit(l, instance, "")
@@ -805,6 +820,14 @@ func AuditTaskGroupV1(c echo.Context) error {
 	instances := make([]*model.Instance, 0)
 	for _, task := range tasks {
 		instances = append(instances, task.Instance)
+	}
+
+	can, err := checkCurrentUserCanAccessInstances(c, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	l := log.NewEntry()
