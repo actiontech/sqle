@@ -197,9 +197,9 @@ type RuleTemplateDetailResV1 struct {
 }
 
 func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectName map[uint]model.ProjectAndInstance) *RuleTemplateDetailResV1 {
-	instanceNames := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
+	instances := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
 	for _, instance := range template.Instances {
-		instanceNames = append(instanceNames, &GlobalRuleTemplateInstance{
+		instances = append(instances, &GlobalRuleTemplateInstance{
 			ProjectName:  instNameToProjectName[instance.ID].ProjectName,
 			InstanceName: instance.Name,
 		})
@@ -209,10 +209,11 @@ func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectNam
 		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:     template.Name,
-		Desc:     template.Desc,
-		DBType:   template.DBType,
-		RuleList: ruleList,
+		Name:      template.Name,
+		Desc:      template.Desc,
+		DBType:    template.DBType,
+		Instances: instances,
+		RuleList:  ruleList,
 	}
 }
 
@@ -540,7 +541,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate,req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -549,7 +550,7 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate,sourceTplName)
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate, sourceTplName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -739,6 +740,6 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 // @Param filter_db_type query string false "filter db type"
 // @Success 200 {object} v1.GetRuleTemplateTipsResV1
 // @router /v1/projects/{project_name}/rule_template_tips [get]
-func GetProjectRuleTemplateTips(c echo.Context) error{
+func GetProjectRuleTemplateTips(c echo.Context) error {
 	return nil
 }
