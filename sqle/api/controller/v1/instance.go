@@ -1024,22 +1024,23 @@ func GetInstanceTips(c echo.Context) error {
 // @router /v1/projects/{project_name}/instances/{instance_name}/rules [get]
 func GetInstanceRules(c echo.Context) error {
 	s := model.GetStorage()
+
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
-	}
-
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
 	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
