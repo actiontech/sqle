@@ -128,11 +128,6 @@ func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateUserRoles(user *User, rs ...*Role) error {
-	err := s.db.Model(user).Association("Roles").Replace(rs).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	users := []*User{}
 	err := s.db.Where("login_name in (?)", names).Find(&users).Error
@@ -376,4 +371,16 @@ func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
 		return u, false, nil
 	}
 	return u, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsUserHaveProject(userName string) (bool, error) {
+	var count uint
+	err := s.db.Table("members").
+		Joins("JOIN users ON users.id = members.user_id").
+		Where("users.login_name = ?", userName).
+		Where("users.deleted_at IS NULL").
+		Where("members.deleted_at IS NULL").
+		Count(&count).Error
+
+	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
