@@ -733,7 +733,7 @@ func GetAuditPlanReport(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
-	_, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -747,7 +747,7 @@ func GetAuditPlanReport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
 	}
 	s := model.GetStorage()
-	report, exist, err := s.GetAuditPlanReportByID(uint(reportID))
+	report, exist, err := s.GetAuditPlanReportByID(ap.ID, uint(reportID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1380,7 +1380,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
-	_, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1395,6 +1395,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
+		"audit_plan_id":        ap.ID,
 		"limit":                req.PageSize,
 		"offset":               offset,
 	}
