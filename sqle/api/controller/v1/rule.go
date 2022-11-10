@@ -109,7 +109,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		DBType: req.DBType,
 	}
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -159,7 +159,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 	}
 
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, template)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -323,17 +323,8 @@ func GetRuleTemplates(c echo.Context) error {
 		return err
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-	data := map[string]interface{}{
-		"limit":      req.PageSize,
-		"offset":     offset,
-		"project_id": model.ProjectIdForGlobalRuleTemplate,
-	}
 	s := model.GetStorage()
-	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, req.PageIndex, req.PageSize, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -361,9 +352,37 @@ func GetRuleTemplates(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 
+	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertRuleTemplatesToRes(templateNameToInstanceIds, instanceIdToProjectName, ruleTemplates),
+		TotalNums: count,
+	})
+}
+
+func getRuleTemplatesByReq(s *model.Storage, pageIndex, pageSize uint32, projectId uint) (ruleTemplates []*model.RuleTemplateDetail, count uint64, err error) {
+	var offset uint32
+	if pageIndex >= 1 {
+		offset = pageSize * (pageIndex - 1)
+	}
+	data := map[string]interface{}{
+		"limit":      pageSize,
+		"offset":     offset,
+		"project_id": projectId,
+	}
+	ruleTemplates, count, err = s.GetRuleTemplatesByReq(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
+	instanceIdToProjectName map[uint] /*instance id*/ model.ProjectAndInstance,
+	ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
+
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
-		instances := make([]*GlobalRuleTemplateInstance, len(ruleTemplate.InstanceIds))
+		instances := make([]*GlobalRuleTemplateInstance, len(templateNameToInstanceIds[ruleTemplate.Name]))
 		for i, instId := range templateNameToInstanceIds[ruleTemplate.Name] {
 			instances[i] = &GlobalRuleTemplateInstance{
 				ProjectName:  instanceIdToProjectName[instId].ProjectName,
@@ -378,11 +397,7 @@ func GetRuleTemplates(c echo.Context) error {
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
-	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      ruleTemplatesReq,
-		TotalNums: count,
-	})
+	return ruleTemplatesReq
 }
 
 type GetRulesReqV1 struct {
@@ -652,7 +667,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 		DBType:    req.DBType,
 	}
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -660,7 +675,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 	}
 
 	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
+	if len(req.Instances) > 0 {
 		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -742,7 +757,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	}
 
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, template)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -750,7 +765,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	}
 
 	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
+	if len(req.Instances) > 0 {
 		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -967,16 +982,7 @@ func GetProjectRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-	data := map[string]interface{}{
-		"limit":      req.PageSize,
-		"offset":     offset,
-		"project_id": project.ID,
-	}
-	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, req.PageIndex, req.PageSize, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1063,7 +1069,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	}
 
 	var instances []*model.Instance
-	if req.Instances != nil || len(req.Instances) > 0 {
+	if len(req.Instances) > 0 {
 		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -1081,9 +1087,10 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: sourceTpl.DBType,
+		ProjectId: project.ID,
+		Name:      req.Name,
+		Desc:      req.Desc,
+		DBType:    sourceTpl.DBType,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
