@@ -145,7 +145,7 @@ func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string)
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplateByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateByNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Table("rule_templates").
 		Where("rule_templates.name = ?", name).
