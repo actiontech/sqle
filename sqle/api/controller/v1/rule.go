@@ -322,9 +322,10 @@ func GetRuleTemplates(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	s := model.GetStorage()
-	ruleTemplates, count, err := getRuleTemplatesByReq(s, req.PageIndex, req.PageSize, model.ProjectIdForGlobalRuleTemplate)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -359,13 +360,9 @@ func GetRuleTemplates(c echo.Context) error {
 	})
 }
 
-func getRuleTemplatesByReq(s *model.Storage, pageIndex, pageSize uint32, projectId uint) (ruleTemplates []*model.RuleTemplateDetail, count uint64, err error) {
-	var offset uint32
-	if pageIndex >= 1 {
-		offset = pageSize * (pageIndex - 1)
-	}
+func getRuleTemplatesByReq(s *model.Storage, limit, offset uint32, projectId uint) (ruleTemplates []*model.RuleTemplateDetail, count uint64, err error) {
 	data := map[string]interface{}{
-		"limit":      pageSize,
+		"limit":      limit,
 		"offset":     offset,
 		"project_id": projectId,
 	}
@@ -982,7 +979,8 @@ func GetProjectRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
 
-	ruleTemplates, count, err := getRuleTemplatesByReq(s, req.PageIndex, req.PageSize, project.ID)
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
