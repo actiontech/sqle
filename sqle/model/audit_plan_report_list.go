@@ -36,7 +36,7 @@ JOIN projects ON projects.id = audit_plans.project_id
 WHERE reports.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
-ADN projects.name = :project_name
+AND projects.name = :project_name
 
 ORDER BY reports.created_at DESC , reports.id DESC 
 
