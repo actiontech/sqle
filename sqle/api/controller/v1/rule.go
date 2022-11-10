@@ -500,8 +500,12 @@ func GetRuleTemplateTips(c echo.Context) error {
 		return err
 	}
 
+	return getRuleTemplateTips(c, model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
+}
+
+func getRuleTemplateTips(c echo.Context, projectId uint, filterDBType string) error {
 	s := model.GetStorage()
-	ruleTemplates, err := s.GetRuleTemplateTips(model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
+	ruleTemplates, err := s.GetRuleTemplateTips(projectId, filterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1097,6 +1101,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// GetProjectRuleTemplateTips
 // @Summary 获取项目规则模板提示
 // @Description get rule template tips in project
 // @Id getProjectRuleTemplateTipsV1
@@ -1107,5 +1112,20 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 // @Success 200 {object} v1.GetRuleTemplateTipsResV1
 // @router /v1/projects/{project_name}/rule_template_tips [get]
 func GetProjectRuleTemplateTips(c echo.Context) error {
-	return nil
+	req := new(RuleTemplateTipReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	return getRuleTemplateTips(c, project.ID, req.FilterDBType)
 }
