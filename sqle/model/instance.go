@@ -14,7 +14,7 @@ import (
 
 // Instance is a table for database info
 // NOTE: related model:
-// - ProjectMemberRole
+// - ProjectMemberRole, ProjectMemberGroupRole
 type Instance struct {
 	Model
 	ProjectId uint `gorm:"index; not null"`
@@ -33,8 +33,6 @@ type Instance struct {
 	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:varchar(255); default:'{\"max_pre_query_rows\":100,\"query_timeout_second\":10}'"`
 
 	// relation table
-	// TODO　这个字段没用了，　应该删掉他
-	Roles            []*Role           `json:"-" gorm:"many2many:instance_role;"`
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
 	WorkflowTemplate *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
 }
@@ -115,9 +113,18 @@ func (s *Storage) GetAllInstance() ([]*Instance, error) {
 	return i, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceByName(name string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceByNameAndProjectName(instName, projectName string) (*Instance, bool, error) {
 	instance := &Instance{}
-	err := s.db.Where("name = ?", name).First(instance).Error
+	err := s.db.Joins("JOIN projects on projects.id = instances.project_id").Where("projects.name = ?", projectName).Where("instances.name = ?", instName).First(instance).Error
+	if err == gorm.ErrRecordNotFound {
+		return instance, false, nil
+	}
+	return instance, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetInstanceByNameAndProjectID(instName string, projectID uint) (*Instance, bool, error) {
+	instance := &Instance{}
+	err := s.db.Where("instances.project_id = ?", projectID).Where("instances.name = ?", instName).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
@@ -141,9 +148,12 @@ func (s *Storage) GetInstancesByType(dbType string) ([]*Instance, error) {
 	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByNames(names []string) ([]*Instance, error) {
+func (s *Storage) GetInstancesByNamesAndProjectName(instNames []string, projectName string) ([]*Instance, error) {
 	instances := []*Instance{}
-	err := s.db.Where("name in (?)", names).Find(&instances).Error
+	err := s.db.Joins("JOIN projects on projects.id = instances.project_id").
+		Where("projects.name = ?", projectName).
+		Where("instances.name in (?)", instNames).
+		Find(&instances).Error
 	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -162,8 +172,8 @@ func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckInstanceExist(instanceNames []string) (instances []*Instance, err error) {
-	instances, err = s.GetInstancesByNames(instanceNames)
+func (s *Storage) GetAndCheckInstanceExist(instanceNames []string, projectName string) (instances []*Instance, err error) {
+	instances, err = s.GetInstancesByNamesAndProjectName(instanceNames, projectName)
 	if err != nil {
 		return instances, err
 	}

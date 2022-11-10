@@ -132,15 +132,24 @@ func CreateAndAuditTask(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -672,8 +681,16 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctInstNames)
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

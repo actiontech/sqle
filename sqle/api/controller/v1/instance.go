@@ -78,17 +78,17 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 }
 
 type CreateInstanceReqV1 struct {
-	Name                 string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
-	DBType               string                          `json:"db_type" form:"db_type" example:"mysql"`
-	User                 string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host                 string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
-	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc                 string                          `json:"desc" example:"this is a test instance"`
-	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	Name             string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host             string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc             string                          `json:"desc" example:"this is a test instance"`
+	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
+	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 type SQLQueryConfigReqV1 struct {
@@ -151,7 +151,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	_, exist, err := s.GetInstanceByName(req.Name)
+	_, exist, err := s.GetInstanceByNameAndProjectName(req.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -222,7 +222,7 @@ func CreateInstance(c echo.Context) error {
 		ProjectId:          project.ID,
 	}
 
-	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
+	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -288,16 +288,16 @@ func checkCurrentUserCanAccessInstances(c echo.Context, instances []*model.Insta
 }
 
 type InstanceResV1 struct {
-	Name                 string                          `json:"instance_name"`
-	DBType               string                          `json:"db_type" example:"mysql"`
-	Host                 string                          `json:"db_host" example:"10.10.10.10"`
-	Port                 string                          `json:"db_port" example:"3306"`
-	User                 string                          `json:"db_user" example:"root"`
-	Desc                 string                          `json:"desc" example:"this is a instance"`
-	MaintenanceTimes     []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list,omitempty"`
-	AdditionalParams     []*InstanceAdditionalParamResV1 `json:"additional_params"`
-	SQLQueryConfig       *SQLQueryConfigResV1            `json:"sql_query_config"`
+	Name             string                          `json:"instance_name"`
+	DBType           string                          `json:"db_type" example:"mysql"`
+	Host             string                          `json:"db_host" example:"10.10.10.10"`
+	Port             string                          `json:"db_port" example:"3306"`
+	User             string                          `json:"db_user" example:"root"`
+	Desc             string                          `json:"desc" example:"this is a instance"`
+	MaintenanceTimes []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list,omitempty"`
+	AdditionalParams []*InstanceAdditionalParamResV1 `json:"additional_params"`
+	SQLQueryConfig   *SQLQueryConfigResV1            `json:"sql_query_config"`
 }
 
 type SQLQueryConfigResV1 struct {
@@ -423,7 +423,15 @@ func GetInstance(c echo.Context) error {
 func DeleteInstance(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -456,16 +464,16 @@ func DeleteInstance(c echo.Context) error {
 }
 
 type UpdateInstanceReqV1 struct {
-	DBType               *string                         `json:"db_type" form:"db_type" example:"mysql"`
-	User                 *string                         `json:"db_user" form:"db_user" example:"root"`
-	Host                 *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port                 *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
-	Password             *string                         `json:"db_password" form:"db_password" example:"123456"`
-	Desc                 *string                         `json:"desc" example:"this is a test instance"`
-	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates        []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	DBType           *string                         `json:"db_type" form:"db_type" example:"mysql"`
+	User             *string                         `json:"db_user" form:"db_user" example:"root"`
+	Host             *string                         `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"omitempty,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             *string                         `json:"db_port" form:"db_port" example:"3306" valid:"omitempty,port"`
+	Password         *string                         `json:"db_password" form:"db_password" example:"123456"`
+	Desc             *string                         `json:"desc" example:"this is a test instance"`
+	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 // UpdateInstance update instance
@@ -490,9 +498,17 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
 	}
 
-	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -504,7 +520,7 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceBind)
 	}
 
-	ruleTemplates, err := s.GetRuleTemplatesByNames(req.RuleTemplates)
+	ruleTemplates, err := s.GetRuleTemplatesByNamesAndProjectID(req.RuleTemplates, instance.ProjectId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -539,26 +555,8 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["db_password"] = password
 	}
 
-	// todo issue984 handle WorkflowTemplateName
-	//if req.WorkflowTemplateName != nil {
-	//	// Workflow template name empty is unbound instance workflow template.
-	//	if *req.WorkflowTemplateName == "" {
-	//		updateMap["workflow_template_id"] = 0
-	//	} else {
-	//		workflowTemplate, exist, err := s.GetWorkflowTemplateByName(*req.WorkflowTemplateName)
-	//		if err != nil {
-	//			return controller.JSONBaseErrorReq(c, err)
-	//		}
-	//		if !exist {
-	//			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-	//				fmt.Errorf("workflow template is not exist")))
-	//		}
-	//		updateMap["workflow_template_id"] = workflowTemplate.ID
-	//	}
-	//}
-
 	if req.RuleTemplates != nil {
-		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates)
+		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, instance.ProjectId)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -567,17 +565,6 @@ func UpdateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	// todo issue984 handle roles
-	//if req.Roles != nil {
-	//	roles, err := s.GetAndCheckRoleExist(req.Roles)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//	err = s.UpdateInstanceRoles(instance, roles...)
-	//	if err != nil {
-	//		return controller.JSONBaseErrorReq(c, err)
-	//	}
-	//}
 
 	if req.AdditionalParams != nil {
 		additionalParams := driver.AllAdditionalParams()[instance.DbType]
@@ -623,14 +610,14 @@ func UpdateInstance(c echo.Context) error {
 }
 
 type GetInstancesReqV1 struct {
-	FilterInstanceName         string `json:"filter_instance_name" query:"filter_instance_name"`
-	FilterDBType               string `json:"filter_db_type" query:"filter_db_type"`
-	FilterDBHost               string `json:"filter_db_host" query:"filter_db_host"`
-	FilterDBPort               string `json:"filter_db_port" query:"filter_db_port"`
-	FilterDBUser               string `json:"filter_db_user" query:"filter_db_user"`
-	FilterRuleTemplateName     string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
-	PageIndex                  uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                   uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterInstanceName     string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterDBType           string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDBHost           string `json:"filter_db_host" query:"filter_db_host"`
+	FilterDBPort           string `json:"filter_db_port" query:"filter_db_port"`
+	FilterDBUser           string `json:"filter_db_user" query:"filter_db_user"`
+	FilterRuleTemplateName string `json:"filter_rule_template_name" query:"filter_rule_template_name"`
+	PageIndex              uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize               uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetInstancesResV1 struct {
@@ -668,24 +655,28 @@ func GetInstances(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projectName := c.Param("project_name")
+	err = CheckIsProjectMember(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	var offset uint32
 	if req.PageIndex >= 1 {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
-		"filter_instance_name":          req.FilterInstanceName,
-		"filter_db_host":                req.FilterDBHost,
-		"filter_db_port":                req.FilterDBPort,
-		"filter_db_user":                req.FilterDBUser,
-		// todo issue984 handle filter_workflow_template_name and filter_role_name
-		//"filter_workflow_template_name": req.FilterWorkflowTemplateName,
-		"filter_rule_template_name":     req.FilterRuleTemplateName,
-		//"filter_role_name":              req.FilterRoleName,
-		"filter_db_type":                req.FilterDBType,
-		"current_user_id":               user.ID,
-		"check_user_can_access":         user.Name != model.DefaultAdminUser,
-		"limit":                         req.PageSize,
-		"offset":                        offset,
+		"filter_instance_name":      req.FilterInstanceName,
+		"filter_project_name":       projectName,
+		"filter_db_host":            req.FilterDBHost,
+		"filter_db_port":            req.FilterDBPort,
+		"filter_db_user":            req.FilterDBUser,
+		"filter_rule_template_name": req.FilterRuleTemplateName,
+		"filter_db_type":            req.FilterDBType,
+		"current_user_id":           user.ID,
+		"check_user_can_access":     user.Name != model.DefaultAdminUser,
+		"limit":                     req.PageSize,
+		"offset":                    offset,
 	}
 
 	instances, count, err := s.GetInstancesByReq(data, user)
@@ -696,17 +687,14 @@ func GetInstances(c echo.Context) error {
 	instancesRes := []InstanceResV1{}
 	for _, instance := range instances {
 		instanceReq := InstanceResV1{
-			Name:                 instance.Name,
-			DBType:               instance.DbType,
-			Host:                 instance.Host,
-			Port:                 instance.Port,
-			User:                 instance.User,
-			Desc:                 instance.Desc,
-			// todo issue984
-			//WorkflowTemplateName: instance.WorkflowTemplateName.String,
-			MaintenanceTimes:     convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
-			RuleTemplates:        instance.RuleTemplateNames,
-			//Roles:                instance.RoleNames,
+			Name:             instance.Name,
+			DBType:           instance.DbType,
+			Host:             instance.Host,
+			Port:             instance.Port,
+			User:             instance.User,
+			Desc:             instance.Desc,
+			MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+			RuleTemplates:    instance.RuleTemplateNames,
 			SQLQueryConfig: &SQLQueryConfigResV1{
 				MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
 				QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
@@ -757,8 +745,17 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 // @router /v1/projects/{project_name}/instances/{instance_name}/connection [get]
 func CheckInstanceIsConnectableByName(c echo.Context) error {
 	s := model.GetStorage()
+
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -772,7 +769,6 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-
 	l := log.NewEntry()
 
 	err = common.CheckInstanceIsConnectable(instance)
@@ -820,6 +816,14 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	instanceNames := make([]string, 0, len(req.Instances))
 	for _, instance := range req.Instances {
 		instanceNames = append(instanceNames, instance.Name)
@@ -828,7 +832,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 	distinctInstNames := utils.RemoveDuplicate(instanceNames)
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctInstNames)
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -844,7 +848,6 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 	if !can {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-
 	l := log.NewEntry()
 
 	instanceConnectionResV1 := make([]InstanceConnectionResV1, len(instances))
@@ -944,8 +947,17 @@ type InstanceSchemaResV1 struct {
 // @router /v1/projects/{project_name}/instances/{instance_name}/schemas [get]
 func GetInstanceSchemas(c echo.Context) error {
 	s := model.GetStorage()
+
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1032,8 +1044,17 @@ func GetInstanceTips(c echo.Context) error {
 // @router /v1/projects/{project_name}/instances/{instance_name}/rules [get]
 func GetInstanceRules(c echo.Context) error {
 	s := model.GetStorage()
+
 	instanceName := c.Param("instance_name")
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1041,7 +1062,6 @@ func GetInstanceRules(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
-
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

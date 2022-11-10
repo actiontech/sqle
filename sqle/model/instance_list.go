@@ -2,7 +2,9 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
@@ -29,7 +31,7 @@ LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
 LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
-LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
+LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL 
 WHERE
 inst.id in (SELECT DISTINCT(inst.id)
 
@@ -54,8 +56,11 @@ LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
+LEFT JOIN projects AS p ON inst.project_id = projects.id
 
 WHERE inst.deleted_at IS NULL
+
+AND p.name = :filter_project_name
 
 {{- if .filter_instance_name }}
 AND inst.name = :filter_instance_name
@@ -77,16 +82,8 @@ AND inst.db_user = :filter_db_user
 AND inst.db_type = :filter_db_type
 {{- end }}
 
-{{- if .filter_role_name }}
-AND roles.name = :filter_role_name
-{{- end }}
-
 {{- if .filter_rule_template_name }}
 AND rt.name = :filter_rule_template_name
-{{- end }}
-
-{{- if .filter_workflow_template_name }}
-AND wt.name = :filter_workflow_template_name
 {{- end }}
 
 {{- if .check_user_can_access }}
@@ -100,6 +97,10 @@ AND roles.id IN  ( {{ .role_id_list }} )
 
 func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	result []*InstanceDetail, count uint64, err error) {
+
+	if data["filter_project_name"] == "" {
+		return nil, 0, errors.New(errors.DataInvalid, fmt.Errorf("project name can not be empty"))
+	}
 
 	if !IsDefaultAdminUser(user.Name) {
 		roles, err := s.GetRolesByUserID(int(user.ID))
