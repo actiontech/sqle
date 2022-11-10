@@ -545,9 +545,9 @@ func GetUserTips(c echo.Context) error {
 }
 
 type CreateMemberReqV1 struct {
-	UserName string          `json:"user_name" valid:"required"`
-	IsOwner  bool            `json:"is_owner" valid:"required"`
-	Roles    []BindRoleReqV1 `json:"roles" valid:"required"`
+	UserName  string          `json:"user_name" valid:"required"`
+	IsManager bool            `json:"is_manager" valid:"required"`
+	Roles     []BindRoleReqV1 `json:"roles" valid:"required"`
 }
 
 type BindRoleReqV1 struct {
@@ -572,8 +572,8 @@ func AddMember(c echo.Context) error {
 }
 
 type UpdateMemberReqV1 struct {
-	IsOwner *bool            `json:"is_owner"`
-	Roles   *[]BindRoleReqV1 `json:"roles"`
+	IsManager *bool            `json:"is_manager"`
+	Roles     *[]BindRoleReqV1 `json:"roles"`
 }
 
 // UpdateMember
@@ -621,9 +621,9 @@ type GetMembersRespV1 struct {
 }
 
 type GetMemberRespDataV1 struct {
-	UserName string          `json:"user_name"`
-	IsOwner  bool            `json:"is_owner"`
-	Roles    []BindRoleReqV1 `json:"roles"`
+	UserName  string          `json:"user_name"`
+	IsManager bool            `json:"is_manager"`
+	Roles     []BindRoleReqV1 `json:"roles"`
 }
 
 // GetMembers
