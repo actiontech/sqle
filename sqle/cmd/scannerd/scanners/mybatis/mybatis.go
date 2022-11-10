@@ -137,14 +137,16 @@ func GetSQLFromPath(pathName string, skipErrorQuery bool) (allSQL []driver.Node,
 	}
 	for _, fi := range fileInfos {
 		var sqlList []driver.Node
+		pathJoin := path.Join(pathName, fi.Name())
+
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(path.Join(pathName, fi.Name()), skipErrorQuery)
+			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery)
 		} else if strings.HasSuffix(fi.Name(), "xml") {
-			sqlList, err = GetSQLFromFile(path.Join(pathName, fi.Name()), skipErrorQuery)
+			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery)
 		}
 
 		if err != nil {
-			return nil, err
+			fmt.Printf("[parse xml file error] parse file %s error: %v\n", pathJoin, err)
 		}
 		allSQL = append(allSQL, sqlList...)
 	}
