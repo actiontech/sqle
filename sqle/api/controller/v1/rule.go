@@ -86,7 +86,7 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
-// @Param instance body v1.CreateRuleTemplateReqV1 true "add rule template request"
+// @Param req body v1.CreateRuleTemplateReqV1 true "add rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates [post]
 func CreateRuleTemplate(c echo.Context) error {
@@ -109,7 +109,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		DBType: req.DBType,
 	}
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -140,7 +140,7 @@ type UpdateRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.UpdateRuleTemplateReqV1 true "update rule template request"
+// @Param req body v1.UpdateRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates/{rule_template_name}/ [patch]
 func UpdateRuleTemplate(c echo.Context) error {
@@ -159,7 +159,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 	}
 
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
-	if req.RuleList != nil || len(req.RuleList) > 0 {
+	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, template)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
@@ -197,9 +197,9 @@ type RuleTemplateDetailResV1 struct {
 }
 
 func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectName map[uint]model.ProjectAndInstance) *RuleTemplateDetailResV1 {
-	instanceNames := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
+	instances := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
 	for _, instance := range template.Instances {
-		instanceNames = append(instanceNames, &GlobalRuleTemplateInstance{
+		instances = append(instances, &GlobalRuleTemplateInstance{
 			ProjectName:  instNameToProjectName[instance.ID].ProjectName,
 			InstanceName: instance.Name,
 		})
@@ -209,10 +209,11 @@ func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectNam
 		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:     template.Name,
-		Desc:     template.Desc,
-		DBType:   template.DBType,
-		RuleList: ruleList,
+		Name:      template.Name,
+		Desc:      template.Desc,
+		DBType:    template.DBType,
+		Instances: instances,
+		RuleList:  ruleList,
 	}
 }
 
@@ -269,7 +270,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
-	used, err := s.IsRuleTemplateBeingUsed(templateName)
+	used, err := s.IsRuleTemplateBeingUsed(templateName, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -321,18 +322,10 @@ func GetRuleTemplates(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
-	data := map[string]interface{}{
-		"limit":      req.PageSize,
-		"offset":     offset,
-		"project_id": model.ProjectIdForGlobalRuleTemplate,
-	}
 	s := model.GetStorage()
-	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -360,9 +353,33 @@ func GetRuleTemplates(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 
+	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertRuleTemplatesToRes(templateNameToInstanceIds, instanceIdToProjectName, ruleTemplates),
+		TotalNums: count,
+	})
+}
+
+func getRuleTemplatesByReq(s *model.Storage, limit, offset uint32, projectId uint) (ruleTemplates []*model.RuleTemplateDetail, count uint64, err error) {
+	data := map[string]interface{}{
+		"limit":      limit,
+		"offset":     offset,
+		"project_id": projectId,
+	}
+	ruleTemplates, count, err = s.GetRuleTemplatesByReq(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
+	instanceIdToProjectName map[uint] /*instance id*/ model.ProjectAndInstance,
+	ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
+
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
-		instances := make([]*GlobalRuleTemplateInstance, len(ruleTemplate.InstanceIds))
+		instances := make([]*GlobalRuleTemplateInstance, len(templateNameToInstanceIds[ruleTemplate.Name]))
 		for i, instId := range templateNameToInstanceIds[ruleTemplate.Name] {
 			instances[i] = &GlobalRuleTemplateInstance{
 				ProjectName:  instanceIdToProjectName[instId].ProjectName,
@@ -377,11 +394,7 @@ func GetRuleTemplates(c echo.Context) error {
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
-	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      ruleTemplatesReq,
-		TotalNums: count,
-	})
+	return ruleTemplatesReq
 }
 
 type GetRulesReqV1 struct {
@@ -499,8 +512,12 @@ func GetRuleTemplateTips(c echo.Context) error {
 		return err
 	}
 
+	return getRuleTemplateTips(c, model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
+}
+
+func getRuleTemplateTips(c echo.Context, projectId uint, filterDBType string) error {
 	s := model.GetStorage()
-	ruleTemplates, err := s.GetRuleTemplateTips(req.FilterDBType)
+	ruleTemplates, err := s.GetRuleTemplateTips(projectId, filterDBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -531,7 +548,7 @@ type CloneRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.CloneRuleTemplateReqV1 true "clone rule template request"
+// @Param req body v1.CloneRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates/{rule_template_name}/clone [post]
 func CloneRuleTemplate(c echo.Context) error {
@@ -540,7 +557,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate,req.Name)
+	_, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -549,7 +566,7 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate,sourceTplName)
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(model.ProjectIdForGlobalRuleTemplate, sourceTplName)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -607,11 +624,86 @@ type CreateProjectRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param instance body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
+// @Param req body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates [post]
 func CreateProjectRuleTemplate(c echo.Context) error {
-	return nil
+	req := new(CreateProjectRuleTemplateReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	_, exist, err = s.GetRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
+	}
+
+	ruleTemplate := &model.RuleTemplate{
+		ProjectId: project.ID,
+		Name:      req.Name,
+		Desc:      req.Desc,
+		DBType:    req.DBType,
+	}
+	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
+	if len(req.RuleList) > 0 {
+		templateRules, err = checkAndGenerateRules(req.RuleList, ruleTemplate)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+	}
+
+	var instances []*model.Instance
+	if len(req.Instances) > 0 {
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.Save(ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateRuleTemplateRules(ruleTemplate, templateRules...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateProjectRuleTemplateReqV1 struct {
@@ -628,11 +720,86 @@ type UpdateProjectRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
+// @Param req body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [patch]
 func UpdateProjectRuleTemplate(c echo.Context) error {
-	return nil
+	templateName := c.Param("rule_template_name")
+	req := new(UpdateProjectRuleTemplateReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
+	}
+
+	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
+	if len(req.RuleList) > 0 {
+		templateRules, err = checkAndGenerateRules(req.RuleList, template)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+	}
+
+	var instances []*model.Instance
+	if len(req.Instances) > 0 {
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	err = CheckRuleTemplateCanBeBindEachInstance(s, templateName, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{template}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if req.Desc != nil {
+		template.Desc = *req.Desc
+		err = s.Save(&template)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	if req.RuleList != nil {
+		err = s.UpdateRuleTemplateRules(template, templateRules...)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	if req.Instances != nil {
+		err = s.UpdateRuleTemplateInstances(template, instances...)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetProjectRuleTemplateResV1 struct {
@@ -663,7 +830,56 @@ type ProjectRuleTemplateInstance struct {
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [get]
 func GetProjectRuleTemplate(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+	templateName := c.Param("rule_template_name")
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(project.ID, templateName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
+			fmt.Errorf("rule template is not exist"))))
+	}
+
+	return c.JSON(http.StatusOK, &GetProjectRuleTemplateResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertProjectRuleTemplateToRes(template),
+	})
+}
+
+func convertProjectRuleTemplateToRes(template *model.RuleTemplate) *RuleProjectTemplateDetailResV1 {
+	instances := make([]*ProjectRuleTemplateInstance, 0, len(template.Instances))
+	for _, instance := range template.Instances {
+		instances = append(instances, &ProjectRuleTemplateInstance{
+			Name: instance.Name,
+		})
+	}
+	ruleList := make([]RuleResV1, 0, len(template.RuleList))
+	for _, r := range template.RuleList {
+		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
+	}
+	return &RuleProjectTemplateDetailResV1{
+		Name:      template.Name,
+		Desc:      template.Desc,
+		DBType:    template.DBType,
+		Instances: instances,
+		RuleList:  ruleList,
+	}
 }
 
 // DeleteProjectRuleTemplate
@@ -677,7 +893,44 @@ func GetProjectRuleTemplate(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [delete]
 func DeleteProjectRuleTemplate(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	templateName := c.Param("rule_template_name")
+	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
+	}
+	used, err := s.IsRuleTemplateBeingUsed(templateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if used {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+	}
+
+	err = s.Delete(template)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetProjectRuleTemplatesResV1 struct {
@@ -705,7 +958,55 @@ type ProjectRuleTemplateResV1 struct {
 // @Success 200 {object} v1.GetProjectRuleTemplatesResV1
 // @router /v1/projects/{project_name}/rule_templates [get]
 func GetProjectRuleTemplates(c echo.Context) error {
-	return nil
+	req := new(GetRuleTemplatesReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetProjectRuleTemplatesResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertProjectRuleTemplatesToRes(ruleTemplates),
+		TotalNums: count,
+	})
+}
+
+func convertProjectRuleTemplatesToRes(ruleTemplates []*model.RuleTemplateDetail) []ProjectRuleTemplateResV1 {
+	ruleTemplatesRes := make([]ProjectRuleTemplateResV1, len(ruleTemplates))
+	for i, t := range ruleTemplates {
+		instances := make([]*ProjectRuleTemplateInstance, len(t.InstanceNames))
+		for j, instName := range t.InstanceNames {
+			instances[j] = &ProjectRuleTemplateInstance{Name: instName}
+		}
+		ruleTemplatesRes[i] = ProjectRuleTemplateResV1{
+			Name:      t.Name,
+			Desc:      t.Desc,
+			DBType:    t.DBType,
+			Instances: instances,
+		}
+	}
+	return ruleTemplatesRes
 }
 
 type CloneProjectRuleTemplateReqV1 struct {
@@ -723,13 +1024,89 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Accept json
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
+// @Param req body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {
-	return nil
+	req := new(CloneProjectRuleTemplateReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+	_, exist, err = s.GetRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
+	}
+
+	sourceTplName := c.Param("rule_template_name")
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(project.ID, sourceTplName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
+			fmt.Errorf("source rule template %s is not exist", sourceTplName))))
+	}
+
+	var instances []*model.Instance
+	if len(req.Instances) > 0 {
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ruleTemplate := &model.RuleTemplate{
+		ProjectId: project.ID,
+		Name:      req.Name,
+		Desc:      req.Desc,
+		DBType:    sourceTpl.DBType,
+	}
+	err = s.Save(ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CloneRuleTemplateRules(sourceTpl, ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// GetProjectRuleTemplateTips
 // @Summary 获取项目规则模板提示
 // @Description get rule template tips in project
 // @Id getProjectRuleTemplateTipsV1
@@ -739,6 +1116,27 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 // @Param filter_db_type query string false "filter db type"
 // @Success 200 {object} v1.GetRuleTemplateTipsResV1
 // @router /v1/projects/{project_name}/rule_template_tips [get]
-func GetProjectRuleTemplateTips(c echo.Context) error{
-	return nil
+func GetProjectRuleTemplateTips(c echo.Context) error {
+	req := new(RuleTemplateTipReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	return getRuleTemplateTips(c, project.ID, req.FilterDBType)
 }

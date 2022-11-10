@@ -145,6 +145,18 @@ func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string)
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetRuleTemplateByNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
+	t := &RuleTemplate{}
+	err := s.db.Table("rule_templates").
+		Where("rule_templates.name = ?", name).
+		Where("project_id = ?", projectId).
+		First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRuleTemplateDetailByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
@@ -200,10 +212,10 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	return ruleMap
 }
 
-func (s *Storage) GetRuleTemplateTips(dbType string) ([]*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplateTips(projectId uint, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
-	db := s.db.Select("name, db_type")
+	db := s.db.Select("name, db_type").Where("project_id = ?", projectId)
 	if dbType != "" {
 		db = db.Where("db_type = ?", dbType)
 	}
@@ -294,12 +306,12 @@ func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string) (bool, error) {
+func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uint) (bool, error) {
 	var count int
 	err := s.db.Table("rule_templates").
-		Joins("join audit_plans on audit_plans.rule_template_name = rule_templates.name").
+		Joins("join audit_plans on audit_plans.project_id = rule_templates.project_id").
 		Where("audit_plans.deleted_at is null").
-		Where("rule_templates.name = ?", ruleTemplateName).
+		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
