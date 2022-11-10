@@ -988,9 +988,12 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanNa
 		return nil, false, err
 	}
 
-	// todo: project manager has all permissions.
-
 	if ap.CreateUserID == user.ID {
+		return ap, true, nil
+	}
+
+	err = CheckIsProjectManager(userName, projectName)
+	if err == nil {
 		return ap, true, nil
 	}
 
@@ -1004,9 +1007,8 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanNa
 				return ap, true, nil
 			}
 		}
-		return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
 	}
-	return ap, true, nil
+	return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
 }
 
 // deprecated. will be removed when sqle-ee is not referenced.
