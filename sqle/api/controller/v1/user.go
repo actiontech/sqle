@@ -764,7 +764,61 @@ type GetMemberRespDataV1 struct {
 // @Success 200 {object} v1.GetMembersRespV1
 // @router /v1/projects/{project_name}/members [get]
 func GetMembers(c echo.Context) error {
-	return nil
+	req := new(GetMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
+	// 获取成员信息
+	mp := map[string]interface{}{
+		"limit":                limit,
+		"offset":               offset,
+		"filter_project_name":  projectName,
+		"filter_user_name":     req.FilterUserName,
+		"filter_instance_name": req.FilterInstanceName,
+	}
+
+	s := model.GetStorage()
+	members, total, err := s.GetMembersByReq(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取角色信息
+	memberNames := []string{}
+	for _, member := range members {
+		memberNames = append(memberNames, member.UserName)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberNames(memberNames, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 生成响应
+	data := []GetMemberRespDataV1{}
+	for _, member := range members {
+		data = append(data, GetMemberRespDataV1{
+			UserName:  member.UserName,
+			IsManager: member.IsManager,
+			Roles:     convertBindRoleToBindRoleReqV1(bindRole[member.UserName]),
+		})
+	}
+
+	return c.JSON(http.StatusOK, GetMembersRespV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      data,
+		TotalNums: total,
+	})
 }
 
 func convertBindRoleToBindRoleReqV1(role []model.BindRole) []BindRoleReqV1 {
