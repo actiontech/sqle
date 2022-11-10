@@ -78,17 +78,18 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 }
 
 type CreateInstanceReqV1 struct {
-	Name             string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
-	DBType           string                          `json:"db_type" form:"db_type" example:"mysql"`
-	User             string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
-	Host             string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
-	Port             string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
-	Password         string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
-	Desc             string                          `json:"desc" example:"this is a test instance"`
-	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	Name                 string                          `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType               string                          `json:"db_type" form:"db_type" example:"mysql"`
+	User                 string                          `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host                 string                          `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port                 string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password             string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc                 string                          `json:"desc" example:"this is a test instance"`
+	SQLQueryConfig       *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
+	MaintenanceTimes     []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
+	GlobalRuleTemplates  []string                        `json:"global_rule_template_name_list" form:"global_rule_template_name_list"`
+	ProjectRuleTemplates []string                        `json:"project_rule_template_name_list" form:"project_rule_template_name_list"`
+	AdditionalParams     []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
 type SQLQueryConfigReqV1 struct {
@@ -222,12 +223,12 @@ func CreateInstance(c echo.Context) error {
 		ProjectId:          project.ID,
 	}
 
-	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, project.ID)
+	templates, err := s.GetAndCheckRuleTemplateExist(req.ProjectRuleTemplates, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
+	if !CheckInstanceCanBindOneRuleTemplate(req.ProjectRuleTemplates) {
 		return controller.JSONBaseErrorReq(c, errInstanceBind)
 	}
 
