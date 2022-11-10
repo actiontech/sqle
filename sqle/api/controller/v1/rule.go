@@ -1123,6 +1123,12 @@ func GetProjectRuleTemplateTips(c echo.Context) error {
 	}
 	projectName := c.Param("project_name")
 
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
