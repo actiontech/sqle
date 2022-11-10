@@ -18,6 +18,7 @@ import (
 var (
 	dir            string
 	skipErrorQuery bool
+	skipErrorXml   bool
 	skipAudit      bool
 
 	mybatisCmd = &cobra.Command{
@@ -28,6 +29,7 @@ var (
 				XMLDir:         dir,
 				APName:         rootCmdFlags.auditPlanName,
 				SkipErrorQuery: skipErrorQuery,
+				SkipErrorXml:   skipErrorXml,
 				SkipAudit:      skipAudit,
 			}
 			log := logrus.WithField("scanner", "mybatis")
@@ -51,6 +53,7 @@ var (
 func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
 	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip the statement that the scanner failed to parse from within the xml file")
+	mybatisCmd.Flags().BoolVarP(&skipErrorXml, "skip-error-xml", "X", false, "skip the xml file that failed to parse")
 	mybatisCmd.Flags().BoolVarP(&skipAudit, "skip-audit", "K", false, "only upload sql to sqle, not audit")
 	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
