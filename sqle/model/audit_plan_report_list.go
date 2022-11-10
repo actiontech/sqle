@@ -83,8 +83,11 @@ var auditPlanReportSQLBodyTpl = `
 {{ define "body" }}
 
 FROM audit_plan_report_sqls_v2 AS report_sqls
-WHERE deleted_at IS NULL
-AND audit_plan_report_id = :audit_plan_report_id
+JOIN audit_plan_reports_v2 AS audit_plan_reports ON report_sqls.audit_plan_report_id = audit_plan_reports.id
+WHERE audit_plan_reports.deleted_at IS NULL
+AND report_sqls.deleted_at IS NULL
+AND report_sqls.audit_plan_report_id = :audit_plan_report_id
+AND audit_plan_reports.audit_plan_id = :audit_plan_id
 
 {{ end }}
 `
