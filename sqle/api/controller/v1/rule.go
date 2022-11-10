@@ -839,7 +839,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
 			fmt.Errorf("rule template is not exist"))))
 	}
-	
+
 	return c.JSON(http.StatusOK, &GetProjectRuleTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertProjectRuleTemplateToRes(template),
@@ -942,7 +942,63 @@ type ProjectRuleTemplateResV1 struct {
 // @Success 200 {object} v1.GetProjectRuleTemplatesResV1
 // @router /v1/projects/{project_name}/rule_templates [get]
 func GetProjectRuleTemplates(c echo.Context) error {
-	return nil
+	req := new(GetRuleTemplatesReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+	data := map[string]interface{}{
+		"limit":      req.PageSize,
+		"offset":     offset,
+		"project_id": project.ID,
+	}
+	ruleTemplates, count, err := s.GetRuleTemplatesByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetProjectRuleTemplatesResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertProjectRuleTemplatesToRes(ruleTemplates),
+		TotalNums: count,
+	})
+}
+
+func convertProjectRuleTemplatesToRes(ruleTemplates []*model.RuleTemplateDetail) []ProjectRuleTemplateResV1 {
+	ruleTemplatesRes := make([]ProjectRuleTemplateResV1, len(ruleTemplates))
+	for i, t := range ruleTemplates {
+		instances := make([]*ProjectRuleTemplateInstance, len(t.InstanceNames))
+		for j, instName := range t.InstanceNames {
+			instances[j] = &ProjectRuleTemplateInstance{Name: instName}
+		}
+		ruleTemplatesRes[i] = ProjectRuleTemplateResV1{
+			Name:      t.Name,
+			Desc:      t.Desc,
+			DBType:    t.DBType,
+			Instances: instances,
+		}
+	}
+	return ruleTemplatesRes
 }
 
 type CloneProjectRuleTemplateReqV1 struct {
