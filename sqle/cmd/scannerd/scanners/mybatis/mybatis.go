@@ -29,6 +29,7 @@ type MyBatis struct {
 	apName         string
 	xmlDir         string
 	skipErrorQuery bool
+	skipErrorXml   bool
 	skipAudit      bool
 }
 
@@ -36,6 +37,7 @@ type Params struct {
 	XMLDir         string
 	APName         string
 	SkipErrorQuery bool
+	SkipErrorXml   bool
 	SkipAudit      bool
 }
 
@@ -44,6 +46,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		xmlDir:         params.XMLDir,
 		apName:         params.APName,
 		skipErrorQuery: params.SkipErrorQuery,
+		skipErrorXml:   params.SkipErrorXml,
 		skipAudit:      params.SkipAudit,
 		l:              l,
 		c:              c,
@@ -52,7 +55,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery)
+	sqls, err := GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml)
 	if err != nil {
 		return err
 	}
@@ -122,7 +125,7 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	return mb.c.GetAuditReportReq(mb.apName, reportID)
 }
 
-func GetSQLFromPath(pathName string, skipErrorQuery bool) (allSQL []driver.Node, err error) {
+func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL []driver.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -140,13 +143,17 @@ func GetSQLFromPath(pathName string, skipErrorQuery bool) (allSQL []driver.Node,
 		pathJoin := path.Join(pathName, fi.Name())
 
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery)
+			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorXml)
 		} else if strings.HasSuffix(fi.Name(), "xml") {
 			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery)
 		}
 
 		if err != nil {
-			fmt.Printf("[parse xml file error] parse file %s error: %v\n", pathJoin, err)
+			if skipErrorXml {
+				fmt.Printf("[parse xml file error] parse file %s error: %v\n", pathJoin, err)
+			} else {
+				return nil, fmt.Errorf("parse file %s error: %v", pathJoin, err)
+			}
 		}
 		allSQL = append(allSQL, sqlList...)
 	}
