@@ -265,9 +265,9 @@ func (t *TestNotify) NotificationBody() string {
 	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
 }
 
-func NotifyAuditPlan(apName string, report *model.AuditPlanReportV2) error {
+func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	s := model.GetStorage()
-	ap, _, err := s.GetAuditPlanByName(apName)
+	ap, _, err := s.GetAuditPlanById(auditPlanId)
 	if err != nil {
 		return err
 	}

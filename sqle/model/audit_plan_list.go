@@ -124,7 +124,7 @@ JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
-AND audit_plans.name = :audit_plan_name
+AND audit_plans.id = :audit_plan_id
 
 {{ end }}
 `
