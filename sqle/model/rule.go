@@ -145,6 +145,18 @@ func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string)
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetRuleTemplateByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
+	t := &RuleTemplate{}
+	err := s.db.Table("rule_templates").
+		Where("rule_templates.name = ?", name).
+		Where("project_id = ?", projectId).
+		First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRuleTemplateDetailByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
