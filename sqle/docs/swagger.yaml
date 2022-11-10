@@ -573,7 +573,6 @@ definitions:
         example: test@email.com
         type: string
       management_permission_code_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
           type: integer
         type: array
@@ -2080,13 +2079,6 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
-  v1.ManagementPermission:
-    properties:
-      code:
-        type: integer
-      desc:
-        type: string
-    type: object
   v1.ManagementPermissionResV1:
     properties:
       code:
@@ -2820,7 +2812,6 @@ definitions:
       is_disabled:
         type: boolean
       management_permission_code_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
           type: integer
         type: array
@@ -2890,9 +2881,8 @@ definitions:
       login_type:
         type: string
       management_permission_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
-          $ref: '#/definitions/v1.ManagementPermission'
+          $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
       user_group_name_list:
         items:
@@ -2945,9 +2935,8 @@ definitions:
       login_type:
         type: string
       management_permission_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
-          $ref: '#/definitions/v1.ManagementPermission'
+          $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
       user_group_name_list:
         items:
@@ -5129,7 +5118,7 @@ paths:
         type: string
       - description: add rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.CreateProjectRuleTemplateReqV1'
@@ -5208,7 +5197,7 @@ paths:
         type: string
       - description: update rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.UpdateProjectRuleTemplateReqV1'
@@ -5241,7 +5230,7 @@ paths:
         type: string
       - description: clone rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.CloneProjectRuleTemplateReqV1'
@@ -5928,7 +5917,7 @@ paths:
       parameters:
       - description: add rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.CreateRuleTemplateReqV1'
@@ -5992,7 +5981,7 @@ paths:
         type: string
       - description: update rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.UpdateRuleTemplateReqV1'
@@ -6020,7 +6009,7 @@ paths:
         type: string
       - description: clone rule template request
         in: body
-        name: instance
+        name: req
         required: true
         schema:
           $ref: '#/definitions/v1.CloneRuleTemplateReqV1'
@@ -6855,7 +6844,7 @@ paths:
       description: get user tip list
       operationId: getUserTipListV1
       parameters:
-      - description: project id
+      - description: project name
         in: query
         name: filter_project
         type: string
