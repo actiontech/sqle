@@ -6818,12 +6818,6 @@ var doc = `{
                     "type": "string",
                     "example": "this is a test instance"
                 },
-                "global_rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "instance_name": {
                     "type": "string",
                     "example": "test"
@@ -6834,11 +6828,8 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
                     }
                 },
-                "project_rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql_query_config": {
                     "type": "object",
