@@ -306,12 +306,12 @@ func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string) (bool, error) {
+func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uint) (bool, error) {
 	var count int
 	err := s.db.Table("rule_templates").
-		Joins("join audit_plans on audit_plans.rule_template_name = rule_templates.name").
+		Joins("join audit_plans on audit_plans.project_id = rule_templates.project_id").
 		Where("audit_plans.deleted_at is null").
-		Where("rule_templates.name = ?", ruleTemplateName).
+		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
