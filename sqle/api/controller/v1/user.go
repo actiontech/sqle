@@ -767,6 +767,17 @@ func GetMembers(c echo.Context) error {
 	return nil
 }
 
+func convertBindRoleToBindRoleReqV1(role []model.BindRole) []BindRoleReqV1 {
+	req := []BindRoleReqV1{}
+	for _, r := range role {
+		req = append(req, BindRoleReqV1{
+			InstanceName: r.InstanceName,
+			RoleNames:    r.RoleNames,
+		})
+	}
+	return req
+}
+
 type GetMemberRespV1 struct {
 	controller.BaseRes
 	Data GetMemberRespDataV1 `json:"data"`
@@ -783,5 +794,42 @@ type GetMemberRespV1 struct {
 // @Success 200 {object} v1.GetMemberRespV1
 // @router /v1/projects/{project_name}/members/{user_name}/ [get]
 func GetMember(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	mp := map[string]interface{}{
+		"limit":               1,
+		"offset":              1,
+		"filter_user_name":    userName,
+		"filter_project_name": projectName,
+	}
+
+	s := model.GetStorage()
+	members, _, err := s.GetMembersByReq(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(members) != 1 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("the number of members is not unique")))
+	}
+
+	bindRole, err := s.GetBindRolesByMemberNames([]string{members[0].UserName}, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GetMemberRespV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetMemberRespDataV1{
+			UserName:  members[0].UserName,
+			IsManager: members[0].IsManager,
+			Roles:     convertBindRoleToBindRoleReqV1(bindRole[members[0].UserName]),
+		},
+	})
 }
