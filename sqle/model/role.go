@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
 )
@@ -39,6 +40,137 @@ type ProjectMemberGroupRole struct {
 	UserGroupID uint `json:"user_group_id" gorm:"not null"`
 	InstanceID  uint `json:"instance_id" gorm:"not null"`
 	RoleID      uint `json:"role_id" gorm:"not null"`
+}
+
+type BindRole struct {
+	InstanceName string   `json:"instance_name" valid:"required"`
+	RoleNames    []string `json:"role_names" valid:"required"`
+}
+
+func (s *Storage) UpdateUserRoles(userName, projectName string, bindRoles []BindRole) error {
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("user not exist"))
+	}
+
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		return errors.ConnectStorageErrWrapper(s.updateUserRoles(tx, user, projectName, bindRoles))
+	})
+}
+
+// 每次更新都是全量更新 InstID+UserID 定位到的角色
+func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, bindRoles []BindRole) error {
+	if len(bindRoles) == 0 {
+		return nil
+	}
+
+	// 获取实例ID和规则ID
+	instNames := []string{}
+	roleNames := []string{}
+	for _, role := range bindRoles {
+		instNames = append(instNames, role.InstanceName)
+		for _, name := range role.RoleNames {
+			roleNames = append(roleNames, name)
+		}
+	}
+
+	roleNames = utils.RemoveDuplicate(roleNames)
+	instNames = utils.RemoveDuplicate(instNames)
+
+	roles, err := s.GetRolesByNames(roleNames)
+	if err != nil {
+		return err
+	}
+	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	if err != nil {
+		return err
+	}
+
+	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
+	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
+	instIDs := []uint{}
+	for _, role := range roles {
+		roleCache[role.Name] = role.ID
+	}
+
+	for _, inst := range insts {
+		instCache[inst.Name] = inst.ID
+		instIDs = append(instIDs, inst.ID)
+	}
+
+	// 删掉所有旧数据
+	err = tx.Where("user_id = ?", user.ID).Where("instance_id in (?)", instIDs).Delete(&ProjectMemberRole{}).Error
+	if err != nil {
+		return err
+	}
+
+	// 写入新数据
+	for _, role := range bindRoles {
+		for _, name := range role.RoleNames {
+			if err = tx.Save(&ProjectMemberRole{
+				RoleID:     roleCache[name],
+				InstanceID: instCache[role.InstanceName],
+				UserID:     user.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) (map[string /*member name*/ ][]BindRole, error) {
+	roles := []*struct {
+		UserName     string `json:"user_name"`
+		InstanceName string `json:"instance_name"`
+		RoleName     string `json:"role_name"`
+	}{}
+
+	err := s.db.Table("project_member_role").
+		Select("users.login_name AS user_name , instances.name AS instance_name , roles.name AS role_name").
+		Joins("JOIN users ON users.id = project_member_role.user_id").
+		Joins("JOIN instances ON instances.id = project_member_role.instance_id").
+		Joins("JOIN projects ON projects.id = instances.project_id").
+		Joins("JOIN roles ON roles.id = project_member_role.role_id").
+		Where("projects.name = ?", projectName).
+		Where("users.login_name in (?)", names).
+		Scan(&roles).Error
+
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	removeDuplicate := map[string]struct{}{}
+	resp := map[string][]BindRole{}
+
+A:
+	for _, role := range roles {
+		// 去重
+		fg := role.RoleName + role.InstanceName + role.UserName
+		if _, ok := removeDuplicate[fg]; ok {
+			continue
+		}
+		removeDuplicate[fg] = struct{}{}
+
+		// resp中已有此用户+实例的信息时走这里
+		for i, bindRole := range resp[role.UserName] {
+			if bindRole.InstanceName == role.InstanceName {
+				resp[role.UserName][i].RoleNames = append(resp[role.UserName][i].RoleNames, role.RoleName)
+				continue A
+			}
+		}
+		// resp还没记录过此用户或此用户+实例的信息时走这里
+		resp[role.UserName] = append(resp[role.UserName], BindRole{
+			InstanceName: role.InstanceName,
+			RoleNames:    []string{role.RoleName},
+		})
+	}
+
+	return resp, nil
 }
 
 func (s *Storage) GetRoleByName(name string) (*Role, bool, error) {
