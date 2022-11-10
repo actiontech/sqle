@@ -679,7 +679,56 @@ func UpdateMember(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members/{user_name}/ [delete]
 func DeleteMember(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = checkMemberCanDelete(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, s.RemoveMember(userName, projectName))
+
+}
+
+func checkMemberCanDelete(userName, projectName string) error {
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.New(errors.DataNotExist, fmt.Errorf("user not exist"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.New(errors.DataNotExist, fmt.Errorf("project not exist"))
+	}
+
+	if len(project.Managers) == 1 && project.Managers[0].ID == user.ID {
+		return errors.New(errors.DataInvalid, fmt.Errorf("cannot delete the last administrator"))
+	}
+
+	// TODO issue_960 工单部分还没做, 遗留检查是否有残余工单和扫描任务和工作模板, 删全局用户那里也得改
 	return nil
+
 }
 
 type GetMemberReqV1 struct {
