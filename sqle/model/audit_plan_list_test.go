@@ -110,9 +110,11 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	tableAndRowOfSQL := `
 	FROM audit_plan_reports_v2 AS reports
 	JOIN audit_plans ON audit_plans.id = reports.audit_plan_id
+	JOIN projects ON projects.id = audit_plans.project_id
 	WHERE reports.deleted_at IS NULL
 	AND audit_plans.deleted_at IS NULL
 	AND audit_plans.name = ?
+	AND projects.name = ?
 	ORDER BY reports.created_at DESC , reports.id DESC
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -120,14 +122,15 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT reports.id, reports.score , reports.pass_rate, reports.audit_level, reports.created_at %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
+		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "project_1", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"id", "score", "pass_rate", "audit_level", "created_at"}).
 		AddRow("1", 100, 1, "normal", "2021-09-01T13:46:13+08:00"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
+		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "project_1").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields := map[string]interface{}{
 		"audit_plan_name": "audit_plan_for_jave_repo",
+		"project_name":    "project_1",
 		"limit":           100,
 		"offset":          10}
 	result, count, err := GetStorage().GetAuditPlanReportsByReq(nameFields)
@@ -141,8 +144,11 @@ func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	tableAndRowOfSQL := `
 	FROM audit_plan_report_sqls_v2 AS report_sqls
-	WHERE deleted_at IS NULL
-	AND audit_plan_report_id = ?
+	JOIN audit_plan_reports_v2 AS audit_plan_reports ON report_sqls.audit_plan_report_id = audit_plan_reports.id
+	WHERE audit_plan_reports.deleted_at IS NULL
+	AND report_sqls.deleted_at IS NULL
+	AND report_sqls.audit_plan_report_id = ?
+	AND audit_plan_reports.audit_plan_id = ?
 	`
 
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -150,14 +156,14 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_result, report_sqls.number %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs(1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
+		ExpectQuery().WithArgs(1, 1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"sql", "audit_result", "number",
 	}).AddRow("select * from t1 where id = 1", "FAKE AUDIT RESULT", "1"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
+		ExpectQuery().WithArgs(1, 1).WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields := map[string]interface{}{
-		"audit_plan_name":      "audit_plan_for_jave_repo",
+		"audit_plan_id":        1,
 		"audit_plan_report_id": 1,
 		"limit":                100,
 		"offset":               10}

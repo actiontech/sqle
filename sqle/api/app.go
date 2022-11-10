@@ -239,23 +239,27 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/configurations/sql_query", v1.GetSQLQueryConfiguration)
 
 	// audit plan
-	v1Router.POST("/audit_plans", v1.CreateAuditPlan)
-	v1Router.DELETE("/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
-	v1Router.PATCH("/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
-	v1Router.GET("/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
-	v1Router.GET("/audit_plans", v1.GetAuditPlans)
-	v1Router.GET("/audit_plans/:audit_plan_name/reports", v1.GetAuditPlanReports)
-	v1Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/", v1.GetAuditPlanReport)
-
-	v1Router.POST("/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-	v1Router.POST("/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-	v1Router.POST("/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
 	v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
 	v1Router.GET("/audit_plan_types", v1.GetAuditPlanTypes)
-	v1Router.PATCH("/audit_plans/:audit_plan_name/notify_config", v1.UpdateAuditPlanNotifyConfig)
-	v1Router.GET("/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
-	v1Router.GET("/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
-	v1Router.GET("/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
+
+	// project - audit plan
+	v1Router.POST("/projects/:project_name/audit_plans", v1.CreateAuditPlan)
+	v1Router.GET("/projects/:project_name/audit_plans", v1.GetAuditPlans)
+	v1Router.DELETE("/projects/:project_name/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
+	v1Router.PATCH("/projects/:project_name/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports", v1.GetAuditPlanReports)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/", v1.GetAuditPlanReport)
+
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/sqls", v1.GetAuditPlanSQLs)
+	v1Router.POST("/projects/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+	v1Router.POST("/projects/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+	v1Router.POST("/projects/:project_name/audit_plans/:audit_plan_name/trigger", v1.TriggerAuditPlan)
+	v1Router.PATCH("/projects/:project_name/audit_plans/:audit_plan_name/notify_config", v1.UpdateAuditPlanNotifyConfig)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
+	v1Router.GET("/projects/:project_name/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
+	v2Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 
 	// sql query
 	cloudbeaver_wrapper.StartApp(e)

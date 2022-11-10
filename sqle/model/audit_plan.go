@@ -80,9 +80,28 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanReportByID(id uint) (*AuditPlanReportV2, bool, error) {
+func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAuditPlanFromProjectByName(projectName, AuditPlanName string) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).Joins("projects ON projects.id = audit_plans.project_id").
+		Where("projects.name = ? AND audit_plans.name = ?", projectName, AuditPlanName).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReportV2, bool, error) {
 	ap := &AuditPlanReportV2{}
-	err := s.db.Model(AuditPlanReportV2{}).Where("id = ?", id).Preload("AuditPlan").Find(ap).Error
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -152,6 +171,11 @@ func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQLV2) (raw string, ar
 
 func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {
 	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Update(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) error {
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 

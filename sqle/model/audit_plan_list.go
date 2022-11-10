@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
@@ -38,6 +39,7 @@ var auditPlanBodyTpl = `
 {{ define "body" }}
 FROM audit_plans
 LEFT JOIN users ON audit_plans.create_user_id = users.id
+LEFT JOIN projects ON audit_plans.project_id = projects.id
 
 WHERE audit_plans.deleted_at IS NULL
 AND users.deleted_at IS NULL
@@ -66,6 +68,10 @@ AND audit_plans.type = :filter_audit_plan_type
 {{- if .filter_audit_plan_instance_name }}
 AND audit_plans.instance_name = :filter_audit_plan_instance_name
 {{- end }}
+
+{{- if .filter_project_name }}
+AND projects.name = :filter_project_name
+}}
 
 {{ end }}
 `
@@ -118,7 +124,7 @@ JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
-AND audit_plans.name = :audit_plan_name
+AND audit_plans.id = :audit_plan_id
 
 {{ end }}
 `

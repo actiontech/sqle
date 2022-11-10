@@ -211,12 +211,20 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
+	// check project
 	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
 
 	// check user
 	currentUserName := controller.GetUserName(c)
 
-	err := CheckIsProjectMember(currentUserName, projectName)
+	err = CheckIsProjectMember(currentUserName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -229,7 +237,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	// check audit plan name
-	_, exist, err = s.GetAuditPlanByName(req.Name)
+	_, exist, err = s.GetAuditPlanFromProjectByName(projectName, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -270,7 +278,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = inst.DbType
 
 		// check operation
-		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType)
+		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType) // todo: refactor permissions. waiting for project member.
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -282,6 +290,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = req.InstanceType
 	}
 
+	// todo: check and select rule template binding in project. waiting for project rule.
 	// check rule template name
 	if req.RuleTemplateName != "" {
 		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
@@ -325,6 +334,7 @@ func CreateAuditPlan(c echo.Context) error {
 		RuleTemplateName: ruleTemplateName,
 		InstanceName:     req.InstanceName,
 		InstanceDatabase: req.InstanceDatabase,
+		ProjectId:        project.ID,
 	}
 	err = s.Save(ap)
 	if err != nil {
@@ -332,7 +342,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.Name))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 // customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
@@ -368,14 +378,11 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
-	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	s := model.GetStorage()
+	projectName := c.Param("project_name")
+	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := s.GetAuditPlanByName(apName)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -387,7 +394,7 @@ func DeleteAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -413,16 +420,10 @@ func UpdateAuditPlan(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	storage := model.GetStorage()
-	ap, exist, err := storage.GetAuditPlanByName(apName)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -440,6 +441,8 @@ func UpdateAuditPlan(c echo.Context) error {
 	if req.InstanceDatabase != nil {
 		updateAttr["instance_database"] = *req.InstanceDatabase
 	}
+
+	storage := model.GetStorage()
 	if req.RuleTemplateName != nil {
 		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName)
 		if err != nil {
@@ -458,12 +461,12 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["params"] = ps
 	}
 
-	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 type GetAuditPlansReqV1 struct {
@@ -514,6 +517,12 @@ func GetAuditPlans(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	var offset uint32
 	if req.PageIndex >= 1 {
@@ -524,7 +533,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS})
+	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS}) // todo: refactor permissions. waiting for projec member
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -539,6 +548,7 @@ func GetAuditPlans(c echo.Context) error {
 		"filter_audit_plan_instance_name": req.FilterAuditPlanInstanceName,
 		"current_user_name":               currentUser.Name,
 		"current_user_is_admin":           model.DefaultAdminUser == currentUser.Name,
+		"filter_project_name":             projectName,
 		"limit":                           req.PageSize,
 		"offset":                          offset,
 	}
@@ -590,21 +600,17 @@ type GetAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
-	storage := model.GetStorage()
-
-	ap, exist, err := storage.GetAuditPlanByName(apName)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
+
 	meta, err := auditplan.GetMeta(ap.Type)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -664,10 +670,15 @@ func GetAuditPlanReports(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+
+	_, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	var offset uint32
@@ -676,6 +687,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
+		"project_name":    projectName,
 		"audit_plan_name": apName,
 		"limit":           req.PageSize,
 		"offset":          offset,
@@ -718,10 +730,15 @@ type GetAuditPlanReportResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanReportResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
 func GetAuditPlanReport(c echo.Context) error {
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	id := c.Param("audit_plan_report_id")
@@ -730,7 +747,7 @@ func GetAuditPlanReport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
 	}
 	s := model.GetStorage()
-	report, exist, err := s.GetAuditPlanReportByID(uint(reportID))
+	report, exist, err := s.GetAuditPlanReportByID(ap.ID, uint(reportID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -777,15 +794,25 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, false))
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -807,39 +834,36 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := checkAndConvertToModelAuditPlanSQL(c, apName, req.SQLs)
+
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, true))
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, true))
 }
 
-func checkAndConvertToModelAuditPlanSQL(c echo.Context, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
-	s := model.GetStorage()
-
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	ap, exist, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, errAuditPlanNotExist
-	}
-
+func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	var drvMgr driver.DriverManager
 	var drv driver.Driver
+	var err error
+
 	// lazy load driver
 	initDriver := func() error {
 		if drv == nil {
-			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), ap.DBType)
+			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), auditPlan.DBType)
 			if err != nil {
 				return err
 			}
@@ -910,14 +934,19 @@ type TriggerAuditPlanResV1 struct {
 // @Success 200 {object} v1.TriggerAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
 
 	manager := auditplan.GetManager()
-	report, err := manager.Audit(apName)
+	report, err := manager.Audit(ap.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -933,6 +962,56 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
+func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanName string, opCode int) (*model.AuditPlan, bool, error) {
+	storage := model.GetStorage()
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return nil, false, err
+	}
+
+	ap, exist, err := storage.GetAuditPlanFromProjectByName(projectName, auditPlanName)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exist {
+		return nil, true, nil
+	}
+
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return ap, true, nil
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if ap.CreateUserID == user.ID {
+		return ap, true, nil
+	}
+
+	err = CheckIsProjectManager(userName, projectName)
+	if err == nil {
+		return ap, true, nil
+	}
+
+	if opCode > 0 {
+		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)}) //todo: refactor instance permissions. waiting for project member.
+		if err != nil {
+			return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
+		}
+		for _, instance := range instances {
+			if ap.InstanceName == instance.Name {
+				return ap, true, nil
+			}
+		}
+	}
+	return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
+}
+
+// deprecated. will be removed when sqle-ee is not referenced.
 func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode int) error {
 	storage := model.GetStorage()
 
@@ -995,11 +1074,15 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	updateAttr := make(map[string]interface{})
@@ -1023,7 +1106,7 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 	}
 
 	storage := model.GetStorage()
-	err = storage.UpdateAuditPlanByName(apName, updateAttr)
+	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
 	return controller.JSONBaseErrorReq(c, err)
 }
 
@@ -1051,18 +1134,19 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config [get]
 func GetAuditPlanNotifyConfig(c echo.Context) error {
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	s := model.GetStorage()
-	ap, _, err := s.GetAuditPlanByName(apName)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
 
 	return c.JSON(http.StatusOK, GetAuditPlanNotifyConfigResV1{
-		BaseRes: controller.NewBaseReq(err),
+		BaseRes: controller.NewBaseReq(nil),
 		Data: GetAuditPlanNotifyConfigResDataV1{
 			NotifyInterval:      ap.NotifyInterval,
 			NotifyLevel:         ap.NotifyLevel,
@@ -1094,18 +1178,18 @@ type TestAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.TestAuditPlanNotifyConfigResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config/test [get]
 func TestAuditPlanNotifyConfig(c echo.Context) error {
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	s := model.GetStorage()
-
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, 0)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	user, exist, err := s.GetUserByID(ap.CreateUserID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1213,10 +1297,15 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	var offset uint32
@@ -1225,12 +1314,12 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"audit_plan_name": apName,
-		"limit":           req.PageSize,
-		"offset":          offset,
+		"limit":  req.PageSize,
+		"offset": offset,
 	}
+
 	manager := auditplan.GetManager()
-	head, rows, count, err := manager.GetSQLs(apName, data)
+	head, rows, count, err := manager.GetSQLs(ap.ID, data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1290,11 +1379,15 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	err := CheckCurrentUserCanAccessAuditPlan(c, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	var offset uint32
@@ -1303,8 +1396,8 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"audit_plan_name":      apName,
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
+		"audit_plan_id":        ap.ID,
 		"limit":                req.PageSize,
 		"offset":               offset,
 	}
