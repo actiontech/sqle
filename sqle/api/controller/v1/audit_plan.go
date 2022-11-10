@@ -278,7 +278,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = inst.DbType
 
 		// check operation
-		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType) // todo: refactor permissions.
+		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType) // todo: refactor permissions. waiting for project member.
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -290,7 +290,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = req.InstanceType
 	}
 
-	// todo: check and select rule template binding in project.
+	// todo: check and select rule template binding in project. waiting for project rule.
 	// check rule template name
 	if req.RuleTemplateName != "" {
 		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
@@ -533,7 +533,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS}) // todo: refactor permissions.
+	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS}) // todo: refactor permissions. waiting for projec member
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -796,12 +796,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	}
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := convertToModelAuditPlanSQL(c, projectName, apName, req.SQLs)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
-	// TODO: just get ap id.
 	s := model.GetStorage()
 	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
@@ -809,6 +804,11 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	manager := auditplan.GetManager()
@@ -836,12 +836,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	}
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
-	sqls, err := convertToModelAuditPlanSQL(c, projectName, apName, req.SQLs)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
-	// TODO: just get ap id.
 	s := model.GetStorage()
 	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
@@ -851,27 +846,24 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
+	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	manager := auditplan.GetManager()
 	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, true))
 }
 
-func convertToModelAuditPlanSQL(c echo.Context, projectName, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
-	s := model.GetStorage()
-
-	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, errAuditPlanNotExist
-	}
-
+func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	var drvMgr driver.DriverManager
 	var drv driver.Driver
+	var err error
+
 	// lazy load driver
 	initDriver := func() error {
 		if drv == nil {
-			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), ap.DBType)
+			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), auditPlan.DBType)
 			if err != nil {
 				return err
 			}
@@ -1003,7 +995,7 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanNa
 	}
 
 	if opCode > 0 {
-		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)}) //todo: refactor instance permissions.
+		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)}) //todo: refactor instance permissions. waiting for project member.
 		if err != nil {
 			return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
 		}
