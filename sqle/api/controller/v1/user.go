@@ -617,7 +617,55 @@ type UpdateMemberReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members/{user_name}/ [patch]
 func UpdateMember(c echo.Context) error {
-	return nil
+	req := new(UpdateMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 更新成员
+	mp := map[string]interface{}{}
+
+	if req.IsManager != nil {
+		mp["is_manager"] = *req.IsManager
+	}
+
+	if len(mp) > 0 {
+		err = s.UpdateMemberByName(userName, projectName, mp)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// 更新角色
+	role := []model.BindRole{}
+	if req.Roles != nil {
+		for _, r := range *req.Roles {
+			role = append(role, model.BindRole{
+				RoleNames:    r.RoleNames,
+				InstanceName: r.InstanceName,
+			})
+		}
+	}
+	if len(role) > 0 {
+		return controller.JSONBaseErrorReq(c, s.UpdateUserRoles(userName, projectName, role))
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 // DeleteMember
