@@ -471,6 +471,10 @@ definitions:
       desc:
         example: this is a test instance
         type: string
+      global_rule_template_name_list:
+        items:
+          type: string
+        type: array
       instance_name:
         example: test
         type: string
@@ -478,7 +482,7 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeReqV1'
         type: array
-      rule_template_name_list:
+      project_rule_template_name_list:
         items:
           type: string
         type: array
