@@ -259,12 +259,12 @@ func CheckIsProjectMember(userName, projectName string) error {
 		return nil
 	}
 	s := model.GetStorage()
-	isMember, err := s.IsProjectMember(userName, projectName)
+	isMember, err := s.IsUserInProject(userName, projectName)
 	if err != nil {
 		return err
 	}
 	if !isMember {
-		return errors.New(errors.UserNotPermission, fmt.Errorf("you can only see the information of your project"))
+		return errors.New(errors.UserNotPermission, fmt.Errorf("user %v is not in project %v", userName, projectName))
 	}
 	return nil
 }
