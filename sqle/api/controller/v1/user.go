@@ -568,7 +568,34 @@ type BindRoleReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members [post]
 func AddMember(c echo.Context) error {
-	return nil
+	req := new(CreateMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	role := []model.BindRole{}
+	for _, r := range req.Roles {
+		role = append(role, model.BindRole{
+			RoleNames:    r.RoleNames,
+			InstanceName: r.InstanceName,
+		})
+	}
+
+	return controller.JSONBaseErrorReq(c, s.AddMember(req.UserName, projectName, req.IsManager, role))
 }
 
 type UpdateMemberReqV1 struct {
