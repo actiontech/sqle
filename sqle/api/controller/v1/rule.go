@@ -86,7 +86,7 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Accept json
-// @Param instance body v1.CreateRuleTemplateReqV1 true "add rule template request"
+// @Param req body v1.CreateRuleTemplateReqV1 true "add rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates [post]
 func CreateRuleTemplate(c echo.Context) error {
@@ -140,7 +140,7 @@ type UpdateRuleTemplateReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.UpdateRuleTemplateReqV1 true "update rule template request"
+// @Param req body v1.UpdateRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates/{rule_template_name}/ [patch]
 func UpdateRuleTemplate(c echo.Context) error {
@@ -551,7 +551,7 @@ type CloneRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.CloneRuleTemplateReqV1 true "clone rule template request"
+// @Param req body v1.CloneRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/rule_templates/{rule_template_name}/clone [post]
 func CloneRuleTemplate(c echo.Context) error {
@@ -627,7 +627,7 @@ type CreateProjectRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param instance body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
+// @Param req body v1.CreateProjectRuleTemplateReqV1 true "add rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates [post]
 func CreateProjectRuleTemplate(c echo.Context) error {
@@ -723,7 +723,7 @@ type UpdateProjectRuleTemplateReqV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
+// @Param req body v1.UpdateProjectRuleTemplateReqV1 true "update rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [patch]
 func UpdateProjectRuleTemplate(c echo.Context) error {
@@ -1026,7 +1026,7 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Accept json
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
-// @Param instance body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
+// @Param req body v1.CloneProjectRuleTemplateReqV1 true "clone rule template request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {

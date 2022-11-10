@@ -3081,7 +3081,7 @@ var doc = `{
                     },
                     {
                         "description": "add rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -3203,7 +3203,7 @@ var doc = `{
                     },
                     {
                         "description": "update rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -3254,7 +3254,7 @@ var doc = `{
                     },
                     {
                         "description": "clone rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -4315,7 +4315,7 @@ var doc = `{
                 "parameters": [
                     {
                         "description": "add rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -4416,7 +4416,7 @@ var doc = `{
                     },
                     {
                         "description": "update rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -4460,7 +4460,7 @@ var doc = `{
                     },
                     {
                         "description": "clone rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -5772,7 +5772,7 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "project id",
+                        "description": "project name",
                         "name": "filter_project",
                         "in": "query"
                     }
@@ -6972,7 +6972,6 @@ var doc = `{
                     "example": "test@email.com"
                 },
                 "management_permission_code_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -9174,17 +9173,6 @@ var doc = `{
                 }
             }
         },
-        "v1.ManagementPermission": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "desc": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.ManagementPermissionResV1": {
             "type": "object",
             "properties": {
@@ -10284,7 +10272,6 @@ var doc = `{
                     "type": "boolean"
                 },
                 "management_permission_code_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -10389,10 +10376,9 @@ var doc = `{
                     "type": "string"
                 },
                 "management_permission_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ManagementPermission"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {
@@ -10472,10 +10458,9 @@ var doc = `{
                     "type": "string"
                 },
                 "management_permission_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ManagementPermission"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {
