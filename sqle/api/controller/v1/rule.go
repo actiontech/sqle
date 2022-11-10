@@ -1020,7 +1020,81 @@ type CloneProjectRuleTemplateReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/clone [post]
 func CloneProjectRuleTemplate(c echo.Context) error {
-	return nil
+	req := new(CloneProjectRuleTemplateReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+	_, exist, err = s.GetRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule template is exist")))
+	}
+
+	sourceTplName := c.Param("rule_template_name")
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(project.ID, sourceTplName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
+			fmt.Errorf("source rule template %s is not exist", sourceTplName))))
+	}
+
+	var instances []*model.Instance
+	if req.Instances != nil || len(req.Instances) > 0 {
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	err = CheckRuleTemplateCanBeBindEachInstance(s, req.Name, instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{sourceTpl}, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ruleTemplate := &model.RuleTemplate{
+		Name:   req.Name,
+		Desc:   req.Desc,
+		DBType: sourceTpl.DBType,
+	}
+	err = s.Save(ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CloneRuleTemplateRules(sourceTpl, ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // @Summary 获取项目规则模板提示
