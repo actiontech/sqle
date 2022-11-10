@@ -342,7 +342,7 @@ func CreateAuditPlan(c echo.Context) error {
 	}
 
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.Name))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 // customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
@@ -404,7 +404,7 @@ func DeleteAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -487,7 +487,7 @@ func UpdateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(apName))
+	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
 }
 
 type GetAuditPlansReqV1 struct {
@@ -837,8 +837,18 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// TODO: just get ap id.
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, false))
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -867,8 +877,18 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// TODO: just get ap id.
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(apName, sqls, true))
+	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, true))
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, projectName, apName string, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
@@ -971,8 +991,18 @@ func TriggerAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// TODO: just get ap id.
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	manager := auditplan.GetManager()
-	report, err := manager.Audit(apName)
+	report, err := manager.Audit(ap.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1317,13 +1347,22 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"audit_plan_name": apName,
-		"limit":           req.PageSize,
-		"offset":          offset,
+		"limit":  req.PageSize,
+		"offset": offset,
 	}
+
+	// TODO: just get ap id.
+	s := model.GetStorage()
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
+
 	manager := auditplan.GetManager()
-	// todo: audit plan task will using ap id as manager taks id.
-	head, rows, count, err := manager.GetSQLs(apName, data)
+	head, rows, count, err := manager.GetSQLs(ap.ID, data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
