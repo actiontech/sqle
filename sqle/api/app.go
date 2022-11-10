@@ -197,6 +197,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
 	v1Router.POST("/projects/:project_name/rule_templates", v1.CreateProjectRuleTemplate)
 	v1Router.PATCH("/projects/:project_name/rule_templates/:rule_template_name/", v1.UpdateProjectRuleTemplate)
+	v1Router.GET("/projects/:project_name/rule_templates/:rule_template_name/", v1.GetProjectRuleTemplate)
+	v1Router.DELETE("/projects/:project_name/rule_templates/:rule_template_name/", v1.DeleteProjectRuleTemplate)
+	v1Router.GET("/projects/:project_name/rule_templates", v1.GetProjectRuleTemplates)
+	v1Router.POST("/projects/:project_name/rule_templates/:rule_template_name/clone", v1.CloneProjectRuleTemplate)
+	v1Router.GET("/projects/:project_name/rule_template_tips", v1.GetProjectRuleTemplateTips)
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
