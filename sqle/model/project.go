@@ -193,7 +193,7 @@ func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	return p, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsProjectMember(userName, projectName string) (bool, error) {
+func (s *Storage) IsUserInProject(userName, projectName string) (bool, error) {
 	query := `
 SELECT EXISTS(
 SELECT users.login_name 
