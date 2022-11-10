@@ -270,7 +270,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
-	used, err := s.IsRuleTemplateBeingUsed(templateName)
+	used, err := s.IsRuleTemplateBeingUsed(templateName, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -877,7 +877,44 @@ func convertProjectRuleTemplateToRes(template *model.RuleTemplate) *RuleProjectT
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [delete]
 func DeleteProjectRuleTemplate(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
+	}
+
+	templateName := c.Param("rule_template_name")
+	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
+	}
+	used, err := s.IsRuleTemplateBeingUsed(templateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if used {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+	}
+
+	err = s.Delete(template)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetProjectRuleTemplatesResV1 struct {
