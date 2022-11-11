@@ -244,12 +244,6 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplatesByNamesAndProjectID(instNames []string, projectID uint) ([]*RuleTemplate, error) {
-	templates := []*RuleTemplate{}
-	err := s.db.Where("name in (?)", instNames).Where("project_id = ?", projectID).Find(&templates).Error
-	return templates, errors.New(errors.ConnectStorageError, err)
-}
-
 // 数据源可以绑定全局规则模板和项目规则模板
 // 全局规则模板的project_id为0
 func (s *Storage) GetAndCheckRuleTemplateExistForBindingInstance(templateName string, projectID uint) (*RuleTemplate, error) {
