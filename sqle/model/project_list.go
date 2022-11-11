@@ -2,8 +2,9 @@ package model
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type ProjectDetail struct {
