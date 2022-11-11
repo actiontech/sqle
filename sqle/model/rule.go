@@ -250,26 +250,15 @@ func (s *Storage) GetRuleTemplatesByNamesAndProjectID(instNames []string, projec
 	return templates, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string, projectID uint) (ruleTemplates []*RuleTemplate, err error) {
-	ruleTemplates, err = s.GetRuleTemplatesByNamesAndProjectID(templateNames, projectID)
-	if err != nil {
-		return ruleTemplates, err
+// 数据源可以绑定全局规则模板和项目规则模板
+// 全局规则模板的project_id为0
+func (s *Storage) GetAndCheckRuleTemplateExistForBindingInstance(templateName string, projectID uint) (*RuleTemplate, error) {
+	template := &RuleTemplate{}
+	err := s.db.Where("name = ?", templateName).Where("project_id = ? OR project_id = 0", projectID).Find(template).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
 	}
-	existTemplateNames := map[string]struct{}{}
-	for _, user := range ruleTemplates {
-		existTemplateNames[user.Name] = struct{}{}
-	}
-	notExistTemplateNames := []string{}
-	for _, userName := range templateNames {
-		if _, ok := existTemplateNames[userName]; !ok {
-			notExistTemplateNames = append(notExistTemplateNames, userName)
-		}
-	}
-	if len(notExistTemplateNames) > 0 {
-		return ruleTemplates, errors.New(errors.DataNotExist,
-			fmt.Errorf("rule template %s not exist", strings.Join(notExistTemplateNames, ", ")))
-	}
-	return ruleTemplates, nil
+	return template, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error) {
