@@ -162,7 +162,7 @@ func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	p := &Project{}
-	err := s.db.Preload("CreateUser").Preload("Managers").Where("name = ?", projectName).First(p).Error
+	err := s.db.Preload("CreateUser").Preload("Members").Preload("Managers").Where("name = ?", projectName).First(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
@@ -249,4 +249,63 @@ func (s *Storage) GetProjectNamesByInstanceIds(instanceIds []uint) (map[uint] /*
 	}
 
 	return res, nil
+}
+
+func (s *Storage) AddMember(userName, projectName string, isManager bool, bindRole []BindRole) error {
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("user not exist"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("project not exist"))
+	}
+
+	return errors.New(errors.ConnectStorageError, s.db.Transaction(func(tx *gorm.DB) error {
+
+		if err = tx.Exec("INSERT IGNORE INTO project_user (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		err = s.updateUserRoles(tx, user, projectName, bindRole)
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+		return nil
+	}))
+}
+
+func (s *Storage) AddProjectManager(userName, projectName string) error {
+	sql := `
+INSERT IGNORE INTO project_manager 
+SELECT projects.id AS project_id , users.id AS user_id
+FROM projects
+JOIN users
+WHERE projects.name = ?
+AND users.login_name = ?
+LIMIT 1
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
+}
+
+func (s *Storage) RemoveMember(userName, projectName string) error {
+	sql := `
+DELETE FROM project_user
+WHERE project_id = (
+SELECT id FROM projects WHERE name = ?
+)
+AND user_id = (
+SELECT id FROM users WHERE login_name = ?
+)
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
 }

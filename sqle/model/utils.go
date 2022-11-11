@@ -139,7 +139,6 @@ var autoMigrateList = []interface{}{
 	&ProjectMemberRole{},
 	&ProjectMemberGroupRole{},
 	&ManagementPermission{},
-	&Member{},
 }
 
 func (s *Storage) AutoMigrate() error {
@@ -167,11 +166,6 @@ func (s *Storage) AutoMigrate() error {
 	}
 	err = s.db.Model(&ProjectMemberGroupRole{}).AddUniqueIndex("uniq_project_user_group_role_user_group_id_instance_id_role_id",
 		"user_group_id", "instance_id", "role_id").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(&Member{}).AddUniqueIndex("uniq_member_id_user_id_project_id",
-		"user_id", "project_id", "id").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
