@@ -222,13 +222,13 @@ func CreateInstance(c echo.Context) error {
 		ProjectId:          project.ID,
 	}
 
-	templates, err := s.GetAndCheckRuleTemplateExist(req.ProjectRuleTemplates, project.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !CheckInstanceCanBindOneRuleTemplate(req.ProjectRuleTemplates) {
-		return controller.JSONBaseErrorReq(c, errInstanceBind)
+	var templates []*model.RuleTemplate
+	if req.RuleTemplateName != "" {
+		template, err := s.GetAndCheckRuleTemplateExistForBindingInstance(req.RuleTemplateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		templates = append(templates, template)
 	}
 
 	err = CheckInstanceAndRuleTemplateDbType(templates, instance)
