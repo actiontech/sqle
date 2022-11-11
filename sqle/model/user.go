@@ -375,11 +375,10 @@ func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
 
 func (s *Storage) IsUserHaveProject(userName string) (bool, error) {
 	var count uint
-	err := s.db.Table("members").
-		Joins("JOIN users ON users.id = members.user_id").
+	err := s.db.Table("project_user").
+		Joins("JOIN users ON users.id = project_user.user_id").
 		Where("users.login_name = ?", userName).
 		Where("users.deleted_at IS NULL").
-		Where("members.deleted_at IS NULL").
 		Count(&count).Error
 
 	return count > 0, errors.ConnectStorageErrWrapper(err)
