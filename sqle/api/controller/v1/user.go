@@ -638,14 +638,8 @@ func UpdateMember(c echo.Context) error {
 	}
 
 	// 更新成员
-	mp := map[string]interface{}{}
-
-	if req.IsManager != nil {
-		mp["is_manager"] = *req.IsManager
-	}
-
-	if len(mp) > 0 {
-		err = s.UpdateMemberByName(userName, projectName, mp)
+	if req.IsManager != nil && *req.IsManager {
+		err = s.AddProjectManager(userName, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
