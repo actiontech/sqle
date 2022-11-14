@@ -478,10 +478,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeReqV1'
         type: array
-      rule_template_name_list:
-        items:
-          type: string
-        type: array
+      rule_template_name:
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
@@ -2713,10 +2711,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeReqV1'
         type: array
-      rule_template_name_list:
-        items:
-          type: string
-        type: array
+      rule_template_name:
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object

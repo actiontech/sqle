@@ -85,10 +85,10 @@ type CreateInstanceReqV1 struct {
 	Port             string                          `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
 	Password         string                          `json:"db_password" form:"db_password" example:"123456" valid:"required"`
 	Desc             string                          `json:"desc" example:"this is a test instance"`
-	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
-	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
-	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
+	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" form:"sql_query_config"`
+	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" form:"maintenance_times"`
+	RuleTemplateName string                          `json:"rule_template_name" form:"rule_template_name"`
+	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" form:"additional_params"`
 }
 
 type SQLQueryConfigReqV1 struct {
@@ -222,13 +222,13 @@ func CreateInstance(c echo.Context) error {
 		ProjectId:          project.ID,
 	}
 
-	templates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, project.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
-		return controller.JSONBaseErrorReq(c, errInstanceBind)
+	var templates []*model.RuleTemplate
+	if req.RuleTemplateName != "" {
+		template, err := s.GetAndCheckRuleTemplateExistForBindingInstance(req.RuleTemplateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		templates = append(templates, template)
 	}
 
 	err = CheckInstanceAndRuleTemplateDbType(templates, instance)
@@ -471,7 +471,7 @@ type UpdateInstanceReqV1 struct {
 	Password         *string                         `json:"db_password" form:"db_password" example:"123456"`
 	Desc             *string                         `json:"desc" example:"this is a test instance"`
 	MaintenanceTimes []*MaintenanceTimeReqV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates    []string                        `json:"rule_template_name_list" form:"rule_template_name_list"`
+	RuleTemplateName *string                         `json:"rule_template_name" form:"rule_template_name"`
 	SQLQueryConfig   *SQLQueryConfigReqV1            `json:"sql_query_config" from:"sql_query_config"`
 	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
@@ -516,19 +516,6 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
-	if !CheckInstanceCanBindOneRuleTemplate(req.RuleTemplates) {
-		return controller.JSONBaseErrorReq(c, errInstanceBind)
-	}
-
-	ruleTemplates, err := s.GetRuleTemplatesByNamesAndProjectID(req.RuleTemplates, instance.ProjectId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	err = CheckInstanceAndRuleTemplateDbType(ruleTemplates, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	updateMap := map[string]interface{}{}
 	if req.Desc != nil {
 		updateMap["desc"] = *req.Desc
@@ -555,11 +542,20 @@ func UpdateInstance(c echo.Context) error {
 		updateMap["db_password"] = password
 	}
 
-	if req.RuleTemplates != nil {
-		ruleTemplates, err := s.GetAndCheckRuleTemplateExist(req.RuleTemplates, instance.ProjectId)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	if req.RuleTemplateName != nil {
+		var ruleTemplates []*model.RuleTemplate
+		if *req.RuleTemplateName != "" {
+			ruleTemplate, err := s.GetAndCheckRuleTemplateExistForBindingInstance(*req.RuleTemplateName, instance.ProjectId)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instance)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			ruleTemplates = append(ruleTemplates, ruleTemplate)
 		}
+
 		err = s.UpdateInstanceRuleTemplates(instance, ruleTemplates...)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -1078,10 +1074,6 @@ func GetInstanceRules(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertRulesToRes(rules),
 	})
-}
-
-func CheckInstanceCanBindOneRuleTemplate(ruleTemplates []string) bool {
-	return len(ruleTemplates) <= 1
 }
 
 func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, instances ...*model.Instance) error {
