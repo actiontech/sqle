@@ -295,6 +295,7 @@ func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uin
 		Joins("join audit_plans on audit_plans.project_id = rule_templates.project_id").
 		Where("audit_plans.deleted_at is null").
 		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
+		Where("rule_templates.project_id = ?", projectId).
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
