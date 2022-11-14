@@ -933,7 +933,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project %s not exist", projectName))
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -941,7 +941,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := CheckIsProjectMember(user.Name, projectName); err != nil {
+	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
