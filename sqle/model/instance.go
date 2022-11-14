@@ -559,3 +559,22 @@ func (s *Storage) CheckInstancesExist(instNames []string) (bool, error) {
 	err := s.db.Model(&Instance{}).Where("name in (?)", instNames).Count(&count).Error
 	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) getInstanceIDsAndBindCacheByNames(instNames []string, projectName string) (map[string /*inst name*/ ]uint /*inst id*/, []uint /*inst id*/, error) {
+	instNames = utils.RemoveDuplicate(instNames)
+
+	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
+	instIDs := []uint{}
+
+	for _, inst := range insts {
+		instCache[inst.Name] = inst.ID
+		instIDs = append(instIDs, inst.ID)
+	}
+
+	return instCache, instIDs, nil
+}

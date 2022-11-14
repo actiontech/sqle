@@ -264,7 +264,7 @@ func CheckIsProjectMember(userName, projectName string) error {
 		return err
 	}
 	if !isMember {
-		return errors.New(errors.UserNotPermission, fmt.Errorf("user %v is not in project %v", userName, projectName))
+		return errors.New(errors.UserNotPermission, fmt.Errorf("the project does not exist or user %v is not in project %v", userName, projectName))
 	}
 	return nil
 }
@@ -279,7 +279,7 @@ func CheckIsProjectManager(userName, projectName string) error {
 		return err
 	}
 	if !isManager {
-		return errors.New(errors.UserNotPermission, fmt.Errorf("only project administrators can perform this operation"))
+		return errors.New(errors.UserNotPermission, fmt.Errorf("the project does not exist or the user does not have permission to operate"))
 	}
 	return nil
 }
