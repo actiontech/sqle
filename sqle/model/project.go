@@ -205,6 +205,7 @@ JOIN user_group_users on users.id = user_group_users.user_id
 JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
 JOIN projects as p on project_user_group.project_id = p.id
 WHERE users.stat = 0
+AND users.deleted_at IS NULL
 AND( 
 	projects.name = ?
 OR
@@ -215,6 +216,46 @@ OR
 		Exist bool `json:"exist"`
 	}
 	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
+	return exist.Exist, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CheckUserIsMember(userName, projectName string) (bool, error) {
+	query := `
+SELECT EXISTS(
+SELECT 1
+FROM project_user
+LEFT JOIN projects ON projects.id = project_user.project_id
+LEFT JOIN users ON users.id = project_user.user_id
+WHERE users.stat = 0
+AND users.deleted_at IS NULL
+AND users.login_name = ?
+AND projects.name = ?
+)
+`
+	var exist struct {
+		Exist bool `json:"exist"`
+	}
+	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
+	return exist.Exist, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CheckUserGroupIsMember(groupName, projectName string) (bool, error) {
+	query := `
+SELECT EXISTS(
+SELECT 1
+FROM project_user_group
+LEFT JOIN projects ON projects.id = project_user_group.project_id
+LEFT JOIN user_groups ON user_groups.id = project_user_group.user_group_id
+WHERE user_groups.stat = 0
+AND user_groups.deleted_at IS NULL
+AND user_groups.name = ?
+AND projects.name = ?
+)
+`
+	var exist struct {
+		Exist bool `json:"exist"`
+	}
+	err := s.db.Raw(query, groupName, projectName).Find(&exist).Error
 	return exist.Exist, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -312,10 +353,124 @@ LEFT JOIN project_manager ON project_user.project_id = project_manager.project_i
 LEFT JOIN projects ON project_user.project_id = projects.id
 LEFT JOIN users ON project_user.user_id = users.id
 WHERE 
-users.name = ?
+users.login_name = ?
 AND
 projects.name = ?
 `
 
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
+}
+
+func (s *Storage) AddMemberGroup(groupName, projectName string, bindRole []BindRole) error {
+	group, exist, err := s.GetUserGroupByName(groupName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("user group not exist"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("project not exist"))
+	}
+
+	return errors.New(errors.ConnectStorageError, s.db.Transaction(func(tx *gorm.DB) error {
+
+		if err = tx.Exec("INSERT INTO project_user_group (project_id, user_group_id) VALUES (?,?)", project.ID, group.ID).Error; err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		err = s.updateUserGroupRoles(tx, group, projectName, bindRole)
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+		return nil
+	}))
+}
+
+func (s *Storage) RemoveMemberGroup(groupName, projectName string) error {
+	sql := `
+DELETE project_user_group 
+FROM project_user_group
+LEFT JOIN projects ON project_user_group.project_id = projects.id
+LEFT JOIN user_groups ON project_user_group.user_group_id = user_groups.id
+WHERE 
+user_groups.name = ?
+AND
+projects.name = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, groupName).Error)
+}
+
+type GetMemberGroupFilter struct {
+	FilterProjectName   *string
+	FilterUserGroupName *string
+	FilterInstanceName  *string
+	Limit               *uint32
+	Offset              *uint32
+}
+
+func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilter) (*gorm.DB, error) {
+	if filter.FilterProjectName == nil {
+		return nil, errors.ConnectStorageErrWrapper(fmt.Errorf("project name cannot be empty"))
+	}
+
+	query = query.Model(&UserGroup{}).
+		Joins("LEFT JOIN project_user_group ON project_user_group.user_group_id = user_groups.id").
+		Joins("LEFT JOIN projects ON projects.id = project_user_group.project_id").
+		Joins("LEFT JOIN instances ON instances.project_id = projects.id").
+		Where("user_groups.stat = 0").
+		Where("user_groups.deleted_at IS NULL").
+		Where("instances.deleted_at IS NULL").
+		Where("projects.name = ?", *filter.FilterProjectName)
+
+	if filter.Limit != nil {
+		query = query.Limit(*filter.Limit).Offset(*filter.Offset)
+	}
+	if filter.FilterUserGroupName != nil {
+		query = query.Where("user_groups.name = ?", *filter.FilterUserGroupName)
+	}
+	if filter.FilterInstanceName != nil {
+		query = query.Where("instances.name = ?", *filter.FilterInstanceName)
+	}
+	return query, nil
+}
+
+func (s *Storage) GetMemberGroups(filter GetMemberGroupFilter) ([]*UserGroup, error) {
+	group := []*UserGroup{}
+	query, err := generateMemberGroupQueryCriteria(s.db, filter)
+	if err != nil {
+		return nil, err
+	}
+	err = query.Scan(&group).Error
+	return group, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetMemberGroupCount(filter GetMemberGroupFilter) (uint64, error) {
+	// count要查总数, 清掉limit
+	filter.Limit = nil
+	filter.Offset = nil
+
+	var count uint64
+	query, err := generateMemberGroupQueryCriteria(s.db, filter)
+	if err != nil {
+		return 0, err
+	}
+	err = query.Count(count).Error
+	return count, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetMemberGroupByGroupName(projectName, groupName string) (*UserGroup, error) {
+	group := &UserGroup{}
+	err := s.db.Joins("LEFT JOIN project_user_group ON project_user_group.user_group_id = user_groups.id").
+		Joins("LEFT JOIN projects ON project_user_group.project_id = projects.id").
+		Where("projects.name = ?", projectName).
+		Where("user_groups.name = ?", groupName).
+		Find(group).Error
+	return group, errors.ConnectStorageErrWrapper(err)
 }
