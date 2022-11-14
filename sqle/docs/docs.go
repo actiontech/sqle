@@ -8928,11 +8928,8 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeResV1"
                     }
                 },
-                "rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql_query_config": {
                     "type": "object",
