@@ -941,7 +941,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := CheckIsProjectMember(user.Name, projectName); err != nil {
+	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
