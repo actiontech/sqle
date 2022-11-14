@@ -290,10 +290,9 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = req.InstanceType
 	}
 
-	// todo: check and select rule template binding in project. waiting for project rule.
 	// check rule template name
 	if req.RuleTemplateName != "" {
-		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName)
+		exist, err = s.CheckRuleTemplateExistForAuditPlan(req.RuleTemplateName, project.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -301,7 +300,7 @@ func CreateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template does not exist")))
 		}
 	}
-	ruleTemplateName, err := autoSelectRuleTemplate(req.RuleTemplateName, req.InstanceName, req.InstanceType)
+	ruleTemplateName, err := autoSelectRuleTemplate(req.RuleTemplateName, req.InstanceName, req.InstanceType, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -347,7 +346,7 @@ func CreateAuditPlan(c echo.Context) error {
 
 // customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
 // 规则模板选择规则: 指定规则模板 -- > 数据源绑定的规则模板 -- > 数据库类型默认模板
-func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, dbType string) (ruleTemplateName string, err error) {
+func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, dbType string, projectId uint) (ruleTemplateName string, err error) {
 	s := model.GetStorage()
 
 	if customRuleTemplateName != "" {
@@ -355,7 +354,7 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 	}
 
 	if instanceName != "" {
-		ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceName(instanceName)
+		ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceNameAndProjectId(instanceName, projectId)
 		if err != nil {
 			return "", err
 		}
@@ -444,7 +443,15 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	storage := model.GetStorage()
 	if req.RuleTemplateName != nil {
-		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName)
+		project, exist, err := storage.GetProjectByName(projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		}
+
+		exist, err = storage.CheckRuleTemplateExistForAuditPlan(*req.RuleTemplateName, project.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

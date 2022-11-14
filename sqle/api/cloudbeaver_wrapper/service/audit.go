@@ -44,7 +44,7 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		return true, nil, nil
 	}
 
-	ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceName(inst.Name)
+	ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceNameAndProjectId(inst.Name, inst.ProjectId)
 	if err != nil {
 		return false, nil, err
 	}
