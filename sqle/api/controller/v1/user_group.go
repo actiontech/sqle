@@ -492,7 +492,68 @@ type GetMemberGroupRespDataV1 struct {
 // @Success 200 {object} v1.GetMemberGroupsRespV1
 // @router /v1/projects/{project_name}/member_groups [get]
 func GetMemberGroups(c echo.Context) error {
-	return nil
+	req := new(GetMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取成员组列表
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	filter := model.GetMemberGroupFilter{
+		Limit:             &limit,
+		Offset:            &offset,
+		FilterProjectName: &projectName,
+	}
+	if req.FilterInstanceName != "" {
+		filter.FilterInstanceName = &req.FilterInstanceName
+	}
+	if req.FilterUserGroupName != "" {
+		filter.FilterUserGroupName = &req.FilterUserGroupName
+	}
+
+	s := model.GetStorage()
+	groups, err := s.GetMemberGroups(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	total, err := s.GetMemberGroupCount(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取角色信息
+	groupNames := []string{}
+	for _, group := range groups {
+		groupNames = append(groupNames, group.Name)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberGroupNames(groupNames, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 生成响应
+	data := []GetMemberGroupRespDataV1{}
+	for _, group := range groups {
+		data = append(data, GetMemberGroupRespDataV1{
+			UserGroupName: group.Name,
+			Roles:         convertBindRoleToBindRoleReqV1(bindRole[group.Name]),
+		})
+	}
+
+	return c.JSON(http.StatusOK, GetMemberGroupsRespV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      data,
+		TotalNums: total,
+	})
 }
 
 type GetMemberGroupRespV1 struct {
