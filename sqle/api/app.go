@@ -212,7 +212,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/rules", v1.GetRules)
 
 	// workflow
-	v1Router.POST("/workflows", DeprecatedBy(apiV2))
+	v1Router.POST("/projects/:project_name/workflows", v1.CreateWorkflowV1)
 	v1Router.GET("/workflows/:workflow_id/", DeprecatedBy(apiV2))
 	v1Router.GET("/workflows", DeprecatedBy(apiV2))
 	v1Router.POST("/workflows/:workflow_id/steps/:workflow_step_id/approve", v1.ApproveWorkflow)

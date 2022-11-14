@@ -924,9 +924,28 @@ func CreateWorkflowV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	s := model.GetStorage()
 
-	_, exist, err := s.GetWorkflowBySubject(req.Subject)
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("project %s not exist", projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := CheckIsProjectMember(user.Name, projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	_, exist, err = s.GetWorkflowBySubject(req.Subject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -946,15 +965,19 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
 	}
 
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	insIdtMap := make(map[uint] /* project instance id */ struct{}, len(project.Instances))
+	for _, instance := range project.Instances {
+		insIdtMap[instance.ID] = struct{}{}
 	}
 
 	workflowTemplateId := tasks[0].Instance.WorkflowTemplateId
 	for _, task := range tasks {
 		if task.Instance == nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. taskId=%v", task.ID)))
+		}
+
+		if _, ok := insIdtMap[task.InstanceId]; !ok {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not in project. taskId=%v", task.ID)))
 		}
 
 		count, err := s.GetTaskSQLCountByTaskID(task.ID)
