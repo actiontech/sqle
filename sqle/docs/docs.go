@@ -10371,7 +10371,7 @@ var doc = `{
         "v1.UserDetailResV1": {
             "type": "object",
             "properties": {
-                "bind_project": {
+                "bind_projects": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.UserBindProjectResV1"

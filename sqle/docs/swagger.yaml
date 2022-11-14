@@ -2877,7 +2877,7 @@ definitions:
     type: object
   v1.UserDetailResV1:
     properties:
-      bind_project:
+      bind_projects:
         items:
           $ref: '#/definitions/v1.UserBindProjectResV1'
         type: array
