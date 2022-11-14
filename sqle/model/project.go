@@ -162,7 +162,8 @@ func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	p := &Project{}
-	err := s.db.Preload("CreateUser").Preload("Members").Preload("Managers").Where("name = ?", projectName).First(p).Error
+	err := s.db.Preload("CreateUser").Preload("Members").Preload("Managers").Preload("Instances").
+		Where("name = ?", projectName).First(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
