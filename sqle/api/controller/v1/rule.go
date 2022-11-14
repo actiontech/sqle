@@ -13,6 +13,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var errRuleTemplateNotExist = errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
+
 type CreateRuleTemplateReqV1 struct {
 	Name     string      `json:"rule_template_name" valid:"required,name"`
 	Desc     string      `json:"desc"`
