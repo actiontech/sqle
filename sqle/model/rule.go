@@ -245,17 +245,6 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-// 数据源可以绑定全局规则模板和项目规则模板
-// 全局规则模板的project_id为0
-func (s *Storage) GetAndCheckRuleTemplateExistForBindingInstance(templateName string, projectID uint) (*RuleTemplate, error) {
-	template := &RuleTemplate{}
-	err := s.db.Where("name = ?", templateName).Where("project_id = ? OR project_id = 0", projectID).Find(template).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
-	}
-	return template, errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Where("db_type = ?", dbType).Where("name in (?)", names).Find(&rules).Error

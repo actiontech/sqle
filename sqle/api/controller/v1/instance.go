@@ -224,9 +224,12 @@ func CreateInstance(c echo.Context) error {
 
 	var templates []*model.RuleTemplate
 	if req.RuleTemplateName != "" {
-		template, err := s.GetAndCheckRuleTemplateExistForBindingInstance(req.RuleTemplateName, project.ID)
+		template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.RuleTemplateName, project.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
 		}
 		templates = append(templates, template)
 	}
@@ -541,9 +544,12 @@ func UpdateInstance(c echo.Context) error {
 	if req.RuleTemplateName != nil {
 		var ruleTemplates []*model.RuleTemplate
 		if *req.RuleTemplateName != "" {
-			ruleTemplate, err := s.GetAndCheckRuleTemplateExistForBindingInstance(*req.RuleTemplateName, instance.ProjectId)
+			ruleTemplate, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(*req.RuleTemplateName, instance.ProjectId)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
+			}
+			if !exist {
+				return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
 			}
 			err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instance)
 			if err != nil {
