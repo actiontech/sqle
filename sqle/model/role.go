@@ -77,28 +77,14 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 		}
 	}
 
-	roleNames = utils.RemoveDuplicate(roleNames)
-	instNames = utils.RemoveDuplicate(instNames)
-
-	roles, err := s.GetRolesByNames(roleNames)
-	if err != nil {
-		return err
-	}
-	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
 	if err != nil {
 		return err
 	}
 
-	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
-	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
-	instIDs := []uint{}
-	for _, role := range roles {
-		roleCache[role.Name] = role.ID
-	}
-
-	for _, inst := range insts {
-		instCache[inst.Name] = inst.ID
-		instIDs = append(instIDs, inst.ID)
+	roleCache, err := s.getRoleBindIDByNames(roleNames)
+	if err != nil {
+		return err
 	}
 
 	// 删掉所有旧数据
@@ -139,28 +125,14 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 		}
 	}
 
-	roleNames = utils.RemoveDuplicate(roleNames)
-	instNames = utils.RemoveDuplicate(instNames)
-
-	roles, err := s.GetRolesByNames(roleNames)
-	if err != nil {
-		return err
-	}
-	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
 	if err != nil {
 		return err
 	}
 
-	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
-	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
-	instIDs := []uint{}
-	for _, role := range roles {
-		roleCache[role.Name] = role.ID
-	}
-
-	for _, inst := range insts {
-		instCache[inst.Name] = inst.ID
-		instIDs = append(instIDs, inst.ID)
+	roleCache, err := s.getRoleBindIDByNames(roleNames)
+	if err != nil {
+		return err
 	}
 
 	// 删掉所有旧数据
@@ -183,6 +155,22 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 	}
 
 	return nil
+}
+
+func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role name*/ ]uint /*role id*/, error) {
+	roleNames = utils.RemoveDuplicate(roleNames)
+
+	roles, err := s.GetRolesByNames(roleNames)
+	if err != nil {
+		return nil, err
+	}
+
+	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
+	for _, role := range roles {
+		roleCache[role.Name] = role.ID
+	}
+
+	return roleCache, nil
 }
 
 func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) (map[string /*member name*/ ][]BindRole, error) {
