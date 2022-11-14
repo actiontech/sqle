@@ -67,7 +67,7 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 		return nil
 	}
 
-	// 获取实例ID和规则ID
+	// 获取实例ID和角色ID
 	instNames := []string{}
 	roleNames := []string{}
 	for _, role := range bindRoles {
@@ -265,4 +265,12 @@ func (s *Storage) DeleteRoleAndAssociations(role *Role) error {
 
 		return nil
 	})
+}
+
+func (s *Storage) CheckRolesExist(roleNames []string) (bool, error) {
+	roleNames = utils.RemoveDuplicate(roleNames)
+
+	var count int
+	err := s.db.Model(&Role{}).Where("name in (?)", roleNames).Count(&count).Error
+	return len(roleNames) == count, errors.ConnectStorageErrWrapper(err)
 }
