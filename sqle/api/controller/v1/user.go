@@ -3,12 +3,13 @@ package v1
 import (
 	_errors "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/utils"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 )
 
