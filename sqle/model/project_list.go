@@ -106,7 +106,7 @@ var membersCountTpl = `
 SELECT COUNT(DISTINCT project_user.user_id)
 {{ template "body" . }}
 `
-
+// TODO issue_960 有注入风险, 改为gorm的写法
 var membersQueryBodyTpl = `
 {{ define "body" }}
 
