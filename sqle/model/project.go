@@ -270,8 +270,14 @@ func (s *Storage) AddMember(userName, projectName string, isManager bool, bindRo
 
 	return errors.New(errors.ConnectStorageError, s.db.Transaction(func(tx *gorm.DB) error {
 
-		if err = tx.Exec("INSERT IGNORE INTO project_user (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
+		if err = tx.Exec("INSERT INTO project_user (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
 			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		if isManager {
+			if err = tx.Exec("INSERT INTO project_manager (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
+				return errors.ConnectStorageErrWrapper(err)
+			}
 		}
 
 		err = s.updateUserRoles(tx, user, projectName, bindRole)
@@ -284,7 +290,7 @@ func (s *Storage) AddMember(userName, projectName string, isManager bool, bindRo
 
 func (s *Storage) AddProjectManager(userName, projectName string) error {
 	sql := `
-INSERT IGNORE INTO project_manager 
+INSERT INTO project_manager 
 SELECT projects.id AS project_id , users.id AS user_id
 FROM projects
 JOIN users
@@ -298,13 +304,16 @@ LIMIT 1
 
 func (s *Storage) RemoveMember(userName, projectName string) error {
 	sql := `
-DELETE FROM project_user
-WHERE project_id = (
-SELECT id FROM projects WHERE name = ?
-)
-AND user_id = (
-SELECT id FROM users WHERE login_name = ?
-)
+DELETE project_user, project_manager 
+FROM project_user
+LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
+	AND project_user.user_id = project_manager.user_id
+LEFT JOIN projects ON project_user.project_id = projects.id
+LEFT JOIN users ON project_user.user_id = users.id
+WHERE 
+users.name = ?
+AND
+projects.name = ?
 `
 
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)

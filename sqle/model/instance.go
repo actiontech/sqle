@@ -551,3 +551,11 @@ func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
 //AND users.id = 4
 //AND role_operations.op_code IN (20200)
 //GROUP BY instances.id
+
+func (s *Storage) CheckInstancesExist(instNames []string) (bool, error) {
+	instNames = utils.RemoveDuplicate(instNames)
+
+	var count int
+	err := s.db.Model(&Instance{}).Where("name in (?)", instNames).Count(&count).Error
+	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
+}

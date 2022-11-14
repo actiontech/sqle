@@ -3,6 +3,7 @@ package v1
 import (
 	_errors "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/utils"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -164,7 +165,7 @@ func DeleteUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
-
+	// TODO issue_960 工单部分还没做, 遗留检查是否有残余工单和扫描任务和工作模板, 需要看一下这里的逻辑要不要改
 	exist, err = s.UserHasRunningWorkflow(user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -181,7 +182,7 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
 			fmt.Errorf("%s can't be deleted,cause the user binds the workflow template", userName)))
 	}
-
+	// TODO issue_960 需要检查用户是否是成员, 如果是要删关系表, 还要检查是不是最后一个管理员
 	err = s.Delete(user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -582,17 +583,43 @@ func AddMember(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	err = CheckIsProjectMember(userName, projectName)
+	// 检查用户是否已添加过
+	isMember, err := s.IsUserInProject(userName, projectName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
+	}
+	if isMember {
+		return errors.New(errors.DataExist, fmt.Errorf("user %v is in project %v", userName, projectName))
 	}
 
 	role := []model.BindRole{}
+	instNames := []string{}
+	roleNames := []string{}
 	for _, r := range req.Roles {
 		role = append(role, model.BindRole{
 			RoleNames:    r.RoleNames,
 			InstanceName: r.InstanceName,
 		})
+		instNames = append(instNames, r.InstanceName)
+		roleNames = append(roleNames, r.RoleNames...)
+	}
+
+	// 检查实例是否存在
+	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent instances")))
+	}
+
+	// 检查角色是否存在
+	exist, err = s.CheckRolesExist(utils.RemoveDuplicate(roleNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent roles")))
 	}
 
 	return controller.JSONBaseErrorReq(c, s.AddMember(req.UserName, projectName, req.IsManager, role))
@@ -720,7 +747,6 @@ func checkMemberCanDelete(userName, projectName string) error {
 		return errors.New(errors.DataInvalid, fmt.Errorf("cannot delete the last administrator"))
 	}
 
-	// TODO issue_960 工单部分还没做, 遗留检查是否有残余工单和扫描任务和工作模板, 删全局用户那里也得改
 	return nil
 
 }
