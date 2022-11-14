@@ -572,5 +572,31 @@ type GetMemberGroupRespV1 struct {
 // @Success 200 {object} v1.GetMemberGroupRespV1
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [get]
 func GetMemberGroup(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	userGroup, err := s.GetMemberGroupByGroupName(projectName, groupName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberGroupNames([]string{userGroup.Name}, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GetMemberGroupRespV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetMemberGroupRespDataV1{
+			UserGroupName: userGroup.Name,
+			Roles:         convertBindRoleToBindRoleReqV1(bindRole[userGroup.Name]),
+		},
+	})
 }
