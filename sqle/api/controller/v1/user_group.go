@@ -445,7 +445,19 @@ func UpdateMemberGroup(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [delete]
 func DeleteMemberGroup(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+
+	return controller.JSONBaseErrorReq(c, s.RemoveMemberGroup(groupName, projectName))
+
 }
 
 type GetMemberGroupReqV1 struct {
