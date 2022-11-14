@@ -284,12 +284,15 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 	return existRules, nil
 }
 
-func (s *Storage) CheckRuleTemplateExistForAuditPlan(ruleTemplateName string, projectId uint) (bool, error) {
+func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []uint) (bool, error) {
+	if len(projectIds) <= 0 {
+		return false, nil
+	}
 	var count int
 	err := s.db.Table("rule_templates").
 		Where("name = ?", ruleTemplateName).
 		Where("deleted_at IS NULL").
-		Where("project_id = ? OR project_id = 0", projectId).
+		Where("project_id IN (?)", projectIds).
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
