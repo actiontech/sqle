@@ -95,7 +95,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
+	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -150,7 +150,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
+	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -263,7 +263,7 @@ func GetRuleTemplate(c echo.Context) error {
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
+	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -557,7 +557,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
+	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -649,7 +649,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
 
-	_, exist, err = s.GetRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	_, exist, err = s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -745,7 +745,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
-	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, project.ID)
+	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -911,7 +911,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 	}
 
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateByNameAndProjectId(templateName, project.ID)
+	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1048,7 +1048,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
-	_, exist, err = s.GetRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	_, exist, err = s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
