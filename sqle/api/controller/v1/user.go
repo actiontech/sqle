@@ -250,7 +250,7 @@ type UserDetailResV1 struct {
 	IsDisabled               bool                         `json:"is_disabled,omitempty"`
 	UserGroups               []string                     `json:"user_group_name_list,omitempty"`
 	ManagementPermissionList []*ManagementPermissionResV1 `json:"management_permission_list,omitempty"`
-	BindProject              []*UserBindProjectResV1      `json:"bind_project,omitempty"`
+	BindProjects             []*UserBindProjectResV1      `json:"bind_projects,omitempty"`
 }
 
 type UserBindProjectResV1 struct {
@@ -282,7 +282,7 @@ func convertUserToRes(user *model.User, managementPermissionCodes []uint, projec
 			ProjectName: project.Name,
 		})
 	}
-	userResp.BindProject = bindProjects
+	userResp.BindProjects = bindProjects
 
 	userResp.ManagementPermissionList = generateManagementPermissionResV1s(managementPermissionCodes)
 
@@ -608,12 +608,12 @@ func AddMember(c echo.Context) error {
 
 	s := model.GetStorage()
 	// 检查用户是否已添加过
-	isMember, err := s.IsUserInProject(userName, projectName)
+	isMember, err := s.IsUserInProject(req.UserName, projectName)
 	if err != nil {
 		return err
 	}
 	if isMember {
-		return errors.New(errors.DataExist, fmt.Errorf("user %v is in project %v", userName, projectName))
+		return errors.New(errors.DataExist, fmt.Errorf("user %v is in project %v", req.UserName, projectName))
 	}
 
 	role := []model.BindRole{}
