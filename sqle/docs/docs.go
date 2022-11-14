@@ -6854,7 +6854,7 @@ var doc = `{
         "v1.CreateMemberReqV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -7710,7 +7710,7 @@ var doc = `{
         "v1.GetMemberRespDataV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -10142,7 +10142,7 @@ var doc = `{
         "v1.UpdateMemberReqV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -10354,9 +10354,23 @@ var doc = `{
                 }
             }
         },
+        "v1.UserBindProjectResV1": {
+            "type": "object",
+            "properties": {
+                "projectName": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UserDetailResV1": {
             "type": "object",
             "properties": {
+                "bind_projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserBindProjectResV1"
+                    }
+                },
                 "email": {
                     "type": "string"
                 },

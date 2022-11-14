@@ -495,7 +495,7 @@ definitions:
     type: object
   v1.CreateMemberReqV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -1081,7 +1081,7 @@ definitions:
     type: object
   v1.GetMemberRespDataV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -2726,7 +2726,7 @@ definitions:
     type: object
   v1.UpdateMemberReqV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -2866,8 +2866,17 @@ definitions:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
         type: array
     type: object
+  v1.UserBindProjectResV1:
+    properties:
+      projectName:
+        type: string
+    type: object
   v1.UserDetailResV1:
     properties:
+      bind_projects:
+        items:
+          $ref: '#/definitions/v1.UserBindProjectResV1'
+        type: array
       email:
         type: string
       is_admin:

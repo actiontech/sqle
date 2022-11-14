@@ -162,7 +162,7 @@ func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	p := &Project{}
-	err := s.db.Preload("CreateUser").Preload("Managers").Where("name = ?", projectName).First(p).Error
+	err := s.db.Preload("CreateUser").Preload("Members").Preload("Managers").Where("name = ?", projectName).First(p).Error
 	if err == gorm.ErrRecordNotFound {
 		return p, false, nil
 	}
@@ -193,7 +193,7 @@ func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	return p, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsProjectMember(userName, projectName string) (bool, error) {
+func (s *Storage) IsUserInProject(userName, projectName string) (bool, error) {
 	query := `
 SELECT EXISTS(
 SELECT users.login_name 
@@ -249,4 +249,72 @@ func (s *Storage) GetProjectNamesByInstanceIds(instanceIds []uint) (map[uint] /*
 	}
 
 	return res, nil
+}
+
+func (s *Storage) AddMember(userName, projectName string, isManager bool, bindRole []BindRole) error {
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("user not exist"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("project not exist"))
+	}
+
+	return errors.New(errors.ConnectStorageError, s.db.Transaction(func(tx *gorm.DB) error {
+
+		if err = tx.Exec("INSERT INTO project_user (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+
+		if isManager {
+			if err = tx.Exec("INSERT INTO project_manager (project_id, user_id) VALUES (?,?)", project.ID, user.ID).Error; err != nil {
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+
+		err = s.updateUserRoles(tx, user, projectName, bindRole)
+		if err != nil {
+			return errors.ConnectStorageErrWrapper(err)
+		}
+		return nil
+	}))
+}
+
+func (s *Storage) AddProjectManager(userName, projectName string) error {
+	sql := `
+INSERT INTO project_manager 
+SELECT projects.id AS project_id , users.id AS user_id
+FROM projects
+JOIN users
+WHERE projects.name = ?
+AND users.login_name = ?
+LIMIT 1
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
+}
+
+func (s *Storage) RemoveMember(userName, projectName string) error {
+	sql := `
+DELETE project_user, project_manager 
+FROM project_user
+LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
+	AND project_user.user_id = project_manager.user_id
+LEFT JOIN projects ON project_user.project_id = projects.id
+LEFT JOIN users ON project_user.user_id = users.id
+WHERE 
+users.name = ?
+AND
+projects.name = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
 }

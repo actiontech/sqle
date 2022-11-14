@@ -8,6 +8,8 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -164,7 +166,7 @@ func DeleteUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
-
+	// TODO issue_960 工单部分还没做, 遗留检查是否有残余工单和扫描任务和工作模板, 需要看一下这里的逻辑要不要改
 	exist, err = s.UserHasRunningWorkflow(user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -181,7 +183,7 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
 			fmt.Errorf("%s can't be deleted,cause the user binds the workflow template", userName)))
 	}
-
+	// TODO issue_960 需要检查用户是否是成员, 如果是要删关系表, 还要检查是不是最后一个管理员
 	err = s.Delete(user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -248,9 +250,14 @@ type UserDetailResV1 struct {
 	IsDisabled               bool                         `json:"is_disabled,omitempty"`
 	UserGroups               []string                     `json:"user_group_name_list,omitempty"`
 	ManagementPermissionList []*ManagementPermissionResV1 `json:"management_permission_list,omitempty"`
+	BindProjects             []*UserBindProjectResV1      `json:"bind_projects,omitempty"`
 }
 
-func convertUserToRes(user *model.User, managementPermissionCodes []uint) UserDetailResV1 {
+type UserBindProjectResV1 struct {
+	ProjectName string
+}
+
+func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project) UserDetailResV1 {
 	if user.UserAuthenticationType == "" {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
@@ -268,6 +275,14 @@ func convertUserToRes(user *model.User, managementPermissionCodes []uint) UserDe
 		userGroupNames[i] = user.UserGroups[i].Name
 	}
 	userResp.UserGroups = userGroupNames
+
+	bindProjects := []*UserBindProjectResV1{}
+	for _, project := range projects {
+		bindProjects = append(bindProjects, &UserBindProjectResV1{
+			ProjectName: project.Name,
+		})
+	}
+	userResp.BindProjects = bindProjects
 
 	userResp.ManagementPermissionList = generateManagementPermissionResV1s(managementPermissionCodes)
 
@@ -298,9 +313,14 @@ func GetUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projects, err := s.GetProjectTips(user.Name)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes),
+		Data:    convertUserToRes(user, codes, projects),
 	})
 }
 
@@ -327,9 +347,14 @@ func GetCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projects, err := s.GetProjectTips(user.Name)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes),
+		Data:    convertUserToRes(user, codes, projects),
 	})
 }
 
@@ -545,9 +570,9 @@ func GetUserTips(c echo.Context) error {
 }
 
 type CreateMemberReqV1 struct {
-	UserName string          `json:"user_name" valid:"required"`
-	IsOwner  bool            `json:"is_owner" valid:"required"`
-	Roles    []BindRoleReqV1 `json:"roles" valid:"required"`
+	UserName  string          `json:"user_name" valid:"required"`
+	IsManager bool            `json:"is_manager" valid:"required"`
+	Roles     []BindRoleReqV1 `json:"roles" valid:"required"`
 }
 
 type BindRoleReqV1 struct {
@@ -568,12 +593,65 @@ type BindRoleReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members [post]
 func AddMember(c echo.Context) error {
-	return nil
+	req := new(CreateMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	// 检查用户是否已添加过
+	isMember, err := s.IsUserInProject(req.UserName, projectName)
+	if err != nil {
+		return err
+	}
+	if isMember {
+		return errors.New(errors.DataExist, fmt.Errorf("user %v is in project %v", req.UserName, projectName))
+	}
+
+	role := []model.BindRole{}
+	instNames := []string{}
+	roleNames := []string{}
+	for _, r := range req.Roles {
+		role = append(role, model.BindRole{
+			RoleNames:    r.RoleNames,
+			InstanceName: r.InstanceName,
+		})
+		instNames = append(instNames, r.InstanceName)
+		roleNames = append(roleNames, r.RoleNames...)
+	}
+
+	// 检查实例是否存在
+	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent instances")))
+	}
+
+	// 检查角色是否存在
+	exist, err = s.CheckRolesExist(utils.RemoveDuplicate(roleNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent roles")))
+	}
+
+	return controller.JSONBaseErrorReq(c, s.AddMember(req.UserName, projectName, req.IsManager, role))
 }
 
 type UpdateMemberReqV1 struct {
-	IsOwner *bool            `json:"is_owner"`
-	Roles   *[]BindRoleReqV1 `json:"roles"`
+	IsManager *bool            `json:"is_manager"`
+	Roles     *[]BindRoleReqV1 `json:"roles"`
 }
 
 // UpdateMember
@@ -590,7 +668,49 @@ type UpdateMemberReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members/{user_name}/ [patch]
 func UpdateMember(c echo.Context) error {
-	return nil
+	req := new(UpdateMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 更新成员
+	if req.IsManager != nil && *req.IsManager {
+		err = s.AddProjectManager(userName, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// 更新角色
+	role := []model.BindRole{}
+	if req.Roles != nil {
+		for _, r := range *req.Roles {
+			role = append(role, model.BindRole{
+				RoleNames:    r.RoleNames,
+				InstanceName: r.InstanceName,
+			})
+		}
+	}
+	if len(role) > 0 {
+		return controller.JSONBaseErrorReq(c, s.UpdateUserRoles(userName, projectName, role))
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 // DeleteMember
@@ -604,7 +724,55 @@ func UpdateMember(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/members/{user_name}/ [delete]
 func DeleteMember(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	err = checkMemberCanDelete(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, s.RemoveMember(userName, projectName))
+
+}
+
+func checkMemberCanDelete(userName, projectName string) error {
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	user, exist, err := s.GetUserByName(userName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.New(errors.DataNotExist, fmt.Errorf("user not exist"))
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.New(errors.DataNotExist, fmt.Errorf("project not exist"))
+	}
+
+	if len(project.Managers) == 1 && project.Managers[0].ID == user.ID {
+		return errors.New(errors.DataInvalid, fmt.Errorf("cannot delete the last administrator"))
+	}
+
 	return nil
+
 }
 
 type GetMemberReqV1 struct {
@@ -621,9 +789,9 @@ type GetMembersRespV1 struct {
 }
 
 type GetMemberRespDataV1 struct {
-	UserName string          `json:"user_name"`
-	IsOwner  bool            `json:"is_owner"`
-	Roles    []BindRoleReqV1 `json:"roles"`
+	UserName  string          `json:"user_name"`
+	IsManager bool            `json:"is_manager"`
+	Roles     []BindRoleReqV1 `json:"roles"`
 }
 
 // GetMembers
@@ -640,7 +808,72 @@ type GetMemberRespDataV1 struct {
 // @Success 200 {object} v1.GetMembersRespV1
 // @router /v1/projects/{project_name}/members [get]
 func GetMembers(c echo.Context) error {
-	return nil
+	req := new(GetMemberReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
+	// 获取成员信息
+	mp := map[string]interface{}{
+		"limit":                limit,
+		"offset":               offset,
+		"filter_project_name":  projectName,
+		"filter_user_name":     req.FilterUserName,
+		"filter_instance_name": req.FilterInstanceName,
+	}
+
+	s := model.GetStorage()
+	members, total, err := s.GetMembersByReq(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取角色信息
+	memberNames := []string{}
+	for _, member := range members {
+		memberNames = append(memberNames, member.UserName)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberNames(memberNames, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 生成响应
+	data := []GetMemberRespDataV1{}
+	for _, member := range members {
+		data = append(data, GetMemberRespDataV1{
+			UserName:  member.UserName,
+			IsManager: member.IsManager,
+			Roles:     convertBindRoleToBindRoleReqV1(bindRole[member.UserName]),
+		})
+	}
+
+	return c.JSON(http.StatusOK, GetMembersRespV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      data,
+		TotalNums: total,
+	})
+}
+
+func convertBindRoleToBindRoleReqV1(role []model.BindRole) []BindRoleReqV1 {
+	req := []BindRoleReqV1{}
+	for _, r := range role {
+		req = append(req, BindRoleReqV1{
+			InstanceName: r.InstanceName,
+			RoleNames:    r.RoleNames,
+		})
+	}
+	return req
 }
 
 type GetMemberRespV1 struct {
@@ -659,5 +892,42 @@ type GetMemberRespV1 struct {
 // @Success 200 {object} v1.GetMemberRespV1
 // @router /v1/projects/{project_name}/members/{user_name}/ [get]
 func GetMember(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	userName := c.Param("user_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	mp := map[string]interface{}{
+		"limit":               1,
+		"offset":              1,
+		"filter_user_name":    userName,
+		"filter_project_name": projectName,
+	}
+
+	s := model.GetStorage()
+	members, _, err := s.GetMembersByReq(mp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(members) != 1 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("the number of members is not unique")))
+	}
+
+	bindRole, err := s.GetBindRolesByMemberNames([]string{members[0].UserName}, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GetMemberRespV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetMemberRespDataV1{
+			UserName:  members[0].UserName,
+			IsManager: members[0].IsManager,
+			Roles:     convertBindRoleToBindRoleReqV1(bindRole[members[0].UserName]),
+		},
+	})
 }

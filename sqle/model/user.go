@@ -128,11 +128,6 @@ func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateUserRoles(user *User, rs ...*Role) error {
-	err := s.db.Model(user).Association("Roles").Replace(rs).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	users := []*User{}
 	err := s.db.Where("login_name in (?)", names).Find(&users).Error

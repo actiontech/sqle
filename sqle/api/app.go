@@ -171,6 +171,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.PATCH("/user", v1.UpdateCurrentUser)
 	v1Router.GET("/user_tips", v1.GetUserTips)
 	v1Router.PUT("/user/password", v1.UpdateCurrentUserPassword)
+	v1Router.POST("/projects/:project_name/members", v1.AddMember)
+	v1Router.PATCH("/projects/:project_name/members/:user_name/", v1.UpdateMember)
+	v1Router.DELETE("/projects/:project_name/members/:user_name/", v1.DeleteMember)
+	v1Router.GET("/projects/:project_name/members", v1.GetMembers)
+	v1Router.GET("/projects/:project_name/members/:user_name/", v1.GetMember)
 
 	// operations
 	v1Router.GET("/operations", v1.GetOperations)
