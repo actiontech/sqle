@@ -150,7 +150,7 @@ func (s *Storage) GetRuleTemplateByNameAndProjectId(name string, projectId uint)
 	t := &RuleTemplate{}
 	err := s.db.Table("rule_templates").
 		Where("rule_templates.name = ?", name).
-		Where("project_id = ?", projectId).
+		Where("project_id = ? OR project_id = 0", projectId).
 		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
