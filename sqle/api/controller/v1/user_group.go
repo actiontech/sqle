@@ -8,6 +8,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -393,7 +394,44 @@ type UpdateMemberGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [patch]
 func UpdateMemberGroup(c echo.Context) error {
-	return nil
+	req := new(UpdateMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	isMember, err := s.CheckUserGroupIsMember(groupName, projectName)
+	if err != nil {
+		return err
+	}
+	if !isMember {
+		return errors.New(errors.DataNotExist, fmt.Errorf("user group %v is not in project %v", groupName, projectName))
+	}
+
+	// 更新角色
+	role := []model.BindRole{}
+	if req.Roles != nil {
+		for _, r := range *req.Roles {
+			role = append(role, model.BindRole{
+				RoleNames:    r.RoleNames,
+				InstanceName: r.InstanceName,
+			})
+		}
+	}
+	if len(role) > 0 {
+		return controller.JSONBaseErrorReq(c, s.UpdateUserRoles(groupName, projectName, role))
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 // DeleteMemberGroup
