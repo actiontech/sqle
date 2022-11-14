@@ -5772,7 +5772,7 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "project id",
+                        "description": "project name",
                         "name": "filter_project",
                         "in": "query"
                     }
@@ -6857,7 +6857,7 @@ var doc = `{
         "v1.CreateMemberReqV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -6972,7 +6972,6 @@ var doc = `{
                     "example": "test@email.com"
                 },
                 "management_permission_code_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -7714,7 +7713,7 @@ var doc = `{
         "v1.GetMemberRespDataV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -9174,17 +9173,6 @@ var doc = `{
                 }
             }
         },
-        "v1.ManagementPermission": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "desc": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.ManagementPermissionResV1": {
             "type": "object",
             "properties": {
@@ -10160,7 +10148,7 @@ var doc = `{
         "v1.UpdateMemberReqV1": {
             "type": "object",
             "properties": {
-                "is_owner": {
+                "is_manager": {
                     "type": "boolean"
                 },
                 "roles": {
@@ -10284,7 +10272,6 @@ var doc = `{
                     "type": "boolean"
                 },
                 "management_permission_code_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -10373,9 +10360,23 @@ var doc = `{
                 }
             }
         },
+        "v1.UserBindProjectResV1": {
+            "type": "object",
+            "properties": {
+                "projectName": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UserDetailResV1": {
             "type": "object",
             "properties": {
+                "bind_project": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserBindProjectResV1"
+                    }
+                },
                 "email": {
                     "type": "string"
                 },
@@ -10389,10 +10390,9 @@ var doc = `{
                     "type": "string"
                 },
                 "management_permission_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ManagementPermission"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {
@@ -10472,10 +10472,9 @@ var doc = `{
                     "type": "string"
                 },
                 "management_permission_list": {
-                    "description": "todo issue960 handle ManagementPermissionCodes in implementation",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.ManagementPermission"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {

@@ -497,7 +497,7 @@ definitions:
     type: object
   v1.CreateMemberReqV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -573,7 +573,6 @@ definitions:
         example: test@email.com
         type: string
       management_permission_code_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
           type: integer
         type: array
@@ -1084,7 +1083,7 @@ definitions:
     type: object
   v1.GetMemberRespDataV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -2080,13 +2079,6 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
-  v1.ManagementPermission:
-    properties:
-      code:
-        type: integer
-      desc:
-        type: string
-    type: object
   v1.ManagementPermissionResV1:
     properties:
       code:
@@ -2738,7 +2730,7 @@ definitions:
     type: object
   v1.UpdateMemberReqV1:
     properties:
-      is_owner:
+      is_manager:
         type: boolean
       roles:
         items:
@@ -2820,7 +2812,6 @@ definitions:
       is_disabled:
         type: boolean
       management_permission_code_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
           type: integer
         type: array
@@ -2879,8 +2870,17 @@ definitions:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
         type: array
     type: object
+  v1.UserBindProjectResV1:
+    properties:
+      projectName:
+        type: string
+    type: object
   v1.UserDetailResV1:
     properties:
+      bind_project:
+        items:
+          $ref: '#/definitions/v1.UserBindProjectResV1'
+        type: array
       email:
         type: string
       is_admin:
@@ -2890,9 +2890,8 @@ definitions:
       login_type:
         type: string
       management_permission_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
-          $ref: '#/definitions/v1.ManagementPermission'
+          $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
       user_group_name_list:
         items:
@@ -2945,9 +2944,8 @@ definitions:
       login_type:
         type: string
       management_permission_list:
-        description: todo issue960 handle ManagementPermissionCodes in implementation
         items:
-          $ref: '#/definitions/v1.ManagementPermission'
+          $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
       user_group_name_list:
         items:
@@ -6855,7 +6853,7 @@ paths:
       description: get user tip list
       operationId: getUserTipListV1
       parameters:
-      - description: project id
+      - description: project name
         in: query
         name: filter_project
         type: string
