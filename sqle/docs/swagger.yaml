@@ -1917,10 +1917,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.MaintenanceTimeResV1'
         type: array
-      rule_template_name_list:
-        items:
-          type: string
-        type: array
+      rule_template_name:
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
