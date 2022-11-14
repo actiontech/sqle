@@ -292,7 +292,7 @@ func CreateAuditPlan(c echo.Context) error {
 
 	// check rule template name
 	if req.RuleTemplateName != "" {
-		exist, err = s.CheckRuleTemplateExistForAuditPlan(req.RuleTemplateName, project.ID)
+		exist, err = s.IsRuleTemplateExist(req.RuleTemplateName, []uint{project.ID, model.ProjectIdForGlobalRuleTemplate})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -451,7 +451,7 @@ func UpdateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errProjectNotExist)
 		}
 
-		exist, err = storage.CheckRuleTemplateExistForAuditPlan(*req.RuleTemplateName, project.ID)
+		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName, []uint{project.ID, model.ProjectIdForGlobalRuleTemplate})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
