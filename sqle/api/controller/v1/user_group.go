@@ -8,6 +8,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -319,7 +320,60 @@ type CreateMemberGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups [post]
 func AddMemberGroup(c echo.Context) error {
-	return nil
+	req := new(CreateMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	// 检查用户组是否已添加过
+	isMember, err := s.CheckUserGroupIsMember(req.UserGroupName, projectName)
+	if err != nil {
+		return err
+	}
+	if isMember {
+		return errors.New(errors.DataExist, fmt.Errorf("user group %v is in project %v", req.UserGroupName, projectName))
+	}
+
+	role := []model.BindRole{}
+	instNames := []string{}
+	roleNames := []string{}
+	for _, r := range req.Roles {
+		role = append(role, model.BindRole{
+			RoleNames:    r.RoleNames,
+			InstanceName: r.InstanceName,
+		})
+		instNames = append(instNames, r.InstanceName)
+		roleNames = append(roleNames, r.RoleNames...)
+	}
+
+	// 检查实例是否存在
+	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent instances")))
+	}
+
+	// 检查角色是否存在
+	exist, err = s.CheckRolesExist(utils.RemoveDuplicate(roleNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent roles")))
+	}
+
+	return controller.JSONBaseErrorReq(c, s.AddMemberGroup(req.UserGroupName, projectName, role))
 }
 
 type UpdateMemberGroupReqV1 struct {
@@ -340,7 +394,44 @@ type UpdateMemberGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [patch]
 func UpdateMemberGroup(c echo.Context) error {
-	return nil
+	req := new(UpdateMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	isMember, err := s.CheckUserGroupIsMember(groupName, projectName)
+	if err != nil {
+		return err
+	}
+	if !isMember {
+		return errors.New(errors.DataNotExist, fmt.Errorf("user group %v is not in project %v", groupName, projectName))
+	}
+
+	// 更新角色
+	role := []model.BindRole{}
+	if req.Roles != nil {
+		for _, r := range *req.Roles {
+			role = append(role, model.BindRole{
+				RoleNames:    r.RoleNames,
+				InstanceName: r.InstanceName,
+			})
+		}
+	}
+	if len(role) > 0 {
+		return controller.JSONBaseErrorReq(c, s.UpdateUserRoles(groupName, projectName, role))
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 // DeleteMemberGroup
@@ -354,7 +445,19 @@ func UpdateMemberGroup(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [delete]
 func DeleteMemberGroup(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+
+	return controller.JSONBaseErrorReq(c, s.RemoveMemberGroup(groupName, projectName))
+
 }
 
 type GetMemberGroupReqV1 struct {
@@ -389,7 +492,68 @@ type GetMemberGroupRespDataV1 struct {
 // @Success 200 {object} v1.GetMemberGroupsRespV1
 // @router /v1/projects/{project_name}/member_groups [get]
 func GetMemberGroups(c echo.Context) error {
-	return nil
+	req := new(GetMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取成员组列表
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	filter := model.GetMemberGroupFilter{
+		Limit:             &limit,
+		Offset:            &offset,
+		FilterProjectName: &projectName,
+	}
+	if req.FilterInstanceName != "" {
+		filter.FilterInstanceName = &req.FilterInstanceName
+	}
+	if req.FilterUserGroupName != "" {
+		filter.FilterUserGroupName = &req.FilterUserGroupName
+	}
+
+	s := model.GetStorage()
+	groups, err := s.GetMemberGroups(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	total, err := s.GetMemberGroupCount(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取角色信息
+	groupNames := []string{}
+	for _, group := range groups {
+		groupNames = append(groupNames, group.Name)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberGroupNames(groupNames, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 生成响应
+	data := []GetMemberGroupRespDataV1{}
+	for _, group := range groups {
+		data = append(data, GetMemberGroupRespDataV1{
+			UserGroupName: group.Name,
+			Roles:         convertBindRoleToBindRoleReqV1(bindRole[group.Name]),
+		})
+	}
+
+	return c.JSON(http.StatusOK, GetMemberGroupsRespV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      data,
+		TotalNums: total,
+	})
 }
 
 type GetMemberGroupRespV1 struct {
@@ -408,5 +572,31 @@ type GetMemberGroupRespV1 struct {
 // @Success 200 {object} v1.GetMemberGroupRespV1
 // @router /v1/projects/{project_name}/member_groups/{user_group_name}/ [get]
 func GetMemberGroup(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	groupName := c.Param("user_group_name")
+	currentUser := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	userGroup, err := s.GetMemberGroupByGroupName(projectName, groupName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	bindRole, err := s.GetBindRolesByMemberGroupNames([]string{userGroup.Name}, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GetMemberGroupRespV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetMemberGroupRespDataV1{
+			UserGroupName: userGroup.Name,
+			Roles:         convertBindRoleToBindRoleReqV1(bindRole[userGroup.Name]),
+		},
+	})
 }

@@ -77,28 +77,14 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 		}
 	}
 
-	roleNames = utils.RemoveDuplicate(roleNames)
-	instNames = utils.RemoveDuplicate(instNames)
-
-	roles, err := s.GetRolesByNames(roleNames)
-	if err != nil {
-		return err
-	}
-	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
 	if err != nil {
 		return err
 	}
 
-	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
-	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
-	instIDs := []uint{}
-	for _, role := range roles {
-		roleCache[role.Name] = role.ID
-	}
-
-	for _, inst := range insts {
-		instCache[inst.Name] = inst.ID
-		instIDs = append(instIDs, inst.ID)
+	roleCache, err := s.getRoleBindIDByNames(roleNames)
+	if err != nil {
+		return err
 	}
 
 	// 删掉所有旧数据
@@ -123,6 +109,70 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	return nil
 }
 
+// 每次更新都是全量更新 InstID+UserGroupID 定位到的角色
+func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectName string, bindRoles []BindRole) error {
+	if len(bindRoles) == 0 {
+		return nil
+	}
+
+	// 获取实例ID和角色ID
+	instNames := []string{}
+	roleNames := []string{}
+	for _, role := range bindRoles {
+		instNames = append(instNames, role.InstanceName)
+		for _, name := range role.RoleNames {
+			roleNames = append(roleNames, name)
+		}
+	}
+
+	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
+	if err != nil {
+		return err
+	}
+
+	roleCache, err := s.getRoleBindIDByNames(roleNames)
+	if err != nil {
+		return err
+	}
+
+	// 删掉所有旧数据
+	err = tx.Where("user_group_id = ?", group.ID).Where("instance_id in (?)", instIDs).Delete(&ProjectMemberGroupRole{}).Error
+	if err != nil {
+		return err
+	}
+
+	// 写入新数据
+	for _, role := range bindRoles {
+		for _, name := range role.RoleNames {
+			if err = tx.Save(&ProjectMemberGroupRole{
+				RoleID:      roleCache[name],
+				InstanceID:  instCache[role.InstanceName],
+				UserGroupID: group.ID,
+			}).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role name*/ ]uint /*role id*/, error) {
+	roleNames = utils.RemoveDuplicate(roleNames)
+
+	roles, err := s.GetRolesByNames(roleNames)
+	if err != nil {
+		return nil, err
+	}
+
+	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
+	for _, role := range roles {
+		roleCache[role.Name] = role.ID
+	}
+
+	return roleCache, nil
+}
+
 func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) (map[string /*member name*/ ][]BindRole, error) {
 	roles := []*struct {
 		UserName     string `json:"user_name"`
@@ -130,12 +180,12 @@ func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) 
 		RoleName     string `json:"role_name"`
 	}{}
 
-	err := s.db.Table("project_member_role").
+	err := s.db.Table("project_member_roles").
 		Select("users.login_name AS user_name , instances.name AS instance_name , roles.name AS role_name").
-		Joins("JOIN users ON users.id = project_member_role.user_id").
-		Joins("JOIN instances ON instances.id = project_member_role.instance_id").
+		Joins("JOIN users ON users.id = project_member_roles.user_id").
+		Joins("JOIN instances ON instances.id = project_member_roles.instance_id").
 		Joins("JOIN projects ON projects.id = instances.project_id").
-		Joins("JOIN roles ON roles.id = project_member_role.role_id").
+		Joins("JOIN roles ON roles.id = project_member_roles.role_id").
 		Where("projects.name = ?", projectName).
 		Where("users.login_name in (?)", names).
 		Scan(&roles).Error
@@ -165,6 +215,56 @@ A:
 		}
 		// resp还没记录过此用户或此用户+实例的信息时走这里
 		resp[role.UserName] = append(resp[role.UserName], BindRole{
+			InstanceName: role.InstanceName,
+			RoleNames:    []string{role.RoleName},
+		})
+	}
+
+	return resp, nil
+}
+
+func (s *Storage) GetBindRolesByMemberGroupNames(names []string, projectName string) (map[string /*member group name*/ ][]BindRole, error) {
+	roles := []*struct {
+		GroupName    string `json:"group_name"`
+		InstanceName string `json:"instance_name"`
+		RoleName     string `json:"role_name"`
+	}{}
+
+	err := s.db.Table("project_member_group_roles").
+		Select("user_groups.name AS group_name , instances.name AS instance_name , roles.name AS role_name").
+		Joins("JOIN user_groups ON user_groups.id = project_member_group_roles.user_group_id").
+		Joins("JOIN instances ON instances.id = project_member_group_roles.instance_id").
+		Joins("JOIN projects ON projects.id = instances.project_id").
+		Joins("JOIN roles ON roles.id = project_member_group_roles.role_id").
+		Where("projects.name = ?", projectName).
+		Where("user_groups.name in (?)", names).
+		Scan(&roles).Error
+
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	removeDuplicate := map[string]struct{}{}
+	resp := map[string][]BindRole{}
+
+A:
+	for _, role := range roles {
+		// 去重
+		fg := role.RoleName + role.InstanceName + role.GroupName
+		if _, ok := removeDuplicate[fg]; ok {
+			continue
+		}
+		removeDuplicate[fg] = struct{}{}
+
+		// resp中已有此用户组+实例的信息时走这里
+		for i, bindRole := range resp[role.GroupName] {
+			if bindRole.InstanceName == role.InstanceName {
+				resp[role.GroupName][i].RoleNames = append(resp[role.GroupName][i].RoleNames, role.RoleName)
+				continue A
+			}
+		}
+		// resp还没记录过此用户或此用户+实例的信息时走这里
+		resp[role.GroupName] = append(resp[role.GroupName], BindRole{
 			InstanceName: role.InstanceName,
 			RoleNames:    []string{role.RoleName},
 		})
