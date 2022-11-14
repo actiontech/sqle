@@ -319,7 +319,60 @@ type CreateMemberGroupReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/member_groups [post]
 func AddMemberGroup(c echo.Context) error {
-	return nil
+	req := new(CreateMemberGroupReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	// 检查用户组是否已添加过
+	isMember, err := s.CheckUserGroupIsMember(req.UserGroupName, projectName)
+	if err != nil {
+		return err
+	}
+	if isMember {
+		return errors.New(errors.DataExist, fmt.Errorf("user group %v is in project %v", req.UserGroupName, projectName))
+	}
+
+	role := []model.BindRole{}
+	instNames := []string{}
+	roleNames := []string{}
+	for _, r := range req.Roles {
+		role = append(role, model.BindRole{
+			RoleNames:    r.RoleNames,
+			InstanceName: r.InstanceName,
+		})
+		instNames = append(instNames, r.InstanceName)
+		roleNames = append(roleNames, r.RoleNames...)
+	}
+
+	// 检查实例是否存在
+	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent instances")))
+	}
+
+	// 检查角色是否存在
+	exist, err = s.CheckRolesExist(utils.RemoveDuplicate(roleNames))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("prohibit binding non-existent roles")))
+	}
+
+	return controller.JSONBaseErrorReq(c, s.AddMemberGroup(req.UserGroupName, projectName, role))
 }
 
 type UpdateMemberGroupReqV1 struct {
