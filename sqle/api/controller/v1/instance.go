@@ -295,7 +295,7 @@ type InstanceResV1 struct {
 	User             string                          `json:"db_user" example:"root"`
 	Desc             string                          `json:"desc" example:"this is a instance"`
 	MaintenanceTimes []*MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplates    []string                        `json:"rule_template_name_list,omitempty"`
+	RuleTemplateName string                          `json:"rule_template_name,omitempty"`
 	AdditionalParams []*InstanceAdditionalParamResV1 `json:"additional_params"`
 	SQLQueryConfig   *SQLQueryConfigResV1            `json:"sql_query_config"`
 }
@@ -358,11 +358,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 	}
 
 	if len(instance.RuleTemplates) > 0 {
-		ruleTemplateNames := make([]string, 0, len(instance.RuleTemplates))
-		for _, rt := range instance.RuleTemplates {
-			ruleTemplateNames = append(ruleTemplateNames, rt.Name)
-		}
-		instanceResV1.RuleTemplates = ruleTemplateNames
+		instanceResV1.RuleTemplateName = instance.RuleTemplates[0].Name
 	}
 
 	for _, param := range instance.AdditionalParams {
@@ -682,6 +678,11 @@ func GetInstances(c echo.Context) error {
 
 	instancesRes := []InstanceResV1{}
 	for _, instance := range instances {
+		ruleTemplateName := ""
+		if len(instance.RuleTemplateNames) >= 1 {
+			ruleTemplateName = instance.RuleTemplateNames[0]
+		}
+
 		instanceReq := InstanceResV1{
 			Name:             instance.Name,
 			DBType:           instance.DbType,
@@ -690,7 +691,7 @@ func GetInstances(c echo.Context) error {
 			User:             instance.User,
 			Desc:             instance.Desc,
 			MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
-			RuleTemplates:    instance.RuleTemplateNames,
+			RuleTemplateName: ruleTemplateName,
 			SQLQueryConfig: &SQLQueryConfigResV1{
 				MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
 				QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
