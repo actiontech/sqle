@@ -249,9 +249,14 @@ type UserDetailResV1 struct {
 	IsDisabled               bool                         `json:"is_disabled,omitempty"`
 	UserGroups               []string                     `json:"user_group_name_list,omitempty"`
 	ManagementPermissionList []*ManagementPermissionResV1 `json:"management_permission_list,omitempty"`
+	BindProject              []*UserBindProjectResV1      `json:"bind_project,omitempty"`
 }
 
-func convertUserToRes(user *model.User, managementPermissionCodes []uint) UserDetailResV1 {
+type UserBindProjectResV1 struct {
+	ProjectName string
+}
+
+func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project) UserDetailResV1 {
 	if user.UserAuthenticationType == "" {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
@@ -269,6 +274,14 @@ func convertUserToRes(user *model.User, managementPermissionCodes []uint) UserDe
 		userGroupNames[i] = user.UserGroups[i].Name
 	}
 	userResp.UserGroups = userGroupNames
+
+	bindProjects := []*UserBindProjectResV1{}
+	for _, project := range projects {
+		bindProjects = append(bindProjects, &UserBindProjectResV1{
+			ProjectName: project.Name,
+		})
+	}
+	userResp.BindProject = bindProjects
 
 	userResp.ManagementPermissionList = generateManagementPermissionResV1s(managementPermissionCodes)
 
@@ -299,9 +312,14 @@ func GetUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projects, err := s.GetProjectTips(user.Name)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes),
+		Data:    convertUserToRes(user, codes, projects),
 	})
 }
 
@@ -328,9 +346,14 @@ func GetCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projects, err := s.GetProjectTips(user.Name)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes),
+		Data:    convertUserToRes(user, codes, projects),
 	})
 }
 
