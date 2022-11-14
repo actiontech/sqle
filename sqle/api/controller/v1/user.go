@@ -608,7 +608,7 @@ func AddMember(c echo.Context) error {
 
 	s := model.GetStorage()
 	// 检查用户是否已添加过
-	isMember, err := s.IsUserInProject(req.UserName, projectName)
+	isMember, err := s.CheckUserIsMember(req.UserName, projectName)
 	if err != nil {
 		return err
 	}
@@ -683,9 +683,12 @@ func UpdateMember(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	err = CheckIsProjectMember(userName, projectName)
+	isMember, err := s.CheckUserIsMember(userName, projectName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
+	}
+	if !isMember {
+		return errors.New(errors.DataNotExist, fmt.Errorf("user %v is not in project %v", userName, projectName))
 	}
 
 	// 更新成员
