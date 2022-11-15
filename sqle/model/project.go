@@ -474,3 +474,48 @@ func (s *Storage) GetMemberGroupByGroupName(projectName, groupName string) (*Use
 		Find(group).Error
 	return group, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) RemoveMemberFromAllProjectByUserID(userID uint) error {
+	sql := `
+DELETE project_user, project_manager 
+FROM project_user
+LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
+	AND project_user.user_id = project_manager.user_id
+LEFT JOIN users ON project_user.user_id = users.id
+WHERE 
+users.id = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userID).Error)
+}
+
+// 检查用户是否是某一个项目的最后一个管理员
+func (s *Storage) IsLastProjectManagerOfAnyProjectByUserID(userID uint) (bool, error) {
+
+	sql := `
+SELECT count(1) AS count
+FROM project_manager
+WHERE project_manager.project_id IN
+(
+SELECT project_id
+FROM project_manager AS m
+WHERE m.user_id = ?
+)
+
+GROUP BY project_manager.project_id
+
+`
+
+	var count []int
+	err := s.db.Raw(sql, userID).Scan(&count).Error
+	if err != nil {
+		return true, errors.ConnectStorageErrWrapper(err)
+	}
+
+	for _, c := range count {
+		if c == 1 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
