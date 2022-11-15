@@ -320,8 +320,7 @@ func (w *Workflow) GetTaskIds() []uint {
 	return taskIds
 }
 
-func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task,
-	stepTemplates []*WorkflowStepTemplate) error {
+func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId uint) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -348,6 +347,7 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 	workflow := &Workflow{
 		Subject:      subject,
 		Desc:         desc,
+		ProjectId:    projectId,
 		CreateUserId: user.ID,
 		Mode:         workflowMode,
 	}

@@ -1038,7 +1038,7 @@ func CreateWorkflowV1(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	err = s.CreateWorkflow(req.Subject, req.Desc, user, tasks, stepTemplates)
+	err = s.CreateWorkflow(req.Subject, req.Desc, user, tasks, stepTemplates, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
