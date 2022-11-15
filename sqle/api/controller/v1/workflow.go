@@ -1631,5 +1631,147 @@ type WorkflowResV1 struct {
 // @Success 200 {object} GetWorkflowResV1
 // @router /v1/projects/{project_name}/workflows/{workflow_name}/ [get]
 func GetWorkflowV1(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowName := c.Param("workflow_name")
+
+	s := model.GetStorage()
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
+	userName := controller.GetUserName(c)
+
+	if err := CheckIsProjectMember(userName, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(project.Name, workflowName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	err = CheckCurrentUserCanViewWorkflow(c, &model.Workflow{Model: model.Model{ID: workflow.ID}})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	history, err := s.GetWorkflowHistoryById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	workflow.RecordHistory = history
+
+	return c.JSON(http.StatusOK, &GetWorkflowResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowToRes(workflow),
+	})
+}
+
+func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV1 {
+	workflowRes := &WorkflowResV1{
+		Name:       workflow.Subject,
+		Desc:       workflow.Desc,
+		Mode:       workflow.Mode,
+		CreateUser: workflow.CreateUser.Name,
+		CreateTime: &workflow.CreatedAt,
+	}
+
+	// convert workflow record
+	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
+
+	// convert workflow record history
+	recordHistory := make([]*WorkflowRecordResV1, 0, len(workflow.RecordHistory))
+	for _, record := range workflow.RecordHistory {
+		recordRes := convertWorkflowRecordToRes(workflow, record)
+		recordHistory = append(recordHistory, recordRes)
+	}
+	workflowRes.RecordHistory = recordHistory
+	workflowRes.Record = workflowRecordRes
+
+	return workflowRes
+}
+
+func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV1 {
+	steps := make([]*WorkflowStepResV1, 0, len(record.Steps)+1)
+	// It is filled by create user and create time;
+	// and tell others that this is a creating or updating operation.
+	var stepType string
+	if workflow.IsFirstRecord(record) {
+		stepType = model.WorkflowStepTypeCreateWorkflow
+	} else {
+		stepType = model.WorkflowStepTypeUpdateWorkflow
+	}
+
+	firstVirtualStep := &WorkflowStepResV1{
+		Type:          stepType,
+		OperationTime: &record.CreatedAt,
+		OperationUser: workflow.CreateUserName(),
+	}
+	steps = append(steps, firstVirtualStep)
+
+	// convert workflow actual step
+	for _, step := range record.Steps {
+		stepRes := convertWorkflowStepToRes(step)
+		steps = append(steps, stepRes)
+	}
+	// fill step number
+	var currentStepNum uint
+	for i, step := range steps {
+		number := uint(i + 1)
+		step.Number = number
+		if step.Id != 0 && step.Id == record.CurrentWorkflowStepId {
+			currentStepNum = number
+		}
+	}
+
+	tasksRes := make([]*WorkflowTaskItem, len(record.InstanceRecords))
+	for i, inst := range record.InstanceRecords {
+		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
+	}
+
+	return &WorkflowRecordResV1{
+		Tasks:             tasksRes,
+		CurrentStepNumber: currentStepNum,
+		Status:            record.Status,
+		Steps:             steps,
+	}
+}
+
+func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
+	stepRes := &WorkflowStepResV1{
+		Id:            step.ID,
+		Type:          step.Template.Typ,
+		Desc:          step.Template.Desc,
+		OperationTime: step.OperateAt,
+		State:         step.State,
+		Reason:        step.Reason,
+		Users:         []string{},
+	}
+	if step.OperationUser != nil {
+		stepRes.OperationUser = step.OperationUser.Name
+	}
+	if step.Assignees != nil {
+		for _, user := range step.Assignees {
+			stepRes.Users = append(stepRes.Users, user.Name)
+		}
+	}
+	return stepRes
 }
