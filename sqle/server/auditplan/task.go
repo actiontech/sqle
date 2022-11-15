@@ -298,7 +298,7 @@ func convertRawSQLToModelSQLs(sqls []string) []*model.AuditPlanSQLV2 {
 }
 
 func (at *baseTask) FullSyncSQLs(sqls []*SQL) error {
-	return at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+	return at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *baseTask) PartialSyncSQLs(sqls []*SQL) error {
@@ -426,7 +426,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		sqls = append(sqls, sql)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
@@ -538,7 +538,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 			})
 		}
 
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(apSQLs))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
 		if err != nil {
 			at.logger.Errorf("save top sql to storage fail, error: %v", err)
 		}
@@ -836,7 +836,7 @@ func (at *aliRdsMySQLTask) collectorDo() {
 	mergedSlowSqls := mergeSQLsByFingerprint(slowSqls)
 	if len(mergedSlowSqls) > 0 {
 		if at.isFirstScrap() {
-			err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
 			if err != nil {
 				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return
