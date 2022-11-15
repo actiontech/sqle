@@ -305,7 +305,7 @@ func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (us
 }
 
 // GetCanAuditWorkflowUsers will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
-func (s *Storage) GetCanAuditWorkflowUsers(instance *Instance, opCode ...int) (users []*User, err error) {
+func (s *Storage) GetCanAuditWorkflowUsers(instance *Instance) (users []*User, err error) {
 	users, err = s.GetWithOperationUserFromInstance(instance, OP_WORKFLOW_AUDIT)
 	if err != nil {
 		return
