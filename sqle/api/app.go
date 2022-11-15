@@ -232,7 +232,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/workflows/:workflow_id/tasks", v1.GetSummaryOfWorkflowTasksV1)
 
 	// task
-	v1Router.POST("/tasks/audits", v1.CreateAndAuditTask)
+	v1Router.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
