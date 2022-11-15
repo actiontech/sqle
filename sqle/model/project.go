@@ -117,17 +117,16 @@ func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 
 func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	p := []*Project{}
-	query := s.db.Table("projects").Select("name")
+	query := s.db.Table("projects").Select("projects.name,projects.id")
 
 	var err error
 	if userName != DefaultAdminUser {
-		err = query.Joins("JOIN project_user on project_user.project_id = projects.id").
-			Joins("JOIN users on users.id = project_user.user_id").
-			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
-			Joins("JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id").
-			Joins("RIGHT JOIN users as u on u.id = user_group_users.user_id").
-			Where("users.stat = 0").Where("u.stat = 0").
-			Where("users.login_name = ? OR u.login_name = ?", userName, userName).Find(&p).Error
+		err = query.Joins("LEFT JOIN project_user on project_user.project_id = projects.id").
+			Joins("LEFT JOIN users on users.id = project_user.user_id").
+			Joins("LEFT JOIN project_user_group on project_user_group.project_id = projects.id").
+			Joins("LEFT JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id").
+			Joins("LEFT JOIN users as u on u.id = user_group_users.user_id").
+			Where("(users.login_name = ? AND users.stat = 0) OR (u.login_name = ? AND u.stat = 0)", userName, userName).Find(&p).Error
 	} else {
 		err = query.Find(&p).Error
 	}
@@ -143,13 +142,14 @@ func (s *Storage) IsUserInProject(userName, projectName string) (bool, error) {
 SELECT EXISTS(
 SELECT users.login_name 
 FROM users
-JOIN project_user on project_user.user_id = users.id
-JOIN projects on project_user.project_id = projects.id
-JOIN user_group_users on users.id = user_group_users.user_id 
-JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
-JOIN projects as p on project_user_group.project_id = p.id
+LEFT JOIN project_user on project_user.user_id = users.id
+LEFT JOIN projects on project_user.project_id = projects.id
+LEFT JOIN user_group_users on users.id = user_group_users.user_id 
+LEFT JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+LEFT JOIN projects as p on project_user_group.project_id = p.id
 WHERE users.stat = 0
 AND users.deleted_at IS NULL
+AND users.login_name = ?
 AND( 
 	projects.name = ?
 OR
@@ -159,7 +159,7 @@ OR
 	var exist struct {
 		Exist bool `json:"exist"`
 	}
-	err := s.db.Raw(query, userName, projectName).Find(&exist).Error
+	err := s.db.Raw(query, userName, projectName, projectName).Find(&exist).Error
 	return exist.Exist, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -288,6 +288,19 @@ LIMIT 1
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
 }
 
+func (s *Storage) RemoveProjectManager(userName, projectName string) error {
+	sql := `
+DELETE project_manager 
+FROM project_manager
+JOIN projects ON project_manager.project_id = projects.id
+JOIN users ON project_manager.user_id = users.id
+WHERE projects.name = ?
+AND users.login_name = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
+}
+
 func (s *Storage) RemoveMember(userName, projectName string) error {
 	sql := `
 DELETE project_user, project_manager, project_member_role  
@@ -339,18 +352,18 @@ func (s *Storage) AddMemberGroup(groupName, projectName string, bindRole []BindR
 
 func (s *Storage) RemoveMemberGroup(groupName, projectName string) error {
 	sql := `
-DELETE project_user_group, project_member_group_role 
+DELETE project_user_group, project_member_group_roles 
 FROM project_user_group
 LEFT JOIN projects ON project_user_group.project_id = projects.id
 LEFT JOIN user_groups ON project_user_group.user_group_id = user_groups.id
-LEFT JOIN project_member_group_role ON project_member_group_role.user_group_id = user_groups.id
+LEFT JOIN project_member_group_roles ON project_member_group_roles.user_group_id = user_groups.id
 WHERE 
 user_groups.name = ?
 AND
 projects.name = ?
 `
 
-	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, groupName).Error)
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, groupName, projectName).Error)
 }
 
 type GetMemberGroupFilter struct {
@@ -438,11 +451,11 @@ users.id = ?
 
 func (s *Storage) RemoveMemberGroupFromAllProjectByUserGroupID(userGroupID uint) error {
 	sql := `
-DELETE project_user_group, project_member_group_role 
+DELETE project_user_group, project_member_group_roles 
 FROM project_user_group
 LEFT JOIN projects ON project_user_group.project_id = projects.id
 LEFT JOIN user_groups ON project_user_group.user_group_id = user_groups.id
-LEFT JOIN project_member_group_role ON project_member_group_role.user_group_id = ?
+LEFT JOIN project_member_group_roles ON project_member_group_roles.user_group_id = ?
 WHERE
 user_groups.id = ?
 `
