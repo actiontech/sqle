@@ -1274,9 +1274,9 @@ func GetWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
+	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
-		workflowReq := &WorkflowDetailResV1{
+		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
@@ -1286,12 +1286,12 @@ func GetWorkflowsV1(c echo.Context) error {
 			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
 			Status:                  workflow.Status,
 		}
-		workflowsReq = append(workflowsReq, workflowReq)
+		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
 
 	return c.JSON(http.StatusOK, GetWorkflowsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      workflowsReq,
+		Data:      workflowsResV1,
 		TotalNums: count,
 	})
 }
