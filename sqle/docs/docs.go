@@ -3659,6 +3659,43 @@ var doc = `{
             }
         },
         "/v1/projects/{project_name}/workflows/{workflow_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow detail",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单详情",
+                "operationId": "getWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowResV1"
+                        }
+                    }
+                }
+            },
             "patch": {
                 "security": [
                     {
@@ -5586,7 +5623,7 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "project id",
+                        "description": "project name",
                         "name": "filter_project",
                         "in": "query"
                     }
@@ -8662,6 +8699,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowStatusCountResV1": {
             "type": "object",
             "properties": {
@@ -10683,6 +10737,38 @@ var doc = `{
                 }
             }
         },
+        "v1.WorkflowRecordResV1": {
+            "type": "object",
+            "properties": {
+                "current_step_number": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowTaskItem"
+                    }
+                },
+                "workflow_step_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowStepResV1"
+                    }
+                }
+            }
+        },
         "v1.WorkflowRejectedPercentGroupByCreator": {
             "type": "object",
             "properties": {
@@ -10707,6 +10793,43 @@ var doc = `{
                     "type": "number"
                 },
                 "workflow_total_num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": [
+                        "same_sqls",
+                        "different_sqls"
+                    ]
+                },
+                "record": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                },
+                "record_history_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowRecordResV1"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "workflow_id": {
                     "type": "integer"
                 }
             }
@@ -10764,6 +10887,60 @@ var doc = `{
                     "type": "integer"
                 },
                 "waiting_for_execution_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowStepResV1": {
+            "type": "object",
+            "properties": {
+                "assignee_user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "operation_time": {
+                    "type": "string"
+                },
+                "operation_user_name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string",
+                    "enum": [
+                        "initialized",
+                        "approved",
+                        "rejected"
+                    ]
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "create_workflow",
+                        "update_workflow",
+                        "sql_review",
+                        "sql_execute"
+                    ]
+                },
+                "workflow_step_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowTaskItem": {
+            "type": "object",
+            "properties": {
+                "task_id": {
                     "type": "integer"
                 }
             }

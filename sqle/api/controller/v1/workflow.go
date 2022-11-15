@@ -277,15 +277,6 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-type WorkflowRecordResV1 struct {
-	TaskId            uint                 `json:"task_id"`
-	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
-	Status            string               `json:"status" enums:"on_process,rejected,canceled,exec_scheduled,executing,exec_failed,finished"`
-	ScheduleTime      *time.Time           `json:"schedule_time,omitempty"`
-	ScheduleUser      string               `json:"schedule_user,omitempty"`
-	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
-}
-
 type WorkflowStepResV1 struct {
 	Id            uint       `json:"workflow_step_id,omitempty"`
 	Number        uint       `json:"number"`
@@ -1590,4 +1581,45 @@ func ExecuteTasksOnWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+type GetWorkflowResV1 struct {
+	controller.BaseRes
+	Data *WorkflowResV1 `json:"data"`
+}
+
+type WorkflowTaskItem struct {
+	Id uint `json:"task_id"`
+}
+
+type WorkflowRecordResV1 struct {
+	Tasks             []*WorkflowTaskItem     `json:"tasks"`
+	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
+	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
+}
+
+type WorkflowResV1 struct {
+	Id            uint                   `json:"workflow_id"`
+	Subject       string                 `json:"subject"`
+	Desc          string                 `json:"desc,omitempty"`
+	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`
+	CreateUser    string                 `json:"create_user_name"`
+	CreateTime    *time.Time             `json:"create_time"`
+	Record        *WorkflowRecordResV1   `json:"record"`
+	RecordHistory []*WorkflowRecordResV1 `json:"record_history_list,omitempty"`
+}
+
+// GetWorkflowV1
+// @Summary 获取工单详情
+// @Description get workflow detail
+// @Tags workflow
+// @Id getWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_name path integer true "workflow name"
+// @Param project_name path string true "project name"
+// @Success 200 {object} GetWorkflowResV1
+// @router /v1/projects/{project_name}/workflows/{workflow_name}/ [get]
+func GetWorkflowV1(c echo.Context) error {
+	return nil
 }
