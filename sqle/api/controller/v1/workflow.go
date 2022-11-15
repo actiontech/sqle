@@ -186,17 +186,26 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
 	s := model.GetStorage()
-	templateName := c.Param("workflow_template_name")
+
 	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
 	userName := controller.GetUserName(c)
 
-	err := CheckIsProjectMember(userName, projectName)
+	err = CheckIsProjectManager(userName, project.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowTemplate, exist, err := s.GetWorkflowTemplateByName(templateName)
+	workflowTemplate, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -204,9 +213,10 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("workflow template is not exist")))
 	}
+
 	var instances []*model.Instance
 	if req.Instances != nil && len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances, projectName)
+		instances, err = s.GetAndCheckInstanceExist(req.Instances, project.Name)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -274,6 +284,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
