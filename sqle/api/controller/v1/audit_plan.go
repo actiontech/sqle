@@ -278,7 +278,7 @@ func CreateAuditPlan(c echo.Context) error {
 		instanceType = inst.DbType
 
 		// check operation
-		can, err := s.CheckUserCanCreateAuditPlan(user, req.InstanceName, instanceType) // todo: refactor permissions. waiting for project member.
+		can, err := s.CheckUserCanCreateAuditPlan(user, projectName, req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
