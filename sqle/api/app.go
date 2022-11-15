@@ -108,7 +108,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// workflow template
 		v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate, AdminUserAllowed())
-		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
+		v1Router.PATCH("/projects/:project_name/workflow_template", v1.UpdateWorkflowTemplate, AdminUserAllowed())
 
 		// workflow
 		v1Router.POST("/workflows/cancel", v1.BatchCancelWorkflows, AdminUserAllowed())
