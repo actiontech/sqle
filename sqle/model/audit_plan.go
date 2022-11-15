@@ -126,14 +126,8 @@ func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2
 	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
 
-// todo issue960 使用AuditPlanId识别扫描任务
-func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return err
-	}
-
-	raw, args := getBatchInsertRawSQL(ap.ID, sqls)
+func (s *Storage) UpdateDefaultAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
 	raw += `
 ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
