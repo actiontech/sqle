@@ -207,38 +207,6 @@ func (s *Storage) GetInstanceNamesByWorkflowTemplateId(id uint) ([]string, error
 	return names, nil
 }
 
-var checkUserHasOpToInstancesQuery = `
-SELECT instances.id
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
-WHERE
-instances.deleted_at IS NULL
-AND instances.id IN (?)
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-UNION
-SELECT instances.id
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE 
-instances.deleted_at IS NULL
-AND instances.id IN (?)
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-`
-
 func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 	instanceIds := make([]uint, len(instances))
 	for i, inst := range instances {
@@ -246,63 +214,6 @@ func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 	}
 	instanceIds = utils.RemoveDuplicateUint(instanceIds)
 	return instanceIds
-}
-
-func (s *Storage) CheckUserHasOpToInstances(user *User, instances []*Instance, ops []uint) (bool, error) {
-	instanceIds := getDeduplicatedInstanceIds(instances)
-	var instanceRecords []*Instance
-	err := s.db.Raw(checkUserHasOpToInstancesQuery, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
-	if err != nil {
-		return false, errors.ConnectStorageErrWrapper(err)
-	}
-	return len(instanceRecords) == len(instanceIds), nil
-}
-
-func (s *Storage) CheckUserHasOpToAnyInstance(user *User, instances []*Instance, ops []uint) (bool, error) {
-	instanceIds := getDeduplicatedInstanceIds(instances)
-	var instanceRecords []*Instance
-	err := s.db.Raw(checkUserHasOpToInstancesQuery, instanceIds, user.ID, ops, instanceIds, user.ID, ops).Scan(&instanceRecords).Error
-	if err != nil {
-		return false, errors.ConnectStorageErrWrapper(err)
-	}
-	return len(instanceRecords) > 0, nil
-}
-
-func (s *Storage) GetUserCanOpInstances(user *User, ops []uint) (instances []*Instance, err error) {
-	query := `
-SELECT instances.id, instances.name
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0
-WHERE
-instances.deleted_at IS NULL
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-UNION
-SELECT instances.id, instances.name
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0
-LEFT JOIN role_operations ON role_operations.role_id = roles.id
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id 
-JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0
-WHERE 
-instances.deleted_at IS NULL
-AND users.id = ?
-AND role_operations.op_code IN (?)
-GROUP BY instances.id
-`
-	err = s.db.Raw(query, user.ID, ops, user.ID, ops).Scan(&instances).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-	return
 }
 
 func getDbTypeQueryCond(dbType string) string {
@@ -424,66 +335,6 @@ func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName s
 	}
 
 	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, 0, projectName)
-}
-
-func (s *Storage) GetInstanceTipsByUserAndOperation(user *User, dbType, projectName string, opCode ...int) (
-	instances []*Instance, err error) {
-
-	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
-	if err != nil {
-		return nil, err
-	}
-
-	if IsDefaultAdminUser(user.Name) || isProjectManager {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectName)
-	}
-	return s.getInstanceTipsByUserAndOperation(user, dbType, projectName, opCode...)
-}
-
-func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, projectName string, opCode ...int) (
-	instances []*Instance, err error) {
-
-	query1 := s.db.Table("instances").
-		Select("instances.name, instances.db_type").
-		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
-		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
-		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
-		Joins("LEFT JOIN user_role ON user_role.role_id = roles.id").
-		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0").
-		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
-		Where("instances.deleted_at IS NULL").
-		Where("users.id = ?", user.ID).
-		Where("role_operations.op_code IN (?)", opCode).
-		Group("instances.id")
-
-	query2 := s.db.Table("instances").
-		Select("instances.name, instances.db_type").
-		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
-		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
-		Joins("LEFT JOIN role_operations ON role_operations.role_id = roles.id").
-		Joins("JOIN user_group_roles ON roles.id = user_group_roles.role_id").
-		Joins("JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.deleted_at IS NULL").
-		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
-		Joins("JOIN users ON users.id = user_group_users.user_id AND users.deleted_at IS NULL AND users.stat=0").
-		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
-		Where("instances.deleted_at IS NULL").
-		Where("users.id = ?", user.ID).
-		Where("role_operations.op_code IN (?)", opCode).
-		Group("instances.id")
-
-	if projectName != "" {
-		query1.Where("projects.name = ?", projectName)
-		query2.Where("projects.name = ?", projectName)
-	}
-
-	if dbType != "" {
-		query1.Where("AND instances.db_type = ?", dbType)
-		query2.Where("AND instances.db_type = ?", dbType)
-	}
-
-	err = s.db.Raw("? UNION ?", query1.QueryExpr(), query2.QueryExpr()).Scan(&instances).Error
-
-	return instances, errors.ConnectStorageErrWrapper(err)
 }
 
 func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {

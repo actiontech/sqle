@@ -251,45 +251,6 @@ func CreateInstance(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-// 1. admin user have all access to all instance
-// 2. non-admin user have access to instance which is bound to one of his roles
-func checkCurrentUserCanAccessInstance(c echo.Context, instance *model.Instance) (bool, error) {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return true, nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return false, err
-	}
-	s := model.GetStorage()
-	access, err := s.UserCanAccessInstance(user, instance)
-	if err != nil {
-		return false, err
-	}
-	if !access {
-		return false, nil
-	}
-	return true, nil
-}
-
-func checkCurrentUserCanAccessInstances(c echo.Context, instances []*model.Instance) (bool, error) {
-	if len(instances) == 0 {
-		return false, nil
-	}
-
-	for _, instance := range instances {
-		can, err := checkCurrentUserCanAccessInstance(c, instance)
-		if err != nil {
-			return false, err
-		}
-		if !can {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 type InstanceResV1 struct {
 	Name             string                          `json:"instance_name"`
 	DBType           string                          `json:"db_type" example:"mysql"`

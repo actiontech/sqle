@@ -160,19 +160,3 @@ func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) err
 	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
-
-func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
-	if user.Name == DefaultAdminUser {
-		return true, nil
-	}
-	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_SAVE})
-	if err != nil {
-		return false, err
-	}
-	for _, instance := range instances {
-		if instName == instance.Name {
-			return true, nil
-		}
-	}
-	return false, nil
-}

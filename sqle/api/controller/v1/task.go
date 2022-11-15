@@ -220,45 +220,6 @@ func CreateAndAuditTask(c echo.Context) error {
 	})
 }
 
-func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-	if user.ID == task.CreateUserId {
-		return nil
-	}
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return ErrTaskNoAccess
-	}
-	access, err := s.UserCanAccessWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if access {
-		return nil
-	}
-	if len(ops) > 0 {
-		ok, err := s.CheckUserHasOpToInstances(user, []*model.Instance{task.Instance}, ops)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-	}
-
-	return ErrTaskNoAccess
-}
-
 // @Summary 获取Sql扫描任务信息
 // @Description get task
 // @Tags task

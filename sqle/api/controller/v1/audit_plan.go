@@ -961,55 +961,6 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
-func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanName string, opCode int) (*model.AuditPlan, bool, error) {
-	storage := model.GetStorage()
-
-	userName := controller.GetUserName(c)
-	err := CheckIsProjectMember(userName, projectName)
-	if err != nil {
-		return nil, false, err
-	}
-
-	ap, exist, err := storage.GetAuditPlanFromProjectByName(projectName, auditPlanName)
-	if err != nil {
-		return nil, false, err
-	}
-	if !exist {
-		return nil, true, nil
-	}
-
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return ap, true, nil
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return nil, false, err
-	}
-
-	if ap.CreateUserID == user.ID {
-		return ap, true, nil
-	}
-
-	err = CheckIsProjectManager(userName, projectName)
-	if err == nil {
-		return ap, true, nil
-	}
-
-	if opCode > 0 {
-		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)}) //todo: refactor instance permissions. waiting for project member.
-		if err != nil {
-			return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
-		}
-		for _, instance := range instances {
-			if ap.InstanceName == instance.Name {
-				return ap, true, nil
-			}
-		}
-	}
-	return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
-}
-
 // deprecated. will be removed when sqle-ee is not referenced.
 func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode int) error {
 	storage := model.GetStorage()

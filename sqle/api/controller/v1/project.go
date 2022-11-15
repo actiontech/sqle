@@ -249,37 +249,3 @@ func GetProjectTipsV1(c echo.Context) error {
 		Data:    data,
 	})
 }
-
-/*
-	统一报错
-*/
-
-func CheckIsProjectMember(userName, projectName string) error {
-	if userName == model.DefaultAdminUser {
-		return nil
-	}
-	s := model.GetStorage()
-	isMember, err := s.IsUserInProject(userName, projectName)
-	if err != nil {
-		return err
-	}
-	if !isMember {
-		return errors.New(errors.UserNotPermission, fmt.Errorf("the project does not exist or user %v is not in project %v", userName, projectName))
-	}
-	return nil
-}
-
-func CheckIsProjectManager(userName, projectName string) error {
-	if userName == model.DefaultAdminUser {
-		return nil
-	}
-	s := model.GetStorage()
-	isManager, err := s.IsProjectManager(userName, projectName)
-	if err != nil {
-		return err
-	}
-	if !isManager {
-		return errors.New(errors.UserNotPermission, fmt.Errorf("the project does not exist or the user does not have permission to operate"))
-	}
-	return nil
-}
