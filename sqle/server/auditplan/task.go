@@ -302,7 +302,7 @@ func (at *baseTask) FullSyncSQLs(sqls []*SQL) error {
 }
 
 func (at *baseTask) PartialSyncSQLs(sqls []*SQL) error {
-	return at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+	return at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *baseTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
@@ -842,7 +842,7 @@ func (at *aliRdsMySQLTask) collectorDo() {
 				return
 			}
 		} else {
-			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
 			if err != nil {
 				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return
