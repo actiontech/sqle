@@ -10408,6 +10408,9 @@ var doc = `{
         "v1.UserBindProjectResV1": {
             "type": "object",
             "properties": {
+                "isManager": {
+                    "type": "boolean"
+                },
                 "projectName": {
                     "type": "string"
                 }

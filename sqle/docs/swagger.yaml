@@ -2878,6 +2878,8 @@ definitions:
     type: object
   v1.UserBindProjectResV1:
     properties:
+      isManager:
+        type: boolean
       projectName:
         type: string
     type: object
