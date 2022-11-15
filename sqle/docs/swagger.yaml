@@ -1736,6 +1736,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WorkflowResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowStatusCountResV1:
     properties:
       code:
@@ -3083,6 +3095,29 @@ definitions:
       workflow_total_num:
         type: integer
     type: object
+  v1.WorkflowRecordResV1:
+    properties:
+      current_step_number:
+        type: integer
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/v1.WorkflowTaskItem'
+        type: array
+      workflow_step_list:
+        items:
+          $ref: '#/definitions/v1.WorkflowStepResV1'
+        type: array
+    type: object
   v1.WorkflowRejectedPercentGroupByCreator:
     properties:
       creator:
@@ -3099,6 +3134,31 @@ definitions:
       rejected_percent:
         type: number
       workflow_total_num:
+        type: integer
+    type: object
+  v1.WorkflowResV1:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      mode:
+        enum:
+        - same_sqls
+        - different_sqls
+        type: string
+      record:
+        $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: object
+      record_history_list:
+        items:
+          $ref: '#/definitions/v1.WorkflowRecordResV1'
+        type: array
+      subject:
+        type: string
+      workflow_id:
         type: integer
     type: object
   v1.WorkflowStageDuration:
@@ -3136,6 +3196,43 @@ definitions:
       waiting_for_audit_count:
         type: integer
       waiting_for_execution_count:
+        type: integer
+    type: object
+  v1.WorkflowStepResV1:
+    properties:
+      assignee_user_name_list:
+        items:
+          type: string
+        type: array
+      desc:
+        type: string
+      number:
+        type: integer
+      operation_time:
+        type: string
+      operation_user_name:
+        type: string
+      reason:
+        type: string
+      state:
+        enum:
+        - initialized
+        - approved
+        - rejected
+        type: string
+      type:
+        enum:
+        - create_workflow
+        - update_workflow
+        - sql_review
+        - sql_execute
+        type: string
+      workflow_step_id:
+        type: integer
+    type: object
+  v1.WorkflowTaskItem:
+    properties:
+      task_id:
         type: integer
     type: object
   v1.WorkflowTemplateDetailResV1:
@@ -5475,6 +5572,30 @@ paths:
       tags:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/:
+    get:
+      description: get workflow detail
+      operationId: getWorkflowV1
+      parameters:
+      - description: workflow name
+        in: path
+        name: workflow_name
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单详情
+      tags:
+      - workflow
     patch:
       consumes:
       - application/json
@@ -6728,7 +6849,7 @@ paths:
       description: get user group tip list
       operationId: getUserGroupTipListV1
       parameters:
-      - description: project id
+      - description: project name
         in: query
         name: filter_project
         type: string
