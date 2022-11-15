@@ -3046,7 +3046,7 @@ definitions:
       desc:
         type: string
       project_name:
-        type: integer
+        type: string
       status:
         enum:
         - wait_for_audit
@@ -3059,8 +3059,6 @@ definitions:
         type: string
       subject:
         type: string
-      workflow_name:
-        type: integer
     type: object
   v1.WorkflowPassPercentV1:
     properties:

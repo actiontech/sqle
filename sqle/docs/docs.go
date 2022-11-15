@@ -10628,7 +10628,7 @@ var doc = `{
                     "type": "string"
                 },
                 "project_name": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "status": {
                     "type": "string",
@@ -10644,9 +10644,6 @@ var doc = `{
                 },
                 "subject": {
                     "type": "string"
-                },
-                "workflow_name": {
-                    "type": "integer"
                 }
             }
         },
