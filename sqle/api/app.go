@@ -111,6 +111,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/workflow_templates/:workflow_template_name/", v1.UpdateWorkflowTemplate, AdminUserAllowed())
 
 		// workflow
+		v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1, AdminUserAllowed())
 		v1Router.POST("/workflows/cancel", v1.BatchCancelWorkflows, AdminUserAllowed())
 
 		// audit whitelist

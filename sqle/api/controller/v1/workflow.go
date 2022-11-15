@@ -1143,7 +1143,61 @@ type WorkflowDetailResV1 struct {
 // @Success 200 {object} v1.GetWorkflowsResV1
 // @router /v1/workflows [get]
 func GetGlobalWorkflowsV1(c echo.Context) error {
-	return nil
+	req := new(GetWorkflowsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var offset uint32
+	if req.PageIndex > 0 {
+		offset = (req.PageIndex - 1) * req.PageSize
+	}
+
+	data := map[string]interface{}{
+		"filter_subject":                         req.FilterSubject,
+		"filter_create_time_from":                req.FilterCreateTimeFrom,
+		"filter_create_time_to":                  req.FilterCreateTimeTo,
+		"filter_create_user_name":                req.FilterCreateUserName,
+		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
+		"filter_status":                          req.FilterStatus,
+		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
+		"filter_task_instance_name":              req.FilterTaskInstanceName,
+		"limit":                                  req.PageSize,
+		"offset":                                 offset,
+	}
+
+	s := model.GetStorage()
+	workflows, count, err := s.GetWorkflowsByReq(data, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
+	for _, workflow := range workflows {
+		workflowRes := &WorkflowDetailResV1{
+			ProjectName:             workflow.ProjectName,
+			Subject:                 workflow.Subject,
+			Desc:                    workflow.Desc,
+			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
+			CreateTime:              workflow.CreateTime,
+			CurrentStepType:         workflow.CurrentStepType.String,
+			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
+			Status:                  workflow.Status,
+		}
+		workflowsResV1 = append(workflowsResV1, workflowRes)
+	}
+
+	return c.JSON(http.StatusOK, GetWorkflowsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      workflowsResV1,
+		TotalNums: count,
+	})
 }
 
 // GetWorkflowsV1
