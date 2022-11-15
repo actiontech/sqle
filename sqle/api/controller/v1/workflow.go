@@ -1612,7 +1612,6 @@ type WorkflowRecordResV1 struct {
 
 type WorkflowResV1 struct {
 	Name          string                 `json:"workflow_name"`
-	Subject       string                 `json:"subject"`
 	Desc          string                 `json:"desc,omitempty"`
 	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`
 	CreateUser    string                 `json:"create_user_name"`
