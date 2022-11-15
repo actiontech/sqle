@@ -108,18 +108,9 @@ func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReport
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-// todo issue960 使用AuditPlanId识别扫描任务
-func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
-	ap, exist, err := s.GetAuditPlanByName(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, gorm.ErrRecordNotFound
-	}
-
+func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) {
 	var sqls []*AuditPlanSQLV2
-	err = s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
+	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -140,6 +131,7 @@ func (s *Storage) OverrideAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) e
 	raw, args := getBatchInsertRawSQL(ap, sqls)
 	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
+
 // todo issue960 使用AuditPlanId识别扫描任务
 func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
 	ap, _, err := s.GetAuditPlanByName(apName)

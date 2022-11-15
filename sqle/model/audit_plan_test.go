@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -95,16 +94,13 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
 
-	mockAuditPlanRow := AuditPlan{Model: Model{ID: 1}, Name: "audit_plan_for_java_repo1"}
+	mockAuditPlanRow := AuditPlan{Model: Model{ID: 1}}
 
-	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
-		WithArgs("audit_plan_for_java_repo1").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(mockAuditPlanRow.ID, mockAuditPlanRow.Name))
 	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2`  WHERE `audit_plan_sqls_v2`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
 		WithArgs(mockAuditPlanRow.ID).
 		WillReturnRows(sqlmock.NewRows([]string{"fingerprint"}).AddRow("select * from t1 where id = ?").AddRow("select * from t2 where id = ?"))
 	mock.ExpectClose()
-	sqls, err := GetStorage().GetAuditPlanSQLs(mockAuditPlanRow.Name)
+	sqls, err := GetStorage().GetAuditPlanSQLs(mockAuditPlanRow.ID)
 	assert.NoError(t, err)
 	assert.Len(t, sqls, 2)
 	mockDB.Close()
@@ -115,12 +111,11 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
-		WithArgs("audit_plan_for_java_repo1").
-		WillReturnRows(sqlmock.NewRows([]string{"name"}))
+	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2`  WHERE `audit_plan_sqls_v2`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
+		WithArgs(2).
+		WillReturnRows(sqlmock.NewRows([]string{"audit_plan_id"}))
 	mock.ExpectClose()
-	_, err = GetStorage().GetAuditPlanSQLs("audit_plan_for_java_repo1")
-	assert.Equal(t, gorm.ErrRecordNotFound, err)
+	_, err = GetStorage().GetAuditPlanSQLs(2)
 	mockDB.Close()
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)

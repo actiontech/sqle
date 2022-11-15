@@ -91,7 +91,7 @@ func (at *baseTask) Stop() error {
 }
 
 func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
-	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -633,7 +633,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		}
 	}
 
-	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
 	if err != nil {
 		return nil, err
 	}
