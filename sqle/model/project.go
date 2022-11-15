@@ -91,29 +91,6 @@ func (s *Storage) CreateProject(name string, desc string, createUserID uint) err
 	})
 }
 
-func (s *Storage) CheckUserCanUpdateProject(projectName string, userID uint) (bool, error) {
-	user, exist, err := s.GetUserByID(userID)
-	if err != nil || !exist {
-		return false, err
-	}
-
-	if user.Name == DefaultAdminUser {
-		return true, nil
-	}
-
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil || !exist {
-		return false, err
-	}
-
-	for _, manager := range project.Managers {
-		if manager.ID == userID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (s *Storage) UpdateProjectInfoByID(projectName string, attr map[string]interface{}) error {
 	err := s.db.Table("projects").Where("name = ?", projectName).Update(attr).Error
 	return errors.New(errors.ConnectStorageError, err)
@@ -126,38 +103,6 @@ func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 		return p, false, nil
 	}
 	return p, true, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) IsProjectManager(userName string, projectName string) (bool, error) {
-	var count uint
-
-	err := s.db.Table("project_manager").
-		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
-		Joins("LEFT JOIN users ON project_manager.user_id = users.id").
-		Where("users.login_name = ?", userName).
-		Where("users.stat = 0").
-		Where("projects.name = ?", projectName).
-		Where("users.deleted_at IS NULL").
-		Where("projects.deleted_at IS NULL").
-		Count(&count).Error
-
-	return count > 0, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
-	var count uint
-
-	err := s.db.Table("project_manager").
-		Joins("projects ON projects.id = project_manager.project_id").
-		Joins("JOIN users ON project_manager.user_id = users.id").
-		Where("users.id = ?", userID).
-		Where("users.stats = 0").
-		Where("project_manager.project_id = ?", projectID).
-		Where("users.deleted_at IS NULL").
-		Where("projects.deleted_at IS NULL").
-		Count(&count).Error
-
-	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {

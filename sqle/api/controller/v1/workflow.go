@@ -289,38 +289,6 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func CheckCurrentUserCanOperateWorkflow(c echo.Context, workflow *model.Workflow, ops []uint) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if access {
-		return nil
-	}
-	if len(ops) > 0 {
-		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-		if err != nil {
-			return err
-		}
-		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-	}
-	return ErrWorkflowNoAccess
-}
-
 func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
 	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
 		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
@@ -873,36 +841,6 @@ func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time
 	return ""
 }
 
-func CheckCurrentUserCanViewWorkflow(c echo.Context, workflow *model.Workflow) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if access {
-		return nil
-	}
-	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-	if err != nil {
-		return err
-	}
-	ok, err := s.CheckUserHasOpToAnyInstance(user, instances, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
-	if err != nil {
-		return err
-	}
-	if ok {
-		return nil
-	}
-	return ErrWorkflowNoAccess
-}
-
 type CreateWorkflowReqV1 struct {
 	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc    string `json:"desc" form:"desc"`
@@ -1068,28 +1006,6 @@ func checkWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 				fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting. taskId=%v", allowLevel, task.ID))
 		}
 	}
-	return nil
-}
-
-func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task) error {
-	if model.IsDefaultAdminUser(user.Name) {
-		return nil
-	}
-
-	instances := make([]*model.Instance, len(tasks))
-	for i, task := range tasks {
-		instances[i] = task.Instance
-	}
-
-	s := model.GetStorage()
-	ok, err := s.CheckUserHasOpToInstances(user, instances, []uint{model.OP_WORKFLOW_SAVE})
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return errors.NewAccessDeniedErr("user has no access to create workflow for instance")
-	}
-
 	return nil
 }
 

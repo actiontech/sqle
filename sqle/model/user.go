@@ -194,79 +194,6 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 	return users, nil
 }
 
-func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
-	ok bool, err error) {
-
-	isManager, err := s.IsProjectManagerByID(user.ID, instance.ProjectId)
-	if err != nil {
-		return false, err
-	}
-
-	if IsDefaultAdminUser(user.Name) || isManager {
-		return true, nil
-	}
-
-	type countStruct struct {
-		Count int `json:"count"`
-	}
-
-	query := `
-SELECT COUNT(1) AS count
-FROM instances
-LEFT JOIN project_member_roles ON project_member_roles.instance_id = instances.id
-LEFT JOIN users ON users.id = project_member_roles.user_id
-WHERE instances.deleted_at IS NULL
-AND users.stat = 0 
-AND users.deleted_at IS NULL
-AND instances.id = ?
-AND users.id = ?
-GROUP BY instances.id
-UNION
-SELECT instances.id
-FROM instances
-LEFT JOIN project_member_group_roles ON project_member_group_roles.instance_id = instances.id
-JOIN user_group_users ON project_member_group_roles.user_group_id = user_group_users.user_group_id
-JOIN users ON users.id = user_group_users.user_id
-WHERE instances.deleted_at IS NULL
-AND users.stat = 0 
-AND users.deleted_at IS NULL
-AND instances.id = ?
-AND users.id = ?
-GROUP BY instances.id
-`
-	var cnt countStruct
-	err = s.db.Unscoped().Raw(query, instance.ID, user.ID, instance.ID, user.ID).Scan(&cnt).Error
-	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return false, nil
-		}
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return cnt.Count > 0, nil
-}
-
-func (s *Storage) UserCanAccessWorkflow(user *User, workflow *Workflow) (bool, error) {
-	query := `SELECT count(w.id) FROM workflows AS w
-JOIN workflow_records AS wr ON w.workflow_record_id = wr.id AND w.id = ?
-LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
-LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id = cur_wst.id
-LEFT JOIN workflow_step_user AS cur_wst_re_user ON cur_ws.id = cur_wst_re_user.workflow_step_id
-LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id AND cur_ass_user.stat=0
-LEFT JOIN workflow_steps AS op_ws ON w.id = op_ws.workflow_id AND op_ws.state != "initialized"
-LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
-LEFT JOIN workflow_step_user AS op_wst_re_user ON op_ws.id = op_wst_re_user.workflow_step_id
-LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id AND op_ass_user.stat=0
-where w.deleted_at IS NULL
-AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
-`
-	var count uint
-	err := s.db.Raw(query, workflow.ID, user.ID, user.ID, user.ID).Count(&count).Error
-	if err != nil {
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return count > 0, nil
-}
-
 func (s *Storage) UpdatePassword(user *User, newPassword string) error {
 	user.Password = newPassword
 	// User{}.encryptPassword(): SecretPassword为空时才会对密码进行加密操作
@@ -340,28 +267,6 @@ func (s *Storage) SaveUserAndAssociations(
 
 		return nil
 	})
-}
-
-// GetUsersByOperationCode will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
-func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (users []*User, err error) {
-	names := []string{}
-	err = s.db.Model(&User{}).Select("DISTINCT users.login_name").
-		Joins("LEFT JOIN user_role ON users.id = user_role.user_id "+
-			"LEFT JOIN user_group_users ON users.id = user_group_users.user_id "+
-			"LEFT JOIN user_group_roles ON user_group_users.user_group_id = user_group_roles.role_id "+
-			"LEFT JOIN role_operations ON ( user_role.role_id = role_operations.role_id OR user_group_roles.role_id = role_operations.role_id ) AND role_operations.deleted_at IS NULL "+
-			"LEFT JOIN instance_role ON instance_role.role_id = role_operations.role_id ").
-		Where("instance_role.instance_id = ?", instance.ID).
-		Where("role_operations.op_code in (?)", opCode).
-		Group("users.id").
-		Pluck("login_name", &names).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-	if len(names) == 0 {
-		names = append(names, DefaultAdminUser)
-	}
-	return s.GetUsersByNames(names)
 }
 
 func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
