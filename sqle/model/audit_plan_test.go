@@ -130,7 +130,6 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 		Model: Model{
 			ID: 1,
 		},
-		Name: "test_ap_name",
 	}
 
 	sqls := []*AuditPlanSQLV2{
@@ -140,10 +139,6 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 			Info:        []byte(`{"counter": 1, "last_receive_timestamp": "mock time"}`),
 		},
 	}
-
-	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
-		WithArgs(ap.Name).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(ap.ID, ap.Name))
 
 	mock.ExpectBegin()
 	// expect hard delete
@@ -156,7 +151,7 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 		WithArgs(ap.ID, sqls[0].GetFingerprintMD5(), sqls[0].Fingerprint, sqls[0].SQLContent, sqls[0].Info).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err = GetStorage().OverrideAuditPlanSQLs(ap.Name, sqls)
+	err = GetStorage().OverrideAuditPlanSQLs(ap.ID, sqls)
 	assert.NoError(t, err)
 
 	err = mock.ExpectationsWereMet()
