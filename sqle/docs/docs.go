@@ -10829,9 +10829,6 @@ var doc = `{
                         "$ref": "#/definitions/v1.WorkflowRecordResV1"
                     }
                 },
-                "subject": {
-                    "type": "string"
-                },
                 "workflow_name": {
                     "type": "string"
                 }

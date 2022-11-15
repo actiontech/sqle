@@ -3158,8 +3158,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.WorkflowRecordResV1'
         type: array
-      subject:
-        type: string
       workflow_name:
         type: string
     type: object
