@@ -1605,7 +1605,7 @@ type WorkflowResV1 struct {
 // @Tags workflow
 // @Id getWorkflowV1
 // @Security ApiKeyAuth
-// @Param workflow_name path integer true "workflow name"
+// @Param workflow_name path string true "workflow name"
 // @Param project_name path string true "project name"
 // @Success 200 {object} GetWorkflowResV1
 // @router /v1/projects/{project_name}/workflows/{workflow_name}/ [get]

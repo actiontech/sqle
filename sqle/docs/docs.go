@@ -3673,7 +3673,7 @@ var doc = `{
                 "operationId": "getWorkflowV1",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "workflow name",
                         "name": "workflow_name",
                         "in": "path",
