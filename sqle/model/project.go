@@ -531,7 +531,7 @@ GROUP BY project_manager.project_id
 	return false, nil
 }
 
-func (s *Storage) CheckUserHaveManagementPermission(userID uint, code []uint) (bool, error) {
+func (s *Storage) CheckUserHasManagementPermission(userID uint, code []uint) (bool, error) {
 	code = utils.RemoveDuplicateUint(code)
 
 	user, _, err := s.GetUserByID(userID)
