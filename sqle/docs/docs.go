@@ -10829,8 +10829,8 @@ var doc = `{
                 "subject": {
                     "type": "string"
                 },
-                "workflow_id": {
-                    "type": "integer"
+                "workflow_name": {
+                    "type": "string"
                 }
             }
         },
