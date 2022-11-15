@@ -61,8 +61,17 @@ type WorkFlowStepTemplateResV1 struct {
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
-	templateName := c.Param("workflow_template_name")
-	template, exist, err := s.GetWorkflowTemplateByName(templateName)
+
+	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -70,10 +79,12 @@ func GetWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("workflow template is not exist")))
 	}
+
 	res, err := getWorkflowTemplateDetailByTemplate(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    res,
