@@ -370,7 +370,7 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 
 	allUsers := make([][]*User, len(tasks))
 	for i, task := range tasks {
-		users, err := s.GetCanAuditWorkflowUsers(task.Instance, OP_WORKFLOW_AUDIT)
+		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
 		if err != nil {
 			return err
 		}
