@@ -15,7 +15,7 @@ type ProjectDetail struct {
 }
 
 var projectsQueryTpl = `SELECT
-DISTINCT projects.name , projects.` + "`desc`" + `, users.login_name as create_user_name, projects.created_at as create_time
+DISTINCT projects.name , projects.` + "`desc`" + `, cu.login_name as create_user_name, projects.created_at as create_time
 
 {{- template "body" . -}}
 
@@ -33,13 +33,14 @@ var projectsQueryBodyTpl = `
 {{ define "body" }}
 
 FROM projects
-LEFT JOIN project_user on project_user.project_id = projects.id
-LEFT JOIN users on users.id = project_user.user_id
-LEFT JOIN project_user_group on project_user_group.project_id = projects.id
-LEFT JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id
-LEFT JOIN users as u on u.id = user_group_users.user_id
+LEFT JOIN project_user ON project_user.project_id = projects.id
+LEFT JOIN users ON users.id = project_user.user_id
+LEFT JOIN project_user_group ON project_user_group.project_id = projects.id
+LEFT JOIN user_group_users ON project_user_group.user_group_id = user_group_users.user_group_id
+LEFT JOIN users AS u ON u.id = user_group_users.user_id
+LEFT JOIN users AS cu ON cu.id = projects.create_user_id
 WHERE 
-1 = 1
+projects.deleted_at IS NULL
 
 {{ if .filter_user_name }}
 AND
@@ -107,7 +108,6 @@ SELECT COUNT(DISTINCT project_user.user_id)
 {{ template "body" . }}
 `
 
-// TODO issue_960 有注入风险, 改为gorm的写法
 var membersQueryBodyTpl = `
 {{ define "body" }}
 
