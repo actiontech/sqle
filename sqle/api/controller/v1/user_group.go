@@ -170,7 +170,7 @@ func DeleteUserGroup(c echo.Context) (err error) {
 		}
 	}
 
-	err = s.RemoveMemberGroupFromAllProjectByUserID(ug.ID)
+	err = s.RemoveMemberGroupFromAllProjectByUserGroupID(ug.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

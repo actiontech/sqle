@@ -492,7 +492,7 @@ users.id = ?
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userID, userID).Error)
 }
 
-func (s *Storage) RemoveMemberGroupFromAllProjectByUserID(userGroupID uint) error {
+func (s *Storage) RemoveMemberGroupFromAllProjectByUserGroupID(userGroupID uint) error {
 	sql := `
 DELETE project_user_group, project_member_group_role 
 FROM project_user_group
