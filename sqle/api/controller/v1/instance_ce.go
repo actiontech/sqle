@@ -33,10 +33,10 @@ func getInstanceTips(c echo.Context) error {
 	switch req.FunctionalModule {
 	case create_audit_plan:
 		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_AUDIT_PLAN_SAVE)
-	case sql_query:
+	case create_workflow:
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_WORKFLOW_SAVE)
+	default:
 		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType, projectName)
-	default: // create_workflow case
-		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId, projectName)
 	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
