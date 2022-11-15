@@ -10609,7 +10609,7 @@
                     "type": "string"
                 },
                 "project_name": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "status": {
                     "type": "string",
@@ -10625,9 +10625,6 @@
                 },
                 "subject": {
                     "type": "string"
-                },
-                "workflow_name": {
-                    "type": "integer"
                 }
             }
         },
