@@ -208,7 +208,35 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 	}
 	return nil
 }
+func (s *Storage) CreateDefaultRole() error {
+	roles, err := s.GetAllRoleTip()
+	if err != nil {
+		return err
+	}
+	if len(roles) > 0 {
+		return nil
+	}
 
+	// dev
+	err = s.SaveRoleAndAssociations(&Role{
+		Name: "dev",
+		Desc: "dev",
+	}, []uint{OP_WORKFLOW_SAVE, OP_AUDIT_PLAN_SAVE, OP_SQL_QUERY_QUERY})
+	if err != nil {
+		return err
+	}
+
+	// dba
+	err = s.SaveRoleAndAssociations(&Role{
+		Name: "dba",
+		Desc: "dba",
+	}, []uint{OP_WORKFLOW_AUDIT, OP_SQL_QUERY_QUERY})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)

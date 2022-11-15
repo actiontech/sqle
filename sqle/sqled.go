@@ -77,6 +77,9 @@ func Run(config *config.Config) error {
 		if err := s.CreateDefaultProject(); err != nil {
 			return fmt.Errorf("create default project failed while auto migrating table: %v", err)
 		}
+		if err := s.CreateDefaultRole(); err != nil {
+			return fmt.Errorf("create default rule failed while auto migrating table: %v", err)
+		}
 	}
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
