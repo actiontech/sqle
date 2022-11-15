@@ -3158,8 +3158,8 @@ definitions:
         type: array
       subject:
         type: string
-      workflow_id:
-        type: integer
+      workflow_name:
+        type: string
     type: object
   v1.WorkflowStageDuration:
     properties:
