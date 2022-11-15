@@ -63,10 +63,6 @@ func (s *Storage) UpdateUserRoles(userName, projectName string, bindRoles []Bind
 
 // 每次更新都是全量更新 InstID+UserID 定位到的角色
 func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, bindRoles []BindRole) error {
-	if len(bindRoles) == 0 {
-		return nil
-	}
-
 	// 获取实例ID和角色ID
 	instNames := []string{}
 	roleNames := []string{}
@@ -88,7 +84,11 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	}
 
 	// 删掉所有旧数据
-	err = tx.Where("user_id = ?", user.ID).Where("instance_id in (?)", instIDs).Delete(&ProjectMemberRole{}).Error
+	err = tx.Exec(`
+DELETE FROM project_member_roles
+WHERE user_id = ?
+AND instance_id in (?)
+`, user.ID, instIDs).Error
 	if err != nil {
 		return err
 	}
@@ -109,11 +109,22 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	return nil
 }
 
+func (s *Storage) UpdateUserGroupRoles(groupName, projectName string, bindRoles []BindRole) error {
+	user, exist, err := s.GetUserGroupByName(groupName)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	if !exist {
+		return errors.ConnectStorageErrWrapper(fmt.Errorf("user not exist"))
+	}
+
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		return errors.ConnectStorageErrWrapper(s.updateUserGroupRoles(tx, user, projectName, bindRoles))
+	})
+}
+
 // 每次更新都是全量更新 InstID+UserGroupID 定位到的角色
 func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectName string, bindRoles []BindRole) error {
-	if len(bindRoles) == 0 {
-		return nil
-	}
 
 	// 获取实例ID和角色ID
 	instNames := []string{}
@@ -136,7 +147,11 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 	}
 
 	// 删掉所有旧数据
-	err = tx.Where("user_group_id = ?", group.ID).Where("instance_id in (?)", instIDs).Delete(&ProjectMemberGroupRole{}).Error
+	err = tx.Exec(`
+DELETE FROM project_member_group_roles
+WHERE user_group_id = ?
+AND instance_id in (?)
+`, group.ID, instIDs).Error
 	if err != nil {
 		return err
 	}
@@ -182,10 +197,15 @@ func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) 
 
 	err := s.db.Table("project_member_roles").
 		Select("users.login_name AS user_name , instances.name AS instance_name , roles.name AS role_name").
-		Joins("JOIN users ON users.id = project_member_roles.user_id").
-		Joins("JOIN instances ON instances.id = project_member_roles.instance_id").
-		Joins("JOIN projects ON projects.id = instances.project_id").
-		Joins("JOIN roles ON roles.id = project_member_roles.role_id").
+		Joins("LEFT JOIN users ON users.id = project_member_roles.user_id").
+		Joins("LEFT JOIN instances ON instances.id = project_member_roles.instance_id").
+		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
+		Joins("LEFT JOIN roles ON roles.id = project_member_roles.role_id").
+		Where("project_member_roles.deleted_at IS NULL").
+		Where("projects.deleted_at IS NULL").
+		Where("users.deleted_at IS NULL").
+		Where("instances.deleted_at IS NULL").
+		Where("roles.deleted_at IS NULL").
 		Where("projects.name = ?", projectName).
 		Where("users.login_name in (?)", names).
 		Scan(&roles).Error
@@ -232,10 +252,15 @@ func (s *Storage) GetBindRolesByMemberGroupNames(names []string, projectName str
 
 	err := s.db.Table("project_member_group_roles").
 		Select("user_groups.name AS group_name , instances.name AS instance_name , roles.name AS role_name").
-		Joins("JOIN user_groups ON user_groups.id = project_member_group_roles.user_group_id").
-		Joins("JOIN instances ON instances.id = project_member_group_roles.instance_id").
-		Joins("JOIN projects ON projects.id = instances.project_id").
-		Joins("JOIN roles ON roles.id = project_member_group_roles.role_id").
+		Joins("LEFT JOIN user_groups ON user_groups.id = project_member_group_roles.user_group_id").
+		Joins("LEFT JOIN instances ON instances.id = project_member_group_roles.instance_id").
+		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
+		Joins("LEFT JOIN roles ON roles.id = project_member_group_roles.role_id").
+		Where("project_member_group_roles.deleted_at IS NULL").
+		Where("projects.deleted_at IS NULL").
+		Where("user_groups.deleted_at IS NULL").
+		Where("instances.deleted_at IS NULL").
+		Where("roles.deleted_at IS NULL").
 		Where("projects.name = ?", projectName).
 		Where("user_groups.name in (?)", names).
 		Scan(&roles).Error
