@@ -1115,7 +1115,7 @@ type GetWorkflowsResV1 struct {
 
 type WorkflowDetailResV1 struct {
 	ProjectName             string     `json:"project_name"`
-	Subject                 string     `json:"subject"`
+	Name                    string     `json:"workflow_name"`
 	Desc                    string     `json:"desc"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
@@ -1186,7 +1186,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	for _, workflow := range workflows {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
-			Subject:                 workflow.Subject,
+			Name:                    workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
@@ -1282,7 +1282,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	for _, workflow := range workflows {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
-			Subject:                 workflow.Subject,
+			Name:                    workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
