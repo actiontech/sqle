@@ -132,10 +132,10 @@ func (s *Storage) IsProjectManager(userName string, projectName string) (bool, e
 	var count uint
 
 	err := s.db.Table("project_manager").
-		Joins("projects ON projects.id = project_manager.project_id").
-		Joins("users ON project_manager.user_id = users.id").
+		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
+		Joins("LEFT JOIN users ON project_manager.user_id = users.id").
 		Where("users.login_name = ?", userName).
-		Where("users.stats = 0").
+		Where("users.stat = 0").
 		Where("projects.name = ?", projectName).
 		Where("users.deleted_at IS NULL").
 		Where("projects.deleted_at IS NULL").
@@ -346,12 +346,13 @@ LIMIT 1
 
 func (s *Storage) RemoveMember(userName, projectName string) error {
 	sql := `
-DELETE project_user, project_manager 
+DELETE project_user, project_manager, project_member_role  
 FROM project_user
 LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
 	AND project_user.user_id = project_manager.user_id
 LEFT JOIN projects ON project_user.project_id = projects.id
 LEFT JOIN users ON project_user.user_id = users.id
+LEFT JOIN project_member_role ON project_member_role.user_id = users.id
 WHERE 
 users.login_name = ?
 AND
@@ -394,10 +395,11 @@ func (s *Storage) AddMemberGroup(groupName, projectName string, bindRole []BindR
 
 func (s *Storage) RemoveMemberGroup(groupName, projectName string) error {
 	sql := `
-DELETE project_user_group 
+DELETE project_user_group, project_member_group_role 
 FROM project_user_group
 LEFT JOIN projects ON project_user_group.project_id = projects.id
 LEFT JOIN user_groups ON project_user_group.user_group_id = user_groups.id
+LEFT JOIN project_member_group_role ON project_member_group_role.user_group_id = user_groups.id
 WHERE 
 user_groups.name = ?
 AND
@@ -473,4 +475,59 @@ func (s *Storage) GetMemberGroupByGroupName(projectName, groupName string) (*Use
 		Where("user_groups.name = ?", groupName).
 		Find(group).Error
 	return group, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) RemoveMemberFromAllProjectByUserID(userID uint) error {
+	sql := `
+DELETE project_user, project_manager, project_member_role 
+FROM project_user
+LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
+	AND project_user.user_id = project_manager.user_id
+LEFT JOIN project_member_role ON project_member_role.user_id = ?
+LEFT JOIN users ON project_user.user_id = users.id
+WHERE 
+users.id = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userID, userID).Error)
+}
+
+func (s *Storage) RemoveMemberGroupFromAllProjectByUserGroupID(userGroupID uint) error {
+	sql := `
+DELETE project_user_group, project_member_group_role 
+FROM project_user_group
+LEFT JOIN projects ON project_user_group.project_id = projects.id
+LEFT JOIN user_groups ON project_user_group.user_group_id = user_groups.id
+LEFT JOIN project_member_group_role ON project_member_group_role.user_group_id = ?
+WHERE
+user_groups.id = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userGroupID, userGroupID).Error)
+}
+
+// 检查用户是否是某一个项目的最后一个管理员
+func (s *Storage) IsLastProjectManagerOfAnyProjectByUserID(userID uint) (bool, error) {
+
+	sql := `
+SELECT count(1) AS count
+FROM project_manager
+WHERE project_manager.user_id = ?
+GROUP BY project_manager.project_id
+`
+
+	var count []*struct {
+		Count int `json:"count"`
+	}
+	err := s.db.Raw(sql, userID).Scan(&count).Error
+	if err != nil {
+		return true, errors.ConnectStorageErrWrapper(err)
+	}
+
+	for _, c := range count {
+		if c.Count == 1 {
+			return true, nil
+		}
+	}
+	return false, nil
 }

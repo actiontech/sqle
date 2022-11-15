@@ -166,7 +166,6 @@ func DeleteUser(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("user is not exist")))
 	}
-	// TODO issue_960 工单部分还没做, 遗留检查是否有残余工单和扫描任务和工作模板, 需要看一下这里的逻辑要不要改
 	exist, err = s.UserHasRunningWorkflow(user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -183,7 +182,20 @@ func DeleteUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
 			fmt.Errorf("%s can't be deleted,cause the user binds the workflow template", userName)))
 	}
-	// TODO issue_960 需要检查用户是否是成员, 如果是要删关系表, 还要检查是不是最后一个管理员
+
+	isLastMgr, err := s.IsLastProjectManagerOfAnyProjectByUserID(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLastMgr {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("%s can't be deleted,cause the user is project last manager", userName)))
+	}
+
+	err = s.RemoveMemberFromAllProjectByUserID(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	err = s.Delete(user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -546,12 +558,12 @@ type GetUserTipsResV1 struct {
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
-	req := new(GetUsersReqV1)
+	req := new(UserTipsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 	s := model.GetStorage()
-	users, err := s.GetUserTipsByProject(req.FilterUserName)
+	users, err := s.GetUserTipsByProject(req.FilterProject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
