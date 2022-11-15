@@ -531,3 +531,11 @@ GROUP BY project_manager.project_id
 	}
 	return false, nil
 }
+
+func (s *Storage) GetManagedProjects(userID uint) ([]*Project, error) {
+	p := []*Project{}
+	err := s.db.Joins("LEFT JOIN project_manager ON project_manager.project_id = projects.id").
+		Where("project_manager.user_id = ?", userID).
+		Find(&p).Error
+	return p, errors.ConnectStorageErrWrapper(err)
+}

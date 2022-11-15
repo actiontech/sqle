@@ -267,9 +267,10 @@ type UserDetailResV1 struct {
 
 type UserBindProjectResV1 struct {
 	ProjectName string
+	IsManager   bool
 }
 
-func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project) UserDetailResV1 {
+func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project, projectManagerCache map[uint /*project id*/ ]bool /*is manager*/) UserDetailResV1 {
 	if user.UserAuthenticationType == "" {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
@@ -292,6 +293,7 @@ func convertUserToRes(user *model.User, managementPermissionCodes []uint, projec
 	for _, project := range projects {
 		bindProjects = append(bindProjects, &UserBindProjectResV1{
 			ProjectName: project.Name,
+			IsManager:   projectManagerCache[project.ID],
 		})
 	}
 	userResp.BindProjects = bindProjects
@@ -330,9 +332,26 @@ func GetUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	managed, err := s.GetManagedProjects(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	managerCache := map[uint]bool{}
+	for _, project := range projects {
+		isManager := false
+		for _, p := range managed {
+			if p.ID == project.ID {
+				isManager = true
+				break
+			}
+		}
+		managerCache[project.ID] = isManager
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes, projects),
+		Data:    convertUserToRes(user, codes, projects, managerCache),
 	})
 }
 
@@ -364,9 +383,26 @@ func GetCurrentUser(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	managed, err := s.GetManagedProjects(user.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	managerCache := map[uint]bool{}
+	for _, project := range projects {
+		isManager := false
+		for _, p := range managed {
+			if p.ID == project.ID {
+				isManager = true
+				break
+			}
+		}
+		managerCache[project.ID] = isManager
+	}
+
 	return c.JSON(http.StatusOK, &GetUserDetailResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertUserToRes(user, codes, projects),
+		Data:    convertUserToRes(user, codes, projects, managerCache),
 	})
 }
 
