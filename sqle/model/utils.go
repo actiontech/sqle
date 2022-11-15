@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"database/sql"
 	sqlDriver "database/sql/driver"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -463,4 +465,37 @@ func (rl *RowList) ForceConvertIntSlice() []uint {
 		res[i] = uint(n)
 	}
 	return res
+}
+
+func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result interface{}, queryTpl string, bodyTpls ...string) error {
+	var buff bytes.Buffer
+	tpl := template.New("getQuery")
+	var err error
+	for _, bt := range bodyTpls {
+		if tpl, err = tpl.Parse(bt); err != nil {
+			return err
+		}
+	}
+	tpl, err = tpl.Parse(queryTpl)
+	if err != nil {
+		return err
+	}
+	err = tpl.Execute(&buff, data)
+	if err != nil {
+		return err
+	}
+
+	sqlxDb := GetSqlxDb()
+
+	query, args, err := sqlx.Named(buff.String(), data)
+	if err != nil {
+		return err
+	}
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return err
+	}
+	query = sqlxDb.Rebind(query)
+	err = sqlxDb.Select(result, query, args...)
+	return err
 }
