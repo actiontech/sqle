@@ -10693,7 +10693,7 @@ var doc = `{
                         "finished"
                     ]
                 },
-                "subject": {
+                "workflow_name": {
                     "type": "string"
                 }
             }
