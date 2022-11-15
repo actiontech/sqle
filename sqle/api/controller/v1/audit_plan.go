@@ -443,15 +443,7 @@ func UpdateAuditPlan(c echo.Context) error {
 
 	storage := model.GetStorage()
 	if req.RuleTemplateName != nil {
-		project, exist, err := storage.GetProjectByName(projectName)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, errProjectNotExist)
-		}
-
-		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName, []uint{project.ID, model.ProjectIdForGlobalRuleTemplate})
+		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName, []uint{ap.ProjectId, model.ProjectIdForGlobalRuleTemplate})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
