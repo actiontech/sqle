@@ -403,11 +403,15 @@ func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
 //AND role_operations.op_code IN (20200)
 //GROUP BY instances.id
 
-func (s *Storage) CheckInstancesExist(instNames []string) (bool, error) {
+func (s *Storage) CheckInstancesExist(projectName string, instNames []string) (bool, error) {
 	instNames = utils.RemoveDuplicate(instNames)
 
 	var count int
-	err := s.db.Model(&Instance{}).Where("name in (?)", instNames).Count(&count).Error
+	err := s.db.Model(&Instance{}).
+		Joins("JOIN projects ON projects.id = instances.project_id").
+		Where("projects.name = ?", projectName).
+		Where("instances.name in (?)", instNames).
+		Count(&count).Error
 	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
 }
 

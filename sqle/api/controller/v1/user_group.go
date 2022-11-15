@@ -356,7 +356,7 @@ func AddMemberGroup(c echo.Context) error {
 	}
 
 	// 检查实例是否存在
-	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	exist, err := s.CheckInstancesExist(projectName, utils.RemoveDuplicate(instNames))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -428,7 +428,7 @@ func UpdateMemberGroup(c echo.Context) error {
 		}
 	}
 	if len(role) > 0 {
-		return controller.JSONBaseErrorReq(c, s.UpdateUserRoles(groupName, projectName, role))
+		return controller.JSONBaseErrorReq(c, s.UpdateUserGroupRoles(groupName, projectName, role))
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
