@@ -132,10 +132,10 @@ func (s *Storage) IsProjectManager(userName string, projectName string) (bool, e
 	var count uint
 
 	err := s.db.Table("project_manager").
-		Joins("projects ON projects.id = project_manager.project_id").
-		Joins("users ON project_manager.user_id = users.id").
+		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
+		Joins("LEFT JOIN users ON project_manager.user_id = users.id").
 		Where("users.login_name = ?", userName).
-		Where("users.stats = 0").
+		Where("users.stat = 0").
 		Where("projects.name = ?", projectName).
 		Where("users.deleted_at IS NULL").
 		Where("projects.deleted_at IS NULL").
@@ -506,14 +506,16 @@ GROUP BY project_manager.project_id
 
 `
 
-	var count []int
+	var count []*struct {
+		Count int `json:"count"`
+	}
 	err := s.db.Raw(sql, userID).Scan(&count).Error
 	if err != nil {
 		return true, errors.ConnectStorageErrWrapper(err)
 	}
 
 	for _, c := range count {
-		if c == 1 {
+		if c.Count == 1 {
 			return true, nil
 		}
 	}

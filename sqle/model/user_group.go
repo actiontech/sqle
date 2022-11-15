@@ -60,16 +60,19 @@ func (s *Storage) SaveUserGroupAndAssociations(
 	})
 }
 
-func (s *Storage) GetUserGroupTipByProject(projectID uint) ([]*UserGroup, error) {
-	if projectID == 0 {
+func (s *Storage) GetUserGroupTipByProject(projectName string) ([]*UserGroup, error) {
+	if projectName == "" {
 		return s.GetAllUserGroupTip()
 	}
 
 	userGroups := []*UserGroup{}
-	err := s.db.Table("user_groups").Joins("JOIN project_user_group on project_user_group.user_group_id = user_groups.id").Select("user_groups.name").
+	err := s.db.Table("user_groups").
+		Joins("LEFT JOIN project_user_group on project_user_group.user_group_id = user_groups.id").
+		Joins("LEFT JOIN projects on project_user_group.project_id = projects.id").
+		Select("user_groups.name").
 		Where("stat=0").
 		Where("user_groups.deleted_at IS NULL").
-		Where("project_user_group.project_id = ?", projectID).
+		Where("projects.name = ?", projectName).
 		Find(&userGroups).Error
 
 	return userGroups, errors.New(errors.ConnectStorageError, err)

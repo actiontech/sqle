@@ -558,12 +558,12 @@ type GetUserTipsResV1 struct {
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
-	req := new(GetUsersReqV1)
+	req := new(UserTipsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 	s := model.GetStorage()
-	users, err := s.GetUserTipsByProject(req.FilterUserName)
+	users, err := s.GetUserTipsByProject(req.FilterProject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
