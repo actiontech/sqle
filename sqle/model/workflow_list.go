@@ -9,7 +9,6 @@ import (
 
 type WorkflowListDetail struct {
 	ProjectName             string         `json:"project_name"`
-	Id                      uint           `json:"workflow_id"`
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
 	CreateUser              sql.NullString `json:"create_user_name"`
@@ -17,14 +16,11 @@ type WorkflowListDetail struct {
 	CreateTime              *time.Time     `json:"create_time"`
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
-	TaskStatus              RowList        `json:"task_status"`
 	Status                  string         `json:"status"`
-	TaskInstanceType        RowList        `json:"task_instance_type"`
 }
 
 var workflowsQueryTpl = `
 SELECT p.name 														 AS project_name,
-       w.id                                                          AS workflow_id,
        w.subject,
        w.desc,
        create_user.login_name                                        AS create_user_name,
@@ -32,9 +28,7 @@ SELECT p.name 														 AS project_name,
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
        GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_user_name_list,
-       GROUP_CONCAT(tasks.status)                                    AS task_status,
-       wr.status,																							
-	   GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
+       wr.status																							
 {{- template "body" . -}}
 GROUP BY p.id,w.id
 ORDER BY w.id DESC
