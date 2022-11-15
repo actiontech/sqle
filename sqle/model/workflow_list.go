@@ -8,6 +8,7 @@ import (
 )
 
 type WorkflowListDetail struct {
+	ProjectName             string         `json:"project_name"`
 	Id                      uint           `json:"workflow_id"`
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
@@ -22,7 +23,8 @@ type WorkflowListDetail struct {
 }
 
 var workflowsQueryTpl = `
-SELECT w.id                                                          AS workflow_id,
+SELECT p.name 														 AS project_name,
+       w.id                                                          AS workflow_id,
        w.subject,
        w.desc,
        create_user.login_name                                        AS create_user_name,
@@ -34,7 +36,7 @@ SELECT w.id                                                          AS workflow
        wr.status,																							
 	   GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
 {{- template "body" . -}}
-GROUP BY w.id
+GROUP BY p.id,w.id
 ORDER BY w.id DESC
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
@@ -48,7 +50,8 @@ var workflowsCountTpl = `SELECT COUNT(DISTINCT w.id)
 
 var workflowsQueryBodyTpl = `
 {{ define "body" }}
-FROM workflows AS w
+FROM projects p
+LEFT JOIN workflows AS w ON w.project_id = p.id
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
 LEFT JOIN workflow_instance_records wir on wir.workflow_record_id = wr.id
@@ -124,6 +127,11 @@ AND tasks.status = :filter_task_status
 {{- if .filter_task_instance_name }}
 AND inst.name = :filter_task_instance_name
 {{- end }}
+
+{{- if .filter_project_name }}
+AND p.name = :filter_project_name
+{{- end }}
+
 {{ end }}
 
 `
