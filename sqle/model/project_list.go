@@ -80,11 +80,11 @@ type MemberDetail struct {
 }
 
 var membersQueryTpl = `
-SELECT users.login_name
+SELECT DISTINCT users.login_name AS user_name
 
 {{ template "body" . }}
 
-AND project_manager.id IS NOT NULL
+AND project_manager.user_id IS NOT NULL
 
 {{ if .limit }}
 LIMIT :limit OFFSET :offset
@@ -93,7 +93,7 @@ LIMIT :limit OFFSET :offset
 `
 
 var managersQueryTpl = `
-SELECT users.login_name
+SELECT DISTINCT users.login_name AS user_name
 
 {{ template "body" . }}
 
@@ -106,6 +106,7 @@ var membersCountTpl = `
 SELECT COUNT(DISTINCT project_user.user_id)
 {{ template "body" . }}
 `
+
 // TODO issue_960 有注入风险, 改为gorm的写法
 var membersQueryBodyTpl = `
 {{ define "body" }}
@@ -113,7 +114,7 @@ var membersQueryBodyTpl = `
 FROM project_user
 LEFT JOIN project_manager ON project_user.user_id = project_manager.user_id
 LEFT JOIN users ON users.id = project_user.user_id
-LEFT JOIN projects ON projects.id = project_user.projects_id
+LEFT JOIN projects ON projects.id = project_user.project_id
 LEFT JOIN instances ON instances.project_id = projects.id
 WHERE users.stat = 0
 AND users.deleted_at IS NULL
@@ -138,12 +139,16 @@ func (s *Storage) GetMembersByReq(data map[string]interface{}) (
 		return nil, 0, errors.New(errors.DataInvalid, fmt.Errorf("project name must be exist"))
 	}
 
-	members := []string{}
+	members := []*struct {
+		UserName string `json:"user_name"`
+	}{}
 	err = s.getListResult(membersQueryBodyTpl, membersQueryTpl, data, &members)
 	if err != nil {
 		return result, 0, err
 	}
-	managers := []string{}
+	managers := []*struct {
+		UserName string `json:"user_name"`
+	}{}
 	err = s.getListResult(membersQueryBodyTpl, managersQueryTpl, data, &managers)
 	if err != nil {
 		return result, 0, err
@@ -158,7 +163,7 @@ func (s *Storage) GetMembersByReq(data map[string]interface{}) (
 			}
 		}
 		result = append(result, &MemberDetail{
-			UserName:  member,
+			UserName:  member.UserName,
 			IsManager: isManager,
 		})
 	}

@@ -179,7 +179,6 @@ func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 		err = query.Joins("JOIN project_user on project_user.project_id = projects.id").
 			Joins("JOIN users on users.id = project_user.user_id").
 			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
-			Joins("JOIN project_user_group on project_user_group.project_id = projects.id").
 			Joins("JOIN user_group_users on project_user_group.user_group_id = user_group_users.user_group_id").
 			Joins("RIGHT JOIN users as u on u.id = user_group_users.user_id").
 			Where("users.stat = 0").Where("u.stat = 0").
@@ -230,7 +229,7 @@ WHERE users.stat = 0
 AND users.deleted_at IS NULL
 AND users.login_name = ?
 AND projects.name = ?
-)
+) AS exist
 `
 	var exist struct {
 		Exist bool `json:"exist"`
@@ -250,7 +249,7 @@ WHERE user_groups.stat = 0
 AND user_groups.deleted_at IS NULL
 AND user_groups.name = ?
 AND projects.name = ?
-)
+) AS exist
 `
 	var exist struct {
 		Exist bool `json:"exist"`
@@ -463,7 +462,7 @@ func (s *Storage) GetMemberGroupCount(filter GetMemberGroupFilter) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-	err = query.Count(count).Error
+	err = query.Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
 }
 
@@ -530,6 +529,26 @@ GROUP BY project_manager.project_id
 		}
 	}
 	return false, nil
+}
+
+func (s *Storage) CheckUserHaveManagementPermission(userID uint, code []uint) (bool, error) {
+	code = utils.RemoveDuplicateUint(code)
+
+	user, _, err := s.GetUserByID(userID)
+	if err != nil {
+		return false, err
+	}
+	if user.Name == DefaultAdminUser {
+		return true, nil
+	}
+
+	var count int
+	err = s.db.Model(&ManagementPermission{}).
+		Where("user_id = ?", userID).
+		Where("permission_code in (?)", code).
+		Count(&count).Error
+
+	return count == len(code), errors.ConnectStorageErrWrapper(err)
 }
 
 func (s *Storage) GetManagedProjects(userID uint) ([]*Project, error) {
