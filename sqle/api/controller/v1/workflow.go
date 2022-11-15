@@ -1115,7 +1115,7 @@ type GetWorkflowsResV1 struct {
 
 type WorkflowDetailResV1 struct {
 	ProjectName             string     `json:"project_name"`
-	Subject                 string     `json:"subject"`
+	Name                    string     `json:"workflow_name"`
 	Desc                    string     `json:"desc"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
@@ -1186,7 +1186,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	for _, workflow := range workflows {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
-			Subject:                 workflow.Subject,
+			Name:                    workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
@@ -1282,7 +1282,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	for _, workflow := range workflows {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
-			Subject:                 workflow.Subject,
+			Name:                    workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
@@ -1593,14 +1593,14 @@ type WorkflowTaskItem struct {
 }
 
 type WorkflowRecordResV1 struct {
-	Tasks             []*WorkflowTaskItem     `json:"tasks"`
-	CurrentStepNumber uint                    `json:"current_step_number,omitempty"`
-	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	Tasks             []*WorkflowTaskItem  `json:"tasks"`
+	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
+	Status            string               `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 	Steps             []*WorkflowStepResV1 `json:"workflow_step_list,omitempty"`
 }
 
 type WorkflowResV1 struct {
-	Id            uint                   `json:"workflow_id"`
+	Name          string                 `json:"workflow_name"`
 	Subject       string                 `json:"subject"`
 	Desc          string                 `json:"desc,omitempty"`
 	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`

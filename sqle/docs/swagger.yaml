@@ -3067,7 +3067,7 @@ definitions:
         - executing
         - finished
         type: string
-      subject:
+      workflow_name:
         type: string
     type: object
   v1.WorkflowPassPercentV1:
@@ -3158,8 +3158,8 @@ definitions:
         type: array
       subject:
         type: string
-      workflow_id:
-        type: integer
+      workflow_name:
+        type: string
     type: object
   v1.WorkflowStageDuration:
     properties:
