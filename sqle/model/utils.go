@@ -212,7 +212,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
-		_, exist, err := s.GetRuleTemplateByProjectIdAndName(ProjectIdForGlobalRuleTemplate, templateName)
+		_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, ProjectIdForGlobalRuleTemplate)
 		if err != nil {
 			return xerrors.Wrap(err, "get rule template failed")
 		}
