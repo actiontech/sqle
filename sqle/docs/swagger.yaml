@@ -5580,7 +5580,7 @@ paths:
         in: path
         name: workflow_name
         required: true
-        type: integer
+        type: string
       - description: project name
         in: path
         name: project_name
