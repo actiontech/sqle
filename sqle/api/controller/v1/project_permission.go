@@ -261,7 +261,7 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanNa
 	}
 
 	if opCode > 0 {
-		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)}) //todo: refactor instance permissions. waiting for project member.
+		instances, err := storage.GetUserCanOpInstancesFromProject(user, projectName, []uint{uint(opCode)})
 		if err != nil {
 			return nil, false, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode)))
 		}
