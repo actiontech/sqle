@@ -1004,3 +1004,15 @@ func (s *Storage) GetTasksByWorkFlowRecordID(id uint) ([]*Task, error) {
 
 	return tasks, nil
 }
+
+func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName string) (*Workflow, bool, error) {
+	workflow := &Workflow{}
+	err := s.db.Table("projects").Joins("left join workflows on workflows.project_id = projects.id").
+		Where("projects.name = ?", projectName).
+		Where("workflows.subject = ?", workflowName).Select("workflows.*").Scan(&workflow).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflow, false, nil
+	}
+
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
+}
