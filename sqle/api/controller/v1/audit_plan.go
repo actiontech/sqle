@@ -532,7 +532,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	instances, err := s.GetUserCanOpInstances(currentUser, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS}) // todo: refactor permissions. waiting for projec member
+	instances, err := s.GetUserCanOpInstancesFromProject(currentUser, projectName, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
