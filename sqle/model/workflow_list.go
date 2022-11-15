@@ -17,6 +17,7 @@ type WorkflowListDetail struct {
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
 	Status                  string         `json:"status"`
+	TaskInstanceType        RowList        `json:"task_instance_type"`
 }
 
 var workflowsQueryTpl = `
@@ -28,7 +29,8 @@ SELECT p.name 														 AS project_name,
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
        GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_user_name_list,
-       wr.status																							
+       wr.status,
+       GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
 {{- template "body" . -}}
 GROUP BY p.id,w.id
 ORDER BY w.id DESC
