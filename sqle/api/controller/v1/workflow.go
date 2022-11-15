@@ -1168,6 +1168,8 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		"filter_status":                          req.FilterStatus,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
+		"current_user_id":                        user.ID,
+		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}
