@@ -1172,8 +1172,24 @@ func GetWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -1192,13 +1208,13 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_status":                          req.FilterStatus,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
+		"filter_project_name":                    project.Name,
 		"current_user_id":                        user.ID,
-		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
+		"check_user_can_access":                  CheckIsProjectManager(user.Name, project.Name) != nil,
 		"limit":                                  req.PageSize,
 		"offset":                                 offset,
 	}
 
-	s := model.GetStorage()
 	workflows, count, err := s.GetWorkflowsByReq(data, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1207,6 +1223,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	workflowsReq := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
 		workflowReq := &WorkflowDetailResV1{
+			ProjectName:             workflow.ProjectName,
 			Subject:                 workflow.Subject,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
