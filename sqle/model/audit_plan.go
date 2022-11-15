@@ -108,46 +108,26 @@ func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReport
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-// todo issue960 使用AuditPlanId识别扫描任务
-func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
-	ap, exist, err := s.GetAuditPlanByName(name)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, gorm.ErrRecordNotFound
-	}
-
+func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) {
 	var sqls []*AuditPlanSQLV2
-	err = s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
+	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
-// todo issue960 使用AuditPlanId识别扫描任务
-func (s *Storage) OverrideAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return err
-	}
-
-	err = s.db.Unscoped().
+func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	err := s.db.Unscoped().
 		Model(AuditPlanSQLV2{}).
-		Where("audit_plan_id = ?", ap.ID).
+		Where("audit_plan_id = ?", auditPlanId).
 		Delete(&AuditPlanSQLV2{}).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	raw, args := getBatchInsertRawSQL(ap, sqls)
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
-// todo issue960 使用AuditPlanId识别扫描任务
-func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return err
-	}
 
-	raw, args := getBatchInsertRawSQL(ap, sqls)
+func (s *Storage) UpdateDefaultAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
 	raw += `
 ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
@@ -160,11 +140,11 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
+func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
 		pattern = append(pattern, "(?, ?, ?, ?, ?)")
-		args = append(args, ap.ID, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info)
+		args = append(args, auditPlanId, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info)
 	}
 	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`) VALUES %s",
 		strings.Join(pattern, ", "))
