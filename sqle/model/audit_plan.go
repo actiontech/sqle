@@ -91,7 +91,7 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanFromProjectByName(projectName, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Joins("projects ON projects.id = audit_plans.project_id").
+	err := s.db.Model(AuditPlan{}).Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
 		Where("projects.name = ? AND audit_plans.name = ?", projectName, AuditPlanName).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
