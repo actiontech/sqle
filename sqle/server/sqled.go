@@ -481,14 +481,14 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 			if projectId == nil {
 				return nil, xerrors.New("project id is needed when rule template name is given")
 			}
-			modelRules, err = st.GetRulesFromRuleTemplateByName(*projectId, ruleTemplateName)
+			modelRules, err = st.GetRulesFromRuleTemplateByName([]uint{*projectId, model.ProjectIdForGlobalRuleTemplate}, ruleTemplateName)
 		} else {
 			if inst != nil {
 				modelRules, err = st.GetRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
 			} else {
 				templateName := st.GetDefaultRuleTemplateName(dbType)
 				// 默认规则模板从全局模板里拿
-				modelRules, err = st.GetRulesFromRuleTemplateByName(model.ProjectIdForGlobalRuleTemplate, templateName)
+				modelRules, err = st.GetRulesFromRuleTemplateByName([]uint{model.ProjectIdForGlobalRuleTemplate}, templateName)
 			}
 		}
 		if err != nil {
