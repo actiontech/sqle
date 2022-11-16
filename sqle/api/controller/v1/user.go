@@ -707,6 +707,11 @@ func UpdateMember(c echo.Context) error {
 	// 更新成员
 	if req.IsManager != nil {
 		if *req.IsManager {
+			err = s.AddProjectManager(userName, projectName)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		} else {
 			isLastManager, err := s.IsLastProjectManager(userName, projectName)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
@@ -714,12 +719,6 @@ func UpdateMember(c echo.Context) error {
 			if isLastManager {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot delete the last administrator")))
 			}
-
-			err = s.AddProjectManager(userName, projectName)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-		} else {
 			err = s.RemoveProjectManager(userName, projectName)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
