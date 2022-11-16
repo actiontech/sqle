@@ -472,6 +472,7 @@ func (s *Storage) IsLastProjectManager(userName, projectName string) (bool, erro
 		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
 		Where("users.login_name = ?", userName).
 		Where("projects.name = ?", projectName).
+		Group("GROUP BY project_manager.project_id").
 		Count(&count).
 		Error
 
