@@ -354,9 +354,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
-		Model: model.Model{ID: workflow.ID},
-	}, []uint{})
+	err = CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -521,19 +519,33 @@ func RejectWorkflow(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflows/{workflow_name}/cancel [post]
 func CancelWorkflow(c echo.Context) error {
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
+	s := model.GetStorage()
+
+	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	}, []uint{})
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
+	workflowName := c.Param("workflow_name")
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(project.Name, workflowName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
+	err = CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflow, err := checkCancelWorkflow(workflowId)
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+	workflow, err = checkCancelWorkflow(workflowIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -550,7 +562,7 @@ func CancelWorkflow(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil)
+	err = s.UpdateWorkflowStatus(workflow, nil, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
