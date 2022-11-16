@@ -73,8 +73,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
-	v2Router := e.Group(apiV2)
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 
 	// v1 admin api, just admin user can access.
 	{
@@ -226,11 +224,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/workflows/:workflow_id/cancel", v1.CancelWorkflow)
-	v1Router.PATCH("/workflows/:workflow_id/", DeprecatedBy(apiV2))
-	v1Router.PUT("/workflows/:workflow_id/schedule", DeprecatedBy(apiV2))
-	v1Router.POST("/workflows/:workflow_id/task/execute", DeprecatedBy(apiV2))
 	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
-	v1Router.GET("/workflows/:workflow_id/tasks", v1.GetSummaryOfWorkflowTasksV1)
+	v1Router.GET("/projects/:project_name/workflows/:workflow_name/tasks", v1.GetSummaryOfWorkflowTasksV1)
+	v1Router.POST("/projects/:project_name/workflows/:workflow_name/tasks/execute", v1.ExecuteTasksOnWorkflowV1)
+	v1Router.PUT("/projects/:project_name/workflows/:workflow_name/tasks/:task_id/schedule", v1.UpdateWorkflowScheduleV1)
+	v1Router.PATCH("/projects/:project_name/workflows/:workflow_name/", v1.UpdateWorkflowV1)
 
 	// task
 	v1Router.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
@@ -272,7 +270,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
-	v2Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
+	v1Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 
 	// sql query
 	cloudbeaver_wrapper.StartApp(e)
