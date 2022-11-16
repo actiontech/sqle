@@ -584,7 +584,7 @@ func GetUserTips(c echo.Context) error {
 
 type CreateMemberReqV1 struct {
 	UserName  string          `json:"user_name" valid:"required"`
-	IsManager bool            `json:"is_manager" valid:"required"`
+	IsManager bool            `json:"is_manager"`
 	Roles     []BindRoleReqV1 `json:"roles" valid:"required"`
 }
 
@@ -707,6 +707,14 @@ func UpdateMember(c echo.Context) error {
 	// 更新成员
 	if req.IsManager != nil {
 		if *req.IsManager {
+			isLastManager, err := s.IsLastProjectManager(userName, projectName)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if isLastManager {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot delete the last administrator")))
+			}
+
 			err = s.AddProjectManager(userName, projectName)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
