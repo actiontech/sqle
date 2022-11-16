@@ -33,15 +33,31 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
 	sqlWhitelist := &model.SqlWhitelist{
+		ProjectId: project.ID,
 		Value:     req.Value,
 		Desc:      req.Desc,
 		MatchType: req.MatchType,
 	}
 
-	err := s.Save(sqlWhitelist)
+	err = s.Save(sqlWhitelist)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
