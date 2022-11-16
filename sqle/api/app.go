@@ -222,7 +222,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/cancel", v1.CancelWorkflow)
 	v1Router.POST("/projects/:project_name/workflows/cancel", v1.BatchCancelWorkflows)
-	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
+	v1Router.POST("/projects/:project_name/workflows/:workflow_name/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
 	v1Router.GET("/projects/:project_name/workflows/:workflow_name/tasks", v1.GetSummaryOfWorkflowTasksV1)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/tasks/execute", v1.ExecuteTasksOnWorkflowV1)
 	v1Router.PUT("/projects/:project_name/workflows/:workflow_name/tasks/:task_id/schedule", v1.UpdateWorkflowScheduleV1)
@@ -268,7 +268,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
-	v1Router.GET("/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
+	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 
 	// sql query
 	cloudbeaver_wrapper.StartApp(e)
