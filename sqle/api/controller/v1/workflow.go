@@ -949,7 +949,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	_, exist, err = s.GetWorkflowBySubject(req.Subject)
+	_, exist, err = s.GetWorkflowByProjectAndWorkflowName(project.Name, req.Subject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
