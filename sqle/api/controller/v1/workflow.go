@@ -354,9 +354,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
-		Model: model.Model{ID: workflow.ID},
-	}, []uint{})
+	err = CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
