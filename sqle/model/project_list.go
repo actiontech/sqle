@@ -85,22 +85,10 @@ SELECT DISTINCT users.login_name AS user_name
 
 {{ template "body" . }}
 
-AND project_manager.user_id IS NOT NULL
-
 {{ if .limit }}
 LIMIT :limit OFFSET :offset
 {{ end }}
 
-`
-
-var managersQueryTpl = `
-SELECT DISTINCT users.login_name AS user_name
-
-{{ template "body" . }}
-
-{{ if .limit }}
-LIMIT :limit OFFSET :offset
-{{ end }}
 `
 
 var membersCountTpl = `
@@ -112,7 +100,6 @@ var membersQueryBodyTpl = `
 {{ define "body" }}
 
 FROM project_user
-LEFT JOIN project_manager ON project_user.user_id = project_manager.user_id
 LEFT JOIN users ON users.id = project_user.user_id
 LEFT JOIN projects ON projects.id = project_user.project_id
 LEFT JOIN instances ON instances.project_id = projects.id
@@ -146,18 +133,16 @@ func (s *Storage) GetMembersByReq(data map[string]interface{}) (
 	if err != nil {
 		return result, 0, err
 	}
-	managers := []*struct {
-		UserName string `json:"user_name"`
-	}{}
-	err = s.getListResult(membersQueryBodyTpl, managersQueryTpl, data, &managers)
+
+	project, _, err := s.GetProjectByName(fmt.Sprintf("%v", data["filter_project_name"]))
 	if err != nil {
 		return result, 0, err
 	}
 
 	for _, member := range members {
 		isManager := false
-		for _, manager := range managers {
-			if manager == member {
+		for _, manager := range project.Managers {
+			if manager.Name == member.UserName {
 				isManager = true
 				break
 			}
