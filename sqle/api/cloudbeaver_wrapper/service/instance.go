@@ -97,12 +97,22 @@ func SyncInstance(sqleInstances map[uint] /*sqle inst id*/ *sqleModel.Instance) 
 
 	// 同步实例信息
 	for _, sqleInstID := range needAdd {
-		if err := AddCloudBeaverInstance(client, sqleInstances[sqleInstID]); err != nil {
+		project, _, err := s.GetProjectByID(sqleInstances[sqleInstID].ProjectId)
+		if err != nil {
+			l.Errorf("get instance %v project failed: %v", sqleInstID, err)
+			project.Name = "unknown"
+		}
+		if err := AddCloudBeaverInstance(client, sqleInstances[sqleInstID], project); err != nil {
 			l.Errorf("add instance %v to cloudbeaver failed: %v", sqleInstID, err)
 		}
 	}
 	for _, sqleInstID := range needUpdate {
-		if err := UpdateCloudBeaverInstance(client, cbInstCacheMap[sqleInstID].CloudBeaverInstanceID, sqleInstances[sqleInstID]); err != nil {
+		project, _, err := s.GetProjectByID(sqleInstances[sqleInstID].ProjectId)
+		if err != nil {
+			l.Errorf("get instance %v project failed: %v", sqleInstID, err)
+			project.Name = "unknown"
+		}
+		if err := UpdateCloudBeaverInstance(client, cbInstCacheMap[sqleInstID].CloudBeaverInstanceID, sqleInstances[sqleInstID], project); err != nil {
 			l.Errorf("update instance %v to cloudbeaver failed: %v", sqleInstID, err)
 		}
 	}
@@ -112,8 +122,8 @@ func SyncInstance(sqleInstances map[uint] /*sqle inst id*/ *sqleModel.Instance) 
 }
 
 // AddCloudBeaverInstance 添加实例后会同步缓存
-func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instance) error {
-	params, err := GenerateCloudBeaverInstanceParams(sqleInst)
+func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instance, project *sqleModel.Project) error {
+	params, err := GenerateCloudBeaverInstanceParams(sqleInst, project)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
 		// 不支持的类型跳过就好,没必要终端流程
@@ -142,15 +152,6 @@ func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instan
 	})
 }
 
-func GenerateCloudBeaverDriverID(sqleInst *sqleModel.Instance) (string, error) {
-	switch sqleInst.DbType {
-	case driver.DriverTypeMySQL:
-		return "mysql:mysql8", nil
-	default:
-		return "", fmt.Errorf("temporarily unsupported instance types")
-	}
-}
-
 const (
 	CreateConnectionQuery = `
 mutation createConnection(
@@ -169,8 +170,9 @@ fragment DatabaseConnection on ConnectionInfo {
 )
 
 // UpdateCloudBeaverInstance 更新完毕后会同步缓存
-func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleInst *sqleModel.Instance) error {
-	params, err := GenerateCloudBeaverInstanceParams(sqleInst)
+func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleInst *sqleModel.Instance, project *sqleModel.Project) error {
+
+	params, err := GenerateCloudBeaverInstanceParams(sqleInst, project)
 	if err != nil {
 		fmt.Println("Instances of this type are not currently supported:", sqleInst.DbType)
 		// 不支持的类型跳过就好,没必要终端流程
@@ -178,7 +180,7 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 		return nil
 	}
 	// 更新实例
-	params["connectionId"] = cbInstID
+	params["config"].(map[string]interface{})["connectionId"] = cbInstID
 	req := gqlClient.NewRequest(UpdateConnectionQuery, params)
 	resp := struct {
 		Connection struct {
@@ -313,14 +315,15 @@ query setConnections($userId: ID!, $connections: [ID!]!) {
 `
 )
 
-func generateCommonCloudBeaverConfigParams(sqleInst *sqleModel.Instance) map[string]interface{} {
+func generateCommonCloudBeaverConfigParams(sqleInst *sqleModel.Instance, project *sqleModel.Project) map[string]interface{} {
 	return map[string]interface{}{
 		"configurationType": "MANUAL",
-		"name":              sqleInst.Name,
+		"name":              fmt.Sprintf("%v: %v", project.Name, sqleInst.Name),
 		"template":          false,
 		"host":              sqleInst.Host,
 		"port":              sqleInst.Port,
 		"databaseName":      nil,
+		"description":       nil,
 		"authModelId":       "native",
 		"saveCredentials":   true,
 		"credentials": map[string]interface{}{
@@ -330,9 +333,9 @@ func generateCommonCloudBeaverConfigParams(sqleInst *sqleModel.Instance) map[str
 	}
 }
 
-func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance) (map[string]interface{}, error) {
+func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance, project *sqleModel.Project) (map[string]interface{}, error) {
 	var err error
-	config := generateCommonCloudBeaverConfigParams(sqleInst)
+	config := generateCommonCloudBeaverConfigParams(sqleInst, project)
 
 	switch sqleInst.DbType {
 	case driver.DriverTypeMySQL, driver.DriverTypeTiDB:
