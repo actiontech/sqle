@@ -329,13 +329,33 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflow(c echo.Context) error {
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
+	projectName := c.Param("project_name")
+	workflowName := c.Param("workflow_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
+	userName := controller.GetUserName(c)
+	if err := CheckIsProjectMember(userName, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(project.Name, workflowName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
+		Model: model.Model{ID: workflow.ID},
 	}, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -353,8 +373,8 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -388,7 +408,7 @@ func ApproveWorkflow(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	go notification.NotifyWorkflow(workflowId, notification.WorkflowNotifyTypeApprove)
+	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeApprove)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
