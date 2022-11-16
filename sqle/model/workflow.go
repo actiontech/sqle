@@ -968,6 +968,7 @@ var workflowTasksSummaryQueryBodyTpl = `
 FROM workflow_instance_records AS wir
 LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
 LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
+LEFT JOIN projects ON projects.id = w.project_id
 LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
@@ -977,13 +978,18 @@ LEFT JOIN users AS curr_ass_user ON curr_ws_user.user_id = curr_ass_user.id
 
 WHERE
 w.deleted_at IS NULL
-AND w.id = :workflow_id
+AND w.subject = :workflow_name
+AND projects.name = :project_name
 
 {{ end }}
 `
 
 func (s *Storage) GetWorkflowTasksSummaryByReq(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
+
+	if data["workflow_name"] == nil || data["project_name"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	}
 
 	err = s.getListResult(workflowTasksSummaryQueryBodyTpl, workflowTasksSummaryQueryTpl, data, &result)
 	if err != nil {
