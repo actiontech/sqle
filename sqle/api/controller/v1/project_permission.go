@@ -94,17 +94,26 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, project *model.Project, 
 }
 
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return err
+	}
+
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return nil
 	}
 	if user.ID == task.CreateUserId {
 		return nil
 	}
 	s := model.GetStorage()
+	isManager, err := s.IsProjectManagerByID(user.ID, task.Instance.ProjectId)
+	if err != nil {
+		return err
+	}
+	if isManager {
+		return nil
+	}
+
 	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
 	if err != nil {
 		return err
@@ -132,15 +141,25 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint)
 	return ErrTaskNoAccess
 }
 
-func CheckCurrentUserCanViewWorkflow(c echo.Context, workflow *model.Workflow) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
+func CheckCurrentUserCanViewWorkflow(c echo.Context, workflowName, projectName string) error {
+	userName := controller.GetUserName(c)
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(userName, projectName)
+	if err != nil {
+		return err
+	}
+	if userName == model.DefaultAdminUser || isManager {
 		return nil
 	}
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return err
 	}
-	s := model.GetStorage()
+	workflow, _, err := s.GetWorkflowByProjectAndWorkflowName(projectName, workflowName)
+	if err != nil {
+		return err
+	}
+
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
 		return err
