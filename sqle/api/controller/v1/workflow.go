@@ -544,8 +544,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowIdStr := strconv.Itoa(int(workflow.ID))
-	workflow, err = checkCancelWorkflow(workflowIdStr)
+	workflow, err = checkCancelWorkflow(workflow.Subject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
