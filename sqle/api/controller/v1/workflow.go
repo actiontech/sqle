@@ -354,7 +354,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
 		Model: model.Model{ID: workflow.ID},
 	}, []uint{})
 	if err != nil {
@@ -440,9 +440,7 @@ func RejectWorkflow(c echo.Context) error {
 	}
 
 	// RejectWorkflow no need extra operation code for now.
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
-		Model: model.Model{ID: uint(id)},
-	}, []uint{})
+	err = CheckCurrentUserCanOperateWorkflow(c, nil, workflow, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -513,7 +511,7 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
 		Model: model.Model{ID: uint(id)},
 	}, []uint{})
 	if err != nil {
@@ -739,7 +737,7 @@ func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.
 }
 
 func PrepareForWorkflowExecution(c echo.Context, workflow *model.Workflow, user *model.User, workflowId int) error {
-	err := CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+	err := CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
 		Model: model.Model{ID: uint(workflowId)},
 	}, []uint{})
 	if err != nil {
@@ -1274,7 +1272,7 @@ func UpdateWorkflowV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
 		Model: model.Model{ID: uint(workflowId)},
 	}, []uint{})
 	if err != nil {
@@ -1414,7 +1412,7 @@ func UpdateWorkflowScheduleV1(c echo.Context) error {
 		return err
 	}
 
-	err = CheckCurrentUserCanOperateWorkflow(c, &model.Workflow{
+	err = CheckCurrentUserCanOperateWorkflow(c, nil, &model.Workflow{
 		Model: model.Model{ID: uint(workflowIdInt)},
 	}, []uint{})
 	if err != nil {
