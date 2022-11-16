@@ -642,7 +642,7 @@ func AddMember(c echo.Context) error {
 	}
 
 	// 检查实例是否存在
-	exist, err := s.CheckInstancesExist(utils.RemoveDuplicate(instNames))
+	exist, err := s.CheckInstancesExist(projectName, utils.RemoveDuplicate(instNames))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -705,11 +705,19 @@ func UpdateMember(c echo.Context) error {
 	}
 
 	// 更新成员
-	if req.IsManager != nil && *req.IsManager {
-		err = s.AddProjectManager(userName, projectName)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	if req.IsManager != nil {
+		if *req.IsManager {
+			err = s.AddProjectManager(userName, projectName)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+		} else {
+			err = s.RemoveProjectManager(userName, projectName)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 		}
+
 	}
 
 	// 更新角色
