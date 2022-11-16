@@ -239,7 +239,7 @@ GROUP BY instances.id
 
 func (s *Storage) GetWithOperationUserFromInstance(instance *Instance, opCode ...int) (users []*User, err error) {
 	query := `
-	SELECT user.id, users.login_name
+	SELECT users.id, users.login_name
 	FROM users
 	LEFT JOIN project_member_roles ON users.id = project_member_roles.user_id
 	LEFT JOIN roles ON project_member_roles.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
@@ -251,7 +251,7 @@ func (s *Storage) GetWithOperationUserFromInstance(instance *Instance, opCode ..
 	AND role_operations.op_code IN (?)
 
 	UNION
-	SELECT user.id, users.login_name
+	SELECT users.id, users.login_name
 	FROM users
 	LEFT JOIN user_group_users ON users.id = user_group_users.user_id
 	LEFT JOIN user_groups ON user_group_users.user_group_id = user_groups.id AND user_groups.stat = 0
