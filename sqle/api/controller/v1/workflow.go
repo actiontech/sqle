@@ -431,16 +431,31 @@ type RejectWorkflowReqV1 struct {
 func RejectWorkflow(c echo.Context) error {
 	req := new(RejectWorkflowReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	workflowId := c.Param("workflow_id")
-	id, err := FormatStringToInt(workflowId)
-	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	s := model.GetStorage()
+
+	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+	}
+
+	workflowName := c.Param("workflow_name")
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(project.Name, workflowName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+	}
+
 	// RejectWorkflow no need extra operation code for now.
-	err = CheckCurrentUserCanOperateWorkflow(c, nil, workflow, []uint{})
+	err = CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -457,8 +472,8 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
