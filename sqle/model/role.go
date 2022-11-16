@@ -399,3 +399,14 @@ func (s *Storage) CheckRolesExist(roleNames []string) (bool, error) {
 	err := s.db.Model(&Role{}).Where("name in (?)", roleNames).Count(&count).Error
 	return len(roleNames) == count, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) DeleteRoleByInstanceID(instanceID uint) error {
+	sql := `
+DELETE project_member_roles, project_member_group_roles
+FROM project_member_roles
+LEFT JOIN project_member_group_roles ON project_member_roles.instance_id = project_member_group_roles.instance_id
+WHERE project_member_roles.instance_id = ?
+`
+
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, instanceID).Error)
+}

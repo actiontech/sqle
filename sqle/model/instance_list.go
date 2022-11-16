@@ -56,7 +56,7 @@ LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
-LEFT JOIN projects AS p ON inst.project_id = projects.id
+LEFT JOIN projects AS p ON inst.project_id = p.id
 
 WHERE inst.deleted_at IS NULL
 

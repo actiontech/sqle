@@ -416,6 +416,10 @@ func DeleteInstance(c echo.Context) error {
 			fmt.Errorf("%s can't be deleted,cause wait_for_audit or wait_for_execution workflow exist", instanceName)))
 	}
 
+	err = s.DeleteRoleByInstanceID(instance.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	err = s.Delete(instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
