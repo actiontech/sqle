@@ -87,10 +87,16 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
 	whitelistId := c.Param("audit_whitelist_id")
-	sqlWhitelist, exist, err := s.GetSqlWhitelistById(whitelistId)
+	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectName(whitelistId, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -98,6 +104,7 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("sql audit whitelist is not exist")))
 	}
+
 	// nothing to update
 	if req.Value == nil && req.Desc == nil && req.MatchType == nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(nil))

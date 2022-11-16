@@ -41,9 +41,13 @@ func (s SqlWhitelist) TableName() string {
 	return "sql_whitelist"
 }
 
-func (s *Storage) GetSqlWhitelistById(sqlWhiteId string) (*SqlWhitelist, bool, error) {
+func (s *Storage) GetSqlWhitelistByIdAndProjectName(sqlWhiteId, projectName string) (*SqlWhitelist, bool, error) {
 	sqlWhitelist := &SqlWhitelist{}
-	err := s.db.Table("sql_whitelist").Where("id = ?", sqlWhiteId).First(sqlWhitelist).Error
+	err := s.db.Table("sql_whitelist").
+		Joins("LEFT JOIN projects ON projects.id = sql_whitelist.project_id").
+		Where("id = ?", sqlWhiteId).
+		Where("projects.name = ?", projectName).
+		First(sqlWhitelist).Error
 	if err == gorm.ErrRecordNotFound {
 		return sqlWhitelist, false, nil
 	}
