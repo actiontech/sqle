@@ -108,9 +108,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate, AdminUserAllowed())
 		v1Router.PATCH("/projects/:project_name/workflow_template", v1.UpdateWorkflowTemplate, AdminUserAllowed())
 
-		// workflow
-		v1Router.POST("/workflows/cancel", v1.BatchCancelWorkflows, AdminUserAllowed())
-
 		// audit whitelist
 		v1Router.GET("/audit_whitelist", v1.GetSqlWhitelist, AdminUserAllowed())
 		v1Router.POST("/audit_whitelist", v1.CreateAuditWhitelist, AdminUserAllowed())
@@ -224,6 +221,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/steps/:workflow_step_id/approve", v1.ApproveWorkflow)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/steps/:workflow_step_id/reject", v1.RejectWorkflow)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/cancel", v1.CancelWorkflow)
+	v1Router.POST("/projects/:project_name/workflows/cancel", v1.BatchCancelWorkflows)
 	v1Router.POST("/workflows/:workflow_id/tasks/:task_id/execute", v1.ExecuteOneTaskOnWorkflowV1)
 	v1Router.GET("/projects/:project_name/workflows/:workflow_name/tasks", v1.GetSummaryOfWorkflowTasksV1)
 	v1Router.POST("/projects/:project_name/workflows/:workflow_name/tasks/execute", v1.ExecuteTasksOnWorkflowV1)

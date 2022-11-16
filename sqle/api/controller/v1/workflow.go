@@ -544,8 +544,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowIdStr := strconv.Itoa(int(workflow.ID))
-	workflow, err = checkCancelWorkflow(workflowIdStr)
+	workflow, err = checkCancelWorkflow(project.Name, workflow.Subject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -589,9 +588,15 @@ func BatchCancelWorkflows(c echo.Context) error {
 		return err
 	}
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	if err := CheckIsProjectManager(userName, projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	workflows := make([]*model.Workflow, len(req.WorkflowNames))
-	for i, workflowId := range req.WorkflowNames {
-		workflow, err := checkCancelWorkflow(workflowId)
+	for i, workflowName := range req.WorkflowNames {
+		workflow, err := checkCancelWorkflow(projectName, workflowName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -606,11 +611,12 @@ func BatchCancelWorkflows(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func checkCancelWorkflow(id string) (*model.Workflow, error) {
-	workflow, exist, err := model.GetStorage().GetWorkflowDetailById(id)
+func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailBySubject(projectName, workflowName)
 	if err != nil {
 		return nil, err
 	}
