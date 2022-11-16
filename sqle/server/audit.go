@@ -16,11 +16,11 @@ import (
 )
 
 func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName string) (err error) {
-	return HookAudit(l, task, &EmptyAuditHook{}, projectId,ruleTemplateName)
+	return HookAudit(l, task, &EmptyAuditHook{}, projectId, ruleTemplateName)
 }
 
-func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint,ruleTemplateName string) (err error) {
-	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId,ruleTemplateName)
+func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
+	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId, ruleTemplateName)
 	if err != nil {
 		return err
 	}
@@ -100,8 +100,14 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 	}()
 
 	st := model.GetStorage()
-
-	whitelist, _, err := st.GetSqlWhitelist(0, 0)
+	projectName, exist, err := st.GetProjectNameByInstanceId(task.InstanceId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.Errorf("project of task doesn't exist. task_id=%v", task.ID)
+	}
+	whitelist, _, err := st.GetSqlWhitelistByProjectName(0, 0, projectName)
 	if err != nil {
 		return err
 	}
