@@ -623,10 +623,13 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	return workflow, true, nil
 }
 
-func (s *Storage) GetWorkflowDetailBySubject(name string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowDetailBySubject(projectName, workflowName string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
-		Preload("Record").Where("subject = ?", name).First(workflow).Error
+	err := s.db.Model(&Workflow{}).Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
+		Where("subject = ?", workflowName).
+		Where("projects.name = ?", projectName).
+		First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
