@@ -51,7 +51,7 @@ workflow permission.
 
 */
 
-func CheckCurrentUserCanOperateWorkflow(c echo.Context, workflow *model.Workflow, ops []uint) error {
+func CheckCurrentUserCanOperateWorkflow(c echo.Context, project *model.Project, workflow *model.Workflow, ops []uint) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
@@ -59,7 +59,17 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, workflow *model.Workflow
 	if err != nil {
 		return err
 	}
+
 	s := model.GetStorage()
+
+	isManager, err := s.IsProjectManager(user.Name, project.Name)
+	if err != nil {
+		return err
+	}
+	if isManager {
+		return nil
+	}
+
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
 		return err
