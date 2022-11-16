@@ -195,9 +195,15 @@ func GetSqlWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	sqlWhitelist, count, err := s.GetSqlWhitelist(req.PageIndex, req.PageSize)
+	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectName(req.PageIndex, req.PageSize, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
