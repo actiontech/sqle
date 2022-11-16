@@ -140,7 +140,14 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 func DeleteAuditWhitelistById(c echo.Context) error {
 	s := model.GetStorage()
 	whitelistId := c.Param("audit_whitelist_id")
-	sqlWhitelist, exist, err := s.GetSqlWhitelistById(whitelistId)
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectName(whitelistId, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
