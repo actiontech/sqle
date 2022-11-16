@@ -71,7 +71,7 @@ AND audit_plans.instance_name = :filter_audit_plan_instance_name
 
 {{- if .filter_project_name }}
 AND projects.name = :filter_project_name
-}}
+{{- end }}
 
 {{ end }}
 `
