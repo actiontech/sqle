@@ -108,8 +108,8 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(projectId uint, name string) ([]*Rule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectId(projectId, name)
+func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
 	}
@@ -134,7 +134,8 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 		return nil, nil
 	}
 	tplName := templates[0].Name
-	return s.GetRulesFromRuleTemplateByName(instance.ProjectId, tplName)
+	// 数据源可以绑定全局模板和项目模板
+	return s.GetRulesFromRuleTemplateByName([]uint{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, tplName)
 }
 
 func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string) (*RuleTemplate, bool, error) {
@@ -158,14 +159,14 @@ func (s *Storage) GetGlobalAndProjectRuleTemplateByNameAndProjectId(name string,
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByNameAndProjectId(projectId uint, name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
 	t := &RuleTemplate{Name: name}
 	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("Instances").
 		Where(t).
-		Where("project_id = ?", projectId).
+		Where("project_id IN (?)", projectIds).
 		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
