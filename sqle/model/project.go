@@ -303,20 +303,20 @@ AND users.login_name = ?
 
 func (s *Storage) RemoveMember(userName, projectName string) error {
 	sql := `
-DELETE project_user, project_manager, project_member_role  
+DELETE project_user, project_manager, project_member_roles  
 FROM project_user
 LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
 	AND project_user.user_id = project_manager.user_id
 LEFT JOIN projects ON project_user.project_id = projects.id
 LEFT JOIN users ON project_user.user_id = users.id
-LEFT JOIN project_member_role ON project_member_role.user_id = users.id
+LEFT JOIN project_member_roles ON project_member_roles.user_id = users.id
 WHERE 
 users.login_name = ?
 AND
 projects.name = ?
 `
 
-	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
+	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userName, projectName).Error)
 }
 
 func (s *Storage) AddMemberGroup(groupName, projectName string, bindRole []BindRole) error {
@@ -436,11 +436,11 @@ func (s *Storage) GetMemberGroupByGroupName(projectName, groupName string) (*Use
 
 func (s *Storage) RemoveMemberFromAllProjectByUserID(userID uint) error {
 	sql := `
-DELETE project_user, project_manager, project_member_role 
+DELETE project_user, project_manager, project_member_roles 
 FROM project_user
 LEFT JOIN project_manager ON project_user.project_id = project_manager.project_id 
 	AND project_user.user_id = project_manager.user_id
-LEFT JOIN project_member_role ON project_member_role.user_id = ?
+LEFT JOIN project_member_roles ON project_member_roles.user_id = ?
 LEFT JOIN users ON project_user.user_id = users.id
 WHERE 
 users.id = ?
@@ -461,6 +461,21 @@ user_groups.id = ?
 `
 
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, userGroupID, userGroupID).Error)
+}
+
+func (s *Storage) IsLastProjectManager(userName, projectName string) (bool, error) {
+
+	var count int
+
+	err := s.db.Table("project_manager").
+		Joins("LEFT JOIN users ON users.id = project_manager.user_id").
+		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
+		Where("users.login_name = ?", userName).
+		Where("projects.name = ?", projectName).
+		Count(&count).
+		Error
+
+	return count == 1, errors.ConnectStorageErrWrapper(err)
 }
 
 // 检查用户是否是某一个项目的最后一个管理员
