@@ -181,8 +181,19 @@ func CheckCurrentUserCanViewWorkflow(c echo.Context, workflowName, projectName s
 	return ErrWorkflowNoAccess
 }
 
-func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task) error {
+func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task, projectName string) error {
 	if model.IsDefaultAdminUser(user.Name) {
+		return nil
+	}
+
+	s := model.GetStorage()
+
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return err
+	}
+
+	if isManager {
 		return nil
 	}
 
@@ -191,7 +202,6 @@ func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task) er
 		instances[i] = task.Instance
 	}
 
-	s := model.GetStorage()
 	ok, err := s.CheckUserHasOpToInstances(user, instances, []uint{model.OP_WORKFLOW_SAVE})
 	if err != nil {
 		return err
