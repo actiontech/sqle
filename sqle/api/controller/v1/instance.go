@@ -636,8 +636,6 @@ func GetInstances(c echo.Context) error {
 		"filter_db_user":            req.FilterDBUser,
 		"filter_rule_template_name": req.FilterRuleTemplateName,
 		"filter_db_type":            req.FilterDBType,
-		"current_user_id":           user.ID,
-		"check_user_can_access":     user.Name != model.DefaultAdminUser,
 		"limit":                     req.PageSize,
 		"offset":                    offset,
 	}
