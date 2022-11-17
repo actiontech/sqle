@@ -259,7 +259,7 @@ func UpdateUserGroup(c echo.Context) (err error) {
 }
 
 type UserGroupTipsReqV1 struct {
-	FilterProject string `json:"filter_project"`
+	FilterProject string `json:"filter_project" query:"filter_project"`
 }
 
 type UserGroupTipListItem struct {
@@ -280,11 +280,20 @@ type GetUserGroupTipsResV1 struct {
 // @Success 200 {object} v1.GetUserGroupTipsResV1
 // @router /v1/user_group_tips [get]
 func GetUserGroupTips(c echo.Context) error {
+	req := new(UserGroupTipsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
 	s := model.GetStorage()
+	if req.FilterProject != "" {
+		err := CheckIsProjectMember(controller.GetUserName(c), req.FilterProject)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 
-	projectName := c.Param("filter_project")
-
-	userGroupNames, err := s.GetUserGroupTipByProject(projectName)
+	userGroupNames, err := s.GetUserGroupTipByProject(req.FilterProject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
