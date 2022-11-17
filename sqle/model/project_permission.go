@@ -391,7 +391,7 @@ func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
 		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
 		Joins("LEFT JOIN users ON project_manager.user_id = users.id").
 		Where("users.id = ?", userID).
-		Where("users.stats = 0").
+		Where("users.stat = 0").
 		Where("project_manager.project_id = ?", projectID).
 		Where("users.deleted_at IS NULL").
 		Where("projects.deleted_at IS NULL").
