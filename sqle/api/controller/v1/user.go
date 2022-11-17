@@ -538,7 +538,7 @@ func GetUsers(c echo.Context) error {
 }
 
 type UserTipsReqV1 struct {
-	FilterProject string `json:"filter_project"`
+	FilterProject string `json:"filter_project" query:"filter_project"`
 }
 
 type UserTipResV1 struct {
