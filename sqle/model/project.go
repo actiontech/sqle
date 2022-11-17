@@ -386,7 +386,8 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 		Where("user_groups.stat = 0").
 		Where("user_groups.deleted_at IS NULL").
 		Where("instances.deleted_at IS NULL").
-		Where("projects.name = ?", *filter.FilterProjectName)
+		Where("projects.name = ?", *filter.FilterProjectName).
+		Group("user_groups.id")
 
 	if filter.Limit != nil {
 		query = query.Limit(*filter.Limit).Offset(*filter.Offset)
