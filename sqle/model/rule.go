@@ -101,7 +101,7 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
 		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
 		Where("`instances`.`name` = ?", name).
-		Where("`rule_templates`.`project_id` = ?", projectId).Find(t).Error
+		Where("`instances`.`project_id` = ?", projectId).Find(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -300,6 +300,15 @@ func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uin
 		Where("audit_plans.deleted_at is null").
 		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
 		Where("rule_templates.project_id = ?", projectId).
+		Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsRuleTemplateBeingUsedFromAnyProject(ruleTemplateName string) (bool, error) {
+	var count int
+	err := s.db.Table("audit_plans").
+		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
+		Where("audit_plans.deleted_at is null").
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
