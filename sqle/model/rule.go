@@ -159,6 +159,12 @@ func (s *Storage) GetGlobalAndProjectRuleTemplateByNameAndProjectId(name string,
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) IsRuleTemplateExistFromAnyProject(name string) (bool, error) {
+	var count int
+	err := s.db.Model(&RuleTemplate{}).Where("name = ?", name).Count(&count).Error
+	return count > 0, errors.ConnectStorageErrWrapper(err)
+}
+
 func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
