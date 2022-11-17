@@ -3904,7 +3904,7 @@ var doc = `{
                 "operationId": "getSummaryOfInstanceTasksV1",
                 "parameters": [
                     {
-                        "type": "integer",
+                        "type": "string",
                         "description": "workflow name",
                         "name": "workflow_name",
                         "in": "path",
@@ -6147,13 +6147,6 @@ var doc = `{
                         "description": "size of per page",
                         "name": "page_size",
                         "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {

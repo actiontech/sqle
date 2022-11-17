@@ -5730,7 +5730,7 @@ paths:
         in: path
         name: workflow_name
         required: true
-        type: integer
+        type: string
       - description: project name
         in: path
         name: project_name
@@ -7186,11 +7186,6 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
       responses:
         "200":
           description: OK
