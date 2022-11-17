@@ -63,6 +63,12 @@ func GetWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 
 	projectName := c.Param("project_name")
+
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

@@ -117,7 +117,7 @@ func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 
 func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	p := []*Project{}
-	query := s.db.Table("projects").Select("projects.name,projects.id")
+	query := s.db.Table("projects").Select("DISTINCT projects.name,projects.id")
 
 	var err error
 	if userName != DefaultAdminUser {
@@ -465,18 +465,12 @@ user_groups.id = ?
 
 func (s *Storage) IsLastProjectManager(userName, projectName string) (bool, error) {
 
-	var count int
+	project, _, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return true, err
+	}
 
-	err := s.db.Table("project_manager").
-		Joins("LEFT JOIN users ON users.id = project_manager.user_id").
-		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
-		Where("users.login_name = ?", userName).
-		Where("projects.name = ?", projectName).
-		Group("project_manager.project_id").
-		Count(&count).
-		Error
-
-	return count == 1, errors.ConnectStorageErrWrapper(err)
+	return len(project.Managers) == 1 && project.Managers[0].Name == userName, nil
 }
 
 // 检查用户是否是某一个项目的最后一个管理员
