@@ -152,7 +152,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -265,14 +265,14 @@ func GetRuleTemplate(c echo.Context) error {
 func DeleteRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, model.ProjectIdForGlobalRuleTemplate)
+	template, exist, err := s.GetRuleTemplateByProjectIdAndName(model.ProjectIdForGlobalRuleTemplate, templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
-	used, err := s.IsRuleTemplateBeingUsed(templateName, model.ProjectIdForGlobalRuleTemplate)
+	used, err := s.IsRuleTemplateBeingUsedFromAnyProject(templateName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -755,6 +755,10 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
 
+	if template.ProjectId == model.ProjectIdForGlobalRuleTemplate {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot update a global template from this api")))
+	}
+
 	templateRules := make([]model.RuleTemplateRule, 0, len(req.RuleList))
 	if len(req.RuleList) > 0 {
 		templateRules, err = checkAndGenerateRules(req.RuleList, template)
@@ -920,6 +924,11 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
+
+	if template.ProjectId == model.ProjectIdForGlobalRuleTemplate {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot delete a global template from this api")))
+	}
+
 	used, err := s.IsRuleTemplateBeingUsed(templateName, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1050,7 +1059,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist. projectName=%v", projectName)))
 	}
-	_, exist, err = s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, project.ID)
+	exist, err = s.IsRuleTemplateExistFromAnyProject(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
