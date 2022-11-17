@@ -1016,7 +1016,7 @@ func CreateWorkflowV1(c echo.Context) error {
 
 	// check user role operations
 	{
-		err = checkCurrentUserCanCreateWorkflow(user, tasks)
+		err = checkCurrentUserCanCreateWorkflow(user, tasks, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
