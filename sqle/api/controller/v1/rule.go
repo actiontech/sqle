@@ -97,7 +97,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
+	exist, err := s.IsRuleTemplateExistFromAnyProject(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -559,7 +559,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, model.ProjectIdForGlobalRuleTemplate)
+	exist, err := s.IsRuleTemplateExistFromAnyProject(req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
