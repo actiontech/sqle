@@ -103,10 +103,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 
-		// workflow template
-		v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate, AdminUserAllowed())
-		v1Router.PATCH("/projects/:project_name/workflow_template", v1.UpdateWorkflowTemplate, AdminUserAllowed())
-
 		// audit whitelist
 		v1Router.GET("/audit_whitelist", v1.GetSqlWhitelist, AdminUserAllowed())
 		v1Router.POST("/audit_whitelist", v1.CreateAuditWhitelist, AdminUserAllowed())
@@ -212,6 +208,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
+
+	// workflow template
+	v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate)
+	v1Router.PATCH("/projects/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
 
 	// workflow
 	v1Router.POST("/projects/:project_name/workflows", v1.CreateWorkflowV1)
