@@ -540,13 +540,19 @@ func GetAuditPlans(c echo.Context) error {
 	for _, instance := range instances {
 		names = append(names, instance.Name)
 	}
+
+	isManager, err := s.IsProjectManager(currentUser.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	data := map[string]interface{}{
 		"filter_audit_plan_db_type":       req.FilterAuditPlanDBType,
 		"fuzzy_search_audit_plan_name":    req.FuzzySearchAuditPlanName,
 		"filter_audit_plan_type":          req.FilterAuditPlanType,
 		"filter_audit_plan_instance_name": req.FilterAuditPlanInstanceName,
 		"current_user_name":               currentUser.Name,
-		"current_user_is_admin":           model.DefaultAdminUser == currentUser.Name,
+		"current_user_is_admin":           model.DefaultAdminUser == currentUser.Name || isManager,
 		"filter_project_name":             projectName,
 		"limit":                           req.PageSize,
 		"offset":                          offset,
