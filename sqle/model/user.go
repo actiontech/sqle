@@ -140,13 +140,13 @@ func (s *Storage) GetUserTipsByProject(projectName string) ([]*User, error) {
 	}
 
 	query := `
-SELECT users.login_name 
+SELECT DISTINCT users.login_name 
 FROM users
-JOIN project_user on project_user.user_id = users.id
-JOIN projects on project_user.project_id = projects.id
-JOIN user_group_users on users.id = user_group_users.user_id 
-JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
-JOIN projects as p on project_user_group.project_id = p.id
+LEFT JOIN project_user on project_user.user_id = users.id
+LEFT JOIN projects on project_user.project_id = projects.id
+LEFT JOIN user_group_users on users.id = user_group_users.user_id 
+LEFT JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+LEFT JOIN projects as p on project_user_group.project_id = p.id
 WHERE users.stat = 0
 AND( 
 	projects.name = ?
