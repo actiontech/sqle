@@ -223,20 +223,6 @@ func getDbTypeQueryCond(dbType string) string {
 	return `AND instances.db_type = ?`
 }
 
-func (s *Storage) GetInstancesTipsByUserAndTypeAndTempId(user *User, dbType string, tempID uint32, projectName string) ([]*Instance, error) {
-
-	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
-	if err != nil {
-		return nil, err
-	}
-
-	if IsDefaultAdminUser(user.Name) || isProjectManager {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, tempID, projectName)
-	}
-
-	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, tempID, projectName)
-}
-
 func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectName string) (instances []*Instance, err error) {
 	query := s.db.Model(&Instance{}).Select("instances.name, instances.db_type, instances.workflow_template_id").Group("instances.id")
 
@@ -270,71 +256,18 @@ func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
-func (s *Storage) GetInstanceTipsByUserAndTypeAndTempID(user *User, dbType string, tempID uint32, projectName string) (instances []*Instance, err error) {
-
-	queryByRole := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
-		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
-		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL").
-		Joins("LEFT JOIN user_role ON roles.id = user_role.role_id").
-		Joins("LEFT JOIN users ON users.id = user_role.user_id AND users.deleted_at IS NULL AND users.stat=0").
-		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
-		Where("users.id = ?", user.ID).
-		Group("instances.id")
-
-	queryByGroup := s.db.Model(&Instance{}).Select("instances.name, instances.db_type , instances.workflow_template_id").
-		Joins("LEFT JOIN instance_role ON instance_role.instance_id = instances.id").
-		Joins("LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.deleted_at IS NULL AND roles.stat = 0").
-		Joins("JOIN user_group_roles ON roles.id = user_group_roles.role_id").
-		Joins("JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL").
-		Joins("JOIN user_group_users ON user_groups.id = user_group_users.user_group_id").
-		Joins("JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL").
-		Joins("LEFT JOIN projects ON projects.id = instances.project_id").
-		Where("users.id = ?", user.ID).
-		Group("instances.id")
-
-	if dbType != "" {
-		queryByRole = queryByRole.Where("db_type = ?", dbType)
-		queryByGroup = queryByGroup.Where("db_type = ?", dbType)
-	}
-
-	if tempID != 0 {
-		queryByRole = queryByRole.Where("workflow_template_id = ?", tempID)
-		queryByGroup = queryByGroup.Where("workflow_template_id = ?", tempID)
-	}
-
-	if projectName != "" {
-		queryByRole = queryByRole.Where("projects.name = ?", projectName)
-		queryByGroup = queryByGroup.Where("projects.name = ?", projectName)
-	}
-
-	var instByRole, instByGroup []*Instance
-	if err := queryByRole.Scan(&instByRole).Error; err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	if err := queryByGroup.Scan(&instByGroup).Error; err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	instances = append(instances, instByRole...)
-	instances = append(instances, instByGroup...)
-
-	return instances, nil
-}
-
 func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName string) (
 	instances []*Instance, err error) {
 
-	isProjectManager, err := s.IsProjectManager(user.Name, projectName)
+	isMember, err := s.IsProjectMember(user.Name, projectName)
 	if err != nil {
 		return nil, err
 	}
-
-	if IsDefaultAdminUser(user.Name) || isProjectManager {
+	if IsDefaultAdminUser(user.Name) || isMember {
 		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectName)
 	}
 
-	return s.GetInstanceTipsByUserAndTypeAndTempID(user, dbType, 0, projectName)
+	return []*Instance{}, nil
 }
 
 func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
