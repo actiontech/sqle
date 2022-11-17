@@ -92,7 +92,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// role
 		v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
-		v1Router.GET("/role_tips", v1.GetRoleTips, AdminUserAllowed())
 		v1Router.POST("/roles", v1.CreateRole, AdminUserAllowed())
 		v1Router.PATCH("/roles/:role_name/", v1.UpdateRole, AdminUserAllowed())
 		v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
@@ -155,6 +154,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects", v1.GetProjectListV1)
 	v1Router.GET("/projects/:project_name/", v1.GetProjectDetailV1)
 	v1Router.GET("/project_tips", v1.GetProjectTipsV1)
+
+	// role
+	v1Router.GET("/role_tips", v1.GetRoleTips)
 
 	// user
 	v1Router.GET("/user", v1.GetCurrentUser)
