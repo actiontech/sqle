@@ -388,8 +388,8 @@ func (s *Storage) IsProjectManagerByID(userID, projectID uint) (bool, error) {
 	var count uint
 
 	err := s.db.Table("project_manager").
-		Joins("projects ON projects.id = project_manager.project_id").
-		Joins("JOIN users ON project_manager.user_id = users.id").
+		Joins("LEFT JOIN projects ON projects.id = project_manager.project_id").
+		Joins("LEFT JOIN users ON project_manager.user_id = users.id").
 		Where("users.id = ?", userID).
 		Where("users.stats = 0").
 		Where("project_manager.project_id = ?", projectID).
