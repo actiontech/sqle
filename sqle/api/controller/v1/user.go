@@ -707,9 +707,15 @@ func UpdateMember(c echo.Context) error {
 	// 更新成员
 	if req.IsManager != nil {
 		if *req.IsManager {
-			err = s.AddProjectManager(userName, projectName)
+			isManager, err := s.IsProjectManager(userName, projectName)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
+			}
+			if !isManager {
+				err = s.AddProjectManager(userName, projectName)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
 			}
 		} else {
 			isLastManager, err := s.IsLastProjectManager(userName, projectName)
