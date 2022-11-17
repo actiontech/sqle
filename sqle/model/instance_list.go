@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/utils"
 )
 
 type InstanceDetail struct {
@@ -17,18 +16,15 @@ type InstanceDetail struct {
 	User                 string         `json:"db_user"`
 	MaintenancePeriod    Periods        `json:"maintenance_period" gorm:"text"`
 	WorkflowTemplateName sql.NullString `json:"workflow_template_name"`
-	RoleNames            RowList        `json:"role_names"`
 	RuleTemplateNames    RowList        `json:"rule_template_names"`
 	SqlQueryConfig       SqlQueryConfig `json:"sql_query_config"`
 }
 
 var instancesQueryTpl = `SELECT inst.name, inst.db_type, inst.desc, inst.db_host,
 inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, wt.name AS workflow_template_name,
-GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
 FROM instances AS inst
 LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
-LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL 
@@ -52,7 +48,6 @@ var instancesQueryBodyTpl = `
 {{ define "body" }}
 FROM instances AS inst
 LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
-LEFT JOIN roles ON ir.role_id = roles.id AND roles.deleted_at IS NULL AND roles.stat = 0
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
 LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
@@ -86,12 +81,6 @@ AND inst.db_type = :filter_db_type
 AND rt.name = :filter_rule_template_name
 {{- end }}
 
-{{- if .check_user_can_access }}
-
-AND roles.id IN  ( {{ .role_id_list }} )
-
-{{- end }}
-
 {{- end }}
 `
 
@@ -102,17 +91,6 @@ func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 		return nil, 0, errors.New(errors.DataInvalid, fmt.Errorf("project name can not be empty"))
 	}
 
-	if !IsDefaultAdminUser(user.Name) {
-		roles, err := s.GetRolesByUserID(int(user.ID))
-		if err != nil {
-			return result, count, err
-		}
-		if len(roles) == 0 {
-			return result, count, nil
-		}
-		roleIDs := GetRoleIDsFromRoles(roles)
-		data["role_id_list"] = utils.JoinUintSliceToString(roleIDs, ", ")
-	}
 	err = s.getListResult(instancesQueryBodyTpl, instancesQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
