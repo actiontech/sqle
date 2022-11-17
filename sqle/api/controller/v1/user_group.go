@@ -286,12 +286,6 @@ func GetUserGroupTips(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	if req.FilterProject != "" {
-		err := CheckIsProjectMember(controller.GetUserName(c), req.FilterProject)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
 
 	userGroupNames, err := s.GetUserGroupTipByProject(req.FilterProject)
 	if err != nil {
