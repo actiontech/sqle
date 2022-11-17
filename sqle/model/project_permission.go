@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
@@ -323,9 +322,19 @@ audit plan permission.
 */
 
 func (s *Storage) CheckUserCanCreateAuditPlan(user *User, projectName, instName string) (bool, error) {
-	if user.Name == DefaultAdminUser {
+	if IsDefaultAdminUser(user.Name) {
 		return true, nil
 	}
+
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return false, err
+	}
+
+	if isManager {
+		return true, nil
+	}
+
 	// todo: check it in db, don't get all instances.
 	instances, err := s.GetUserCanOpInstancesFromProject(user, projectName, []uint{OP_AUDIT_PLAN_SAVE})
 	if err != nil {
