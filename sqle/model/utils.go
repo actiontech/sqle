@@ -210,6 +210,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 	}
 	return nil
 }
+
 func (s *Storage) CreateDefaultRole() error {
 	roles, err := s.GetAllRoleTip()
 	if err != nil {
@@ -242,7 +243,7 @@ func (s *Storage) CreateDefaultRole() error {
 func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
-		_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, ProjectIdForGlobalRuleTemplate)
+		exist, err := s.IsRuleTemplateExistFromAnyProject(templateName)
 		if err != nil {
 			return xerrors.Wrap(err, "get rule template failed")
 		}
