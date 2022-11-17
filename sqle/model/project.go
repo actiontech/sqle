@@ -117,7 +117,7 @@ func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 
 func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
 	p := []*Project{}
-	query := s.db.Table("projects").Select("projects.name,projects.id")
+	query := s.db.Table("projects").Select("DISTINCT projects.name,projects.id")
 
 	var err error
 	if userName != DefaultAdminUser {
