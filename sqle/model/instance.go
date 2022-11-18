@@ -216,13 +216,6 @@ func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 	return instanceIds
 }
 
-func getDbTypeQueryCond(dbType string) string {
-	if dbType == "" {
-		return ""
-	}
-	return `AND instances.db_type = ?`
-}
-
 func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectName string) (instances []*Instance, err error) {
 	query := s.db.Model(&Instance{}).Select("instances.name, instances.db_type, instances.workflow_template_id").Group("instances.id")
 
