@@ -40,11 +40,22 @@ AND users.id = ?
 AND role_operations.op_code IN (?)
 AND instances.id IN (?, ?)
 GROUP BY instances.id
+
+UNION 
+SELECT instances.id 
+FROM instances 
+LEFT JOIN projects ON instances.project_id = projects.id 
+LEFT JOIN project_manager ON project_manager.project_id = projects.id 
+LEFT JOIN users ON project_manager.user_id = users.id AND users.deleted_at IS NULL AND users.stat = 0 
+WHERE instances.deleted_at IS NULL 
+AND users.id = ? 
+AND instances.id IN (?, ?) 
+GROUP BY instances.id
 `
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectQuery(query).WithArgs(1, 1, 1, 2, 1, 1, 1, 2).
+	mock.ExpectQuery(query).WithArgs(1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1).AddRow(2))
 
 	inst1 := &Instance{}
