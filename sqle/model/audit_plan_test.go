@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -115,7 +115,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"audit_plan_id"}))
 	mock.ExpectClose()
-	_, err = GetStorage().GetAuditPlanSQLs(2)
+	GetStorage().GetAuditPlanSQLs(2)
 	mockDB.Close()
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
