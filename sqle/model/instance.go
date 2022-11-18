@@ -348,25 +348,23 @@ func (s *Storage) CheckInstancesExist(projectName string, instNames []string) (b
 	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) getInstanceIDsAndBindCacheByNames(instNames []string, projectName string) (map[string /*inst name*/ ]uint /*inst id*/, []uint /*inst id*/, error) {
+func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName string) (map[string /*inst name*/ ]uint /*inst id*/, error) {
 	instNames = utils.RemoveDuplicate(instNames)
 
 	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if len(insts) != len(instNames) {
-		return nil, nil, errors.NewDataNotExistErr("some instances don't exist")
+		return nil, errors.NewDataNotExistErr("some instances don't exist")
 	}
 
 	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
-	instIDs := []uint{}
 
 	for _, inst := range insts {
 		instCache[inst.Name] = inst.ID
-		instIDs = append(instIDs, inst.ID)
 	}
 
-	return instCache, instIDs, nil
+	return instCache, nil
 }

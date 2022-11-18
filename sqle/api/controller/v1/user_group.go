@@ -429,9 +429,10 @@ func UpdateMemberGroup(c echo.Context) error {
 				InstanceName: r.InstanceName,
 			})
 		}
-	}
-	if len(role) > 0 {
-		return controller.JSONBaseErrorReq(c, s.UpdateUserGroupRoles(groupName, projectName, role))
+		err = s.UpdateUserGroupRoles(groupName, projectName, role)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
