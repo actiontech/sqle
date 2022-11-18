@@ -74,6 +74,33 @@ AND projects.name = :project_name
 AND instances.db_type = :db_type
 {{- end }}
 GROUP BY instances.id
+
+UNION
+SELECT
+
+{{- template "select_fields" . -}}
+
+FROM instances
+LEFT JOIN projects ON instances.project_id = projects.id
+LEFT JOIN project_manager ON project_manager.project_id = projects.id
+LEFT JOIN users ON project_manager.user_id = users.id AND users.deleted_at IS NULL AND users.stat = 0
+WHERE
+instances.deleted_at IS NULL
+AND users.id = :user_id
+
+{{- if .instance_ids }}
+AND instances.id IN (:instance_ids)
+{{- end }}
+
+{{- if .project_name }}
+AND projects.name = :project_name
+{{- end }}
+
+{{- if .db_type }}
+AND instances.db_type = :db_type
+{{- end }}
+GROUP BY instances.id
+
 `
 
 func (s *Storage) filterUserHasOpInstances(user *User, instanceIds []uint, ops []uint) ([]*Instance, error) {
