@@ -92,8 +92,14 @@ AND projects.name = ?
 	}
 
 	// 写入新数据
+	duplicate := map[string]struct{}{}
 	for _, role := range bindRoles {
 		for _, name := range role.RoleNames {
+			roleFg := fmt.Sprintf("%v-%v-%v", name, role.InstanceName, user.ID)
+			if _, ok := duplicate[roleFg]; ok {
+				continue
+			}
+			duplicate[roleFg] = struct{}{}
 			if err = tx.Save(&ProjectMemberRole{
 				RoleID:     roleCache[name],
 				InstanceID: instCache[role.InstanceName],
@@ -158,8 +164,14 @@ AND projects.name = ?
 	}
 
 	// 写入新数据
+	duplicate := map[string]struct{}{}
 	for _, role := range bindRoles {
 		for _, name := range role.RoleNames {
+			roleFg := fmt.Sprintf("%v-%v-%v", name, role.InstanceName, group.ID)
+			if _, ok := duplicate[roleFg]; ok {
+				continue
+			}
+			duplicate[roleFg] = struct{}{}
 			if err = tx.Save(&ProjectMemberGroupRole{
 				RoleID:      roleCache[name],
 				InstanceID:  instCache[role.InstanceName],
