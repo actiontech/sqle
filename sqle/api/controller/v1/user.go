@@ -266,11 +266,11 @@ type UserDetailResV1 struct {
 }
 
 type UserBindProjectResV1 struct {
-	ProjectName string
-	IsManager   bool
+	ProjectName string `json:"project_name"`
+	IsManager   bool   `json:"is_manager"`
 }
 
-func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project, projectManagerCache map[uint /*project id*/ ]bool /*is manager*/) UserDetailResV1 {
+func convertUserToRes(user *model.User, managementPermissionCodes []uint, projects []*model.Project, projectManagerCache map[uint] /*project id*/ bool /*is manager*/) UserDetailResV1 {
 	if user.UserAuthenticationType == "" {
 		user.UserAuthenticationType = model.UserAuthenticationTypeSQLE
 	}
