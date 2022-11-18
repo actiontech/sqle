@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
@@ -296,11 +295,6 @@ AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
 	return count > 0, nil
-}
-
-// todo: remove
-func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (users []*User, err error) {
-	return nil, fmt.Errorf("function GetUsersByOperationCode deprecated")
 }
 
 // GetCanAuditWorkflowUsers will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
