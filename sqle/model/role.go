@@ -68,7 +68,7 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 		}
 	}
 
-	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
+	instCache, err := s.getInstanceBindCacheByNames(instNames, projectName)
 	if err != nil {
 		return err
 	}
@@ -79,13 +79,14 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	}
 
 	// 删掉所有旧数据
-	if len(instIDs) > 0 {
-		err = tx.Exec(`
-DELETE FROM project_member_roles
-WHERE user_id = ?
-AND instance_id in (?)
-`, user.ID, instIDs).Error
-	}
+	err = tx.Exec(`
+DELETE project_member_roles 
+FROM project_member_roles
+LEFT JOIN project_user ON project_user.user_id = project_member_roles.user_id
+LEFT JOIN projects ON projects.id = project_user.project_id
+WHERE project_member_roles.user_id = ?
+AND projects.name = ?
+`, user.ID, projectName).Error
 	if err != nil {
 		return err
 	}
@@ -133,7 +134,7 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 		}
 	}
 
-	instCache, instIDs, err := s.getInstanceIDsAndBindCacheByNames(instNames, projectName)
+	instCache, err := s.getInstanceBindCacheByNames(instNames, projectName)
 	if err != nil {
 		return err
 	}
@@ -145,10 +146,13 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 
 	// 删掉所有旧数据
 	err = tx.Exec(`
-DELETE FROM project_member_group_roles
-WHERE user_group_id = ?
-AND instance_id in (?)
-`, group.ID, instIDs).Error
+DELETE project_member_group_roles 
+FROM project_member_group_roles
+LEFT JOIN project_user_group ON project_user_group.user_group_id = project_member_group_roles.user_group_id
+LEFT JOIN projects ON projects.id = project_user_group.project_id
+WHERE project_member_group_roles.user_group_id = ?
+AND projects.name = ?
+`, group.ID, projectName).Error
 	if err != nil {
 		return err
 	}
