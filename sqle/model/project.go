@@ -396,7 +396,9 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 		query = query.Where("user_groups.name = ?", *filter.FilterUserGroupName)
 	}
 	if filter.FilterInstanceName != nil {
-		query = query.Where("instances.name = ?", *filter.FilterInstanceName)
+		query = query.
+			Joins("JOIN project_member_group_roles ON project_member_group_roles.user_group_id = user_groups.id AND project_member_group_roles.instance_id = instances.id").
+			Where("instances.name = ?", *filter.FilterInstanceName)
 	}
 	return query, nil
 }
