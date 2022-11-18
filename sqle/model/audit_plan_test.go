@@ -115,7 +115,8 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"audit_plan_id"}))
 	mock.ExpectClose()
-	GetStorage().GetAuditPlanSQLs(2)
+	_, err = GetStorage().GetAuditPlanSQLs(2)
+	assert.NoError(t, err)
 	mockDB.Close()
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
