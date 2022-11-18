@@ -103,6 +103,11 @@ FROM project_user
 LEFT JOIN users ON users.id = project_user.user_id
 LEFT JOIN projects ON projects.id = project_user.project_id
 LEFT JOIN instances ON instances.project_id = projects.id
+
+{{  if .filter_instance_name  }}
+JOIN project_member_roles ON project_member_roles.user_id = users.id AND project_member_roles.instance_id = instances.id
+{{ end }}
+
 WHERE users.stat = 0
 AND users.deleted_at IS NULL
 AND instances.deleted_at IS NULL
