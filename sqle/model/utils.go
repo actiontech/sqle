@@ -468,11 +468,11 @@ func (rl *RowList) ForceConvertIntSlice() []uint {
 	return res
 }
 
-func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result interface{}, queryTpl string, bodyTpls ...string) error {
+func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result interface{}, queryTpl string, bodyTemplates ...string) error {
 	var buff bytes.Buffer
 	tpl := template.New("getQuery")
 	var err error
-	for _, bt := range bodyTpls {
+	for _, bt := range bodyTemplates {
 		if tpl, err = tpl.Parse(bt); err != nil {
 			return err
 		}
