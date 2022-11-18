@@ -24,7 +24,6 @@ import (
 
 const (
 	apiV1 = "v1"
-	apiV2 = "v2"
 )
 
 // @title Sqle API Docs

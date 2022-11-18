@@ -63,9 +63,7 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	roleNames := []string{}
 	for _, role := range bindRoles {
 		instNames = append(instNames, role.InstanceName)
-		for _, name := range role.RoleNames {
-			roleNames = append(roleNames, name)
-		}
+		roleNames = append(roleNames, role.RoleNames...)
 	}
 
 	instCache, err := s.getInstanceBindCacheByNames(instNames, projectName)
@@ -135,9 +133,7 @@ func (s *Storage) updateUserGroupRoles(tx *gorm.DB, group *UserGroup, projectNam
 	roleNames := []string{}
 	for _, role := range bindRoles {
 		instNames = append(instNames, role.InstanceName)
-		for _, name := range role.RoleNames {
-			roleNames = append(roleNames, name)
-		}
+		roleNames = append(roleNames, role.RoleNames...)
 	}
 
 	instCache, err := s.getInstanceBindCacheByNames(instNames, projectName)
@@ -185,7 +181,7 @@ AND projects.name = ?
 	return nil
 }
 
-func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role name*/ ]uint /*role id*/, error) {
+func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string] /*role name*/ uint /*role id*/, error) {
 	roleNames = utils.RemoveDuplicate(roleNames)
 
 	roles, err := s.GetRolesByNames(roleNames)
@@ -197,7 +193,7 @@ func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role na
 		return nil, errors.NewDataNotExistErr("some roles don't exist")
 	}
 
-	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
+	roleCache := map[string] /*role name*/ uint /*role id*/ {}
 	for _, role := range roles {
 		roleCache[role.Name] = role.ID
 	}
@@ -205,7 +201,7 @@ func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role na
 	return roleCache, nil
 }
 
-func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) (map[string /*member name*/ ][]BindRole, error) {
+func (s *Storage) GetBindRolesByMemberNames(names []string, projectName string) (map[string] /*member name*/ []BindRole, error) {
 	roles := []*struct {
 		UserName     string `json:"user_name"`
 		InstanceName string `json:"instance_name"`
@@ -260,7 +256,7 @@ A:
 	return resp, nil
 }
 
-func (s *Storage) GetBindRolesByMemberGroupNames(names []string, projectName string) (map[string /*member group name*/ ][]BindRole, error) {
+func (s *Storage) GetBindRolesByMemberGroupNames(names []string, projectName string) (map[string] /*member group name*/ []BindRole, error) {
 	roles := []*struct {
 		GroupName    string `json:"group_name"`
 		InstanceName string `json:"instance_name"`
