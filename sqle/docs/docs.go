@@ -10401,10 +10401,10 @@ var doc = `{
         "v1.UserBindProjectResV1": {
             "type": "object",
             "properties": {
-                "isManager": {
+                "is_manager": {
                     "type": "boolean"
                 },
-                "projectName": {
+                "project_name": {
                     "type": "string"
                 }
             }

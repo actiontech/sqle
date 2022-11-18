@@ -2878,9 +2878,9 @@ definitions:
     type: object
   v1.UserBindProjectResV1:
     properties:
-      isManager:
+      is_manager:
         type: boolean
-      projectName:
+      project_name:
         type: string
     type: object
   v1.UserDetailResV1:
