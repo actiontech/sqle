@@ -356,6 +356,10 @@ func (s *Storage) getInstanceIDsAndBindCacheByNames(instNames []string, projectN
 		return nil, nil, err
 	}
 
+	if len(insts) != len(instNames) {
+		return nil, nil, errors.NewDataNotExistErr("some instances don't exist")
+	}
+
 	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
 	instIDs := []uint{}
 

@@ -84,11 +84,13 @@ func (s *Storage) updateUserRoles(tx *gorm.DB, user *User, projectName string, b
 	}
 
 	// 删掉所有旧数据
-	err = tx.Exec(`
+	if len(instIDs) > 0 {
+		err = tx.Exec(`
 DELETE FROM project_member_roles
 WHERE user_id = ?
 AND instance_id in (?)
 `, user.ID, instIDs).Error
+	}
 	if err != nil {
 		return err
 	}
@@ -178,6 +180,10 @@ func (s *Storage) getRoleBindIDByNames(roleNames []string) (map[string /*role na
 	roles, err := s.GetRolesByNames(roleNames)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(roles) != len(roleNames) {
+		return nil, errors.NewDataNotExistErr("some roles don't exist")
 	}
 
 	roleCache := map[string /*role name*/ ]uint /*role id*/ {}
