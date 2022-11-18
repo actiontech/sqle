@@ -34,7 +34,7 @@ const (
 
 type (
 	BaseRes                     = controller.BaseRes
-	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1 // todo issue980 confirm
+	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
 	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
 	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
 	PartialSyncAuditPlanSQLsReq = v1.PartialSyncAuditPlanSQLsReqV1
