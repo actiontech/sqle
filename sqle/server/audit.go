@@ -15,12 +15,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Audit(l *logrus.Entry, task *model.Task, ruleTemplateName string) (err error) {
-	return HookAudit(l, task, &EmptyAuditHook{}, ruleTemplateName)
+func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName string) (err error) {
+	return HookAudit(l, task, &EmptyAuditHook{}, projectId,ruleTemplateName)
 }
 
-func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, ruleTemplateName string) (err error) {
-	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, ruleTemplateName)
+func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint,ruleTemplateName string) (err error) {
+	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId,ruleTemplateName)
 	if err != nil {
 		return err
 	}
@@ -35,8 +35,8 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, ruleTemplateNa
 
 const AuditSchema = "AuditSchema"
 
-func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, ruleTemplateName string) (*model.Task, error) {
-	manager, err := newDriverManagerWithAudit(l, nil, "", dbType, ruleTemplateName)
+func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *uint, ruleTemplateName string) (*model.Task, error) {
+	manager, err := newDriverManagerWithAudit(l, nil, "", dbType, projectId, ruleTemplateName)
 	if err != nil {
 		return nil, err
 	}

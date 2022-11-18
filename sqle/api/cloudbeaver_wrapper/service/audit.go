@@ -44,16 +44,18 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		return true, nil, nil
 	}
 
-	ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceName(inst.Name)
+	ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceNameAndProjectId(inst.Name, inst.ProjectId)
 	if err != nil {
 		return false, nil, err
 	}
 	ruleTemplateName := ""
+	var projectId uint
 	if exist {
 		ruleTemplateName = ruleTemplate.Name
+		projectId = ruleTemplate.ProjectId
 	}
 
-	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, ruleTemplateName)
+	task, err := server.AuditSQLByDBType(log.NewEntry(), sql, inst.DbType, &projectId, ruleTemplateName)
 	if err != nil {
 		return false, nil, err
 	}

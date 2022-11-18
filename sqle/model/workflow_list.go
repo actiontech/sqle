@@ -8,7 +8,7 @@ import (
 )
 
 type WorkflowListDetail struct {
-	Id                      uint           `json:"workflow_id"`
+	ProjectName             string         `json:"project_name"`
 	Subject                 string         `json:"subject"`
 	Desc                    string         `json:"desc"`
 	CreateUser              sql.NullString `json:"create_user_name"`
@@ -16,13 +16,12 @@ type WorkflowListDetail struct {
 	CreateTime              *time.Time     `json:"create_time"`
 	CurrentStepType         sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser RowList        `json:"current_step_assignee_user_name_list"`
-	TaskStatus              RowList        `json:"task_status"`
 	Status                  string         `json:"status"`
 	TaskInstanceType        RowList        `json:"task_instance_type"`
 }
 
 var workflowsQueryTpl = `
-SELECT w.id                                                          AS workflow_id,
+SELECT p.name 														 AS project_name,
        w.subject,
        w.desc,
        create_user.login_name                                        AS create_user_name,
@@ -30,9 +29,8 @@ SELECT w.id                                                          AS workflow
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
        GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_user_name_list,
-       GROUP_CONCAT(tasks.status)                                    AS task_status,
-       wr.status,																							
-	   GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
+       wr.status,
+       GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
 {{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC
@@ -48,7 +46,8 @@ var workflowsCountTpl = `SELECT COUNT(DISTINCT w.id)
 
 var workflowsQueryBodyTpl = `
 {{ define "body" }}
-FROM workflows AS w
+FROM workflows w
+LEFT JOIN projects AS p ON w.project_id = p.id
 LEFT JOIN users AS create_user ON w.create_user_id = create_user.id
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
 LEFT JOIN workflow_instance_records wir on wir.workflow_record_id = wr.id
@@ -124,6 +123,11 @@ AND tasks.status = :filter_task_status
 {{- if .filter_task_instance_name }}
 AND inst.name = :filter_task_instance_name
 {{- end }}
+
+{{- if .filter_project_name }}
+AND p.name = :filter_project_name
+{{- end }}
+
 {{ end }}
 
 `

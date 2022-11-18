@@ -27,7 +27,7 @@ var (
 				APName:      rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "slowquery")
-			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
 			scanner, err := slowquery.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))

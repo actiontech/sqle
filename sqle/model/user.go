@@ -26,6 +26,8 @@ const (
 	UserAuthenticationTypeOAUTH2 UserAuthenticationType = "oauth2" //user verify through oauth2
 )
 
+// NOTE: related model:
+// - ProjectMemberRole, ManagementPermission
 type User struct {
 	Model
 	// has created composite index: [id, login_name] by gorm#AddIndex
@@ -35,10 +37,10 @@ type User struct {
 	Password               string                 `json:"-" gorm:"-"`
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
-	Roles                  []*Role                `gorm:"many2many:user_role;"`
-	UserGroups             []*UserGroup           `gorm:"many2many:user_group_users"`
-	Stat                   uint                   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
-	ThirdPartyUserID       string                 `json:"third_party_user_id"`
+
+	UserGroups       []*UserGroup `gorm:"many2many:user_group_users"`
+	Stat             uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+	ThirdPartyUserID string       `json:"third_party_user_id"`
 
 	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
 }
@@ -118,7 +120,7 @@ func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 
 func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	t := &User{}
-	err := s.db.Preload("Roles").Preload("UserGroups").
+	err := s.db.Preload("UserGroups").
 		Where("login_name = ?", name).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
@@ -126,14 +128,36 @@ func (s *Storage) GetUserDetailByName(name string) (*User, bool, error) {
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateUserRoles(user *User, rs ...*Role) error {
-	err := s.db.Model(user).Association("Roles").Replace(rs).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) GetUsersByNames(names []string) ([]*User, error) {
 	users := []*User{}
 	err := s.db.Where("login_name in (?)", names).Find(&users).Error
+	return users, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetUserTipsByProject(projectName string) ([]*User, error) {
+	if projectName == "" {
+		return s.GetAllUserTip()
+	}
+
+	query := `
+SELECT DISTINCT users.login_name 
+FROM users
+LEFT JOIN project_user on project_user.user_id = users.id
+LEFT JOIN projects on project_user.project_id = projects.id
+LEFT JOIN user_group_users on users.id = user_group_users.user_id 
+LEFT JOIN project_user_group on user_group_users.user_group_id = project_user_group.user_group_id
+LEFT JOIN projects as p on project_user_group.project_id = p.id
+WHERE users.stat = 0
+AND( 
+	projects.name = ?
+OR
+	p.name = ?
+)
+`
+
+	var users []*User
+	err := s.db.Raw(query, projectName, projectName).Scan(&users).Error
+
 	return users, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -168,75 +192,6 @@ func (s *Storage) GetAndCheckUserExist(userNames []string) (users []*User, err e
 			fmt.Errorf("user %s not exist", strings.Join(notExistUserNames, ", ")))
 	}
 	return users, nil
-}
-
-func (s *Storage) UserCanAccessInstance(user *User, instance *Instance) (
-	ok bool, err error) {
-
-	if IsDefaultAdminUser(user.Name) {
-		return true, nil
-	}
-
-	type countStruct struct {
-		Count int `json:"count"`
-	}
-
-	query := `
-SELECT COUNT(1) AS count
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
-LEFT JOIN user_role ON user_role.role_id = roles.id
-LEFT JOIN users ON users.id = user_role.user_id AND users.stat = 0 AND users.deleted_at IS NULL
-WHERE instances.deleted_at IS NULL
-AND instances.id = ?
-AND users.id = ?
-GROUP BY instances.id
-UNION
-SELECT instances.id
-FROM instances
-LEFT JOIN instance_role ON instance_role.instance_id = instances.id
-LEFT JOIN roles ON roles.id = instance_role.role_id AND roles.stat = 0 AND roles.deleted_at IS NULL
-JOIN user_group_roles ON roles.id = user_group_roles.role_id
-JOIN user_groups ON user_groups.id = user_group_roles.user_group_id AND user_groups.stat = 0 AND user_groups.deleted_at IS NULL
-JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
-JOIN users ON users.id = user_group_users.user_id AND users.stat = 0 AND users.deleted_at IS NULL
-WHERE instances.deleted_at IS NULL
-AND instances.id = ?
-AND users.id = ?
-GROUP BY instances.id
-`
-	var cnt countStruct
-	err = s.db.Unscoped().Raw(query, instance.ID, user.ID, instance.ID, user.ID).Scan(&cnt).Error
-	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			return false, nil
-		}
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return cnt.Count > 0, nil
-}
-
-func (s *Storage) UserCanAccessWorkflow(user *User, workflow *Workflow) (bool, error) {
-	query := `SELECT count(w.id) FROM workflows AS w
-JOIN workflow_records AS wr ON w.workflow_record_id = wr.id AND w.id = ?
-LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
-LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id = cur_wst.id
-LEFT JOIN workflow_step_user AS cur_wst_re_user ON cur_ws.id = cur_wst_re_user.workflow_step_id
-LEFT JOIN users AS cur_ass_user ON cur_wst_re_user.user_id = cur_ass_user.id AND cur_ass_user.stat=0
-LEFT JOIN workflow_steps AS op_ws ON w.id = op_ws.workflow_id AND op_ws.state != "initialized"
-LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
-LEFT JOIN workflow_step_user AS op_wst_re_user ON op_ws.id = op_wst_re_user.workflow_step_id
-LEFT JOIN users AS op_ass_user ON op_wst_re_user.user_id = op_ass_user.id AND op_ass_user.stat=0
-where w.deleted_at IS NULL
-AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
-`
-	var count uint
-	err := s.db.Raw(query, workflow.ID, user.ID, user.ID, user.ID).Count(&count).Error
-	if err != nil {
-		return false, errors.New(errors.ConnectStorageError, err)
-	}
-	return count > 0, nil
 }
 
 func (s *Storage) UpdatePassword(user *User, newPassword string) error {
@@ -282,9 +237,8 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-// NOTE: parameter: roles([]*Users) and userGroups([]*Role) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserAndAssociations(
-	user *User, roles []*Role, userGroups []*UserGroup) (err error) {
+	user *User, userGroups []*UserGroup, managementPermissionCodes *[]uint) (err error) {
 	return s.Tx(func(txDB *gorm.DB) error {
 
 		// User
@@ -293,18 +247,7 @@ func (s *Storage) SaveUserAndAssociations(
 			return errors.ConnectStorageErrWrapper(err)
 		}
 
-		// Roles
-		if roles != nil {
-			if err := txDB.Model(user).
-				Association("Roles").
-				Replace(roles).Error; err != nil {
-				txDB.Rollback()
-				return errors.ConnectStorageErrWrapper(err)
-			}
-		}
-
 		// user groups
-
 		if userGroups != nil {
 			if err := txDB.Model(user).
 				Association("UserGroups").
@@ -314,30 +257,16 @@ func (s *Storage) SaveUserAndAssociations(
 			}
 		}
 
+		// permission
+		if managementPermissionCodes != nil {
+			if err := updateManagementPermission(txDB, user.ID, *managementPermissionCodes); err != nil {
+				txDB.Rollback()
+				return errors.ConnectStorageErrWrapper(err)
+			}
+		}
+
 		return nil
 	})
-}
-
-// GetUsersByOperationCode will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
-func (s *Storage) GetUsersByOperationCode(instance *Instance, opCode ...int) (users []*User, err error) {
-	names := []string{}
-	err = s.db.Model(&User{}).Select("DISTINCT users.login_name").
-		Joins("LEFT JOIN user_role ON users.id = user_role.user_id "+
-			"LEFT JOIN user_group_users ON users.id = user_group_users.user_id "+
-			"LEFT JOIN user_group_roles ON user_group_users.user_group_id = user_group_roles.role_id "+
-			"LEFT JOIN role_operations ON ( user_role.role_id = role_operations.role_id OR user_group_roles.role_id = role_operations.role_id ) AND role_operations.deleted_at IS NULL "+
-			"LEFT JOIN instance_role ON instance_role.role_id = role_operations.role_id ").
-		Where("instance_role.instance_id = ?", instance.ID).
-		Where("role_operations.op_code in (?)", opCode).
-		Group("users.id").
-		Pluck("login_name", &names).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-	if len(names) == 0 {
-		names = append(names, DefaultAdminUser)
-	}
-	return s.GetUsersByNames(names)
 }
 
 func (s *Storage) GetUserByID(id uint) (*User, bool, error) {

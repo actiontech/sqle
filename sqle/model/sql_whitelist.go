@@ -15,6 +15,7 @@ const (
 
 type SqlWhitelist struct {
 	Model
+	ProjectId uint `gorm:"index; not null"`
 	// Value store SQL text.
 	Value            string `json:"value" gorm:"not null;type:text"`
 	CapitalizedValue string `json:"-" gorm:"-"`
