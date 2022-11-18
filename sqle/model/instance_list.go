@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -15,19 +14,16 @@ type InstanceDetail struct {
 	Port                 string         `json:"db_port"`
 	User                 string         `json:"db_user"`
 	MaintenancePeriod    Periods        `json:"maintenance_period" gorm:"text"`
-	WorkflowTemplateName sql.NullString `json:"workflow_template_name"`
 	RuleTemplateNames    RowList        `json:"rule_template_names"`
 	SqlQueryConfig       SqlQueryConfig `json:"sql_query_config"`
 }
 
 var instancesQueryTpl = `SELECT inst.name, inst.db_type, inst.desc, inst.db_host,
-inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, wt.name AS workflow_template_name,
+inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, 
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
 FROM instances AS inst
-LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
-LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL 
 WHERE
 inst.id in (SELECT DISTINCT(inst.id)
 
@@ -47,10 +43,8 @@ var instancesCountTpl = `SELECT COUNT(DISTINCT inst.id)
 var instancesQueryBodyTpl = `
 {{ define "body" }}
 FROM instances AS inst
-LEFT JOIN instance_role AS ir ON inst.id = ir.instance_id
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
 LEFT JOIN rule_templates AS rt ON inst_rt.rule_template_id = rt.id AND rt.deleted_at IS NULL
-LEFT JOIN workflow_templates AS wt ON inst.workflow_template_id = wt.id AND wt.deleted_at IS NULL
 LEFT JOIN projects AS p ON inst.project_id = p.id
 
 WHERE inst.deleted_at IS NULL
