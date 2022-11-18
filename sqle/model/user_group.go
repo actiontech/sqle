@@ -7,13 +7,14 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// NOTE: related model:
+// - ProjectMemberGroupRole
 type UserGroup struct {
 	Model
 	Name  string  `json:"name" gorm:"index"`
 	Desc  string  `json:"desc" gorm:"column:description"`
 	Users []*User `gorm:"many2many:user_group_users"`
 	Stat  uint    `json:"stat" gorm:"comment:'0:active,1:disabled'"`
-	Roles []*Role `gorm:"many2many:user_group_roles"`
 }
 
 func (ug *UserGroup) TableName() string {
@@ -40,9 +41,8 @@ func (s *Storage) GetUserGroupByName(name string) (
 	return userGroup, true, err
 }
 
-// NOTE: parameter: us([]*Users) and rs([]*Role) need to be distinguished as nil or zero length slice.
 func (s *Storage) SaveUserGroupAndAssociations(
-	ug *UserGroup, us []*User, rs []*Role) (err error) {
+	ug *UserGroup, us []*User) (err error) {
 
 	return s.Tx(func(txDB *gorm.DB) error {
 		if err := txDB.Save(ug).Error; err != nil {
@@ -56,15 +56,26 @@ func (s *Storage) SaveUserGroupAndAssociations(
 			}
 		}
 
-		// save user group roles
-		if rs != nil {
-			if err := txDB.Model(ug).Association("Roles").Replace(rs).Error; err != nil {
-				return err
-			}
-		}
-
 		return nil
 	})
+}
+
+func (s *Storage) GetUserGroupTipByProject(projectName string) ([]*UserGroup, error) {
+	if projectName == "" {
+		return s.GetAllUserGroupTip()
+	}
+
+	userGroups := []*UserGroup{}
+	err := s.db.Table("user_groups").
+		Joins("LEFT JOIN project_user_group on project_user_group.user_group_id = user_groups.id").
+		Joins("LEFT JOIN projects on project_user_group.project_id = projects.id").
+		Select("user_groups.name").
+		Where("stat=0").
+		Where("user_groups.deleted_at IS NULL").
+		Where("projects.name = ?", projectName).
+		Find(&userGroups).Error
+
+	return userGroups, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {

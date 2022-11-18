@@ -11,6 +11,7 @@ var (
 		host          string
 		port          string
 		token         string
+		project       string
 		auditPlanName string
 		timeout       int
 	}
@@ -27,6 +28,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.auditPlanName, "name", "N", "", "audit plan name")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.token, "token", "A", "", "sqle token")
 	rootCmd.PersistentFlags().IntVarP(&rootCmdFlags.timeout, "timeout", "T", pkgScanner.DefaultTimeoutNum, "request sqle timeout in seconds")
+	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.project, "project", "J", "default", "project name")
 	_ = rootCmd.MarkPersistentFlagRequired("name")
 	_ = rootCmd.MarkPersistentFlagRequired("token")
 }

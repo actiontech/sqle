@@ -5,9 +5,8 @@ package v1
 
 import (
 	e "errors"
-	"net/http"
-
 	"github.com/actiontech/sqle/sqle/errors"
+	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -22,6 +21,7 @@ func getInstanceTips(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	projectName := c.Param("project_name")
 
 	s := model.GetStorage()
 	user, err := controller.GetCurrentUser(c)
@@ -32,11 +32,11 @@ func getInstanceTips(c echo.Context) error {
 	var instances []*model.Instance
 	switch req.FunctionalModule {
 	case create_audit_plan:
-		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_AUDIT_PLAN_SAVE)
-	case sql_query:
-		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType)
-	default: // create_workflow case
-		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId)
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_AUDIT_PLAN_SAVE)
+	case create_workflow:
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_WORKFLOW_SAVE)
+	default:
+		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType, projectName)
 	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"bytes"
 	"database/sql"
 	sqlDriver "database/sql/driver"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -135,6 +137,10 @@ var autoMigrateList = []interface{}{
 	&WorkflowInstanceRecord{},
 	&CloudBeaverUserCache{},
 	&CloudBeaverInstanceCache{},
+	&Project{},
+	&ProjectMemberRole{},
+	&ProjectMemberGroupRole{},
+	&ManagementPermission{},
 }
 
 func (s *Storage) AutoMigrate() error {
@@ -152,6 +158,16 @@ func (s *Storage) AutoMigrate() error {
 	}
 	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
 		"audit_plan_id", "fingerprint_md5").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	err = s.db.Model(&ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
+		"user_id", "instance_id", "role_id").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	err = s.db.Model(&ProjectMemberGroupRole{}).AddUniqueIndex("uniq_project_user_group_role_user_group_id_instance_id_role_id",
+		"user_group_id", "instance_id", "role_id").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
@@ -195,10 +211,39 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
 	return nil
 }
 
+func (s *Storage) CreateDefaultRole() error {
+	roles, err := s.GetAllRoleTip()
+	if err != nil {
+		return err
+	}
+	if len(roles) > 0 {
+		return nil
+	}
+
+	// dev
+	err = s.SaveRoleAndAssociations(&Role{
+		Name: "dev",
+		Desc: "dev",
+	}, []uint{OP_WORKFLOW_SAVE, OP_AUDIT_PLAN_SAVE, OP_SQL_QUERY_QUERY})
+	if err != nil {
+		return err
+	}
+
+	// dba
+	err = s.SaveRoleAndAssociations(&Role{
+		Name: "dba",
+		Desc: "dba",
+	}, []uint{OP_WORKFLOW_AUDIT, OP_SQL_QUERY_QUERY})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
-		_, exist, err := s.GetRuleTemplateByName(templateName)
+		exist, err := s.IsRuleTemplateExistFromAnyProject(templateName)
 		if err != nil {
 			return xerrors.Wrap(err, "get rule template failed")
 		}
@@ -255,47 +300,27 @@ func (s *Storage) CreateAdminUser() error {
 	return nil
 }
 
-var DefaultWorkflowTemplate = "default"
+const DefaultProject = "default"
 
-func (s *Storage) CreateDefaultWorkflowTemplate() error {
-	user, exist, err := s.GetUserByName(DefaultAdminUser)
+func (s *Storage) CreateDefaultProject() error {
+	exist, err := s.IsProjectExist()
+	if err != nil {
+		return err
+	}
+	if exist {
+		return nil
+	}
+
+	defaultUser, exist, err := s.GetUserByName(DefaultAdminUser)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		return fmt.Errorf("admin user not exist")
+		return fmt.Errorf("admin not exist, unable to create project")
 	}
-	_, exist, err = s.GetWorkflowTemplateByName(DefaultWorkflowTemplate)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		wt := &WorkflowTemplate{
-			Name:                          DefaultWorkflowTemplate,
-			Desc:                          "默认模板",
-			AllowSubmitWhenLessAuditLevel: string(driver.RuleLevelWarn),
-			Steps: []*WorkflowStepTemplate{
-				{
-					Number: 1,
-					Typ:    WorkflowStepTypeSQLReview,
-					ApprovedByAuthorized: sql.NullBool{
-						Bool:  true,
-						Valid: true,
-					},
-				},
-				{
-					Number: 2,
-					Typ:    WorkflowStepTypeSQLExecute,
-					Users:  []*User{user},
-				},
-			},
-		}
-		err = s.SaveWorkflowTemplate(wt)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+
+	err = s.CreateProject(DefaultProject, "", defaultUser.ID)
+	return err
 }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {
@@ -441,4 +466,37 @@ func (rl *RowList) ForceConvertIntSlice() []uint {
 		res[i] = uint(n)
 	}
 	return res
+}
+
+func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result interface{}, queryTpl string, bodyTemplates ...string) error {
+	var buff bytes.Buffer
+	tpl := template.New("getQuery")
+	var err error
+	for _, bt := range bodyTemplates {
+		if tpl, err = tpl.Parse(bt); err != nil {
+			return err
+		}
+	}
+	tpl, err = tpl.Parse(queryTpl)
+	if err != nil {
+		return err
+	}
+	err = tpl.Execute(&buff, data)
+	if err != nil {
+		return err
+	}
+
+	sqlxDb := GetSqlxDb()
+
+	query, args, err := sqlx.Named(buff.String(), data)
+	if err != nil {
+		return err
+	}
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return err
+	}
+	query = sqlxDb.Rebind(query)
+	err = sqlxDb.Select(result, query, args...)
+	return err
 }

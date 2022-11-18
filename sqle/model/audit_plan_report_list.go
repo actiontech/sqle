@@ -31,10 +31,12 @@ var auditPlanReportBodyTpl = `
 
 FROM audit_plan_reports_v2 AS reports
 JOIN audit_plans ON audit_plans.id = reports.audit_plan_id
+JOIN projects ON projects.id = audit_plans.project_id
 
 WHERE reports.deleted_at IS NULL
 AND audit_plans.deleted_at IS NULL
 AND audit_plans.name = :audit_plan_name
+AND projects.name = :project_name
 
 ORDER BY reports.created_at DESC , reports.id DESC 
 
@@ -81,8 +83,11 @@ var auditPlanReportSQLBodyTpl = `
 {{ define "body" }}
 
 FROM audit_plan_report_sqls_v2 AS report_sqls
-WHERE deleted_at IS NULL
-AND audit_plan_report_id = :audit_plan_report_id
+JOIN audit_plan_reports_v2 AS audit_plan_reports ON report_sqls.audit_plan_report_id = audit_plan_reports.id
+WHERE audit_plan_reports.deleted_at IS NULL
+AND report_sqls.deleted_at IS NULL
+AND report_sqls.audit_plan_report_id = :audit_plan_report_id
+AND audit_plan_reports.audit_plan_id = :audit_plan_id
 
 {{ end }}
 `

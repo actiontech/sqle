@@ -12,6 +12,7 @@ import (
 
 type AuditPlan struct {
 	Model
+	ProjectId        uint   `gorm:"index; not null"`
 	Name             string `json:"name" gorm:"not null;index"`
 	CronExpression   string `json:"cron_expression" gorm:"not null"`
 	DBType           string `json:"db_type" gorm:"not null"`
@@ -79,53 +80,54 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanReportByID(id uint) (*AuditPlanReportV2, bool, error) {
-	ap := &AuditPlanReportV2{}
-	err := s.db.Model(AuditPlanReportV2{}).Where("id = ?", id).Preload("AuditPlan").Find(ap).Error
+func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanSQLs(name string) ([]*AuditPlanSQLV2, error) {
-	ap, exist, err := s.GetAuditPlanByName(name)
-	if err != nil {
-		return nil, err
+func (s *Storage) GetAuditPlanFromProjectByName(projectName, AuditPlanName string) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where("projects.name = ? AND audit_plans.name = ?", projectName, AuditPlanName).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
 	}
-	if !exist {
-		return nil, gorm.ErrRecordNotFound
-	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
 
+func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReportV2, bool, error) {
+	ap := &AuditPlanReportV2{}
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) {
 	var sqls []*AuditPlanSQLV2
-	err = s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", ap.ID).Find(&sqls).Error
+	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) OverrideAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return err
-	}
-
-	err = s.db.Unscoped().
+func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	err := s.db.Unscoped().
 		Model(AuditPlanSQLV2{}).
-		Where("audit_plan_id = ?", ap.ID).
+		Where("audit_plan_id = ?", auditPlanId).
 		Delete(&AuditPlanSQLV2{}).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	raw, args := getBatchInsertRawSQL(ap, sqls)
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
 
-func (s *Storage) UpdateDefaultAuditPlanSQLs(apName string, sqls []*AuditPlanSQLV2) error {
-	ap, _, err := s.GetAuditPlanByName(apName)
-	if err != nil {
-		return err
-	}
-
-	raw, args := getBatchInsertRawSQL(ap, sqls)
+func (s *Storage) UpdateDefaultAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
 	raw += `
 ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
@@ -138,11 +140,11 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func getBatchInsertRawSQL(ap *AuditPlan, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
+func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
 		pattern = append(pattern, "(?, ?, ?, ?, ?)")
-		args = append(args, ap.ID, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info)
+		args = append(args, auditPlanId, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info)
 	}
 	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`) VALUES %s",
 		strings.Join(pattern, ", "))
@@ -154,18 +156,7 @@ func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) CheckUserCanCreateAuditPlan(user *User, instName, dbType string) (bool, error) {
-	if user.Name == DefaultAdminUser {
-		return true, nil
-	}
-	instances, err := s.GetUserCanOpInstances(user, []uint{OP_AUDIT_PLAN_SAVE})
-	if err != nil {
-		return false, err
-	}
-	for _, instance := range instances {
-		if instName == instance.Name {
-			return true, nil
-		}
-	}
-	return false, nil
+func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) error {
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
