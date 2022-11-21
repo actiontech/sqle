@@ -2205,6 +2205,9 @@ definitions:
         type: string
       desc:
         type: string
+      explain:
+        example: 避免多次 table rebuild 带来的消耗、以及对线上业务的影响
+        type: string
       level:
         enum:
         - normal
