@@ -2200,13 +2200,13 @@ definitions:
     type: object
   v1.RuleResV1:
     properties:
+      annotation:
+        example: 避免多次 table rebuild 带来的消耗、以及对线上业务的影响
+        type: string
       db_type:
         example: mysql
         type: string
       desc:
-        type: string
-      explain:
-        example: 避免多次 table rebuild 带来的消耗、以及对线上业务的影响
         type: string
       level:
         enum:
