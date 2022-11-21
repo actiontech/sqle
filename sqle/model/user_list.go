@@ -20,11 +20,8 @@ func (u *UserDetail) IsDisabled() bool {
 var usersQueryTpl = `SELECT 
 users.id, users.login_name, users.email, users.wechat_id,
 users.user_authentication_type, users.stat, 
-GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names,
 GROUP_CONCAT(DISTINCT COALESCE(user_groups.name,'')) AS user_group_names
 FROM users 
-LEFT JOIN user_role ON users.id = user_role.user_id
-LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
 LEFT JOIN user_group_users ON users.id = user_group_users.user_id
 LEFT JOIN user_groups ON user_group_users.user_group_id = user_groups.id AND user_groups.deleted_at IS NULL
 WHERE
@@ -44,15 +41,10 @@ var usersCountTpl = `SELECT COUNT(DISTINCT users.id)
 var usersQueryBodyTpl = `
 {{ define "body" }}
 FROM users 
-LEFT JOIN user_role ON users.id = user_role.user_id
-LEFT JOIN roles ON user_role.role_id = roles.id AND roles.deleted_at IS NULL
 WHERE
 users.deleted_at IS NULL
 {{- if .filter_user_name }}
 AND users.login_name = :filter_user_name
-{{- end }}
-{{- if .filter_role_name }}
-AND roles.name = :filter_role_name
 {{- end }}
 {{- end }}
 `
