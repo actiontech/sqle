@@ -1205,11 +1205,12 @@ type GetAuditPlanAnalysisDataResV1 struct {
 // @Id getTaskAnalysisData
 // @Tags audit_plan
 // @Param project_name path string true "project name"
+// @Param audit_plan_name path string true "audit plan name"
 // @Param audit_plan_report_id path string true "audit plan report id"
 // @Param number path string true "sql number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetAuditPlanAnalysisDataResV1
-// @router /v1/projects/{project_name}/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
+// @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
 	return getAuditPlanAnalysisData(c)
 }
