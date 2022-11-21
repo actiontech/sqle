@@ -79,785 +79,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/audit_plans": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan info list",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取扫描任务信息列表",
-                "operationId": "getAuditPlansV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter audit plan db type",
-                        "name": "filter_audit_plan_db_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "fuzzy search audit plan name",
-                        "name": "fuzzy_search_audit_plan_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter audit plan type",
-                        "name": "filter_audit_plan_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter audit plan instance name",
-                        "name": "filter_audit_plan_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlansResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create audit plan",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "添加扫描任务",
-                "operationId": "createAuditPlanV1",
-                "parameters": [
-                    {
-                        "description": "create audit plan",
-                        "name": "audit_plan",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditPlanReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain and related table metadata for analysis",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql number",
-                        "name": "number",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务",
-                "operationId": "getAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanResV1"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "delete audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "删除扫描任务",
-                "operationId": "deleteAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "更新扫描任务",
-                "operationId": "updateAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update audit plan",
-                        "name": "audit_plan",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditPlanReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/notify_config": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan notify config",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取扫描任务消息推送设置",
-                "operationId": "getAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResV1"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update audit plan notify config",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "更新扫描任务通知设置",
-                "operationId": "updateAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update audit plan notify config",
-                        "name": "config",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/notify_config/test": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Test audit task message push",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "测试扫描任务消息推送",
-                "operationId": "testAuditPlanNotifyConfigV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportSQLsV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/reports": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report list",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的报告列表",
-                "operationId": "getAuditPlanReportsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
-                "operationId": "getAuditPlanReportV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
-                "operationId": "getAuditPlanSQLsV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls/full": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "full sync audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "全量同步SQL到扫描任务",
-                "operationId": "fullSyncAuditPlanSQLsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "full sync audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.FullSyncAuditPlanSQLsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/sqls/partial": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "partial sync audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "增量同步SQL到扫描任务",
-                "operationId": "partialSyncAuditPlanSQLsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "partial sync audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.PartialSyncAuditPlanSQLsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_plans/{audit_plan_name}/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "trigger audit plan",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "触发扫描任务",
-                "operationId": "triggerAuditPlanV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TriggerAuditPlanResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_whitelist": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get all whitelist",
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "获取Sql审核白名单",
-                "operationId": "getAuditWhitelistV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "page size",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditWhitelistResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create a sql whitelist",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "添加SQL白名单",
-                "operationId": "createAuditWhitelistV1",
-                "parameters": [
-                    {
-                        "description": "add sql whitelist req",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditWhitelistReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/audit_whitelist/{audit_whitelist_id}/": {
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "remove sql white",
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "删除SQL白名单信息",
-                "operationId": "deleteAuditWhitelistByIdV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit whitelist id",
-                        "name": "audit_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update sql whitelist by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "audit_whitelist"
-                ],
-                "summary": "更新SQL白名单",
-                "operationId": "UpdateAuditWhitelistByIdV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sql audit whitelist id",
-                        "name": "audit_whitelist_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update sql whitelist req",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/basic_info": {
             "get": {
                 "description": "get sqle basic info",
@@ -1504,522 +725,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/instance_tips": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance tip list",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例提示列表",
-                "operationId": "getInstanceTipListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter db type",
-                        "name": "filter_db_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter workflow template id",
-                        "name": "filter_workflow_template_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "create_audit_plan",
-                            "sql_query",
-                            "create_workflow"
-                        ],
-                        "type": "string",
-                        "description": "functional module",
-                        "name": "functional_module",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance info list",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例信息列表",
-                "operationId": "getInstanceListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter db type",
-                        "name": "filter_db_type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter db host",
-                        "name": "filter_db_host",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter db port",
-                        "name": "filter_db_port",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter db user",
-                        "name": "filter_db_user",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter workflow rule template name",
-                        "name": "filter_workflow_template_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter rule template name",
-                        "name": "filter_rule_template_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstancesResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create a instance",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "instance"
-                ],
-                "summary": "添加实例",
-                "operationId": "createInstanceV1",
-                "parameters": [
-                    {
-                        "description": "add instance",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateInstanceReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/connections": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "batch test instance db connections",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "批量测试实例连通性（实例提交后）",
-                "operationId": "batchCheckInstanceIsConnectableByName",
-                "parameters": [
-                    {
-                        "description": "instances",
-                        "name": "instances",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCheckInstanceConnectionsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchGetInstanceConnectionsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance db",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例信息",
-                "operationId": "getInstanceV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceResV1"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "delete instance db",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "删除实例",
-                "operationId": "deleteInstanceV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update instance",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "更新实例",
-                "operationId": "updateInstanceV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update instance request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateInstanceReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/connection": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "test instance db connection",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "实例连通性测试（实例提交后）",
-                "operationId": "checkInstanceIsConnectableByNameV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/rules": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance all rule",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例应用的规则列表",
-                "operationId": "getInstanceRuleListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetRulesResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/schemas": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "instance schema list",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "实例 Schema 列表",
-                "operationId": "getInstanceSchemasV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceSchemaResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/schemas/{schema_name}/tables": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "list table by schema",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取数据库下的所有表",
-                "operationId": "listTableBySchema",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get table metadata",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取表元数据",
-                "operationId": "getTableMetadata",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema name",
-                        "name": "schema_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "table name",
-                        "name": "table_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instances/{instance_name}/workflow_template": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance workflow template",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例应用的工作流程模板",
-                "operationId": "getInstanceWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceWorkflowTemplateResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/login": {
             "post": {
                 "description": "user login",
@@ -2044,6 +749,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetUserLoginResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/management_permissions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get platform management permissions",
+                "tags": [
+                    "management_permission"
+                ],
+                "summary": "获取平台管理权限列表",
+                "operationId": "GetManagementPermissionsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetManagementPermissionsResV1"
                         }
                     }
                 }
@@ -2111,6 +839,3248 @@ var doc = `{
                 }
             }
         },
+        "/v1/project_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project tip list",
+                "tags": [
+                    "project"
+                ],
+                "summary": "获取项目提示列表",
+                "operationId": "getProjectTipsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project list",
+                "tags": [
+                    "project"
+                ],
+                "summary": "获取项目列表",
+                "operationId": "getProjectListV1",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "创建项目",
+                "operationId": "createProjectV1",
+                "parameters": [
+                    {
+                        "description": "create project request",
+                        "name": "project",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateProjectReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project detail",
+                "tags": [
+                    "project"
+                ],
+                "summary": "获取项目详情",
+                "operationId": "getProjectDetailV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectDetailResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete project",
+                "tags": [
+                    "project"
+                ],
+                "summary": "删除项目",
+                "operationId": "deleteProjectV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "更新项目",
+                "operationId": "updateProjectV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create project request",
+                        "name": "project",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateProjectReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan info list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务信息列表",
+                "operationId": "getAuditPlansV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan db type",
+                        "name": "filter_audit_plan_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan type",
+                        "name": "filter_audit_plan_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan instance name",
+                        "name": "filter_audit_plan_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlansResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create audit plan",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "添加扫描任务",
+                "operationId": "createAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务",
+                "operationId": "getAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "删除扫描任务",
+                "operationId": "deleteAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新扫描任务",
+                "operationId": "updateAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务消息推送设置",
+                "operationId": "getAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update audit plan notify config",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "更新扫描任务通知设置",
+                "operationId": "updateAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update audit plan notify config",
+                        "name": "config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditPlanNotifyConfigReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config/test": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Test audit task message push",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "测试扫描任务消息推送",
+                "operationId": "testAuditPlanNotifyConfigV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的报告列表",
+                "operationId": "getAuditPlanReportsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL扫描记录统计信息",
+                "operationId": "getAuditPlanReportV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL扫描详情",
+                "operationId": "getAuditPlanReportsSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanReportSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
+                "operationId": "getAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "full sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "全量同步SQL到扫描任务",
+                "operationId": "fullSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "full sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.FullSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "partial sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "增量同步SQL到扫描任务",
+                "operationId": "partialSyncAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "partial sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.PartialSyncAuditPlanSQLsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "trigger audit plan",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "触发扫描任务",
+                "operationId": "triggerAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TriggerAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_whitelist": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all whitelist",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "获取Sql审核白名单",
+                "operationId": "getAuditWhitelistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditWhitelistResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a sql whitelist",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "添加SQL白名单",
+                "operationId": "createAuditWhitelistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add sql whitelist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_whitelist/{audit_whitelist_id}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "remove sql white",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "删除SQL白名单信息",
+                "operationId": "deleteAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql whitelist by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "更新SQL白名单",
+                "operationId": "UpdateAuditWhitelistByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit whitelist id",
+                        "name": "audit_whitelist_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update sql whitelist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instance_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance tip list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例提示列表",
+                "operationId": "getInstanceTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "create_audit_plan",
+                            "create_workflow"
+                        ],
+                        "type": "string",
+                        "description": "functional module",
+                        "name": "functional_module",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance info list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息列表",
+                "operationId": "getInstanceListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db host",
+                        "name": "filter_db_host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db port",
+                        "name": "filter_db_port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db user",
+                        "name": "filter_db_user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter rule template name",
+                        "name": "filter_rule_template_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstancesResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a instance",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "instance"
+                ],
+                "summary": "添加实例",
+                "operationId": "createInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateInstanceReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/connections": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch test instance db connections",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "批量测试实例连通性（实例提交后）",
+                "operationId": "batchCheckInstanceIsConnectableByName",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "instances",
+                        "name": "instances",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCheckInstanceConnectionsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchGetInstanceConnectionsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance db",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息",
+                "operationId": "getInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete instance db",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "删除实例",
+                "operationId": "deleteInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update instance",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "更新实例",
+                "operationId": "updateInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update instance request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateInstanceReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/connection": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test instance db connection",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "实例连通性测试（实例提交后）",
+                "operationId": "checkInstanceIsConnectableByNameV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/rules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance all rule",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例应用的规则列表",
+                "operationId": "getInstanceRuleListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRulesResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "instance schema list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "实例 Schema 列表",
+                "operationId": "getInstanceSchemasV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceSchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "list table by schema",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取数据库下的所有表",
+                "operationId": "listTableBySchema",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ListTableBySchemaResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get table metadata",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取表元数据",
+                "operationId": "getTableMetadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "table name",
+                        "name": "table_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTableMetadataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/member_groups": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get member groups",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "获取成员组列表",
+                "operationId": "getMemberGroupsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter user group name",
+                        "name": "filter_user_group_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetMemberGroupsRespV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "add member group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "添加成员组",
+                "operationId": "addMemberGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add member group",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateMemberGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/member_groups/{user_group_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get member group",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "获取成员组信息",
+                "operationId": "getMemberGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user group name",
+                        "name": "user_group_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetMemberGroupRespV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete member group",
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "删除成员组",
+                "operationId": "deleteMemberGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user group name",
+                        "name": "user_group_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update member group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user_group"
+                ],
+                "summary": "修改成员组",
+                "operationId": "updateMemberGroupV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user group name",
+                        "name": "user_group_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update member_group",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateMemberGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/members": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get members",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取成员列表",
+                "operationId": "getMembersV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter user name",
+                        "name": "filter_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetMembersRespV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "add member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "添加成员",
+                "operationId": "addMemberV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add member",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateMemberReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/members/{user_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get member",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取成员信息",
+                "operationId": "getMemberV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetMemberRespV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete member",
+                "tags": [
+                    "user"
+                ],
+                "summary": "删除成员",
+                "operationId": "deleteMemberV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update member",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "修改成员",
+                "operationId": "updateMemberV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "user name",
+                        "name": "user_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update member",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateMemberReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/rule_template_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template tips in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取项目规则模板提示",
+                "operationId": "getProjectRuleTemplateTipsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTemplateTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/rule_templates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all rule template in a project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "项目规则模板列表",
+                "operationId": "getProjectRuleTemplateListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectRuleTemplatesResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a rule template in project",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "添加项目规则模板",
+                "operationId": "createProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add rule template request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/rule_templates/{rule_template_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template detail in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取项目规则模板信息",
+                "operationId": "getProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectRuleTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete rule template in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "删除项目规则模板",
+                "operationId": "deleteProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update rule template in project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新项目规则模板",
+                "operationId": "updateProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule template request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/rule_templates/{rule_template_name}/clone": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "clone a rule template in project",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "克隆项目规则模板",
+                "operationId": "cloneProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "clone rule template request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CloneProjectRuleTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/task_groups": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create tasks group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建审核任务组",
+                "operationId": "createAuditTasksV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "parameters for creating audit tasks group",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/tasks/audits": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "创建Sql扫描任务并提交审核",
+                "operationId": "createAndAuditTaskV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema of instance",
+                        "name": "instance_schema",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sql",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflow_template": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow template detail",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取审批流程模板详情",
+                "operationId": "getWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update the workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新Sql审批流程模板",
+                "operationId": "updateWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单列表",
+                "operationId": "getWorkflowsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter subject",
+                        "name": "filter_subject",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_task_execute_start_time_from",
+                        "name": "filter_task_execute_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_task_execute_start_time_to",
+                        "name": "filter_task_execute_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create user name",
+                        "name": "filter_create_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user name",
+                        "name": "filter_current_step_assignee_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_task_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建工单",
+                "operationId": "createWorkflowV1",
+                "parameters": [
+                    {
+                        "description": "create workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateWorkflowReqV1"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch cancel workflows",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "批量取消工单",
+                "operationId": "batchCancelWorkflowsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch cancel workflows request",
+                        "name": "BatchCancelWorkflowsReqV1",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCancelWorkflowsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow detail",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单详情",
+                "operationId": "getWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow when it is rejected to creator.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新工单（驳回后才可更新）",
+                "operationId": "updateWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "cancel workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "审批关闭（中止）",
+                "operationId": "cancelWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "approve workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "审批通过",
+                "operationId": "approveWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "reject workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "审批驳回",
+                "operationId": "rejectWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow step id",
+                        "name": "workflow_step_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "workflow approve request",
+                        "name": "workflow_approve",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.RejectWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get summary of workflow instance tasks",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单数据源任务概览",
+                "operationId": "getSummaryOfInstanceTasksV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTasksResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute tasks on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "多数据源批量上线",
+                "operationId": "executeTasksOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute one task on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "工单提交单个数据源上线",
+                "operationId": "executeOneTaskOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/schedule": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow schedule.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
+                "operationId": "updateWorkflowScheduleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow name",
+                        "name": "workflow_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow schedule request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowScheduleReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/role_tips": {
             "get": {
                 "security": [
@@ -2153,24 +4123,11 @@ var doc = `{
                 ],
                 "summary": "获取角色列表",
                 "operationId": "getRoleListV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
                         "description": "filter role name",
                         "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter user name",
-                        "name": "filter_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
                         "in": "query"
                     },
                     {
@@ -2213,7 +4170,6 @@ var doc = `{
                 ],
                 "summary": "创建角色",
                 "operationId": "createRoleV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create role",
@@ -2290,7 +4246,6 @@ var doc = `{
                 ],
                 "summary": "更新角色信息",
                 "operationId": "updateRoleV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -2326,11 +4281,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get rule template tips",
+                "description": "get global rule template tips",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "获取规则模板提示",
+                "summary": "获取全局规则模板提示",
                 "operationId": "getRuleTemplateTipsV1",
                 "parameters": [
                     {
@@ -2357,19 +4312,13 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get all rule template",
+                "description": "get all global rule template",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "规则模板列表",
+                "summary": "全局规则模板列表",
                 "operationId": "getRuleTemplateListV1",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
-                        "in": "query"
-                    },
                     {
                         "type": "integer",
                         "description": "page index",
@@ -2398,19 +4347,19 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "create a rule template",
+                "description": "create a global rule template",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "添加规则模板",
+                "summary": "添加全局规则模板",
                 "operationId": "createRuleTemplateV1",
                 "parameters": [
                     {
                         "description": "add rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2435,11 +4384,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get rule template",
+                "description": "get global rule template",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "获取规则模板信息",
+                "summary": "获取全局规则模板信息",
                 "operationId": "getRuleTemplateV1",
                 "parameters": [
                     {
@@ -2465,11 +4414,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "delete rule template",
+                "description": "delete global rule template",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "删除规则模板",
+                "summary": "删除全局规则模板",
                 "operationId": "deleteRuleTemplateV1",
                 "parameters": [
                     {
@@ -2495,11 +4444,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "update rule template",
+                "description": "update global rule template",
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "更新规则模板",
+                "summary": "更新全局规则模板",
                 "operationId": "updateRuleTemplateV1",
                 "parameters": [
                     {
@@ -2511,7 +4460,7 @@ var doc = `{
                     },
                     {
                         "description": "update rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2543,7 +4492,7 @@ var doc = `{
                 "tags": [
                     "rule_template"
                 ],
-                "summary": "克隆规则模板",
+                "summary": "克隆全局规则模板",
                 "operationId": "CloneRuleTemplateV1",
                 "parameters": [
                     {
@@ -2555,7 +4504,7 @@ var doc = `{
                     },
                     {
                         "description": "clone rule template request",
-                        "name": "instance",
+                        "name": "req",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2633,190 +4582,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.DirectAuditResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/explain/{instance_name}/": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取SQL执行计划",
-                "operationId": "getSQLExplain",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "sql and schema",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSqlExplainReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLExplainResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/history/{instance_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql query history",
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取当前用户历史查询SQL",
-                "operationId": "getSQLQueryHistory",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "fuzzy search filter",
-                        "name": "filter_fuzzy_search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLQueryHistoryResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/prepare/{instance_name}/": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "execute sql query",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "准备执行查询sql",
-                "operationId": "prepareSQLQuery",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "exec sql",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.PrepareSQLQueryReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.PrepareSQLQueryResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_query/results/{query_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql query result",
-                "tags": [
-                    "sql_query"
-                ],
-                "summary": "获取SQL查询结果",
-                "operationId": "getSQLResult",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "query sql id",
-                        "name": "query_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLResultResV1"
                         }
                     }
                 }
@@ -3199,46 +4964,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/task_groups": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create tasks group.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建审核任务组",
-                "operationId": "createAuditTasksV1",
-                "parameters": [
-                    {
-                        "description": "parameters for creating audit tasks group",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditTasksGroupReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateAuditTasksGroupResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/task_groups/audit": {
             "post": {
                 "security": [
@@ -3290,68 +5015,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.AuditTaskGroupResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/tasks/audits": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create and audit a task, you can upload sql content in three ways, any one can be used, but only one is effective.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "创建Sql扫描任务并提交审核",
-                "operationId": "createAndAuditTaskV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "schema of instance",
-                        "name": "instance_schema",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "sqls for audit",
-                        "name": "sql",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input SQL file",
-                        "name": "input_sql_file",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "file",
-                        "description": "input mybatis XML file",
-                        "name": "input_mybatis_xml_file",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditTaskResV1"
                         }
                     }
                 }
@@ -3780,6 +5443,14 @@ var doc = `{
                 ],
                 "summary": "获取用户组提示列表",
                 "operationId": "getUserGroupTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "filter_project",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3958,6 +5629,14 @@ var doc = `{
                 ],
                 "summary": "获取用户提示列表",
                 "operationId": "getUserTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "filter_project",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3986,12 +5665,6 @@ var doc = `{
                         "type": "string",
                         "description": "filter user name",
                         "name": "filter_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
                         "in": "query"
                     },
                     {
@@ -4209,217 +5882,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflow_template_tips": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow template tips",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取审批流程模板提示信息",
-                "operationId": "getWorkflowTemplateTipsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTemplateTipResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflow_templates": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow template list",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取审批流程模板列表",
-                "operationId": "getWorkflowTemplateListV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTemplatesResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create a workflow template",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "创建Sql审批流程模板",
-                "operationId": "createWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "description": "create workflow template request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateWorkflowTemplateReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflow_templates/{workflow_template_name}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow template detail",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取审批流程模板详情",
-                "operationId": "getWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template name",
-                        "name": "workflow_template_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update the workflow template",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "删除Sql审批流程模板",
-                "operationId": "deleteWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template name",
-                        "name": "workflow_template_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update the workflow template",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "更新Sql审批流程模板",
-                "operationId": "updateWorkflowTemplateV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow template name",
-                        "name": "workflow_template_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "create workflow template",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateWorkflowTemplateReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/workflows": {
             "get": {
                 "security": [
@@ -4427,839 +5889,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get workflow list",
+                "description": "get global workflow list",
                 "tags": [
                     "workflow"
                 ],
-                "summary": "获取审批流程列表",
-                "operationId": "getWorkflowListV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter subject",
-                        "name": "filter_subject",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time from",
-                        "name": "filter_create_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time to",
-                        "name": "filter_create_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "sql_review",
-                            "sql_execute"
-                        ],
-                        "type": "string",
-                        "description": "filter current step type",
-                        "name": "filter_current_step_type",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "on_process",
-                            "rejected",
-                            "canceled",
-                            "exec_scheduled",
-                            "executing",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "string",
-                        "description": "filter workflow status",
-                        "name": "filter_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_task_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter task execute start time from",
-                        "name": "filter_task_execute_start_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter task execute start time to",
-                        "name": "filter_task_execute_start_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create workflow",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "创建工单",
-                "operationId": "createWorkflowV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "description": "create workflow request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.CreateWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/cancel": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "batch cancel workflows",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "批量取消工单",
-                "operationId": "batchCancelWorkflowsV1",
-                "parameters": [
-                    {
-                        "description": "batch cancel workflows request",
-                        "name": "BatchCancelWorkflowsReqV1",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchCancelWorkflowsReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow detail",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取审批流程详情",
-                "operationId": "getWorkflowV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowResV1"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update workflow when it is rejected to creator.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "更新审批流程（驳回后才可更新）",
-                "operationId": "updateWorkflowV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update workflow request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/cancel": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "cancel workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "审批关闭（中止）",
-                "operationId": "cancelWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/schedule": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update workflow schedule.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "设置工单定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
-                "operationId": "updateWorkflowScheduleV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update workflow schedule request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateWorkflowScheduleV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/approve": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "approve workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "审批通过",
-                "operationId": "approveWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow step id",
-                        "name": "workflow_step_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/steps/{workflow_step_id}/reject": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "reject workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "审批驳回",
-                "operationId": "rejectWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow step id",
-                        "name": "workflow_step_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "workflow approve request",
-                        "name": "workflow_approve",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.RejectWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/task/execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "execute task on workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "工单提交 SQL 上线",
-                "operationId": "executeTaskOnWorkflowV1",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/tasks": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get summary of workflow instance tasks",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单数据源任务概览",
-                "operationId": "getSummaryOfInstanceTasksV1",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowTasksResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/{workflow_id}/tasks/{task_id}/execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "execute one task on workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "工单提交单个数据源上线",
-                "operationId": "executeOneTaskOnWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/audit_plans/{audit_plan_name}/report/{audit_plan_report_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportSQLsV2",
-                "deprecated": true,
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan report SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQL扫描详情",
-                "operationId": "getAuditPlanReportsSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan report id",
-                        "name": "audit_plan_report_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/audit_plans/{audit_plan_name}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan SQLs",
-                "tags": [
-                    "audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQLs信息(不包括扫描结果)",
-                "operationId": "getAuditPlanSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "audit plan name",
-                        "name": "audit_plan_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanSQLsResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/roles": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get role list",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "获取角色列表",
-                "operationId": "getRoleListV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter role name",
-                        "name": "filter_role_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter user name",
-                        "name": "filter_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetRolesResV2"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "创建角色",
-                "operationId": "createRoleV2",
-                "parameters": [
-                    {
-                        "description": "create role",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.CreateRoleReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/roles/{role_name}/": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "role"
-                ],
-                "summary": "更新角色信息",
-                "operationId": "updateRoleV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "role name",
-                        "name": "role_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update role request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.UpdateRoleReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/workflows": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow list",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单列表",
-                "operationId": "getWorkflowsV2",
+                "summary": "获取全局工单列表",
+                "operationId": "getGlobalWorkflowsV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -5341,208 +5976,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetWorkflowsResV2"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "create workflow",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "创建工单",
-                "operationId": "createWorkflowV2",
-                "parameters": [
-                    {
-                        "description": "create workflow request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.CreateWorkflowReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/workflows/{workflow_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow detail",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单详情",
-                "operationId": "getWorkflowV2",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetWorkflowResV2"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update workflow when it is rejected to creator.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "更新工单（驳回后才可更新）",
-                "operationId": "updateWorkflowV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update workflow request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.UpdateWorkflowReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/workflows/{workflow_id}/tasks/execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "execute tasks on workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "多数据源批量上线",
-                "operationId": "executeTasksOnWorkflowV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/workflows/{workflow_id}/tasks/{task_id}/schedule": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update workflow schedule.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
-                "operationId": "updateWorkflowScheduleV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update workflow schedule request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateWorkflowScheduleV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
                         }
                     }
                 }
@@ -5648,21 +6082,17 @@ var doc = `{
         "v1.AuditPlanReportSQLResV1": {
             "type": "object",
             "properties": {
+                "audit_plan_report_sql": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
                 "audit_plan_report_sql_audit_result": {
                     "type": "string",
                     "example": "same format as task audit result"
                 },
-                "audit_plan_report_sql_fingerprint": {
-                    "type": "string",
-                    "example": "select * from t1 where id = ?"
-                },
-                "audit_plan_report_sql_last_receive_text": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_report_sql_last_receive_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
+                "number": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -5703,6 +6133,23 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanSQLHeadV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql"
+                    ]
+                }
+            }
+        },
         "v1.AuditPlanSQLReqV1": {
             "type": "object",
             "properties": {
@@ -5731,21 +6178,20 @@ var doc = `{
         "v1.AuditPlanSQLResV1": {
             "type": "object",
             "properties": {
-                "audit_plan_sql_counter": {
-                    "type": "string",
-                    "example": "6"
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLHeadV1"
+                    }
                 },
-                "audit_plan_sql_fingerprint": {
-                    "type": "string",
-                    "example": "select * from t1 where id = ?"
-                },
-                "audit_plan_sql_last_receive_text": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_sql_last_receive_timestamp": {
-                    "type": "string",
-                    "example": "RFC3339"
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
@@ -5963,7 +6409,7 @@ var doc = `{
         "v1.BatchCancelWorkflowsReqV1": {
             "type": "object",
             "properties": {
-                "workflow_ids": {
+                "workflow_names": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -6040,6 +6486,20 @@ var doc = `{
                 }
             }
         },
+        "v1.BindRoleReqV1": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "role_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
@@ -6062,7 +6522,7 @@ var doc = `{
                 }
             }
         },
-        "v1.CloneRuleTemplateReqV1": {
+        "v1.CloneProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
                 "desc": {
@@ -6073,6 +6533,17 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "new_rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CloneRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
                 },
                 "new_rule_template_name": {
                     "type": "string"
@@ -6210,51 +6681,58 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
-                },
-                "workflow_template_name": {
-                    "type": "string"
                 }
             }
         },
-        "v1.CreateRoleReqV1": {
+        "v1.CreateMemberGroupReqV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
+                "roles": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
                     }
                 },
-                "role_desc": {
+                "user_group_name": {
                     "type": "string"
-                },
-                "role_name": {
-                    "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
-        "v1.CreateRuleTemplateReqV1": {
+        "v1.CreateMemberReqV1": {
+            "type": "object",
+            "properties": {
+                "is_manager": {
+                    "type": "boolean"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
+                    }
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateProjectReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
                 "db_type": {
@@ -6280,15 +6758,46 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateRoleReqV1": {
+            "type": "object",
+            "properties": {
+                "operation_code_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "role_desc": {
+                    "type": "string"
+                },
+                "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleReqV1"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateUserGroupReqV1": {
             "type": "object",
             "properties": {
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
@@ -6312,10 +6821,10 @@ var doc = `{
                     "type": "string",
                     "example": "test@email.com"
                 },
-                "role_name_list": {
+                "management_permission_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "user_group_name_list": {
@@ -6344,42 +6853,13 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "task_id": {
-                    "type": "string"
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "workflow_subject": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.CreateWorkflowTemplateReqV1": {
-            "type": "object",
-            "properties": {
-                "allow_submit_when_less_audit_level": {
-                    "type": "string",
-                    "enum": [
-                        "normal",
-                        "notice",
-                        "warn",
-                        "error"
-                    ]
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "workflow_step_template_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkFlowStepTemplateReqV1"
-                    }
-                },
-                "workflow_template_name": {
                     "type": "string"
                 }
             }
@@ -6628,10 +7108,8 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.AuditPlanSQLResV1"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanSQLResV1"
                 },
                 "message": {
                     "type": "string",
@@ -6915,23 +7393,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetInstanceWorkflowTemplateResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.WorkflowTemplateDetailResV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetInstancesResV1": {
             "type": "object",
             "properties": {
@@ -7024,6 +7485,134 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetManagementPermissionsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetMemberGroupRespDataV1": {
+            "type": "object",
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
+                    }
+                },
+                "user_group_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetMemberGroupRespV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetMemberGroupRespDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetMemberGroupsRespV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetMemberGroupRespDataV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetMemberRespDataV1": {
+            "type": "object",
+            "properties": {
+                "is_manager": {
+                    "type": "boolean"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
+                    }
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.GetMemberRespV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetMemberRespDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetMembersRespV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetMemberRespDataV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -7121,6 +7710,103 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.OperationResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetProjectDetailResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ProjectDetailItem"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetProjectResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectListItem"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetProjectRuleTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleProjectTemplateDetailResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetProjectRuleTemplatesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectRuleTemplateResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetProjectTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectTipResV1"
                     }
                 },
                 "message": {
@@ -7295,25 +7981,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSQLExplainResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLQuerySQLExplain"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetSQLQueryConfigurationResDataV1": {
             "type": "object",
             "properties": {
@@ -7335,86 +8002,6 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.GetSQLQueryConfigurationResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetSQLQueryHistoryResDataV1": {
-            "type": "object",
-            "properties": {
-                "sql_histories": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLHistoryItemResV1"
-                    }
-                }
-            }
-        },
-        "v1.GetSQLQueryHistoryResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.GetSQLQueryHistoryResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetSQLResultResDataV1": {
-            "type": "object",
-            "properties": {
-                "current_page": {
-                    "type": "integer"
-                },
-                "end_line": {
-                    "type": "integer"
-                },
-                "execution_time": {
-                    "type": "integer"
-                },
-                "head": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLResultItemHeadResV1"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "sql": {
-                    "type": "string"
-                },
-                "start_line": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v1.GetSQLResultResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.GetSQLResultResDataV1"
                 },
                 "message": {
                     "type": "string",
@@ -7457,19 +8044,6 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
-                }
-            }
-        },
-        "v1.GetSqlExplainReqV1": {
-            "type": "object",
-            "properties": {
-                "instance_schema": {
-                    "type": "string",
-                    "example": "db1"
-                },
-                "sql": {
-                    "type": "string",
-                    "example": "alter table tb1 drop columns c1"
                 }
             }
         },
@@ -7951,47 +8525,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetWorkflowTemplateTipResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkflowTemplateTipResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetWorkflowTemplatesResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkflowTemplateResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.GetWorkflowsResV1": {
             "type": "object",
             "properties": {
@@ -8011,6 +8544,17 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GlobalRuleTemplateInstance": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string"
+                },
+                "project_name": {
+                    "type": "string"
                 }
             }
         },
@@ -8142,24 +8686,12 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeResV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
-                },
-                "workflow_template_name": {
-                    "type": "string"
                 }
             }
         },
@@ -8393,6 +8925,17 @@ var doc = `{
                 }
             }
         },
+        "v1.ManagementPermissionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.Oauth2ConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -8434,6 +8977,17 @@ var doc = `{
                 }
             }
         },
+        "v1.Operation": {
+            "type": "object",
+            "properties": {
+                "op_code": {
+                    "type": "integer"
+                },
+                "op_desc": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.OperationResV1": {
             "type": "object",
             "properties": {
@@ -8462,12 +9016,6 @@ var doc = `{
                 "is_disabled": {
                     "type": "boolean"
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
                 "user_group_desc": {
                     "type": "string",
                     "example": "this is a group"
@@ -8480,53 +9028,73 @@ var doc = `{
                 }
             }
         },
-        "v1.PrepareSQLQueryReqV1": {
+        "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
-                "instance_schema": {
+                "create_time": {
                     "type": "string"
                 },
-                "sql": {
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }
         },
-        "v1.PrepareSQLQueryResDataV1": {
+        "v1.ProjectListItem": {
             "type": "object",
             "properties": {
-                "query_ids": {
+                "create_time": {
+                    "type": "string"
+                },
+                "create_user_name": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ProjectRuleTemplateInstance": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ProjectRuleTemplateResV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "instance_list": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.PrepareSQLQueryResSQLV1"
+                        "$ref": "#/definitions/v1.ProjectRuleTemplateInstance"
                     }
-                }
-            }
-        },
-        "v1.PrepareSQLQueryResSQLV1": {
-            "type": "object",
-            "properties": {
-                "query_id": {
-                    "type": "string"
                 },
-                "sql": {
+                "rule_template_name": {
                     "type": "string"
                 }
             }
         },
-        "v1.PrepareSQLQueryResV1": {
+        "v1.ProjectTipResV1": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.PrepareSQLQueryResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
+                "project_name": {
+                    "type": "string"
                 }
             }
         },
@@ -8541,10 +9109,13 @@ var doc = `{
         "v1.RoleResV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "operation_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.Operation"
                     }
                 },
                 "role_desc": {
@@ -8552,12 +9123,6 @@ var doc = `{
                 },
                 "role_name": {
                     "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -8602,6 +9167,32 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleProjectTemplateDetailResV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "instance_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectRuleTemplateInstance"
+                    }
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleResV1"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RuleReqV1": {
             "type": "object",
             "properties": {
@@ -8624,6 +9215,10 @@ var doc = `{
         "v1.RuleResV1": {
             "type": "object",
             "properties": {
+                "annotation": {
+                    "type": "string",
+                    "example": "避免多次 table rebuild 带来的消耗、以及对线上业务的影响"
+                },
                 "db_type": {
                     "type": "string",
                     "example": "mysql"
@@ -8665,10 +9260,10 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "instance_name_list": {
+                "instance_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.GlobalRuleTemplateInstance"
                     }
                 },
                 "rule_list": {
@@ -8691,10 +9286,10 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "instance_name_list": {
+                "instance_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.GlobalRuleTemplateInstance"
                     }
                 },
                 "rule_template_name": {
@@ -8741,14 +9336,6 @@ var doc = `{
                 "message": {
                     "type": "string"
                 },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.SQLHistoryItemResV1": {
-            "type": "object",
-            "properties": {
                 "sql": {
                     "type": "string"
                 }
@@ -8801,27 +9388,6 @@ var doc = `{
                 },
                 "query_timeout_second": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.SQLQuerySQLExplain": {
-            "type": "object",
-            "properties": {
-                "classic_result": {
-                    "description": "explain result in table format",
-                    "type": "object",
-                    "$ref": "#/definitions/v1.ExplainClassicResult"
-                },
-                "sql": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.SQLResultItemHeadResV1": {
-            "type": "object",
-            "properties": {
-                "field_name": {
-                    "type": "string"
                 }
             }
         },
@@ -9233,24 +9799,37 @@ var doc = `{
                         "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
                     }
                 },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "rule_template_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
+                }
+            }
+        },
+        "v1.UpdateMemberGroupReqV1": {
+            "type": "object",
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
+                    }
+                }
+            }
+        },
+        "v1.UpdateMemberReqV1": {
+            "type": "object",
+            "properties": {
+                "is_manager": {
+                    "type": "boolean"
                 },
-                "workflow_template_name": {
-                    "type": "string"
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BindRoleReqV1"
+                    }
                 }
             }
         },
@@ -9262,27 +9841,15 @@ var doc = `{
                 }
             }
         },
-        "v1.UpdateRoleReqV1": {
+        "v1.UpdateProjectReqV1": {
             "type": "object",
             "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "role_desc": {
+                "desc": {
                     "type": "string"
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
-        "v1.UpdateRuleTemplateReqV1": {
+        "v1.UpdateProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
                 "desc": {
@@ -9296,6 +9863,37 @@ var doc = `{
                     "example": [
                         "mysql-xxx"
                     ]
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleReqV1"
+                    }
+                }
+            }
+        },
+        "v1.UpdateRoleReqV1": {
+            "type": "object",
+            "properties": {
+                "is_disabled": {
+                    "type": "boolean"
+                },
+                "operation_code_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "role_desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdateRuleTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
                 },
                 "rule_list": {
                     "type": "array",
@@ -9347,10 +9945,10 @@ var doc = `{
                 "is_disabled": {
                     "type": "boolean"
                 },
-                "role_name_list": {
+                "management_permission_code_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "type": "integer"
                     }
                 },
                 "user_group_name_list": {
@@ -9391,12 +9989,15 @@ var doc = `{
         "v1.UpdateWorkflowReqV1": {
             "type": "object",
             "properties": {
-                "task_id": {
-                    "type": "string"
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
-        "v1.UpdateWorkflowScheduleV1": {
+        "v1.UpdateWorkflowScheduleReqV1": {
             "type": "object",
             "properties": {
                 "schedule_time": {
@@ -9433,9 +10034,26 @@ var doc = `{
                 }
             }
         },
+        "v1.UserBindProjectResV1": {
+            "type": "object",
+            "properties": {
+                "is_manager": {
+                    "type": "boolean"
+                },
+                "project_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UserDetailResV1": {
             "type": "object",
             "properties": {
+                "bind_projects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UserBindProjectResV1"
+                    }
+                },
                 "email": {
                     "type": "string"
                 },
@@ -9448,10 +10066,10 @@ var doc = `{
                 "login_type": {
                     "type": "string"
                 },
-                "role_name_list": {
+                "management_permission_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {
@@ -9473,12 +10091,6 @@ var doc = `{
             "properties": {
                 "is_disabled": {
                     "type": "boolean"
-                },
-                "role_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 },
                 "user_group_desc": {
                     "type": "string"
@@ -9536,10 +10148,10 @@ var doc = `{
                 "login_type": {
                     "type": "string"
                 },
-                "role_name_list": {
+                "management_permission_list": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
                 "user_group_name_list": {
@@ -9698,38 +10310,23 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "schedule_time": {
+                "project_name": {
                     "type": "string"
                 },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "on_process",
+                        "wait_for_audit",
+                        "wait_for_execution",
                         "rejected",
                         "canceled",
-                        "exec_scheduled",
-                        "executing",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },
-                "subject": {
+                "workflow_name": {
                     "type": "string"
-                },
-                "task_instance_name": {
-                    "type": "string"
-                },
-                "task_instance_schema": {
-                    "type": "string"
-                },
-                "task_pass_rate": {
-                    "type": "number"
-                },
-                "task_score": {
-                    "type": "integer"
-                },
-                "workflow_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -9778,26 +10375,23 @@ var doc = `{
                 "current_step_number": {
                     "type": "integer"
                 },
-                "schedule_time": {
-                    "type": "string"
-                },
-                "schedule_user": {
-                    "type": "string"
-                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "on_process",
+                        "wait_for_audit",
+                        "wait_for_execution",
                         "rejected",
                         "canceled",
-                        "exec_scheduled",
-                        "executing",
                         "exec_failed",
+                        "executing",
                         "finished"
                     ]
                 },
-                "task_id": {
-                    "type": "integer"
+                "tasks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowTaskItem"
+                    }
                 },
                 "workflow_step_list": {
                     "type": "array",
@@ -9847,11 +10441,12 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "instance_maintenance_times": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
-                    }
+                "mode": {
+                    "type": "string",
+                    "enum": [
+                        "same_sqls",
+                        "different_sqls"
+                    ]
                 },
                 "record": {
                     "type": "object",
@@ -9863,11 +10458,8 @@ var doc = `{
                         "$ref": "#/definitions/v1.WorkflowRecordResV1"
                     }
                 },
-                "subject": {
+                "workflow_name": {
                     "type": "string"
-                },
-                "workflow_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -9974,6 +10566,14 @@ var doc = `{
                 }
             }
         },
+        "v1.WorkflowTaskItem": {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.WorkflowTemplateDetailResV1": {
             "type": "object",
             "properties": {
@@ -10003,451 +10603,6 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.WorkflowTemplateResV1": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "workflow_template_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.WorkflowTemplateTipResV1": {
-            "type": "object",
-            "properties": {
-                "workflow_template_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.AuditPlanReportSQLResV2": {
-            "type": "object",
-            "properties": {
-                "audit_plan_report_sql": {
-                    "type": "string",
-                    "example": "select * from t1 where id = 1"
-                },
-                "audit_plan_report_sql_audit_result": {
-                    "type": "string",
-                    "example": "same format as task audit result"
-                },
-                "number": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
-        "v2.AuditPlanSQLHeadV2": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "sql"
-                    ]
-                }
-            }
-        },
-        "v2.AuditPlanSQLResV2": {
-            "type": "object",
-            "properties": {
-                "head": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditPlanSQLHeadV2"
-                    }
-                },
-                "rows": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "v2.CreateRoleReqV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "operation_code_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "role_name": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "v2.CreateWorkflowReqV2": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "task_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "workflow_subject": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.GetAuditPlanReportSQLsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditPlanReportSQLResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetAuditPlanSQLsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AuditPlanSQLResV2"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetRolesResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.RoleResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetWorkflowResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.WorkflowResV2"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v2.GetWorkflowsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.WorkflowDetailResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.Operation": {
-            "type": "object",
-            "properties": {
-                "op_code": {
-                    "type": "integer"
-                },
-                "op_desc": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.RoleResV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "operation_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.Operation"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "role_name": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "v2.UpdateRoleReqV2": {
-            "type": "object",
-            "properties": {
-                "instance_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_disabled": {
-                    "type": "boolean"
-                },
-                "operation_code_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "role_desc": {
-                    "type": "string"
-                },
-                "user_group_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "v2.UpdateWorkflowReqV2": {
-            "type": "object",
-            "properties": {
-                "task_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "v2.WorkflowDetailResV2": {
-            "type": "object",
-            "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
-                "current_step_assignee_user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "current_step_type": {
-                    "type": "string",
-                    "enum": [
-                        "sql_review",
-                        "sql_execute"
-                    ]
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "wait_for_audit",
-                        "wait_for_execution",
-                        "rejected",
-                        "canceled",
-                        "exec_failed",
-                        "executing",
-                        "finished"
-                    ]
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "workflow_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.WorkflowRecordResV2": {
-            "type": "object",
-            "properties": {
-                "current_step_number": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "wait_for_audit",
-                        "wait_for_execution",
-                        "rejected",
-                        "canceled",
-                        "exec_failed",
-                        "executing",
-                        "finished"
-                    ]
-                },
-                "tasks": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.WorkflowTaskItem"
-                    }
-                },
-                "workflow_step_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkflowStepResV1"
-                    }
-                }
-            }
-        },
-        "v2.WorkflowResV2": {
-            "type": "object",
-            "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "mode": {
-                    "type": "string",
-                    "enum": [
-                        "same_sqls",
-                        "different_sqls"
-                    ]
-                },
-                "record": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.WorkflowRecordResV2"
-                },
-                "record_history_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.WorkflowRecordResV2"
-                    }
-                },
-                "subject": {
-                    "type": "string"
-                },
-                "workflow_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.WorkflowTaskItem": {
-            "type": "object",
-            "properties": {
-                "task_id": {
-                    "type": "integer"
                 }
             }
         }

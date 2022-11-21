@@ -10,6 +10,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ungerik/go-dry"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
@@ -24,7 +26,6 @@ import (
 	"github.com/pingcap/parser/types"
 	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
-	"github.com/ungerik/go-dry"
 )
 
 // rule type
@@ -102,6 +103,8 @@ const (
 	DDLCheckColumnQuantityInPK                         = "ddl_check_column_quantity_in_pk"
 	DDLCheckAutoIncrement                              = "ddl_check_auto_increment"
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
+	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
+	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 )
 
 // inspector DML rules
@@ -155,7 +158,7 @@ const (
 	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
-	DDLCheckSubQueryNestNum               = "ddl_check_sub_query_depth"
+	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
 )
 
 // inspector config code
@@ -266,7 +269,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -341,7 +344,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -393,7 +396,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -406,11 +409,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driver.Rule{
 			Name:     DDLCheckPKWithoutIfNotExists,
-			Desc:     "新建表必须加入if not exists create，保证重复执行不报错",
+			Desc:     "新建表必须加入 if not exists，保证重复执行不报错",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeUsageSuggestion,
 		},
-		Message:      "新建表必须加入if not exists create，保证重复执行不报错",
+		Message:      "新建表必须加入 if not exists，保证重复执行不报错",
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
@@ -433,6 +436,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表名、列名、索引名的长度不能大于%v字节",
 		AllowOffline: true,
 		Func:         checkNewObjectName,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckObjectNameIsUpperAndLowerLetterMixed,
+			Desc:     "数据库对象命名不建议大小写字母混合",
+			Category: RuleTypeNamingConvention,
+			Level:    driver.RuleLevelNotice,
+		},
+		Message:      "数据库对象命名不建议大小写字母混合，以下对象命名不规范：%v",
+		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
+		AllowOffline: true,
 	},
 	{
 		Rule: driver.Rule{
@@ -494,6 +508,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "char长度大于20时，必须使用varchar类型",
 		AllowOffline: true,
 		Func:         checkStringType,
+	},
+	{
+		Rule: driver.Rule{
+			Name:     DDLCheckFieldNotNUllMustContainDefaultValue,
+			Desc:     "字段约束为not null时必须带默认值",
+			Level:    driver.RuleLevelWarn,
+			Category: RuleTypeDDLConvention,
+		},
+		Message:      "字段约束为not null时必须带默认值，以下字段不规范:%v",
+		AllowOffline: true,
+		Func:         checkFieldNotNUllMustContainDefaultValue,
 	},
 	{
 		Rule: driver.Rule{
@@ -911,7 +936,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5000",
+					Value: "100",
 					Desc:  "最大插入行数",
 					Type:  params.ParamTypeInt,
 				},
@@ -930,7 +955,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "1000",
+					Value: "50",
 					Desc:  "in语句参数最大个数",
 					Type:  params.ParamTypeInt,
 				},
@@ -1083,7 +1108,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckSubQueryNestNum,
+			Name:     DMLCheckSubQueryNestNum,
 			Desc:     "子查询嵌套层数不能超过阈值",
 			Level:    driver.RuleLevelWarn,
 			Category: RuleTypeDMLConvention,
@@ -1399,29 +1424,29 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
 			Name:     DDLHintDropColumn,
-			Desc:     "删除列为高危操作",
+			Desc:     "禁止进行删除列的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除列为高危操作",
+		Message: "禁止进行删除列的操作",
 		Func:    hintDropColumn,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
 			Name:     DDLHintDropPrimaryKey,
-			Desc:     "删除主键为高危操作",
+			Desc:     "禁止进行删除主键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除主键为高危操作",
+		Message: "禁止进行删除主键的操作",
 		Func:    hintDropPrimaryKey,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:     DDLHintDropForeignKey,
-			Desc:     "删除外键为高危操作",
+			Desc:     "禁止进行删除外键的操作",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "删除外键为高危操作",
+		Message: "禁止进行删除外键的操作",
 		Func:    hintDropForeignKey,
 	},
 	{
@@ -1436,11 +1461,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
 			Name:     DMLHintInNullOnlyFalse,
-			Desc:     "IN (NULL)/NOT IN (NULL) 永远非真",
+			Desc:     "避免使用 IN (NULL) 或者 NOT IN (NULL)",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "IN (NULL)/NOT IN (NULL) 永远非真",
+		Message: "避免使用IN (NULL)/NOT IN (NULL) ，该用法永远非真将导致条件失效",
 		Func:    hintInNullOnlyFalse,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
@@ -1464,11 +1489,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
 			Name:     DDLCheckFullWidthQuotationMarks,
-			Desc:     "DDL 语句中使用了中文全角引号",
+			Desc:     "检测DDL语句中是否使用了中文全角引号",
 			Level:    driver.RuleLevelError,
 			Category: RuleTypeDDLConvention,
 		},
-		Message: "DDL 语句中使用了中文全角引号",
+		Message: "DDL 语句中使用了中文全角引号，这可能是书写错误",
 		Func:    checkFullWidthQuotationMarks,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
@@ -1524,7 +1549,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "64",
+					Value: "1024",
 					Desc:  "SQL最大长度",
 					Type:  params.ParamTypeInt,
 				},
@@ -1568,7 +1593,7 @@ var RuleHandlers = []RuleHandler{
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "5",
+					Value: "40",
 					Desc:  "最大列数",
 					Type:  params.ParamTypeInt,
 				},
@@ -1609,7 +1634,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "VARCHAR 定义长度过长",
+		Message: "VARCHAR 定义长度过长, 超过了%d",
 		Func:    checkVarcharSize,
 	}, {
 		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
@@ -1632,11 +1657,11 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
 			Name:     DMLHintSumFuncTips,
-			Desc:     "使用 SUM(COL) 时需注意 NPE 问题",
+			Desc:     "避免使用 SUM(COL)",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeDMLConvention,
 		},
-		Message: "使用 SUM(COL) 时需注意 NPE 问题",
+		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
@@ -1741,6 +1766,72 @@ var RuleHandlers = []RuleHandler{
 	},
 }
 
+func checkFieldNotNUllMustContainDefaultValue(input *RuleHandlerInput) error {
+	names := make([]string, 0)
+
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		// 获取主键的列名
+		// 联合主键的情况，只需要取第一个字段的列名，因为自增字段必须是联合主键的第一个字段，否则建表会报错
+		var primaryKeyColName string
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp == ast.ConstraintPrimaryKey {
+				primaryKeyColName = constraint.Keys[0].Column.Name.O
+				break
+			}
+		}
+
+		for _, col := range stmt.Cols {
+			if col.Options == nil {
+				continue
+			}
+
+			// 跳过主键自增的列，因为主键自增的列不需要设置默认值
+			if (isFieldContainColumnOptionType(col, ast.ColumnOptionPrimaryKey) || primaryKeyColName == col.Name.Name.O) &&
+				isFieldContainColumnOptionType(col, ast.ColumnOptionAutoIncrement) {
+				continue
+			}
+
+			if isFieldContainColumnOptionType(col, ast.ColumnOptionNotNull) && !isFieldContainColumnOptionType(col, ast.ColumnOptionDefaultValue) {
+				names = append(names, col.Name.Name.String())
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, col := range spec.NewColumns {
+				if col.Options == nil {
+					continue
+				}
+
+				if isFieldContainColumnOptionType(col, ast.ColumnOptionPrimaryKey) && isFieldContainColumnOptionType(col, ast.ColumnOptionAutoIncrement) {
+					continue
+				}
+
+				if isFieldContainColumnOptionType(col, ast.ColumnOptionNotNull) && !isFieldContainColumnOptionType(col, ast.ColumnOptionDefaultValue) {
+					names = append(names, col.Name.Name.String())
+				}
+			}
+		}
+	default:
+		return nil
+	}
+
+	if len(names) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckFieldNotNUllMustContainDefaultValue, strings.Join(names, ","))
+	}
+
+	return nil
+}
+
+func isFieldContainColumnOptionType(field *ast.ColumnDef, optionType ast.ColumnOptionType) bool {
+	for _, option := range field.Options {
+		if option.Tp == optionType {
+			return true
+		}
+	}
+	return false
+}
+
 func checkSubQueryNestNum(in *RuleHandlerInput) error {
 	if _, ok := in.Node.(ast.DMLNode); ok {
 		var maxNestNum int
@@ -1748,7 +1839,7 @@ func checkSubQueryNestNum(in *RuleHandlerInput) error {
 		in.Node.Accept(&subQueryNestNumExtract)
 		expectNestNum := in.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 		if *subQueryNestNumExtract.MaxNestNum > expectNestNum {
-			addResult(in.Res, in.Rule, DDLCheckSubQueryNestNum, expectNestNum)
+			addResult(in.Res, in.Rule, DMLCheckSubQueryNestNum, expectNestNum)
 		}
 	}
 	return nil
@@ -2624,9 +2715,76 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 	return nil
 }
 
+func checkIsObjectNameUpperAndLowerLetterMixed(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	invalidNames := make([]string, 0)
+	for _, name := range names {
+		if !utils.IsUpperAndLowerLetterMixed(name) {
+			continue
+		}
+		invalidNames = append(invalidNames, name)
+	}
+
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameIsUpperAndLowerLetterMixed, strings.Join(invalidNames, ","))
+	}
+
+	return nil
+}
+
 func checkNewObjectName(input *RuleHandlerInput) error {
+	names := getObjectNames(input.Node)
+
+	// check length
+	if input.Rule.Name == DDLCheckObjectNameLength {
+		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+		//length, err := strconv.Atoi(input.Rule.Value)
+		//if err != nil {
+		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
+		//}
+		for _, name := range names {
+			if len(name) > length {
+				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
+				break
+			}
+		}
+	}
+
+	// check exist non-latin and underscore
+	for _, name := range names {
+		// CASE:
+		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
+		if name == "" {
+			continue
+		}
+		if !unicode.Is(unicode.Latin, rune(name[0])) ||
+			bytes.IndexFunc([]byte(name), func(r rune) bool {
+				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
+			}) != -1 {
+
+			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
+			break
+		}
+	}
+
+	// check keyword
+	invalidNames := []string{}
+	for _, name := range names {
+		if keyword.IsMysqlReservedKeyword(name) {
+			invalidNames = append(invalidNames, name)
+		}
+	}
+	if len(invalidNames) > 0 {
+		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
+			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
+	}
+	return nil
+}
+
+func getObjectNames(node ast.Node) []string {
 	names := []string{}
-	switch stmt := input.Node.(type) {
+	switch stmt := node.(type) {
 	case *ast.CreateDatabaseStmt:
 		// schema
 		names = append(names, stmt.Name)
@@ -2675,50 +2833,7 @@ func checkNewObjectName(input *RuleHandlerInput) error {
 		return nil
 	}
 
-	// check length
-	if input.Rule.Name == DDLCheckObjectNameLength {
-		length := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-		//length, err := strconv.Atoi(input.Rule.Value)
-		//if err != nil {
-		//	return fmt.Errorf("parsing input.Rule[%v] value error: %v", input.Rule.Name, err)
-		//}
-		for _, name := range names {
-			if len(name) > length {
-				addResult(input.Res, input.Rule, DDLCheckObjectNameLength, length)
-				break
-			}
-		}
-	}
-
-	// check exist non-latin and underscore
-	for _, name := range names {
-		// CASE:
-		// 	CREATE TABLE t1(id int, INDEX (id)); // when index name is anonymous, skip inspect it
-		if name == "" {
-			continue
-		}
-		if !unicode.Is(unicode.Latin, rune(name[0])) ||
-			bytes.IndexFunc([]byte(name), func(r rune) bool {
-				return !(unicode.Is(unicode.Latin, r) || string(r) == "_" || unicode.IsDigit(r))
-			}) != -1 {
-
-			addResult(input.Res, input.Rule, DDLCheckObjectNameUseCN)
-			break
-		}
-	}
-
-	// check keyword
-	invalidNames := []string{}
-	for _, name := range names {
-		if keyword.IsMysqlReservedKeyword(name) {
-			invalidNames = append(invalidNames, name)
-		}
-	}
-	if len(invalidNames) > 0 {
-		addResult(input.Res, input.Rule, DDLCheckObjectNameUsingKeyword,
-			strings.Join(util.RemoveArrayRepeat(invalidNames), ", "))
-	}
-	return nil
+	return names
 }
 
 func checkForeignKey(input *RuleHandlerInput) error {
@@ -4596,18 +4711,35 @@ func checkColumnTypeInteger(input *RuleHandlerInput) error {
 }
 
 func checkVarcharSize(input *RuleHandlerInput) error {
+	maxVarcharLen := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int() {
-				addResult(input.Res, input.Rule, input.Rule.Name)
+			if col.Tp == nil {
+				continue
+			}
+			if col.Tp.Tp == mysql.TypeVarchar && col.Tp.Flen > maxVarcharLen {
+				addResult(input.Res, input.Rule, input.Rule.Name, maxVarcharLen)
 				break
 			}
 		}
-		return nil
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, column := range spec.NewColumns {
+				if column.Tp == nil {
+					continue
+				}
+				if column.Tp.Tp == mysql.TypeVarchar && column.Tp.Flen > maxVarcharLen {
+					addResult(input.Res, input.Rule, input.Rule.Name, maxVarcharLen)
+					break
+				}
+			}
+		}
 	default:
 		return nil
 	}
+	return nil
 }
 
 func notRecommendFuncInWhere(input *RuleHandlerInput) error {

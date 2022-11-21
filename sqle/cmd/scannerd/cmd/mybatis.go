@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/mybatis"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
@@ -17,6 +18,8 @@ import (
 var (
 	dir            string
 	skipErrorQuery bool
+	skipErrorXml   bool
+	skipAudit      bool
 
 	mybatisCmd = &cobra.Command{
 		Use:   "mybatis",
@@ -26,9 +29,11 @@ var (
 				XMLDir:         dir,
 				APName:         rootCmdFlags.auditPlanName,
 				SkipErrorQuery: skipErrorQuery,
+				SkipErrorXml:   skipErrorXml,
+				SkipAudit:      skipAudit,
 			}
 			log := logrus.WithField("scanner", "mybatis")
-			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
 			scanner, err := mybatis.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
@@ -48,6 +53,8 @@ var (
 func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
 	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip the statement that the scanner failed to parse from within the xml file")
+	mybatisCmd.Flags().BoolVarP(&skipErrorXml, "skip-error-xml", "X", false, "skip the xml file that failed to parse")
+	mybatisCmd.Flags().BoolVarP(&skipAudit, "skip-audit", "K", false, "only upload sql to sqle, not audit")
 	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
 }

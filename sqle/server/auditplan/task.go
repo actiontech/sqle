@@ -91,7 +91,7 @@ func (at *baseTask) Stop() error {
 }
 
 func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
-	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 		})
 	}
 
-	err = server.Audit(at.logger, task, at.ap.RuleTemplateName)
+	err = server.Audit(at.logger, task, &at.ap.ProjectId, at.ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 		if err != nil {
 			return nil, err
 		}
@@ -298,11 +298,11 @@ func convertRawSQLToModelSQLs(sqls []string) []*model.AuditPlanSQLV2 {
 }
 
 func (at *baseTask) FullSyncSQLs(sqls []*SQL) error {
-	return at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+	return at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *baseTask) PartialSyncSQLs(sqls []*SQL) error {
-	return at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+	return at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *baseTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
@@ -376,7 +376,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 	if err != nil {
 		return
 	}
@@ -426,7 +426,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		sqls = append(sqls, sql)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertRawSQLToModelSQLs(sqls))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
@@ -489,7 +489,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -538,7 +538,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 			})
 		}
 
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(apSQLs))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
 		if err != nil {
 			at.logger.Errorf("save top sql to storage fail, error: %v", err)
 		}
@@ -622,7 +622,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 		if err != nil {
 			return nil, err
 		}
@@ -633,7 +633,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		}
 	}
 
-	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.Name)
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -667,7 +667,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		})
 	}
 
-	err = server.HookAudit(at.logger, task, &TiDBAuditHook{}, at.ap.RuleTemplateName)
+	err = server.HookAudit(at.logger, task, &TiDBAuditHook{}, &at.ap.ProjectId, at.ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}
@@ -836,13 +836,13 @@ func (at *aliRdsMySQLTask) collectorDo() {
 	mergedSlowSqls := mergeSQLsByFingerprint(slowSqls)
 	if len(mergedSlowSqls) > 0 {
 		if at.isFirstScrap() {
-			err = at.persist.OverrideAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
 			if err != nil {
 				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return
 			}
 		} else {
-			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.Name, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
+			err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
 			if err != nil {
 				at.logger.Errorf("save sqls to storage fail, error: %v", err)
 				return

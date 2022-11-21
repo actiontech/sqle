@@ -16,7 +16,6 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 )
 
 // %s = audit plan name
@@ -24,18 +23,18 @@ const (
 	// Post
 	LoginUri = "/v1/login"
 	// Post
-	TriggerAudit = "/v1/audit_plans/%s/trigger"
+	TriggerAudit = "/v1/projects/%v/audit_plans/%s/trigger"
 	// Post
-	FullUpload = "/v1/audit_plans/%s/sqls/full"
+	FullUpload = "/v1/projects/%v/audit_plans/%s/sqls/full"
 	// Post
-	PartialUpload = "/v1/audit_plans/%s/sqls/partial"
+	PartialUpload = "/v1/projects/%v/audit_plans/%s/sqls/partial"
 	// Get										%v=report_id
-	GetAuditReport = "/v2/audit_plans/%s/report/%v/?page_index=%d&page_size=%d"
+	GetAuditReport = "/v1/projects/%v/audit_plans/%s/report/%v/?page_index=%d&page_size=%d"
 )
 
 type (
 	BaseRes                     = controller.BaseRes
-	GetAuditPlanReportSQLsRes   = v2.GetAuditPlanReportSQLsResV2
+	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
 	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
 	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
 	PartialSyncAuditPlanSQLsReq = v1.PartialSyncAuditPlanSQLsReqV1
@@ -46,6 +45,7 @@ type Client struct {
 	baseURL    string
 	httpClient *client
 	token      string
+	project    string
 }
 
 func NewSQLEClient(timeout time.Duration, host, port string) *Client {
@@ -68,6 +68,12 @@ func (sc *Client) WithToken(token string) *Client {
 	return &sc2
 }
 
+func (sc *Client) WithProject(project string) *Client {
+	sc.project = project
+	sc2 := *sc
+	return &sc2
+}
+
 func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPlanSQLReq) error {
 	bodyBuf := &bytes.Buffer{}
 	encoder := json.NewEncoder(bodyBuf)
@@ -79,7 +85,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPla
 		return err
 	}
 
-	url := sc.baseURL + fmt.Sprintf(uri, auditPlanName)
+	url := sc.baseURL + fmt.Sprintf(uri, sc.project, auditPlanName)
 	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(bodyBuf.Bytes()))
 	if err != nil {
 		return err
@@ -97,7 +103,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPla
 }
 
 func (sc *Client) TriggerAuditReq(auditPlanName string) (string, error) {
-	url := sc.baseURL + fmt.Sprintf(TriggerAudit, auditPlanName)
+	url := sc.baseURL + fmt.Sprintf(TriggerAudit, sc.project, auditPlanName)
 
 	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, nil)
 	if err != nil {
@@ -121,7 +127,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 	cursor = pageIndex * pageSize
 
 	for {
-		url := sc.baseURL + fmt.Sprintf(GetAuditReport, auditPlanName, reportID, pageIndex, pageSize)
+		url := sc.baseURL + fmt.Sprintf(GetAuditReport, sc.project, auditPlanName, reportID, pageIndex, pageSize)
 		resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodGet, sc.token, nil)
 		if err != nil {
 			return err
@@ -155,7 +161,8 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 }
 
 const (
-	DefaultTimeout = time.Second * 10
+	DefaultTimeoutNum = 10
+	DefaultTimeout    = time.Second * time.Duration(DefaultTimeoutNum)
 )
 
 // client is a wrap of http.Client

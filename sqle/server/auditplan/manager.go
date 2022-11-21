@@ -22,11 +22,11 @@ func InitManager(s *model.Storage) chan struct{} {
 	manager = &Manager{
 		scheduler: &scheduler{
 			cron:     cron.New(),
-			entryIDs: make(map[string]cron.EntryID),
+			entryIDs: make(map[uint]cron.EntryID),
 		},
 		persist: s,
 		logger:  log.NewEntry().WithField("type", "audit_plan"),
-		tasks:   map[string]Task{},
+		tasks:   map[uint]Task{},
 	}
 
 	err := manager.start()
@@ -62,7 +62,7 @@ type Manager struct {
 
 	logger *logrus.Entry
 
-	tasks map[string]Task
+	tasks map[uint] /* audit plan id*/ Task
 }
 
 func (mgr *Manager) start() error {
@@ -101,29 +101,29 @@ func (mgr *Manager) stop() {
 	mgr.logger.Infoln("audit plan manager stopped")
 }
 
-func (mgr *Manager) SyncTask(apName string) error {
+func (mgr *Manager) SyncTask(auditPlanId uint) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	ap, exist, err := mgr.persist.GetAuditPlanByName(apName)
+	ap, exist, err := mgr.persist.GetAuditPlanById(auditPlanId)
 	if err != nil {
 		return err
 	}
 	if !exist {
-		return mgr.deleteAuditPlan(apName)
+		return mgr.deleteAuditPlan(auditPlanId)
 	} else {
 		return mgr.startAuditPlan(ap)
 	}
 }
 
 func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
-	if mgr.scheduler.hasJob(ap.Name) {
-		err := mgr.scheduler.removeJob(mgr.logger, ap.Name)
+	if mgr.scheduler.hasJob(ap.ID) {
+		err := mgr.scheduler.removeJob(mgr.logger, ap.ID)
 		if err != nil {
 			return err
 		}
 	}
-	task, ok := mgr.tasks[ap.Name]
+	task, ok := mgr.tasks[ap.ID]
 	if ok {
 		err := task.Stop()
 		if err != nil {
@@ -135,47 +135,47 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 	if err := task.Start(); err != nil {
 		return err
 	}
-	mgr.tasks[ap.Name] = task
+	mgr.tasks[ap.ID] = task
 
 	return mgr.scheduler.addJob(mgr.logger, ap, func() {
-		_, err := mgr.Audit(ap.Name)
+		_, err := mgr.Audit(ap.ID)
 		if err != nil {
 			mgr.logger.WithField("name", ap.Name).Errorf("schedule to audit task failed, error: %v", err)
 		}
 	})
 }
 
-func (mgr *Manager) deleteAuditPlan(name string) error {
-	if mgr.scheduler.hasJob(name) {
-		err := mgr.scheduler.removeJob(mgr.logger, name)
+func (mgr *Manager) deleteAuditPlan(id uint) error {
+	if mgr.scheduler.hasJob(id) {
+		err := mgr.scheduler.removeJob(mgr.logger, id)
 		if err != nil {
 			return err
 		}
 	}
-	task, ok := mgr.tasks[name]
+	task, ok := mgr.tasks[id]
 	if ok {
 		err := task.Stop()
 		if err != nil {
 			return err
 		}
-		delete(mgr.tasks, name)
+		delete(mgr.tasks, id)
 	}
 	return nil
 }
 
-func (mgr *Manager) getTask(apName string) (Task, error) {
-	task, ok := mgr.tasks[apName]
+func (mgr *Manager) getTask(auditPlanId uint) (Task, error) {
+	task, ok := mgr.tasks[auditPlanId]
 	if !ok {
 		return nil, errors.New(errors.DataNotExist, fmt.Errorf("task not found"))
 	}
 	return task, nil
 }
 
-func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
+func (mgr *Manager) Audit(auditPlanId uint) (*model.AuditPlanReportV2, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	task, err := mgr.getTask(apName)
+	task, err := mgr.getTask(auditPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -183,14 +183,14 @@ func (mgr *Manager) Audit(apName string) (*model.AuditPlanReportV2, error) {
 	if err != nil {
 		return nil, err
 	}
-	return report, notification.NotifyAuditPlan(apName, report)
+	return report, notification.NotifyAuditPlan(auditPlanId, report)
 }
 
-func (mgr *Manager) UploadSQLs(apName string, sqls []*SQL, isPartialSync bool) error {
+func (mgr *Manager) UploadSQLs(auditPlanId uint, sqls []*SQL, isPartialSync bool) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	task, err := mgr.getTask(apName)
+	task, err := mgr.getTask(auditPlanId)
 	if err != nil {
 		return err
 	}
@@ -201,11 +201,13 @@ func (mgr *Manager) UploadSQLs(apName string, sqls []*SQL, isPartialSync bool) e
 	}
 }
 
-func (mgr *Manager) GetSQLs(apName string, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+func (mgr *Manager) GetSQLs(auditPlanId uint, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	task, err := mgr.getTask(apName)
+	args["audit_plan_id"] = auditPlanId
+
+	task, err := mgr.getTask(auditPlanId)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -218,26 +220,26 @@ type scheduler struct {
 	cron *cron.Cron
 
 	// entryIDs maps audit plan name to it's job entry ID.
-	entryIDs map[string]cron.EntryID
+	entryIDs map[uint] /* audit plan id*/ cron.EntryID
 }
 
-func (s *scheduler) removeJob(entry *logrus.Entry, auditPlanName string) error {
-	entryID, ok := s.entryIDs[auditPlanName]
+func (s *scheduler) removeJob(entry *logrus.Entry, auditPlanId uint) error {
+	entryID, ok := s.entryIDs[auditPlanId]
 	if !ok {
 		return ErrAuditPlanNotExist
 	}
 
 	s.cron.Remove(entryID)
-	delete(s.entryIDs, auditPlanName)
+	delete(s.entryIDs, auditPlanId)
 
 	entry.WithFields(logrus.Fields{
-		"name": auditPlanName,
+		"id": auditPlanId,
 	}).Infoln("stop audit scheduler")
 	return nil
 }
 
 func (s *scheduler) addJob(entry *logrus.Entry, ap *model.AuditPlan, do func()) error {
-	_, ok := s.entryIDs[ap.Name]
+	_, ok := s.entryIDs[ap.ID]
 	if ok {
 		return ErrAuditPlanExisted
 	}
@@ -247,9 +249,10 @@ func (s *scheduler) addJob(entry *logrus.Entry, ap *model.AuditPlan, do func()) 
 		return err
 	}
 
-	s.entryIDs[ap.Name] = entryID
+	s.entryIDs[ap.ID] = entryID
 
 	entry.WithFields(logrus.Fields{
+		"id":              ap.ID,
 		"name":            ap.Name,
 		"cron_expression": ap.CronExpression,
 	}).Infoln("start audit scheduler")
@@ -264,7 +267,7 @@ func (s *scheduler) stop() context.Context {
 	return s.cron.Stop()
 }
 
-func (s *scheduler) hasJob(auditPlanName string) bool {
-	_, has := s.entryIDs[auditPlanName]
+func (s *scheduler) hasJob(auditPlanId uint) bool {
+	_, has := s.entryIDs[auditPlanId]
 	return has
 }

@@ -12,6 +12,8 @@ import (
 
 type RuleTemplate struct {
 	Model
+	// global rule-template has no ProjectId
+	ProjectId uint               `gorm:"index"`
 	Name      string             `json:"name"`
 	Desc      string             `json:"desc"`
 	DBType    string             `json:"db_type"`
@@ -94,19 +96,20 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplatesByInstanceName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
 		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
-		Where("`instances`.`name` = ?", name).Find(t).Error
+		Where("`instances`.`name` = ?", name).
+		Where("`instances`.`project_id` = ?", projectId).Find(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(name string) ([]*Rule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByName(name)
+func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
 	}
@@ -131,25 +134,46 @@ func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
 		return nil, nil
 	}
 	tplName := templates[0].Name
-	return s.GetRulesFromRuleTemplateByName(tplName)
+	// 数据源可以绑定全局模板和项目模板
+	return s.GetRulesFromRuleTemplateByName([]uint{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, tplName)
 }
 
-func (s *Storage) GetRuleTemplateByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId uint, name string) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
-	err := s.db.Where("name = ?", name).First(t).Error
+	err := s.db.Where("name = ?", name).Where("project_id = ?", projectId).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByName(name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetGlobalAndProjectRuleTemplateByNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
+	t := &RuleTemplate{}
+	err := s.db.Table("rule_templates").
+		Where("rule_templates.name = ?", name).
+		Where("project_id = ? OR project_id = 0", projectId).
+		First(t).Error
+	if err == gorm.ErrRecordNotFound {
+		return t, false, nil
+	}
+	return t, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsRuleTemplateExistFromAnyProject(name string) (bool, error) {
+	var count int
+	err := s.db.Model(&RuleTemplate{}).Where("name = ?", name).Count(&count).Error
+	return count > 0, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []uint, name string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
 	t := &RuleTemplate{Name: name}
 	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("Instances").
-		Where(t).First(t).Error
+		Where(t).
+		Where("project_id IN (?)", projectIds).
+		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -196,10 +220,10 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	return ruleMap
 }
 
-func (s *Storage) GetRuleTemplateTips(dbType string) ([]*RuleTemplate, error) {
+func (s *Storage) GetRuleTemplateTips(projectId uint, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
-	db := s.db.Select("name, db_type")
+	db := s.db.Select("name, db_type").Where("project_id = ?", projectId)
 	if dbType != "" {
 		db = db.Where("db_type = ?", dbType)
 	}
@@ -226,34 +250,6 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	rules := []*Rule{}
 	err := s.db.Where(&Rule{DBType: dbType}).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetRuleTemplatesByNames(names []string) ([]*RuleTemplate, error) {
-	templates := []*RuleTemplate{}
-	err := s.db.Where("name in (?)", names).Find(&templates).Error
-	return templates, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetAndCheckRuleTemplateExist(templateNames []string) (ruleTemplates []*RuleTemplate, err error) {
-	ruleTemplates, err = s.GetRuleTemplatesByNames(templateNames)
-	if err != nil {
-		return ruleTemplates, err
-	}
-	existTemplateNames := map[string]struct{}{}
-	for _, user := range ruleTemplates {
-		existTemplateNames[user.Name] = struct{}{}
-	}
-	notExistTemplateNames := []string{}
-	for _, userName := range templateNames {
-		if _, ok := existTemplateNames[userName]; !ok {
-			notExistTemplateNames = append(notExistTemplateNames, userName)
-		}
-	}
-	if len(notExistTemplateNames) > 0 {
-		return ruleTemplates, errors.New(errors.DataNotExist,
-			fmt.Errorf("rule template %s not exist", strings.Join(notExistTemplateNames, ", ")))
-	}
-	return ruleTemplates, nil
 }
 
 func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error) {
@@ -284,18 +280,35 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 	return existRules, nil
 }
 
-func (s *Storage) IsRuleTemplateExist(ruleTemplateName string) (bool, error) {
+func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []uint) (bool, error) {
+	if len(projectIds) <= 0 {
+		return false, nil
+	}
 	var count int
-	err := s.db.Table("rule_templates").Where("name = ?", ruleTemplateName).Where("deleted_at IS NULL").Count(&count).Error
+	err := s.db.Table("rule_templates").
+		Where("name = ?", ruleTemplateName).
+		Where("deleted_at IS NULL").
+		Where("project_id IN (?)", projectIds).
+		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string) (bool, error) {
+func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uint) (bool, error) {
 	var count int
 	err := s.db.Table("rule_templates").
-		Joins("join audit_plans on audit_plans.rule_template_name = rule_templates.name").
+		Joins("join audit_plans on audit_plans.project_id = rule_templates.project_id").
 		Where("audit_plans.deleted_at is null").
-		Where("rule_templates.name = ?", ruleTemplateName).
+		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
+		Where("rule_templates.project_id = ?", projectId).
+		Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) IsRuleTemplateBeingUsedFromAnyProject(ruleTemplateName string) (bool, error) {
+	var count int
+	err := s.db.Table("audit_plans").
+		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
+		Where("audit_plans.deleted_at is null").
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }

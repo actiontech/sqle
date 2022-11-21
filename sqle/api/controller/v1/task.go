@@ -107,13 +107,14 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Tags task
 // @Id createAndAuditTaskV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param instance_name formData string true "instance name"
 // @Param instance_schema formData string false "schema of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Success 200 {object} v1.GetAuditTaskResV1
-// @router /v1/tasks/audits [post]
+// @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
 	req := new(CreateAuditTaskReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -131,15 +132,24 @@ func CreateAndAuditTask(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err = CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	instance, exist, err := s.GetInstanceByName(req.InstanceName)
+
+	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
-
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -208,45 +218,6 @@ func CreateAndAuditTask(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
-}
-
-func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint) error {
-	if controller.GetUserName(c) == model.DefaultAdminUser {
-		return nil
-	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-	if user.ID == task.CreateUserId {
-		return nil
-	}
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return ErrTaskNoAccess
-	}
-	access, err := s.UserCanAccessWorkflow(user, workflow)
-	if err != nil {
-		return err
-	}
-	if access {
-		return nil
-	}
-	if len(ops) > 0 {
-		ok, err := s.CheckUserHasOpToInstances(user, []*model.Instance{task.Instance}, ops)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
-		}
-	}
-
-	return ErrTaskNoAccess
 }
 
 // @Summary 获取Sql扫描任务信息
@@ -649,9 +620,10 @@ const MaximumDataSourceNum = 10
 // @Tags task
 // @Id createAuditTasksV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param req body v1.CreateAuditTasksGroupReqV1 true "parameters for creating audit tasks group"
 // @Success 200 {object} v1.CreateAuditTasksGroupResV1
-// @router /v1/task_groups [post]
+// @router /v1/projects/{project_name}/task_groups [post]
 func CreateAuditTasksGroupV1(c echo.Context) error {
 	req := new(CreateAuditTasksGroupReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -670,8 +642,16 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNames(distinctInstNames)
+	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

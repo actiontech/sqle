@@ -48,13 +48,13 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-
+			projectName := c.Param("project_name")
 			apnInParam := c.Param("audit_plan_name")
 			if apnInToken != apnInParam {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			apn, apnExist, err := model.GetStorage().GetAuditPlanByName(apnInParam)
+			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectName, apnInParam)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}

@@ -8,7 +8,9 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+	"unicode"
 	"unsafe"
 )
 
@@ -143,4 +145,28 @@ func NvlString(param *string) string {
 		return *param
 	}
 	return ""
+}
+
+// IsUpperAndLowerLetterMixed
+// return true if the string contains both uppercase and lowercase letters
+func IsUpperAndLowerLetterMixed(s string) bool {
+	if len(s) == 1 {
+		return false
+	}
+
+	var isUpper bool
+	var once sync.Once
+	for _, v := range s {
+		if !unicode.IsLetter(v) {
+			continue
+		}
+		once.Do(func() {
+			isUpper = unicode.IsUpper(v)
+		})
+		if unicode.IsUpper(v) != isUpper {
+			return true
+		}
+	}
+
+	return false
 }
