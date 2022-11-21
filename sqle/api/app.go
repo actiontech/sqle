@@ -273,10 +273,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// sql query
 	cloudbeaver_wrapper.StartApp(e)
-	//v1Router.POST("/sql_query/prepare/:instance_name/", v1.PrepareSQLQuery)
-	//v1Router.GET("/sql_query/history/:instance_name/", v1.GetSQLQueryHistory)
-	//v1Router.GET("/sql_query/results/:query_id/", v1.GetSQLResult)
-	//v1Router.POST("/sql_query/explain/:instance_name/", v1.GetSQLExplain)
 
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
