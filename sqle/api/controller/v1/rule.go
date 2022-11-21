@@ -409,13 +409,13 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name    string           `json:"rule_name"`
-	Desc    string           `json:"desc"`
-	Explain string           `json:"explain" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
-	Level   string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ     string           `json:"type" example:"全局配置" `
-	DBType  string           `json:"db_type" example:"mysql"`
-	Params  []RuleParamResV1 `json:"params,omitempty"`
+	Name       string           `json:"rule_name"`
+	Desc       string           `json:"desc"`
+	Annotation string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
+	Level      string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ        string           `json:"type" example:"全局配置" `
+	DBType     string           `json:"db_type" example:"mysql"`
+	Params     []RuleParamResV1 `json:"params,omitempty"`
 }
 
 type RuleParamResV1 struct {
