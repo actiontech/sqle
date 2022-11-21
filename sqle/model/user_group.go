@@ -89,13 +89,10 @@ user_groups.id,
 user_groups.name, 
 user_groups.description,
 user_groups.stat,
-GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names,
-GROUP_CONCAT(DISTINCT COALESCE(roles.name,'')) AS role_names
+GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names
 FROM user_groups
 LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
 LEFT JOIN users ON user_group_users.user_id = users.id AND users.deleted_at IS NULL
-LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
-LEFT JOIN roles ON user_group_roles.role_id = roles.id AND roles.deleted_at IS NULL
 WHERE 
 user_groups.id IN (SELECT DISTINCT(user_groups.id)
 
@@ -116,8 +113,6 @@ var userGroupsQueryBodyTpl = `
 FROM user_groups
 LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
 LEFT JOIN users ON user_group_users.user_id = users.id AND users.deleted_at IS NULL
-LEFT JOIN user_group_roles ON user_groups.id = user_group_roles.user_group_id
-LEFT JOIN roles ON user_group_roles.role_id = roles.id AND roles.deleted_at IS NULL
 WHERE
 user_groups.deleted_at IS NULL
 
@@ -134,7 +129,6 @@ type UserGroupDetail struct {
 	Desc      string  `json:"description"`
 	Stat      uint    `json:"stat"`
 	UserNames RowList `json:"user_names"`
-	RoleNames RowList `json:"role_names"`
 }
 
 func (ugd *UserGroupDetail) IsDisabled() bool {
