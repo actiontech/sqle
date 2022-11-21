@@ -9222,6 +9222,10 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "explain": {
+                    "type": "string",
+                    "example": "避免多次 table rebuild 带来的消耗、以及对线上业务的影响"
+                },
                 "level": {
                     "type": "string",
                     "enum": [
