@@ -995,7 +995,45 @@ type GetInstanceTipsResV1 struct {
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/projects/{project_name}/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
-	return getInstanceTips(c)
+	req := new(InstanceTipReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var instances []*model.Instance
+	switch req.FunctionalModule {
+	case create_audit_plan:
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_AUDIT_PLAN_SAVE)
+	case create_workflow:
+		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, projectName, model.OP_WORKFLOW_SAVE)
+	default:
+		instances, err = s.GetInstanceTipsByUser(user, req.FilterDBType, projectName)
+	}
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
+	for _, inst := range instances {
+		instanceTipRes := InstanceTipResV1{
+			Name:               inst.Name,
+			Type:               inst.DbType,
+			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
+		}
+		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
+	}
+
+	return c.JSON(http.StatusOK, &GetInstanceTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    instanceTipsResV1,
+	})
 }
 
 // GetInstanceRules get instance all rule
