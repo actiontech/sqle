@@ -17,8 +17,9 @@ import (
 
 func getAction(sqls []string, typ int, d driver.Driver) *action {
 	task := &model.Task{
-		Model:     model.Model{ID: 1},
-		SQLSource: model.TaskSQLSourceFromMyBatisXMLFile,
+		Model:      model.Model{ID: 1},
+		SQLSource:  model.TaskSQLSourceFromMyBatisXMLFile,
+		InstanceId: 1,
 	}
 
 	for _, sql := range sqls {
@@ -138,10 +139,9 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist`")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `sql_whitelist`.* FROM `sql_whitelist` LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((instances.id = ?))")).
+		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT count(*) FROM `sql_whitelist`")).
-		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("1"))
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `execute_sql_detail`")).
