@@ -101,12 +101,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 
-		// audit whitelist
-		v1Router.GET("/audit_whitelist", v1.GetSqlWhitelist, AdminUserAllowed())
-		v1Router.POST("/audit_whitelist", v1.CreateAuditWhitelist, AdminUserAllowed())
-		v1Router.PATCH("/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById, AdminUserAllowed())
-		v1Router.DELETE("/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById, AdminUserAllowed())
-
 		// configurations
 		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/ldap", v1.UpdateLDAPConfiguration, AdminUserAllowed())
@@ -145,6 +139,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
 
 	}
+
+	// audit whitelist
+	v1Router.GET("/projects/:project_name/audit_whitelist", v1.GetSqlWhitelist)
+	v1Router.POST("/projects/:project_name/audit_whitelist", v1.CreateAuditWhitelist)
+	v1Router.PATCH("/projects/:project_name/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById)
+	v1Router.DELETE("/projects/:project_name/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById)
 
 	// project
 	v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
