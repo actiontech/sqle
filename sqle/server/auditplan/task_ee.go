@@ -44,7 +44,7 @@ func (at *OBMySQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -117,7 +117,7 @@ func (at *OBMySQLTopSQLTask) collect(queryDriver driver.SQLQueryDriver, sql stri
 		sqls = append(sqls, s)
 	}
 
-	return at.persist.OverrideAuditPlanSQLs(at.ap.Name, convertSQLsToModelSQLs(sqls))
+	return at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
@@ -127,7 +127,7 @@ func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByName(at.ap.InstanceName)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
 		if err != nil {
 			return nil, err
 		}

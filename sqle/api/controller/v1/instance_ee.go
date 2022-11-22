@@ -18,61 +18,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getInstanceTips(c echo.Context) error {
-	req := new(InstanceTipReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	s := model.GetStorage()
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	var instances []*model.Instance
-	switch req.FunctionalModule {
-	case create_audit_plan:
-		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_AUDIT_PLAN_SAVE)
-	case sql_query:
-		instances, err = s.GetInstanceTipsByUserAndOperation(user, req.FilterDBType, model.OP_SQL_QUERY_QUERY)
-		supportedTypes := driver.GetQueryDriverNames()
-	A:
-		for i := len(instances) - 1; i >= 0; i-- {
-			for _, supportedType := range supportedTypes {
-				if supportedType == instances[i].DbType {
-					continue A
-				}
-			}
-			instances = append(instances[:i], instances[i+1:]...)
-		}
-	default: // create_workflow case
-		instances, err = s.GetInstancesTipsByUserAndTypeAndTempId(user, req.FilterDBType, req.FilterWorkflowTemplateId)
-	}
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
-
-	for _, inst := range instances {
-		instanceTipRes := InstanceTipResV1{
-			Name:               inst.Name,
-			Type:               inst.DbType,
-			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
-		}
-		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
-	}
-	return c.JSON(http.StatusOK, &GetInstanceTipsResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    instanceTipsResV1,
-	})
-}
-
 func listTableBySchema(c echo.Context) error {
 	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	schemaName := c.Param("schema_name")
+	projectName := c.Param("project_name")
 
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -129,8 +81,9 @@ func getTableMetadata(c echo.Context) error {
 	instanceName := c.Param("instance_name")
 	schemaName := c.Param("schema_name")
 	tableName := c.Param("table_name")
+	projectName := c.Param("project_name")
 
-	instance, exist, err := s.GetInstanceByName(instanceName)
+	instance, exist, err := s.GetInstanceDetailByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

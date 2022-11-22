@@ -28,7 +28,7 @@ var (
 				APName:       rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "tidb-audit-log")
-			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token)
+			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
 			scanner, err := tidb_audit_log.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
