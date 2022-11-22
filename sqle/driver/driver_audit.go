@@ -83,8 +83,9 @@ func RuleLevelLessOrEqual(a, b string) bool {
 }
 
 type Rule struct {
-	Name string
-	Desc string
+	Name       string
+	Desc       string
+	Annotation string
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
@@ -485,11 +486,12 @@ func convertRuleFromProtoToDriver(rule *proto.Rule) *Rule {
 		})
 	}
 	return &Rule{
-		Name:     rule.Name,
-		Category: rule.Category,
-		Desc:     rule.Desc,
-		Level:    RuleLevel(rule.Level),
-		Params:   ps,
+		Name:       rule.Name,
+		Category:   rule.Category,
+		Desc:       rule.Desc,
+		Annotation: rule.Annotation,
+		Level:      RuleLevel(rule.Level),
+		Params:     ps,
 	}
 }
 
@@ -504,11 +506,12 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 		})
 	}
 	return &proto.Rule{
-		Name:     rule.Name,
-		Desc:     rule.Desc,
-		Level:    string(rule.Level),
-		Category: rule.Category,
-		Params:   params,
+		Name:       rule.Name,
+		Desc:       rule.Desc,
+		Annotation: rule.Annotation,
+		Level:      string(rule.Level),
+		Category:   rule.Category,
+		Params:     params,
 	}
 }
 
