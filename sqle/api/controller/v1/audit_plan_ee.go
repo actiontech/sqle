@@ -55,11 +55,6 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report not exist")))
 	}
 
-	err = CheckCurrentUserCanAccessAuditPlan(c, auditPlanReport.AuditPlan.Name, model.OP_AUDIT_PLAN_VIEW_OTHERS)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	auditPlanReportSQLV2, exist, err := s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportIdInt), uint(numberInt))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
