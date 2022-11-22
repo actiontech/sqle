@@ -25,6 +25,16 @@ var errSQLAnalysisSQLIsNotSupport = errors.New(errors.SQLAnalysisSQLIsNotSupport
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
 	number := c.Param("number")
+	apName := c.Param("audit_plan_name")
+	projectName := c.Param("project_name")
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
+	}
 
 	reportIdInt, err := strconv.Atoi(reportId)
 	if err != nil {
@@ -37,7 +47,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	auditPlanReport, exist, err := s.GetAuditPlanReportByID(uint(reportIdInt))
+	auditPlanReport, exist, err := s.GetAuditPlanReportByID(ap.ID, uint(reportIdInt))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -58,7 +68,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report sql v2 not exist")))
 	}
 
-	instance, exist, err := s.GetInstanceByName(auditPlanReport.AuditPlan.InstanceName)
+	instance, exist, err := s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, auditPlanReport.AuditPlan.ProjectId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
