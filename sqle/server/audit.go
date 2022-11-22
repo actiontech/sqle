@@ -100,14 +100,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 	}()
 
 	st := model.GetStorage()
-	projectName, exist, err := st.GetProjectNameByInstanceId(task.InstanceId)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return errors.Errorf("project of task doesn't exist. task_id=%v", task.ID)
-	}
-	whitelist, _, err := st.GetSqlWhitelistByProjectName(0, 0, projectName)
+	whitelist, _, err := st.GetSqlWhitelistByInstanceId(task.InstanceId)
 	if err != nil {
 		return err
 	}

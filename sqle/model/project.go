@@ -237,20 +237,6 @@ func (s *Storage) GetProjectNamesByInstanceIds(instanceIds []uint) (map[uint] /*
 	return res, nil
 }
 
-func (s *Storage) GetProjectNameByInstanceId(instanceId uint) (projectName string, exist bool, err error) {
-	res := struct {
-		Name string `json:"name"`
-	}{}
-	err = s.db.Table("projects").
-		Joins("LEFT JOIN instances ON projects.id = instances.project_id").
-		Where("instances.id = ?", instanceId).
-		Find(&res).Error
-	if err == gorm.ErrRecordNotFound {
-		return "", false, nil
-	}
-	return res.Name, true, errors.New(errors.ConnectStorageError, err)
-}
-
 func (s *Storage) AddMember(userName, projectName string, isManager bool, bindRole []BindRole) error {
 	user, exist, err := s.GetUserByName(userName)
 	if err != nil {
