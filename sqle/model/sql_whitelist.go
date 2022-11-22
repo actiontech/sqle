@@ -41,26 +41,43 @@ func (s SqlWhitelist) TableName() string {
 	return "sql_whitelist"
 }
 
-func (s *Storage) GetSqlWhitelistById(sqlWhiteId string) (*SqlWhitelist, bool, error) {
+func (s *Storage) GetSqlWhitelistByIdAndProjectName(sqlWhiteId, projectName string) (*SqlWhitelist, bool, error) {
 	sqlWhitelist := &SqlWhitelist{}
-	err := s.db.Table("sql_whitelist").Where("id = ?", sqlWhiteId).First(sqlWhitelist).Error
+	err := s.db.Table("sql_whitelist").
+		Joins("LEFT JOIN projects ON projects.id = sql_whitelist.project_id").
+		Where("sql_whitelist.id = ?", sqlWhiteId).
+		Where("projects.name = ?", projectName).
+		First(sqlWhitelist).Error
 	if err == gorm.ErrRecordNotFound {
 		return sqlWhitelist, false, nil
 	}
 	return sqlWhitelist, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetSqlWhitelist(pageIndex, pageSize uint32) ([]SqlWhitelist, uint32, error) {
+func (s *Storage) GetSqlWhitelistByProjectName(pageIndex, pageSize uint32, projectName string) ([]SqlWhitelist, uint32, error) {
 	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
+	query := s.db.Table("sql_whitelist").
+		Joins("LEFT JOIN projects ON projects.id = sql_whitelist.project_id").
+		Where("projects.name = ?", projectName)
 	if pageSize == 0 {
-		err := s.db.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
+		err := query.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
 		return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 	}
-	err := s.db.Model(&SqlWhitelist{}).Count(&count).Error
+	err := query.Count(&count).Error
 	if err != nil {
 		return sqlWhitelist, 0, errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
+	err = query.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
+}
+
+
+func (s *Storage) GetSqlWhitelistByInstanceId(instanceId uint) ([]SqlWhitelist,  error) {
+	sqlWhitelist := []SqlWhitelist{}
+	err := s.db.Table("sql_whitelist").
+		Joins("LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id").
+		Where("instances.id = ?", instanceId).
+		Find(&sqlWhitelist).Error
+	return sqlWhitelist,  errors.New(errors.ConnectStorageError, err)
 }

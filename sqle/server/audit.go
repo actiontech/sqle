@@ -16,11 +16,11 @@ import (
 )
 
 func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName string) (err error) {
-	return HookAudit(l, task, &EmptyAuditHook{}, projectId,ruleTemplateName)
+	return HookAudit(l, task, &EmptyAuditHook{}, projectId, ruleTemplateName)
 }
 
-func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint,ruleTemplateName string) (err error) {
-	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId,ruleTemplateName)
+func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
+	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId, ruleTemplateName)
 	if err != nil {
 		return err
 	}
@@ -100,8 +100,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 	}()
 
 	st := model.GetStorage()
-
-	whitelist, _, err := st.GetSqlWhitelist(0, 0)
+	whitelist, err := st.GetSqlWhitelistByInstanceId(task.InstanceId)
 	if err != nil {
 		return err
 	}
