@@ -427,11 +427,12 @@ type RuleParamResV1 struct {
 
 func convertRuleToRes(rule *model.Rule) RuleResV1 {
 	ruleRes := RuleResV1{
-		Name:   rule.Name,
-		Desc:   rule.Desc,
-		Level:  rule.Level,
-		Typ:    rule.Typ,
-		DBType: rule.DBType,
+		Name:       rule.Name,
+		Desc:       rule.Desc,
+		Annotation: rule.Annotation,
+		Level:      rule.Level,
+		Typ:        rule.Typ,
+		DBType:     rule.DBType,
 	}
 	if rule.Params != nil && len(rule.Params) > 0 {
 		paramsRes := make([]RuleParamResV1, 0, len(rule.Params))
