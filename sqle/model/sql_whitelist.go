@@ -73,14 +73,11 @@ func (s *Storage) GetSqlWhitelistByProjectName(pageIndex, pageSize uint32, proje
 }
 
 
-func (s *Storage) GetSqlWhitelistByInstanceId(instanceId uint) ([]SqlWhitelist, bool, error) {
+func (s *Storage) GetSqlWhitelistByInstanceId(instanceId uint) ([]SqlWhitelist,  error) {
 	sqlWhitelist := []SqlWhitelist{}
 	err := s.db.Table("sql_whitelist").
 		Joins("LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id").
 		Where("instances.id = ?", instanceId).
 		Find(&sqlWhitelist).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	return sqlWhitelist, true, errors.New(errors.ConnectStorageError, err)
+	return sqlWhitelist,  errors.New(errors.ConnectStorageError, err)
 }
