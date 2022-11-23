@@ -34,7 +34,7 @@ func GetManagementPermissionDesc(code uint) string {
 	return desc
 }
 
-func GetManagementPermission() map[uint /*code*/ ]string /*desc*/ {
+func GetManagementPermission() map[uint] /*code*/ string /*desc*/ {
 	resp := map[uint]string{}
 	for u, s := range managementPermission2Desc {
 		resp[u] = s
@@ -68,7 +68,7 @@ func updateManagementPermission(txDB *gorm.DB, userID uint, permissionCode []uin
 	return nil
 }
 
-func (s *Storage) GetManagementPermissionByUserID(userID uint) ([]uint, error, ) {
+func (s *Storage) GetManagementPermissionByUserID(userID uint) ([]uint, error) {
 	code := []*struct {
 		PermissionCode uint
 	}{}
@@ -80,7 +80,7 @@ func (s *Storage) GetManagementPermissionByUserID(userID uint) ([]uint, error, )
 	return resp, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetManagementPermissionByUserIDs(userIDs []uint) (map[uint /*user id*/ ][]uint /*codes*/, error, ) {
+func (s *Storage) GetManagementPermissionByUserIDs(userIDs []uint) (map[uint] /*user id*/ []uint /*codes*/, error) {
 	p := []*ManagementPermission{}
 	err := s.db.Table("management_permissions").Select("user_id,permission_code").Where("user_id in (?)", userIDs).Where("deleted_at IS NULL").Scan(&p).Error
 
@@ -94,4 +94,24 @@ func (s *Storage) GetManagementPermissionByUserIDs(userIDs []uint) (map[uint /*u
 	}
 
 	return resp, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CheckUserHaveManagementPermission(userID uint, code []uint) (bool, error) {
+	code = utils.RemoveDuplicateUint(code)
+
+	user, _, err := s.GetUserByID(userID)
+	if err != nil {
+		return false, err
+	}
+	if user.Name == DefaultAdminUser {
+		return true, nil
+	}
+
+	var count int
+	err = s.db.Model(&ManagementPermission{}).
+		Where("user_id = ?", userID).
+		Where("permission_code in (?)", code).
+		Count(&count).Error
+
+	return count == len(code), errors.ConnectStorageErrWrapper(err)
 }

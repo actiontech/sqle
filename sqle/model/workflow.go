@@ -904,6 +904,20 @@ func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 	return count, nil
 }
 
+// 执行成功, 执行失败, 已取消三种工单会被当作已结束工单
+func (s *Storage) HasNotEndWorkflowByProjectName(projectName string) (bool, error) {
+	endStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusCancel}
+
+	var count int
+	err := s.db.Table("workflows").
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Joins("LEFT JOIN projects ON projects.id = workflows.project_id").
+		Where("workflow_records.status NOT IN (?)", endStatus).
+		Where("projects.name = ?", projectName).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // GetApprovedWorkflowCount
 // 返回审核通过的工单数（工单状态是 待上线,正在上线,上线成功,上线失败 中任意一个表示工单通过审核）
 // 工单状态是 待审核,已驳回,已关闭 中任意一个表示工单未通过审核
