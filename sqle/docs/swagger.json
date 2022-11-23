@@ -4557,6 +4557,12 @@
                         "description": "filter db type",
                         "name": "filter_db_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter global rule template name",
+                        "name": "filter_global_rule_template_name",
+                        "in": "query"
                     }
                 ],
                 "responses": {
