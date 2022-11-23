@@ -6081,6 +6081,10 @@ paths:
         in: query
         name: filter_db_type
         type: string
+      - description: filter global rule template name
+        in: query
+        name: filter_global_rule_template_name
+        type: string
       responses:
         "200":
           description: OK
