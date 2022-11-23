@@ -8,12 +8,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// todo issue960 fix test
 func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	// 1. test for common user
 	tableAndRowOfSQL := `
 	FROM audit_plans
 	LEFT JOIN users ON audit_plans.create_user_id = users.id
+	LEFT JOIN projects ON audit_plans.project_id = projects.id
 	WHERE audit_plans.deleted_at IS NULL
 	AND users.deleted_at IS NULL
 	AND (
@@ -48,6 +48,7 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	tableAndRowOfSQL1 := `
 	FROM audit_plans
 	LEFT JOIN users ON audit_plans.create_user_id = users.id
+	LEFT JOIN projects ON audit_plans.project_id = projects.id
 	WHERE audit_plans.deleted_at IS NULL
 	AND users.deleted_at IS NULL
 	`
@@ -83,22 +84,22 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 	JOIN audit_plans ON audit_plans.id = audit_plan_sqls.audit_plan_id
 	WHERE audit_plan_sqls.deleted_at IS NULL
 	AND  audit_plans.deleted_at IS NULL
-	AND audit_plans.name = ?
+	AND audit_plans.id = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT audit_plan_sqls.fingerprint, audit_plan_sqls.sql_content, audit_plan_sqls.info %v order by audit_plan_sqls.id LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
+		ExpectQuery().WithArgs(1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"fingerprint", "sql_content", "info",
 	}).AddRow("select * from t1 where id = ?", "select * from t1 where id = 1", []byte(`{"counter": 1, "last_receive_timestamp": "2021-09-01T13:46:13+08:00"}`)))
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
+		ExpectQuery().WithArgs(1).WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields := map[string]interface{}{
-		"audit_plan_name": "audit_plan_for_jave_repo",
-		"limit":           100,
-		"offset":          10}
+		"audit_plan_id": 1,
+		"limit":         100,
+		"offset":        10}
 	result, count, err := GetStorage().GetAuditPlanSQLsByReq(nameFields)
 	assert.NoError(t, err)
 	assert.Equal(t, uint64(2), count)
