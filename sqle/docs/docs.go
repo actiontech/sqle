@@ -3279,6 +3279,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get project statistics",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取项目统计信息",
+                "operationId": "getProjectStatisticsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetProjectStatisticsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/task_groups": {
             "post": {
                 "security": [
@@ -7793,6 +7825,46 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetProjectStatisticsResDataV1": {
+            "type": "object",
+            "properties": {
+                "audit_plan_total": {
+                    "type": "integer"
+                },
+                "instance_total": {
+                    "type": "integer"
+                },
+                "member_total": {
+                    "type": "integer"
+                },
+                "rule_template_total": {
+                    "type": "integer"
+                },
+                "whitelist_total": {
+                    "type": "integer"
+                },
+                "workflow_total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetProjectStatisticsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetProjectStatisticsResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
