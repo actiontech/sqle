@@ -82,6 +82,7 @@ DELETE project_member_roles
 FROM project_member_roles
 LEFT JOIN project_user ON project_user.user_id = project_member_roles.user_id
 LEFT JOIN projects ON projects.id = project_user.project_id
+JOIN instances ON projects.id = instances.project_id AND project_member_roles.instance_id = instances.id
 WHERE project_member_roles.user_id = ?
 AND projects.name = ?
 `, user.ID, projectName).Error
@@ -152,6 +153,7 @@ DELETE project_member_group_roles
 FROM project_member_group_roles
 LEFT JOIN project_user_group ON project_user_group.user_group_id = project_member_group_roles.user_group_id
 LEFT JOIN projects ON projects.id = project_user_group.project_id
+JOIN instances ON projects.id = instances.project_id AND project_member_group_roles.instance_id = instances.id
 WHERE project_member_group_roles.user_group_id = ?
 AND projects.name = ?
 `, group.ID, projectName).Error
