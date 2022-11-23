@@ -185,7 +185,7 @@ func Test_action_execute(t *testing.T) {
 			return nil
 		})
 
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ string) ([]*model.Rule, error) {
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ []uint, _ string) ([]*model.Rule, error) {
 			return nil, nil
 		})
 	}
