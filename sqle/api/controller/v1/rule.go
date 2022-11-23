@@ -475,7 +475,9 @@ func GetRules(c echo.Context) error {
 	s := model.GetStorage()
 	var rules []*model.Rule
 	var err error
-	if req.FilterDBType != "" {
+	if req.FilterGlobalRuleTemplateName != "" {
+		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
+	} else if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
 	} else {
 		rules, err = s.GetAllRule()

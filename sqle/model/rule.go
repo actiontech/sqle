@@ -252,6 +252,16 @@ func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetAllRuleByGlobalRuleTemplateName(name string) ([]*Rule, error) {
+	rules := []*Rule{}
+	err := s.db.Joins("LEFT JOIN rule_template_rule ON rules.name = rule_template_rule.rule_name").
+		Joins("LEFT JOIN rule_templates ON rule_template_rule.rule_template_id = rule_templates.id").
+		Where("rule_templates.project_id = 0").
+		Where("rule_templates.name = ?", name).
+		Find(&rules).Error
+	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRulesByNames(names []string, dbType string) ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Where("db_type = ?", dbType).Where("name in (?)", names).Find(&rules).Error
