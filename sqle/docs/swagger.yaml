@@ -1240,6 +1240,33 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetProjectStatisticsResDataV1:
+    properties:
+      audit_plan_total:
+        type: integer
+      instance_total:
+        type: integer
+      member_total:
+        type: integer
+      rule_template_total:
+        type: integer
+      whitelist_total:
+        type: integer
+      workflow_total:
+        type: integer
+    type: object
+  v1.GetProjectStatisticsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetProjectStatisticsResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetProjectTipsResV1:
     properties:
       code:
@@ -5222,6 +5249,26 @@ paths:
       summary: 克隆项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/statistics:
+    get:
+      description: get project statistics
+      operationId: getProjectStatisticsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetProjectStatisticsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目统计信息
+      tags:
+      - statistic
   /v1/projects/{project_name}/task_groups:
     post:
       consumes:
