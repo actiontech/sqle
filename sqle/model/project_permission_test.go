@@ -3,7 +3,7 @@ package model
 import (
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -101,11 +101,23 @@ func Test_GetUserCanOpInstances(t *testing.T) {
 		AND users.id = ?
 		AND role_operations.op_code IN (?, ?, ?)
 		GROUP BY instances.id
+
+		UNION
+		SELECT
+		instances.id, instances.name
+		FROM instances
+		LEFT JOIN projects ON instances.project_id = projects.id
+		LEFT JOIN project_manager ON project_manager.project_id = projects.id
+		LEFT JOIN users ON project_manager.user_id = users.id AND users.deleted_at IS NULL AND users.stat = 0
+		WHERE
+		instances.deleted_at IS NULL
+		AND users.id = ?
+		GROUP BY instances.id
 		`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectQuery(query).WithArgs(1, 1, 2, 3, 1, 1, 2, 3).
+	mock.ExpectQuery(query).WithArgs(1, 1, 2, 3, 1, 1, 2, 3, 1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "inst_1").AddRow(2, "inst_2"))
 
 	user := &User{}
@@ -154,11 +166,24 @@ func Test_GetUserCanOpInstancesFromProject(t *testing.T) {
 		AND role_operations.op_code IN (?)
 		AND projects.name = ?
 		GROUP BY instances.id
+
+		UNION
+		SELECT
+		instances.id, instances.name
+		FROM instances
+		LEFT JOIN projects ON instances.project_id = projects.id
+		LEFT JOIN project_manager ON project_manager.project_id = projects.id
+		LEFT JOIN users ON project_manager.user_id = users.id AND users.deleted_at IS NULL AND users.stat = 0
+		WHERE
+		instances.deleted_at IS NULL
+		AND users.id = ?
+		AND projects.name = ?
+		GROUP BY instances.id
 		`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectQuery(query).WithArgs(1, 1, "project_1", 1, 1, "project_1").
+	mock.ExpectQuery(query).WithArgs(1, 1, "project_1", 1, 1, "project_1", 1, "project_1").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name"}).AddRow(1, "inst_1").AddRow(2, "inst_2"))
 
 	user := &User{}
@@ -209,11 +234,25 @@ func Test_GetInstanceTipsByUserAndOperation(t *testing.T) {
 		AND projects.name = ?
 		AND instances.db_type = ?
 		GROUP BY instances.id
+
+		UNION
+		SELECT
+		instances.id, instances.name, instances.db_type
+		FROM instances
+		LEFT JOIN projects ON instances.project_id = projects.id
+		LEFT JOIN project_manager ON project_manager.project_id = projects.id
+		LEFT JOIN users ON project_manager.user_id = users.id AND users.deleted_at IS NULL AND users.stat = 0
+		WHERE
+		instances.deleted_at IS NULL
+		AND users.id = ?
+		AND projects.name = ?
+		AND instances.db_type = ?
+		GROUP BY instances.id
 		`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	InitMockStorage(mockDB)
-	mock.ExpectQuery(query).WithArgs(1, 1, 2, "project_1", "MySQL", 1, 1, 2, "project_1", "MySQL").
+	mock.ExpectQuery(query).WithArgs(1, 1, 2, "project_1", "MySQL", 1, 1, 2, "project_1", "MySQL", 1, "project_1", "MySQL").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "db_type"}).AddRow(1, "inst_1", "MySQL").AddRow(2, "inst_2", "Oracle"))
 
 	user := &User{}
