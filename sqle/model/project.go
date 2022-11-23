@@ -105,7 +105,7 @@ func (s *Storage) GetProjectByID(projectID uint) (*Project, bool, error) {
 	return p, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s Storage) GetProjectByName(projectName string) (*Project, bool, error) {
+func (s *Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	p := &Project{}
 	err := s.db.Preload("CreateUser").Preload("Members").Preload("Managers").Preload("Instances").
 		Where("name = ?", projectName).First(p).Error
