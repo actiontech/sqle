@@ -368,3 +368,30 @@ type GetSqlExecutionFailPercentResV1 struct {
 func GetSqlExecutionFailPercentV1(c echo.Context) error {
 	return getSqlExecutionFailPercentV1(c)
 }
+
+type GetProjectStatisticsResV1 struct {
+	controller.BaseRes
+	Data GetProjectStatisticsResDataV1 `json:"data"`
+}
+
+type GetProjectStatisticsResDataV1 struct {
+	WorkflowTotal     uint64 `json:"workflow_total,omitempty"`
+	AuditPlanTotal    uint64 `json:"audit_plan_total,omitempty"`
+	InstanceTotal     uint64 `json:"instance_total,omitempty"`
+	MemberTotal       uint64 `json:"member_total,omitempty"`
+	RuleTemplateTotal uint64 `json:"rule_template_total,omitempty"`
+	WhitelistTotal    uint64 `json:"whitelist_total,omitempty"`
+}
+
+// GetProjectStatisticsV1
+// @Summary 获取项目统计信息
+// @Description get project statistics
+// @Tags statistic
+// @Id getProjectStatisticsV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetProjectStatisticsResV1
+// @router /v1/projects/{project_name}/statistics [get]
+func GetProjectStatisticsV1(c echo.Context) error {
+	return nil
+}
