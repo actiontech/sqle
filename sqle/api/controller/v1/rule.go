@@ -400,7 +400,8 @@ func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
 }
 
 type GetRulesReqV1 struct {
-	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
+	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
 }
 
 type GetRulesResV1 struct {
@@ -463,6 +464,7 @@ func convertRulesToRes(rules []*model.Rule) []RuleResV1 {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
+// @Param filter_global_rule_template_name query string false "filter global rule template name"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
 func GetRules(c echo.Context) error {
