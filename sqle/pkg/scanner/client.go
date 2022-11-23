@@ -29,7 +29,7 @@ const (
 	// Post
 	PartialUpload = "/v1/projects/%v/audit_plans/%s/sqls/partial"
 	// Get										%v=report_id
-	GetAuditReport = "/v1/projects/%v/audit_plans/%s/report/%v/?page_index=%d&page_size=%d"
+	GetAuditReport = "/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
 )
 
 type (
