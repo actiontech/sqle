@@ -25,7 +25,7 @@ type QueryPrepareRequest struct {
 func (m *QueryPrepareRequest) Reset()                    { *m = QueryPrepareRequest{} }
 func (m *QueryPrepareRequest) String() string            { return proto1.CompactTextString(m) }
 func (*QueryPrepareRequest) ProtoMessage()               {}
-func (*QueryPrepareRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*QueryPrepareRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *QueryPrepareRequest) GetSql() string {
 	if m != nil {
@@ -49,7 +49,7 @@ type QueryPrepareConf struct {
 func (m *QueryPrepareConf) Reset()                    { *m = QueryPrepareConf{} }
 func (m *QueryPrepareConf) String() string            { return proto1.CompactTextString(m) }
 func (*QueryPrepareConf) ProtoMessage()               {}
-func (*QueryPrepareConf) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*QueryPrepareConf) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func (m *QueryPrepareConf) GetLimit() uint32 {
 	if m != nil {
@@ -74,7 +74,7 @@ type QueryPrepareResponse struct {
 func (m *QueryPrepareResponse) Reset()                    { *m = QueryPrepareResponse{} }
 func (m *QueryPrepareResponse) String() string            { return proto1.CompactTextString(m) }
 func (*QueryPrepareResponse) ProtoMessage()               {}
-func (*QueryPrepareResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (*QueryPrepareResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
 
 func (m *QueryPrepareResponse) GetNewSql() string {
 	if m != nil {
@@ -105,7 +105,7 @@ type QueryRequest struct {
 func (m *QueryRequest) Reset()                    { *m = QueryRequest{} }
 func (m *QueryRequest) String() string            { return proto1.CompactTextString(m) }
 func (*QueryRequest) ProtoMessage()               {}
-func (*QueryRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
+func (*QueryRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
 
 func (m *QueryRequest) GetSql() string {
 	if m != nil {
@@ -128,7 +128,7 @@ type QueryConf struct {
 func (m *QueryConf) Reset()                    { *m = QueryConf{} }
 func (m *QueryConf) String() string            { return proto1.CompactTextString(m) }
 func (*QueryConf) ProtoMessage()               {}
-func (*QueryConf) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
+func (*QueryConf) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
 
 func (m *QueryConf) GetTimeOutSecond() uint32 {
 	if m != nil {
@@ -145,7 +145,7 @@ type QueryResponse struct {
 func (m *QueryResponse) Reset()                    { *m = QueryResponse{} }
 func (m *QueryResponse) String() string            { return proto1.CompactTextString(m) }
 func (*QueryResponse) ProtoMessage()               {}
-func (*QueryResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
+func (*QueryResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
 
 func (m *QueryResponse) GetColumn() []*Param {
 	if m != nil {
@@ -168,7 +168,7 @@ type QueryResultRow struct {
 func (m *QueryResultRow) Reset()                    { *m = QueryResultRow{} }
 func (m *QueryResultRow) String() string            { return proto1.CompactTextString(m) }
 func (*QueryResultRow) ProtoMessage()               {}
-func (*QueryResultRow) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
+func (*QueryResultRow) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
 
 func (m *QueryResultRow) GetValues() []*QueryResultValue {
 	if m != nil {
@@ -184,7 +184,7 @@ type QueryResultValue struct {
 func (m *QueryResultValue) Reset()                    { *m = QueryResultValue{} }
 func (m *QueryResultValue) String() string            { return proto1.CompactTextString(m) }
 func (*QueryResultValue) ProtoMessage()               {}
-func (*QueryResultValue) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
+func (*QueryResultValue) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
 
 func (m *QueryResultValue) GetValue() string {
 	if m != nil {
@@ -350,9 +350,9 @@ var _QueryDriver_serviceDesc = grpc.ServiceDesc{
 	Metadata: "query_driver.proto",
 }
 
-func init() { proto1.RegisterFile("query_driver.proto", fileDescriptor1) }
+func init() { proto1.RegisterFile("query_driver.proto", fileDescriptor2) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor2 = []byte{
 	// 409 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x4d, 0x6f, 0xd3, 0x40,
 	0x10, 0x95, 0x9b, 0xc4, 0xc2, 0x93, 0x18, 0x45, 0xd3, 0x40, 0xad, 0xc0, 0x21, 0xb2, 0x72, 0x30,

@@ -37,6 +37,7 @@ message Rule {
   string level = 4;
   string category = 5;
   repeated Param params = 6;
+  string annotation = 7;
 }
 
 message Param {
