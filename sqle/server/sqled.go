@@ -367,16 +367,19 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 		return err
 	}
 
-	_, err := a.driver.Exec(context.TODO(), executeSQL.Content)
-	if err != nil {
+	_, execErr := a.driver.Exec(context.TODO(), executeSQL.Content)
+	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
-		executeSQL.ExecResult = err.Error()
+		executeSQL.ExecResult = execErr.Error()
 	} else {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 		executeSQL.ExecResult = model.TaskExecResultOK
 	}
 	if err := st.Save(executeSQL); err != nil {
 		return err
+	}
+	if execErr != nil {
+		return execErr
 	}
 	return nil
 }
@@ -409,8 +412,13 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 		executeSQL.ExecResult = model.TaskExecResultOK
 	}
-
-	return st.UpdateExecuteSQLs(executeSQLs)
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
+		return err
+	}
+	if txErr != nil {
+		return txErr
+	}
+	return nil
 }
 
 func (a *action) rollback() (err error) {
