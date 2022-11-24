@@ -243,8 +243,9 @@ var RuleHandlers = []RuleHandler{
 	// config
 	{
 		Rule: driver.Rule{
-			Name: ConfigDMLRollbackMaxRows,
-			Desc: "在 DML 语句中预计影响行数超过指定值则不回滚",
+			Name:       ConfigDMLRollbackMaxRows,
+			Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
+			Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
 			//Value:    "1000",
 			Level:    driver.RuleLevelNotice,
 			Category: RuleTypeGlobalConfig,
@@ -261,8 +262,9 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name: ConfigDDLOSCMinSize,
-			Desc: "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			Name:       ConfigDDLOSCMinSize,
+			Desc:       "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
+			Annotation: "开启该规则后会对大表的DDL语句给出 pt-osc工具的改写建议【需要参考命令进行手工执行，后续会支持自动执行】；直接对大表进行DDL变更时可能会导致长时间锁表问题，影响业务可持续性。具体对大表定义的阈值可以根据业务需求调整，默认值：1024",
 			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
@@ -279,14 +281,15 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTableSize,
-			Desc:     "检查DDL操作的表是否超过指定数据量",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckTableSize,
+			Desc:       "检查DDL操作的表是否超过指定数据量",
+			Annotation: "大表执行DDL，耗时较久且负载较高，长时间占用锁资源，会影响数据库性能；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
-					Value: "16",
+					Value: "1024",
 					Desc:  "表空间大小（MB）",
 					Type:  params.ParamTypeInt,
 				},
@@ -297,10 +300,11 @@ var RuleHandlers = []RuleHandler{
 		Func:                    checkDDLTableSize,
 	}, {
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexTooMany,
-			Desc:     "检查DDL创建的新索引对应字段是否已存在过多索引",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckIndexTooMany,
+			Desc:       "检查DDL创建的新索引对应字段是否已存在过多索引",
+			Annotation: "在有单字段索引的情况下，过多的复合索引，一般都是没有存在价值的；相反，还会降低数据增加删除时的性能，特别是对频繁更新的表来说，负面影响更大；具体规则阈值可以根据业务需求调整，默认值：2",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeIndexingConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -316,19 +320,21 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     ConfigDMLExplainPreCheckEnable,
-			Desc:     "使用explain加强预检查能力",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeGlobalConfig,
+			Name:       ConfigDMLExplainPreCheckEnable,
+			Desc:       "使用explain加强预检查能力",
+			Annotation: "通过 explain 的形式将待上线的DML进行SQL是否能正确执行的检查，提前发现语句的错误，提高上线成功率",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckRedundantIndex,
-			Desc:     "检查DDL是否创建冗余的索引",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexOptimization,
+			Name:       DDLCheckRedundantIndex,
+			Desc:       "检查DDL是否创建冗余的索引",
+			Annotation: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，并且优化器在优化查询时需要逐个进行代价计算，影响查询性能",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexOptimization,
 		},
 		Message:                         "%v",
 		AllowOffline:                    true,
@@ -337,10 +343,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckTableSize,
-			Desc:     "检查DML操作的表是否超过指定数据量",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckTableSize,
+			Desc:       "检查DML操作的表是否超过指定数据量",
+			Annotation: "DML操作大表，耗时较久且负载较高，容易影响数据库性能；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -353,13 +360,13 @@ var RuleHandlers = []RuleHandler{
 		Message: "执行DML的表 %v 空间超过 %vMB",
 		Func:    checkDMLTableSize,
 	},
-
 	{
 		Rule: driver.Rule{
-			Name:     ConfigOptimizeIndexEnabled,
-			Desc:     "索引创建建议",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeIndexOptimization,
+			Name:       ConfigOptimizeIndexEnabled,
+			Desc:       "索引创建建议",
+			Annotation: "通过该规则开启索引优化建议，提供两个参数配置来定义索引优化建议的行为。1. 计算列基数阈值：配置当表数据量超过多少行时不再计算列的区分度来排序索引优先级，防止对大表进行操作影响性能；2. 联合索引最大列数：限制联合索引给到的列数最大值，防止给出建议的联合索引不符合其他SQL标准",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeIndexOptimization,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultMultiParamsFirstKeyName,
@@ -379,17 +386,19 @@ var RuleHandlers = []RuleHandler{
 
 	{
 		Rule: driver.Rule{
-			Name:     ConfigSQLIsExecuted,
-			Desc:     "停用上线审核模式",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeGlobalConfig,
+			Name:       ConfigSQLIsExecuted,
+			Desc:       "停用上线审核模式",
+			Annotation: "启用该规则来兼容事后审核的场景，对于事后采集的DDL 和 DML 语句将不再进行上线校验。例如库表元数据的扫描任务可开启该规则",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeGlobalConfig,
 		},
 	},
 
 	{
 		Rule: driver.Rule{
-			Name: ConfigDDLGhostMinSize,
-			Desc: "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
+			Name:       ConfigDDLGhostMinSize,
+			Desc:       "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
+			Annotation: "开启该规则后会自动对大表的DDL操作使用gh-ost 工具进行在线改表；直接对大表进行DDL变更时可能会导致长时间锁表问题，影响业务可持续性。具体对大表定义的阈值可以根据业务需求调整，默认值：1024",
 			//Value:    "16",
 			Level:    driver.RuleLevelNormal,
 			Category: RuleTypeGlobalConfig,
@@ -408,10 +417,11 @@ var RuleHandlers = []RuleHandler{
 	// rule
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKWithoutIfNotExists,
-			Desc:     "新建表必须加入 if not exists，保证重复执行不报错",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckPKWithoutIfNotExists,
+			Desc:       "新建表必须加入 if not exists，保证重复执行不报错",
+			Annotation: "新建表如果表已经存在，不添加if not exists create执行SQL会报错，建议开启此规则，避免SQL实际执行报错",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "新建表必须加入 if not exists，保证重复执行不报错",
 		AllowOffline: true,
@@ -419,10 +429,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckObjectNameLength,
-			Desc:     "表名、列名、索引名的长度不能大于指定字节",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckObjectNameLength,
+			Desc:       "表名、列名、索引名的长度不能大于指定字节",
+			Annotation: "通过配置该规则可以规范指定业务的对象命名长度，具体长度可以自定义设置，默认最大长度：64。是MySQL规定标识符命名最大长度为64字节",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 			//Value:    "64",
 			Params: params.Params{
 				&params.Param{
@@ -439,10 +450,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckObjectNameIsUpperAndLowerLetterMixed,
-			Desc:     "数据库对象命名不建议大小写字母混合",
-			Category: RuleTypeNamingConvention,
-			Level:    driver.RuleLevelNotice,
+			Name:       DDLCheckObjectNameIsUpperAndLowerLetterMixed,
+			Desc:       "数据库对象命名不建议大小写字母混合",
+			Annotation: "数据库对象命名规范，不推荐采用大小写混用的形式建议词语之间使用下划线连接，提高代码可读性",
+			Category:   RuleTypeNamingConvention,
+			Level:      driver.RuleLevelNotice,
 		},
 		Message:      "数据库对象命名不建议大小写字母混合，以下对象命名不规范：%v",
 		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
@@ -450,10 +462,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKNotExist,
-			Desc:     "表必须有主键",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckPKNotExist,
+			Desc:       "表必须有主键",
+			Annotation: "主键使数据达到全局唯一，可提高数据检索效率",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                         "表必须有主键",
 		AllowOffline:                    true,
@@ -463,10 +476,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKWithoutAutoIncrement,
-			Desc:     "主键建议使用自增",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckPKWithoutAutoIncrement,
+			Desc:       "主键建议使用自增",
+			Annotation: "自增主键，数字型速度快，而且是增量增长，占用空间小，更快速的做数据插入操作，避免增加维护索引的开销",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                         "主键建议使用自增",
 		AllowOffline:                    true,
@@ -476,10 +490,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKWithoutBigintUnsigned,
-			Desc:     "主键建议使用 bigint 无符号类型，即 bigint unsigned",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckPKWithoutBigintUnsigned,
+			Desc:       "主键建议使用 bigint 无符号类型，即 bigint unsigned",
+			Annotation: "bigint unsigned拥有更大的取值范围，建议开启此规则，避免发生溢出",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                         "主键建议使用 bigint 无符号类型，即 bigint unsigned",
 		AllowOffline:                    true,
@@ -489,10 +504,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckJoinFieldType,
-			Desc:     "JOIN字段类型不一致",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckJoinFieldType,
+			Desc:       "JOIN字段类型不一致",
+			Annotation: "JOIN字段类型不一致会导致类型不匹配发生隐式准换，建议开启此规则，避免索引失效",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "存在JOIN字段类型不一致, 会导致隐式转换",
 		AllowOffline: false,
@@ -500,10 +516,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnCharLength,
-			Desc:     "char长度大于20时，必须使用varchar类型",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnCharLength,
+			Desc:       "char长度大于20时，必须使用varchar类型",
+			Annotation: "varchar是变长字段，存储空间小，可节省存储空间，同时相对较小的字段检索效率显然也要高些",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "char长度大于20时，必须使用varchar类型",
 		AllowOffline: true,
@@ -511,10 +528,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckFieldNotNUllMustContainDefaultValue,
-			Desc:     "字段约束为not null时必须带默认值",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckFieldNotNUllMustContainDefaultValue,
+			Desc:       "字段约束为not null时必须带默认值",
+			Annotation: "如存在not null且不带默认值的字段，insert时不包含该字段，会导致插入报错",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "字段约束为not null时必须带默认值，以下字段不规范:%v",
 		AllowOffline: true,
@@ -522,10 +540,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLDisableFK,
-			Desc:     "禁止使用外键",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLDisableFK,
+			Desc:       "禁止使用外键",
+			Annotation: "外键在高并发场景下性能较差，容易造成死锁，同时不利于后期维护（拆分、迁移）",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:      "禁止使用外键",
 		AllowOffline: true,
@@ -533,10 +552,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLDisableAlterFieldUseFirstAndAfter,
-			Desc:     "alter表字段禁止使用first,after",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLDisableAlterFieldUseFirstAndAfter,
+			Desc:       "alter表字段禁止使用first,after",
+			Annotation: "first,after 的alter操作通过Copy Table的方式完成，对业务影响较大",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "alter表字段禁止使用first,after",
 		AllowOffline: true,
@@ -544,10 +564,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCreateTimeColumn,
-			Desc:     "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckCreateTimeColumn,
+			Desc:       "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
+			Annotation: "使用CREATE_TIME字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为CURRENT_TIMESTAMP可保证时间的准确性",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -563,9 +584,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DDLCheckIndexCount,
-			Desc:  "索引个数建议不超过阈值",
-			Level: driver.RuleLevelNotice,
+			Name:       DDLCheckIndexCount,
+			Desc:       "索引个数建议不超过阈值",
+			Annotation: "在表上建立的每个索引都会增加存储开销，索引对于插入、删除、更新操作也会增加处理上的开销，太多与不充分、不正确的索引对性能都毫无益处；具体规则阈值可以根据业务需求调整，默认值：5",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "5",
 			Category: RuleTypeIndexingConvention,
 			Params: params.Params{
@@ -585,10 +607,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckUpdateTimeColumn,
-			Desc:     "建表DDL必须包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckUpdateTimeColumn,
+			Desc:       "建表DDL必须包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+			Annotation: "使用更新时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为UPDATE_TIME可保证时间的准确性",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -598,16 +621,16 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-
 		Message:      "建表DDL必须包含%v字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 		AllowOffline: true,
 		Func:         checkFieldUpdateTime,
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DDLCheckCompositeIndexMax,
-			Desc:  "复合索引的列数量不建议超过阈值",
-			Level: driver.RuleLevelNotice,
+			Name:       DDLCheckCompositeIndexMax,
+			Desc:       "复合索引的列数量不建议超过阈值",
+			Annotation: "复合索引会根据索引列数创建对应组合的索引，列数越多，创建的索引越多，每个索引都会增加磁盘空间的开销，同时增加索引维护的开销；具体规则阈值可以根据业务需求调整，默认值：3",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "3",
 			Category: RuleTypeIndexingConvention,
 			Params: params.Params{
@@ -627,10 +650,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckObjectNameUsingKeyword,
-			Desc:     "数据库对象命名禁止使用保留字",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckObjectNameUsingKeyword,
+			Desc:       "数据库对象命名禁止使用保留字",
+			Annotation: "通过配置该规则可以规范指定业务的数据对象命名规则，避免发生冲突，以及混淆",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 		},
 		Message:      "数据库对象命名禁止使用保留字 %s",
 		AllowOffline: true,
@@ -638,10 +662,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckObjectNameUseCN,
-			Desc:     "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckObjectNameUseCN,
+			Desc:       "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
+			Annotation: "通过配置该规则可以规范指定业务的数据对象命名规则",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 		},
 		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 		AllowOffline: true,
@@ -649,10 +674,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTableDBEngine,
-			Desc:     "必须使用指定数据库引擎",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckTableDBEngine,
+			Desc:       "必须使用指定数据库引擎",
+			Annotation: "通过配置该规则可以规范指定业务的数据库引擎，具体规则可以自定义设置。默认值是Innodb，Innodb 支持事务，支持行级锁，更好的恢复性，高并发下性能更好",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 			//Value:    "Innodb",
 			Params: params.Params{
 				&params.Param{
@@ -669,10 +695,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTableCharacterSet,
-			Desc:     "必须使用指定数据库字符集",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckTableCharacterSet,
+			Desc:       "必须使用指定数据库字符集",
+			Annotation: "通过该规则约束全局的数据库字符集，避免创建非预期的字符集，防止业务侧出现“乱码”等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 			//Value:    "utf8mb4",
 			Params: params.Params{
 				&params.Param{
@@ -689,10 +716,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexedColumnWithBlob,
-			Desc:     "禁止将blob类型的列加入索引",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckIndexedColumnWithBlob,
+			Desc:       "禁止将blob类型的列加入索引",
+			Annotation: "blob类型属于大字段类型，作为索引会占用很大的存储空间",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                         "禁止将blob类型的列加入索引",
 		AllowOffline:                    true,
@@ -702,10 +730,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWhereIsInvalid,
-			Desc:     "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWhereIsInvalid,
+			Desc:       "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
+			Annotation: "SQL缺少where条件在执行时会进行全表扫描产生额外开销，建议在大数据量高并发环境下开启，避免影响数据库查询性能",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "禁止使用没有where条件的sql语句或者使用where 1=1等变相没有条件的sql",
 		AllowOffline: true,
@@ -713,10 +742,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckAlterTableNeedMerge,
-			Desc:     "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckAlterTableNeedMerge,
+			Desc:       "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
+			Annotation: "避免多次 table rebuild 带来的消耗、以及对线上业务的影响",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:                 "已存在对该表的修改语句，建议合并成一个ALTER语句",
 		AllowOffline:            false,
@@ -725,10 +755,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLDisableSelectAllColumn,
-			Desc:     "不建议使用select *",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLDisableSelectAllColumn,
+			Desc:       "不建议使用select *",
+			Annotation: "当表结构变更时，使用*通配符选择所有列将导致查询行为会发生更改，与业务期望不符；同时select * 中的无用字段会带来不必要的磁盘I/O，以及网络开销，且无法覆盖索引进而回表，大幅度降低查询效率",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "不建议使用select *",
 		AllowOffline: true,
@@ -736,10 +767,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLDisableDropStatement,
-			Desc:     "禁止除索引外的drop操作",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLDisableDropStatement,
+			Desc:       "禁止除索引外的drop操作",
+			Annotation: "DROP是DDL，数据变更不会写入日志，无法进行回滚；建议开启此规则，避免误删除操作",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止除索引外的drop操作",
 		AllowOffline: true,
@@ -747,10 +779,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTableWithoutComment,
-			Desc:     "表建议添加注释",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckTableWithoutComment,
+			Desc:       "表建议添加注释",
+			Annotation: "表添加注释能够使表的意义更明确，方便日后的维护",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "表建议添加注释",
 		AllowOffline: true,
@@ -758,10 +791,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnWithoutComment,
-			Desc:     "列建议添加注释",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnWithoutComment,
+			Desc:       "列建议添加注释",
+			Annotation: "列添加注释能够使列的意义更明确，方便日后的维护",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "列建议添加注释",
 		AllowOffline: true,
@@ -769,10 +803,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexPrefix,
-			Desc:     "普通索引必须使用固定前缀",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckIndexPrefix,
+			Desc:       "普通索引必须使用固定前缀",
+			Annotation: "通过配置该规则可以规范指定业务的索引命名规则，具体命名规范可以自定义设置，默认提示值：idx_",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 			//Value:    "idx_",
 			Params: params.Params{
 				&params.Param{
@@ -789,10 +824,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckUniqueIndexPrefix,
-			Desc:     "unique索引必须使用固定前缀",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckUniqueIndexPrefix,
+			Desc:       "unique索引必须使用固定前缀",
+			Annotation: "通过配置该规则可以规范指定业务的unique索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 			//Value:    "uniq_",
 			Params: params.Params{
 				&params.Param{
@@ -809,10 +845,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckUniqueIndex,
-			Desc:     "unique索引名必须使用 IDX_UK_表名_字段名",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckUniqueIndex,
+			Desc:       "unique索引名必须使用 IDX_UK_表名_字段名",
+			Annotation: "通过配置该规则可以规范指定业务的unique索引命名规则",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeNamingConvention,
 		},
 		Message:      "unique索引名必须使用 IDX_UK_表名_字段名",
 		AllowOffline: true,
@@ -820,10 +857,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnWithoutDefault,
-			Desc:     "除了自增列及大字段列之外，每个列都必须添加默认值",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnWithoutDefault,
+			Desc:       "除了自增列及大字段列之外，每个列都必须添加默认值",
+			Annotation: "列添加默认值，可避免列为NULL值时对查询的影响",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "除了自增列及大字段列之外，每个列都必须添加默认值",
 		AllowOffline: true,
@@ -831,10 +869,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnTimestampWithoutDefault,
-			Desc:     "timestamp 类型的列必须添加默认值",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnTimestampWithoutDefault,
+			Desc:       "timestamp 类型的列必须添加默认值",
+			Annotation: "timestamp添加默认值，可避免出现全为0的日期格式与业务预期不符",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "timestamp 类型的列必须添加默认值",
 		AllowOffline: true,
@@ -842,10 +881,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnBlobWithNotNull,
-			Desc:     "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnBlobWithNotNull,
+			Desc:       "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+			Annotation: "BLOB 和 TEXT 类型的字段无法指定默认值，如插入数据不指定字段默认为NULL，如果添加了 NOT NULL 限制，写入数据时又未对该字段指定值会导致写入失败",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
 		AllowOffline: true,
@@ -853,10 +893,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnBlobDefaultIsNotNull,
-			Desc:     "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnBlobDefaultIsNotNull,
+			Desc:       "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
+			Annotation: "在SQL_MODE严格模式下BLOB 和 TEXT 类型无法设置默认值，如插入数据不指定值，字段会被设置为NULL",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 		AllowOffline: true,
@@ -864,10 +905,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWithLimit,
-			Desc:     "delete/update 语句不能有limit条件",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWithLimit,
+			Desc:       "delete/update 语句不能有limit条件",
+			Annotation: "delete/update 语句使用limit条件将随机选取数据进行删除或者更新，业务无法预期",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句不能有limit条件",
 		AllowOffline: true,
@@ -875,10 +917,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckSelectLimit,
-			Desc:     "select 语句必须带limit",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSelectLimit,
+			Desc:       "select 语句必须带limit",
+			Annotation: "如果查询的扫描行数很大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：1000",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -894,10 +937,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWithOrderBy,
-			Desc:     "delete/update 语句不能有order by",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWithOrderBy,
+			Desc:       "delete/update 语句不能有order by",
+			Annotation: "delete/update 存在order by会使用排序，带来无谓的开销",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句不能有order by",
 		AllowOffline: true,
@@ -905,10 +949,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckSelectWithOrderBy,
-			Desc:     "select 语句不能有order by",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSelectWithOrderBy,
+			Desc:       "select 语句不能有order by",
+			Annotation: "ORDER BY 对查询性能影响较大，同时不便于优化维护，建议将排序部分放到业务处理",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "select 语句不能有order by",
 		AllowOffline: true,
@@ -917,10 +962,11 @@ var RuleHandlers = []RuleHandler{
 	{
 		// TODO: 修改level以适配默认模板
 		Rule: driver.Rule{
-			Name:     DMLCheckInsertColumnsExist,
-			Desc:     "insert 语句必须指定column",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckInsertColumnsExist,
+			Desc:       "insert 语句必须指定column",
+			Annotation: "当表结构发生变更，INSERT请求不明确指定列名，会发生插入数据不匹配的情况；建议开启此规则，避免插入结果与业务预期不符",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "insert 语句必须指定column",
 		AllowOffline: true,
@@ -928,9 +974,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DMLCheckBatchInsertListsMax,
-			Desc:  "单条insert语句，建议批量插入不超过阈值",
-			Level: driver.RuleLevelNotice,
+			Name:       DMLCheckBatchInsertListsMax,
+			Desc:       "单条insert语句，建议批量插入不超过阈值",
+			Annotation: "避免大事务，以及降低发生回滚对业务的影响；具体规则阈值可以根据业务需求调整，默认值：100",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "5000",
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
@@ -948,10 +995,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckInQueryNumber,
-			Desc:     "where条件内in语句中的参数个数不能超过阈值",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckInQueryNumber,
+			Desc:       "where条件内in语句中的参数个数不能超过阈值",
+			Annotation: "当IN值过多时，有可能会导致查询进行全表扫描，使得MySQL性能急剧下降；具体规则阈值可以根据业务需求调整，默认值：50",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -967,10 +1015,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKProhibitAutoIncrement,
-			Desc:     "主键禁止使用自增",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckPKProhibitAutoIncrement,
+			Desc:       "主键禁止使用自增",
+			Annotation: "后期维护相对不便，过于依赖数据库自增机制达到全局唯一，不易拆分，容易造成主键冲突",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                         "主键禁止使用自增",
 		AllowOffline:                    true,
@@ -980,10 +1029,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWhereExistFunc,
-			Desc:     "避免对条件字段使用函数操作",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWhereExistFunc,
+			Desc:       "避免对条件字段使用函数操作",
+			Annotation: "对条件字段做函数操作，可能会破坏索引值的有序性，导致优化器选择放弃走索引，使查询性能大幅度降低",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "避免对条件字段使用函数操作",
 		AllowOffline: false,
@@ -991,10 +1041,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWhereExistNot,
-			Desc:     "不建议对条件字段使用负向查询",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWhereExistNot,
+			Desc:       "不建议对条件字段使用负向查询",
+			Annotation: "使用负向查询，将导致全表扫描，出现慢SQL",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "不建议对条件字段使用负向查询",
 		AllowOffline: true,
@@ -1002,10 +1053,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLWhereExistNull,
-			Desc:     "不建议对条件字段使用 NULL 值判断",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLWhereExistNull,
+			Desc:       "不建议对条件字段使用 NULL 值判断",
+			Annotation: "使用 IS NULL 或 IS NOT NULL 可能导致查询放弃使用索引而进行全表扫描",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "不建议对条件字段使用 NULL 值判断",
 		Func:         checkWhereExistNull,
@@ -1013,20 +1065,22 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWhereExistImplicitConversion,
-			Desc:     "条件字段存在数值和字符的隐式转换",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWhereExistImplicitConversion,
+			Desc:       "条件字段存在数值和字符的隐式转换",
+			Annotation: "隐式转化会导致查询有无法命中索引的风险，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "条件字段存在数值和字符的隐式转换",
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckLimitMustExist,
-			Desc:     "delete/update 语句必须有limit条件",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckLimitMustExist,
+			Desc:       "delete/update 语句必须有limit条件",
+			Annotation: "limit条件可以降低写错 SQL 的代价（删错数据），同时避免长事务影响业务",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "delete/update 语句必须有limit条件",
 		Func:         checkDMLLimitExist,
@@ -1034,10 +1088,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckWhereExistScalarSubquery,
-			Desc:     "避免使用标量子查询",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckWhereExistScalarSubquery,
+			Desc:       "避免使用标量子查询",
+			Annotation: "标量子查询存在多次访问同一张表的问题，执行开销大效率低，可使用left join 替代标量子查询",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "避免使用标量子查询",
 		AllowOffline: true,
@@ -1045,10 +1100,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIndexesExistBeforeCreateConstraints,
-			Desc:     "建议创建约束前,先行创建索引",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeIndexingConvention,
+			Name:       DDLCheckIndexesExistBeforeCreateConstraints,
+			Desc:       "建议创建约束前,先行创建索引",
+			Annotation: "创建约束前，先行创建索引，约束可作用于二级索引，避免全表扫描，提高性能",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeIndexingConvention,
 		},
 		Message:                 "建议创建约束前,先行创建索引",
 		OnlyAuditNotExecutedSQL: true,
@@ -1056,10 +1112,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckSelectForUpdate,
-			Desc:     "建议避免使用select for update",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSelectForUpdate,
+			Desc:       "建议避免使用select for update",
+			Annotation: "select for update 会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞，在高并发下，容易造成数据库大量锁等待，影响数据库查询性能",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "建议避免使用select for update",
 		Func:         checkDMLSelectForUpdate,
@@ -1067,9 +1124,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DDLCheckDatabaseCollation,
-			Desc:  "建议使用规定的数据库排序规则",
-			Level: driver.RuleLevelNotice,
+			Name:       DDLCheckDatabaseCollation,
+			Desc:       "建议使用规定的数据库排序规则",
+			Annotation: "通过该规则约束全局的数据库排序规则，避免创建非预期的数据库排序规则，防止业务侧出现排序结果非预期等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "utf8mb4_0900_ai_ci",
 			Category: RuleTypeDDLConvention,
 			Params: params.Params{
@@ -1086,10 +1144,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckDecimalTypeColumn,
-			Desc:     "精确浮点数建议使用DECIMAL",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckDecimalTypeColumn,
+			Desc:       "精确浮点数建议使用DECIMAL",
+			Annotation: "对于浮点数运算，DECIMAL精确度较高",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "精确浮点数建议使用DECIMAL",
 		Func:         checkDecimalTypeColumn,
@@ -1097,10 +1156,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckBigintInsteadOfDecimal,
-			Desc:     "建议用BIGINT类型代替DECIMAL",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckBigintInsteadOfDecimal,
+			Desc:       "建议用BIGINT类型代替DECIMAL",
+			Annotation: "因为cpu不支持对decimal的直接运算，只是mysql自身实现了decimal的高精度计算，但是计算代价高，并且存储同样范围值的时候，空间占用也更多；使用bigint代替decimal，可根据小数的位数乘以相应的倍数，即可达到精确的浮点存储计算，避免decimal计算代价高的问题",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "建议列%s用BIGINT类型代替DECIMAL",
 		Func:         checkBigintInsteadOfDecimal,
@@ -1108,10 +1168,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckSubQueryNestNum,
-			Desc:     "子查询嵌套层数不能超过阈值",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSubQueryNestNum,
+			Desc:       "子查询嵌套层数不能超过阈值",
+			Annotation: "子查询嵌套层数超过阈值，有些情况下，子查询并不能使用到索引。同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1127,9 +1188,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DMLCheckNeedlessFunc,
-			Desc:  "避免使用不必要的内置函数",
-			Level: driver.RuleLevelNotice,
+			Name:       DMLCheckNeedlessFunc,
+			Desc:       "避免使用不必要的内置函数",
+			Annotation: "通过配置该规则可以指定业务中需要禁止使用的内置函数，使用内置函数可能会导致SQL无法走索引或者产生一些非预期的结果。实际需要禁用的函数可通过规则设置",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "sha(),sqrt(),md5()",
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
@@ -1147,10 +1209,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckDatabaseSuffix,
-			Desc:     "数据库名称必须使用固定后缀结尾",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckDatabaseSuffix,
+			Desc:       "数据库名称必须使用固定后缀结尾",
+			Annotation: "通过配置该规则可以规范指定业务的数据库命名规则，具体命名规范可以自定义设置，默认提示值：_DB",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeNamingConvention,
 			//Value:    "_DB",
 			Params: params.Params{
 				&params.Param{
@@ -1167,10 +1230,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckPKName,
-			Desc:     "建议主键命名为\"PK_表名\"",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeNamingConvention,
+			Name:       DDLCheckPKName,
+			Desc:       "建议主键命名为\"PK_表名\"",
+			Annotation: "通过配置该规则可以规范指定业务的主键命名规则",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeNamingConvention,
 		},
 		Message:      "建议主键命名为\"PK_表名\"",
 		Func:         checkPKIndexName,
@@ -1178,10 +1242,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTransactionIsolationLevel,
-			Desc:     "事物隔离级别建议设置成RC",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckTransactionIsolationLevel,
+			Desc:       "事物隔离级别建议设置成RC",
+			Annotation: "RC避免了脏读的现象，但没有解决幻读的问题；使用RR，能避免幻读，但是由于引入间隙锁导致加锁的范围可能扩大，从而会影响并发，还容易造成死锁，所以在大多数业务场景下，幻读出现的机率较少，RC基本上能满足业务需求",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "事物隔离级别建议设置成RC",
 		Func:         checkTransactionIsolationLevel,
@@ -1189,10 +1254,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckFuzzySearch,
-			Desc:     "禁止使用全模糊搜索或左模糊搜索",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckFuzzySearch,
+			Desc:       "禁止使用全模糊搜索或左模糊搜索",
+			Annotation: "使用全模糊搜索或左模糊搜索将导致查询无法使用索引，导致全表扫描",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "禁止使用全模糊搜索或左模糊搜索",
 		AllowOffline: true,
@@ -1200,10 +1266,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckTablePartition,
-			Desc:     "不建议使用分区表相关功能",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckTablePartition,
+			Desc:       "不建议使用分区表相关功能",
+			Annotation: "分区表在物理上表现为多个文件，在逻辑上表现为一个表，跨分区查询效率可能更低，建议采用物理分表的方式管理大数据",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "不建议使用分区表相关功能",
 		AllowOffline: true,
@@ -1211,9 +1278,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DMLCheckNumberOfJoinTables,
-			Desc:  "使用JOIN连接表查询建议不超过阈值",
-			Level: driver.RuleLevelNotice,
+			Name:       DMLCheckNumberOfJoinTables,
+			Desc:       "使用JOIN连接表查询建议不超过阈值",
+			Annotation: "表关联越多，意味着各种驱动关系组合就越多，比较各种结果集的执行成本的代价也就越高，进而SQL查询性能会大幅度下降；具体规则阈值可以根据业务需求调整，默认值：3",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "3",
 			Category: RuleTypeDMLConvention,
 			Params: params.Params{
@@ -1231,10 +1299,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckIfAfterUnionDistinct,
-			Desc:     "建议使用UNION ALL,替代UNION",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckIfAfterUnionDistinct,
+			Desc:       "建议使用UNION ALL,替代UNION",
+			Annotation: "union会按照字段的顺序进行排序同时去重，union all只是简单的将两个结果合并后就返回，从效率上看，union all 要比union快很多；如果合并的两个结果集中允许包含重复数据且不需要排序时的话，建议开启此规则，使用union all替代union",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "建议使用UNION ALL,替代UNION",
 		AllowOffline: true,
@@ -1242,10 +1311,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckIsExistLimitOffset,
-			Desc:     "使用LIMIT分页时,避免使用LIMIT M,N",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DDLCheckIsExistLimitOffset,
+			Desc:       "使用LIMIT分页时,避免使用LIMIT M,N",
+			Annotation: "LIMIT M,N当偏移量m过大的时候，查询效率会很低，因为MySQL是先查出m+n个数据，然后抛弃掉前m个数据；对于有大数据量的mysql表来说，使用LIMIT分页存在很严重的性能问题",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "使用LIMIT分页时,避免使用LIMIT M,N",
 		AllowOffline: true,
@@ -1253,9 +1323,10 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:  DDLCheckIndexOption,
-			Desc:  "建议选择可选性超过阈值字段作为索引",
-			Level: driver.RuleLevelNotice,
+			Name:       DDLCheckIndexOption,
+			Desc:       "建议选择可选性超过阈值字段作为索引",
+			Annotation: "选择区分度高的字段作为索引，可快速定位数据；区分度太低，无法有效利用索引，甚至可能需要扫描大量数据页，拖慢SQL；具体规则阈值可以根据业务需求调整，默认值：70",
+			Level:      driver.RuleLevelNotice,
 			//Value:    "0.7",
 			Category: RuleTypeIndexOptimization,
 			Params: params.Params{
@@ -1273,10 +1344,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnEnumNotice,
-			Desc:     "不建议使用 ENUM 类型",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnEnumNotice,
+			Desc:       "不建议使用 ENUM 类型",
+			Annotation: "ENUM类型不是SQL标准，移植性较差，后期如修改或增加枚举值需重建整张表，代价较大，且无法通过字面量值进行排序",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 ENUM 类型",
 		AllowOffline: true,
@@ -1284,10 +1356,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnSetNotice,
-			Desc:     "不建议使用 SET 类型",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnSetNotice,
+			Desc:       "不建议使用 SET 类型",
+			Annotation: "集合的修改需要重新定义列，后期修改的代价大，建议在业务层实现",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 SET 类型",
 		AllowOffline: true,
@@ -1295,10 +1368,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckColumnBlobNotice,
-			Desc:     "不建议使用 BLOB 或 TEXT 类型",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnBlobNotice,
+			Desc:       "不建议使用 BLOB 或 TEXT 类型",
+			Annotation: "BLOB 或 TEXT 类型消耗大量的网络和IO带宽，同时在该表上的DML操作都会变得很慢",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "不建议使用 BLOB 或 TEXT 类型",
 		AllowOffline: true,
@@ -1308,9 +1382,10 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name: DMLCheckExplainAccessTypeAll,
 			//Value:    "10000",
-			Desc:     "查询的扫描不建议超过指定行数（默认值：10000）",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Desc:       "查询的扫描不建议超过指定行数（默认值：10000）",
+			Annotation: "查询的扫描行数多大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：10000",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1326,10 +1401,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckExplainExtraUsingFilesort,
-			Desc:     "该查询使用了文件排序",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckExplainExtraUsingFilesort,
+			Desc:       "该查询使用了文件排序",
+			Annotation: "大数据量的情况下，文件排序意味着SQL性能较低，会增加OS的开销，影响数据库性能",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "该查询使用了文件排序",
 		AllowOffline: false,
@@ -1337,10 +1413,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DMLCheckExplainExtraUsingTemporary,
-			Desc:     "该查询使用了临时表",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckExplainExtraUsingTemporary,
+			Desc:       "该查询使用了临时表",
+			Annotation: "大数据量的情况下，临时表意味着SQL性能较低，会增加OS的开销，影响数据库性能",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message:      "该查询使用了临时表",
 		AllowOffline: false,
@@ -1348,10 +1425,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCreateView,
-			Desc:     "禁止使用视图",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckCreateView,
+			Desc:       "禁止使用视图",
+			Annotation: "视图的查询性能较差，同时基表结构变更，需要对视图进行维护，如果视图可读性差且包含复杂的逻辑，都会增加维护的成本",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用视图",
 		AllowOffline: true,
@@ -1359,10 +1437,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCreateTrigger,
-			Desc:     "禁止使用触发器",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckCreateTrigger,
+			Desc:       "禁止使用触发器",
+			Annotation: "触发器难以开发和维护，不能高效移植，且在复杂的逻辑以及高并发下，容易出现死锁影响业务",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用触发器",
 		AllowOffline: true,
@@ -1370,10 +1449,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCreateFunction,
-			Desc:     "禁止使用自定义函数",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckCreateFunction,
+			Desc:       "禁止使用自定义函数",
+			Annotation: "自定义函数，维护较差，且依赖性高会导致SQL无法跨库使用",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用自定义函数",
 		AllowOffline: true,
@@ -1381,10 +1461,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLCheckCreateProcedure,
-			Desc:     "禁止使用存储过程",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeUsageSuggestion,
+			Name:       DDLCheckCreateProcedure,
+			Desc:       "禁止使用存储过程",
+			Annotation: "存储过程在一定程度上会使程序难以调试和拓展，各种数据库的存储过程语法相差很大，给将来的数据库移植带来很大的困难，且会极大的增加出现BUG的概率",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
 		},
 		Message:      "禁止使用存储过程",
 		AllowOffline: true,
@@ -1392,10 +1473,11 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{
-			Name:     DDLDisableTypeTimestamp,
-			Desc:     "禁止使用TIMESTAMP字段",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLDisableTypeTimestamp,
+			Desc:       "禁止使用TIMESTAMP字段",
+			Annotation: "TIMESTAMP 有最大值限制（'2038-01-19 03:14:07' UTC），且会时区转换的问题",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message:      "禁止使用TIMESTAMP字段",
 		AllowOffline: true,
@@ -1403,149 +1485,164 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driver.Rule{ //select a as id, id , b as user  from mysql.user;
-			Name:     DMLCheckAlias,
-			Desc:     "别名不要与表或列的名字相同",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckAlias,
+			Desc:       "别名不要与表或列的名字相同",
+			Annotation: "表或列的别名与其真实名称相同, 这样的别名会使得查询更难去分辨",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "这些别名(%v)与列名或表名相同",
 		Func:    checkAlias,
 	},
 	{
-
 		Rule: driver.Rule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
-			Name:     DDLHintUpdateTableCharsetWillNotUpdateFieldCharset,
-			Desc:     "修改表的默认字符集不会改表各个字段的字符集",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLHintUpdateTableCharsetWillNotUpdateFieldCharset,
+			Desc:       "修改表的默认字符集不会改表各个字段的字符集",
+			Annotation: "修改表的默认字符集，只会影响后续新增的字段，不会修表已有字段的字符集；如需修改整张表所有字段的字符集建议开启此规则",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "修改表的默认字符集不会改表各个字段的字符集",
 		Func:    hintUpdateTableCharsetWillNotUpdateFieldCharset,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP COLUMN col;
-			Name:     DDLHintDropColumn,
-			Desc:     "禁止进行删除列的操作",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLHintDropColumn,
+			Desc:       "禁止进行删除列的操作",
+			Annotation: "业务逻辑与删除列依赖未完全消除，列被删除后可能导致程序异常（无法正常读写）的情况；开启该规则，SQLE将提醒删除列为高危操作",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "禁止进行删除列的操作",
 		Func:    hintDropColumn,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
-			Name:     DDLHintDropPrimaryKey,
-			Desc:     "禁止进行删除主键的操作",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLHintDropPrimaryKey,
+			Desc:       "禁止进行删除主键的操作",
+			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除主键为高危操作",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "禁止进行删除主键的操作",
 		Func:    hintDropPrimaryKey,
 	}, {
 		Rule: driver.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
-			Name:     DDLHintDropForeignKey,
-			Desc:     "禁止进行删除外键的操作",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLHintDropForeignKey,
+			Desc:       "禁止进行删除外键的操作",
+			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除外键为高危操作",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "禁止进行删除外键的操作",
 		Func:    hintDropForeignKey,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id like "a";
-			Name:     DMLNotRecommendNotWildcardLike,
-			Desc:     "不建议使用没有通配符的 LIKE 查询",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendNotWildcardLike,
+			Desc:       "不建议使用没有通配符的 LIKE 查询",
+			Annotation: "不包含通配符的 LIKE 查询逻辑上与等值查询相同，建议使用等值查询替代",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议使用没有通配符的 LIKE 查询",
 		Func:    notRecommendNotWildcardLike,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
-			Name:     DMLHintInNullOnlyFalse,
-			Desc:     "避免使用 IN (NULL) 或者 NOT IN (NULL)",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintInNullOnlyFalse,
+			Desc:       "避免使用 IN (NULL) 或者 NOT IN (NULL)",
+			Annotation: "查询条件永远非真，这将导致查询无匹配到的结果",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "避免使用IN (NULL)/NOT IN (NULL) ，该用法永远非真将导致条件失效",
 		Func:    hintInNullOnlyFalse,
 	}, {
 		Rule: driver.Rule{ //select * from user where id in (a);
-			Name:     DMLNotRecommendIn,
-			Desc:     "尽量不要使用IN",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendIn,
+			Desc:       "尽量不要使用IN",
+			Annotation: "当IN值过多时，有可能会导致查询进行全表扫描，使得MySQL性能急剧下降",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "尽量不要使用IN",
 		Func:    notRecommendIn,
 	},
 	{
 		Rule: driver.Rule{ //select * from user where id = ' 1';
-			Name:     DMLCheckSpacesAroundTheString,
-			Desc:     "引号中的字符串开头或结尾包含空格",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSpacesAroundTheString,
+			Desc:       "引号中的字符串开头或结尾包含空格",
+			Annotation: "字符串前后存在空格将可能导致查询判断逻辑出错，如在MySQL 5.5中'a'和'a '在查询中被认为是相同的值",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "引号中的字符串开头或结尾包含空格",
 		Func:    checkSpacesAroundTheString,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
-			Name:     DDLCheckFullWidthQuotationMarks,
-			Desc:     "检测DDL语句中是否使用了中文全角引号",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckFullWidthQuotationMarks,
+			Desc:       "检测DDL语句中是否使用了中文全角引号",
+			Annotation: "建议开启此规则，可避免MySQL会将中文全角引号识别为命名的一部分，执行结果与业务预期不符",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "DDL 语句中使用了中文全角引号，这可能是书写错误",
 		Func:    checkFullWidthQuotationMarks,
 	}, {
 		Rule: driver.Rule{ //select name from tbl where id < 1000 order by rand(1)
-			Name:     DMLNotRecommendOrderByRand,
-			Desc:     "不建议使用 ORDER BY RAND()",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendOrderByRand,
+			Desc:       "不建议使用 ORDER BY RAND()",
+			Annotation: "ORDER BY RAND()使用了临时表，同时还要对其进行排序，在数据量很大的情况下会增加服务器负载以及增加查询时间",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 ORDER BY RAND()",
 		Func:    notRecommendOrderByRand,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
-			Name:     DMLNotRecommendGroupByConstant,
-			Desc:     "不建议对常量进行 GROUP BY",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendGroupByConstant,
+			Desc:       "不建议对常量进行 GROUP BY",
+			Annotation: "GROUP BY 1 表示按第一列进行GROUP BY；在GROUP BY子句中使用数字，而不是表达式或列名称，当查询列顺序改变时，会导致查询逻辑出现问题",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议对常量进行 GROUP BY",
 		Func:    notRecommendGroupByConstant,
 	}, {
 		Rule: driver.Rule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
-			Name:     DMLCheckSortDirection,
-			Desc:     "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSortDirection,
+			Desc:       "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
+			Annotation: "在 MySQL 8.0 之前当 ORDER BY 多个列指定的排序方向不同时将无法使用已经建立的索引。在MySQL8.0 之后可以建立对应的排序顺序的联合索引来优化",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
 		Func:    checkSortDirection,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl group by 1
-			Name:     DMLHintGroupByRequiresConditions,
-			Desc:     "请为 GROUP BY 显示添加 ORDER BY 条件",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintGroupByRequiresConditions,
+			Desc:       "请为 GROUP BY 显示添加 ORDER BY 条件",
+			Annotation: "在5.7中，MySQL默认会对’GROUP BY col1, …’按如下顺序’ORDER BY col1,…’隐式排序，导致产生无谓的排序，带来额外的开销；在8.0中，则不会出现这种情况。如果不需要排序建议显示添加’ORDER BY NULL’",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "请为 GROUP BY 显示添加 ORDER BY 条件",
 		Func:    hintGroupByRequiresConditions,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
-			Name:     DMLNotRecommendGroupByExpression,
-			Desc:     "不建议ORDER BY 的条件为表达式",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendGroupByExpression,
+			Desc:       "不建议ORDER BY 的条件为表达式",
+			Annotation: "当ORDER BY条件为表达式或函数时会使用到临时表，如果在未指定WHERE或WHERE条件返回的结果集较大时性能会很差",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议ORDER BY 的条件为表达式",
 		Func:    notRecommendGroupByExpression,
 	}, {
 		Rule: driver.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
-			Name:     DMLCheckSQLLength,
-			Desc:     "建议将过长的SQL分解成几个简单的SQL",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSQLLength,
+			Desc:       "建议将过长的SQL分解成几个简单的SQL",
+			Annotation: "过长的sql可读性较差，难以维护，且容易引发性能问题；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1559,37 +1656,41 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkSQLLength,
 	}, {
 		Rule: driver.Rule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
-			Name:     DMLNotRecommendHaving,
-			Desc:     "不建议使用 HAVING 子句",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendHaving,
+			Desc:       "不建议使用 HAVING 子句",
+			Annotation: "对于索引字段，放在HAVING子句中时不会走索引；建议将HAVING子句改写为WHERE中的查询条件，可以在查询处理期间使用索引，提高SQL的执行效率",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 HAVING 子句",
 		Func:    notRecommendHaving,
 	}, {
 		Rule: driver.Rule{ //delete from tbl
-			Name:     DMLHintUseTruncateInsteadOfDelete,
-			Desc:     "删除全表时建议使用 TRUNCATE 替代 DELETE",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintUseTruncateInsteadOfDelete,
+			Desc:       "删除全表时建议使用 TRUNCATE 替代 DELETE",
+			Annotation: "TRUNCATE TABLE 比 DELETE 速度快，且使用的系统和事务日志资源少，同时TRUNCATE后表所占用的空间会被释放，而DELETE后需要手工执行OPTIMIZE才能释放表空间",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
 		Func:    hintUseTruncateInsteadOfDelete,
 	}, {
 		Rule: driver.Rule{ //update mysql.func set name ="hello";
-			Name:     DMLNotRecommendUpdatePK,
-			Desc:     "不要 UPDATE 主键",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendUpdatePK,
+			Desc:       "不要 UPDATE 主键",
+			Annotation: "主键索引数据列的顺序就是表记录的物理存储顺序，频繁更新主键将导致整个表记录的顺序的调整，会耗费相当大的资源",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不要 UPDATE 主键",
 		Func:    notRecommendUpdatePK,
 	}, {
 		Rule: driver.Rule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
-			Name:     DDLCheckColumnQuantity,
-			Desc:     "表中包含有太多的列",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnQuantity,
+			Desc:       "表中包含有太多的列",
+			Annotation: "避免在OLTP系统上做宽表设计，后期对性能影响很大；具体规则阈值可根据业务需求调整，默认值：40",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1603,28 +1704,31 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkColumnQuantity,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
-			Name:     DDLRecommendTableColumnCharsetSame,
-			Desc:     "建议列与表使用同一个字符集",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLRecommendTableColumnCharsetSame,
+			Desc:       "建议列与表使用同一个字符集",
+			Annotation: "统一字符集可以避免由于字符集转换产生的乱码，不同的字符集进行比较前需要进行转换会造成索引失效",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "建议列与表使用同一个字符集",
 		Func:    recommendTableColumnCharsetSame,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a INT(1));
-			Name:     DDLCheckColumnTypeInteger,
-			Desc:     "整型定义建议采用 INT(10) 或 BIGINT(20)",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnTypeInteger,
+			Desc:       "整型定义建议采用 INT(10) 或 BIGINT(20)",
+			Annotation: "INT(M) 或 BIGINT(M)，M 表示最大显示宽度，可存储最大值的宽度分别为10、20，采用 INT(10) 或 BIGINT(20)可避免发生显示截断的可能",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "整型定义建议采用 INT(10) 或 BIGINT(20)",
 		Func:    checkColumnTypeInteger,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tab (a varchar(3500));
-			Name:     DDLCheckVarcharSize,
-			Desc:     "VARCHAR 定义长度过长",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckVarcharSize,
+			Desc:       "VARCHAR 定义长度过长",
+			Annotation: "MySQL建立索引时没有限制索引的大小，索引长度会默认采用的该字段的长度，VARCHAR 定义长度越长建立的索引存储大小越大；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1638,37 +1742,41 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkVarcharSize,
 	}, {
 		Rule: driver.Rule{ //select id from t where substring(name,1,3)='abc'
-			Name:     DMLNotRecommendFuncInWhere,
-			Desc:     "应避免在 WHERE 条件中使用函数或其他运算符",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendFuncInWhere,
+			Desc:       "应避免在 WHERE 条件中使用函数或其他运算符",
+			Annotation: "函数或运算符会导致查询无法利用表中的索引，该查询将会全表扫描，性能较差",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "应避免在 WHERE 条件中使用函数或其他运算符",
 		Func:    notRecommendFuncInWhere,
 	}, {
 		Rule: driver.Rule{ //SELECT SYSDATE();
-			Name:     DMLNotRecommendSysdate,
-			Desc:     "不建议使用 SYSDATE() 函数",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendSysdate,
+			Desc:       "不建议使用 SYSDATE() 函数",
+			Annotation: "当SYSDATE()函数在基于satement模式的主从环境下可能造成数据的不一致，因为语句在主库中执行到日志传递到备库，存在时间差，到备库执行的时候就会变成不同的时间值，建议采取row模式的复制环境",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不建议使用 SYSDATE() 函数",
 		Func:    notRecommendSysdate,
 	}, {
 		Rule: driver.Rule{ //SELECT SUM(COL) FROM tbl;
-			Name:     DMLHintSumFuncTips,
-			Desc:     "避免使用 SUM(COL)",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintSumFuncTips,
+			Desc:       "避免使用 SUM(COL)",
+			Annotation: "当某一列的值全是NULL时，COUNT(COL)的返回结果为0，但SUM(COL)的返回结果为NULL，因此使用SUM()时需注意NPE问题（指数据返回NULL）；如业务需避免NPE问题，建议开启此规则",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
-			Name:     DDLCheckColumnQuantityInPK,
-			Desc:     "主键中的列过多",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckColumnQuantityInPK,
+			Desc:       "主键中的列过多",
+			Annotation: "主建中的列过多，会导致二级索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
@@ -1682,83 +1790,92 @@ var RuleHandlers = []RuleHandler{
 		Func:    checkColumnQuantityInPK,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where name=xx limit 10
-			Name:     DMLHintLimitMustBeCombinedWithOrderBy,
-			Desc:     "未使用 ORDER BY 的 LIMIT 查询",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintLimitMustBeCombinedWithOrderBy,
+			Desc:       "未使用 ORDER BY 的 LIMIT 查询",
+			Annotation: "没有ORDER BY的LIMIT会导致非确定性的结果可能与业务需求不符，这取决于执行计划",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "未使用 ORDER BY 的 LIMIT 查询",
 		Func:    hintLimitMustBeCombinedWithOrderBy,
 	},
 	{
 		Rule: driver.Rule{ //TRUNCATE TABLE tbl_name
-			Name:     DMLHintTruncateTips,
-			Desc:     "请谨慎使用TRUNCATE操作",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintTruncateTips,
+			Desc:       "请谨慎使用TRUNCATE操作",
+			Annotation: "TRUNCATE是DLL，数据不能回滚，在没有备份情况下，谨慎使用TRUNCATE",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "请谨慎使用TRUNCATE操作",
 		Func:    hintTruncateTips,
 	}, {
 		Rule: driver.Rule{ //delete from t where col = 'condition'
-			Name:     DMLHintDeleteTips,
-			Desc:     "使用DELETE/DROP/TRUNCATE等操作时注意备份",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLHintDeleteTips,
+			Desc:       "使用DELETE/DROP/TRUNCATE等操作时注意备份",
+			Annotation: "DROP/TRUNCATE是DDL，操作立即生效，不会写入日志，所以无法回滚，在执行高危操作之前对数据进行备份是很有必要的",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "使用DELETE/DROP/TRUNCATE等操作时注意备份",
 		Func:    hintDeleteTips,
 	}, {
 		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
-			Name:     DMLCheckSQLInjectionFunc,
-			Desc:     "发现常见 SQL 注入函数",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSQLInjectionFunc,
+			Desc:       "发现常见 SQL 注入函数",
+			Annotation: "攻击者通过SQL注入，可未经授权可访问数据库中的数据，存在盗取用户信息，造成用户数据泄露等安全漏洞问题",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "发现常见 SQL 注入函数",
 		Func:    checkSQLInjectionFunc,
 	}, {
 		Rule: driver.Rule{ //select col1,col2 from tbl where type!=0
-			Name:     DMLCheckNotEqualSymbol,
-			Desc:     "请使用'<>'代替'!='",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckNotEqualSymbol,
+			Desc:       "请使用'<>'代替'!='",
+			Annotation: "'!=' 是非标准的运算符，'<>' 才是SQL中标准的不等于运算符",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "请使用'<>'代替'!='",
 		Func:    checkNotEqualSymbol,
 	}, {
 		Rule: driver.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
-			Name:     DMLNotRecommendSubquery,
-			Desc:     "不推荐使用子查询",
-			Level:    driver.RuleLevelNotice,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLNotRecommendSubquery,
+			Desc:       "不推荐使用子查询",
+			Annotation: "有些情况下，子查询并不能使用到索引，同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
+			Level:      driver.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "不推荐使用子查询",
 		Func:    notRecommendSubquery,
 	}, {
 		Rule: driver.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
-			Name:     DMLCheckSubqueryLimit,
-			Desc:     "子查询不支持LIMIT",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDMLConvention,
+			Name:       DMLCheckSubqueryLimit,
+			Desc:       "子查询不支持LIMIT",
+			Annotation: "当前MySQL版本不支持在子查询中进行'LIMIT & IN/ALL/ANY/SOME'",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
 		},
 		Message: "子查询不支持LIMIT",
 		Func:    checkSubqueryLimit,
 	}, {
 		Rule: driver.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
-			Name:     DDLCheckAutoIncrement,
-			Desc:     "表的初始AUTO_INCREMENT值不为0",
-			Level:    driver.RuleLevelWarn,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLCheckAutoIncrement,
+			Desc:       "表的初始AUTO_INCREMENT值不为0",
+			Annotation: "创建表时AUTO_INCREMENT设置为0则自增从1开始，避免数据空洞。另外在导出表结构DDL时，表结构内AUTO_INCREMENT通常为当前的自增值，通过该DDL进行建表操作会导致自增值从一个无意义数字开始。建议自增ID统一从1开始",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
 		},
 		Message: "表的初始AUTO_INCREMENT值不为0",
 		Func:    checkAutoIncrement,
 	}, {
 		Rule: driver.Rule{ // rename table t1 to t2;
-			Name:     DDLNotAllowRenaming,
-			Desc:     "禁止使用rename或change对表名字段名进行修改",
-			Level:    driver.RuleLevelError,
-			Category: RuleTypeDDLConvention,
+			Name:       DDLNotAllowRenaming,
+			Desc:       "禁止使用rename或change对表名字段名进行修改",
+			Annotation: "rename/change 表名/列名会对线上业务不停机发布造成影响，如需这种操作应当DBA手工干预",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",

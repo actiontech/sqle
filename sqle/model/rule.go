@@ -23,32 +23,35 @@ type RuleTemplate struct {
 
 func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
 	return &Rule{
-		Name:   dr.Name,
-		Desc:   dr.Desc,
-		Level:  string(dr.Level),
-		Typ:    dr.Category,
-		DBType: dbType,
-		Params: dr.Params,
+		Name:       dr.Name,
+		Desc:       dr.Desc,
+		Annotation: dr.Annotation,
+		Level:      string(dr.Level),
+		Typ:        dr.Category,
+		DBType:     dbType,
+		Params:     dr.Params,
 	}
 }
 
 func ConvertRuleToDriverRule(r *Rule) *driver.Rule {
 	return &driver.Rule{
-		Name:     r.Name,
-		Desc:     r.Desc,
-		Category: r.Typ,
-		Level:    driver.RuleLevel(r.Level),
-		Params:   r.Params,
+		Name:       r.Name,
+		Desc:       r.Desc,
+		Annotation: r.Annotation,
+		Category:   r.Typ,
+		Level:      driver.RuleLevel(r.Level),
+		Params:     r.Params,
 	}
 }
 
 type Rule struct {
-	Name   string        `json:"name" gorm:"primary_key; not null"`
-	DBType string        `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc   string        `json:"desc"`
-	Level  string        `json:"level" example:"error"` // notice, warn, error
-	Typ    string        `json:"type" gorm:"column:type; not null"`
-	Params params.Params `json:"params" gorm:"type:varchar(1000)"`
+	Name       string        `json:"name" gorm:"primary_key; not null"`
+	DBType     string        `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc       string        `json:"desc"`
+	Annotation string        `json:"annotation" gorm:"column:annotation"`
+	Level      string        `json:"level" example:"error"` // notice, warn, error
+	Typ        string        `json:"type" gorm:"column:type; not null"`
+	Params     params.Params `json:"params" gorm:"type:varchar(1000)"`
 }
 
 func (r Rule) TableName() string {

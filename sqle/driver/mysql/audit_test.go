@@ -211,6 +211,7 @@ select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 
 func TestDDLCheckTableSize(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableSize].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "16")
 
 	runSingleRuleInspectCase(rule, t, "drop_table: table1 oversized", DefaultMysqlInspect(),
 		`drop table exist_db.exist_tb_1;`, newTestResult())
