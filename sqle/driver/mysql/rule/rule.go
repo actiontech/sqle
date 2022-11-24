@@ -1244,7 +1244,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:       DDLCheckTransactionIsolationLevel,
 			Desc:       "事物隔离级别建议设置成RC",
-			Annotation: "通过配置该规则可以规范指定业务的主键命名规则",
+			Annotation: "RC避免了脏读的现象，但没有解决幻读的问题；使用RR，能避免幻读，但是由于引入间隙锁导致加锁的范围可能扩大，从而会影响并发，还容易造成死锁，所以在大多数业务场景下，幻读出现的机率较少，RC基本上能满足业务需求",
 			Level:      driver.RuleLevelNotice,
 			Category:   RuleTypeUsageSuggestion,
 		},
