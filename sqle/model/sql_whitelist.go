@@ -81,3 +81,16 @@ func (s *Storage) GetSqlWhitelistByInstanceId(instanceId uint) ([]SqlWhitelist, 
 		Find(&sqlWhitelist).Error
 	return sqlWhitelist,  errors.New(errors.ConnectStorageError, err)
 }
+
+
+func (s *Storage) GetSqlWhitelistTotalByProjectName(projectName string) (uint64, error) {
+	var count uint64
+	err := s.db.
+		Table("sql_whitelist").
+		Joins("LEFT JOIN projects ON sql_whitelist.project_id = projects.id").
+		Where("projects.name = ?", projectName).
+		Where("sql_whitelist.deleted_at IS NULL").
+		Count(&count).
+		Error
+	return count, errors.ConnectStorageErrWrapper(err)
+}

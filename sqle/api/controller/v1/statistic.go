@@ -1,7 +1,11 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/model"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -393,5 +397,47 @@ type GetProjectStatisticsResDataV1 struct {
 // @Success 200 {object} v1.GetProjectStatisticsResV1
 // @router /v1/projects/{project_name}/statistics [get]
 func GetProjectStatisticsV1(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp := GetProjectStatisticsResDataV1{}
+	s := model.GetStorage()
+
+	resp.MemberTotal, err = s.GetUserTotalInProjectByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp.WhitelistTotal, err = s.GetSqlWhitelistTotalByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp.RuleTemplateTotal, err = s.GetRuleTemplateTotalByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp.InstanceTotal, err = s.GetInstanceTotalByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp.AuditPlanTotal, err = s.GetAuditPlanTotalByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resp.WorkflowTotal, err = s.GetWorkflowTotalByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GetProjectStatisticsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resp,
+	})
 }
