@@ -1325,7 +1325,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:       DDLCheckIndexOption,
 			Desc:       "建议选择可选性超过阈值字段作为索引",
-			Annotation: "选择区分度高的字段作为索引，可快速定位数据；区分度太低，无法有效利用索引，甚至可能需要扫描大量数据页，拖慢sql；具体规则阈值可以根据业务需求调整，默认值：70",
+			Annotation: "选择区分度高的字段作为索引，可快速定位数据；区分度太低，无法有效利用索引，甚至可能需要扫描大量数据页，拖慢SQL；具体规则阈值可以根据业务需求调整，默认值：70",
 			Level:      driver.RuleLevelNotice,
 			//Value:    "0.7",
 			Category: RuleTypeIndexOptimization,
@@ -1403,7 +1403,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:       DMLCheckExplainExtraUsingFilesort,
 			Desc:       "该查询使用了文件排序",
-			Annotation: "大数据量的情况下，文件排序意味着sql性能较低，会增加OS的开销，影响数据库性能",
+			Annotation: "大数据量的情况下，文件排序意味着SQL性能较低，会增加OS的开销，影响数据库性能",
 			Level:      driver.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -1415,7 +1415,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{
 			Name:       DMLCheckExplainExtraUsingTemporary,
 			Desc:       "该查询使用了临时表",
-			Annotation: "大数据量的情况下，临时表意味着sql性能较低，会增加OS的开销，影响数据库性能",
+			Annotation: "大数据量的情况下，临时表意味着SQL性能较低，会增加OS的开销，影响数据库性能",
 			Level:      driver.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -1823,7 +1823,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{ //SELECT BENCHMARK(10, RAND())
 			Name:       DMLCheckSQLInjectionFunc,
 			Desc:       "发现常见 SQL 注入函数",
-			Annotation: "攻击者通过sql注入，可未经授权可访问数据库中的数据，存在盗取用户信息，造成用户数据泄露等安全漏洞问题",
+			Annotation: "攻击者通过SQL注入，可未经授权可访问数据库中的数据，存在盗取用户信息，造成用户数据泄露等安全漏洞问题",
 			Level:      driver.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
