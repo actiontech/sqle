@@ -85,7 +85,7 @@ type AnalysisDriverInitRequest struct {
 func (m *AnalysisDriverInitRequest) Reset()                    { *m = AnalysisDriverInitRequest{} }
 func (m *AnalysisDriverInitRequest) String() string            { return proto1.CompactTextString(m) }
 func (*AnalysisDriverInitRequest) ProtoMessage()               {}
-func (*AnalysisDriverInitRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*AnalysisDriverInitRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *AnalysisDriverInitRequest) GetDsn() *DSN {
 	if m != nil {
@@ -101,7 +101,7 @@ type ListTablesInSchemaRequest struct {
 func (m *ListTablesInSchemaRequest) Reset()                    { *m = ListTablesInSchemaRequest{} }
 func (m *ListTablesInSchemaRequest) String() string            { return proto1.CompactTextString(m) }
 func (*ListTablesInSchemaRequest) ProtoMessage()               {}
-func (*ListTablesInSchemaRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (*ListTablesInSchemaRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *ListTablesInSchemaRequest) GetSchema() string {
 	if m != nil {
@@ -117,7 +117,7 @@ type ListTablesInSchemaResponse struct {
 func (m *ListTablesInSchemaResponse) Reset()                    { *m = ListTablesInSchemaResponse{} }
 func (m *ListTablesInSchemaResponse) String() string            { return proto1.CompactTextString(m) }
 func (*ListTablesInSchemaResponse) ProtoMessage()               {}
-func (*ListTablesInSchemaResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
+func (*ListTablesInSchemaResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *ListTablesInSchemaResponse) GetTables() []*Table {
 	if m != nil {
@@ -133,7 +133,7 @@ type Table struct {
 func (m *Table) Reset()                    { *m = Table{} }
 func (m *Table) String() string            { return proto1.CompactTextString(m) }
 func (*Table) ProtoMessage()               {}
-func (*Table) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
+func (*Table) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *Table) GetName() string {
 	if m != nil {
@@ -150,7 +150,7 @@ type GetTableMetaByTableNameRequest struct {
 func (m *GetTableMetaByTableNameRequest) Reset()                    { *m = GetTableMetaByTableNameRequest{} }
 func (m *GetTableMetaByTableNameRequest) String() string            { return proto1.CompactTextString(m) }
 func (*GetTableMetaByTableNameRequest) ProtoMessage()               {}
-func (*GetTableMetaByTableNameRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
+func (*GetTableMetaByTableNameRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *GetTableMetaByTableNameRequest) GetSchema() string {
 	if m != nil {
@@ -173,7 +173,7 @@ type GetTableMetaByTableNameResponse struct {
 func (m *GetTableMetaByTableNameResponse) Reset()                    { *m = GetTableMetaByTableNameResponse{} }
 func (m *GetTableMetaByTableNameResponse) String() string            { return proto1.CompactTextString(m) }
 func (*GetTableMetaByTableNameResponse) ProtoMessage()               {}
-func (*GetTableMetaByTableNameResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
+func (*GetTableMetaByTableNameResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *GetTableMetaByTableNameResponse) GetTableMeta() *TableItem {
 	if m != nil {
@@ -193,7 +193,7 @@ type TableItem struct {
 func (m *TableItem) Reset()                    { *m = TableItem{} }
 func (m *TableItem) String() string            { return proto1.CompactTextString(m) }
 func (*TableItem) ProtoMessage()               {}
-func (*TableItem) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
+func (*TableItem) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
 func (m *TableItem) GetName() string {
 	if m != nil {
@@ -237,7 +237,7 @@ type ColumnsInfo struct {
 func (m *ColumnsInfo) Reset()                    { *m = ColumnsInfo{} }
 func (m *ColumnsInfo) String() string            { return proto1.CompactTextString(m) }
 func (*ColumnsInfo) ProtoMessage()               {}
-func (*ColumnsInfo) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
+func (*ColumnsInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *ColumnsInfo) GetAnalysisInfoInTableFormat() *AnalysisInfoInTableFormat {
 	if m != nil {
@@ -253,7 +253,7 @@ type IndexesInfo struct {
 func (m *IndexesInfo) Reset()                    { *m = IndexesInfo{} }
 func (m *IndexesInfo) String() string            { return proto1.CompactTextString(m) }
 func (*IndexesInfo) ProtoMessage()               {}
-func (*IndexesInfo) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{8} }
+func (*IndexesInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
 
 func (m *IndexesInfo) GetAnalysisInfoInTableFormat() *AnalysisInfoInTableFormat {
 	if m != nil {
@@ -269,7 +269,7 @@ type Row struct {
 func (m *Row) Reset()                    { *m = Row{} }
 func (m *Row) String() string            { return proto1.CompactTextString(m) }
 func (*Row) ProtoMessage()               {}
-func (*Row) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{9} }
+func (*Row) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 func (m *Row) GetItems() []string {
 	if m != nil {
@@ -286,7 +286,7 @@ type AnalysisInfoInTableFormat struct {
 func (m *AnalysisInfoInTableFormat) Reset()                    { *m = AnalysisInfoInTableFormat{} }
 func (m *AnalysisInfoInTableFormat) String() string            { return proto1.CompactTextString(m) }
 func (*AnalysisInfoInTableFormat) ProtoMessage()               {}
-func (*AnalysisInfoInTableFormat) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{10} }
+func (*AnalysisInfoInTableFormat) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 func (m *AnalysisInfoInTableFormat) GetColumns() []*AnalysisInfoHead {
 	if m != nil {
@@ -310,7 +310,7 @@ type AnalysisInfoHead struct {
 func (m *AnalysisInfoHead) Reset()                    { *m = AnalysisInfoHead{} }
 func (m *AnalysisInfoHead) String() string            { return proto1.CompactTextString(m) }
 func (*AnalysisInfoHead) ProtoMessage()               {}
-func (*AnalysisInfoHead) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{11} }
+func (*AnalysisInfoHead) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
 
 func (m *AnalysisInfoHead) GetName() string {
 	if m != nil {
@@ -333,7 +333,7 @@ type GetTableMetaBySQLRequest struct {
 func (m *GetTableMetaBySQLRequest) Reset()                    { *m = GetTableMetaBySQLRequest{} }
 func (m *GetTableMetaBySQLRequest) String() string            { return proto1.CompactTextString(m) }
 func (*GetTableMetaBySQLRequest) ProtoMessage()               {}
-func (*GetTableMetaBySQLRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{12} }
+func (*GetTableMetaBySQLRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{12} }
 
 func (m *GetTableMetaBySQLRequest) GetSql() string {
 	if m != nil {
@@ -349,7 +349,7 @@ type GetTableMetaBySQLResponse struct {
 func (m *GetTableMetaBySQLResponse) Reset()                    { *m = GetTableMetaBySQLResponse{} }
 func (m *GetTableMetaBySQLResponse) String() string            { return proto1.CompactTextString(m) }
 func (*GetTableMetaBySQLResponse) ProtoMessage()               {}
-func (*GetTableMetaBySQLResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{13} }
+func (*GetTableMetaBySQLResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{13} }
 
 func (m *GetTableMetaBySQLResponse) GetTableMetas() []*TableMetaItemBySQL {
 	if m != nil {
@@ -370,7 +370,7 @@ type TableMetaItemBySQL struct {
 func (m *TableMetaItemBySQL) Reset()                    { *m = TableMetaItemBySQL{} }
 func (m *TableMetaItemBySQL) String() string            { return proto1.CompactTextString(m) }
 func (*TableMetaItemBySQL) ProtoMessage()               {}
-func (*TableMetaItemBySQL) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{14} }
+func (*TableMetaItemBySQL) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{14} }
 
 func (m *TableMetaItemBySQL) GetName() string {
 	if m != nil {
@@ -421,7 +421,7 @@ type ExplainRequest struct {
 func (m *ExplainRequest) Reset()                    { *m = ExplainRequest{} }
 func (m *ExplainRequest) String() string            { return proto1.CompactTextString(m) }
 func (*ExplainRequest) ProtoMessage()               {}
-func (*ExplainRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{15} }
+func (*ExplainRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{15} }
 
 func (m *ExplainRequest) GetSql() string {
 	if m != nil {
@@ -437,7 +437,7 @@ type ExplainResponse struct {
 func (m *ExplainResponse) Reset()                    { *m = ExplainResponse{} }
 func (m *ExplainResponse) String() string            { return proto1.CompactTextString(m) }
 func (*ExplainResponse) ProtoMessage()               {}
-func (*ExplainResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{16} }
+func (*ExplainResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{16} }
 
 func (m *ExplainResponse) GetClassicResult() *ExplainClassicResult {
 	if m != nil {
@@ -453,7 +453,7 @@ type ExplainClassicResult struct {
 func (m *ExplainClassicResult) Reset()                    { *m = ExplainClassicResult{} }
 func (m *ExplainClassicResult) String() string            { return proto1.CompactTextString(m) }
 func (*ExplainClassicResult) ProtoMessage()               {}
-func (*ExplainClassicResult) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{17} }
+func (*ExplainClassicResult) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{17} }
 
 func (m *ExplainClassicResult) GetAnalysisInfoInTableFormat() *AnalysisInfoInTableFormat {
 	if m != nil {
@@ -695,9 +695,9 @@ var _AnalysisDriver_serviceDesc = grpc.ServiceDesc{
 	Metadata: "analysis_driver.proto",
 }
 
-func init() { proto1.RegisterFile("analysis_driver.proto", fileDescriptor2) }
+func init() { proto1.RegisterFile("analysis_driver.proto", fileDescriptor0) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor0 = []byte{
 	// 661 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x55, 0xcd, 0x6e, 0xd3, 0x40,
 	0x10, 0x56, 0xea, 0x24, 0x25, 0x93, 0x52, 0xca, 0xaa, 0x3f, 0x8e, 0x8b, 0xda, 0xb0, 0x82, 0xaa,
