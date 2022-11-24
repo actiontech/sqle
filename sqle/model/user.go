@@ -277,3 +277,24 @@ func (s *Storage) GetUserByID(id uint) (*User, bool, error) {
 	}
 	return u, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetUserTotalInProjectByProjectName(projectName string) (uint64, error) {
+	sql := `
+SELECT 
+	COUNT(DISTINCT users.id)
+FROM
+	users
+	LEFT JOIN project_user ON users.id = project_user.user_id
+	LEFT JOIN projects AS p ON p.id = project_user.project_id
+	LEFT JOIN user_group_users ON user_group_users.user_id = users.id
+	LEFT JOIN project_user_group ON project_user_group.user_group_id = user_group_users.user_group_id
+	LEFT JOIN projects AS pg ON pg.id = project_user_group.project_id
+WHERE
+	p.name = ?
+	OR
+	pg.name = ?
+`
+	var count uint64
+	err := s.db.Raw(sql, projectName, projectName).Count(&count).Error
+	return count, errors.ConnectStorageErrWrapper(err)
+}
