@@ -160,3 +160,16 @@ func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) err
 	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
+
+
+func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, error) {
+	var count uint64
+	err := s.db.
+		Table("audit_plans").
+		Joins("LEFT JOIN projects ON audit_plans.project_id = projects.id").
+		Where("projects.name = ?", projectName).
+		Where("audit_plans.deleted_at IS NULL").
+		Count(&count).
+		Error
+	return count, errors.ConnectStorageErrWrapper(err)
+}
