@@ -7,15 +7,15 @@ import (
 )
 
 type InstanceDetail struct {
-	Name                 string         `json:"name"`
-	DbType               string         `json:"db_type"`
-	Desc                 string         `json:"desc"`
-	Host                 string         `json:"db_host"`
-	Port                 string         `json:"db_port"`
-	User                 string         `json:"db_user"`
-	MaintenancePeriod    Periods        `json:"maintenance_period" gorm:"text"`
-	RuleTemplateNames    RowList        `json:"rule_template_names"`
-	SqlQueryConfig       SqlQueryConfig `json:"sql_query_config"`
+	Name              string         `json:"name"`
+	DbType            string         `json:"db_type"`
+	Desc              string         `json:"desc"`
+	Host              string         `json:"db_host"`
+	Port              string         `json:"db_port"`
+	User              string         `json:"db_user"`
+	MaintenancePeriod Periods        `json:"maintenance_period" gorm:"text"`
+	RuleTemplateNames RowList        `json:"rule_template_names"`
+	SqlQueryConfig    SqlQueryConfig `json:"sql_query_config"`
 }
 
 var instancesQueryTpl = `SELECT inst.name, inst.db_type, inst.desc, inst.db_host,
@@ -93,4 +93,11 @@ func (s *Storage) GetInstancesByReq(data map[string]interface{}, user *User) (
 	count, err = s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 	return result, count, err
 
+}
+
+func (s *Storage) GetInstanceTotalByProjectName(projectName string) (uint64, error) {
+	data := map[string]interface{}{
+		"filter_project_name": projectName,
+	}
+	return s.getCountResult(instancesQueryBodyTpl, instancesCountTpl, data)
 }

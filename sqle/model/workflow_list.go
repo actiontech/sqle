@@ -162,6 +162,13 @@ func (s *Storage) GetWorkflowCountByReq(data map[string]interface{}) (uint64, er
 	return s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
 }
 
+func (s *Storage) GetWorkflowTotalByProjectName(projectName string) (uint64, error) {
+	data := map[string]interface{}{
+		"filter_project_name": projectName,
+	}
+	return s.GetWorkflowCountByReq(data)
+}
+
 type WorkflowTemplateDetail struct {
 	Name string `json:"workflow_template_name"`
 	Desc string `json:"desc"`
