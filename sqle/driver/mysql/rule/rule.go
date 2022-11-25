@@ -1754,7 +1754,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driver.Rule{ //SELECT SYSDATE();
 			Name:       DMLNotRecommendSysdate,
 			Desc:       "不建议使用 SYSDATE() 函数",
-			Annotation: "当SYSDATE()函数在基于satement模式的主从环境下可能造成数据的不一致，因为语句在主库中执行到日志传递到备库，存在时间差，到备库执行的时候就会变成不同的时间值，建议采取row模式的复制环境",
+			Annotation: "当SYSDATE()函数在基于statement模式的主从环境下可能造成数据的不一致，因为语句在主库中执行到日志传递到备库，存在时间差，到备库执行的时候就会变成不同的时间值，建议采取row模式的复制环境",
 			Level:      driver.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
