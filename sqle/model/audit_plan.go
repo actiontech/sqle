@@ -173,3 +173,21 @@ func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, er
 		Error
 	return count, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, error) {
+	ids := []struct {
+		ID uint `json:"id"`
+	}{}
+	err := s.db.Table("audit_plans").
+		Select("audit_plans.id").
+		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where("projects.name = ?", projectName).
+		Find(&ids).Error
+
+	resp := []uint{}
+	for _, id := range ids {
+		resp = append(resp, id.ID)
+	}
+
+	return resp, errors.ConnectStorageErrWrapper(err)
+}
