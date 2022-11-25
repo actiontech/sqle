@@ -351,4 +351,4 @@ postgresql
 dbeaver
 logon
 alipay
-OLTP
+oltp
