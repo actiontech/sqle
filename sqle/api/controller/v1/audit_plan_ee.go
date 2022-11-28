@@ -28,6 +28,10 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
 
+	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

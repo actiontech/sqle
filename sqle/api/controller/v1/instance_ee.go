@@ -5,7 +5,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -24,20 +23,16 @@ func listTableBySchema(c echo.Context) error {
 	schemaName := c.Param("schema_name")
 	projectName := c.Param("project_name")
 
+	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
-	}
-
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, ErrInstanceNotExist))
 	}
 
 	dsn, err := common.NewDSN(instance, "")
@@ -82,6 +77,10 @@ func getTableMetadata(c echo.Context) error {
 	schemaName := c.Param("schema_name")
 	tableName := c.Param("table_name")
 	projectName := c.Param("project_name")
+
+	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	instance, exist, err := s.GetInstanceDetailByNameAndProjectName(instanceName, projectName)
 	if err != nil {
