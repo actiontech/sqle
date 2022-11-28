@@ -85,7 +85,7 @@ var LicenseCheckers = []LicenseChecker{
 		}
 		return false, true, nil
 	},
-	// 添加/删除用户
+	// 添加用户
 	func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
 		s := model.GetStorage()
 		if c.Request().Method == http.MethodPost && strings.TrimSuffix(c.Path(), "/") == "/v1/users" {
@@ -94,14 +94,14 @@ var LicenseCheckers = []LicenseChecker{
 		}
 		return false, true, nil
 	},
-	// 添加/删除数据源
+	// 添加数据源
 	func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
 		return InstanceLicenseChecker(c)
 	},
 }
 
 var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
-	if c.Request().Method != http.MethodPost || strings.TrimSuffix(c.Path(), "/") != "/v1/instances" {
+	if c.Request().Method != http.MethodPost || strings.TrimSuffix(c.Path(), "/") != "/v1/projects/:project_name/instances" {
 		return false, true, nil
 	}
 
