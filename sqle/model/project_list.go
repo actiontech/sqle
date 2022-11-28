@@ -102,7 +102,10 @@ var membersQueryBodyTpl = `
 FROM project_user
 LEFT JOIN users ON users.id = project_user.user_id
 LEFT JOIN projects ON projects.id = project_user.project_id
+
+{{ if .filter_instance_name }}
 LEFT JOIN instances ON instances.project_id = projects.id
+{{ end }}
 
 {{  if .filter_instance_name  }}
 JOIN project_member_roles ON project_member_roles.user_id = users.id AND project_member_roles.instance_id = instances.id
@@ -110,7 +113,11 @@ JOIN project_member_roles ON project_member_roles.user_id = users.id AND project
 
 WHERE users.stat = 0
 AND users.deleted_at IS NULL
+
+{{ if .filter_instance_name }}
 AND instances.deleted_at IS NULL
+{{ end }}
+
 AND projects.name = :filter_project_name
 
 {{ if .filter_user_name }}

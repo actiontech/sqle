@@ -382,10 +382,8 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 	query = query.Model(&UserGroup{}).
 		Joins("LEFT JOIN project_user_group ON project_user_group.user_group_id = user_groups.id").
 		Joins("LEFT JOIN projects ON projects.id = project_user_group.project_id").
-		Joins("LEFT JOIN instances ON instances.project_id = projects.id").
 		Where("user_groups.stat = 0").
 		Where("user_groups.deleted_at IS NULL").
-		Where("instances.deleted_at IS NULL").
 		Where("projects.name = ?", *filter.FilterProjectName).
 		Group("user_groups.id")
 
@@ -397,6 +395,8 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 	}
 	if filter.FilterInstanceName != nil {
 		query = query.
+			Joins("LEFT JOIN instances ON instances.project_id = projects.id").
+			Where("instances.deleted_at IS NULL").
 			Joins("JOIN project_member_group_roles ON project_member_group_roles.user_group_id = user_groups.id AND project_member_group_roles.instance_id = instances.id").
 			Where("instances.name = ?", *filter.FilterInstanceName)
 	}
