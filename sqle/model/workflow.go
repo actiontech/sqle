@@ -732,29 +732,33 @@ func (s *Storage) GetLastWorkflow() (*Workflow, bool, error) {
 }
 
 func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
-	return s.TxExec(func(tx *sql.Tx) error {
-		_, err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("DELETE FROM workflow_records WHERE id = ?", workflow.WorkflowRecordId)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.ID)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.ID)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Exec("DELETE FROM workflow_instance_records WHERE workflow_record_id = ?", workflow.WorkflowRecordId)
-		if err != nil {
-			return err
-		}
-		return nil
+	return s.Tx(func(tx *gorm.DB) error {
+		return s.deleteWorkflow(tx, workflow)
 	})
+}
+
+func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
+	err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Exec("DELETE FROM workflow_records WHERE id = ?", workflow.WorkflowRecordId).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.ID).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.ID).Error
+	if err != nil {
+		return err
+	}
+	err = tx.Exec("DELETE FROM workflow_instance_records WHERE workflow_record_id = ?", workflow.WorkflowRecordId).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
@@ -1072,4 +1076,10 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName 
 	}
 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
+	workflows := []*Workflow{}
+	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectID).Scan(&workflows).Error
+	return workflows, errors.ConnectStorageErrWrapper(err)
 }
