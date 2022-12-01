@@ -486,7 +486,8 @@ where project_id in(
 	 select distinct project_id 
 	 from project_manager 
  	 where user_id = ?
-	);
+	)
+group by project_id;
 `
 
 	var count []*struct {
