@@ -230,9 +230,9 @@ func (s *Storage) UserHasBindWorkflowTemplate(user *User) (bool, error) {
 	count := 0
 	err := s.db.Table("workflow_templates").
 		Joins("join workflow_step_templates on workflow_templates.id = workflow_step_templates.workflow_template_id").
-		Joins("join workflow_step_user on workflow_step_templates.id = workflow_step_user.workflow_step_id").
+		Joins("join workflow_step_template_user on workflow_step_templates.id = workflow_step_template_user.workflow_step_template_id").
 		Where("workflow_templates.deleted_at is null").
-		Where("workflow_step_user.user_id = ?", user.ID).
+		Where("workflow_step_template_user.user_id = ?", user.ID).
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
