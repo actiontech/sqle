@@ -282,6 +282,7 @@ FROM projects
 JOIN users
 WHERE projects.name = ?
 AND users.login_name = ?
+AND users.deleted_at is null
 LIMIT 1
 `
 
@@ -296,6 +297,7 @@ JOIN projects ON project_manager.project_id = projects.id
 JOIN users ON project_manager.user_id = users.id
 WHERE projects.name = ?
 AND users.login_name = ?
+AND users.deleted_at is null
 `
 
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
