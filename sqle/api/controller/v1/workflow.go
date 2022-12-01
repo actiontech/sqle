@@ -559,7 +559,13 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser) {
+
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser || isManager) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
