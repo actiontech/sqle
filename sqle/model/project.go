@@ -282,6 +282,7 @@ FROM projects
 JOIN users
 WHERE projects.name = ?
 AND users.login_name = ?
+AND users.deleted_at is null
 LIMIT 1
 `
 
@@ -296,6 +297,7 @@ JOIN projects ON project_manager.project_id = projects.id
 JOIN users ON project_manager.user_id = users.id
 WHERE projects.name = ?
 AND users.login_name = ?
+AND users.deleted_at is null
 `
 
 	return errors.ConnectStorageErrWrapper(s.db.Exec(sql, projectName, userName).Error)
@@ -480,10 +482,14 @@ func (s *Storage) IsLastProjectManager(userName, projectName string) (bool, erro
 func (s *Storage) IsLastProjectManagerOfAnyProjectByUserID(userID uint) (bool, error) {
 
 	sql := `
-SELECT count(1) AS count
-FROM project_manager
-WHERE project_manager.user_id = ?
-GROUP BY project_manager.project_id
+select count(1) as count
+from project_manager
+where project_id in(
+	 select distinct project_id 
+	 from project_manager 
+ 	 where user_id = ?
+	)
+group by project_id;
 `
 
 	var count []*struct {
