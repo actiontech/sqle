@@ -298,3 +298,13 @@ WHERE
 	err := s.db.Raw(sql, projectName, projectName).Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) GetMemberTips(projectName string) ([]*User, error) {
+	users := []*User{}
+	err := s.db.Model(&User{}).Select("login_name").
+		Joins("LEFT JOIN project_user ON project_user.user_id = users.id").
+		Joins("LEFT JOIN projects ON projects.id = project_user.project_id").
+		Where("projects.name = ?", projectName).
+		Find(&users).Error
+	return users, errors.ConnectStorageErrWrapper(err)
+}
