@@ -15,10 +15,10 @@ import (
 )
 
 type DirectAuditReqV1 struct {
-	InstanceType string `json:"instance_type" form:"instance_type" example:"mysql" valid:"required"`
+	InstanceType string `json:"instance_type" form:"instance_type" example:"MySQL" valid:"required"`
 	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
 	SQLContent string `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
-	SQLType    string `json:"sql_type" form:"sql_type" example:"sql"`
+	SQLType    string `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
 }
 
 const (
