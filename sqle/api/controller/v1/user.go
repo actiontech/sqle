@@ -969,3 +969,46 @@ func GetMember(c echo.Context) error {
 		},
 	})
 }
+
+type MemberTipResV1 struct {
+	Name string `json:"user_name"`
+}
+
+type GetMemberTipsResV1 struct {
+	controller.BaseRes
+	Data []MemberTipResV1 `json:"data"`
+}
+
+// @Summary 获取成员提示列表
+// @Description get member tip list
+// @Tags user
+// @Id getMemberTipListV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetMemberTipsResV1
+// @router /v1/projects/{project_name}/member_tips [get]
+func GetMemberTips(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	users, err := s.GetMemberTips(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	userTipsRes := make([]MemberTipResV1, 0, len(users))
+
+	for _, user := range users {
+		userTipRes := MemberTipResV1{
+			Name: user.Name,
+		}
+		userTipsRes = append(userTipsRes, userTipRes)
+	}
+	return c.JSON(http.StatusOK, &GetMemberTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    userTipsRes,
+	})
+}

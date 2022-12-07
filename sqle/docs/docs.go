@@ -2753,6 +2753,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/member_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get member tip list",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取成员提示列表",
+                "operationId": "getMemberTipListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetMemberTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/members": {
             "get": {
                 "security": [
@@ -7632,6 +7664,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetMemberTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MemberTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetMembersRespV1": {
             "type": "object",
             "properties": {
@@ -9010,6 +9061,14 @@ var doc = `{
                     "type": "integer"
                 },
                 "desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.MemberTipResV1": {
+            "type": "object",
+            "properties": {
+                "user_name": {
                     "type": "string"
                 }
             }
