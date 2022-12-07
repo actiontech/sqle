@@ -1102,6 +1102,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetMemberTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.MemberTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetMembersRespV1:
     properties:
       code:
@@ -2043,6 +2056,11 @@ definitions:
       code:
         type: integer
       desc:
+        type: string
+    type: object
+  v1.MemberTipResV1:
+    properties:
+      user_name:
         type: string
     type: object
   v1.Oauth2ConfigurationReqV1:
@@ -4910,6 +4928,26 @@ paths:
       summary: 修改成员组
       tags:
       - user_group
+  /v1/projects/{project_name}/member_tips:
+    get:
+      description: get member tip list
+      operationId: getMemberTipListV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMemberTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员提示列表
+      tags:
+      - user
   /v1/projects/{project_name}/members:
     get:
       description: get members
