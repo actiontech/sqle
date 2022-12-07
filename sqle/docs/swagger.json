@@ -6932,12 +6932,21 @@
             "properties": {
                 "instance_type": {
                     "type": "string",
-                    "example": "mysql"
+                    "example": "MySQL"
                 },
                 "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
                     "type": "string",
                     "example": "select * from t1; select * from t2;"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
                 }
             }
         },

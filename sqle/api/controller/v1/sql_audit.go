@@ -10,14 +10,21 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 
+	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/labstack/echo/v4"
 )
 
 type DirectAuditReqV1 struct {
-	InstanceType string `json:"instance_type" form:"instance_type" example:"mysql" valid:"required"`
+	InstanceType string `json:"instance_type" form:"instance_type" example:"MySQL" valid:"required"`
 	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
 	SQLContent string `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
+	SQLType    string `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
 }
+
+const (
+	SQLTypeSQL     = "sql" // DirectAuditReqV1.SQLType 为空时默认为此
+	SQLTypeMyBatis = "mybatis"
+)
 
 type DirectAuditResV1 struct {
 	controller.BaseRes
@@ -50,13 +57,22 @@ var ErrDirectAudit = errors.New(errors.GenericError, fmt.Errorf("audit failed, p
 // @router /v1/sql_audit [post]
 func DirectAudit(c echo.Context) error {
 	req := new(DirectAuditReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
+	err := controller.BindAndValidateReq(c, req)
+	if err != nil {
 		return err
+	}
+
+	sql := req.SQLContent
+	if req.SQLType == SQLTypeMyBatis {
+		sql, err = parser.ParseXML(req.SQLContent)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, req.SQLContent, req.InstanceType, nil, "")
+	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
