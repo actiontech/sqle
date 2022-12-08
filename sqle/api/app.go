@@ -170,6 +170,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.DELETE("/projects/:project_name/members/:user_name/", v1.DeleteMember)
 	v1Router.GET("/projects/:project_name/members", v1.GetMembers)
 	v1Router.GET("/projects/:project_name/members/:user_name/", v1.GetMember)
+	v1Router.GET("/projects/:project_name/member_tips", v1.GetMemberTips)
 
 	// user group
 	v1Router.POST("/projects/:project_name/member_groups", v1.AddMemberGroup)

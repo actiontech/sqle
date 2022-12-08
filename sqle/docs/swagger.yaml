@@ -608,11 +608,18 @@ definitions:
   v1.DirectAuditReqV1:
     properties:
       instance_type:
-        example: mysql
+        example: MySQL
         type: string
       sql_content:
         description: 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
         example: select * from t1; select * from t2;
+        type: string
+      sql_type:
+        enum:
+        - sql
+        - mybatis
+        - ""
+        example: sql
         type: string
     type: object
   v1.DirectAuditResV1:
@@ -1051,6 +1058,10 @@ definitions:
         type: array
       user_group_name:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/v1.MemberGroupUserItem'
+        type: array
     type: object
   v1.GetMemberGroupRespV1:
     properties:
@@ -1098,6 +1109,19 @@ definitions:
       data:
         $ref: '#/definitions/v1.GetMemberRespDataV1'
         type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetMemberTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.MemberTipResV1'
+        type: array
       message:
         example: ok
         type: string
@@ -2043,6 +2067,16 @@ definitions:
       code:
         type: integer
       desc:
+        type: string
+    type: object
+  v1.MemberGroupUserItem:
+    properties:
+      name:
+        type: string
+    type: object
+  v1.MemberTipResV1:
+    properties:
+      user_name:
         type: string
     type: object
   v1.Oauth2ConfigurationReqV1:
@@ -4910,6 +4944,26 @@ paths:
       summary: 修改成员组
       tags:
       - user_group
+  /v1/projects/{project_name}/member_tips:
+    get:
+      description: get member tip list
+      operationId: getMemberTipListV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetMemberTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取成员提示列表
+      tags:
+      - user
   /v1/projects/{project_name}/members:
     get:
       description: get members
