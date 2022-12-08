@@ -60,28 +60,48 @@ func (s *Storage) SaveUserGroupAndAssociations(
 	})
 }
 
-func (s *Storage) GetUserGroupTipByProject(projectName string) ([]*UserGroup, error) {
-	if projectName == "" {
-		return s.GetAllUserGroupTip()
-	}
+var userGroupTipsQueryTpl = `SELECT
+user_groups.name AS group_name,
+GROUP_CONCAT(DISTINCT COALESCE(users.login_name,'')) AS user_names
+{{- template "body" . }}
+GROUP BY user_groups.id
+`
 
-	userGroups := []*UserGroup{}
-	err := s.db.Table("user_groups").
-		Joins("LEFT JOIN project_user_group on project_user_group.user_group_id = user_groups.id").
-		Joins("LEFT JOIN projects on project_user_group.project_id = projects.id").
-		Select("user_groups.name").
-		Where("stat=0").
-		Where("user_groups.deleted_at IS NULL").
-		Where("projects.name = ?", projectName).
-		Find(&userGroups).Error
+var userGroupTipsQueryBodyTpl = `
+{{ define "body" }}
+FROM user_groups 
+LEFT JOIN user_group_users ON user_groups.id = user_group_users.user_group_id
+LEFT JOIN users ON user_group_users.user_id = users.id AND users.deleted_at IS NULL
 
-	return userGroups, errors.New(errors.ConnectStorageError, err)
+{{- if .project_name }}
+LEFT JOIN project_user_group on project_user_group.user_group_id = user_groups.id
+LEFT JOIN projects on project_user_group.project_id = projects.id
+{{- end }}
+
+WHERE user_groups.deleted_at IS NULL
+AND user_groups.stat=0
+
+{{- if .project_name }}
+AND projects.name = :project_name
+{{- end }}
+
+{{- end }}
+
+`
+
+type UserGroupTips struct {
+	Name      string  `json:"group_name"`
+	UserNames RowList `json:"user_names"`
 }
 
-func (s *Storage) GetAllUserGroupTip() ([]*UserGroup, error) {
-	userGroups := []*UserGroup{}
-	err := s.db.Select("name").Where("stat = 0").Find(&userGroups).Error
-	return userGroups, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetUserGroupTipByProject(data map[string]interface{}) ([]*UserGroupTips, error) {
+	results := []*UserGroupTips{}
+	err := s.getListResult(userGroupTipsQueryTpl, userGroupTipsQueryBodyTpl, data, &results)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, errors.New(errors.ConnectStorageError, err)
 }
 
 var userGroupsQueryTpl = `SELECT 
