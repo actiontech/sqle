@@ -10271,6 +10271,12 @@ var doc = `{
             "properties": {
                 "user_group_name": {
                     "type": "string"
+                },
+                "user_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

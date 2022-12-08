@@ -263,7 +263,8 @@ type UserGroupTipsReqV1 struct {
 }
 
 type UserGroupTipListItem struct {
-	Name string `json:"user_group_name"`
+	Name      string   `json:"user_group_name"`
+	UserNames []string `json:"user_names"`
 }
 
 type GetUserGroupTipsResV1 struct {
@@ -287,15 +288,19 @@ func GetUserGroupTips(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	userGroupNames, err := s.GetUserGroupTipByProject(req.FilterProject)
+	data := map[string]interface{}{
+		"project_name": req.FilterProject,
+	}
+	userGroups, err := s.GetUserGroupTipByProject(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	userGroupTipsRes := make([]*UserGroupTipListItem, len(userGroupNames))
-	for i := range userGroupNames {
+	userGroupTipsRes := make([]*UserGroupTipListItem, len(userGroups))
+	for i := range userGroups {
 		userGroupTipsRes[i] = &UserGroupTipListItem{
-			Name: userGroupNames[i].Name,
+			Name:      userGroups[i].Name,
+			UserNames: userGroups[i].UserNames,
 		}
 	}
 
