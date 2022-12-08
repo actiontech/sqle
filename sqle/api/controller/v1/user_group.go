@@ -477,9 +477,14 @@ type GetMemberGroupsRespV1 struct {
 	TotalNums uint64                     `json:"total_nums"`
 }
 
+type MemberGroupUserItem struct {
+	Name string `json:"name"`
+}
+
 type GetMemberGroupRespDataV1 struct {
-	UserGroupName string          `json:"user_group_name"`
-	Roles         []BindRoleReqV1 `json:"roles"`
+	UserGroupName string                `json:"user_group_name"`
+	Roles         []BindRoleReqV1       `json:"roles"`
+	Users         []MemberGroupUserItem `json:"users"`
 }
 
 // GetMemberGroups
@@ -550,6 +555,7 @@ func GetMemberGroups(c echo.Context) error {
 		data = append(data, GetMemberGroupRespDataV1{
 			UserGroupName: group.Name,
 			Roles:         convertBindRoleToBindRoleReqV1(bindRole[group.Name]),
+			Users:         convertMemberGroupUsers(group.Users),
 		})
 	}
 
@@ -558,6 +564,14 @@ func GetMemberGroups(c echo.Context) error {
 		Data:      data,
 		TotalNums: total,
 	})
+}
+
+func convertMemberGroupUsers(users []*model.User) []MemberGroupUserItem {
+	usersRes := make([]MemberGroupUserItem, len(users))
+	for i, user := range users {
+		usersRes[i] = MemberGroupUserItem{Name: user.Name}
+	}
+	return usersRes
 }
 
 type GetMemberGroupRespV1 struct {
