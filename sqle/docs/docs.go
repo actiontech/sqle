@@ -9289,6 +9289,12 @@ var doc = `{
         "v1.RoleTipResV1": {
             "type": "object",
             "properties": {
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Operation"
+                    }
+                },
                 "role_name": {
                     "type": "string"
                 }
@@ -10271,6 +10277,12 @@ var doc = `{
             "properties": {
                 "user_group_name": {
                     "type": "string"
+                },
+                "user_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
