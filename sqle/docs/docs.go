@@ -7597,6 +7597,12 @@ var doc = `{
                 },
                 "user_group_name": {
                     "type": "string"
+                },
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MemberGroupUserItem"
+                    }
                 }
             }
         },
@@ -9070,6 +9076,14 @@ var doc = `{
                     "type": "integer"
                 },
                 "desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.MemberGroupUserItem": {
+            "type": "object",
+            "properties": {
+                "name": {
                     "type": "string"
                 }
             }

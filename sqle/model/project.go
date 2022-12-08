@@ -382,6 +382,7 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 	}
 
 	query = query.Model(&UserGroup{}).
+		Preload("Users").
 		Joins("LEFT JOIN project_user_group ON project_user_group.user_group_id = user_groups.id").
 		Joins("LEFT JOIN projects ON projects.id = project_user_group.project_id").
 		Where("user_groups.stat = 0").
@@ -411,7 +412,7 @@ func (s *Storage) GetMemberGroups(filter GetMemberGroupFilter) ([]*UserGroup, er
 	if err != nil {
 		return nil, err
 	}
-	err = query.Scan(&group).Error
+	err = query.Find(&group).Error
 	return group, errors.ConnectStorageErrWrapper(err)
 }
 

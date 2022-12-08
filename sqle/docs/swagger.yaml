@@ -1058,6 +1058,10 @@ definitions:
         type: array
       user_group_name:
         type: string
+      users:
+        items:
+          $ref: '#/definitions/v1.MemberGroupUserItem'
+        type: array
     type: object
   v1.GetMemberGroupRespV1:
     properties:
@@ -2063,6 +2067,11 @@ definitions:
       code:
         type: integer
       desc:
+        type: string
+    type: object
+  v1.MemberGroupUserItem:
+    properties:
+      name:
         type: string
     type: object
   v1.MemberTipResV1:
