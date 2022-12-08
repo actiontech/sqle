@@ -38,7 +38,8 @@ func DeleteRole(c echo.Context) error {
 }
 
 type RoleTipResV1 struct {
-	Name string `json:"role_name"`
+	Name       string       `json:"role_name"`
+	Operations []*Operation `json:"operations,omitempty"`
 }
 
 type GetRoleTipsResV1 struct {
@@ -61,9 +62,18 @@ func GetRoleTips(c echo.Context) error {
 	}
 	roleTipsRes := make([]RoleTipResV1, 0, len(roles))
 
-	for _, role := range roles {
+	for i, role := range roles {
+		ops := make([]*Operation, len(roles[i].OperationsCodes))
+		opCodes := roles[i].OperationsCodes.ForceConvertIntSlice()
+		for i := range opCodes {
+			ops[i] = &Operation{
+				Code: opCodes[i],
+				Desc: model.GetOperationCodeDesc(opCodes[i]),
+			}
+		}
 		roleTipRes := RoleTipResV1{
-			Name: role.Name,
+			Name:       role.Name,
+			Operations: ops,
 		}
 		roleTipsRes = append(roleTipsRes, roleTipRes)
 	}
