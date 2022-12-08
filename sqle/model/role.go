@@ -338,10 +338,34 @@ func (s *Storage) UpdateRoleInstances(role *Role, instances ...*Instance) error 
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllRoleTip() ([]*Role, error) {
-	roles := []*Role{}
-	err := s.db.Select("name").Find(&roles).Error
-	return roles, errors.New(errors.ConnectStorageError, err)
+var roleTipsQueryTpl = `SELECT roles.name,
+GROUP_CONCAT(DISTINCT COALESCE(role_operations.op_code,'')) AS operations_codes
+{{ template "body" . }}
+GROUP BY roles.id
+`
+
+var roleTipsQueryBodyTpl = `
+{{ define "body" }}
+FROM roles
+LEFT JOIN role_operations ON role_operations.role_id = roles.id AND role_operations.deleted_at IS NULL
+WHERE
+roles.deleted_at IS NULL
+
+{{- end }}
+`
+
+type RoleTips struct {
+	Name            string  `json:"name"`
+	OperationsCodes RowList `json:"operations_codes"`
+}
+
+func (s *Storage) GetAllRoleTip() ([]*RoleTips, error) {
+	result := []*RoleTips{}
+	err := s.getListResult(roleTipsQueryBodyTpl, roleTipsQueryTpl, nil, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAndCheckRoleExist(roleNames []string) (roles []*Role, err error) {

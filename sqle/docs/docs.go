@@ -9289,6 +9289,12 @@ var doc = `{
         "v1.RoleTipResV1": {
             "type": "object",
             "properties": {
+                "operations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Operation"
+                    }
+                },
                 "role_name": {
                     "type": "string"
                 }
