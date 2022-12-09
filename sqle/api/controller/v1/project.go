@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	errProjectNotExist = errors.New(errors.DataNotExist, fmt.Errorf("project is not exist"))
+	errProjectNotExist = func(projectName string) error {
+		return errors.New(errors.DataNotExist, fmt.Errorf("project [%v] is not exist", projectName))
+	}
 )
 
 type GetProjectReqV1 struct {
