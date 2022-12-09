@@ -319,7 +319,7 @@ outerLoop:
 				}
 			}
 
-		case driver.SQLTypeDDL:
+		default:
 			if len(txSQLs) > 0 {
 				if err = a.execSQLs(txSQLs); err != nil {
 					break outerLoop
@@ -329,10 +329,6 @@ outerLoop:
 			if err = a.execSQL(executeSQL); err != nil {
 				break outerLoop
 			}
-
-		default:
-			err = fmt.Errorf("unknown SQL type %v", nodes[0].Type)
-			break outerLoop
 		}
 	}
 
