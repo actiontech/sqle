@@ -13,7 +13,9 @@ import (
 )
 
 var (
-	errProjectNotExist = errors.New(errors.DataNotExist, fmt.Errorf("project is not exist"))
+	errProjectNotExist = func(projectName string) error {
+		return errors.New(errors.DataNotExist, fmt.Errorf("project [%v] is not exist", projectName))
+	}
 )
 
 type GetProjectReqV1 struct {
@@ -118,7 +120,7 @@ func GetProjectDetailV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project not exist"))
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	return c.JSON(http.StatusOK, GetProjectDetailResV1{

@@ -204,7 +204,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("project not exist")))
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	instance := &model.Instance{
