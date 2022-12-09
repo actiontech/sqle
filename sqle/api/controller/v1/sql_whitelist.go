@@ -47,7 +47,7 @@ func CreateAuditWhitelist(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	sqlWhitelist := &model.SqlWhitelist{
