@@ -120,7 +120,7 @@ func GetProjectDetailV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project not exist"))
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	return c.JSON(http.StatusOK, GetProjectDetailResV1{

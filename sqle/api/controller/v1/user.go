@@ -802,7 +802,7 @@ func checkMemberCanDelete(userName, projectName string) error {
 		return err
 	}
 	if !exist {
-		return errors.New(errors.DataNotExist, fmt.Errorf("project not exist"))
+		return errProjectNotExist(projectName)
 	}
 
 	if len(project.Managers) == 1 && project.Managers[0].ID == user.ID {
