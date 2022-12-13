@@ -129,49 +129,17 @@ func (n *WhenNode) Scan(start *xml.StartElement) error {
 }
 
 type OtherwiseNode struct {
-	Data *MyBatisData
+	*ChildrenNode
 }
 
 func NewOtherwiseNode() *OtherwiseNode {
-	return &OtherwiseNode{}
+	n := &OtherwiseNode{}
+	n.ChildrenNode = NewNode()
+	return n
 }
 
 func (n *OtherwiseNode) Scan(start *xml.StartElement) error {
 	return nil
-}
-
-func (n *OtherwiseNode) AddChildren(ns ...Node) error {
-	err := fmt.Errorf(`<ohterwise> data is invalid`)
-	if len(ns) != 1 {
-		return err
-	}
-	switch d := ns[0].(type) {
-	case *MyBatisData:
-		n.Data = d
-	default:
-		return err
-	}
-	return nil
-}
-
-func (n *OtherwiseNode) GetStmt(ctx *Context) (string, error) {
-	// fix: https://github.com/actiontech/sqle/issues/563
-	// the label <otherwise> may be empty.
-	// <when>
-	/*
-		<when "case 1">
-			case 1
-		</when>
-		<when "case 2">
-			case 2
-		</when>
-		<otherwise> #no default case
-		</otherwise>
-	*/
-	if n.Data != nil {
-		return n.Data.GetStmt(ctx)
-	}
-	return "", nil
 }
 
 type TrimNode struct {
