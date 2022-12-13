@@ -204,6 +204,49 @@ func TestWeChatConfigurationV1(c echo.Context) error {
 	return testWeChatConfigurationV1(c)
 }
 
+type GetDingTalkConfigurationResV1 struct {
+	controller.BaseRes
+	Data DingTalkConfigurationV1 `json:"data"`
+}
+
+type DingTalkConfigurationV1 struct {
+	AppKey                 string `json:"app_key"`
+	AppSecret              string `json:"app_secret"`
+	IsEnableDingTalkNotify bool   `json:"is_enable_ding_talk_notify"`
+}
+
+// GetDingTalkConfigurationV1
+// @Summary 获取 dingTalk 配置
+// @Description get dingTalk configuration
+// @Id getDingTalkConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDingTalkConfigurationResV1
+// @router /v1/configurations/ding_talk [get]
+func GetDingTalkConfigurationV1(c echo.Context) error {
+	return nil
+}
+
+type UpdateDingTalkConfigurationReqV1 struct {
+	AppKey                 string `json:"app_key" form:"app_key" example:"dinghkwuua1gf099mfhl" validate:"required"`
+	AppSecret              string `json:"app_secret" form:"app_secret" example:"TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn" validate:"required"`
+	IsEnableDingTalkNotify bool   `json:"is_enable_ding_talk_notify" from:"is_enable_ding_talk_notify" validate:"required" description:"是否启用钉钉通知"`
+}
+
+// UpdateDingTalkConfigurationV1
+// @Summary 添加或更新 DingTalk 配置
+// @Description update DingTalk configuration
+// @Accept json
+// @Id updateDingTalkConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param instance body v1.UpdateDingTalkConfigurationReqV1 true "update DingTalk configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/ding_talk [patch]
+func UpdateDingTalkConfigurationV1(c echo.Context) error {
+	return nil
+}
+
 type UpdateWeChatConfigurationReqV1 struct {
 	EnableWeChatNotify *bool   `json:"enable_wechat_notify" from:"enable_wechat_notify" description:"是否启用微信通知"`
 	CorpID             *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
