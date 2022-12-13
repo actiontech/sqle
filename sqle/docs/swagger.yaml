@@ -2936,6 +2936,8 @@ definitions:
         type: array
       desc:
         type: string
+      execute_by_authorized:
+        type: boolean
       type:
         enum:
         - sql_review
@@ -2952,6 +2954,8 @@ definitions:
         type: array
       desc:
         type: string
+      execute_by_authorized:
+        type: boolean
       number:
         type: integer
       type:

@@ -48,6 +48,7 @@ type WorkFlowStepTemplateResV1 struct {
 	Typ                  string   `json:"type"`
 	Desc                 string   `json:"desc,omitempty"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
 	Users                []string `json:"assignee_user_name_list"`
 }
 
@@ -140,6 +141,7 @@ type WorkFlowStepTemplateReqV1 struct {
 	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
 	Users                []string `json:"assignee_user_name_list" form:"assignee_user_name_list"`
 }
 
