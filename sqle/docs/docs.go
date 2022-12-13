@@ -10383,6 +10383,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "execute_by_authorized": {
+                    "type": "boolean"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -10406,6 +10409,9 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "execute_by_authorized": {
+                    "type": "boolean"
                 },
                 "number": {
                     "type": "integer"
