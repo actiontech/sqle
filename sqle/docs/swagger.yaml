@@ -2120,6 +2120,31 @@ definitions:
       op_desc:
         type: string
     type: object
+  v1.ParseProjectRuleTemplateFileResDataV1:
+    properties:
+      db_type:
+        type: string
+      desc:
+        type: string
+      name:
+        type: string
+      rule_list:
+        items:
+          $ref: '#/definitions/v1.RuleResV1'
+        type: array
+    type: object
+  v1.ParseProjectRuleTemplateFileResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ParseProjectRuleTemplateFileResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -2936,6 +2961,8 @@ definitions:
         type: array
       desc:
         type: string
+      execute_by_authorized:
+        type: boolean
       type:
         enum:
         - sql_review
@@ -2952,6 +2979,8 @@ definitions:
         type: array
       desc:
         type: string
+      execute_by_authorized:
+        type: boolean
       number:
         type: integer
       type:
@@ -5311,6 +5340,31 @@ paths:
       summary: 克隆项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/rule_templates/{rule_template_name}/export:
+    get:
+      description: export rule template in a project
+      operationId: exportProjectRuleTemplateV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: sqle rule template file
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出项目规则模板
+      tags:
+      - rule_template
   /v1/projects/{project_name}/statistics:
     get:
       description: get project statistics
@@ -6132,6 +6186,48 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 克隆全局规则模板
+      tags:
+      - rule_template
+  /v1/rule_templates/{rule_template_name}/export:
+    get:
+      description: export rule template
+      operationId: exportRuleTemplateV1
+      parameters:
+      - description: rule template name
+        in: path
+        name: rule_template_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: sqle rule template file
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出全局规则模板
+      tags:
+      - rule_template
+  /v1/rule_templates/parse:
+    post:
+      consumes:
+      - multipart/form-data
+      description: parse rule template
+      operationId: importProjectRuleTemplateV1
+      parameters:
+      - description: SQLE rule template file
+        in: formData
+        name: rule_template_file
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ParseProjectRuleTemplateFileResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 解析规则模板文件
       tags:
       - rule_template
   /v1/rules:

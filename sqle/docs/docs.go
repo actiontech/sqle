@@ -3311,6 +3311,45 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/rule_templates/{rule_template_name}/export": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export rule template in a project",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "导出项目规则模板",
+                "operationId": "exportProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sqle rule template file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistics": {
             "get": {
                 "security": [
@@ -4441,6 +4480,41 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_templates/parse": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "parse rule template",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "解析规则模板文件",
+                "operationId": "importProjectRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "SQLE rule template file",
+                        "name": "rule_template_file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ParseProjectRuleTemplateFileResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rule_templates/{rule_template_name}/": {
             "get": {
                 "security": [
@@ -4581,6 +4655,38 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/rule_templates/{rule_template_name}/export": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "导出全局规则模板",
+                "operationId": "exportRuleTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sqle rule template file",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -9159,6 +9265,43 @@ var doc = `{
                 }
             }
         },
+        "v1.ParseProjectRuleTemplateFileResDataV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "rule_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleResV1"
+                    }
+                }
+            }
+        },
+        "v1.ParseProjectRuleTemplateFileResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ParseProjectRuleTemplateFileResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.PartialSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -10383,6 +10526,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "execute_by_authorized": {
+                    "type": "boolean"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -10406,6 +10552,9 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "execute_by_authorized": {
+                    "type": "boolean"
                 },
                 "number": {
                     "type": "integer"

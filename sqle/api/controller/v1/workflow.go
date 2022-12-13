@@ -48,6 +48,7 @@ type WorkFlowStepTemplateResV1 struct {
 	Typ                  string   `json:"type"`
 	Desc                 string   `json:"desc,omitempty"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
 	Users                []string `json:"assignee_user_name_list"`
 }
 
@@ -74,7 +75,7 @@ func GetWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
@@ -140,6 +141,7 @@ type WorkFlowStepTemplateReqV1 struct {
 	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
+	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
 	Users                []string `json:"assignee_user_name_list" form:"assignee_user_name_list"`
 }
 
@@ -201,7 +203,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	userName := controller.GetUserName(c)
@@ -344,7 +346,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	userName := controller.GetUserName(c)
@@ -446,7 +448,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	workflowName := c.Param("workflow_name")
@@ -533,7 +535,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	workflowName := c.Param("workflow_name")
@@ -949,7 +951,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1230,7 +1232,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist)
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
 	}
 
 	user, err := controller.GetCurrentUser(c)
