@@ -228,9 +228,9 @@ func GetDingTalkConfigurationV1(c echo.Context) error {
 }
 
 type UpdateDingTalkConfigurationReqV1 struct {
-	AppKey                 string `json:"app_key" form:"app_key" example:"dinghkwuua1gf099mfhl" validate:"required"`
-	AppSecret              string `json:"app_secret" form:"app_secret" example:"TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn" validate:"required"`
-	IsEnableDingTalkNotify bool   `json:"is_enable_ding_talk_notify" from:"is_enable_ding_talk_notify" validate:"required" description:"是否启用钉钉通知"`
+	AppKey                 *string `json:"app_key" form:"app_key" example:"dinghkwuua1gf099mfhl" validate:"required"`
+	AppSecret              *string `json:"app_secret" form:"app_secret" example:"TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn" validate:"required"`
+	IsEnableDingTalkNotify *bool   `json:"is_enable_ding_talk_notify" from:"is_enable_ding_talk_notify" validate:"required" description:"是否启用钉钉通知"`
 }
 
 // UpdateDingTalkConfigurationV1
