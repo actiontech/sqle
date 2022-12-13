@@ -574,6 +574,9 @@ definitions:
         items:
           type: integer
         type: array
+      phone:
+        example: "18962136666"
+        type: string
       user_group_name_list:
         items:
           type: string
@@ -604,6 +607,15 @@ definitions:
       workflow_statistics:
         $ref: '#/definitions/v1.WorkflowStatisticsResV1'
         type: object
+    type: object
+  v1.DingTalkConfigurationV1:
+    properties:
+      app_key:
+        type: string
+      app_secret:
+        type: string
+      is_enable_ding_talk_notify:
+        type: boolean
     type: object
   v1.DirectAuditReqV1:
     properties:
@@ -870,6 +882,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.DashboardResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetDingTalkConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.DingTalkConfigurationV1'
         type: object
       message:
         example: ok
@@ -2658,6 +2682,21 @@ definitions:
         example: UserID
         type: string
     type: object
+  v1.UpdateDingTalkConfigurationReqV1:
+    properties:
+      app_key:
+        example: dinghkwuua1gf099mfhl
+        type: string
+      app_secret:
+        example: TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn
+        type: string
+      is_enable_ding_talk_notify:
+        type: boolean
+    required:
+    - app_key
+    - app_secret
+    - is_enable_ding_talk_notify
+    type: object
   v1.UpdateInstanceReqV1:
     properties:
       additional_params:
@@ -2786,6 +2825,8 @@ definitions:
         items:
           type: integer
         type: array
+      phone:
+        type: string
       user_group_name_list:
         items:
           type: string
@@ -2866,6 +2907,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
+      phone:
+        type: string
       user_group_name_list:
         items:
           type: string
@@ -2924,6 +2967,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.ManagementPermissionResV1'
         type: array
+      phone:
+        type: string
       user_group_name_list:
         items:
           type: string
@@ -3282,6 +3327,42 @@ paths:
       summary: 获取 sqle 基本信息
       tags:
       - global
+  /v1/configurations/ding_talk:
+    get:
+      description: get dingTalk configuration
+      operationId: getDingTalkConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDingTalkConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取 dingTalk 配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update DingTalk configuration
+      operationId: updateDingTalkConfigurationV1
+      parameters:
+      - description: update DingTalk configuration req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateDingTalkConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新 DingTalk 配置
+      tags:
+      - configuration
   /v1/configurations/drivers:
     get:
       description: get drivers
