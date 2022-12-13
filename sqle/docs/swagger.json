@@ -10367,6 +10367,9 @@
                 "desc": {
                     "type": "string"
                 },
+                "execute_by_authorized": {
+                    "type": "boolean"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
@@ -10390,6 +10393,9 @@
                 },
                 "desc": {
                     "type": "string"
+                },
+                "execute_by_authorized": {
+                    "type": "boolean"
                 },
                 "number": {
                     "type": "integer"
