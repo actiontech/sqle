@@ -100,6 +100,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.POST("/rule_templates/:rule_template_name/clone", v1.CloneRuleTemplate, AdminUserAllowed())
 		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
+		v1Router.GET("/rule_templates/:rule_template_name/export", v1.ExportRuleTemplateFile, AdminUserAllowed())
 
 		// configurations
 		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
@@ -210,6 +211,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/rule_templates", v1.GetProjectRuleTemplates)
 	v1Router.POST("/projects/:project_name/rule_templates/:rule_template_name/clone", v1.CloneProjectRuleTemplate)
 	v1Router.GET("/projects/:project_name/rule_template_tips", v1.GetProjectRuleTemplateTips)
+	v1Router.POST("/projects/rule_templates/parse", v1.ParseProjectRuleTemplateFile)
+	v1Router.GET("/projects/:project_name/rule_templates/:rule_template_name/export", v1.ExportProjectRuleTemplateFile)
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
