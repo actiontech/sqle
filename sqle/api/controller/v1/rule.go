@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"mime"
 	"net/http"
@@ -1183,7 +1184,72 @@ type ParseProjectRuleTemplateFileResDataV1 struct {
 // @Success 200 {object} v1.ParseProjectRuleTemplateFileResV1
 // @router /v1/rule_templates/parse [post]
 func ParseProjectRuleTemplateFile(c echo.Context) error {
-	return nil
+	// 读取+解析文件
+	file, exist, err := controller.ReadFileContent(c, "rule_template_file")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("please upload rule template file")))
+	}
+
+	template := &model.RuleTemplate{}
+	err = json.Unmarshal([]byte(file), template)
+	if err != nil {
+		log.NewEntry().WithField("api", "/v1/rule_templates/parse").Errorf("parse rule template file failed: %v", err)
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("the file format is incorrect. Please check the uploaded file"))
+	}
+
+	// 补充文件中缺失的部分信息(规则说明等描述信息)
+	ruleNames := []string{}
+	for _, rule := range template.RuleList {
+		ruleNames = append(ruleNames, rule.RuleName)
+	}
+
+	rules, err := model.GetStorage().GetRulesByNames(ruleNames, template.DBType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ruleCache := map[string /*rule name*/ ]model.Rule{}
+	for _, rule := range rules {
+		ruleCache[rule.Name] = rule
+	}
+
+	// 生成响应
+	resp := ParseProjectRuleTemplateFileResDataV1{
+		Name:     template.Name,
+		Desc:     template.Desc,
+		DBType:   template.DBType,
+		RuleList: []RuleResV1{},
+	}
+	for _, rule := range template.RuleList {
+		r := RuleResV1{
+			Name:       rule.RuleName,
+			Desc:       ruleCache[rule.RuleName].Desc,
+			Annotation: ruleCache[rule.RuleName].Annotation,
+			Level:      rule.RuleLevel,
+			Typ:        ruleCache[rule.RuleName].Typ,
+			DBType:     rule.RuleDBType,
+			Params:     []RuleParamResV1{},
+		}
+
+		for _, param := range rule.RuleParams {
+			r.Params = append(r.Params, RuleParamResV1{
+				Key:   param.Key,
+				Value: param.Value,
+				Desc:  param.Desc,
+				Type:  string(param.Type),
+			})
+		}
+
+		resp.RuleList = append(resp.RuleList, r)
+	}
+
+	return c.JSON(http.StatusOK, ParseProjectRuleTemplateFileResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resp,
+	})
 }
 
 // ExportRuleTemplateFile
