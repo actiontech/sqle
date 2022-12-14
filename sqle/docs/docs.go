@@ -97,6 +97,64 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/ding_talk": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get dingTalk configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取 dingTalk 配置",
+                "operationId": "getDingTalkConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDingTalkConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update DingTalk configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新 DingTalk 配置",
+                "operationId": "updateDingTalkConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update DingTalk configuration req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateDingTalkConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/drivers": {
             "get": {
                 "security": [
@@ -7003,6 +7061,10 @@ var doc = `{
                         "type": "integer"
                     }
                 },
+                "phone": {
+                    "type": "string",
+                    "example": "18962136666"
+                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -7046,6 +7108,20 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
+        "v1.DingTalkConfigurationV1": {
+            "type": "object",
+            "properties": {
+                "app_key": {
+                    "type": "string"
+                },
+                "app_secret": {
+                    "type": "string"
+                },
+                "is_enable_ding_talk_notify": {
+                    "type": "boolean"
                 }
             }
         },
@@ -7434,6 +7510,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DashboardResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetDingTalkConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DingTalkConfigurationV1"
                 },
                 "message": {
                     "type": "string",
@@ -10069,6 +10162,25 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateDingTalkConfigurationReqV1": {
+            "type": "object",
+            "required": [
+                "app_key",
+                "app_secret",
+                "is_enable_ding_talk_notify"
+            ],
+            "properties": {
+                "app_key": {
+                    "type": "string"
+                },
+                "app_secret": {
+                    "type": "string"
+                },
+                "is_enable_ding_talk_notify": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v1.UpdateInstanceReqV1": {
             "type": "object",
             "properties": {
@@ -10260,6 +10372,9 @@ var doc = `{
                         "type": "integer"
                     }
                 },
+                "phone": {
+                    "type": "string"
+                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -10381,6 +10496,9 @@ var doc = `{
                         "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
                 },
+                "phone": {
+                    "type": "string"
+                },
                 "user_group_name_list": {
                     "type": "array",
                     "items": {
@@ -10468,6 +10586,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.ManagementPermissionResV1"
                     }
+                },
+                "phone": {
+                    "type": "string"
                 },
                 "user_group_name_list": {
                     "type": "array",

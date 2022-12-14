@@ -17,6 +17,7 @@ type CreateUserReqV1 struct {
 	Name                      string   `json:"user_name" form:"user_name" example:"test" valid:"required,name"`
 	Password                  string   `json:"user_password" form:"user_name" example:"123456" valid:"required"`
 	Email                     string   `json:"email" form:"email" example:"test@email.com" valid:"omitempty,email"`
+	Phone                     string   `json:"phone" form:"phone" example:"18962136666" valid:"omitempty"`
 	WeChatID                  string   `json:"wechat_id" example:"UserID"`
 	UserGroups                []string `json:"user_group_name_list" form:"user_group_name_list"`
 	ManagementPermissionCodes []uint   `json:"management_permission_code_list" form:"management_permission_code_list"`
@@ -70,6 +71,7 @@ func CreateUser(c echo.Context) error {
 
 type UpdateUserReqV1 struct {
 	Email                     *string   `json:"email" valid:"omitempty,len=0|email" form:"email"`
+	Phone                     *string   `json:"phone" valid:"omitempty" form:"phone"`
 	WeChatID                  *string   `json:"wechat_id" example:"UserID"`
 	IsDisabled                *bool     `json:"is_disabled,omitempty" form:"is_disabled"`
 	UserGroups                *[]string `json:"user_group_name_list" form:"user_group_name_list"`
@@ -256,6 +258,7 @@ type GetUserDetailResV1 struct {
 type UserDetailResV1 struct {
 	Name                     string                       `json:"user_name"`
 	Email                    string                       `json:"email"`
+	Phone                    string                       `json:"phone"`
 	IsAdmin                  bool                         `json:"is_admin"`
 	WeChatID                 string                       `json:"wechat_id"`
 	LoginType                string                       `json:"login_type"`
@@ -465,6 +468,7 @@ type GetUsersResV1 struct {
 
 type UserResV1 struct {
 	Name                     string                       `json:"user_name"`
+	Phone                    string                       `json:"phone"`
 	Email                    string                       `json:"email"`
 	WeChatID                 string                       `json:"wechat_id"`
 	LoginType                string                       `json:"login_type"`
