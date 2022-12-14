@@ -2685,10 +2685,8 @@ definitions:
   v1.UpdateDingTalkConfigurationReqV1:
     properties:
       app_key:
-        example: dinghkwuua1gf099mfhl
         type: string
       app_secret:
-        example: TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn
         type: string
       is_enable_ding_talk_notify:
         type: boolean
