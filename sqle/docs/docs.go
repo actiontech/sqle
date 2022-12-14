@@ -10171,12 +10171,10 @@ var doc = `{
             ],
             "properties": {
                 "app_key": {
-                    "type": "string",
-                    "example": "dinghkwuua1gf099mfhl"
+                    "type": "string"
                 },
                 "app_secret": {
-                    "type": "string",
-                    "example": "TUg9EDq1bAQ9jIlKcVsmtB6VR_a-FHB9zHTcWzDjypTF1FtOupHm_5xPcKJK0hgn"
+                    "type": "string"
                 },
                 "is_enable_ding_talk_notify": {
                     "type": "boolean"
