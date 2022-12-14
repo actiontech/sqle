@@ -1297,9 +1297,42 @@ func ExportRuleTemplateFile(c echo.Context) error {
 // @Success 200 file 1 "sqle rule template file"
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/export [get]
 func ExportProjectRuleTemplateFile(c echo.Context) error {
+	// 权限检查
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取规则模板详情
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+	}
+	templateName := c.Param("rule_template_name")
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{project.ID}, templateName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+	}
+
+	// 转成json并写入缓存, 出于第三方对接或未来的SQLE可能用上的原因, 暂不移除当前SQLE认为的无用数据
+	bt, err := json.Marshal(template)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	buff := &bytes.Buffer{}
-	buff.WriteString("\xEF\xBB\xBF测试一下") // 写入UTF-8 BOM
+	buff.Write(bt)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": "test"}))
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", templateName)}))
+	return c.Blob(http.StatusOK, "text/plain", buff.Bytes())
 }
