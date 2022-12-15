@@ -496,6 +496,9 @@ func RejectWorkflow(c echo.Context) error {
 		if inst.IsSQLExecuted {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is executed"))
 		}
+		if inst.ScheduledAt != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is scheduled to be executed"))
+		}
 	}
 
 	currentStep := workflow.CurrentStep()
