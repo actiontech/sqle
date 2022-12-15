@@ -174,6 +174,7 @@ WHERE users.stat = 0
 AND users.deleted_at IS NULL
 AND users.login_name = ?
 AND projects.name = ?
+AND projects.deleted_at IS NULL
 ) AS exist
 `
 	var exist struct {
@@ -194,6 +195,7 @@ WHERE user_groups.stat = 0
 AND user_groups.deleted_at IS NULL
 AND user_groups.name = ?
 AND projects.name = ?
+AND projects.deleted_at IS NULL
 ) AS exist
 `
 	var exist struct {
@@ -387,6 +389,7 @@ func generateMemberGroupQueryCriteria(query *gorm.DB, filter GetMemberGroupFilte
 		Joins("LEFT JOIN projects ON projects.id = project_user_group.project_id").
 		Where("user_groups.stat = 0").
 		Where("user_groups.deleted_at IS NULL").
+		Where("projects.deleted_at IS NULL").
 		Where("projects.name = ?", *filter.FilterProjectName).
 		Group("user_groups.id")
 
