@@ -83,6 +83,7 @@ AND user_groups.stat=0
 
 {{- if .project_name }}
 AND projects.name = :project_name
+AND projects.deleted_at IS NULL
 {{- end }}
 
 {{- end }}

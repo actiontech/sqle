@@ -113,6 +113,7 @@ JOIN project_member_roles ON project_member_roles.user_id = users.id AND project
 
 WHERE users.stat = 0
 AND users.deleted_at IS NULL
+AND projects.deleted_at IS NULL
 
 {{ if .filter_instance_name }}
 AND instances.deleted_at IS NULL
