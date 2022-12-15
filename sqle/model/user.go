@@ -150,8 +150,12 @@ LEFT JOIN projects as p on project_user_group.project_id = p.id
 WHERE users.stat = 0
 AND( 
 	projects.name = ?
+	AND
+	projects.deleted_at IS NULL
 OR
 	p.name = ?
+	AND
+	p.deleted_at IS NULL
 )
 `
 
@@ -304,6 +308,7 @@ func (s *Storage) GetMemberTips(projectName string) ([]*User, error) {
 	err := s.db.Model(&User{}).Select("login_name").
 		Joins("LEFT JOIN project_user ON project_user.user_id = users.id").
 		Joins("LEFT JOIN projects ON projects.id = project_user.project_id").
+		Where("projects.deleted_at IS NULL").
 		Where("projects.name = ?", projectName).
 		Find(&users).Error
 	return users, errors.ConnectStorageErrWrapper(err)
