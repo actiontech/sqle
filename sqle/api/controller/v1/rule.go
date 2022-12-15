@@ -1190,17 +1190,81 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("please upload rule template file")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("the file has not been uploaded or the key bound to the file is not 'rule_template_file'")))
 	}
 
-	template := &model.RuleTemplate{}
-	err = json.Unmarshal([]byte(file), template)
+	resp := ParseProjectRuleTemplateFileResDataV1{}
+	err = json.Unmarshal([]byte(file), &resp)
 	if err != nil {
-		log.NewEntry().WithField("api", "/v1/rule_templates/parse").Errorf("parse rule template file failed: %v", err)
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("the file format is incorrect. Please check the uploaded file"))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("the file format is incorrect. Please check the uploaded file, error: %v", err))
 	}
 
-	// 补充文件中缺失的部分信息(规则说明等描述信息)
+	return c.JSON(http.StatusOK, ParseProjectRuleTemplateFileResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resp,
+	})
+}
+
+// ExportRuleTemplateFile
+// @Summary 导出全局规则模板
+// @Description export rule template
+// @Id exportRuleTemplateV1
+// @Tags rule_template
+// @Param rule_template_name path string true "rule template name"
+// @Security ApiKeyAuth
+// @Success 200 file 1 "sqle rule template file"
+// @router /v1/rule_templates/{rule_template_name}/export [get]
+func ExportRuleTemplateFile(c echo.Context) error {
+	templateName := c.Param("rule_template_name")
+	return exportRuleTemplateFile(c, model.ProjectIdForGlobalRuleTemplate, templateName)
+}
+
+// ExportProjectRuleTemplateFile
+// @Summary 导出项目规则模板
+// @Description export rule template in a project
+// @Id exportProjectRuleTemplateV1
+// @Tags rule_template
+// @Param project_name path string true "project name"
+// @Param rule_template_name path string true "rule template name"
+// @Security ApiKeyAuth
+// @Success 200 file 1 "sqle rule template file"
+// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/export [get]
+func ExportProjectRuleTemplateFile(c echo.Context) error {
+	// 权限检查
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取模板内容
+	templateName := c.Param("rule_template_name")
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+	}
+
+	return exportRuleTemplateFile(c, project.ID, templateName)
+}
+
+func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName string) error {
+	// 获取规则模板详情
+	s := model.GetStorage()
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{projectID}, ruleTemplateName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+	}
+
+	// 补充缺失的信息(规则说明等描述信息)
 	ruleNames := []string{}
 	for _, rule := range template.RuleList {
 		ruleNames = append(ruleNames, rule.RuleName)
@@ -1211,12 +1275,11 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleCache := map[string /*rule name*/ ]model.Rule{}
+	ruleCache := map[string] /*rule name*/ model.Rule{}
 	for _, rule := range rules {
 		ruleCache[rule.Name] = rule
 	}
 
-	// 生成响应
 	resp := ParseProjectRuleTemplateFileResDataV1{
 		Name:     template.Name,
 		Desc:     template.Desc,
@@ -1246,35 +1309,7 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 		resp.RuleList = append(resp.RuleList, r)
 	}
 
-	return c.JSON(http.StatusOK, ParseProjectRuleTemplateFileResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    resp,
-	})
-}
-
-// ExportRuleTemplateFile
-// @Summary 导出全局规则模板
-// @Description export rule template
-// @Id exportRuleTemplateV1
-// @Tags rule_template
-// @Param rule_template_name path string true "rule template name"
-// @Security ApiKeyAuth
-// @Success 200 file 1 "sqle rule template file"
-// @router /v1/rule_templates/{rule_template_name}/export [get]
-func ExportRuleTemplateFile(c echo.Context) error {
-	// 获取规则模板详情
-	s := model.GetStorage()
-	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{model.ProjectIdForGlobalRuleTemplate}, templateName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
-	}
-
-	// 转成json并写入缓存, 出于第三方对接或未来的SQLE可能用上的原因, 暂不移除当前SQLE认为的无用数据
-	bt, err := json.Marshal(template)
+	bt, err := json.Marshal(resp)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1282,57 +1317,6 @@ func ExportRuleTemplateFile(c echo.Context) error {
 	buff := &bytes.Buffer{}
 	buff.Write(bt)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", templateName)}))
-	return c.Blob(http.StatusOK, "text/plain", buff.Bytes())
-}
-
-// ExportProjectRuleTemplateFile
-// @Summary 导出项目规则模板
-// @Description export rule template in a project
-// @Id exportProjectRuleTemplateV1
-// @Tags rule_template
-// @Param project_name path string true "project name"
-// @Param rule_template_name path string true "rule template name"
-// @Security ApiKeyAuth
-// @Success 200 file 1 "sqle rule template file"
-// @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/export [get]
-func ExportProjectRuleTemplateFile(c echo.Context) error {
-	// 权限检查
-	projectName := c.Param("project_name")
-
-	userName := controller.GetUserName(c)
-	err := CheckIsProjectMember(userName, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	// 获取规则模板详情
-	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
-	}
-	templateName := c.Param("rule_template_name")
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{project.ID}, templateName)
-	if err != nil {
-		return c.JSON(200, controller.NewBaseReq(err))
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
-	}
-
-	// 转成json并写入缓存, 出于第三方对接或未来的SQLE可能用上的原因, 暂不移除当前SQLE认为的无用数据
-	bt, err := json.Marshal(template)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	buff := &bytes.Buffer{}
-	buff.Write(bt)
-	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", templateName)}))
+		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", ruleTemplateName)}))
 	return c.Blob(http.StatusOK, "text/plain", buff.Bytes())
 }
