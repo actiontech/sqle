@@ -99,6 +99,25 @@ func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, er
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetRuleTemplateNamesByProjectName(projectName string) ([]string, error) {
+	records := []*RuleTemplate{}
+	err := s.db.Model(&RuleTemplate{}).
+		Select("rule_templates.name").
+		Joins("LEFT JOIN projects ON projects.id = rule_templates.project_id").
+		Where("projects.name = ?", projectName).
+		Find(&records).
+		Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	templateNames := make([]string, len(records))
+	for i, record := range records {
+		templateNames[i] = record.Name
+	}
+	return templateNames, nil
+}
+
 func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
