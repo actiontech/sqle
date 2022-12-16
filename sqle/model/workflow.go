@@ -33,6 +33,7 @@ type WorkflowStepTemplate struct {
 	Typ                  string `gorm:"column:type; not null"`
 	Desc                 string
 	ApprovedByAuthorized sql.NullBool `gorm:"column:approved_by_authorized"`
+	ExecuteByAuthorized  sql.NullBool `gorm:"column:execute_by_authorized"`
 
 	Users []*User `gorm:"many2many:workflow_step_template_user"`
 }
@@ -86,8 +87,8 @@ func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId in
 	}
 	template.ID = uint(templateId)
 	for _, step := range template.Steps {
-		result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized) values (?,?,?,?,?)",
-			step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized)
+		result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?)",
+			step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
 		if err != nil {
 			return 0, err
 		}
@@ -115,8 +116,8 @@ func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*Workflow
 			return err
 		}
 		for _, step := range steps {
-			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized) values (?,?,?,?,?)",
-				step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized)
+			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?)",
+				step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
 			if err != nil {
 				return err
 			}
@@ -224,9 +225,10 @@ type WorkflowStep struct {
 	OperationUser *User                 `gorm:"foreignkey:OperationUserId"`
 }
 
-func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User) []*WorkflowStep {
+func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User, allExecutor []*User) []*WorkflowStep {
 	steps := make([]*WorkflowStep, 0, len(stepsTemplate))
-	for _, st := range stepsTemplate {
+	for i, st := range stepsTemplate {
+
 		step := &WorkflowStep{
 			WorkflowStepTemplateId: st.ID,
 			Assignees:              st.Users,
@@ -234,6 +236,10 @@ func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allIn
 		if st.ApprovedByAuthorized.Bool {
 			step.Assignees = allInspector
 		}
+		if i == len(stepsTemplate)-1 && st.ExecuteByAuthorized.Bool {
+			step.Assignees = allExecutor
+		}
+
 		steps = append(steps, step)
 	}
 	return steps
@@ -369,20 +375,42 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 	}
 
 	allUsers := make([][]*User, len(tasks))
+	allExecutor := make([][]*User, len(tasks))
 	for i, task := range tasks {
 		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
 		if err != nil {
 			return err
 		}
 		allUsers[i] = users
+
+		executor, err := s.GetCanExecuteWorkflowUsers(task.Instance)
+		if err != nil {
+			return err
+		}
+		allExecutor[i] = executor
 	}
 
 	canOptUsers := allUsers[0]
+	canExecUsers := allExecutor[0]
 	for i := 1; i < len(allUsers); i++ {
 		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
+		canExecUsers = getOverlapOfUsers(canExecUsers, allExecutor[i])
 	}
 
-	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers)
+	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
+		adminUser, _, err := s.GetUserByName(DefaultAdminUser)
+		if err != nil {
+			return err
+		}
+		if len(canOptUsers) == 0 {
+			canOptUsers = append(canOptUsers, adminUser)
+		}
+		if len(canExecUsers) == 0 {
+			canExecUsers = append(canExecUsers, adminUser)
+		}
+	}
+
+	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
 
 	tx := s.db.Begin()
 
