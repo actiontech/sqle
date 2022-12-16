@@ -170,3 +170,12 @@ func IsUpperAndLowerLetterMixed(s string) bool {
 
 	return false
 }
+
+func IsStringExistsInStrings(s string, ss []string) bool {
+	for _, a := range ss {
+		if a == s {
+			return true
+		}
+	}
+	return false
+}

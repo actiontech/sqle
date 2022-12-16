@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
+
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -24,6 +26,7 @@ import (
 
 const (
 	apiV1 = "v1"
+	apiV2 = "v2"
 )
 
 // @title Sqle API Docs
@@ -72,6 +75,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
+	v2Router := e.Group(apiV2)
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), middleware.JWT(utils.JWTSecretKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.LicenseAdapter())
 
 	// v1 admin api, just admin user can access.
 	{
@@ -186,6 +191,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// instance
 	v1Router.GET("/projects/:project_name/instances", v1.GetInstances)
+	v2Router.GET("/projects/:project_name/instances", v2.GetInstances)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/", v1.GetInstance)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
@@ -262,6 +268,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// project - audit plan
 	v1Router.POST("/projects/:project_name/audit_plans", v1.CreateAuditPlan)
 	v1Router.GET("/projects/:project_name/audit_plans", v1.GetAuditPlans)
+	v2Router.GET("/projects/:project_name/audit_plans", v2.GetAuditPlans)
 	v1Router.DELETE("/projects/:project_name/audit_plans/:audit_plan_name/", v1.DeleteAuditPlan)
 	v1Router.PATCH("/projects/:project_name/audit_plans/:audit_plan_name/", v1.UpdateAuditPlan)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/", v1.GetAuditPlan)
