@@ -1318,5 +1318,5 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 	buff.Write(bt)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", ruleTemplateName)}))
-	return c.Blob(http.StatusOK, "text/plain", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buff.Bytes())
 }
