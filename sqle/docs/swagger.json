@@ -6199,6 +6199,86 @@
                     }
                 }
             }
+        },
+        "/v2/projects/{project_name}/instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance info list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息列表",
+                "operationId": "getInstanceListV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db host",
+                        "name": "filter_db_host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db port",
+                        "name": "filter_db_port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db user",
+                        "name": "filter_db_user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter rule template name",
+                        "name": "filter_rule_template_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetInstancesResV2"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -6345,9 +6425,8 @@
                     "type": "string",
                     "example": "it's a JWT Token for scanner"
                 },
-                "rule_template_name": {
-                    "type": "string",
-                    "example": "default_MySQL"
+                "rule_template": {
+                    "type": "RuleTemplate"
                 }
             }
         },
@@ -11028,6 +11107,88 @@
                     }
                 },
                 "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.GetInstancesResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.InstanceResV2": {
+            "type": "object",
+            "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
+                    }
+                },
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a instance"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
+                },
+                "rule_template": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.RuleTemplate"
+                },
+                "sql_query_config": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryConfigResV1"
+                }
+            }
+        },
+        "v2.RuleTemplate": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "project_name": {
+                    "description": "ProjectName为空时表示该规则模板为全局规则模板",
                     "type": "string"
                 }
             }
