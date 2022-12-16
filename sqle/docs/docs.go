@@ -6215,6 +6215,154 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/v2/projects/{project_name}/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan info list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务信息列表",
+                "operationId": "getAuditPlansV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan db type",
+                        "name": "filter_audit_plan_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan type",
+                        "name": "filter_audit_plan_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan instance name",
+                        "name": "filter_audit_plan_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlansResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance info list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息列表",
+                "operationId": "getInstanceListV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db host",
+                        "name": "filter_db_host",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db port",
+                        "name": "filter_db_port",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db user",
+                        "name": "filter_db_user",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter rule template name",
+                        "name": "filter_rule_template_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetInstancesResV2"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -11044,6 +11192,146 @@ var doc = `{
                     }
                 },
                 "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.AuditPlanResV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_cron": {
+                    "type": "string",
+                    "example": "0 */2 * * *"
+                },
+                "audit_plan_db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "audit_plan_instance_database": {
+                    "type": "string",
+                    "example": "app1"
+                },
+                "audit_plan_instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
+                },
+                "audit_plan_meta": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanMetaV1"
+                },
+                "audit_plan_name": {
+                    "type": "string",
+                    "example": "audit_for_java_app1"
+                },
+                "audit_plan_token": {
+                    "type": "string",
+                    "example": "it's a JWT Token for scanner"
+                },
+                "rule_template": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.RuleTemplateV2"
+                }
+            }
+        },
+        "v2.GetAuditPlansResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.GetInstancesResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.InstanceResV2": {
+            "type": "object",
+            "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
+                    }
+                },
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a instance"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeResV1"
+                    }
+                },
+                "rule_template": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.RuleTemplateV2"
+                },
+                "sql_query_config": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryConfigResV1"
+                }
+            }
+        },
+        "v2.RuleTemplateV2": {
+            "type": "object",
+            "properties": {
+                "is_global_rule_template": {
+                    "type": "boolean"
+                },
+                "name": {
                     "type": "string"
                 }
             }

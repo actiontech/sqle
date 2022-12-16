@@ -884,7 +884,7 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 			CurrentStepAssigneeUser:  taskDetail.CurrentStepAssigneeUsers,
 			TaskPassRate:             taskDetail.TaskPassRate,
 			TaskScore:                taskDetail.TaskScore,
-			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
+			InstanceMaintenanceTimes: ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
 			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
 	}

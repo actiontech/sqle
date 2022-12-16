@@ -55,7 +55,7 @@ type AuditPlanParamResV1 struct {
 	Type  string `json:"type" enums:"string,int,bool"`
 }
 
-func convertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
+func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 	res := AuditPlanMetaV1{
 		Type:         meta.Type,
 		Desc:         meta.Desc,
@@ -96,7 +96,7 @@ func GetAuditPlanMetas(c echo.Context) error {
 		if req.FilterInstanceType == nil ||
 			meta.InstanceType == auditplan.InstanceTypeAll ||
 			meta.InstanceType == *req.FilterInstanceType {
-			metas = append(metas, convertAuditPlanMetaToRes(meta))
+			metas = append(metas, ConvertAuditPlanMetaToRes(meta))
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{
@@ -580,7 +580,7 @@ func GetAuditPlans(c echo.Context) error {
 			InstanceDatabase: ap.InstanceDatabase,
 			RuleTemplateName: ap.RuleTemplateName.String,
 			Token:            ap.Token,
-			Meta:             convertAuditPlanMetaToRes(meta),
+			Meta:             ConvertAuditPlanMetaToRes(meta),
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlansResV1{
@@ -632,7 +632,7 @@ func GetAuditPlan(c echo.Context) error {
 			InstanceDatabase: ap.InstanceDatabase,
 			RuleTemplateName: ap.RuleTemplateName,
 			Token:            ap.Token,
-			Meta:             convertAuditPlanMetaToRes(meta),
+			Meta:             ConvertAuditPlanMetaToRes(meta),
 		},
 	})
 }
