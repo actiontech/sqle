@@ -115,6 +115,7 @@ func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*Wor
 		stepRes := &WorkFlowStepTemplateResV1{
 			Number:               int(step.Number),
 			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
+			ExecuteByAuthorized:  step.ExecuteByAuthorized.Bool,
 			Typ:                  step.Typ,
 			Desc:                 step.Desc,
 		}
@@ -161,7 +162,7 @@ func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
 		if !isLastStep && step.Type == model.WorkflowStepTypeSQLExecute {
 			return fmt.Errorf("workflow step type sql_execute just be used in last step")
 		}
-		if len(step.Users) == 0 && !step.ApprovedByAuthorized {
+		if len(step.Users) == 0 && !step.ApprovedByAuthorized && !step.ExecuteByAuthorized {
 			return fmt.Errorf("the assignee is empty for step %s", step.Desc)
 		}
 		if len(step.Users) > 3 {
@@ -255,6 +256,10 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 				Number: uint(i + 1),
 				ApprovedByAuthorized: sql.NullBool{
 					Bool:  step.ApprovedByAuthorized,
+					Valid: true,
+				},
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  step.ExecuteByAuthorized,
 					Valid: true,
 				},
 				Typ:  step.Type,
@@ -495,6 +500,9 @@ func RejectWorkflow(c echo.Context) error {
 	for _, inst := range workflow.Record.InstanceRecords {
 		if inst.IsSQLExecuted {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is executed"))
+		}
+		if inst.ScheduledAt != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is scheduled to be executed"))
 		}
 	}
 
@@ -881,7 +889,7 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 			CurrentStepAssigneeUser:  taskDetail.CurrentStepAssigneeUsers,
 			TaskPassRate:             taskDetail.TaskPassRate,
 			TaskScore:                taskDetail.TaskScore,
-			InstanceMaintenanceTimes: convertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
+			InstanceMaintenanceTimes: ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
 			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
 	}

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"mime"
 	"net/http"
@@ -1183,7 +1184,25 @@ type ParseProjectRuleTemplateFileResDataV1 struct {
 // @Success 200 {object} v1.ParseProjectRuleTemplateFileResV1
 // @router /v1/rule_templates/parse [post]
 func ParseProjectRuleTemplateFile(c echo.Context) error {
-	return nil
+	// 读取+解析文件
+	file, exist, err := controller.ReadFileContent(c, "rule_template_file")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("the file has not been uploaded or the key bound to the file is not 'rule_template_file'")))
+	}
+
+	resp := ParseProjectRuleTemplateFileResDataV1{}
+	err = json.Unmarshal([]byte(file), &resp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("the file format is incorrect. Please check the uploaded file, error: %v", err))
+	}
+
+	return c.JSON(http.StatusOK, ParseProjectRuleTemplateFileResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resp,
+	})
 }
 
 // ExportRuleTemplateFile
@@ -1196,11 +1215,8 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 // @Success 200 file 1 "sqle rule template file"
 // @router /v1/rule_templates/{rule_template_name}/export [get]
 func ExportRuleTemplateFile(c echo.Context) error {
-	buff := &bytes.Buffer{}
-	buff.WriteString("\xEF\xBB\xBF测试一下") // 写入UTF-8 BOM
-	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": "test"}))
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	templateName := c.Param("rule_template_name")
+	return exportRuleTemplateFile(c, model.ProjectIdForGlobalRuleTemplate, templateName)
 }
 
 // ExportProjectRuleTemplateFile
@@ -1214,9 +1230,93 @@ func ExportRuleTemplateFile(c echo.Context) error {
 // @Success 200 file 1 "sqle rule template file"
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/export [get]
 func ExportProjectRuleTemplateFile(c echo.Context) error {
+	// 权限检查
+	projectName := c.Param("project_name")
+
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectMember(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 获取模板内容
+	templateName := c.Param("rule_template_name")
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+	}
+
+	return exportRuleTemplateFile(c, project.ID, templateName)
+}
+
+func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName string) error {
+	// 获取规则模板详情
+	s := model.GetStorage()
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{projectID}, ruleTemplateName)
+	if err != nil {
+		return c.JSON(200, controller.NewBaseReq(err))
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+	}
+
+	// 补充缺失的信息(规则说明等描述信息)
+	ruleNames := []string{}
+	for _, rule := range template.RuleList {
+		ruleNames = append(ruleNames, rule.RuleName)
+	}
+
+	rules, err := model.GetStorage().GetRulesByNames(ruleNames, template.DBType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	ruleCache := map[string] /*rule name*/ model.Rule{}
+	for _, rule := range rules {
+		ruleCache[rule.Name] = rule
+	}
+
+	resp := ParseProjectRuleTemplateFileResDataV1{
+		Name:     template.Name,
+		Desc:     template.Desc,
+		DBType:   template.DBType,
+		RuleList: []RuleResV1{},
+	}
+	for _, rule := range template.RuleList {
+		r := RuleResV1{
+			Name:       rule.RuleName,
+			Desc:       ruleCache[rule.RuleName].Desc,
+			Annotation: ruleCache[rule.RuleName].Annotation,
+			Level:      rule.RuleLevel,
+			Typ:        ruleCache[rule.RuleName].Typ,
+			DBType:     rule.RuleDBType,
+			Params:     []RuleParamResV1{},
+		}
+
+		for _, param := range rule.RuleParams {
+			r.Params = append(r.Params, RuleParamResV1{
+				Key:   param.Key,
+				Value: param.Value,
+				Desc:  param.Desc,
+				Type:  string(param.Type),
+			})
+		}
+
+		resp.RuleList = append(resp.RuleList, r)
+	}
+
+	bt, err := json.Marshal(resp)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	buff := &bytes.Buffer{}
-	buff.WriteString("\xEF\xBB\xBF测试一下") // 写入UTF-8 BOM
+	buff.Write(bt)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": "test"}))
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", ruleTemplateName)}))
+	return c.Blob(http.StatusOK, "text/plain", buff.Bytes())
 }

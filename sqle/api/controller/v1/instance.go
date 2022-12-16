@@ -281,7 +281,7 @@ type TimeResV1 struct {
 	Minute int `json:"minute"`
 }
 
-func convertPeriodToMaintenanceTimeResV1(mt model.Periods) []*MaintenanceTimeResV1 {
+func ConvertPeriodToMaintenanceTimeResV1(mt model.Periods) []*MaintenanceTimeResV1 {
 	periods := make([]*MaintenanceTimeResV1, len(mt))
 	for i, time := range mt {
 		periods[i] = &MaintenanceTimeResV1{
@@ -311,7 +311,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 		User:             instance.User,
 		Desc:             instance.Desc,
 		DBType:           instance.DbType,
-		MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+		MaintenanceTimes: ConvertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 		AdditionalParams: []*InstanceAdditionalParamResV1{},
 		SQLQueryConfig: &SQLQueryConfigResV1{
 			MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
@@ -659,7 +659,7 @@ func GetInstances(c echo.Context) error {
 			Port:             instance.Port,
 			User:             instance.User,
 			Desc:             instance.Desc,
-			MaintenanceTimes: convertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+			MaintenanceTimes: ConvertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
 			RuleTemplateName: ruleTemplateName,
 			SQLQueryConfig: &SQLQueryConfigResV1{
 				MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
