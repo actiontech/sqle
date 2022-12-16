@@ -21,10 +21,9 @@ type GetInstancesReqV2 struct {
 	PageSize               uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type RuleTemplate struct {
-	Name string `json:"name"`
-	// ProjectName为空时表示该规则模板为全局规则模板
-	ProjectName string `json:"project_name"`
+type RuleTemplateV2 struct {
+	Name                 string `json:"name"`
+	IsGlobalRuleTemplate bool   `json:"is_global_rule_template"`
 }
 
 type InstanceResV2 struct {
@@ -35,7 +34,7 @@ type InstanceResV2 struct {
 	User             string                             `json:"db_user" example:"root"`
 	Desc             string                             `json:"desc" example:"this is a instance"`
 	MaintenanceTimes []*v1.MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplate     *RuleTemplate                      `json:"rule_template,omitempty"`
+	RuleTemplate     *RuleTemplateV2                    `json:"rule_template,omitempty"`
 	AdditionalParams []*v1.InstanceAdditionalParamResV1 `json:"additional_params"`
 	SQLQueryConfig   *v1.SQLQueryConfigResV1            `json:"sql_query_config"`
 }
@@ -109,14 +108,14 @@ func GetInstances(c echo.Context) error {
 
 	instancesRes := []InstanceResV2{}
 	for _, instance := range instances {
-		var ruleTemplate *RuleTemplate
+		var ruleTemplate *RuleTemplateV2
 		if len(instance.RuleTemplateNames) >= 1 {
-			ruleTemplate = &RuleTemplate{
+			ruleTemplate = &RuleTemplateV2{
 				Name: instance.RuleTemplateNames[0],
 			}
 
-			if isTemplateExistsInProject(ruleTemplate.Name, templateNamesInProject) {
-				ruleTemplate.ProjectName = projectName
+			if !isTemplateExistsInProject(ruleTemplate.Name, templateNamesInProject) {
+				ruleTemplate.IsGlobalRuleTemplate = true
 			}
 		}
 

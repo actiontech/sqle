@@ -6216,6 +6216,74 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan info list",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取扫描任务信息列表",
+                "operationId": "getAuditPlansV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan db type",
+                        "name": "filter_audit_plan_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan type",
+                        "name": "filter_audit_plan_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter audit plan instance name",
+                        "name": "filter_audit_plan_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlansResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances": {
             "get": {
                 "security": [
@@ -6441,8 +6509,9 @@ var doc = `{
                     "type": "string",
                     "example": "it's a JWT Token for scanner"
                 },
-                "rule_template": {
-                    "type": "RuleTemplate"
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default_MySQL"
                 }
             }
         },
@@ -11127,6 +11196,65 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditPlanResV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_cron": {
+                    "type": "string",
+                    "example": "0 */2 * * *"
+                },
+                "audit_plan_db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "audit_plan_instance_database": {
+                    "type": "string",
+                    "example": "app1"
+                },
+                "audit_plan_instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
+                },
+                "audit_plan_meta": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanMetaV1"
+                },
+                "audit_plan_name": {
+                    "type": "string",
+                    "example": "audit_for_java_app1"
+                },
+                "audit_plan_token": {
+                    "type": "string",
+                    "example": "it's a JWT Token for scanner"
+                },
+                "rule_template": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.RuleTemplateV2"
+                }
+            }
+        },
+        "v2.GetAuditPlansResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v2.GetInstancesResV2": {
             "type": "object",
             "properties": {
@@ -11189,7 +11317,7 @@ var doc = `{
                 },
                 "rule_template": {
                     "type": "object",
-                    "$ref": "#/definitions/v2.RuleTemplate"
+                    "$ref": "#/definitions/v2.RuleTemplateV2"
                 },
                 "sql_query_config": {
                     "type": "object",
@@ -11197,14 +11325,13 @@ var doc = `{
                 }
             }
         },
-        "v2.RuleTemplate": {
+        "v2.RuleTemplateV2": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string"
+                "is_global_rule_template": {
+                    "type": "boolean"
                 },
-                "project_name": {
-                    "description": "ProjectName为空时表示该规则模板为全局规则模板",
+                "name": {
                     "type": "string"
                 }
             }
