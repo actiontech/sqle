@@ -100,8 +100,9 @@ definitions:
       audit_plan_token:
         example: it's a JWT Token for scanner
         type: string
-      rule_template:
-        type: RuleTemplate
+      rule_template_name:
+        example: default_MySQL
+        type: string
     type: object
   v1.AuditPlanSQLHeadV1:
     properties:
@@ -3272,6 +3273,48 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v2.AuditPlanResV2:
+    properties:
+      audit_plan_cron:
+        example: 0 */2 * * *
+        type: string
+      audit_plan_db_type:
+        example: mysql
+        type: string
+      audit_plan_instance_database:
+        example: app1
+        type: string
+      audit_plan_instance_name:
+        example: test_mysql
+        type: string
+      audit_plan_meta:
+        $ref: '#/definitions/v1.AuditPlanMetaV1'
+        type: object
+      audit_plan_name:
+        example: audit_for_java_app1
+        type: string
+      audit_plan_token:
+        example: it's a JWT Token for scanner
+        type: string
+      rule_template:
+        $ref: '#/definitions/v2.RuleTemplateV2'
+        type: object
+    type: object
+  v2.GetAuditPlansResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.AuditPlanResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v2.GetInstancesResV2:
     properties:
       code:
@@ -3315,18 +3358,17 @@ definitions:
           $ref: '#/definitions/v1.MaintenanceTimeResV1'
         type: array
       rule_template:
-        $ref: '#/definitions/v2.RuleTemplate'
+        $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
     type: object
-  v2.RuleTemplate:
+  v2.RuleTemplateV2:
     properties:
+      is_global_rule_template:
+        type: boolean
       name:
-        type: string
-      project_name:
-        description: ProjectName为空时表示该规则模板为全局规则模板
         type: string
     type: object
 info:
@@ -7302,6 +7344,50 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
+  /v2/projects/{project_name}/audit_plans:
+    get:
+      description: get audit plan info list
+      operationId: getAuditPlansV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter audit plan db type
+        in: query
+        name: filter_audit_plan_db_type
+        type: string
+      - description: fuzzy search audit plan name
+        in: query
+        name: fuzzy_search_audit_plan_name
+        type: string
+      - description: filter audit plan type
+        in: query
+        name: filter_audit_plan_type
+        type: string
+      - description: filter audit plan instance name
+        in: query
+        name: filter_audit_plan_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlansResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务信息列表
+      tags:
+      - audit_plan
   /v2/projects/{project_name}/instances:
     get:
       description: get instance info list
