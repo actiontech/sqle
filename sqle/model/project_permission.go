@@ -336,6 +336,18 @@ func (s *Storage) GetCanAuditWorkflowUsers(instance *Instance) (users []*User, e
 	return s.GetUsersByNames([]string{DefaultAdminUser})
 }
 
+// GetCanExecuteWorkflowUsers will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
+func (s *Storage) GetCanExecuteWorkflowUsers(instance *Instance) (users []*User, err error) {
+	users, err = s.GetWithOperationUserFromInstance(instance, OP_WORKFLOW_EXECUTE)
+	if err != nil {
+		return
+	}
+	if len(users) != 0 {
+		return
+	}
+	return s.GetUsersByNames([]string{DefaultAdminUser})
+}
+
 /*
 
 audit plan permission.
