@@ -20,6 +20,7 @@ const (
 	OP_WORKFLOW_VIEW_OTHERS = 20100
 	OP_WORKFLOW_SAVE        = 20200 // including "CREATE" and "UPDATE"
 	OP_WORKFLOW_AUDIT       = 20300 // including "PASSED" and "REJECT"
+	OP_WORKFLOW_EXECUTE     = 20040 // 上线工单权限
 
 	// AuditPlan: 审核计划 reserved 30000-39999
 	// NOTE: 用户默认可以查看自己创建的扫描任务，无需定义此项动作权限
@@ -41,6 +42,7 @@ func getConfigurableOperationCodeList() []uint {
 		OP_WORKFLOW_VIEW_OTHERS,
 		OP_WORKFLOW_SAVE,
 		OP_WORKFLOW_AUDIT,
+		OP_WORKFLOW_EXECUTE,
 		// Audit plan: 扫描任务
 		OP_AUDIT_PLAN_VIEW_OTHERS,
 		OP_AUDIT_PLAN_SAVE,
@@ -57,6 +59,8 @@ func GetOperationCodeDesc(opCode uint) string {
 		return "创建/编辑工单"
 	case OP_WORKFLOW_AUDIT:
 		return "审核/驳回工单"
+	case OP_WORKFLOW_EXECUTE:
+		return "上线工单"
 	case OP_AUDIT_PLAN_VIEW_OTHERS:
 		return "查看他人创建的扫描任务"
 	case OP_AUDIT_PLAN_SAVE:
