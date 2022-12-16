@@ -59,7 +59,10 @@ func (s *Storage) CreateProject(name string, desc string, createUserID uint) err
 			{
 				Number: 2,
 				Typ:    WorkflowStepTypeSQLExecute,
-				Users:  []*User{{Model: Model{ID: createUserID}}},
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
 			},
 		},
 	}
