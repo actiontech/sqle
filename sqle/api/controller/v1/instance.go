@@ -975,6 +975,8 @@ type InstanceTipResV1 struct {
 	Name               string `json:"instance_name"`
 	Type               string `json:"instance_type"`
 	WorkflowTemplateId uint32 `json:"workflow_template_id"`
+	IP                 string `json:"ip"`
+	Port               string `json:"port"`
 }
 
 type GetInstanceTipsResV1 struct {
