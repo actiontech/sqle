@@ -1027,6 +1027,8 @@ func GetInstanceTips(c echo.Context) error {
 		instanceTipRes := InstanceTipResV1{
 			Name:               inst.Name,
 			Type:               inst.DbType,
+			Host:               inst.Host,
+			Port:               inst.Port,
 			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
