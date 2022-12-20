@@ -9228,6 +9228,12 @@ var doc = `{
                 "instance_type": {
                     "type": "string"
                 },
+                "ip": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
                 "workflow_template_id": {
                     "type": "integer"
                 }
