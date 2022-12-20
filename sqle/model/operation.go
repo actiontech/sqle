@@ -20,7 +20,7 @@ const (
 	OP_WORKFLOW_VIEW_OTHERS = 20100
 	OP_WORKFLOW_SAVE        = 20200 // including "CREATE" and "UPDATE"
 	OP_WORKFLOW_AUDIT       = 20300 // including "PASSED" and "REJECT"
-	OP_WORKFLOW_EXECUTE     = 20040 // 上线工单权限
+	OP_WORKFLOW_EXECUTE     = 20400 // 上线工单权限
 
 	// AuditPlan: 审核计划 reserved 30000-39999
 	// NOTE: 用户默认可以查看自己创建的扫描任务，无需定义此项动作权限
