@@ -116,6 +116,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/configurations/wechat", v1.GetWeChatConfiguration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/wechat", v1.UpdateWeChatConfigurationV1, AdminUserAllowed())
 		v1Router.POST("/configurations/wechat/test", v1.TestWeChatConfigurationV1, AdminUserAllowed())
+		v1Router.GET("/configurations/ding_talk", v1.GetDingTalkConfigurationV1, AdminUserAllowed())
+		v1Router.PATCH("/configurations/ding_talk", v1.UpdateDingTalkConfigurationV1, AdminUserAllowed())
 		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, AdminUserAllowed())
 		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, AdminUserAllowed())
 		v1Router.GET("/configurations/license", v1.GetLicense, AdminUserAllowed())

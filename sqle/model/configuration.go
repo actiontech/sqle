@@ -331,3 +331,30 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 	return 30 * 24, nil
 }
+
+const (
+	ImTypeDingTalk = "dingTalk"
+)
+
+type IM struct {
+	Model
+	AppKey      string `json:"app_key" gorm:"column:app_key"`
+	AppSecret   string `json:"app_secret" gorm:"column:app_secret"`
+	IsEnable    bool   `json:"is_enable" gorm:"column:is_enable"`
+	ProcessCode string `json:"process_code" gorm:"column:process_code"`
+	// 类型唯一
+	Type string `json:"type" gorm:"unique"`
+}
+
+func (i *IM) TableName() string {
+	return fmt.Sprintf("%v_im", globalConfigurationTablePrefix)
+}
+
+func (s *Storage) GetImConfigByType(imType string) (*IM, bool, error) {
+	im := new(IM)
+	err := s.db.Where("type = ?", imType).First(&im).Error
+	if err == gorm.ErrRecordNotFound {
+		return im, false, nil
+	}
+	return im, true, errors.New(errors.ConnectStorageError, err)
+}

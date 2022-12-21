@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/actiontech/sqle/sqle/pkg/im"
+
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
@@ -224,7 +226,26 @@ type DingTalkConfigurationV1 struct {
 // @Success 200 {object} v1.GetDingTalkConfigurationResV1
 // @router /v1/configurations/ding_talk [get]
 func GetDingTalkConfigurationV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	dingTalk, exist, err := s.GetImConfigByType(model.ImTypeDingTalk)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &GetDingTalkConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    DingTalkConfigurationV1{},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetDingTalkConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: DingTalkConfigurationV1{
+			AppKey:                 dingTalk.AppKey,
+			AppSecret:              dingTalk.AppSecret,
+			IsEnableDingTalkNotify: dingTalk.IsEnable,
+		},
+	})
 }
 
 type UpdateDingTalkConfigurationReqV1 struct {
@@ -244,7 +265,36 @@ type UpdateDingTalkConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/ding_talk [patch]
 func UpdateDingTalkConfigurationV1(c echo.Context) error {
-	return nil
+	req := new(UpdateDingTalkConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	dingTalk, _, err := s.GetImConfigByType(model.ImTypeDingTalk)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if req.AppKey != nil {
+		dingTalk.AppKey = *req.AppKey
+	}
+	if req.AppSecret != nil {
+		dingTalk.AppSecret = *req.AppSecret
+	}
+	if req.IsEnableDingTalkNotify != nil {
+		dingTalk.IsEnable = *req.IsEnableDingTalkNotify
+	}
+
+	dingTalk.Type = model.ImTypeDingTalk
+
+	if err := s.Save(dingTalk); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	go im.CreateApprovalTemplate(model.ImTypeDingTalk)
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateWeChatConfigurationReqV1 struct {
