@@ -201,7 +201,7 @@ func Test_GetUserCanOpInstancesFromProject(t *testing.T) {
 func Test_GetInstanceTipsByUserAndOperation(t *testing.T) {
 	query := `
 		SELECT
-		instances.id, instances.name, instances.db_type
+		instances.id, instances.name, instances.db_host as host, instances.db_port as port, instances.db_type
 		FROM instances
 		LEFT JOIN projects ON instances.project_id = projects.id
 		LEFT JOIN project_member_roles ON instances.id = project_member_roles.instance_id
@@ -218,7 +218,7 @@ func Test_GetInstanceTipsByUserAndOperation(t *testing.T) {
 
 		UNION
 		SELECT
-		instances.id, instances.name, instances.db_type
+		instances.id, instances.name, instances.db_host as host, instances.db_port as port, instances.db_type
 		FROM instances
 		LEFT JOIN projects ON instances.project_id = projects.id
 		LEFT JOIN project_member_group_roles ON instances.id = project_member_group_roles.instance_id
@@ -237,7 +237,7 @@ func Test_GetInstanceTipsByUserAndOperation(t *testing.T) {
 
 		UNION
 		SELECT
-		instances.id, instances.name, instances.db_type
+		instances.id, instances.name, instances.db_host as host, instances.db_port as port, instances.db_type
 		FROM instances
 		LEFT JOIN projects ON instances.project_id = projects.id
 		LEFT JOIN project_manager ON project_manager.project_id = projects.id
