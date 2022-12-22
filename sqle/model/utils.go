@@ -142,6 +142,7 @@ var autoMigrateList = []interface{}{
 	&ProjectMemberGroupRole{},
 	&ManagementPermission{},
 	&IM{},
+	&DingTalkInstance{},
 }
 
 func (s *Storage) AutoMigrate() error {
