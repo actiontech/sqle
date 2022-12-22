@@ -395,6 +395,8 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
+	nextStep := workflow.NextStep()
+
 	err = CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
@@ -406,7 +408,7 @@ func ApproveWorkflow(c echo.Context) error {
 
 	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
 
-	if workflow.NextStep().Template.Typ != model.WorkflowStepTypeSQLExecute {
+	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
 		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
 	}
 

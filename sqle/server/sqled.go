@@ -239,6 +239,8 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 
+					nextStep := workflow.NextStep()
+
 					userId := *approval.OperationRecords[1].UserId
 					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
@@ -257,7 +259,7 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 
-					if workflow.NextStep().Template.Typ != model.WorkflowStepTypeSQLExecute {
+					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
 						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
 					}
 
