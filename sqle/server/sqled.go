@@ -240,7 +240,7 @@ func (s *Sqled) dingTalkRotation() error {
 					}
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, st)
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
 						log.NewEntry().Errorf("get user by user id error: %v", err)
 						continue
@@ -280,7 +280,7 @@ func (s *Sqled) dingTalkRotation() error {
 					}
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, st)
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
 						log.NewEntry().Errorf("get user by user id error: %v", err)
 						continue
@@ -352,21 +352,19 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	return nil
 }
 
-func getUserByUserId(d *dingding.DingTalk, userId string, st *model.Storage) (*model.User, error) {
+func getUserByUserId(d *dingding.DingTalk, userId string, assignees []*model.User) (*model.User, error) {
 	phone, err := d.GetMobileByUserID(userId)
 	if err != nil {
 		return nil, fmt.Errorf("get user mobile error: %v", err)
 	}
 
-	user, exist, err := st.GetUserByPhone(phone)
-	if err != nil {
-		return nil, fmt.Errorf("get user by phone error: %v", err)
-	}
-	if !exist {
-		return nil, fmt.Errorf("user not exist, phone: %s", phone)
+	for _, assignee := range assignees {
+		if assignee.Phone == phone {
+			return assignee, nil
+		}
 	}
 
-	return user, nil
+	return nil, fmt.Errorf("user not found, phone: %s", phone)
 }
 
 const (
