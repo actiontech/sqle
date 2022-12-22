@@ -387,8 +387,9 @@ type DingTalkInstance struct {
 	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
 	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
 	WorkflowStepID      uint   `json:"workflow_step_id" gorm:"column:workflow_step_id"`
-	TaskID              int64  `json:"task_id" gorm:"column:task_id"`
-	Status              string `json:"status" gorm:"default:\"initialized\""`
+	// 审批实例 taskID
+	TaskID int64  `json:"task_id" gorm:"column:task_id"`
+	Status string `json:"status" gorm:"default:\"initialized\""`
 }
 
 func (s *Storage) GetDingTalkInstanceByWorkflowStepID(workflowId, workflowStepID uint) (*DingTalkInstance, bool, error) {
