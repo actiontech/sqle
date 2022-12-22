@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/notification"
+
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 
@@ -238,38 +239,17 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 
-					currentStep := workflow.CurrentStep()
-
-					if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
-						log.NewEntry().Warnf("workflow approval is wait for execution, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
-
-					currentStep.State = model.WorkflowStepStateApprove
-					now := time.Now()
-					currentStep.OperateAt = &now
 					userId := *approval.OperationRecords[1].UserId
-
 					user, err := getUserByUserId(d, userId, st)
 					if err != nil {
 						log.NewEntry().Errorf("get user by user id error: %v", err)
 						continue
 					}
 
-					currentStep.OperationUserId = user.ID
-					nextStep := workflow.NextStep()
-					workflow.Record.CurrentWorkflowStepId = nextStep.ID
-					if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
-						workflow.Record.Status = model.WorkflowStatusWaitForExecution
-					}
-
-					err = st.UpdateWorkflowStatus(workflow, currentStep, nil)
-					if err != nil {
-						log.NewEntry().Errorf("update workflow approval error: %v", err)
+					if err := ApproveWorkflowProcess(workflow, user, st); err != nil {
+						log.NewEntry().Errorf("approve workflow process error: %v", err)
 						continue
 					}
-
-					notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
 
 					dingTalkInstance.Status = model.ApproveStatusAgree
 					if err := st.Save(&dingTalkInstance); err != nil {
@@ -277,8 +257,8 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 
-					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-						imPkg.CreateApproveInstance(strconv.Itoa(int(workflow.ID)))
+					if workflow.NextStep().Template.Typ != model.WorkflowStepTypeSQLExecute {
+						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
 					}
 
 				case model.ApproveStatusRefuse:
@@ -292,17 +272,12 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 
-					currentStep := workflow.CurrentStep()
-					currentStep.State = model.WorkflowStepStateReject
-
+					var reason string
 					if approval.OperationRecords[1] != nil && approval.OperationRecords[1].Remark != nil {
-						currentStep.Reason = *approval.OperationRecords[1].Remark
+						reason = *approval.OperationRecords[1].Remark
 					} else {
-						currentStep.Reason = "审批拒绝"
+						reason = "审批拒绝"
 					}
-
-					now := time.Now()
-					currentStep.OperateAt = &now
 
 					userId := *approval.OperationRecords[1].UserId
 					user, err := getUserByUserId(d, userId, st)
@@ -310,18 +285,11 @@ func (s *Sqled) dingTalkRotation() error {
 						log.NewEntry().Errorf("get user by user id error: %v", err)
 						continue
 					}
-					currentStep.OperationUserId = user.ID
 
-					workflow.Record.Status = model.WorkflowStatusReject
-					workflow.Record.CurrentWorkflowStepId = 0
-
-					err = st.UpdateWorkflowStatus(workflow, currentStep, nil)
-					if err != nil {
-						log.NewEntry().Errorf("update workflow approval error: %v", err)
+					if err := RejectWorkflowProcess(workflow, reason, user, st); err != nil {
+						log.NewEntry().Errorf("reject workflow process error: %v", err)
 						continue
 					}
-
-					notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
 
 					dingTalkInstance.Status = model.ApproveStatusRefuse
 					if err := st.Save(&dingTalkInstance); err != nil {
@@ -332,6 +300,54 @@ func (s *Sqled) dingTalkRotation() error {
 			}
 		}
 	}
+
+	return nil
+}
+
+func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+
+	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been approved, you should to execute it"))
+	}
+
+	currentStep.State = model.WorkflowStepStateApprove
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+	nextStep := workflow.NextStep()
+	workflow.Record.CurrentWorkflowStepId = nextStep.ID
+	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		workflow.Record.Status = model.WorkflowStatusWaitForExecution
+	}
+
+	err := s.UpdateWorkflowStatus(workflow, currentStep, nil)
+	if err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
+
+	return nil
+}
+
+func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+	currentStep.State = model.WorkflowStepStateReject
+	currentStep.Reason = reason
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+
+	workflow.Record.Status = model.WorkflowStatusReject
+	workflow.Record.CurrentWorkflowStepId = 0
+
+	if err := s.UpdateWorkflowStatus(workflow, currentStep, nil); err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
 
 	return nil
 }
