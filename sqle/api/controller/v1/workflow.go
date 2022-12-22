@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/pkg/im"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -421,6 +423,12 @@ func ApproveWorkflow(c echo.Context) error {
 	}
 	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeApprove)
 
+	go im.UpdateApproveStatus(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
+
+	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		go im.CreateApproveInstance(strconv.Itoa(int(workflow.ID)))
+	}
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -522,6 +530,8 @@ func RejectWorkflow(c echo.Context) error {
 	}
 	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
 
+	go im.UpdateApproveStatus(workflow.ID, currentStep.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -587,6 +597,9 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	im.CancelApproveInstance(workflow.ID, workflow.CurrentStep().ID)
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
@@ -1076,7 +1089,11 @@ func CreateWorkflowV1(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
-	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeCreate)
+
+	workFlowId := strconv.Itoa(int(workflow.ID))
+	go notification.NotifyWorkflow(workFlowId, notification.WorkflowNotifyTypeCreate)
+
+	go im.CreateApproveInstance(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1435,6 +1452,9 @@ func UpdateWorkflowV1(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
 	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeCreate)
+
+	workFlowId := strconv.Itoa(int(workflow.ID))
+	go im.CreateApproveInstance(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
