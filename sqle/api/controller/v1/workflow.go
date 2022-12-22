@@ -404,10 +404,10 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApproveStatus(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
 
 	if workflow.NextStep().Template.Typ != model.WorkflowStepTypeSQLExecute {
-		go im.CreateApproveInstance(strconv.Itoa(int(workflow.ID)))
+		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
@@ -499,7 +499,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApproveStatus(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -567,7 +567,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	im.CancelApproveInstance(workflow.ID, workflow.CurrentStep().ID)
+	im.CancelApprove(workflow.ID, workflow.CurrentStep().ID)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -1062,7 +1062,7 @@ func CreateWorkflowV1(c echo.Context) error {
 	workFlowId := strconv.Itoa(int(workflow.ID))
 	go notification.NotifyWorkflow(workFlowId, notification.WorkflowNotifyTypeCreate)
 
-	go im.CreateApproveInstance(workFlowId)
+	go im.CreateApprove(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1423,7 +1423,7 @@ func UpdateWorkflowV1(c echo.Context) error {
 	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeCreate)
 
 	workFlowId := strconv.Itoa(int(workflow.ID))
-	go im.CreateApproveInstance(workFlowId)
+	go im.CreateApprove(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

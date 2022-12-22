@@ -44,7 +44,7 @@ func CreateApprovalTemplate(imType string) {
 	}
 }
 
-func CreateApproveInstance(id string) {
+func CreateApprove(id string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowDetailById(id)
@@ -126,7 +126,7 @@ func CreateApproveInstance(id string) {
 	}
 }
 
-func UpdateApproveStatus(workflowId, stepId uint, phone, status, reason string) {
+func UpdateApprove(workflowId, stepId uint, phone, status, reason string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -158,7 +158,7 @@ func UpdateApproveStatus(workflowId, stepId uint, phone, status, reason string) 
 	}
 }
 
-func CancelApproveInstance(workflowID, workflowStepId uint) {
+func CancelApprove(workflowID, workflowStepId uint) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowID, workflowStepId)
