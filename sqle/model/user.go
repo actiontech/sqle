@@ -110,6 +110,15 @@ func (s *Storage) GetUserByThirdPartyUserID(thirdPartyUserID string) (*User, boo
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetUserByPhone(phone string) (*User, bool, error) {
+	user := &User{}
+	err := s.db.Where("phone = ?", phone).First(user).Error
+	if err == gorm.ErrRecordNotFound {
+		return user, false, nil
+	}
+	return user, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetUserByName(name string) (*User, bool, error) {
 	t := &User{}
 	err := s.db.Where("login_name = ?", name).First(t).Error

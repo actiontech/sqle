@@ -358,3 +358,53 @@ func (s *Storage) GetImConfigByType(imType string) (*IM, bool, error) {
 	}
 	return im, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetAllIMConfig() ([]IM, error) {
+	var ims []IM
+	err := s.db.Find(&ims).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return ims, nil
+}
+
+func (s *Storage) UpdateImConfigById(id uint, m map[string]interface{}) error {
+	err := s.db.Model(&IM{}).Where("id = ?", id).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+const (
+	ApproveStatusInitialized = "initialized"
+	ApproveStatusAgree       = "agree"
+	ApproveStatusRefuse      = "refuse"
+)
+
+type DingTalkInstance struct {
+	Model
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
+	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	WorkflowStepID      uint   `json:"workflow_step_id" gorm:"column:workflow_step_id"`
+	TaskID              int64  `json:"task_id" gorm:"column:task_id"`
+	Status              string `json:"status" gorm:"default:\"initialized\""`
+}
+
+func (s *Storage) GetDingTalkInstanceByWorkflowStepID(workflowId, workflowStepID uint) (*DingTalkInstance, bool, error) {
+	dti := new(DingTalkInstance)
+	err := s.db.Where("workflow_step_id = ? and workflow_id = ?", workflowStepID, workflowId).First(&dti).Error
+	if err == gorm.ErrRecordNotFound {
+		return dti, false, nil
+	}
+	return dti, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, error) {
+	var dingTalkInstances []DingTalkInstance
+	err := s.db.Where("status = ?", status).Find(&dingTalkInstances).Error
+	if err != nil {
+		return nil, err
+	}
+	return dingTalkInstances, nil
+}
