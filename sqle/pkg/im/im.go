@@ -59,7 +59,7 @@ func CreateApprove(id string) {
 
 	var buff bytes.Buffer
 	for _, record := range workflow.Record.InstanceRecords {
-		buff.WriteString(fmt.Sprintf("数据源%s:%d;", record.Instance.Name, record.Task.Score))
+		buff.WriteString(fmt.Sprintf("数据源%s审核评分%d;", record.Instance.Name, record.Task.Score))
 	}
 
 	if workflow.CreateUser.Phone == "" {
