@@ -298,6 +298,8 @@ func (s *Sqled) dingTalkRotation() error {
 						log.NewEntry().Errorf("save ding talk instance error: %v", err)
 						continue
 					}
+				default:
+					log.NewEntry().Info("ding talk rotation, no action")
 				}
 			}
 		}
