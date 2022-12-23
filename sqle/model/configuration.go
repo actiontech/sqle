@@ -331,3 +331,81 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 	return 30 * 24, nil
 }
+
+const (
+	ImTypeDingTalk = "dingTalk"
+)
+
+type IM struct {
+	Model
+	AppKey      string `json:"app_key" gorm:"column:app_key"`
+	AppSecret   string `json:"app_secret" gorm:"column:app_secret"`
+	IsEnable    bool   `json:"is_enable" gorm:"column:is_enable"`
+	ProcessCode string `json:"process_code" gorm:"column:process_code"`
+	// 类型唯一
+	Type string `json:"type" gorm:"unique"`
+}
+
+func (i *IM) TableName() string {
+	return fmt.Sprintf("%v_im", globalConfigurationTablePrefix)
+}
+
+func (s *Storage) GetImConfigByType(imType string) (*IM, bool, error) {
+	im := new(IM)
+	err := s.db.Where("type = ?", imType).First(&im).Error
+	if err == gorm.ErrRecordNotFound {
+		return im, false, nil
+	}
+	return im, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAllIMConfig() ([]IM, error) {
+	var ims []IM
+	err := s.db.Find(&ims).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return ims, nil
+}
+
+func (s *Storage) UpdateImConfigById(id uint, m map[string]interface{}) error {
+	err := s.db.Model(&IM{}).Where("id = ?", id).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+const (
+	ApproveStatusInitialized = "initialized"
+	ApproveStatusAgree       = "agree"
+	ApproveStatusRefuse      = "refuse"
+)
+
+type DingTalkInstance struct {
+	Model
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
+	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	WorkflowStepID      uint   `json:"workflow_step_id" gorm:"column:workflow_step_id"`
+	// 审批实例 taskID
+	TaskID int64  `json:"task_id" gorm:"column:task_id"`
+	Status string `json:"status" gorm:"default:\"initialized\""`
+}
+
+func (s *Storage) GetDingTalkInstanceByWorkflowStepID(workflowId, workflowStepID uint) (*DingTalkInstance, bool, error) {
+	dti := new(DingTalkInstance)
+	err := s.db.Where("workflow_step_id = ? and workflow_id = ?", workflowStepID, workflowId).First(&dti).Error
+	if err == gorm.ErrRecordNotFound {
+		return dti, false, nil
+	}
+	return dti, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, error) {
+	var dingTalkInstances []DingTalkInstance
+	err := s.db.Where("status = ?", status).Find(&dingTalkInstances).Error
+	if err != nil {
+		return nil, err
+	}
+	return dingTalkInstances, nil
+}

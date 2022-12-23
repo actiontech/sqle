@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/pkg/im"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -393,33 +395,22 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 	}
 
+	nextStep := workflow.NextStep()
+
 	err = CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
-	currentStep := workflow.CurrentStep()
-
-	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow has been approved, you should to execute it")))
+	if err := server.ApproveWorkflowProcess(workflow, user, s); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	currentStep.State = model.WorkflowStepStateApprove
-	now := time.Now()
-	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
-	nextStep := workflow.NextStep()
-	workflow.Record.CurrentWorkflowStepId = nextStep.ID
-	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
-		workflow.Record.Status = model.WorkflowStatusWaitForExecution
-	}
+	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
 	}
-	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeApprove)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -506,21 +497,11 @@ func RejectWorkflow(c echo.Context) error {
 		}
 	}
 
-	currentStep := workflow.CurrentStep()
-	currentStep.State = model.WorkflowStepStateReject
-	currentStep.Reason = req.Reason
-	now := time.Now()
-	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
-
-	workflow.Record.Status = model.WorkflowStatusReject
-	workflow.Record.CurrentWorkflowStepId = 0
-
-	err = s.UpdateWorkflowStatus(workflow, currentStep, nil)
-	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+	if err := server.RejectWorkflowProcess(workflow, req.Reason, user, s); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+
+	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -587,6 +568,9 @@ func CancelWorkflow(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	im.CancelApprove(workflow.ID, workflow.CurrentStep().ID)
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
@@ -1076,7 +1060,11 @@ func CreateWorkflowV1(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
-	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeCreate)
+
+	workFlowId := strconv.Itoa(int(workflow.ID))
+	go notification.NotifyWorkflow(workFlowId, notification.WorkflowNotifyTypeCreate)
+
+	go im.CreateApprove(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1435,6 +1423,9 @@ func UpdateWorkflowV1(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
 	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeCreate)
+
+	workFlowId := strconv.Itoa(int(workflow.ID))
+	go im.CreateApprove(workFlowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

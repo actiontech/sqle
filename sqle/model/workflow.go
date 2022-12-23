@@ -198,6 +198,9 @@ type WorkflowInstanceRecord struct {
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
 	ExecutionUserId uint
+
+	Instance *Instance `gorm:"foreignkey:InstanceId"`
+	Task     *Task     `gorm:"foreignkey:TaskId"`
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
@@ -609,7 +612,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 
 func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
 	instanceRecords := []*WorkflowInstanceRecord{}
-	err := s.db.Where("workflow_record_id = ?", id).
+	err := s.db.Preload("Instance").Preload("Task").Where("workflow_record_id = ?", id).
 		Find(&instanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)

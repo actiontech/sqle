@@ -4,8 +4,14 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/notification"
+
+	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
+	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
@@ -128,7 +134,24 @@ func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 func (s *Sqled) Start() {
 	go s.taskLoop()
 	go s.cleanLoop()
+	go s.dingTalkLoop()
 	go s.workflowScheduleLoop()
+}
+
+func (s *Sqled) dingTalkLoop() {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-s.exit:
+			return
+		case <-ticker.C:
+			if err := s.dingTalkRotation(); err != nil {
+				log.NewEntry().Error("dingTalkRotation failed, error:", err)
+			}
+		}
+	}
 }
 
 // taskLoop is a task loop used to receive action from queue.
@@ -173,6 +196,179 @@ func (s *Sqled) do(action *action) error {
 	default:
 	}
 	return err
+}
+
+func (s *Sqled) dingTalkRotation() error {
+	st := model.GetStorage()
+
+	ims, err := st.GetAllIMConfig()
+	if err != nil {
+		log.NewEntry().Errorf("get all im config failed, error: %v", err)
+	}
+
+	for _, im := range ims {
+		switch im.Type {
+		case model.ImTypeDingTalk:
+			d := &dingding.DingTalk{
+				AppKey:    im.AppKey,
+				AppSecret: im.AppSecret,
+			}
+
+			dingTalkInstances, err := st.GetDingTalkInstByStatus(model.ApproveStatusInitialized)
+			if err != nil {
+				log.NewEntry().Errorf("get ding talk status error: %v", err)
+				continue
+			}
+
+			for _, dingTalkInstance := range dingTalkInstances {
+				approval, err := d.GetApprovalDetail(dingTalkInstance.ApproveInstanceCode)
+				if err != nil {
+					log.NewEntry().Errorf("get ding talk approval detail error: %v", err)
+					continue
+				}
+
+				switch *approval.Result {
+				case model.ApproveStatusAgree:
+					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					if err != nil {
+						log.NewEntry().Errorf("get workflow detail error: %v", err)
+						continue
+					}
+					if !exist {
+						log.NewEntry().Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
+						continue
+					}
+
+					nextStep := workflow.NextStep()
+
+					userId := *approval.OperationRecords[1].UserId
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
+					if err != nil {
+						log.NewEntry().Errorf("get user by user id error: %v", err)
+						continue
+					}
+
+					if err := ApproveWorkflowProcess(workflow, user, st); err != nil {
+						log.NewEntry().Errorf("approve workflow process error: %v", err)
+						continue
+					}
+
+					dingTalkInstance.Status = model.ApproveStatusAgree
+					if err := st.Save(&dingTalkInstance); err != nil {
+						log.NewEntry().Errorf("save ding talk instance error: %v", err)
+						continue
+					}
+
+					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
+					}
+
+				case model.ApproveStatusRefuse:
+					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					if err != nil {
+						log.NewEntry().Errorf("get workflow detail error: %v", err)
+						continue
+					}
+					if !exist {
+						log.NewEntry().Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
+						continue
+					}
+
+					var reason string
+					if approval.OperationRecords[1] != nil && approval.OperationRecords[1].Remark != nil {
+						reason = *approval.OperationRecords[1].Remark
+					} else {
+						reason = "审批拒绝"
+					}
+
+					userId := *approval.OperationRecords[1].UserId
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
+					if err != nil {
+						log.NewEntry().Errorf("get user by user id error: %v", err)
+						continue
+					}
+
+					if err := RejectWorkflowProcess(workflow, reason, user, st); err != nil {
+						log.NewEntry().Errorf("reject workflow process error: %v", err)
+						continue
+					}
+
+					dingTalkInstance.Status = model.ApproveStatusRefuse
+					if err := st.Save(&dingTalkInstance); err != nil {
+						log.NewEntry().Errorf("save ding talk instance error: %v", err)
+						continue
+					}
+				default:
+					// ding talk rotation, no action
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+
+	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been approved, you should to execute it"))
+	}
+
+	currentStep.State = model.WorkflowStepStateApprove
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+	nextStep := workflow.NextStep()
+	workflow.Record.CurrentWorkflowStepId = nextStep.ID
+	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		workflow.Record.Status = model.WorkflowStatusWaitForExecution
+	}
+
+	err := s.UpdateWorkflowStatus(workflow, currentStep, nil)
+	if err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
+
+	return nil
+}
+
+func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+	currentStep.State = model.WorkflowStepStateReject
+	currentStep.Reason = reason
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+
+	workflow.Record.Status = model.WorkflowStatusReject
+	workflow.Record.CurrentWorkflowStepId = 0
+
+	if err := s.UpdateWorkflowStatus(workflow, currentStep, nil); err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+
+	return nil
+}
+
+func getUserByUserId(d *dingding.DingTalk, userId string, assignees []*model.User) (*model.User, error) {
+	phone, err := d.GetMobileByUserID(userId)
+	if err != nil {
+		return nil, fmt.Errorf("get user mobile error: %v", err)
+	}
+
+	for _, assignee := range assignees {
+		if assignee.Phone == phone {
+			return assignee, nil
+		}
+	}
+
+	return nil, fmt.Errorf("user not found, phone: %s", phone)
 }
 
 const (

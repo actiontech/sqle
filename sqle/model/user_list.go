@@ -6,6 +6,7 @@ type UserDetail struct {
 	Id             int
 	Name           string `json:"login_name"`
 	Email          string
+	Phone          sql.NullString `json:"phone"`
 	WeChatID       sql.NullString `json:"wechat_id"`
 	LoginType      string         `json:"user_authentication_type"`
 	Stat           int            `json:"stat"`
@@ -18,7 +19,7 @@ func (u *UserDetail) IsDisabled() bool {
 }
 
 var usersQueryTpl = `SELECT 
-users.id, users.login_name, users.email, users.wechat_id,
+users.id, users.login_name, users.email, users.phone, users.wechat_id,
 users.user_authentication_type, users.stat, 
 GROUP_CONCAT(DISTINCT COALESCE(user_groups.name,'')) AS user_group_names
 FROM users 
