@@ -975,6 +975,8 @@ type InstanceTipResV1 struct {
 	Name               string `json:"instance_name"`
 	Type               string `json:"instance_type"`
 	WorkflowTemplateId uint32 `json:"workflow_template_id"`
+	Host               string `json:"host"`
+	Port               string `json:"port"`
 }
 
 type GetInstanceTipsResV1 struct {
@@ -1025,6 +1027,8 @@ func GetInstanceTips(c echo.Context) error {
 		instanceTipRes := InstanceTipResV1{
 			Name:               inst.Name,
 			Type:               inst.DbType,
+			Host:               inst.Host,
+			Port:               inst.Port,
 			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)

@@ -10,10 +10,13 @@ require (
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
+	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
+	github.com/alibabacloud-go/dingtalk v1.4.88
 	github.com/alibabacloud-go/rds-20140815/v2 v2.1.0
 	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-utils v1.4.3
 	github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13 // indirect
+	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f

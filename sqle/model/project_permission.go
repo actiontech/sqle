@@ -201,7 +201,7 @@ func (s *Storage) getInstanceTipsByUserAndOperation(user *User, dbType string, p
 	}
 	fields := `
 {{ define "select_fields" }}
-instances.id, instances.name, instances.db_type
+instances.id, instances.name, instances.db_host as host, instances.db_port as port, instances.db_type
 {{ end }}
 	`
 	err := s.getTemplateQueryResult(data, &instances, queryInstanceUserWithOp, fields)

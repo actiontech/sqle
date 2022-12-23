@@ -274,11 +274,8 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectName, auditPlanNa
 	}
 
 	ap, exist, err := storage.GetAuditPlanFromProjectByName(projectName, auditPlanName)
-	if err != nil {
-		return nil, false, err
-	}
-	if !exist {
-		return nil, true, nil
+	if err != nil || !exist {
+		return nil, exist, err
 	}
 
 	if controller.GetUserName(c) == model.DefaultAdminUser {

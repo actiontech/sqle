@@ -217,7 +217,7 @@ func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 }
 
 func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectName string) (instances []*Instance, err error) {
-	query := s.db.Model(&Instance{}).Select("instances.name, instances.db_type, instances.workflow_template_id").Group("instances.id")
+	query := s.db.Model(&Instance{}).Select("instances.name, instances.db_type, instances.db_host, instances.db_port, instances.workflow_template_id").Group("instances.id")
 
 	if dbType != "" {
 		query = query.Where("db_type = ?", dbType)
@@ -341,7 +341,7 @@ func (s *Storage) CheckInstancesExist(projectName string, instNames []string) (b
 	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName string) (map[string /*inst name*/ ]uint /*inst id*/, error) {
+func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName string) (map[string] /*inst name*/ uint /*inst id*/, error) {
 	instNames = utils.RemoveDuplicate(instNames)
 
 	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
@@ -353,7 +353,7 @@ func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName st
 		return nil, errors.NewDataNotExistErr("some instances don't exist")
 	}
 
-	instCache := map[string /*inst name*/ ]uint /*inst id*/ {}
+	instCache := map[string] /*inst name*/ uint /*inst id*/ {}
 
 	for _, inst := range insts {
 		instCache[inst.Name] = inst.ID

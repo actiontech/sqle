@@ -9222,10 +9222,16 @@ var doc = `{
         "v1.InstanceTipResV1": {
             "type": "object",
             "properties": {
+                "host": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string"
                 },
                 "instance_type": {
+                    "type": "string"
+                },
+                "port": {
                     "type": "string"
                 },
                 "workflow_template_id": {

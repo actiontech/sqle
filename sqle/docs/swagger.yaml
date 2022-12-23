@@ -1958,9 +1958,13 @@ definitions:
     type: object
   v1.InstanceTipResV1:
     properties:
+      host:
+        type: string
       instance_name:
         type: string
       instance_type:
+        type: string
+      port:
         type: string
       workflow_template_id:
         type: integer
