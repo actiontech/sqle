@@ -299,7 +299,7 @@ func (s *Sqled) dingTalkRotation() error {
 						continue
 					}
 				default:
-					log.NewEntry().Info("ding talk rotation, no action")
+					// ding talk rotation, no action
 				}
 			}
 		}
