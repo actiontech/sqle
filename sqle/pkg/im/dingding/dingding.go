@@ -24,7 +24,7 @@ const (
 	timeout         = 30 * time.Second
 
 	workflowNameComp = "工单名称"
-	auditResultScore = "审核结果评分"
+	auditResultScore = "审核结果"
 )
 
 type DingTalk struct {
@@ -81,9 +81,9 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	sqlComponent := &dingTalkWorkflow.FormComponent{
-		ComponentType: tea.String("TextField"),
+		ComponentType: tea.String("TextareaField"),
 		Props: &dingTalkWorkflow.FormComponentProps{
-			ComponentId: tea.String("TextField_27EZxEGStCx21"),
+			ComponentId: tea.String("TextareaField_27EZxEGStCx21"),
 			Label:       tea.String(auditResultScore),
 		},
 	}
