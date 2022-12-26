@@ -106,8 +106,9 @@ func GetAuditPlanMetas(c echo.Context) error {
 }
 
 type AuditPlanTypesV1 struct {
-	Type string `json:"type"`
-	Desc string `json:"desc"`
+	Type         string `json:"type"`
+	Desc         string `json:"desc"`
+	InstanceType string `json:"instance_type" enums:"MySQL,Oracle,TiDB,OceanBase For MySQL,"`
 }
 
 type GetAuditPlanTypesResV1 struct {
@@ -127,8 +128,9 @@ func GetAuditPlanTypes(c echo.Context) error {
 	auditPlanTypesV1 := make([]AuditPlanTypesV1, 0, len(auditplan.Metas))
 	for _, meta := range auditplan.Metas {
 		auditPlanTypesV1 = append(auditPlanTypesV1, AuditPlanTypesV1{
-			Type: meta.Type,
-			Desc: meta.Desc,
+			Type:         meta.Type,
+			Desc:         meta.Desc,
+			InstanceType: meta.InstanceType,
 		})
 	}
 
