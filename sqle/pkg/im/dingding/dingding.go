@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -89,7 +87,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String(fmt.Sprintf("sqle-%s", strconv.Itoa(rand.Int()))),
+		Name:           tea.String("sqle-sql审核"),
 		FormComponents: []*dingTalkWorkflow.FormComponent{workflowNameComponent, sqlComponent},
 	}
 
