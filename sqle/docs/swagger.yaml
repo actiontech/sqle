@@ -150,6 +150,14 @@ definitions:
     properties:
       desc:
         type: string
+      instance_type:
+        enum:
+        - MySQL
+        - Oracle
+        - TiDB
+        - OceanBase For MySQL
+        - ""
+        type: string
       type:
         type: string
     type: object

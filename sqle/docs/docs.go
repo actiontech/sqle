@@ -6583,6 +6583,16 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "instance_type": {
+                    "type": "string",
+                    "enum": [
+                        "MySQL",
+                        "Oracle",
+                        "TiDB",
+                        "OceanBase For MySQL",
+                        ""
+                    ]
+                },
                 "type": {
                     "type": "string"
                 }
