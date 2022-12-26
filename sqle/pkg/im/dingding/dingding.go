@@ -127,9 +127,14 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 	startProcessInstanceHeaders := &dingTalkWorkflow.StartProcessInstanceHeaders{}
 	startProcessInstanceHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
+	actionType := "NONE"
+	if len(userIds) > 1 {
+		actionType = "OR"
+	}
+
 	var startProcessInstanceRequestApprovers []*dingTalkWorkflow.StartProcessInstanceRequestApprovers
 	startProcessInstanceRequestApprovers = append(startProcessInstanceRequestApprovers, &dingTalkWorkflow.StartProcessInstanceRequestApprovers{
-		ActionType: tea.String("NONE"),
+		ActionType: tea.String(actionType),
 		UserIds:    userIds,
 	})
 
