@@ -37,9 +37,10 @@ func CreateApprovalTemplate(imType string) {
 	switch im.Type {
 	case model.ImTypeDingTalk:
 		dingTalk := &dingding.DingTalk{
-			Id:        im.ID,
-			AppKey:    im.AppKey,
-			AppSecret: im.AppSecret,
+			Id:          im.ID,
+			AppKey:      im.AppKey,
+			AppSecret:   im.AppSecret,
+			ProcessCode: im.ProcessCode,
 		}
 
 		if err := dingTalk.CreateApprovalTemplate(); err != nil {
