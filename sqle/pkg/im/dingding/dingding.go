@@ -24,6 +24,7 @@ const (
 	projectNameComp  = "项目名称"
 	workflowLinkComp = "工单链接"
 	workflowNameComp = "工单名称"
+	workDescComp     = "工单描述"
 	auditResultComp  = "审核结果"
 )
 
@@ -96,6 +97,14 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 		},
 	}
 
+	workflowDescComponent := &dingTalkWorkflow.FormComponent{
+		ComponentType: tea.String("TextField"),
+		Props: &dingTalkWorkflow.FormComponentProps{
+			ComponentId: tea.String("TextField_17wdcEGSOCTC0"),
+			Label:       tea.String(workDescComp),
+		},
+	}
+
 	tableComponent := &dingTalkWorkflow.FormComponent{
 		ComponentType: tea.String("TableField"),
 		Children: []*dingTalkWorkflow.FormComponent{
@@ -129,7 +138,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
 		Name:           tea.String("sqle审批"),
-		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowLinkComponent, tableComponent},
+		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowDescComponent, workflowLinkComponent, tableComponent},
 	}
 
 	// 存在 processCode 则更新模版
@@ -170,7 +179,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
-func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName string) error {
+func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc string) error {
 	token, err := getToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -203,6 +212,9 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
 			Name:  tea.String(workflowNameComp),
 			Value: tea.String(workflowName)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(workDescComp),
+			Value: tea.String(desc)},
 		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
 			Name:  tea.String(auditResultComp),
 			Value: tea.String(auditResult),

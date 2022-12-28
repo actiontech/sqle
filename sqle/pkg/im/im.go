@@ -125,7 +125,7 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				return
 			}
