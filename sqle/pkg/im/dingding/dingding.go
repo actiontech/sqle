@@ -154,6 +154,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 			// 错误码： https://open.dingtalk.com/document/orgapp-server/create-an-approval-form-template
 			if !tea.BoolValue(util.Empty(sdkErr.Code)) && sdkErr.Code == tea.String("processcode.error") {
 				formCreateRequest.ProcessCode = tea.String("")
+				//nolint:staticcheck
 				resp, err = client.FormCreateWithOptions(formCreateRequest, formCreateHeaders, &util.RuntimeOptions{})
 				if err != nil {
 					return fmt.Errorf("second attempt create approval template error: %v", err)
