@@ -128,12 +128,30 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String("sqle-sql审核"),
-		FormComponents: []*dingTalkWorkflow.FormComponent{workflowNameComponent, sqlComponent},
+		Name:           tea.String("sqle审批"),
+		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowLinkComponent, tableComponent},
+	}
+
+	// 存在 processCode 则更新模版
+	if d.ProcessCode != "" {
+		formCreateRequest.ProcessCode = tea.String(d.ProcessCode)
 	}
 
 	resp, err := client.FormCreateWithOptions(formCreateRequest, formCreateHeaders, &util.RuntimeOptions{})
 	if err != nil {
+		if sdkErr, ok := err.(*tea.SDKError); ok {
+			// 如果用户更换新的审批应用，这时候用数据库中的 ProcessCode 去更新审批模版，会报 processcode.error（processCode对应的审批流程不存在）错误
+			// 去掉 ProcessCode ，不去更新，而是在新的审批应用上创建一个新的审批模版
+			// 错误码： https://open.dingtalk.com/document/orgapp-server/create-an-approval-form-template
+			if !tea.BoolValue(util.Empty(sdkErr.Code)) && sdkErr.Code == tea.String("processcode.error") {
+				formCreateRequest.ProcessCode = tea.String("")
+				resp, err = client.FormCreateWithOptions(formCreateRequest, formCreateHeaders, &util.RuntimeOptions{})
+				if err != nil {
+					return fmt.Errorf("second attempt create approval template error: %v", err)
+				}
+			}
+		}
+
 		return fmt.Errorf("create approval template error: %v", err)
 	}
 
