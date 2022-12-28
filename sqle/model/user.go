@@ -295,9 +295,20 @@ FROM
 	LEFT JOIN project_user_group ON project_user_group.user_group_id = user_group_users.user_group_id
 	LEFT JOIN projects AS pg ON pg.id = project_user_group.project_id
 WHERE
-	p.name = ?
+	users.deleted_at IS NULL
+AND(	
+	(
+		p.name = ?
+		AND
+		p.deleted_at IS NULL
+	)
 	OR
-	pg.name = ?
+	(
+		pg.name = ?
+		AND
+		pg.deleted_at IS NULL
+	)
+)
 `
 	var count uint64
 	err := s.db.Raw(sql, projectName, projectName).Count(&count).Error
