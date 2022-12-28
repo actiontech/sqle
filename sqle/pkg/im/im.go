@@ -1,12 +1,17 @@
 package im
 
 import (
-	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+)
+
+var (
+	approvalTableLayout = "[%v]"
+	approvalTableRow    = "[{\"name\":\"数据源\",\"value\":\"%s\"},{\"name\":\"审核得分\",\"value\":\"%v\"},{\"name\":\"审核通过率\",\"value\":\"%v%%\"}]"
 )
 
 func CreateApprovalTemplate(imType string) {
@@ -57,11 +62,6 @@ func CreateApprove(id string) {
 		return
 	}
 
-	var buff bytes.Buffer
-	for _, record := range workflow.Record.InstanceRecords {
-		buff.WriteString(fmt.Sprintf("数据源: %v;审核得分: %v;审核通过率: %v%%;\r\n", record.Instance.Name, record.Task.Score, record.Task.PassRate*100))
-	}
-
 	if workflow.CreateUser.Phone == "" {
 		newLog.Error("create user phone is empty")
 		return
@@ -86,6 +86,14 @@ func CreateApprove(id string) {
 			if !im.IsEnable {
 				continue
 			}
+
+			var tableRows []string
+			for _, record := range workflow.Record.InstanceRecords {
+				tableRow := fmt.Sprintf(approvalTableRow, record.Instance.Name, record.Task.Score, record.Task.PassRate*100)
+				tableRows = append(tableRows, tableRow)
+			}
+			tableRowJoins := strings.Join(tableRows, ",")
+			auditResult := fmt.Sprintf(approvalTableLayout, tableRowJoins)
 
 			dingTalk := &dingding.DingTalk{
 				Id:          im.ID,
@@ -116,7 +124,7 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, buff.String()); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				return
 			}
