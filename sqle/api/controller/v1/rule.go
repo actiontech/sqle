@@ -318,8 +318,8 @@ type GlobalRuleTemplateInstance struct {
 // @Id getRuleTemplateListV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetRuleTemplatesResV1
 // @router /v1/rule_templates [get]
 func GetRuleTemplates(c echo.Context) error {
@@ -973,8 +973,8 @@ type ProjectRuleTemplateResV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetProjectRuleTemplatesResV1
 // @router /v1/projects/{project_name}/rule_templates [get]
 func GetProjectRuleTemplates(c echo.Context) error {

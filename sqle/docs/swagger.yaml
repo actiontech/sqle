@@ -3957,11 +3957,13 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - default: 50
         description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -4094,10 +4096,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -4313,10 +4317,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -4381,10 +4387,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -4449,10 +4457,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -4564,10 +4574,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: string
       - description: page size
         in: query
         name: page_size
+        required: true
         type: string
       responses:
         "200":
@@ -4735,10 +4747,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -5038,10 +5052,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       - description: project name
         in: path
@@ -5206,10 +5222,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       - description: project name
         in: path
@@ -5375,10 +5393,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -5754,10 +5774,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       - description: project name
         in: path
@@ -6127,10 +6149,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       produces:
       - application/json
@@ -6248,10 +6272,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -6867,10 +6893,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: string
       - description: page size
         in: query
         name: page_size
+        required: true
         type: string
       responses:
         "200":
@@ -7035,10 +7063,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       produces:
       - application/json
@@ -7152,10 +7182,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -7341,10 +7373,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -7385,10 +7419,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":
@@ -7437,10 +7473,12 @@ paths:
       - description: page index
         in: query
         name: page_index
+        required: true
         type: integer
       - description: size of per page
         in: query
         name: page_size
+        required: true
         type: integer
       responses:
         "200":

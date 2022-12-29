@@ -286,8 +286,8 @@ type AuditTaskSQLResV1 struct {
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
 // @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
-// @Param page_index query string false "page index"
-// @Param page_size query string false "page size"
+// @Param page_index query string true "page index"
+// @Param page_size query string true "page size"
 // @Success 200 {object} v1.GetAuditTaskSQLsResV1
 // @router /v1/tasks/audits/{task_id}/sqls [get]
 func GetTaskSQLs(c echo.Context) error {
