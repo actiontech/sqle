@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/pkg/im"
 
@@ -485,17 +486,32 @@ func UpdateSystemVariables(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
 	s := model.GetStorage()
 
+	// 因为 v1 版本 gorm 不支持批量插入，所以这里只能一个一个更新
 	if req.WorkflowExpiredHours != nil {
-		sv := &model.SystemVariable{
+		systemVariable := model.SystemVariable{
 			Key:   model.SystemVariableWorkflowExpiredHours,
-			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours)}
+			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours),
+		}
 
-		if err := s.Save(sv); err != nil {
+		if err := s.Save(&systemVariable); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
+	if req.Url != nil {
+		systemVariable := model.SystemVariable{
+			Key:   model.SystemVariableSqleUrl,
+			Value: *req.Url,
+		}
+
+		if err := s.Save(&systemVariable); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
