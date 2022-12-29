@@ -125,7 +125,20 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc); err != nil {
+			systemVariables, err := s.GetAllSystemVariables()
+			if err != nil {
+				newLog.Errorf("get sqle url system variables error: %v", err)
+				continue
+			}
+
+			sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
+			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.Subject)
+			if sqleUrl == "" {
+				newLog.Errorf("sqle url is empty")
+				workflowUrl = ""
+			}
+
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				return
 			}
