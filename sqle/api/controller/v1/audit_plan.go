@@ -507,8 +507,8 @@ type AuditPlanResV1 struct {
 // @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_plan_type query string false "filter audit plan type"
 // @Param filter_audit_plan_instance_name query string false "filter audit plan instance name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetAuditPlansResV1
 // @router /v1/projects/{project_name}/audit_plans [get]
 func GetAuditPlans(c echo.Context) error {
@@ -665,8 +665,8 @@ type AuditPlanReportResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param audit_plan_name path string true "audit plan name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetAuditPlanReportsResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports [get]
 func GetAuditPlanReports(c echo.Context) error {
@@ -1246,8 +1246,8 @@ type AuditPlanSQLHeadV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param audit_plan_name path string true "audit plan name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetAuditPlanSQLsResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls [get]
 func GetAuditPlanSQLs(c echo.Context) error {
@@ -1327,8 +1327,8 @@ type AuditPlanReportSQLResV1 struct {
 // @Param project_name path string true "project name"
 // @Param audit_plan_name path string true "audit plan name"
 // @Param audit_plan_report_id path string true "audit plan report id"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetAuditPlanReportSQLsResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
 func GetAuditPlanReportSQLsV1(c echo.Context) error {

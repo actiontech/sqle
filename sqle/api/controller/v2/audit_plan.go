@@ -49,8 +49,8 @@ type AuditPlanResV2 struct {
 // @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_plan_type query string false "filter audit plan type"
 // @Param filter_audit_plan_instance_name query string false "filter audit plan instance name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} GetAuditPlansResV2
 // @router /v2/projects/{project_name}/audit_plans [get]
 func GetAuditPlans(c echo.Context) error {
