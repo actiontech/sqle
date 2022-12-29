@@ -2467,6 +2467,8 @@ definitions:
     type: object
   v1.SystemVariablesResV1:
     properties:
+      url:
+        type: string
       workflow_expired_hours:
         type: integer
     type: object
@@ -2821,6 +2823,9 @@ definitions:
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
+      url:
+        example: http://10.186.61.32:8080
+        type: string
       workflow_expired_hours:
         example: 720
         type: integer
