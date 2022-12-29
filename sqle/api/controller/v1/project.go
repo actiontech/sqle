@@ -42,8 +42,8 @@ type ProjectListItem struct {
 // @Tags project
 // @Id getProjectListV1
 // @Security ApiKeyAuth
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page" default(50)
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page" default(50)
 // @Success 200 {object} v1.GetProjectResV1
 // @router /v1/projects [get]
 func GetProjectListV1(c echo.Context) error {

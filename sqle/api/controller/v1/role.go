@@ -172,8 +172,8 @@ type RoleResV1 struct {
 // @Accept json
 // @Produce json
 // @Param filter_role_name query string false "filter role name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetRolesResV1
 // @router /v1/roles [get]
 func GetRoles(c echo.Context) error {

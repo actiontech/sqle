@@ -96,8 +96,8 @@ type UserGroupListItemResV1 struct {
 // @Id getUserGroupListV1
 // @Security ApiKeyAuth
 // @Param filter_user_group_name query string false "filter user group name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Produce json
 // @Success 200 {object} v1.GetUserGroupsResV1
 // @router /v1/user_groups [get]
@@ -500,8 +500,8 @@ type GetMemberGroupRespDataV1 struct {
 // @Security ApiKeyAuth
 // @Param filter_user_group_name query string false "filter user group name"
 // @Param filter_instance_name query string false "filter instance name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetMemberGroupsRespV1
 // @router /v1/projects/{project_name}/member_groups [get]

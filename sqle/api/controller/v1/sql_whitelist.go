@@ -186,8 +186,8 @@ type AuditWhitelistResV1 struct {
 // @Tags audit_whitelist
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param page_index query string false "page index"
-// @Param page_size query string false "page size"
+// @Param page_index query string true "page index"
+// @Param page_size query string true "page size"
 // @Success 200 {object} v1.GetAuditWhitelistResV1
 // @router /v1/projects/{project_name}/audit_whitelist [get]
 func GetSqlWhitelist(c echo.Context) error {
