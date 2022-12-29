@@ -1,12 +1,17 @@
 package im
 
 import (
-	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+)
+
+var (
+	approvalTableLayout = "[%v]"
+	approvalTableRow    = "[{\"name\":\"数据源\",\"value\":\"%s\"},{\"name\":\"审核得分\",\"value\":\"%v\"},{\"name\":\"审核通过率\",\"value\":\"%v%%\"}]"
 )
 
 func CreateApprovalTemplate(imType string) {
@@ -32,9 +37,10 @@ func CreateApprovalTemplate(imType string) {
 	switch im.Type {
 	case model.ImTypeDingTalk:
 		dingTalk := &dingding.DingTalk{
-			Id:        im.ID,
-			AppKey:    im.AppKey,
-			AppSecret: im.AppSecret,
+			Id:          im.ID,
+			AppKey:      im.AppKey,
+			AppSecret:   im.AppSecret,
+			ProcessCode: im.ProcessCode,
 		}
 
 		if err := dingTalk.CreateApprovalTemplate(); err != nil {
@@ -55,11 +61,6 @@ func CreateApprove(id string) {
 	if !exist {
 		newLog.Error("workflow not exist")
 		return
-	}
-
-	var buff bytes.Buffer
-	for _, record := range workflow.Record.InstanceRecords {
-		buff.WriteString(fmt.Sprintf("数据源: %v;审核得分: %v;审核通过率: %v%%;\r\n", record.Instance.Name, record.Task.Score, record.Task.PassRate*100))
 	}
 
 	if workflow.CreateUser.Phone == "" {
@@ -87,6 +88,14 @@ func CreateApprove(id string) {
 				continue
 			}
 
+			var tableRows []string
+			for _, record := range workflow.Record.InstanceRecords {
+				tableRow := fmt.Sprintf(approvalTableRow, record.Instance.Name, record.Task.Score, record.Task.PassRate*100)
+				tableRows = append(tableRows, tableRow)
+			}
+			tableRowJoins := strings.Join(tableRows, ",")
+			auditResult := fmt.Sprintf(approvalTableLayout, tableRowJoins)
+
 			dingTalk := &dingding.DingTalk{
 				Id:          im.ID,
 				AppKey:      im.AppKey,
@@ -97,7 +106,7 @@ func CreateApprove(id string) {
 			createUserId, err := dingTalk.GetUserIDByPhone(workflow.CreateUser.Phone)
 			if err != nil {
 				newLog.Errorf("get origin user id by phone error: %v", err)
-				return
+				continue
 			}
 
 			var userIds []*string
@@ -116,9 +125,22 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, buff.String()); err != nil {
+			systemVariables, err := s.GetAllSystemVariables()
+			if err != nil {
+				newLog.Errorf("get sqle url system variables error: %v", err)
+				continue
+			}
+
+			sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
+			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.Subject)
+			if sqleUrl == "" {
+				newLog.Errorf("sqle url is empty")
+				workflowUrl = ""
+			}
+
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
-				return
+				continue
 			}
 		default:
 			newLog.Errorf("im type %s not found", im.Type)

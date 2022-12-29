@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -23,8 +21,11 @@ const (
 	dingTalkOpenApi = "https://oapi.dingtalk.com/topapi"
 	timeout         = 30 * time.Second
 
+	projectNameComp  = "项目名称"
+	workflowLinkComp = "工单链接"
 	workflowNameComp = "工单名称"
-	auditResultScore = "审核结果"
+	workDescComp     = "工单描述"
+	auditResultComp  = "审核结果"
 )
 
 type DingTalk struct {
@@ -72,6 +73,22 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	formCreateHeaders := &dingTalkWorkflow.FormCreateHeaders{}
 	formCreateHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
+	projectNameComponent := &dingTalkWorkflow.FormComponent{
+		ComponentType: tea.String("TextField"),
+		Props: &dingTalkWorkflow.FormComponentProps{
+			ComponentId: tea.String("TextField_17EZKEGEIBOC0"),
+			Label:       tea.String(projectNameComp),
+		},
+	}
+
+	workflowLinkComponent := &dingTalkWorkflow.FormComponent{
+		ComponentType: tea.String("TextField"),
+		Props: &dingTalkWorkflow.FormComponentProps{
+			ComponentId: tea.String("TextField_17EZKEGE908C0"),
+			Label:       tea.String(workflowLinkComp),
+		},
+	}
+
 	workflowNameComponent := &dingTalkWorkflow.FormComponent{
 		ComponentType: tea.String("TextField"),
 		Props: &dingTalkWorkflow.FormComponentProps{
@@ -80,21 +97,71 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 		},
 	}
 
-	sqlComponent := &dingTalkWorkflow.FormComponent{
-		ComponentType: tea.String("TextareaField"),
+	workflowDescComponent := &dingTalkWorkflow.FormComponent{
+		ComponentType: tea.String("TextField"),
 		Props: &dingTalkWorkflow.FormComponentProps{
-			ComponentId: tea.String("TextareaField_27EZxEGStCx21"),
-			Label:       tea.String(auditResultScore),
+			ComponentId: tea.String("TextField_17wdcEGSOCTC0"),
+			Label:       tea.String(workDescComp),
+		},
+	}
+
+	tableComponent := &dingTalkWorkflow.FormComponent{
+		ComponentType: tea.String("TableField"),
+		Children: []*dingTalkWorkflow.FormComponent{
+			{
+				ComponentType: tea.String("TextField"),
+				Props: &dingTalkWorkflow.FormComponentProps{
+					Label:       tea.String("数据源"),
+					ComponentId: tea.String("TextField_1712EGE908C0"),
+				},
+			}, {
+				ComponentType: tea.String("TextField"),
+				Props: &dingTalkWorkflow.FormComponentProps{
+					Label:       tea.String("审核得分"),
+					ComponentId: tea.String("TextField_17EZ3GSOCTC0"),
+				},
+			}, {
+				ComponentType: tea.String("TextField"),
+				Props: &dingTalkWorkflow.FormComponentProps{
+					Label:       tea.String("审核通过率"),
+					ComponentId: tea.String("TextField_17EZK43OCTC0"),
+				},
+			},
+		},
+		Props: &dingTalkWorkflow.FormComponentProps{
+			TableViewMode: tea.String("table"),
+			VerticalPrint: tea.Bool(true),
+			Label:         tea.String(auditResultComp),
+			ComponentId:   tea.String("TableField_17EZKEG9OCTC0"),
 		},
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String(fmt.Sprintf("sqle-%s", strconv.Itoa(rand.Int()))),
-		FormComponents: []*dingTalkWorkflow.FormComponent{workflowNameComponent, sqlComponent},
+		Name:           tea.String("sqle审批"),
+		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowDescComponent, workflowLinkComponent, tableComponent},
+	}
+
+	// 存在 processCode 则更新模版
+	if d.ProcessCode != "" {
+		formCreateRequest.ProcessCode = tea.String(d.ProcessCode)
 	}
 
 	resp, err := client.FormCreateWithOptions(formCreateRequest, formCreateHeaders, &util.RuntimeOptions{})
 	if err != nil {
+		if sdkErr, ok := err.(*tea.SDKError); ok {
+			// 如果用户更换新的审批应用，这时候用数据库中的 ProcessCode 去更新审批模版，会报 processcode.error（processCode对应的审批流程不存在）错误
+			// 去掉 ProcessCode ，不去更新，而是在新的审批应用上创建一个新的审批模版
+			// 错误码： https://open.dingtalk.com/document/orgapp-server/create-an-approval-form-template
+			if !tea.BoolValue(util.Empty(sdkErr.Code)) && sdkErr.Code == tea.String("processcode.error") {
+				formCreateRequest.ProcessCode = tea.String("")
+				//nolint:staticcheck
+				resp, err = client.FormCreateWithOptions(formCreateRequest, formCreateHeaders, &util.RuntimeOptions{})
+				if err != nil {
+					return fmt.Errorf("second attempt create approval template error: %v", err)
+				}
+			}
+		}
+
 		return fmt.Errorf("create approval template error: %v", err)
 	}
 
@@ -113,7 +180,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
-func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, sqlContent string) error {
+func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
 	token, err := getToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -127,20 +194,35 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 	startProcessInstanceHeaders := &dingTalkWorkflow.StartProcessInstanceHeaders{}
 	startProcessInstanceHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
+	actionType := "NONE"
+	if len(userIds) > 1 {
+		actionType = "OR"
+	}
+
 	var startProcessInstanceRequestApprovers []*dingTalkWorkflow.StartProcessInstanceRequestApprovers
 	startProcessInstanceRequestApprovers = append(startProcessInstanceRequestApprovers, &dingTalkWorkflow.StartProcessInstanceRequestApprovers{
-		ActionType: tea.String("NONE"),
+		ActionType: tea.String(actionType),
 		UserIds:    userIds,
 	})
 
 	var startProcessInstanceRequestFormComponentValues []*dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues
-	startProcessInstanceRequestFormComponentValues = append(startProcessInstanceRequestFormComponentValues, &dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
-		Name:  tea.String(workflowNameComp),
-		Value: tea.String(workflowName),
-	}, &dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
-		Name:  tea.String(auditResultScore),
-		Value: tea.String(sqlContent),
-	})
+	startProcessInstanceRequestFormComponentValues = append(startProcessInstanceRequestFormComponentValues,
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(projectNameComp),
+			Value: tea.String(projectName)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(workflowNameComp),
+			Value: tea.String(workflowName)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(workDescComp),
+			Value: tea.String(desc)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(workflowLinkComp),
+			Value: tea.String(workflowUrl)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(auditResultComp),
+			Value: tea.String(auditResult),
+		})
 
 	startProcessInstanceRequest := &dingTalkWorkflow.StartProcessInstanceRequest{
 		OriginatorUserId:    originUserId,
