@@ -180,7 +180,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
-func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc string) error {
+func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
 	token, err := getToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -216,6 +216,9 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
 			Name:  tea.String(workDescComp),
 			Value: tea.String(desc)},
+		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
+			Name:  tea.String(workflowLinkComp),
+			Value: tea.String(workflowUrl)},
 		&dingTalkWorkflow.StartProcessInstanceRequestFormComponentValues{
 			Name:  tea.String(auditResultComp),
 			Value: tea.String(auditResult),
