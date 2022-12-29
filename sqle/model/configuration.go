@@ -304,12 +304,54 @@ func (s *Storage) GetOauth2Configuration() (*Oauth2Configuration, bool, error) {
 
 const (
 	SystemVariableWorkflowExpiredHours = "system_variable_workflow_expired_hours"
+	SystemVariableSqleUrl              = "system_variable_sqle_url"
 )
 
 // SystemVariable store misc K-V.
 type SystemVariable struct {
 	Key   string `gorm:"primary_key"`
 	Value string `gorm:"not null"`
+}
+
+func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		for _, v := range systemVariables {
+			if err := tx.Save(&v).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
+	var svs []SystemVariable
+	if s.db.Find(&svs).Error != nil {
+		return nil, errors.New(errors.ConnectStorageError, s.db.Error)
+	}
+
+	sysVariables := make(map[string] /*system variable key*/ SystemVariable, len(svs))
+	for _, sv := range svs {
+		if sv.Key == SystemVariableWorkflowExpiredHours {
+			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
+			if err != nil {
+				log.NewEntry().Errorf("parse workflow expired hours failed, error: %v", err)
+				continue
+			}
+			sv.Value = strconv.Itoa(int(wfExpiredHs))
+		}
+
+		sysVariables[sv.Key] = sv
+	}
+
+	if _, ok := sysVariables[SystemVariableWorkflowExpiredHours]; !ok {
+		sysVariables[SystemVariableWorkflowExpiredHours] = SystemVariable{
+			Key:   SystemVariableWorkflowExpiredHours,
+			Value: strconv.Itoa(30 * 24),
+		}
+	}
+
+	return sysVariables, nil
 }
 
 func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
