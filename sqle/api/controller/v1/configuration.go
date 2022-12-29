@@ -518,7 +518,12 @@ type SystemVariablesResV1 struct {
 // @router /v1/configurations/system_variables [get]
 func GetSystemVariables(c echo.Context) error {
 	s := model.GetStorage()
-	wfExpiredHours, err := s.GetWorkflowExpiredHoursOrDefault()
+	systemVariables, err := s.GetAllSystemVariables()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	expiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableWorkflowExpiredHours].Value)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -526,7 +531,8 @@ func GetSystemVariables(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSystemVariablesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SystemVariablesResV1{
-			WorkflowExpiredHours: int(wfExpiredHours),
+			WorkflowExpiredHours: expiredHours,
+			Url:                  systemVariables[model.SystemVariableSqleUrl].Value,
 		},
 	})
 }
