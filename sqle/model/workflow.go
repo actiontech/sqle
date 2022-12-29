@@ -160,6 +160,7 @@ type Workflow struct {
 
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`
+	Project       *Project          `gorm:"foreignkey:ProjectId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
 	Mode          string
 }
@@ -623,7 +624,7 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
-		Preload("Record").
+		Preload("Record").Preload("Project").
 		Where("id = ?", id).First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
