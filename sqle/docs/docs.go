@@ -9988,6 +9988,9 @@ var doc = `{
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
+                "url": {
+                    "type": "string"
+                },
                 "workflow_expired_hours": {
                     "type": "integer"
                 }
@@ -10515,6 +10518,10 @@ var doc = `{
         "v1.UpdateSystemVariablesReqV1": {
             "type": "object",
             "properties": {
+                "url": {
+                    "type": "string",
+                    "example": "http://10.186.61.32:8080"
+                },
                 "workflow_expired_hours": {
                     "type": "integer",
                     "example": 720
