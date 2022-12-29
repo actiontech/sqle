@@ -3,6 +3,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/pkg/im"
 
@@ -467,7 +468,8 @@ func UpdateLDAPConfiguration(c echo.Context) error {
 }
 
 type UpdateSystemVariablesReqV1 struct {
-	WorkflowExpiredHours *int `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
+	WorkflowExpiredHours *int    `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
+	Url                  *string `json:"url" form:"url" example:"http://10.186.61.32:8080" validate:"url"`
 }
 
 // @Summary 修改系统变量
@@ -484,17 +486,28 @@ func UpdateSystemVariables(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+
 	s := model.GetStorage()
 
+	var systemVariables []model.SystemVariable
 	if req.WorkflowExpiredHours != nil {
-		sv := &model.SystemVariable{
+		systemVariables = append(systemVariables, model.SystemVariable{
 			Key:   model.SystemVariableWorkflowExpiredHours,
-			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours)}
-
-		if err := s.Save(sv); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours),
+		})
 	}
+
+	if req.Url != nil {
+		systemVariables = append(systemVariables, model.SystemVariable{
+			Key:   model.SystemVariableSqleUrl,
+			Value: *req.Url,
+		})
+	}
+
+	if err := s.PathSaveSystemVariables(systemVariables); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
@@ -504,7 +517,8 @@ type GetSystemVariablesResV1 struct {
 }
 
 type SystemVariablesResV1 struct {
-	WorkflowExpiredHours int `json:"workflow_expired_hours"`
+	WorkflowExpiredHours int    `json:"workflow_expired_hours"`
+	Url                  string `json:"url"`
 }
 
 // @Summary 获取系统变量
@@ -516,7 +530,12 @@ type SystemVariablesResV1 struct {
 // @router /v1/configurations/system_variables [get]
 func GetSystemVariables(c echo.Context) error {
 	s := model.GetStorage()
-	wfExpiredHours, err := s.GetWorkflowExpiredHoursOrDefault()
+	systemVariables, err := s.GetAllSystemVariables()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	expiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableWorkflowExpiredHours].Value)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -524,7 +543,8 @@ func GetSystemVariables(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSystemVariablesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SystemVariablesResV1{
-			WorkflowExpiredHours: int(wfExpiredHours),
+			WorkflowExpiredHours: expiredHours,
+			Url:                  systemVariables[model.SystemVariableSqleUrl].Value,
 		},
 	})
 }
