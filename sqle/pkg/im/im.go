@@ -106,7 +106,7 @@ func CreateApprove(id string) {
 			createUserId, err := dingTalk.GetUserIDByPhone(workflow.CreateUser.Phone)
 			if err != nil {
 				newLog.Errorf("get origin user id by phone error: %v", err)
-				return
+				continue
 			}
 
 			var userIds []*string
@@ -140,7 +140,7 @@ func CreateApprove(id string) {
 
 			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
-				return
+				continue
 			}
 		default:
 			newLog.Errorf("im type %s not found", im.Type)
