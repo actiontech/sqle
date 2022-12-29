@@ -489,27 +489,23 @@ func UpdateSystemVariables(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	// 因为 v1 版本 gorm 不支持批量插入，所以这里只能一个一个更新
+	var systemVariables []model.SystemVariable
 	if req.WorkflowExpiredHours != nil {
-		systemVariable := model.SystemVariable{
+		systemVariables = append(systemVariables, model.SystemVariable{
 			Key:   model.SystemVariableWorkflowExpiredHours,
 			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours),
-		}
-
-		if err := s.Save(&systemVariable); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+		})
 	}
 
 	if req.Url != nil {
-		systemVariable := model.SystemVariable{
+		systemVariables = append(systemVariables, model.SystemVariable{
 			Key:   model.SystemVariableSqleUrl,
 			Value: *req.Url,
-		}
+		})
+	}
 
-		if err := s.Save(&systemVariable); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	if err := s.PathSaveSystemVariables(systemVariables); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)

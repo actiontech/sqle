@@ -313,6 +313,17 @@ type SystemVariable struct {
 	Value string `gorm:"not null"`
 }
 
+func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		for _, v := range systemVariables {
+			if err := tx.Save(&v).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 	var svs []SystemVariable
 	if s.db.Find(&svs).Error != nil {
