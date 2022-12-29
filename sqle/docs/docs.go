@@ -938,14 +938,16 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "default": 50,
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1152,13 +1154,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1491,13 +1495,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1595,13 +1601,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1699,13 +1707,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1878,13 +1888,15 @@ var doc = `{
                         "type": "string",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
                         "description": "page size",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2142,13 +2154,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2612,13 +2626,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -2873,13 +2889,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -3135,13 +3153,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -3714,13 +3734,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -4295,13 +4317,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -4484,13 +4508,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5454,13 +5480,15 @@ var doc = `{
                         "type": "string",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
                         "description": "page size",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5722,13 +5750,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5905,13 +5935,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -6197,13 +6229,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -6265,13 +6299,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -6345,13 +6381,15 @@ var doc = `{
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "integer",
                         "description": "size of per page",
                         "name": "page_size",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {

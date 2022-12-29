@@ -602,8 +602,8 @@ type GetInstancesResV1 struct {
 // @Param filter_db_port query string false "filter db port"
 // @Param filter_db_user query string false "filter db user"
 // @Param filter_rule_template_name query string false "filter rule template name"
-// @Param page_index query uint32 false "page index"
-// @Param page_size query uint32 false "size of per page"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetInstancesResV1
 // @router /v1/projects/{project_name}/instances [get]
 func GetInstances(c echo.Context) error {
