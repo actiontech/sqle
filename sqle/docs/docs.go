@@ -7313,9 +7313,6 @@ var doc = `{
                 "app_key": {
                     "type": "string"
                 },
-                "app_secret": {
-                    "type": "string"
-                },
                 "is_enable_ding_talk_notify": {
                     "type": "boolean"
                 }
