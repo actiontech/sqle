@@ -214,7 +214,6 @@ type GetDingTalkConfigurationResV1 struct {
 
 type DingTalkConfigurationV1 struct {
 	AppKey                 string `json:"app_key"`
-	AppSecret              string `json:"app_secret"`
 	IsEnableDingTalkNotify bool   `json:"is_enable_ding_talk_notify"`
 }
 
@@ -243,7 +242,6 @@ func GetDingTalkConfigurationV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: DingTalkConfigurationV1{
 			AppKey:                 dingTalk.AppKey,
-			AppSecret:              dingTalk.AppSecret,
 			IsEnableDingTalkNotify: dingTalk.IsEnable,
 		},
 	})
