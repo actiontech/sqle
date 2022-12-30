@@ -242,7 +242,6 @@ func GetDingTalkConfigurationV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: DingTalkConfigurationV1{
 			AppKey:                 dingTalk.AppKey,
-			AppSecret:              dingTalk.AppSecret,
 			IsEnableDingTalkNotify: dingTalk.IsEnable,
 		},
 	})
