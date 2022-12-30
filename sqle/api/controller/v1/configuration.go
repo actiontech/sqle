@@ -214,7 +214,6 @@ type GetDingTalkConfigurationResV1 struct {
 
 type DingTalkConfigurationV1 struct {
 	AppKey                 string `json:"app_key"`
-	AppSecret              string `json:"app_secret"`
 	IsEnableDingTalkNotify bool   `json:"is_enable_ding_talk_notify"`
 }
 
