@@ -35,7 +35,7 @@ type DingTalk struct {
 	ProcessCode string
 }
 
-func getToken(key, secret string) (string, error) {
+func GetToken(key, secret string) (string, error) {
 	config := &openapi.Config{}
 	config.Protocol = tea.String("https")
 	config.RegionId = tea.String("central")
@@ -60,7 +60,7 @@ func getToken(key, secret string) (string, error) {
 // CreateApprovalTemplate
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-form-template
 func (d *DingTalk) CreateApprovalTemplate() error {
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
 	}
@@ -181,7 +181,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
 func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
 	}
@@ -263,7 +263,7 @@ func (d *DingTalk) UpdateApprovalStatus(workflowId, stepId uint, status, userId,
 		return fmt.Errorf("dingtalk instance not exist,step id: %v", stepId)
 	}
 
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
 	}
@@ -303,7 +303,7 @@ func (d *DingTalk) UpdateApprovalStatus(workflowId, stepId uint, status, userId,
 // GetApprovalDetail
 // https://open.dingtalk.com/document/orgapp-server/obtains-the-details-of-a-single-approval-instance-pop
 func (d *DingTalk) GetApprovalDetail(approveInstanceCode string) (*dingTalkWorkflow.GetProcessInstanceResponseBodyResult, error) {
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return nil, fmt.Errorf("get token error: %v", err)
 	}
@@ -343,7 +343,7 @@ type GetUserIDByPhoneResp struct {
 // https://open.dingtalk.com/document/orgapp-server/query-users-by-phone-number
 func (d *DingTalk) GetUserIDByPhone(phone string) (*string, error) {
 	// todo : token cache
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return nil, fmt.Errorf("get token error: %v", err)
 	}
@@ -393,7 +393,7 @@ type GetUserByUserIdResp struct {
 // GetMobileByUserID
 // https://open.dingtalk.com/document/orgapp-server/query-user-details
 func (d *DingTalk) GetMobileByUserID(userId string) (string, error) {
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return "", fmt.Errorf("get token error: %v", err)
 	}
@@ -427,7 +427,7 @@ func (d *DingTalk) GetMobileByUserID(userId string) (string, error) {
 // CancelApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/revoke-an-approval-instance
 func (d *DingTalk) CancelApprovalInstance(instanceCode string) error {
-	token, err := getToken(d.AppKey, d.AppSecret)
+	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
 	}
