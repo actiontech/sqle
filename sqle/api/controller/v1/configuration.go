@@ -296,6 +296,29 @@ func UpdateDingTalkConfigurationV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+type TestDingTalkConfigResDataV1 struct {
+	IsDingTalkSendNormal bool   `json:"is_ding_talk_send_normal"`
+	SendErrorMessage     string `json:"send_error_message,omitempty"`
+}
+
+type TestDingTalkConfigResV1 struct {
+	controller.BaseRes
+	Data TestDingTalkConfigResDataV1 `json:"data"`
+}
+
+// TestDingTalkConfigV1
+// @Summary 测试 DingTalk 配置
+// @Description test DingTalk configuration
+// @Accept json
+// @Id testDingTalkConfigV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestDingTalkConfigResV1
+// @router /v1/configurations/ding_talk/test [post]
+func TestDingTalkConfigV1(c echo.Context) error {
+	return nil
+}
+
 type UpdateWeChatConfigurationReqV1 struct {
 	EnableWeChatNotify *bool   `json:"enable_wechat_notify" from:"enable_wechat_notify" description:"是否启用微信通知"`
 	CorpID             *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`

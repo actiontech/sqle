@@ -155,6 +155,32 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/ding_talk/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test DingTalk configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试 DingTalk 配置",
+                "operationId": "testDingTalkConfigV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestDingTalkConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/drivers": {
             "get": {
                 "security": [
@@ -10136,6 +10162,34 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TestAuditPlanNotifyConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.TestDingTalkConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "is_ding_talk_send_normal": {
+                    "type": "boolean"
+                },
+                "send_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestDingTalkConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestDingTalkConfigResDataV1"
                 },
                 "message": {
                     "type": "string",
