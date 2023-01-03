@@ -3493,6 +3493,7 @@ paths:
       summary: 添加或更新 DingTalk 配置
       tags:
       - configuration
+  /v1/configurations/ding_talk/test:
     post:
       consumes:
       - application/json

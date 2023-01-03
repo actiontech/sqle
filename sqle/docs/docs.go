@@ -119,30 +119,6 @@ var doc = `{
                     }
                 }
             },
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "test DingTalk configuration",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "测试 DingTalk 配置",
-                "operationId": "testDingTalkConfigV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TestDingTalkConfigResV1"
-                        }
-                    }
-                }
-            },
             "patch": {
                 "security": [
                     {
@@ -174,6 +150,32 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/ding_talk/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test DingTalk configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试 DingTalk 配置",
+                "operationId": "testDingTalkConfigV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestDingTalkConfigResV1"
                         }
                     }
                 }

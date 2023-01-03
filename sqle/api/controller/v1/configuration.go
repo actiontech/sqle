@@ -314,7 +314,7 @@ type TestDingTalkConfigResV1 struct {
 // @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.TestDingTalkConfigResV1
-// @router /v1/configurations/ding_talk [post]
+// @router /v1/configurations/ding_talk/test [post]
 func TestDingTalkConfigV1(c echo.Context) error {
 	return nil
 }
