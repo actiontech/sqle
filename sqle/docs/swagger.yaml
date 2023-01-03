@@ -312,6 +312,13 @@ definitions:
           $ref: '#/definitions/v1.InstanceForCheckConnection'
         type: array
     type: object
+  v1.BatchCompleteWorkflowsReqV1:
+    properties:
+      workflow_names:
+        items:
+          type: string
+        type: array
+    type: object
   v1.BatchGetInstanceConnectionsResV1:
     properties:
       code:
@@ -6157,6 +6164,33 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 批量取消工单
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/complete:
+    post:
+      description: this api will directly change the work order status to finished
+        without real online operation
+      operationId: batchCompleteWorkflowsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch complete workflows request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchCompleteWorkflowsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量完成工单
       tags:
       - workflow
   /v1/role_tips:
