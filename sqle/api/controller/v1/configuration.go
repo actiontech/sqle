@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+
 	"github.com/actiontech/sqle/sqle/pkg/im"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
@@ -316,7 +318,38 @@ type TestDingTalkConfigResV1 struct {
 // @Success 200 {object} v1.TestDingTalkConfigResV1
 // @router /v1/configurations/ding_talk/test [post]
 func TestDingTalkConfigV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	dingTalk, exist, err := s.GetImConfigByType(model.ImTypeDingTalk)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestDingTalkConfigResDataV1{
+				IsDingTalkSendNormal: false,
+				SendErrorMessage:     "dingTalk config not exist",
+			},
+		})
+	}
+
+	_, err = dingding.GetToken(dingTalk.AppKey, dingTalk.AppSecret)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestDingTalkConfigResDataV1{
+				IsDingTalkSendNormal: false,
+				SendErrorMessage:     err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestDingTalkConfigResDataV1{
+			IsDingTalkSendNormal: true,
+		},
+	})
 }
 
 type UpdateWeChatConfigurationReqV1 struct {
