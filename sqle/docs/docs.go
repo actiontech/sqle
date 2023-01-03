@@ -3874,6 +3874,47 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/complete": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "this api will directly change the work order status to finished without real online operation",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "批量完成工单",
+                "operationId": "batchCompleteWorkflowsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch complete workflows request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchCompleteWorkflowsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_name}/": {
             "get": {
                 "security": [
@@ -6880,6 +6921,17 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.InstanceForCheckConnection"
+                    }
+                }
+            }
+        },
+        "v1.BatchCompleteWorkflowsReqV1": {
+            "type": "object",
+            "properties": {
+                "workflow_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }

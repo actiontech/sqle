@@ -621,6 +621,24 @@ func BatchCancelWorkflows(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
+type BatchCompleteWorkflowsReqV1 struct {
+	WorkflowNames []string `json:"workflow_names" form:"workflow_names"`
+}
+
+// BatchCompleteWorkflows complete workflows.
+// @Summary 批量完成工单
+// @Description this api will directly change the work order status to finished without real online operation
+// @Tags workflow
+// @Id batchCompleteWorkflowsV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param data body v1.BatchCompleteWorkflowsReqV1 true "batch complete workflows request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/workflows/complete [post]
+func BatchCompleteWorkflows(c echo.Context) error {
+	return nil
+}
+
 func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
 	workflow, exist, err := model.GetStorage().GetWorkflowDetailBySubject(projectName, workflowName)
 	if err != nil {
