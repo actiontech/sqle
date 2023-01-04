@@ -77,7 +77,7 @@ func GetWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	template, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
@@ -206,7 +206,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	userName := controller.GetUserName(c)
@@ -353,7 +353,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	userName := controller.GetUserName(c)
@@ -444,7 +444,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	workflowName := c.Param("workflow_name")
@@ -524,7 +524,7 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	workflowName := c.Param("workflow_name")
@@ -961,7 +961,7 @@ func CreateWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1246,7 +1246,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	user, err := controller.GetCurrentUser(c)
