@@ -161,6 +161,10 @@ func UpdateApprove(workflowId uint, phone, status, reason string) {
 	for _, im := range ims {
 		switch im.Type {
 		case model.ImTypeDingTalk:
+			if !im.IsEnable {
+				continue
+			}
+
 			dingTalk := &dingding.DingTalk{
 				AppKey:    im.AppKey,
 				AppSecret: im.AppSecret,
