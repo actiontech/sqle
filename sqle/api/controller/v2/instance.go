@@ -1,7 +1,11 @@
 package v2
 
 import (
+	"fmt"
 	"net/http"
+
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -146,4 +150,141 @@ func GetInstances(c echo.Context) error {
 
 func isTemplateExistsInProject(templateName string, templateNamesInProject []string) bool {
 	return utils.IsStringExistsInStrings(templateName, templateNamesInProject)
+}
+
+type CreateInstanceReqV2 struct {
+	Name             string                             `json:"instance_name" form:"instance_name" example:"test" valid:"required,name"`
+	DBType           string                             `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                             `json:"db_user" form:"db_user" example:"root" valid:"required"`
+	Host             string                             `json:"db_host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                             `json:"db_port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                             `json:"db_password" form:"db_password" example:"123456" valid:"required"`
+	Desc             string                             `json:"desc" example:"this is a test instance"`
+	SQLQueryConfig   *v1.SQLQueryConfigReqV1            `json:"sql_query_config" form:"sql_query_config"`
+	MaintenanceTimes []*v1.MaintenanceTimeReqV1         `json:"maintenance_times" form:"maintenance_times"`
+	RuleTemplateName string                             `json:"rule_template_name" form:"rule_template_name" valid:"required"`
+	AdditionalParams []*v1.InstanceAdditionalParamReqV1 `json:"additional_params" form:"additional_params"`
+}
+
+// CreateInstance create instance
+// @Summary 添加实例
+// @Description create a instance
+// @Id createInstanceV2
+// @Tags instance
+// @Security ApiKeyAuth
+// @Accept json
+// @Param project_name path string true "project name"
+// @Param instance body v2.CreateInstanceReqV2 true "add instance"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/projects/{project_name}/instances [post]
+func CreateInstance(c echo.Context) error {
+	s := model.GetStorage()
+	req := new(CreateInstanceReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := v1.CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	_, exist, err := s.GetInstanceByNameAndProjectName(req.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("instance is exist")))
+	}
+
+	if req.DBType == "" {
+		req.DBType = driver.DriverTypeMySQL
+	}
+
+	maintenancePeriod := v1.ConvertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	if !maintenancePeriod.SelfCheck() {
+		return controller.JSONBaseErrorReq(c, v1.ErrWrongTimePeriod)
+	}
+
+	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	for _, additionalParam := range req.AdditionalParams {
+		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+		}
+	}
+
+	sqlQueryConfig := model.SqlQueryConfig{}
+	if req.SQLQueryConfig != nil {
+		sqlQueryConfig = model.SqlQueryConfig{
+			MaxPreQueryRows:                  req.SQLQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond:               req.SQLQueryConfig.QueryTimeoutSecond,
+			AuditEnabled:                     req.SQLQueryConfig.AuditEnabled,
+			AllowQueryWhenLessThanAuditLevel: req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel,
+		}
+	}
+	// default value
+	if sqlQueryConfig.QueryTimeoutSecond == 0 {
+		sqlQueryConfig.QueryTimeoutSecond = 10
+	}
+	// default value
+	if sqlQueryConfig.MaxPreQueryRows == 0 {
+		sqlQueryConfig.MaxPreQueryRows = 100
+	}
+
+	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
+		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
+	}
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
+	instance := &model.Instance{
+		DbType:             req.DBType,
+		Name:               req.Name,
+		User:               req.User,
+		Host:               req.Host,
+		Port:               req.Port,
+		Password:           req.Password,
+		Desc:               req.Desc,
+		AdditionalParams:   additionalParams,
+		MaintenancePeriod:  maintenancePeriod,
+		SqlQueryConfig:     sqlQueryConfig,
+		WorkflowTemplateId: project.WorkflowTemplateId,
+		ProjectId:          project.ID,
+	}
+
+	var templates []*model.RuleTemplate
+	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.RuleTemplateName, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrRuleTemplateNotExist)
+	}
+	templates = append(templates, template)
+
+	err = v1.CheckInstanceAndRuleTemplateDbType(templates, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.Save(instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.UpdateInstanceRuleTemplates(instance, templates...)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
