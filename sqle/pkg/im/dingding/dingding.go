@@ -3,6 +3,7 @@ package dingding
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -180,7 +181,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
-func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, currentStpId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
+func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
 	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -242,7 +243,7 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 	}
 
 	taskID := *approvalDetail.Tasks[0].TaskId
-	dingTalkInstance := model.DingTalkInstance{ApproveInstanceCode: *resp.Body.InstanceId, WorkflowId: workflowId, WorkflowStepID: currentStpId, TaskID: int64(uint(taskID))}
+	dingTalkInstance := model.DingTalkInstance{ApproveInstanceCode: *resp.Body.InstanceId, WorkflowId: workflowId, TaskID: int64(uint(taskID))}
 	s := model.GetStorage()
 	if err := s.Save(&dingTalkInstance); err != nil {
 		return fmt.Errorf("save dingtalk instance error: %v", err)
@@ -253,14 +254,14 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId, curre
 
 // UpdateApprovalStatus
 // https://open.dingtalk.com/document/orgapp-server/approve-or-reject-the-approval-task
-func (d *DingTalk) UpdateApprovalStatus(workflowId, stepId uint, status, userId, reason string) error {
+func (d *DingTalk) UpdateApprovalStatus(workflowId uint, status, userId, reason string) error {
 	s := model.GetStorage()
-	dingTalkInstance, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowId, stepId)
+	dingTalkInstance, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowId)
 	if err != nil {
 		return fmt.Errorf("get dingtalk instance error: %v", err)
 	}
 	if !exist {
-		return fmt.Errorf("dingtalk instance not exist,step id: %v", stepId)
+		return errors.New("ding talk instance not exist")
 	}
 
 	token, err := GetToken(d.AppKey, d.AppSecret)
