@@ -6451,6 +6451,48 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a instance",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "instance"
+                ],
+                "summary": "添加实例",
+                "operationId": "createInstanceV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add instance",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.CreateInstanceReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
             }
         }
     },
@@ -11378,6 +11420,58 @@
                 "rule_template": {
                     "type": "object",
                     "$ref": "#/definitions/v2.RuleTemplateV2"
+                }
+            }
+        },
+        "v2.CreateInstanceReqV2": {
+            "type": "object",
+            "properties": {
+                "additional_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
+                    }
+                },
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "root"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is a test instance"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "test"
+                },
+                "maintenance_times": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.MaintenanceTimeReqV1"
+                    }
+                },
+                "rule_template_name": {
+                    "type": "string"
+                },
+                "sql_query_config": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLQueryConfigReqV1"
                 }
             }
         },
