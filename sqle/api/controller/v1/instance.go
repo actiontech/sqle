@@ -20,7 +20,7 @@ import (
 var ErrInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
-var errWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
+var ErrWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
 
 type GetInstanceAdditionalMetasResV1 struct {
 	controller.BaseRes
@@ -113,7 +113,7 @@ type TimeReqV1 struct {
 	Minute int `json:"minute"`
 }
 
-func convertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Periods {
+func ConvertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Periods {
 	periods := make(model.Periods, len(mt))
 	for i, time := range mt {
 		periods[i] = &model.Period{
@@ -163,9 +163,9 @@ func CreateInstance(c echo.Context) error {
 		req.DBType = driver.DriverTypeMySQL
 	}
 
-	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	maintenancePeriod := ConvertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
 	if !maintenancePeriod.SelfCheck() {
-		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
+		return controller.JSONBaseErrorReq(c, ErrWrongTimePeriod)
 	}
 
 	additionalParams := driver.AllAdditionalParams()[req.DBType]
@@ -204,7 +204,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	instance := &model.Instance{
@@ -229,7 +229,7 @@ func CreateInstance(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if !exist {
-			return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+			return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
 		}
 		templates = append(templates, template)
 	}
@@ -457,9 +457,9 @@ func UpdateInstance(c echo.Context) error {
 		return err
 	}
 
-	maintenancePeriod := convertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
+	maintenancePeriod := ConvertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
 	if !maintenancePeriod.SelfCheck() {
-		return controller.JSONBaseErrorReq(c, errWrongTimePeriod)
+		return controller.JSONBaseErrorReq(c, ErrWrongTimePeriod)
 	}
 
 	instanceName := c.Param("instance_name")
@@ -514,7 +514,7 @@ func UpdateInstance(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			if !exist {
-				return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+				return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
 			}
 			err = CheckInstanceAndRuleTemplateDbType([]*model.RuleTemplate{ruleTemplate}, instance)
 			if err != nil {

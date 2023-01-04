@@ -205,6 +205,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
 	v1Router.POST("/projects/:project_name/instances", v1.CreateInstance)
+	v2Router.POST("/projects/:project_name/instances", v2.CreateInstance)
 	v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
 	v1Router.DELETE("/projects/:project_name/instances/:instance_name/", v1.DeleteInstance)
 	v1Router.PATCH("/projects/:project_name/instances/:instance_name/", v1.UpdateInstance)
