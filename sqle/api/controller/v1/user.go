@@ -817,7 +817,7 @@ func checkMemberCanDelete(userName, projectName string) error {
 		return err
 	}
 	if !exist {
-		return errProjectNotExist(projectName)
+		return ErrProjectNotExist(projectName)
 	}
 
 	if len(project.Managers) == 1 && project.Managers[0].ID == user.ID {

@@ -220,7 +220,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	// check user

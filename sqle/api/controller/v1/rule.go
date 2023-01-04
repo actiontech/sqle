@@ -16,7 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errRuleTemplateNotExist = errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
+var ErrRuleTemplateNotExist = errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
 
 type CreateRuleTemplateReqV1 struct {
 	Name     string      `json:"rule_template_name" valid:"required,name"`
@@ -657,7 +657,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	_, exist, err = s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, project.ID)
@@ -754,7 +754,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, project.ID)
 	if err != nil {
@@ -859,7 +859,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 	templateName := c.Param("rule_template_name")
 	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{project.ID}, templateName)
@@ -922,7 +922,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	templateName := c.Param("rule_template_name")
@@ -996,7 +996,7 @@ func GetProjectRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
@@ -1066,7 +1066,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 	exist, err = s.IsRuleTemplateExistFromAnyProject(req.Name)
 	if err != nil {
@@ -1155,7 +1155,7 @@ func GetProjectRuleTemplateTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	return getRuleTemplateTips(c, project.ID, req.FilterDBType)
@@ -1247,7 +1247,7 @@ func ExportProjectRuleTemplateFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errProjectNotExist(projectName))
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	return exportRuleTemplateFile(c, project.ID, templateName)
@@ -1261,7 +1261,7 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errRuleTemplateNotExist)
+		return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
 	}
 
 	// 补充缺失的信息(规则说明等描述信息)
