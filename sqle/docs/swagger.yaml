@@ -3341,6 +3341,43 @@ definitions:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
     type: object
+  v2.CreateInstanceReqV2:
+    properties:
+      additional_params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
+        type: array
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_password:
+        example: "123456"
+        type: string
+      db_port:
+        example: "3306"
+        type: string
+      db_type:
+        example: mysql
+        type: string
+      db_user:
+        example: root
+        type: string
+      desc:
+        example: this is a test instance
+        type: string
+      instance_name:
+        example: test
+        type: string
+      maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
+        type: array
+      rule_template_name:
+        type: string
+      sql_query_config:
+        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
+        type: object
+    type: object
   v2.GetAuditPlansResV2:
     properties:
       code:
@@ -7560,6 +7597,33 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例信息列表
+      tags:
+      - instance
+    post:
+      consumes:
+      - application/json
+      description: create a instance
+      operationId: createInstanceV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: add instance
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.CreateInstanceReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加实例
       tags:
       - instance
 securityDefinitions:
