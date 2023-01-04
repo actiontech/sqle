@@ -546,6 +546,8 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	workflowStatus := workflow.Record.Status
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -569,7 +571,9 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	im.CancelApprove(workflow.ID)
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
+		go im.CancelApprove(workflow.ID)
+	}
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
