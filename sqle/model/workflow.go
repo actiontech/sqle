@@ -539,31 +539,47 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task, stepTemplates
 
 func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
 	return s.TxExec(func(tx *sql.Tx) error {
-		_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
-			w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
-		if err != nil {
-			return err
-		}
-		if operateStep == nil {
-			return nil
-		}
-		_, err = tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ?",
-			operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
-		if err != nil {
-			return err
-		}
+		return updateWorkflowStatus(tx, w, operateStep, instanceRecords)
+	})
+}
 
-		if len(instanceRecords) <= 0 {
-			return nil
+func updateWorkflowStatus(tx *sql.Tx, w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
+	_, err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
+		w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
+	if err != nil {
+		return err
+	}
+	if operateStep == nil {
+		return nil
+	}
+	_, err = tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ?",
+		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
+	if err != nil {
+		return err
+	}
+
+	if len(instanceRecords) <= 0 {
+		return nil
+	}
+	for _, inst := range instanceRecords {
+		_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
+			inst.IsSQLExecuted, inst.ID)
+		if err != nil {
+			return err
 		}
-		for _, inst := range instanceRecords {
-			_, err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
-				inst.IsSQLExecuted, inst.ID)
-			if err != nil {
-				return err
-			}
-			_, err = tx.Exec("UPDATE workflow_instance_records SET execution_user_id = ? WHERE id = ?",
-				inst.ExecutionUserId, inst.ID)
+		_, err = tx.Exec("UPDATE workflow_instance_records SET execution_user_id = ? WHERE id = ?",
+			inst.ExecutionUserId, inst.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
+	return s.TxExec(func(tx *sql.Tx) error {
+		for _, w := range ws {
+			err := updateWorkflowStatus(tx, w, operateStep, instanceRecords)
 			if err != nil {
 				return err
 			}

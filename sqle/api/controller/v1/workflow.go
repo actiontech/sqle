@@ -612,10 +612,8 @@ func BatchCancelWorkflows(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
@@ -636,7 +634,55 @@ type BatchCompleteWorkflowsReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflows/complete [post]
 func BatchCompleteWorkflows(c echo.Context) error {
-	return nil
+	req := new(BatchCancelWorkflowsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflows := make([]*model.Workflow, len(req.WorkflowNames))
+	for i, workflowName := range req.WorkflowNames {
+		workflow, err := checkCancelWorkflow(projectName, workflowName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
+		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
+		canFinishWorkflow := isManager
+		if !canFinishWorkflow {
+			for _, assignee := range lastStep.Assignees {
+				if assignee.Name == userName {
+					canFinishWorkflow = true
+					break
+				}
+			}
+		}
+
+		if !canFinishWorkflow {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("the current user does not have permission to end these work orders")))
+		}
+
+		workflows[i] = workflow
+
+		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.CurrentWorkflowStepId = 0
+	}
+
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+
 }
 
 func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
