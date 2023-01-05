@@ -47,7 +47,7 @@ These [SQL audit plugins](https://actiontech.github.io/sqle-docs-cn/3.modules/3.
 ## Contact us
 We have several different enterprise support plans on *SQLE*. For more information, please contact our sales team:
 * Global Sales: 400-820-6580
-* North China: +86-13718877200, Mr.Wang
+* North China: +86-13910506562, Mr.Wang
 * South China: +86-18503063188, Mr.Cao
 * East China: +86-18930110869, Mr.Liang
 * South-West China: +86-13540040119, Mr.Hong
