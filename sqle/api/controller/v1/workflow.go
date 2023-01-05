@@ -406,7 +406,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusAgree, "")
 
 	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
 		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
@@ -501,7 +501,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -546,6 +546,8 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	workflowStatus := workflow.Record.Status
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -569,7 +571,9 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	im.CancelApprove(workflow.ID, workflow.CurrentStep().ID)
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
+		go im.CancelApprove(workflow.ID)
+	}
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
