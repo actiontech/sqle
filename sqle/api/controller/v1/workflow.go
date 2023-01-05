@@ -612,10 +612,8 @@ func BatchCancelWorkflows(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
@@ -679,10 +677,8 @@ func BatchCompleteWorkflows(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
