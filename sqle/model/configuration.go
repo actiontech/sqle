@@ -435,7 +435,7 @@ type DingTalkInstance struct {
 
 func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkInstance, bool, error) {
 	dti := new(DingTalkInstance)
-	err := s.db.Where("workflow_id = ?", workflowId).First(&dti).Error
+	err := s.db.Where("workflow_id = ?", workflowId).Last(&dti).Error
 	if err == gorm.ErrRecordNotFound {
 		return dti, false, nil
 	}
