@@ -187,7 +187,7 @@ func UpdateApprove(workflowId uint, phone, status, reason string) {
 func CancelApprove(workflowID uint) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowID)
+	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowID)
 	if err != nil {
 		newLog.Errorf("get dingtalk instance by workflow step id error: %v", err)
 		return

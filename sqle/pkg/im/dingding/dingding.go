@@ -256,7 +256,7 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId uint, 
 // https://open.dingtalk.com/document/orgapp-server/approve-or-reject-the-approval-task
 func (d *DingTalk) UpdateApprovalStatus(workflowId uint, status, userId, reason string) error {
 	s := model.GetStorage()
-	dingTalkInstance, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowId)
+	dingTalkInstance, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowId)
 	if err != nil {
 		return fmt.Errorf("get dingtalk instance error: %v", err)
 	}
