@@ -433,7 +433,7 @@ type DingTalkInstance struct {
 	Status string `json:"status" gorm:"default:\"initialized\""`
 }
 
-func (s *Storage) GetDingTalkInstanceByWorkflowStepID(workflowId uint) (*DingTalkInstance, bool, error) {
+func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkInstance, bool, error) {
 	dti := new(DingTalkInstance)
 	err := s.db.Where("workflow_id = ?", workflowId).First(&dti).Error
 	if err == gorm.ErrRecordNotFound {
