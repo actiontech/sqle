@@ -428,15 +428,14 @@ type DingTalkInstance struct {
 	Model
 	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
 	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
-	WorkflowStepID      uint   `json:"workflow_step_id" gorm:"column:workflow_step_id"`
 	// 审批实例 taskID
 	TaskID int64  `json:"task_id" gorm:"column:task_id"`
 	Status string `json:"status" gorm:"default:\"initialized\""`
 }
 
-func (s *Storage) GetDingTalkInstanceByWorkflowStepID(workflowId, workflowStepID uint) (*DingTalkInstance, bool, error) {
+func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkInstance, bool, error) {
 	dti := new(DingTalkInstance)
-	err := s.db.Where("workflow_step_id = ? and workflow_id = ?", workflowStepID, workflowId).First(&dti).Error
+	err := s.db.Where("workflow_id = ?", workflowId).First(&dti).Error
 	if err == gorm.ErrRecordNotFound {
 		return dti, false, nil
 	}

@@ -138,7 +138,7 @@ func CreateApprove(id string) {
 				workflowUrl = ""
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, workflow.CurrentStep().ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
@@ -148,7 +148,7 @@ func CreateApprove(id string) {
 	}
 }
 
-func UpdateApprove(workflowId, stepId uint, phone, status, reason string) {
+func UpdateApprove(workflowId uint, phone, status, reason string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -161,6 +161,10 @@ func UpdateApprove(workflowId, stepId uint, phone, status, reason string) {
 	for _, im := range ims {
 		switch im.Type {
 		case model.ImTypeDingTalk:
+			if !im.IsEnable {
+				continue
+			}
+
 			dingTalk := &dingding.DingTalk{
 				AppKey:    im.AppKey,
 				AppSecret: im.AppSecret,
@@ -172,7 +176,7 @@ func UpdateApprove(workflowId, stepId uint, phone, status, reason string) {
 				continue
 			}
 
-			if err := dingTalk.UpdateApprovalStatus(workflowId, stepId, status, *userID, reason); err != nil {
+			if err := dingTalk.UpdateApprovalStatus(workflowId, status, *userID, reason); err != nil {
 				newLog.Errorf("update approval status error: %v", err)
 				continue
 			}
@@ -180,16 +184,16 @@ func UpdateApprove(workflowId, stepId uint, phone, status, reason string) {
 	}
 }
 
-func CancelApprove(workflowID, workflowStepId uint) {
+func CancelApprove(workflowID uint) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowStepID(workflowID, workflowStepId)
+	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowID)
 	if err != nil {
 		newLog.Errorf("get dingtalk instance by workflow step id error: %v", err)
 		return
 	}
 	if !exist {
-		newLog.Infof("workflow step %v not exist", workflowStepId)
+		newLog.Infof("dingtalk instance not exist, workflow id: %v", workflowID)
 		return
 	}
 
