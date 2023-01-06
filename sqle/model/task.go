@@ -17,7 +17,7 @@ const (
 	TaskStatusInit             = "initialized"
 	TaskStatusAudited          = "audited"
 	TaskStatusExecuting        = "executing"
-	TaskStatusManualExecuted   = "manually_executed"
+	TaskStatusManuallyExecuted = "manually_executed"
 	TaskStatusExecuteSucceeded = "exec_succeeded"
 	TaskStatusExecuteFailed    = "exec_failed"
 )
@@ -66,10 +66,11 @@ const (
 )
 
 const (
-	SQLExecuteStatusInitialized = "initialized"
-	SQLExecuteStatusDoing       = "doing"
-	SQLExecuteStatusFailed      = "failed"
-	SQLExecuteStatusSucceeded   = "succeeded"
+	SQLExecuteStatusInitialized      = "initialized"
+	SQLExecuteStatusDoing            = "doing"
+	SQLExecuteStatusFailed           = "failed"
+	SQLExecuteStatusSucceeded        = "succeeded"
+	SQLExecuteStatusManuallyExecuted = "manually_executed"
 )
 
 type BaseSQL struct {
@@ -103,6 +104,8 @@ func (s *BaseSQL) GetExecStatusDesc() string {
 		return "执行失败"
 	case SQLExecuteStatusSucceeded:
 		return "执行成功"
+	case SQLExecuteStatusManuallyExecuted:
+		return "人工执行"
 	default:
 		return "未知"
 	}
@@ -291,14 +294,18 @@ func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
 }
 
 func (s *Storage) UpdateExecuteSQLStatusByTaskId(task *Task, status string) error {
-	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=?"
-
 	tx := s.db.Begin()
-	if err := tx.Exec(query, status, task.ID).Error; err != nil {
+	err := updateExecuteSQLStatusByTaskId(tx, task, status)
+	if err != nil {
 		tx.Rollback()
-		return err
+		return errors.ConnectStorageErrWrapper(err)
 	}
 	return tx.Commit().Error
+}
+
+func updateExecuteSQLStatusByTaskId(tx *gorm.DB, task *Task, status string) error {
+	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=?"
+	return tx.Exec(query, status, task.ID).Error
 }
 
 func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string) error {
