@@ -975,7 +975,7 @@ const (
 	taskDisplayStatusWaitForExecution = "wait_for_execution"
 	taskDisplayStatusExecFailed       = "exec_failed"
 	taskDisplayStatusExecSucceeded    = "exec_succeeded"
-	taskStatusManualExecuted          = "manually_executed"
+	taskStatusManuallyExecuted        = "manually_executed"
 	taskDisplayStatusExecuting        = "executing"
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
@@ -998,8 +998,8 @@ func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time
 		return taskDisplayStatusExecFailed
 	case model.TaskStatusExecuting:
 		return taskDisplayStatusExecuting
-	case model.TaskStatusManualExecuted:
-		return taskStatusManualExecuted
+	case model.TaskStatusManuallyExecuted:
+		return taskStatusManuallyExecuted
 	}
 	return ""
 }
