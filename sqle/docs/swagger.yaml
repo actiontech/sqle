@@ -251,6 +251,7 @@ definitions:
         - executing
         - exec_success
         - exec_failed
+        - manually_executed
         type: string
       task_id:
         type: integer
@@ -1800,6 +1801,7 @@ definitions:
         - exec_failed
         - exec_succeeded
         - executing
+        - manually_executed
         type: string
       task_id:
         type: integer
