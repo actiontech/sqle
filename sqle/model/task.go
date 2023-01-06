@@ -17,6 +17,7 @@ const (
 	TaskStatusInit             = "initialized"
 	TaskStatusAudited          = "audited"
 	TaskStatusExecuting        = "executing"
+	TaskStatusManualExecuted   = "manually_executed"
 	TaskStatusExecuteSucceeded = "exec_succeeded"
 	TaskStatusExecuteFailed    = "exec_failed"
 )
@@ -279,10 +280,14 @@ func (s *Storage) UpdateRollbackSQLs(rollbackSQLs []*RollbackSQL) error {
 }
 
 func (s *Storage) UpdateTaskStatusById(taskId uint, status string) error {
-	err := s.db.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
+	err := updateTaskStatusById(s.db, taskId, status)
+	return errors.New(errors.ConnectStorageError, err)
+}
+
+func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
+	return tx.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
 		"status": status,
 	}).Error
-	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateExecuteSQLStatusByTaskId(task *Task, status string) error {

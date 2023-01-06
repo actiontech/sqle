@@ -406,7 +406,7 @@ func ApproveWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusAgree, "")
 
 	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
 		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
@@ -501,7 +501,7 @@ func RejectWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, workflow.CurrentStep().ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -546,6 +546,8 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	workflowStatus := workflow.Record.Status
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -569,7 +571,9 @@ func CancelWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	im.CancelApprove(workflow.ID, workflow.CurrentStep().ID)
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
+		go im.CancelApprove(workflow.ID)
+	}
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -612,10 +616,8 @@ func BatchCancelWorkflows(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	for _, workflow := range workflows {
-		if err := model.GetStorage().UpdateWorkflowStatus(workflow, nil, nil); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
@@ -636,7 +638,77 @@ type BatchCompleteWorkflowsReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflows/complete [post]
 func BatchCompleteWorkflows(c echo.Context) error {
-	return nil
+	req := new(BatchCancelWorkflowsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflows := make([]*model.Workflow, len(req.WorkflowNames))
+	for i, workflowName := range req.WorkflowNames {
+		workflow, err := checkCanCompleteWorkflow(projectName, workflowName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
+		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
+		canFinishWorkflow := isManager
+		if !canFinishWorkflow {
+			for _, assignee := range lastStep.Assignees {
+				if assignee.Name == user.Name {
+					canFinishWorkflow = true
+					break
+				}
+			}
+		}
+
+		if !canFinishWorkflow {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("the current user does not have permission to end these work orders")))
+		}
+
+		lastStep.State = model.WorkflowStepStateApprove
+		workflows[i] = workflow
+		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.CurrentWorkflowStepId = 0
+		for j := range workflow.Record.InstanceRecords {
+			workflow.Record.InstanceRecords[j].ExecutionUserId = user.ID
+			workflow.Record.InstanceRecords[j].IsSQLExecuted = true
+		}
+	}
+
+	if err := model.GetStorage().BatchCompletionWorkflow(workflows); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+
+}
+
+func checkCanCompleteWorkflow(projectName, workflowName string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailBySubject(projectName, workflowName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, ErrWorkflowNoAccess
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
@@ -831,7 +903,7 @@ type GetWorkflowTasksResV1 struct {
 type GetWorkflowTasksItemV1 struct {
 	TaskId                   uint                    `json:"task_id"`
 	InstanceName             string                  `json:"instance_name"`
-	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
+	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing,manually_executed"`
 	ExecStartTime            *time.Time              `json:"exec_start_time,omitempty"`
 	ExecEndTime              *time.Time              `json:"exec_end_time,omitempty"`
 	ScheduleTime             *time.Time              `json:"schedule_time,omitempty"`
@@ -903,6 +975,7 @@ const (
 	taskDisplayStatusWaitForExecution = "wait_for_execution"
 	taskDisplayStatusExecFailed       = "exec_failed"
 	taskDisplayStatusExecSucceeded    = "exec_succeeded"
+	taskStatusManualExecuted          = "manually_executed"
 	taskDisplayStatusExecuting        = "executing"
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
@@ -925,6 +998,8 @@ func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time
 		return taskDisplayStatusExecFailed
 	case model.TaskStatusExecuting:
 		return taskDisplayStatusExecuting
+	case model.TaskStatusManualExecuted:
+		return taskStatusManualExecuted
 	}
 	return ""
 }
