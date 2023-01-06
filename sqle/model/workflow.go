@@ -596,7 +596,7 @@ func (s *Storage) BatchCompletionWorkflow(ws []*Workflow) error {
 				return err
 			}
 			for _, task := range tasks {
-				err = updateTaskStatusById(tx, task.ID, TaskStatusManualExecuted)
+				err = updateTaskStatusById(tx, task.ID, TaskStatusManuallyExecuted)
 				if err != nil {
 					return err
 				}
