@@ -118,7 +118,7 @@ func GetInstances(c echo.Context) error {
 				Name: instance.RuleTemplateNames[0],
 			}
 
-			if !isTemplateExistsInProject(ruleTemplate.Name, templateNamesInProject) {
+			if !utils.StringsContains(templateNamesInProject, ruleTemplate.Name) {
 				ruleTemplate.IsGlobalRuleTemplate = true
 			}
 		}
@@ -146,10 +146,6 @@ func GetInstances(c echo.Context) error {
 		Data:      instancesRes,
 		TotalNums: count,
 	})
-}
-
-func isTemplateExistsInProject(templateName string, templateNamesInProject []string) bool {
-	return utils.IsStringExistsInStrings(templateName, templateNamesInProject)
 }
 
 type CreateInstanceReqV2 struct {

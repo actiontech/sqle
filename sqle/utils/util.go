@@ -171,9 +171,9 @@ func IsUpperAndLowerLetterMixed(s string) bool {
 	return false
 }
 
-func IsStringExistsInStrings(s string, ss []string) bool {
-	for _, a := range ss {
-		if a == s {
+func StringsContains(array []string, ele string) bool {
+	for _, a := range array {
+		if ele == a {
 			return true
 		}
 	}

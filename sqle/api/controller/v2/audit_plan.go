@@ -9,6 +9,7 @@ import (
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -126,7 +127,7 @@ func GetAuditPlans(c echo.Context) error {
 		ruleTemplate := &RuleTemplateV2{
 			Name: ruleTemplateName,
 		}
-		if !isTemplateExistsInProject(ruleTemplateName, templateNamesInProject) {
+		if !utils.StringsContains(templateNamesInProject, ruleTemplateName) {
 			ruleTemplate.IsGlobalRuleTemplate = true
 		}
 
