@@ -149,7 +149,7 @@ func GetInstances(c echo.Context) error {
 }
 
 func isTemplateExistsInProject(templateName string, templateNamesInProject []string) bool {
-	return utils.IsStringExistsInStrings(templateName, templateNamesInProject)
+	return utils.StringsContains(templateNamesInProject, templateName)
 }
 
 type CreateInstanceReqV2 struct {
