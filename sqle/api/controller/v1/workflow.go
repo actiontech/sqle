@@ -644,17 +644,20 @@ func BatchCompleteWorkflows(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	isManager, err := s.IsProjectManager(userName, projectName)
+	isManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	workflows := make([]*model.Workflow, len(req.WorkflowNames))
 	for i, workflowName := range req.WorkflowNames {
-		workflow, err := checkCancelWorkflow(projectName, workflowName)
+		workflow, err := checkCanCompleteWorkflow(projectName, workflowName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -664,7 +667,7 @@ func BatchCompleteWorkflows(c echo.Context) error {
 		canFinishWorkflow := isManager
 		if !canFinishWorkflow {
 			for _, assignee := range lastStep.Assignees {
-				if assignee.Name == userName {
+				if assignee.Name == user.Name {
 					canFinishWorkflow = true
 					break
 				}
@@ -675,18 +678,37 @@ func BatchCompleteWorkflows(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("the current user does not have permission to end these work orders")))
 		}
 
+		lastStep.State = model.WorkflowStepStateApprove
 		workflows[i] = workflow
-
 		workflow.Record.Status = model.WorkflowStatusFinish
 		workflow.Record.CurrentWorkflowStepId = 0
+		for j := range workflow.Record.InstanceRecords {
+			workflow.Record.InstanceRecords[j].ExecutionUserId = user.ID
+			workflow.Record.InstanceRecords[j].IsSQLExecuted = true
+		}
 	}
 
-	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+	if err := model.GetStorage().BatchCompletionWorkflow(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
 
+}
+
+func checkCanCompleteWorkflow(projectName, workflowName string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailBySubject(projectName, workflowName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, ErrWorkflowNoAccess
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
@@ -881,7 +903,7 @@ type GetWorkflowTasksResV1 struct {
 type GetWorkflowTasksItemV1 struct {
 	TaskId                   uint                    `json:"task_id"`
 	InstanceName             string                  `json:"instance_name"`
-	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing"`
+	Status                   string                  `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing,manually_executed"`
 	ExecStartTime            *time.Time              `json:"exec_start_time,omitempty"`
 	ExecEndTime              *time.Time              `json:"exec_end_time,omitempty"`
 	ScheduleTime             *time.Time              `json:"schedule_time,omitempty"`
@@ -953,6 +975,7 @@ const (
 	taskDisplayStatusWaitForExecution = "wait_for_execution"
 	taskDisplayStatusExecFailed       = "exec_failed"
 	taskDisplayStatusExecSucceeded    = "exec_succeeded"
+	taskStatusManualExecuted          = "manually_executed"
 	taskDisplayStatusExecuting        = "executing"
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
@@ -975,6 +998,8 @@ func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time
 		return taskDisplayStatusExecFailed
 	case model.TaskStatusExecuting:
 		return taskDisplayStatusExecuting
+	case model.TaskStatusManualExecuted:
+		return taskStatusManualExecuted
 	}
 	return ""
 }
