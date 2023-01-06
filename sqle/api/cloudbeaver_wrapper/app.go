@@ -105,8 +105,6 @@ func StartApp(e *echo.Echo) {
 	if !service.IsCloudBeaverConfigured() {
 		return
 	}
-	fmt.Println("cloudbeaver wrapper is configured")
-
 	cfg := service.GetSQLQueryConfig()
 	protocol := "http"
 	if cfg.EnableHttps {
@@ -122,10 +120,9 @@ func StartApp(e *echo.Echo) {
 		},
 	}
 
-	// 因为要兼容旧版SQLE, 所以无法识别的版本全部默认2220
-	switch cfg.Version {
-	case service.Version2231:
-		service.QueryGQL = service.CloudBeaverV2231{}
+	err = service.InitGQLVersion()
+	if err != nil {
+		e.Logger.Fatal(err)
 	}
 
 	q := e.Group(service.CbRootUri)
@@ -136,6 +133,8 @@ func StartApp(e *echo.Echo) {
 		Skipper:  middleware.DefaultSkipper,
 		Balancer: middleware.NewRandomBalancer(targets),
 	}))
+
+	fmt.Println("cloudbeaver wrapper is configured")
 }
 
 // login页面无法访问sql_query页面的cookie, 这将导致登录SQLE时无法判断CloudBeaver当前登陆状态, 所以需要将cookie放到根目录下, 使用时在还原回原来的位置

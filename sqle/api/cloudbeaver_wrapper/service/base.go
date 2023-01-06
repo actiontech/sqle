@@ -14,7 +14,6 @@ type SQLQueryConfig struct {
 	config.SQLQueryConfig
 	SqlePort        int
 	SqleEnableHttps bool
-	Version         string
 }
 
 const (
@@ -85,7 +84,6 @@ func InitSQLQueryConfig(sqlePort int, sqleEnableHttps bool, c config.SQLQueryCon
 	cfg.SqlePort = sqlePort
 	cfg.SQLQueryConfig = c
 	cfg.SqleEnableHttps = sqleEnableHttps
-	cfg.Version = c.CloudBeaverVersion
 	cfgMu.Unlock()
 }
 
