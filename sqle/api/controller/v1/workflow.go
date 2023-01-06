@@ -657,7 +657,7 @@ func BatchCompleteWorkflows(c echo.Context) error {
 
 	workflows := make([]*model.Workflow, len(req.WorkflowNames))
 	for i, workflowName := range req.WorkflowNames {
-		workflow, err := checkCancelWorkflow(projectName, workflowName)
+		workflow, err := checkCanCompleteWorkflow(projectName, workflowName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -694,6 +694,21 @@ func BatchCompleteWorkflows(c echo.Context) error {
 
 	return controller.JSONBaseErrorReq(c, nil)
 
+}
+
+func checkCanCompleteWorkflow(projectName, workflowName string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailBySubject(projectName, workflowName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, ErrWorkflowNoAccess
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForAudit) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 func checkCancelWorkflow(projectName, workflowName string) (*model.Workflow, error) {
