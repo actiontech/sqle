@@ -6855,7 +6855,8 @@
                         "audited",
                         "executing",
                         "exec_success",
-                        "exec_failed"
+                        "exec_failed",
+                        "manually_executed"
                     ]
                 },
                 "task_id": {
@@ -9115,7 +9116,8 @@
                         "exec_scheduled",
                         "exec_failed",
                         "exec_succeeded",
-                        "executing"
+                        "executing",
+                        "manually_executed"
                     ]
                 },
                 "task_id": {

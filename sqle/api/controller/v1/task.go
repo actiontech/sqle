@@ -45,7 +45,7 @@ type AuditTaskResV1 struct {
 	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error,"`
 	Score          int32      `json:"score"`
 	PassRate       float64    `json:"pass_rate"`
-	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed"`
+	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
 	SQLSource      string     `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
 	ExecStartTime  *time.Time `json:"exec_start_time,omitempty"`
 	ExecEndTime    *time.Time `json:"exec_end_time,omitempty"`

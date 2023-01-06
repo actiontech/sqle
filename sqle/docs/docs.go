@@ -6871,7 +6871,8 @@ var doc = `{
                         "audited",
                         "executing",
                         "exec_success",
-                        "exec_failed"
+                        "exec_failed",
+                        "manually_executed"
                     ]
                 },
                 "task_id": {
@@ -9131,7 +9132,8 @@ var doc = `{
                         "exec_scheduled",
                         "exec_failed",
                         "exec_succeeded",
-                        "executing"
+                        "executing",
+                        "manually_executed"
                     ]
                 },
                 "task_id": {
