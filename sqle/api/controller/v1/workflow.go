@@ -704,7 +704,7 @@ func checkCanCompleteWorkflow(projectName, workflowName string) (*model.Workflow
 	if !exist {
 		return nil, ErrWorkflowNoAccess
 	}
-	if !(workflow.Record.Status == model.WorkflowStatusWaitForAudit) {
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
 		return nil, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
 	}
