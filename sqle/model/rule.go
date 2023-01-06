@@ -104,6 +104,7 @@ func (s *Storage) GetRuleTemplateNamesByProjectName(projectName string) ([]strin
 	err := s.db.Model(&RuleTemplate{}).
 		Select("rule_templates.name").
 		Joins("LEFT JOIN projects ON projects.id = rule_templates.project_id").
+		Where("projects.deleted_at is null").
 		Where("projects.name = ?", projectName).
 		Find(&records).
 		Error
