@@ -39,6 +39,7 @@ type MysqlConfig struct {
 
 type SQLQueryConfig struct {
 	EnableHttps              bool   `yaml:"enable_https"`
+	CloudBeaverVersion       string `yaml:"cloud_beaver_version"` // 目前支持 '2220' 和 '2231' 两个值, 不指定或指定无法识别的版本默认为 '2220'
 	CloudBeaverHost          string `yaml:"cloud_beaver_host"`
 	CloudBeaverPort          string `yaml:"cloud_beaver_port"`
 	CloudBeaverAdminUser     string `yaml:"cloud_beaver_admin_user"`

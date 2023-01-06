@@ -121,6 +121,13 @@ func StartApp(e *echo.Echo) {
 			URL: url2,
 		},
 	}
+
+	// 因为要兼容旧版SQLE, 所以无法识别的版本全部默认2220
+	switch cfg.Version {
+	case service.Version2231:
+		service.QueryGQL = service.CloudBeaverV2231{}
+	}
+
 	q := e.Group(service.CbRootUri)
 
 	q.Use(RedirectCookie())

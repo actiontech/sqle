@@ -48,7 +48,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 		return err
 	}
 
-	checkExistReq := gqlClient.NewRequest(IsUserExistQuery, map[string]interface{}{
+	checkExistReq := gqlClient.NewRequest(QueryGQL.IsUserExistQuery(), map[string]interface{}{
 		"userId": cloudBeaverUser,
 	})
 
@@ -67,7 +67,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 	// 用户不存在则创建CloudBeaver用户
 	if len(users.ListUsers) == 0 {
 		// 创建用户
-		createUserReq := gqlClient.NewRequest(CreateUserQuery, map[string]interface{}{
+		createUserReq := gqlClient.NewRequest(QueryGQL.CreateUserQuery(), map[string]interface{}{
 			"userId": cloudBeaverUser,
 		})
 		err = client.Run(ctx, createUserReq, &UserList{})
@@ -76,9 +76,10 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 		}
 
 		// 授予角色(不授予角色的用户无法登录)
-		grantUserRoleReq := gqlClient.NewRequest(GrantUserRoleQuery, map[string]interface{}{
+		grantUserRoleReq := gqlClient.NewRequest(QueryGQL.GrantUserRoleQuery(), map[string]interface{}{
 			"userId": cloudBeaverUser,
 			"roleId": CBUserRole,
+			"teamId": CBUserRole,
 		})
 		err = client.Run(ctx, grantUserRoleReq, nil)
 		if err != nil {
@@ -87,7 +88,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 	}
 
 	// 更新CloudBeaver用户密码
-	updatePasswordReq := gqlClient.NewRequest(UpdatePasswordQuery, map[string]interface{}{
+	updatePasswordReq := gqlClient.NewRequest(QueryGQL.UpdatePasswordQuery(), map[string]interface{}{
 		"userId": cloudBeaverUser,
 		"credentials": model.JSON{
 			"password": strings.ToUpper(utils.Md5(sqleUser.Password)),
@@ -121,51 +122,6 @@ func RestoreFromCloudBeaverUserName(name string) string {
 	return strings.TrimPrefix(name, CBNamePrefix)
 }
 
-const (
-	IsUserExistQuery = `
-query getUserList(
-	$userId: ID
-){
-	listUsers(userId: $userId) {
-		...adminUserInfo
-	}
-}
-
-fragment adminUserInfo on AdminUserInfo {
-	userId
-}
-`
-	UpdatePasswordQuery = `
-query setUserCredentials(
-  $userId: ID!
-  $credentials: Object!
-) {
-  setUserCredentials(
-    userId: $userId
-    providerId: "local"
-    credentials: $credentials
-  )
-}
-`
-	CreateUserQuery = `
-query createUser(
-  $userId: ID!
-) {
-  user: createUser(userId: $userId) {
-    ...adminUserInfo
-  }
-}
-
-fragment adminUserInfo on AdminUserInfo {
-	userId
-}
-`
-	GrantUserRoleQuery = `
-query grantUserRole($userId: ID!, $roleId: ID!) {
-  grantUserRole(userId: $userId, roleId: $roleId)
-}`
-)
-
 func Login(user, pwd string) (cookie []*http.Cookie, err error) {
 	client := gqlClient.NewClient(GetSQLEGqlServerURI(), gqlClient.WithHttpResHandler(
 		func(response *http.Response) {
@@ -173,7 +129,7 @@ func Login(user, pwd string) (cookie []*http.Cookie, err error) {
 				cookie = response.Cookies()
 			}
 		}))
-	req := gqlClient.NewRequest(LoginQuery, map[string]interface{}{
+	req := gqlClient.NewRequest(QueryGQL.LoginQuery(), map[string]interface{}{
 		"credentials": model.JSON{
 			"user":     user,
 			"password": strings.ToUpper(utils.Md5(pwd)), // the password is an all-caps md5-32 string
@@ -201,7 +157,7 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 				cookie = response.Cookies()
 			}
 		}))
-	req := gqlClient.NewRequest(LoginQuery, map[string]interface{}{
+	req := gqlClient.NewRequest(QueryGQL.LoginQuery(), map[string]interface{}{
 		"credentials": model.JSON{
 			"user":     user,
 			"password": strings.ToUpper(utils.Md5(pwd)), // the password is an all-caps md5-32 string
@@ -220,27 +176,12 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 	return cookie, nil
 }
 
-const LoginQuery = `
-query authLogin(
-  $credentials: Object
-) {
-	authInfo: authLogin(
-    	provider: "local"
-    	configuration: null
-    	credentials: $credentials
-    	linkUser: false
-  ){
-    authId
-  }
-}
-`
-
 func GetCurrentCloudBeaverUserID(ctx echo.Context) (string, bool, error) {
 	client, err := GetSQLEGQLClientWithCurrentUser(ctx)
 	if err != nil {
 		return "", false, err
 	}
-	req := gqlClient.NewRequest(GetActiveUserQuery, nil)
+	req := gqlClient.NewRequest(QueryGQL.GetActiveUserQuery(), nil)
 	res := struct {
 		User struct {
 			UserID string `json:"userId"`
@@ -251,13 +192,3 @@ func GetCurrentCloudBeaverUserID(ctx echo.Context) (string, bool, error) {
 	err = client.Run(context.TODO(), req, &res)
 	return res.User.UserID, res.User.UserID != "", err
 }
-
-const (
-	GetActiveUserQuery = `
-	query getActiveUser {
-  		user: activeUser {
-    		userId
-  		}
-	}
-`
-)

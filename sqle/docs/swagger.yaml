@@ -6977,7 +6977,6 @@ paths:
         - doing
         - succeeded
         - failed
-        - manually_executed
         in: query
         name: filter_exec_status
         type: string

@@ -5507,8 +5507,7 @@ var doc = `{
                             "initialized",
                             "doing",
                             "succeeded",
-                            "failed",
-                            "manually_executed"
+                            "failed"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
