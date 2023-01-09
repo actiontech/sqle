@@ -568,6 +568,38 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.CreateSyncInstanceTaskReqV1:
+    properties:
+      cron:
+        example: 0 0 * * *
+        type: string
+      db_type:
+        example: mysql
+        type: string
+      params:
+        items:
+          $ref: '#/definitions/v1.SyncTaskAdditionalParamReqV1'
+        type: array
+      rule_template:
+        example: default_mysql
+        type: string
+      source:
+        example: actiontech-dmp
+        type: string
+      url:
+        example: http://10.186.62.56:10000
+        type: string
+      version:
+        example: 5.23.01.0
+        type: string
+    required:
+    - cron
+    - db_type
+    - rule_template
+    - source
+    - url
+    - version
+    type: object
   v1.CreateUserGroupReqV1:
     properties:
       user_group_desc:
@@ -623,6 +655,14 @@ definitions:
       workflow_statistics:
         $ref: '#/definitions/v1.WorkflowStatisticsResV1'
         type: object
+    type: object
+  v1.DeleteSyncInstanceTaskReqV1:
+    properties:
+      id:
+        example: 1
+        type: integer
+    required:
+    - id
     type: object
   v1.DingTalkConfigurationV1:
     properties:
@@ -1501,6 +1541,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSyncInstanceTaskListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceTaskResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -1969,6 +2022,33 @@ definitions:
       name:
         type: string
       schema:
+        type: string
+    type: object
+  v1.InstanceTaskResV1:
+    properties:
+      db_type:
+        example: mysql
+        type: string
+      id:
+        example: 1
+        type: integer
+      last_sync_status:
+        enum:
+        - success
+        - fail
+        example: success
+        type: string
+      last_sync_success_time:
+        example: "2021-08-12 12:00:00"
+        type: string
+      source:
+        example: actiontech-dmp
+        type: string
+      url:
+        example: http://10.186.62.56:10000
+        type: string
+      version:
+        example: 1.23.1
         type: string
     type: object
   v1.InstanceTipResV1:
@@ -2472,6 +2552,13 @@ definitions:
       percent:
         type: number
     type: object
+  v1.SyncTaskAdditionalParamReqV1:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   v1.SystemVariablesResV1:
     properties:
       url:
@@ -2645,6 +2732,14 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.TriggerSyncInstanceTaskReqV1:
+    properties:
+      id:
+        example: 1
+        type: integer
+    required:
+    - id
     type: object
   v1.UpdateAuditPlanNotifyConfigReqV1:
     properties:
@@ -2846,6 +2941,34 @@ definitions:
       smtp_username:
         example: test@qq.com
         type: string
+    type: object
+  v1.UpdateSyncInstanceTaskReqV1:
+    properties:
+      cron:
+        example: 0 0 * * *
+        type: string
+      id:
+        example: 1
+        type: integer
+      params:
+        items:
+          $ref: '#/definitions/v1.SyncTaskAdditionalParamReqV1'
+        type: array
+      rule_template:
+        example: default_mysql
+        type: string
+      url:
+        example: http://10.186.62.56:10000
+        type: string
+      version:
+        example: 5.23.01.0
+        type: string
+    required:
+    - cron
+    - id
+    - rule_template
+    - url
+    - version
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
@@ -6836,6 +6959,104 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
+  /v1/task/sync_instance:
+    delete:
+      description: delete sync instance task
+      operationId: deleteSyncInstanceTaskV1
+      parameters:
+      - description: delete sync instance request
+        in: body
+        name: sync_task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DeleteSyncInstanceTaskReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除同步实例任务
+      tags:
+      - sync_instance
+    patch:
+      description: update sync instance task
+      operationId: updateSyncInstanceTaskV1
+      parameters:
+      - description: update sync instance request
+        in: body
+        name: sync_task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSyncInstanceTaskReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新同步实例任务
+      tags:
+      - sync_instance
+    post:
+      consumes:
+      - application/json
+      description: create sync instance task
+      operationId: createSyncInstanceTaskV1
+      parameters:
+      - description: create sync instance task request
+        in: body
+        name: sync_task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateSyncInstanceTaskReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建同步实例任务
+      tags:
+      - sync_instance
+  /v1/task/sync_instance/trigger:
+    post:
+      description: trigger sync instance
+      operationId: triggerSyncInstanceV1
+      parameters:
+      - description: trigger sync instance request
+        in: body
+        name: sync_instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TriggerSyncInstanceTaskReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 触发同步实例
+      tags:
+      - sync_instance
+  /v1/task/sync_instances:
+    get:
+      description: get sync instance task list
+      operationId: GetSyncInstanceTaskList
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSyncInstanceTaskListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取同步实例任务列表
+      tags:
+      - sync_instance
   /v1/task_groups/audit:
     post:
       consumes:
