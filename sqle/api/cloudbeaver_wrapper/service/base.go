@@ -16,11 +16,6 @@ type SQLQueryConfig struct {
 	SqleEnableHttps bool
 }
 
-const (
-	Version2220 = "2220"
-	Version2231 = "2231"
-)
-
 var (
 	cfg   = &SQLQueryConfig{}
 	cfgMu = &sync.RWMutex{}

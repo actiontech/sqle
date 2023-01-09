@@ -3,12 +3,27 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 )
 
-var QueryGQL GetQueryGQL = CloudBeaverV2220{}
+var QueryGQL GetQueryGQL = CloudBeaverV2223{}
+
+var (
+	Version2215 = CBVersion{
+		version: []int{22, 1, 5},
+	}
+
+	Version2221 = CBVersion{
+		version: []int{22, 2, 1},
+	}
+
+	Version2223 = CBVersion{
+		version: []int{22, 2, 3},
+	}
+)
 
 const getServerConfigQuery = `
 query serverConfig {
@@ -29,16 +44,64 @@ func InitGQLVersion() error {
 	if err != nil {
 		return err
 	}
-	versions := strings.Split(resp.ServerConfig.Version, ".")
-	if len(versions) < 3 {
-		return fmt.Errorf("CloudBeaver version number that cannot be resolved")
+
+	version, err := NewCBVersion(resp.ServerConfig.Version)
+	if err != nil {
+		return err
 	}
 
-	switch fmt.Sprintf("%s%s%s", versions[0], versions[1], versions[2]) {
-	case Version2231:
-		QueryGQL = CloudBeaverV2231{}
+	if version.LessThan(Version2223) {
+		QueryGQL = CloudBeaverV2221{}
 	}
+	if version.LessThan(Version2221) {
+		QueryGQL = CloudBeaverV2215{}
+	}
+	if version.LessThan(Version2215) {
+		return fmt.Errorf("CloudBeaver version less than 22.1.5 are not supported temporarily, your version is %v", resp.ServerConfig.Version)
+	}
+
 	return nil
+}
+
+// CloudBeaver 版本号格式一般为 X.X.X.X 格式,例如 '22.3.1.202212261505' , 其中前三位为版本号
+type CBVersion struct {
+	version []int // version是版本号使用'.'进行分割后的数组
+}
+
+func NewCBVersion(versionStr string) (CBVersion, error) {
+	versions := strings.Split(versionStr, ".")
+	if len(versions) < 3 {
+		return CBVersion{}, fmt.Errorf("CloudBeaver version number that cannot be resolved")
+	}
+	cb := CBVersion{
+		version: []int{},
+	}
+	for _, version := range versions {
+		v, err := strconv.Atoi(version)
+		if err != nil {
+			return CBVersion{}, fmt.Errorf("CloudBeaver version number that cannot be resolved")
+		}
+		cb.version = append(cb.version, v)
+	}
+	return cb, nil
+}
+
+// 只比较前三位, 因为只有前三位与版本有关
+func (v CBVersion) LessThan(version CBVersion) bool {
+	if v.version[0] < version.version[0] {
+		return true
+	}
+	if v.version[0] > version.version[0] {
+		return false
+	}
+	if v.version[1] < version.version[1] {
+		return true
+	}
+	if v.version[1] > version.version[1] {
+		return false
+	}
+	return v.version[2] < version.version[2]
+
 }
 
 // 不同版本的CloudBeaver间存在不兼容查询语句
@@ -55,9 +118,10 @@ type GetQueryGQL interface {
 	GetActiveUserQuery() string
 }
 
-type CloudBeaverV2220 struct{}
+// TODO 暂时无法确定这套查询语句是兼容到22.1.5版本还是22.1.4版本, 因为虽然找到了22.1.4版本的镜像, 但没找到22.1.4版本的代码
+type CloudBeaverV2215 struct{}
 
-func (CloudBeaverV2220) CreateConnectionQuery() string {
+func (CloudBeaverV2215) CreateConnectionQuery() string {
 	return `
 mutation createConnection(
   $projectId: ID!
@@ -74,7 +138,7 @@ fragment DatabaseConnection on ConnectionInfo {
 `
 }
 
-func (CloudBeaverV2220) UpdateConnectionQuery() string {
+func (CloudBeaverV2215) UpdateConnectionQuery() string {
 	return `
 mutation updateConnection(
   $projectId: ID!
@@ -91,7 +155,7 @@ fragment DatabaseConnection on ConnectionInfo {
 `
 }
 
-func (CloudBeaverV2220) GetUserConnectionsQuery() string {
+func (CloudBeaverV2215) GetUserConnectionsQuery() string {
 	return `
 query getUserConnections (
   $projectId: ID
@@ -108,7 +172,7 @@ fragment DatabaseConnection on ConnectionInfo {
 `
 }
 
-func (CloudBeaverV2220) SetUserConnectionsQuery() string {
+func (CloudBeaverV2215) SetUserConnectionsQuery() string {
 	return `
 query setConnections($userId: ID!, $connections: [ID!]!) {
   grantedConnections: setSubjectConnectionAccess(
@@ -119,7 +183,7 @@ query setConnections($userId: ID!, $connections: [ID!]!) {
 `
 }
 
-func (CloudBeaverV2220) IsUserExistQuery() string {
+func (CloudBeaverV2215) IsUserExistQuery() string {
 	return `
 query getUserList(
 	$userId: ID
@@ -135,7 +199,7 @@ fragment adminUserInfo on AdminUserInfo {
 `
 }
 
-func (CloudBeaverV2220) UpdatePasswordQuery() string {
+func (CloudBeaverV2215) UpdatePasswordQuery() string {
 	return `
 query setUserCredentials(
   $userId: ID!
@@ -150,7 +214,7 @@ query setUserCredentials(
 `
 }
 
-func (CloudBeaverV2220) CreateUserQuery() string {
+func (CloudBeaverV2215) CreateUserQuery() string {
 	return `
 query createUser(
   $userId: ID!
@@ -166,14 +230,14 @@ fragment adminUserInfo on AdminUserInfo {
 `
 }
 
-func (CloudBeaverV2220) GrantUserRoleQuery() string {
+func (CloudBeaverV2215) GrantUserRoleQuery() string {
 	return `
 query grantUserRole($userId: ID!, $roleId: ID!) {
   grantUserRole(userId: $userId, roleId: $roleId)
 }`
 }
 
-func (CloudBeaverV2220) LoginQuery() string {
+func (CloudBeaverV2215) LoginQuery() string {
 	return `
 query authLogin(
   $credentials: Object
@@ -190,7 +254,7 @@ query authLogin(
 `
 }
 
-func (CloudBeaverV2220) GetActiveUserQuery() string {
+func (CloudBeaverV2215) GetActiveUserQuery() string {
 	return `
 	query getActiveUser {
   		user: activeUser {
@@ -200,11 +264,31 @@ func (CloudBeaverV2220) GetActiveUserQuery() string {
 `
 }
 
-type CloudBeaverV2231 struct {
-	CloudBeaverV2220
+type CloudBeaverV2221 struct {
+	CloudBeaverV2215
 }
 
-func (CloudBeaverV2231) CreateUserQuery() string {
+func (CloudBeaverV2221) CreateUserQuery() string {
+	return `
+query createUser(
+  $userId: ID!
+) {
+  user: createUser(userId: $userId, enabled: true) {
+    ...adminUserInfo
+  }
+}
+
+fragment adminUserInfo on AdminUserInfo {
+	userId
+}
+`
+}
+
+type CloudBeaverV2223 struct {
+	CloudBeaverV2221
+}
+
+func (CloudBeaverV2223) CreateUserQuery() string {
 	return `
 query createUser(
   $userId: ID!
@@ -220,7 +304,7 @@ fragment adminUserInfo on AdminUserInfo {
 `
 }
 
-func (CloudBeaverV2231) GrantUserRoleQuery() string {
+func (CloudBeaverV2223) GrantUserRoleQuery() string {
 	return `
 query grantUserTeam($userId: ID!, $teamId: ID!) {
   grantUserTeam(userId: $userId, teamId: $teamId)
