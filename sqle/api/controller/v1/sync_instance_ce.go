@@ -15,3 +15,7 @@ var errCommunityEditionDoesNotSupportSyncInstance = errors.New(errors.Enterprise
 func createSyncInstanceTask(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
 }
+
+func updateSyncInstanceTask(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
+}

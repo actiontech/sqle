@@ -30,3 +30,25 @@ type SyncTaskAdditionalParamReqV1 struct {
 func CreateSyncInstanceTask(c echo.Context) error {
 	return createSyncInstanceTask(c)
 }
+
+type UpdateSyncInstanceTaskReqV1 struct {
+	Id           int                            `json:"id" form:"id" validate:"required" example:"1"`
+	Version      *string                        `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
+	URL          *string                        `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
+	RuleTemplate *string                        `json:"rule_template" form:"rule_template" validate:"required" example:"default_mysql"`
+	Cron         *string                        `json:"cron" form:"cron" validate:"required" example:"0 0 * * *"`
+	Params       []SyncTaskAdditionalParamReqV1 `json:"params" form:"params" validate:"dive"`
+}
+
+// UpdateSyncInstanceTask update sync instance task
+// @Summary 更新同步实例任务
+// @Description update sync instance task
+// @Id updateSyncInstanceTaskV1
+// @Tags sync_instance
+// @Security ApiKeyAuth
+// @param sync_task body v1.UpdateSyncInstanceTaskReqV1 true "update sync instance request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/task/sync_instance [patch]
+func UpdateSyncInstanceTask(c echo.Context) error {
+	return updateSyncInstanceTask(c)
+}
