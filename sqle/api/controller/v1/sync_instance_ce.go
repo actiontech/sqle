@@ -19,3 +19,7 @@ func createSyncInstanceTask(c echo.Context) error {
 func updateSyncInstanceTask(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
 }
+
+func deleteSyncInstanceTask(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
+}
