@@ -101,9 +101,9 @@ var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
 	},
 }
 
-func StartApp(e *echo.Echo) {
+func StartApp(e *echo.Echo) error {
 	if !service.IsCloudBeaverConfigured() {
-		return
+		return nil
 	}
 	cfg := service.GetSQLQueryConfig()
 	protocol := "http"
@@ -112,9 +112,7 @@ func StartApp(e *echo.Echo) {
 	}
 	url2, err := url.Parse(fmt.Sprintf("%v://%v:%v", protocol, cfg.CloudBeaverHost, cfg.CloudBeaverPort))
 	if err != nil {
-		e.Logger.Error(err)
-		fmt.Println("cloudbeaver wrapper configuration failed")
-		return
+		return err
 	}
 	targets := []*middleware.ProxyTarget{
 		{
@@ -124,9 +122,7 @@ func StartApp(e *echo.Echo) {
 
 	err = service.InitGQLVersion()
 	if err != nil {
-		e.Logger.Error(err)
-		fmt.Println("cloudbeaver wrapper configuration failed")
-		return
+		return err
 	}
 
 	q := e.Group(service.CbRootUri)
@@ -138,7 +134,7 @@ func StartApp(e *echo.Echo) {
 		Balancer: middleware.NewRandomBalancer(targets),
 	}))
 
-	fmt.Println("cloudbeaver wrapper is configured")
+	return nil
 }
 
 // login页面无法访问sql_query页面的cookie, 这将导致登录SQLE时无法判断CloudBeaver当前登陆状态, 所以需要将cookie放到根目录下, 使用时在还原回原来的位置
