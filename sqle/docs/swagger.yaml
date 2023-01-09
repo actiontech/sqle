@@ -576,10 +576,6 @@ definitions:
       db_type:
         example: mysql
         type: string
-      params:
-        items:
-          $ref: '#/definitions/v1.SyncTaskAdditionalParamReqV1'
-        type: array
       rule_template:
         example: default_mysql
         type: string
@@ -2552,13 +2548,6 @@ definitions:
       percent:
         type: number
     type: object
-  v1.SyncTaskAdditionalParamReqV1:
-    properties:
-      key:
-        type: string
-      value:
-        type: string
-    type: object
   v1.SystemVariablesResV1:
     properties:
       url:
@@ -2950,10 +2939,6 @@ definitions:
       id:
         example: 1
         type: integer
-      params:
-        items:
-          $ref: '#/definitions/v1.SyncTaskAdditionalParamReqV1'
-        type: array
       rule_template:
         example: default_mysql
         type: string
