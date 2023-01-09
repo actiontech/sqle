@@ -112,7 +112,9 @@ func StartApp(e *echo.Echo) {
 	}
 	url2, err := url.Parse(fmt.Sprintf("%v://%v:%v", protocol, cfg.CloudBeaverHost, cfg.CloudBeaverPort))
 	if err != nil {
-		e.Logger.Fatal(err)
+		e.Logger.Error(err)
+		fmt.Println("cloudbeaver wrapper configuration failed")
+		return
 	}
 	targets := []*middleware.ProxyTarget{
 		{
@@ -122,7 +124,9 @@ func StartApp(e *echo.Echo) {
 
 	err = service.InitGQLVersion()
 	if err != nil {
-		e.Logger.Fatal(err)
+		e.Logger.Error(err)
+		fmt.Println("cloudbeaver wrapper configuration failed")
+		return
 	}
 
 	q := e.Group(service.CbRootUri)
