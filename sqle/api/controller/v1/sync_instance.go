@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/labstack/echo/v4"
+)
 
 type CreateSyncInstanceTaskReqV1 struct {
 	Source       string                         `json:"source" form:"source" validate:"required" example:"actiontech-dmp"`
@@ -85,4 +88,31 @@ type TriggerSyncInstanceTaskReqV1 struct {
 // @router /v1/task/sync_instance/trigger [post]
 func TriggerSyncInstance(c echo.Context) error {
 	return triggerSyncInstance(c)
+}
+
+type GetSyncInstanceTaskListResV1 struct {
+	controller.BaseRes
+	Data []InstanceTaskResV1 `json:"data"`
+}
+
+type InstanceTaskResV1 struct {
+	ID                  int    `json:"id" example:"1"`
+	Source              string `json:"source" example:"actiontech-dmp"`
+	Version             string `json:"version" example:"1.23.1"`
+	URL                 string `json:"url" example:"http://10.186.62.56:10000"`
+	DbType              string `json:"db_type" example:"mysql"`
+	LastSyncStatus      string `json:"last_sync_status" enums:"success,fail" example:"success"`
+	LastSyncSuccessTime string `json:"last_sync_success_time" example:"2021-08-12 12:00:00"`
+}
+
+// GetSyncInstanceTaskList get sync instance task list
+// @Summary 获取同步实例任务列表
+// @Description get sync instance task list
+// @Id GetSyncInstanceTaskList
+// @Tags sync_instance
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSyncInstanceTaskListResV1
+// @router /v1/task/sync_instances [get]
+func GetSyncInstanceTaskList(c echo.Context) error {
+	return getSyncInstanceTaskList(c)
 }
