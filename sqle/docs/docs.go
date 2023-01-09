@@ -5291,6 +5291,164 @@ var doc = `{
                 }
             }
         },
+        "/v1/task/sync_instance": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create sync instance task",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "创建同步实例任务",
+                "operationId": "createSyncInstanceTaskV1",
+                "parameters": [
+                    {
+                        "description": "create sync instance task request",
+                        "name": "sync_task",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateSyncInstanceTaskReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete sync instance task",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "删除同步实例任务",
+                "operationId": "deleteSyncInstanceTaskV1",
+                "parameters": [
+                    {
+                        "description": "delete sync instance request",
+                        "name": "sync_task",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DeleteSyncInstanceTaskReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sync instance task",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "更新同步实例任务",
+                "operationId": "updateSyncInstanceTaskV1",
+                "parameters": [
+                    {
+                        "description": "update sync instance request",
+                        "name": "sync_task",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSyncInstanceTaskReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/task/sync_instance/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "trigger sync instance",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "触发同步实例",
+                "operationId": "triggerSyncInstanceV1",
+                "parameters": [
+                    {
+                        "description": "trigger sync instance request",
+                        "name": "sync_instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TriggerSyncInstanceTaskReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/task/sync_instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sync instance task list",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "获取同步实例任务列表",
+                "operationId": "GetSyncInstanceTaskList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSyncInstanceTaskListResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/task_groups/audit": {
             "post": {
                 "security": [
@@ -7347,6 +7505,49 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateSyncInstanceTaskReqV1": {
+            "type": "object",
+            "required": [
+                "cron",
+                "db_type",
+                "rule_template",
+                "source",
+                "url",
+                "version"
+            ],
+            "properties": {
+                "cron": {
+                    "type": "string",
+                    "example": "0 0 * * *"
+                },
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SyncTaskAdditionalParamReqV1"
+                    }
+                },
+                "rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "actiontech-dmp"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://10.186.62.56:10000"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "5.23.01.0"
+                }
+            }
+        },
         "v1.CreateUserGroupReqV1": {
             "type": "object",
             "properties": {
@@ -7426,6 +7627,18 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
+        "v1.DeleteSyncInstanceTaskReqV1": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -8705,6 +8918,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSyncInstanceTaskListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceTaskResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -9384,6 +9616,43 @@ var doc = `{
                 },
                 "schema": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.InstanceTaskResV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "last_sync_status": {
+                    "type": "string",
+                    "enum": [
+                        "success",
+                        "fail"
+                    ],
+                    "example": "success"
+                },
+                "last_sync_success_time": {
+                    "type": "string",
+                    "example": "2021-08-12 12:00:00"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "actiontech-dmp"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://10.186.62.56:10000"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.23.1"
                 }
             }
         },
@@ -10143,6 +10412,17 @@ var doc = `{
                 }
             }
         },
+        "v1.SyncTaskAdditionalParamReqV1": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -10402,6 +10682,18 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.TriggerSyncInstanceTaskReqV1": {
+            "type": "object",
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },
@@ -10698,6 +10990,44 @@ var doc = `{
                 "smtp_username": {
                     "type": "string",
                     "example": "test@qq.com"
+                }
+            }
+        },
+        "v1.UpdateSyncInstanceTaskReqV1": {
+            "type": "object",
+            "required": [
+                "cron",
+                "id",
+                "rule_template",
+                "url",
+                "version"
+            ],
+            "properties": {
+                "cron": {
+                    "type": "string",
+                    "example": "0 0 * * *"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SyncTaskAdditionalParamReqV1"
+                    }
+                },
+                "rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://10.186.62.56:10000"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "5.23.01.0"
                 }
             }
         },
