@@ -69,3 +69,20 @@ type DeleteSyncInstanceTaskReqV1 struct {
 func DeleteSyncInstanceTask(c echo.Context) error {
 	return deleteSyncInstanceTask(c)
 }
+
+type TriggerSyncInstanceTaskReqV1 struct {
+	ID int `json:"id" form:"id" validate:"required" example:"1"`
+}
+
+// TriggerSyncInstance trigger sync instance
+// @Summary 触发同步实例
+// @Description trigger sync instance
+// @Id triggerSyncInstanceV1
+// @Tags sync_instance
+// @Security ApiKeyAuth
+// @param sync_instance body v1.TriggerSyncInstanceTaskReqV1 true "trigger sync instance request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/task/sync_instance/trigger [post]
+func TriggerSyncInstance(c echo.Context) error {
+	return triggerSyncInstance(c)
+}
