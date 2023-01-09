@@ -7524,12 +7524,6 @@ var doc = `{
                     "type": "string",
                     "example": "mysql"
                 },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SyncTaskAdditionalParamReqV1"
-                    }
-                },
                 "rule_template": {
                     "type": "string",
                     "example": "default_mysql"
@@ -10412,17 +10406,6 @@ var doc = `{
                 }
             }
         },
-        "v1.SyncTaskAdditionalParamReqV1": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -11010,12 +10993,6 @@ var doc = `{
                 "id": {
                     "type": "integer",
                     "example": 1
-                },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SyncTaskAdditionalParamReqV1"
-                    }
                 },
                 "rule_template": {
                     "type": "string",
