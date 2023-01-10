@@ -1542,14 +1542,14 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetSyncTaskSourceListResV1:
+  v1.GetSyncTaskTipsResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.SyncTaskSourceListResV1'
+          $ref: '#/definitions/v1.SyncTaskTipsResV1'
         type: array
       message:
         example: ok
@@ -2561,8 +2561,12 @@ definitions:
       sync_error_message:
         type: string
     type: object
-  v1.SyncTaskSourceListResV1:
+  v1.SyncTaskTipsResV1:
     properties:
+      db_types:
+        items:
+          type: string
+        type: array
       source:
         example: actiontech-dmp
         type: string
@@ -7064,18 +7068,18 @@ paths:
       summary: 触发同步实例
       tags:
       - sync_instance
-  /v1/sync_instance/source_tips:
+  /v1/sync_instance/tips:
     get:
-      description: get sync task source list
-      operationId: GetSyncTaskSourceList
+      description: get sync task tips
+      operationId: GetSyncTaskTips
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetSyncTaskSourceListResV1'
+            $ref: '#/definitions/v1.GetSyncTaskTipsResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取同步任务来源列表
+      summary: 获取同步任务提示
       tags:
       - sync_instance
   /v1/task_groups/audit:
