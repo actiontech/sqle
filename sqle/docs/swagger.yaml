@@ -579,7 +579,7 @@ definitions:
       source:
         example: actiontech-dmp
         type: string
-      syncInstanceCron:
+      sync_instance_interval:
         example: 0 0 * * *
         type: string
       url:
@@ -592,7 +592,7 @@ definitions:
     - db_type
     - global_rule_template
     - source
-    - syncInstanceCron
+    - sync_instance_interval
     - url
     - version
     type: object
@@ -1537,6 +1537,19 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.InstanceTaskResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSyncTaskSourceListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SyncTaskSourceListResV1'
         type: array
       message:
         example: ok
@@ -2540,6 +2553,20 @@ definitions:
       percent:
         type: number
     type: object
+  v1.SyncInstanceResV1:
+    properties:
+      is_sync_instance_success:
+        example: true
+        type: boolean
+      sync_error_message:
+        type: string
+    type: object
+  v1.SyncTaskSourceListResV1:
+    properties:
+      source:
+        example: actiontech-dmp
+        type: string
+    type: object
   v1.SystemVariablesResV1:
     properties:
       url:
@@ -2709,6 +2736,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.AuditPlanReportResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.TriggerSyncInstanceResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SyncInstanceResV1'
         type: object
       message:
         example: ok
@@ -2920,7 +2959,7 @@ definitions:
       global_rule_template:
         example: default_mysql
         type: string
-      syncInstanceCron:
+      sync_instance_interval:
         example: 0 0 * * *
         type: string
       url:
@@ -2931,7 +2970,7 @@ definitions:
         type: string
     required:
     - global_rule_template
-    - syncInstanceCron
+    - sync_instance_interval
     - url
     - version
     type: object
@@ -6925,6 +6964,19 @@ paths:
       tags:
       - statistic
   /v1/sync_instance:
+    get:
+      description: get sync instance task list
+      operationId: GetSyncInstanceTaskList
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSyncInstanceTaskListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取同步实例任务列表
+      tags:
+      - sync_instance
     post:
       consumes:
       - application/json
@@ -7006,24 +7058,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v1.TriggerSyncInstanceResV1'
       security:
       - ApiKeyAuth: []
       summary: 触发同步实例
       tags:
       - sync_instance
-  /v1/task/sync_instances:
+  /v1/sync_instance/source_tips:
     get:
-      description: get sync instance task list
-      operationId: GetSyncInstanceTaskList
+      description: get sync task source list
+      operationId: GetSyncTaskSourceList
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetSyncInstanceTaskListResV1'
+            $ref: '#/definitions/v1.GetSyncTaskSourceListResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取同步实例任务列表
+      summary: 获取同步任务来源列表
       tags:
       - sync_instance
   /v1/task_groups/audit:

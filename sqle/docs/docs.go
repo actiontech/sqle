@@ -5292,6 +5292,27 @@ var doc = `{
             }
         },
         "/v1/sync_instance": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sync instance task list",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "获取同步实例任务列表",
+                "operationId": "GetSyncInstanceTaskList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSyncInstanceTaskListResV1"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -5323,6 +5344,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sync_instance/source_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sync task source list",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "获取同步任务来源列表",
+                "operationId": "GetSyncTaskSourceList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSyncTaskSourceListResV1"
                         }
                     }
                 }
@@ -5425,30 +5469,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/task/sync_instances": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sync instance task list",
-                "tags": [
-                    "sync_instance"
-                ],
-                "summary": "获取同步实例任务列表",
-                "operationId": "GetSyncInstanceTaskList",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSyncInstanceTaskListResV1"
+                            "$ref": "#/definitions/v1.TriggerSyncInstanceResV1"
                         }
                     }
                 }
@@ -7516,7 +7537,7 @@ var doc = `{
                 "db_type",
                 "global_rule_template",
                 "source",
-                "syncInstanceCron",
+                "sync_instance_interval",
                 "url",
                 "version"
             ],
@@ -7533,7 +7554,7 @@ var doc = `{
                     "type": "string",
                     "example": "actiontech-dmp"
                 },
-                "syncInstanceCron": {
+                "sync_instance_interval": {
                     "type": "string",
                     "example": "0 0 * * *"
                 },
@@ -8916,6 +8937,25 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.InstanceTaskResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSyncTaskSourceListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SyncTaskSourceListResV1"
                     }
                 },
                 "message": {
@@ -10399,6 +10439,27 @@ var doc = `{
                 }
             }
         },
+        "v1.SyncInstanceResV1": {
+            "type": "object",
+            "properties": {
+                "is_sync_instance_success": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "sync_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SyncTaskSourceListResV1": {
+            "type": "object",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "example": "actiontech-dmp"
+                }
+            }
+        },
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -10654,6 +10715,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.AuditPlanReportResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.TriggerSyncInstanceResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SyncInstanceResV1"
                 },
                 "message": {
                     "type": "string",
@@ -10961,7 +11039,7 @@ var doc = `{
             "type": "object",
             "required": [
                 "global_rule_template",
-                "syncInstanceCron",
+                "sync_instance_interval",
                 "url",
                 "version"
             ],
@@ -10970,7 +11048,7 @@ var doc = `{
                     "type": "string",
                     "example": "default_mysql"
                 },
-                "syncInstanceCron": {
+                "sync_instance_interval": {
                     "type": "string",
                     "example": "0 0 * * *"
                 },
