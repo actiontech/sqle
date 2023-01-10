@@ -10,6 +10,26 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func createSyncInstanceTask(c echo.Context) error {
+	return nil
+}
+
+func updateSyncInstanceTask(c echo.Context) error {
+	return nil
+}
+
+func deleteSyncInstanceTask(c echo.Context) error {
+	return nil
+}
+
+func triggerSyncInstance(c echo.Context) error {
+	return nil
+}
+
+func getSyncInstanceTaskList(c echo.Context) error {
+	return nil
+}
+
 var syncTaskSourceList = []string{"actiontech-dmp"}
 
 func getSyncTaskSourceList(c echo.Context) error {
