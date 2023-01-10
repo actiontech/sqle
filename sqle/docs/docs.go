@@ -5356,23 +5356,44 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get sync task source list",
+                "description": "get sync task tips",
                 "tags": [
                     "sync_instance"
                 ],
-                "summary": "获取同步任务来源列表",
-                "operationId": "GetSyncTaskSourceList",
+                "summary": "获取同步任务提示",
+                "operationId": "GetSyncTaskSourceTips",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetSyncTaskSourceListResV1"
+                            "$ref": "#/definitions/v1.GetSyncTaskSourceTipsResV1"
                         }
                     }
                 }
             }
         },
         "/v1/sync_instance/{task_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sync task detail",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "获取同步任务详情",
+                "operationId": "GetSyncInstanceTask",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSyncInstanceTaskResV1"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -8945,7 +8966,24 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSyncTaskSourceListResV1": {
+        "v1.GetSyncInstanceTaskResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.InstanceTaskDetailResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSyncTaskSourceTipsResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -8955,7 +8993,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SyncTaskSourceListResV1"
+                        "$ref": "#/definitions/v1.SyncTaskTipsResV1"
                     }
                 },
                 "message": {
@@ -9643,6 +9681,39 @@ var doc = `{
                 },
                 "schema": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.InstanceTaskDetailResV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "global_rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "source": {
+                    "type": "string",
+                    "example": "actiontech-dmp"
+                },
+                "sync_instance_interval": {
+                    "type": "string",
+                    "example": "0 0 * * *"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "http://10.186.62.56:10000"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.23.1"
                 }
             }
         },
@@ -10451,9 +10522,15 @@ var doc = `{
                 }
             }
         },
-        "v1.SyncTaskSourceListResV1": {
+        "v1.SyncTaskTipsResV1": {
             "type": "object",
             "properties": {
+                "db_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "source": {
                     "type": "string",
                     "example": "actiontech-dmp"
