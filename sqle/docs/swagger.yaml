@@ -570,17 +570,17 @@ definitions:
     type: object
   v1.CreateSyncInstanceTaskReqV1:
     properties:
-      cron:
-        example: 0 0 * * *
-        type: string
       db_type:
         example: mysql
         type: string
-      rule_template:
+      global_rule_template:
         example: default_mysql
         type: string
       source:
         example: actiontech-dmp
+        type: string
+      syncInstanceCron:
+        example: 0 0 * * *
         type: string
       url:
         example: http://10.186.62.56:10000
@@ -589,10 +589,10 @@ definitions:
         example: 5.23.01.0
         type: string
     required:
-    - cron
     - db_type
-    - rule_template
+    - global_rule_template
     - source
+    - syncInstanceCron
     - url
     - version
     type: object
@@ -651,14 +651,6 @@ definitions:
       workflow_statistics:
         $ref: '#/definitions/v1.WorkflowStatisticsResV1'
         type: object
-    type: object
-  v1.DeleteSyncInstanceTaskReqV1:
-    properties:
-      id:
-        example: 1
-        type: integer
-    required:
-    - id
     type: object
   v1.DingTalkConfigurationV1:
     properties:
@@ -2722,14 +2714,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.TriggerSyncInstanceTaskReqV1:
-    properties:
-      id:
-        example: 1
-        type: integer
-    required:
-    - id
-    type: object
   v1.UpdateAuditPlanNotifyConfigReqV1:
     properties:
       enable_email_notify:
@@ -2933,14 +2917,11 @@ definitions:
     type: object
   v1.UpdateSyncInstanceTaskReqV1:
     properties:
-      cron:
-        example: 0 0 * * *
-        type: string
-      id:
-        example: 1
-        type: integer
-      rule_template:
+      global_rule_template:
         example: default_mysql
+        type: string
+      syncInstanceCron:
+        example: 0 0 * * *
         type: string
       url:
         example: http://10.186.62.56:10000
@@ -2949,9 +2930,8 @@ definitions:
         example: 5.23.01.0
         type: string
     required:
-    - cron
-    - id
-    - rule_template
+    - global_rule_template
+    - syncInstanceCron
     - url
     - version
     type: object
@@ -6944,47 +6924,7 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/task/sync_instance:
-    delete:
-      description: delete sync instance task
-      operationId: deleteSyncInstanceTaskV1
-      parameters:
-      - description: delete sync instance request
-        in: body
-        name: sync_task
-        required: true
-        schema:
-          $ref: '#/definitions/v1.DeleteSyncInstanceTaskReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除同步实例任务
-      tags:
-      - sync_instance
-    patch:
-      description: update sync instance task
-      operationId: updateSyncInstanceTaskV1
-      parameters:
-      - description: update sync instance request
-        in: body
-        name: sync_task
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSyncInstanceTaskReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新同步实例任务
-      tags:
-      - sync_instance
+  /v1/sync_instance:
     post:
       consumes:
       - application/json
@@ -7007,17 +6947,61 @@ paths:
       summary: 创建同步实例任务
       tags:
       - sync_instance
-  /v1/task/sync_instance/trigger:
+  /v1/sync_instance/{task_id}/:
+    delete:
+      description: delete sync instance task
+      operationId: deleteSyncInstanceTaskV1
+      parameters:
+      - description: sync task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除同步实例任务
+      tags:
+      - sync_instance
+    patch:
+      description: update sync instance task
+      operationId: updateSyncInstanceTaskV1
+      parameters:
+      - description: sync task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: update sync instance request
+        in: body
+        name: sync_task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSyncInstanceTaskReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新同步实例任务
+      tags:
+      - sync_instance
+  /v1/sync_instance/{task_id}/trigger:
     post:
       description: trigger sync instance
       operationId: triggerSyncInstanceV1
       parameters:
-      - description: trigger sync instance request
-        in: body
-        name: sync_instance
+      - description: sync task id
+        in: path
+        name: task_id
         required: true
-        schema:
-          $ref: '#/definitions/v1.TriggerSyncInstanceTaskReqV1'
+        type: string
       responses:
         "200":
           description: OK

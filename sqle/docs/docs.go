@@ -5291,7 +5291,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/task/sync_instance": {
+        "/v1/sync_instance": {
             "post": {
                 "security": [
                     {
@@ -5326,7 +5326,9 @@ var doc = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/v1/sync_instance/{task_id}/": {
             "delete": {
                 "security": [
                     {
@@ -5341,13 +5343,11 @@ var doc = `{
                 "operationId": "deleteSyncInstanceTaskV1",
                 "parameters": [
                     {
-                        "description": "delete sync instance request",
-                        "name": "sync_task",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.DeleteSyncInstanceTaskReqV1"
-                        }
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -5373,6 +5373,13 @@ var doc = `{
                 "operationId": "updateSyncInstanceTaskV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "update sync instance request",
                         "name": "sync_task",
                         "in": "body",
@@ -5392,7 +5399,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/task/sync_instance/trigger": {
+        "/v1/sync_instance/{task_id}/trigger": {
             "post": {
                 "security": [
                     {
@@ -5407,13 +5414,11 @@ var doc = `{
                 "operationId": "triggerSyncInstanceV1",
                 "parameters": [
                     {
-                        "description": "trigger sync instance request",
-                        "name": "sync_instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.TriggerSyncInstanceTaskReqV1"
-                        }
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -7508,29 +7513,29 @@ var doc = `{
         "v1.CreateSyncInstanceTaskReqV1": {
             "type": "object",
             "required": [
-                "cron",
                 "db_type",
-                "rule_template",
+                "global_rule_template",
                 "source",
+                "syncInstanceCron",
                 "url",
                 "version"
             ],
             "properties": {
-                "cron": {
-                    "type": "string",
-                    "example": "0 0 * * *"
-                },
                 "db_type": {
                     "type": "string",
                     "example": "mysql"
                 },
-                "rule_template": {
+                "global_rule_template": {
                     "type": "string",
                     "example": "default_mysql"
                 },
                 "source": {
                     "type": "string",
                     "example": "actiontech-dmp"
+                },
+                "syncInstanceCron": {
+                    "type": "string",
+                    "example": "0 0 * * *"
                 },
                 "url": {
                     "type": "string",
@@ -7621,18 +7626,6 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
-                }
-            }
-        },
-        "v1.DeleteSyncInstanceTaskReqV1": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 1
                 }
             }
         },
@@ -10668,18 +10661,6 @@ var doc = `{
                 }
             }
         },
-        "v1.TriggerSyncInstanceTaskReqV1": {
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                }
-            }
-        },
         "v1.UpdateAuditPlanNotifyConfigReqV1": {
             "type": "object",
             "properties": {
@@ -10979,24 +10960,19 @@ var doc = `{
         "v1.UpdateSyncInstanceTaskReqV1": {
             "type": "object",
             "required": [
-                "cron",
-                "id",
-                "rule_template",
+                "global_rule_template",
+                "syncInstanceCron",
                 "url",
                 "version"
             ],
             "properties": {
-                "cron": {
-                    "type": "string",
-                    "example": "0 0 * * *"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "rule_template": {
+                "global_rule_template": {
                     "type": "string",
                     "example": "default_mysql"
+                },
+                "syncInstanceCron": {
+                    "type": "string",
+                    "example": "0 0 * * *"
                 },
                 "url": {
                     "type": "string",
