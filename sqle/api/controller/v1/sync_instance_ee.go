@@ -32,6 +32,10 @@ func getSyncInstanceTaskList(c echo.Context) error {
 	return nil
 }
 
+func getSyncInstanceTask(c echo.Context) error {
+	return nil
+}
+
 const ActiontechDmp = "actiontech-dmp"
 
 var (
