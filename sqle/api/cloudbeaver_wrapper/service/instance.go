@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
@@ -131,7 +132,7 @@ func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instan
 		return nil
 	}
 	// 添加实例
-	req := gqlClient.NewRequest(CreateConnectionQuery, params)
+	req := gqlClient.NewRequest(QueryGQL.CreateConnectionQuery(), params)
 	resp := struct {
 		Connection struct {
 			ID string `json:"id"`
@@ -151,23 +152,6 @@ func AddCloudBeaverInstance(client *gqlClient.Client, sqleInst *sqleModel.Instan
 		SQLEInstanceFingerprint: sqleInst.Fingerprint(),
 	})
 }
-
-const (
-	CreateConnectionQuery = `
-mutation createConnection(
-  $projectId: ID!
-  $config: ConnectionConfig!
-) {
-  connection: createConnection(projectId: $projectId, config: $config) {
-    ...DatabaseConnection
-  }
-}
-
-fragment DatabaseConnection on ConnectionInfo {
-  id
-}
-`
-)
 
 // UpdateCloudBeaverInstance 更新完毕后会同步缓存
 func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleInst *sqleModel.Instance, project *sqleModel.Project) error {
@@ -181,7 +165,7 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 	}
 	// 更新实例
 	params["config"].(map[string]interface{})["connectionId"] = cbInstID
-	req := gqlClient.NewRequest(UpdateConnectionQuery, params)
+	req := gqlClient.NewRequest(QueryGQL.UpdateConnectionQuery(), params)
 	resp := struct {
 		Connection struct {
 			ID string `json:"id"`
@@ -201,23 +185,6 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 		SQLEInstanceFingerprint: sqleInst.Fingerprint(),
 	})
 }
-
-const (
-	UpdateConnectionQuery = `
-mutation updateConnection(
-  $projectId: ID!
-  $config: ConnectionConfig!
-) {
-  connection: updateConnection(projectId: $projectId, config: $config) {
-    ...DatabaseConnection
-  }
-}
-
-fragment DatabaseConnection on ConnectionInfo {
-  id
-}
-`
-)
 
 func SyncVisibleInstance(cbUserCache *sqleModel.CloudBeaverUserCache, sqleUser *sqleModel.User, sqleInstances map[uint] /*sqle inst id*/ *sqleModel.Instance) error {
 
@@ -248,7 +215,7 @@ func SyncVisibleInstance(cbUserCache *sqleModel.CloudBeaverUserCache, sqleUser *
 		} `json:"connections"`
 	}{}
 
-	getConReq := gqlClient.NewRequest(GetUserConnectionsQuery, nil)
+	getConReq := gqlClient.NewRequest(QueryGQL.GetUserConnectionsQuery(), nil)
 
 	client, err := GetGQLClient(cbUserCache.CloudBeaverUserID, sqleUser.Password)
 	if err != nil {
@@ -278,7 +245,7 @@ func syncVisibleInstance(cbInstCacheSlice []*sqleModel.CloudBeaverInstanceCache,
 	for _, cache := range cbInstCacheSlice {
 		cbInstIDs = append(cbInstIDs, cache.CloudBeaverInstanceID)
 	}
-	setConnReq := gqlClient.NewRequest(SetUserConnectionsQuery, map[string]interface{}{
+	setConnReq := gqlClient.NewRequest(QueryGQL.SetUserConnectionsQuery(), map[string]interface{}{
 		"userId":      cloudBeaverUserID,
 		"connections": cbInstIDs,
 	})
@@ -289,31 +256,6 @@ func syncVisibleInstance(cbInstCacheSlice []*sqleModel.CloudBeaverInstanceCache,
 	err = rootClient.Run(context.TODO(), setConnReq, nil)
 	return err
 }
-
-const (
-	GetUserConnectionsQuery = `
-query getUserConnections (
-  $projectId: ID
-  $connectionId: ID
-){
-  connections: userConnections(projectId: $projectId, id: $connectionId) {
-    ...DatabaseConnection
-  }
-}
-
-fragment DatabaseConnection on ConnectionInfo {
-  id
-}
-`
-	SetUserConnectionsQuery = `
-query setConnections($userId: ID!, $connections: [ID!]!) {
-  grantedConnections: setSubjectConnectionAccess(
-    subjectId: $userId
-    connections: $connections
-  )
-}
-`
-)
 
 func generateCommonCloudBeaverConfigParams(sqleInst *sqleModel.Instance, project *sqleModel.Project) map[string]interface{} {
 	return map[string]interface{}{

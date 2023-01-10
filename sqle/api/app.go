@@ -291,7 +291,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 
 	// sql query
-	cloudbeaver_wrapper.StartApp(e)
+	if err := cloudbeaver_wrapper.StartApp(e); err != nil {
+		log.Logger().Errorf("CloudBeaver wrapper configuration failed: %v", err)
+	} else {
+		log.Logger().Info("CloudBeaver wrapper is configured")
+	}
 
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
