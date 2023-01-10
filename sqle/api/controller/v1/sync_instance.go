@@ -133,3 +133,30 @@ type GetSyncTaskSourceTipsResV1 struct {
 func GetSyncTaskSourceTips(c echo.Context) error {
 	return getSyncTaskSourceTips(c)
 }
+
+type InstanceTaskDetailResV1 struct {
+	ID                   int    `json:"id" example:"1"`
+	Source               string `json:"source" example:"actiontech-dmp"`
+	Version              string `json:"version" example:"1.23.1"`
+	URL                  string `json:"url" example:"http://10.186.62.56:10000"`
+	DbType               string `json:"db_type" example:"mysql"`
+	GlobalRuleTemplate   string `json:"global_rule_template" example:"default_mysql"`
+	SyncInstanceInterval string `json:"sync_instance_interval" example:"0 0 * * *"`
+}
+
+type GetSyncInstanceTaskResV1 struct {
+	controller.BaseRes
+	Data InstanceTaskDetailResV1 `json:"data"`
+}
+
+// GetSyncInstanceTask get sync task detail
+// @Summary 获取同步任务详情
+// @Description get sync task detail
+// @Id GetSyncInstanceTask
+// @Tags sync_instance
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSyncInstanceTaskResV1
+// @router /v1/sync_instance/{task_id}/ [get]
+func GetSyncInstanceTask(c echo.Context) error {
+	return getSyncInstanceTask(c)
+}
