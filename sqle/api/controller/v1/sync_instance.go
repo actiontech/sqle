@@ -23,13 +23,12 @@ type CreateSyncInstanceTaskReqV1 struct {
 // @Accept json
 // @Param sync_task body v1.CreateSyncInstanceTaskReqV1 true "create sync instance task request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/task/sync_instance [post]
+// @router /v1/sync_instance [post]
 func CreateSyncInstanceTask(c echo.Context) error {
 	return createSyncInstanceTask(c)
 }
 
 type UpdateSyncInstanceTaskReqV1 struct {
-	Id                 int     `json:"id" form:"id" validate:"required" example:"1"`
 	Version            *string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
 	URL                *string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
 	GlobalRuleTemplate string  `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
@@ -42,15 +41,12 @@ type UpdateSyncInstanceTaskReqV1 struct {
 // @Id updateSyncInstanceTaskV1
 // @Tags sync_instance
 // @Security ApiKeyAuth
+// @Param task_id path string true "sync task id"
 // @param sync_task body v1.UpdateSyncInstanceTaskReqV1 true "update sync instance request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/task/sync_instance [patch]
+// @router /v1/sync_instance/{task_id}/ [patch]
 func UpdateSyncInstanceTask(c echo.Context) error {
 	return updateSyncInstanceTask(c)
-}
-
-type DeleteSyncInstanceTaskReqV1 struct {
-	Id int `json:"id" form:"id" validate:"required" example:"1"`
 }
 
 // DeleteSyncInstanceTask delete sync instance task
@@ -59,15 +55,11 @@ type DeleteSyncInstanceTaskReqV1 struct {
 // @Id deleteSyncInstanceTaskV1
 // @Tags sync_instance
 // @Security ApiKeyAuth
-// @param sync_task body v1.DeleteSyncInstanceTaskReqV1 true "delete sync instance request"
+// @param task_id path string true "sync task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/task/sync_instance [delete]
+// @router /v1/sync_instance/{task_id}/ [delete]
 func DeleteSyncInstanceTask(c echo.Context) error {
 	return deleteSyncInstanceTask(c)
-}
-
-type TriggerSyncInstanceTaskReqV1 struct {
-	ID int `json:"id" form:"id" validate:"required" example:"1"`
 }
 
 // TriggerSyncInstance trigger sync instance
@@ -76,9 +68,9 @@ type TriggerSyncInstanceTaskReqV1 struct {
 // @Id triggerSyncInstanceV1
 // @Tags sync_instance
 // @Security ApiKeyAuth
-// @param sync_instance body v1.TriggerSyncInstanceTaskReqV1 true "trigger sync instance request"
+// @param task_id path string true "sync task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/task/sync_instance/trigger [post]
+// @router /v1/sync_instance/{task_id}/trigger [post]
 func TriggerSyncInstance(c echo.Context) error {
 	return triggerSyncInstance(c)
 }
