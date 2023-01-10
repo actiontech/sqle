@@ -5385,6 +5385,15 @@ var doc = `{
                 ],
                 "summary": "获取同步任务详情",
                 "operationId": "GetSyncInstanceTask",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
