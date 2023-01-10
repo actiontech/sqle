@@ -6,12 +6,12 @@ import (
 )
 
 type CreateSyncInstanceTaskReqV1 struct {
-	Source             string `json:"source" form:"source" validate:"required" example:"actiontech-dmp"`
-	Version            string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
-	URL                string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
-	DbType             string `json:"db_type" form:"db_type" validate:"required" example:"mysql"`
-	GlobalRuleTemplate string `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
-	SyncInstanceCron   string `json:"syncInstanceCron" form:"syncInstanceCron" validate:"required" example:"0 0 * * *"`
+	Source               string `json:"source" form:"source" validate:"required" example:"actiontech-dmp"`
+	Version              string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
+	URL                  string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
+	DbType               string `json:"db_type" form:"db_type" validate:"required" example:"mysql"`
+	GlobalRuleTemplate   string `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
+	SyncInstanceInterval string `json:"sync_instance_interval" form:"sync_instance_interval" validate:"required" example:"0 0 * * *"`
 }
 
 // CreateSyncInstanceTask create sync instance task
@@ -29,10 +29,10 @@ func CreateSyncInstanceTask(c echo.Context) error {
 }
 
 type UpdateSyncInstanceTaskReqV1 struct {
-	Version            *string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
-	URL                *string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
-	GlobalRuleTemplate string  `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
-	SyncInstanceCron   *string `json:"syncInstanceCron" form:"syncInstanceCron" validate:"required" example:"0 0 * * *"`
+	Version              *string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
+	URL                  *string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
+	GlobalRuleTemplate   string  `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
+	SyncInstanceInterval string  `json:"sync_instance_interval" form:"sync_instance_interval" validate:"required" example:"0 0 * * *"`
 }
 
 // UpdateSyncInstanceTask update sync instance task
