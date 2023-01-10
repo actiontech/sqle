@@ -111,3 +111,24 @@ type InstanceTaskResV1 struct {
 func GetSyncInstanceTaskList(c echo.Context) error {
 	return getSyncInstanceTaskList(c)
 }
+
+type SyncTaskSourceListResV1 struct {
+	Source string `json:"source" example:"actiontech-dmp"`
+}
+
+type GetSyncTaskSourceListResV1 struct {
+	controller.BaseRes
+	Data []SyncTaskSourceListResV1 `json:"data"`
+}
+
+// GetSyncTaskSourceList get sync instance source list
+// @Summary 获取同步任务来源列表
+// @Description get sync task source list
+// @Id GetSyncTaskSourceList
+// @Tags sync_instance
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSyncTaskSourceListResV1
+// @router /v1/sync_instance/source_tips [get]
+func GetSyncTaskSourceList(c echo.Context) error {
+	return getSyncTaskSourceList(c)
+}
