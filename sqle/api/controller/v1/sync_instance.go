@@ -117,19 +117,19 @@ type SyncTaskTipsResV1 struct {
 	DbTypes []string `json:"db_types"`
 }
 
-type GetSyncTaskTipsResV1 struct {
+type GetSyncTaskSourceTipsResV1 struct {
 	controller.BaseRes
 	Data []SyncTaskTipsResV1 `json:"data"`
 }
 
-// GetSyncTaskTips get sync instance tips
+// GetSyncTaskSourceTips get sync instance tips
 // @Summary 获取同步任务提示
 // @Description get sync task tips
-// @Id GetSyncTaskTips
+// @Id GetSyncTaskSourceTips
 // @Tags sync_instance
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetSyncTaskTipsResV1
-// @router /v1/sync_instance/tips [get]
-func GetSyncTaskTips(c echo.Context) error {
-	return getSyncTaskTips(c)
+// @Success 200 {object} v1.GetSyncTaskSourceTipsResV1
+// @router /v1/sync_instance/source_tips [get]
+func GetSyncTaskSourceTips(c echo.Context) error {
+	return getSyncTaskSourceTips(c)
 }
