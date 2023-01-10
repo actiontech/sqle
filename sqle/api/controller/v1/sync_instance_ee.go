@@ -47,8 +47,8 @@ var (
 func getSyncTaskSourceTips(c echo.Context) error {
 	m := make(map[string]struct{}, 0)
 
-	additionalParams := driver.AllAdditionalParams()
-	for dbType := range additionalParams {
+	drivers := driver.AllDrivers()
+	for _, dbType := range drivers {
 		m[dbType] = struct{}{}
 	}
 
