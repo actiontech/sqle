@@ -147,6 +147,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		// sync instance
 		v1Router.POST("/sync_instance", v1.CreateSyncInstanceTask, AdminUserAllowed())
 		v1Router.GET("/sync_instance", v1.GetSyncInstanceTaskList, AdminUserAllowed())
+		v1Router.GET("/sync_instance/{task_id}/", v1.GetSyncInstanceTask, AdminUserAllowed())
 		v1Router.PATCH("/sync_instance/{task_id}/", v1.UpdateSyncInstanceTask, AdminUserAllowed())
 		v1Router.GET("/sync_instance/source_tips", v1.GetSyncTaskSourceTips, AdminUserAllowed())
 		v1Router.DELETE("/sync_instance/{task_id}/", v1.DeleteSyncInstanceTask, AdminUserAllowed())
