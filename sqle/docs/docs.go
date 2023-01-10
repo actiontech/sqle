@@ -5349,7 +5349,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/tips": {
+        "/v1/sync_instance/source_tips": {
             "get": {
                 "security": [
                     {
@@ -5361,12 +5361,12 @@ var doc = `{
                     "sync_instance"
                 ],
                 "summary": "获取同步任务提示",
-                "operationId": "GetSyncTaskTips",
+                "operationId": "GetSyncTaskSourceTips",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetSyncTaskTipsResV1"
+                            "$ref": "#/definitions/v1.GetSyncTaskSourceTipsResV1"
                         }
                     }
                 }
@@ -8945,7 +8945,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSyncTaskTipsResV1": {
+        "v1.GetSyncTaskSourceTipsResV1": {
             "type": "object",
             "properties": {
                 "code": {

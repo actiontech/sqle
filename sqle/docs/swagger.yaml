@@ -1542,7 +1542,7 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetSyncTaskTipsResV1:
+  v1.GetSyncTaskSourceTipsResV1:
     properties:
       code:
         example: 0
@@ -7068,15 +7068,15 @@ paths:
       summary: 触发同步实例
       tags:
       - sync_instance
-  /v1/sync_instance/tips:
+  /v1/sync_instance/source_tips:
     get:
       description: get sync task tips
-      operationId: GetSyncTaskTips
+      operationId: GetSyncTaskSourceTips
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetSyncTaskTipsResV1'
+            $ref: '#/definitions/v1.GetSyncTaskSourceTipsResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取同步任务提示
