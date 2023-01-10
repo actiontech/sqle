@@ -5349,24 +5349,24 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/source_tips": {
+        "/v1/sync_instance/tips": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get sync task source list",
+                "description": "get sync task tips",
                 "tags": [
                     "sync_instance"
                 ],
-                "summary": "获取同步任务来源列表",
-                "operationId": "GetSyncTaskSourceList",
+                "summary": "获取同步任务提示",
+                "operationId": "GetSyncTaskTips",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetSyncTaskSourceListResV1"
+                            "$ref": "#/definitions/v1.GetSyncTaskTipsResV1"
                         }
                     }
                 }
@@ -8945,7 +8945,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSyncTaskSourceListResV1": {
+        "v1.GetSyncTaskTipsResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -8955,7 +8955,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.SyncTaskSourceListResV1"
+                        "$ref": "#/definitions/v1.SyncTaskTipsResV1"
                     }
                 },
                 "message": {
@@ -10451,9 +10451,15 @@ var doc = `{
                 }
             }
         },
-        "v1.SyncTaskSourceListResV1": {
+        "v1.SyncTaskTipsResV1": {
             "type": "object",
             "properties": {
+                "db_types": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "source": {
                     "type": "string",
                     "example": "actiontech-dmp"
