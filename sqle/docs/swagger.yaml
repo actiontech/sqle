@@ -7062,6 +7062,12 @@ paths:
     get:
       description: get sync task detail
       operationId: GetSyncInstanceTask
+      parameters:
+      - description: sync task id
+        in: path
+        name: task_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK

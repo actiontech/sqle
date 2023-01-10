@@ -155,6 +155,7 @@ type GetSyncInstanceTaskResV1 struct {
 // @Id GetSyncInstanceTask
 // @Tags sync_instance
 // @Security ApiKeyAuth
+// @param task_id path string true "sync task id"
 // @Success 200 {object} v1.GetSyncInstanceTaskResV1
 // @router /v1/sync_instance/{task_id}/ [get]
 func GetSyncInstanceTask(c echo.Context) error {
