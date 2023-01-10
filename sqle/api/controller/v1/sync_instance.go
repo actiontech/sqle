@@ -62,6 +62,16 @@ func DeleteSyncInstanceTask(c echo.Context) error {
 	return deleteSyncInstanceTask(c)
 }
 
+type SyncInstanceResV1 struct {
+	IsSyncInstanceSuccess bool   `json:"is_sync_instance_success" example:"true"`
+	SyncErrorMessage      string `json:"sync_error_message"`
+}
+
+type TriggerSyncInstanceResV1 struct {
+	controller.BaseRes
+	Data SyncInstanceResV1 `json:"data"`
+}
+
 // TriggerSyncInstance trigger sync instance
 // @Summary 触发同步实例
 // @Description trigger sync instance
@@ -69,7 +79,7 @@ func DeleteSyncInstanceTask(c echo.Context) error {
 // @Tags sync_instance
 // @Security ApiKeyAuth
 // @param task_id path string true "sync task id"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} v1.TriggerSyncInstanceResV1
 // @router /v1/sync_instance/{task_id}/trigger [post]
 func TriggerSyncInstance(c echo.Context) error {
 	return triggerSyncInstance(c)
