@@ -32,6 +32,6 @@ func getSyncInstanceTaskList(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
 }
 
-func getSyncTaskSourceList(c echo.Context) error {
+func getSyncTaskTips(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSyncInstance)
 }
