@@ -105,7 +105,29 @@ func updateSyncInstanceTask(c echo.Context) error {
 }
 
 func deleteSyncInstanceTask(c echo.Context) error {
-	return nil
+	taskId := c.Param("task_id")
+
+	s := model.GetStorage()
+	taskIdStr, err := strconv.Atoi(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	syncTask, exist, err := s.GetSyncTaskById(uint(taskIdStr))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+	}
+
+	if err := s.Delete(&syncTask); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instSync.ReloadInstance(context.Background(), "delete sync instance task")
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func triggerSyncInstance(c echo.Context) error {
