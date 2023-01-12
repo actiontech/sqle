@@ -262,6 +262,7 @@ type InstanceResV1 struct {
 	RuleTemplateName string                          `json:"rule_template_name,omitempty"`
 	AdditionalParams []*InstanceAdditionalParamResV1 `json:"additional_params"`
 	SQLQueryConfig   *SQLQueryConfigResV1            `json:"sql_query_config"`
+	Source           string                          `json:"source" example:"SQLE"`
 }
 
 type SQLQueryConfigResV1 struct {
@@ -319,6 +320,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV1 {
 			AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
 			AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		},
+		Source: instance.Source,
 	}
 
 	if len(instance.RuleTemplates) > 0 {
@@ -667,6 +669,7 @@ func GetInstances(c echo.Context) error {
 				AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
 				AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 			},
+			Source: instance.Source,
 		}
 		instancesRes = append(instancesRes, instanceReq)
 	}
