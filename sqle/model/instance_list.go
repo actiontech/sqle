@@ -16,10 +16,11 @@ type InstanceDetail struct {
 	MaintenancePeriod Periods        `json:"maintenance_period" gorm:"text"`
 	RuleTemplateNames RowList        `json:"rule_template_names"`
 	SqlQueryConfig    SqlQueryConfig `json:"sql_query_config"`
+	Source            string         `json:"source"`
 }
 
 var instancesQueryTpl = `SELECT inst.name, inst.db_type, inst.desc, inst.db_host,
-inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, 
+inst.db_port, inst.db_user, inst.maintenance_period, inst.sql_query_config, inst.source,  
 GROUP_CONCAT(DISTINCT COALESCE(rt.name,'')) AS rule_template_names
 FROM instances AS inst
 LEFT JOIN instance_rule_template AS inst_rt ON inst.id = inst_rt.instance_id
