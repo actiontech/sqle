@@ -483,6 +483,16 @@ func UpdateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	}
 
+	if instance.Source != model.InstanceSourceSQLE {
+		if req.Desc != nil ||
+			req.Host != nil ||
+			req.Port != nil ||
+			req.User != nil ||
+			req.Password != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("description, host, port, user, password of external instance can not be changed")))
+		}
+	}
+
 	updateMap := map[string]interface{}{}
 	if req.Desc != nil {
 		updateMap["desc"] = *req.Desc
