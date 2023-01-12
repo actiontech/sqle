@@ -2011,6 +2011,9 @@ definitions:
         type: array
       rule_template_name:
         type: string
+      source:
+        example: SQLE
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
@@ -3607,6 +3610,9 @@ definitions:
       rule_template:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
+      source:
+        example: SQLE
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
