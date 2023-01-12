@@ -5291,7 +5291,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance": {
+        "/v1/sync_instances": {
             "get": {
                 "security": [
                     {
@@ -5312,73 +5312,7 @@ var doc = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/sync_instance/{task_id}/": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sync task detail",
-                "tags": [
-                    "sync_instance"
-                ],
-                "summary": "获取同步任务详情",
-                "operationId": "GetSyncInstanceTask",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sync task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSyncInstanceTaskResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sync_instance/{task_id}/trigger": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "trigger sync instance",
-                "tags": [
-                    "sync_instance"
-                ],
-                "summary": "触发同步实例",
-                "operationId": "triggerSyncInstanceV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "sync task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TriggerSyncInstanceResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sync_instances": {
+            },
             "post": {
                 "security": [
                     {
@@ -5439,6 +5373,36 @@ var doc = `{
             }
         },
         "/v1/sync_instances/{task_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sync task detail",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "获取同步任务详情",
+                "operationId": "GetSyncInstanceTask",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSyncInstanceTaskResV1"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -5504,6 +5468,38 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/sync_instances/{task_id}/trigger": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "trigger sync instance",
+                "tags": [
+                    "sync_instance"
+                ],
+                "summary": "触发同步实例",
+                "operationId": "triggerSyncInstanceV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "sync task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TriggerSyncInstanceResV1"
                         }
                     }
                 }
@@ -9658,6 +9654,10 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string"
                 },
+                "source": {
+                    "type": "string",
+                    "example": "SQLE"
+                },
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
@@ -9704,13 +9704,13 @@ var doc = `{
                     "type": "string",
                     "example": "mysql"
                 },
-                "global_rule_template": {
-                    "type": "string",
-                    "example": "default_mysql"
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
                 },
                 "source": {
                     "type": "string",
@@ -12030,6 +12030,10 @@ var doc = `{
                 "rule_template": {
                     "type": "object",
                     "$ref": "#/definitions/v2.RuleTemplateV2"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "SQLE"
                 },
                 "sql_query_config": {
                     "type": "object",
