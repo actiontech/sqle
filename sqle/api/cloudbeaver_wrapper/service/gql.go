@@ -9,7 +9,7 @@ import (
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 )
 
-var QueryGQL GetQueryGQL
+var QueryGQL GetQueryGQL = CloudBeaverV2223{}
 
 var (
 	Version2215 = CBVersion{
@@ -49,8 +49,7 @@ func InitGQLVersion() error {
 	if err != nil {
 		return err
 	}
-
-	QueryGQL = CloudBeaverV2223{}
+	// QueryGQL 默认值是 CloudBeaverV2223{}
 	if version.LessThan(Version2223) {
 		QueryGQL = CloudBeaverV2221{}
 	}
