@@ -1,6 +1,7 @@
 package sqled
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	instSync "github.com/actiontech/sqle/sqle/pkg/sync"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -84,6 +86,8 @@ func Run(config *config.Config) error {
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
+
+	instSync.EnableInstanceSync(context.TODO())
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)
