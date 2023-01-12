@@ -143,6 +143,7 @@ var autoMigrateList = []interface{}{
 	&ManagementPermission{},
 	&IM{},
 	&DingTalkInstance{},
+	&SyncInstanceTask{},
 }
 
 func (s *Storage) AutoMigrate() error {
