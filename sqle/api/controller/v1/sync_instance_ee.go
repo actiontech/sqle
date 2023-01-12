@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
@@ -50,7 +51,57 @@ func createSyncInstanceTask(c echo.Context) error {
 }
 
 func updateSyncInstanceTask(c echo.Context) error {
-	return nil
+	req := new(UpdateSyncInstanceTaskReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	taskId := c.Param("task_id")
+
+	s := model.GetStorage()
+	taskIdStr, err := strconv.Atoi(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	syncTask, exist, err := s.GetSyncTaskById(uint(taskIdStr))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+	}
+
+	if req.Version != nil {
+		syncTask.Version = *req.Version
+	}
+
+	if req.URL != nil {
+		syncTask.URL = *req.URL
+	}
+
+	if req.GlobalRuleTemplate != nil {
+		ruleTemplate, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(*req.GlobalRuleTemplate, model.ProjectIdForGlobalRuleTemplate)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("rule template %s not exist", *req.GlobalRuleTemplate))
+		}
+		syncTask.RuleTemplateID = ruleTemplate.ID
+	}
+
+	if req.SyncInstanceInterval != nil {
+		syncTask.SyncInstanceInterval = *req.SyncInstanceInterval
+	}
+
+	if err := s.Save(&syncTask); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instSync.ReloadInstance(context.Background(), "update sync instance task")
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func deleteSyncInstanceTask(c echo.Context) error {
