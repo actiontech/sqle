@@ -2011,6 +2011,9 @@ definitions:
         type: array
       rule_template_name:
         type: string
+      source:
+        example: SQLE
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
@@ -2042,12 +2045,12 @@ definitions:
       db_type:
         example: mysql
         type: string
-      global_rule_template:
-        example: default_mysql
-        type: string
       id:
         example: 1
         type: integer
+      rule_template:
+        example: default_mysql
+        type: string
       source:
         example: actiontech-dmp
         type: string
@@ -3607,6 +3610,9 @@ definitions:
       rule_template:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
+      source:
+        example: SQLE
+        type: string
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
@@ -7003,7 +7009,7 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/sync_instance:
+  /v1/sync_instances:
     get:
       description: get sync instance task list
       operationId: GetSyncInstanceTaskList
@@ -7017,47 +7023,6 @@ paths:
       summary: 获取同步实例任务列表
       tags:
       - sync_instance
-  /v1/sync_instance/{task_id}/:
-    get:
-      description: get sync task detail
-      operationId: GetSyncInstanceTask
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSyncInstanceTaskResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取同步任务详情
-      tags:
-      - sync_instance
-  /v1/sync_instance/{task_id}/trigger:
-    post:
-      description: trigger sync instance
-      operationId: triggerSyncInstanceV1
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TriggerSyncInstanceResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 触发同步实例
-      tags:
-      - sync_instance
-  /v1/sync_instances:
     post:
       consumes:
       - application/json
@@ -7100,6 +7065,25 @@ paths:
       summary: 删除同步实例任务
       tags:
       - sync_instance
+    get:
+      description: get sync task detail
+      operationId: GetSyncInstanceTask
+      parameters:
+      - description: sync task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSyncInstanceTaskResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取同步任务详情
+      tags:
+      - sync_instance
     patch:
       description: update sync instance task
       operationId: updateSyncInstanceTaskV1
@@ -7123,6 +7107,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新同步实例任务
+      tags:
+      - sync_instance
+  /v1/sync_instances/{task_id}/trigger:
+    post:
+      description: trigger sync instance
+      operationId: triggerSyncInstanceV1
+      parameters:
+      - description: sync task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TriggerSyncInstanceResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 触发同步实例
       tags:
       - sync_instance
   /v1/sync_instances/source_tips:
