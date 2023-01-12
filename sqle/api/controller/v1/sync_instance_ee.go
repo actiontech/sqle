@@ -4,16 +4,49 @@
 package v1
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	instSync "github.com/actiontech/sqle/sqle/pkg/sync"
 	"github.com/labstack/echo/v4"
 )
 
 func createSyncInstanceTask(c echo.Context) error {
-	return nil
+	req := new(CreateSyncInstanceTaskReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	ruleTemplate, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]uint{model.ProjectIdForGlobalRuleTemplate}, req.GlobalRuleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("rule template %s not exist", req.GlobalRuleTemplate))
+	}
+
+	syncTask := &model.SyncInstanceTask{
+		Source:               req.Source,
+		Version:              req.Version,
+		URL:                  req.URL,
+		DbType:               req.DbType,
+		RuleTemplateID:       ruleTemplate.ID,
+		SyncInstanceInterval: req.SyncInstanceInterval,
+	}
+
+	if err := s.Save(&syncTask); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instSync.ReloadInstance(context.Background(), "create new sync instance task")
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func updateSyncInstanceTask(c echo.Context) error {
