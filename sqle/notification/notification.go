@@ -3,6 +3,7 @@ package notification
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -18,6 +19,10 @@ type Notification interface {
 
 type Notifier interface {
 	Notify(Notification, []*model.User) error
+}
+
+type WorkflowNotifyConfig struct {
+	SQLEUrl *string
 }
 
 var Notifiers = []Notifier{}
@@ -45,12 +50,14 @@ const (
 type WorkflowNotification struct {
 	notifyType WorkflowNotifyType
 	workflow   *model.Workflow
+	config     WorkflowNotifyConfig
 }
 
-func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType) *WorkflowNotification {
+func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType, config WorkflowNotifyConfig) *WorkflowNotification {
 	return &WorkflowNotification{
 		notifyType: notifyType,
 		workflow:   w,
+		config:     config,
 	}
 }
 
@@ -101,13 +108,20 @@ func (w *WorkflowNotification) NotificationBody() string {
 - 工单主题: %v
 - 工单描述: %v
 - 申请人: %v
-- 创建时间: %v
-`,
+- 创建时间: %v`,
 		w.workflow.Subject,
 		w.workflow.Desc,
 		w.workflow.CreateUserName(),
 		w.workflow.CreatedAt)
 	buf.WriteString(head)
+
+	if w.config.SQLEUrl != nil {
+		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
+			strings.TrimRight(*w.config.SQLEUrl, "/"),
+			w.workflow.Project.Name,
+			w.workflow.Subject,
+		))
+	}
 
 	for _, t := range tasks {
 		buf.WriteString("\n--------------\n")
@@ -203,8 +217,15 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if !exist {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
 	}
-
-	wn := NewWorkflowNotification(workflow, wt)
+	sqleUrl, err := s.GetSqleUrl()
+	if err != nil {
+		log.NewEntry().Errorf("get sqle url error, %v", err)
+	}
+	config := WorkflowNotifyConfig{}
+	if len(sqleUrl) > 0 {
+		config.SQLEUrl = &sqleUrl
+	}
+	wn := NewWorkflowNotification(workflow, wt, config)
 	users := wn.notifyUser()
 	// workflow has been finished.
 	if len(users) == 0 {
@@ -219,12 +240,19 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 type AuditPlanNotification struct {
 	auditPlan *model.AuditPlan
 	report    *model.AuditPlanReportV2
+	config    AuditPlanNotifyConfig
 }
 
-func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) *AuditPlanNotification {
+type AuditPlanNotifyConfig struct {
+	SQLEUrl     *string
+	ProjectName *string
+}
+
+func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config AuditPlanNotifyConfig) *AuditPlanNotification {
 	return &AuditPlanNotification{
 		auditPlan: auditPlan,
 		report:    report,
+		config:    config,
 	}
 }
 
@@ -233,7 +261,8 @@ func (a *AuditPlanNotification) NotificationSubject() string {
 }
 
 func (a *AuditPlanNotification) NotificationBody() string {
-	return fmt.Sprintf(`
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf(`
 - 扫描任务: %v
 - 审核时间: %v
 - 审核类型: %v
@@ -241,8 +270,7 @@ func (a *AuditPlanNotification) NotificationBody() string {
 - 数据库名: %v
 - 审核得分: %v
 - 审核通过率：%v
-- 审核结果等级: %v
-`,
+- 审核结果等级: %v`,
 		a.auditPlan.Name,
 		a.report.CreatedAt.Format(time.RFC3339),
 		a.auditPlan.Type,
@@ -251,7 +279,18 @@ func (a *AuditPlanNotification) NotificationBody() string {
 		a.report.Score,
 		a.report.PassRate,
 		a.report.AuditLevel,
-	)
+	))
+
+	if a.config.SQLEUrl != nil && a.config.ProjectName != nil {
+		builder.WriteString(fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
+			strings.TrimRight(*a.config.SQLEUrl, "/"),
+			*a.config.ProjectName,
+			a.auditPlan.Name,
+			a.report.ID,
+		))
+	}
+
+	return builder.String()
 }
 
 type TestNotify struct {
@@ -275,9 +314,24 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	if err != nil {
 		return err
 	}
+	url, err := s.GetSqleUrl()
+	if err != nil {
+		return err
+	}
+
+	config := AuditPlanNotifyConfig{}
+	if len(url) > 0 {
+		config.SQLEUrl = &url
+
+		project, _, err := s.GetProjectByID(ap.ProjectId)
+		if err != nil {
+			return err
+		}
+		config.ProjectName = &project.Name
+	}
 
 	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
-		n := NewAuditPlanNotification(ap, report)
+		n := NewAuditPlanNotification(ap, report, config)
 		return GetAuditPlanNotifier().Notify(n, ap)
 	}
 
