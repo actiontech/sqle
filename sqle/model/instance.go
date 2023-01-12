@@ -12,6 +12,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const InstanceSourceSQLE string = "SQLE"
+
 // Instance is a table for database info
 // NOTE: related model:
 // - ProjectMemberRole, ProjectMemberGroupRole

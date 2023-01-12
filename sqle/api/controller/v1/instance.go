@@ -220,6 +220,7 @@ func CreateInstance(c echo.Context) error {
 		SqlQueryConfig:     sqlQueryConfig,
 		WorkflowTemplateId: project.WorkflowTemplateId,
 		ProjectId:          project.ID,
+		Source:             model.InstanceSourceSQLE,
 	}
 
 	var templates []*model.RuleTemplate
