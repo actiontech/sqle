@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -449,4 +450,32 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 		return nil, err
 	}
 	return dingTalkInstances, nil
+}
+
+type SyncInstanceTask struct {
+	Model
+	Source               string     `json:"source" gorm:"not null"`
+	Version              string     `json:"version" gorm:"not null"`
+	URL                  string     `json:"url" gorm:"not null"`
+	DbType               string     `json:"db_type" gorm:"not null"`
+	RuleTemplateID       uint       `json:"rule_template_id" gorm:"not null"`
+	SyncInstanceInterval string     `json:"sync_instance_interval" gorm:"not null"`
+	LastSyncStatus       string     `json:"last_sync_status" gorm:"default:\"initialized\""`
+	LastSyncSuccessTime  *time.Time `json:"last_sync_success_time"`
+
+	// 关系表
+	RuleTemplate *RuleTemplate `gorm:"foreignKey:RuleTemplateID"`
+}
+
+func (s *SyncInstanceTask) TableName() string {
+	return fmt.Sprintf("%v_sync_instance", globalConfigurationTablePrefix)
+}
+
+func (s *Storage) GetAllSyncTasks() ([]SyncInstanceTask, error) {
+	var syncTasks []SyncInstanceTask
+	if err := s.db.Model(&SyncInstanceTask{}).Preload("RuleTemplate").Find(&syncTasks).Error; err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return syncTasks, nil
 }
