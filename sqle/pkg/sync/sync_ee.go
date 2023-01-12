@@ -5,10 +5,12 @@ package sync
 
 import (
 	"context"
+
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/sync/dmp"
 	"github.com/robfig/cron/v3"
+	"github.com/sirupsen/logrus"
 )
 
 var ExitCronChan chan string
@@ -43,13 +45,8 @@ func EnableInstanceSync(ctx context.Context) {
 	for _, syncTask := range syncTasks {
 		var syncFunc func()
 
-		switch syncTask.Source {
-		case ActiontechDmp:
-			dmpSync := dmp.NewDmpSync(newLog, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
-			syncFunc = dmpSync.Sync(ctx)
-		default:
-			continue
-		}
+		syncInstance := NewSyncInstance(newLog, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
+		syncFunc = syncInstance.Sync(ctx)
 
 		_, err := c.AddFunc(syncTask.SyncInstanceInterval, syncFunc)
 		if err != nil {
@@ -64,4 +61,12 @@ func EnableInstanceSync(ctx context.Context) {
 	c.Stop()
 
 	newLog.Infof("exit cron task, reason: %s", exitReason)
+}
+
+func NewSyncInstance(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) SyncInstance {
+	switch dbType {
+	case ActiontechDmp:
+		return dmp.NewDmpSync(log, url, dmpVersion, dbType, ruleTemplateName)
+	}
+	return nil
 }
