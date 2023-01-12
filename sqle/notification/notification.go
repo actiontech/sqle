@@ -3,6 +3,7 @@ package notification
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,7 +22,8 @@ type Notifier interface {
 }
 
 type NotifyConfig struct {
-	SQLEUrl *string
+	SQLEUrl     *string
+	ProjectName *string
 }
 
 var Notifiers = []Notifier{}
@@ -117,7 +119,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 
 	if w.config.SQLEUrl != nil {
 		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
-			*w.config.SQLEUrl,
+			strings.TrimRight(*w.config.SQLEUrl, "/"),
 			w.workflow.Project.Name,
 			w.workflow.Subject,
 		))
@@ -240,12 +242,14 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 type AuditPlanNotification struct {
 	auditPlan *model.AuditPlan
 	report    *model.AuditPlanReportV2
+	config    NotifyConfig
 }
 
-func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) *AuditPlanNotification {
+func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config NotifyConfig) *AuditPlanNotification {
 	return &AuditPlanNotification{
 		auditPlan: auditPlan,
 		report:    report,
+		config:    config,
 	}
 }
 
@@ -254,6 +258,16 @@ func (a *AuditPlanNotification) NotificationSubject() string {
 }
 
 func (a *AuditPlanNotification) NotificationBody() string {
+	url := ""
+	if a.config.SQLEUrl != nil && a.config.ProjectName != nil {
+		url = fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
+			strings.TrimRight(*a.config.SQLEUrl, "/"),
+			*a.config.ProjectName,
+			a.auditPlan.Name,
+			a.report.ID,
+		)
+	}
+
 	return fmt.Sprintf(`
 - 扫描任务: %v
 - 审核时间: %v
@@ -262,7 +276,7 @@ func (a *AuditPlanNotification) NotificationBody() string {
 - 数据库名: %v
 - 审核得分: %v
 - 审核通过率：%v
-- 审核结果等级: %v
+- 审核结果等级: %v%v
 `,
 		a.auditPlan.Name,
 		a.report.CreatedAt.Format(time.RFC3339),
@@ -272,6 +286,7 @@ func (a *AuditPlanNotification) NotificationBody() string {
 		a.report.Score,
 		a.report.PassRate,
 		a.report.AuditLevel,
+		url,
 	)
 }
 
@@ -296,9 +311,22 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	if err != nil {
 		return err
 	}
+	url, err := s.GetSqleUrl()
+	if err != nil {
+		return err
+	}
+	project, _, err := s.GetProjectByID(ap.ProjectId)
+	if err != nil {
+		return err
+	}
+	config := NotifyConfig{}
+	if len(url) > 0 {
+		config.SQLEUrl = &url
+		config.ProjectName = &project.Name
+	}
 
 	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
-		n := NewAuditPlanNotification(ap, report)
+		n := NewAuditPlanNotification(ap, report, config)
 		return GetAuditPlanNotifier().Notify(n, ap)
 	}
 
