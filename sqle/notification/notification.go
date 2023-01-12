@@ -21,9 +21,8 @@ type Notifier interface {
 	Notify(Notification, []*model.User) error
 }
 
-type NotifyConfig struct {
-	SQLEUrl     *string
-	ProjectName *string
+type WorkflowNotifyConfig struct {
+	SQLEUrl *string
 }
 
 var Notifiers = []Notifier{}
@@ -51,10 +50,10 @@ const (
 type WorkflowNotification struct {
 	notifyType WorkflowNotifyType
 	workflow   *model.Workflow
-	config     NotifyConfig
+	config     WorkflowNotifyConfig
 }
 
-func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType, config NotifyConfig) *WorkflowNotification {
+func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType, config WorkflowNotifyConfig) *WorkflowNotification {
 	return &WorkflowNotification{
 		notifyType: notifyType,
 		workflow:   w,
@@ -109,8 +108,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 - 工单主题: %v
 - 工单描述: %v
 - 申请人: %v
-- 创建时间: %v
-`,
+- 创建时间: %v`,
 		w.workflow.Subject,
 		w.workflow.Desc,
 		w.workflow.CreateUserName(),
@@ -223,7 +221,7 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if err != nil {
 		log.NewEntry().Errorf("get sqle url error, %v", err)
 	}
-	config := NotifyConfig{}
+	config := WorkflowNotifyConfig{}
 	if len(sqleUrl) > 0 {
 		config.SQLEUrl = &sqleUrl
 	}
@@ -242,10 +240,15 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 type AuditPlanNotification struct {
 	auditPlan *model.AuditPlan
 	report    *model.AuditPlanReportV2
-	config    NotifyConfig
+	config    AuditPlanNotifyConfig
 }
 
-func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config NotifyConfig) *AuditPlanNotification {
+type AuditPlanNotifyConfig struct {
+	SQLEUrl     *string
+	ProjectName *string
+}
+
+func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config AuditPlanNotifyConfig) *AuditPlanNotification {
 	return &AuditPlanNotification{
 		auditPlan: auditPlan,
 		report:    report,
@@ -258,17 +261,8 @@ func (a *AuditPlanNotification) NotificationSubject() string {
 }
 
 func (a *AuditPlanNotification) NotificationBody() string {
-	url := ""
-	if a.config.SQLEUrl != nil && a.config.ProjectName != nil {
-		url = fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
-			strings.TrimRight(*a.config.SQLEUrl, "/"),
-			*a.config.ProjectName,
-			a.auditPlan.Name,
-			a.report.ID,
-		)
-	}
-
-	return fmt.Sprintf(`
+	builder := strings.Builder{}
+	builder.WriteString(fmt.Sprintf(`
 - 扫描任务: %v
 - 审核时间: %v
 - 审核类型: %v
@@ -276,8 +270,7 @@ func (a *AuditPlanNotification) NotificationBody() string {
 - 数据库名: %v
 - 审核得分: %v
 - 审核通过率：%v
-- 审核结果等级: %v%v
-`,
+- 审核结果等级: %v`,
 		a.auditPlan.Name,
 		a.report.CreatedAt.Format(time.RFC3339),
 		a.auditPlan.Type,
@@ -286,8 +279,18 @@ func (a *AuditPlanNotification) NotificationBody() string {
 		a.report.Score,
 		a.report.PassRate,
 		a.report.AuditLevel,
-		url,
-	)
+	))
+
+	if a.config.SQLEUrl != nil && a.config.ProjectName != nil {
+		builder.WriteString(fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
+			strings.TrimRight(*a.config.SQLEUrl, "/"),
+			*a.config.ProjectName,
+			a.auditPlan.Name,
+			a.report.ID,
+		))
+	}
+
+	return builder.String()
 }
 
 type TestNotify struct {
@@ -315,13 +318,15 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	if err != nil {
 		return err
 	}
-	project, _, err := s.GetProjectByID(ap.ProjectId)
-	if err != nil {
-		return err
-	}
-	config := NotifyConfig{}
+
+	config := AuditPlanNotifyConfig{}
 	if len(url) > 0 {
 		config.SQLEUrl = &url
+
+		project, _, err := s.GetProjectByID(ap.ProjectId)
+		if err != nil {
+			return err
+		}
 		config.ProjectName = &project.Name
 	}
 
