@@ -7009,7 +7009,7 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/sync_instance:
+  /v1/sync_instances:
     get:
       description: get sync instance task list
       operationId: GetSyncInstanceTaskList
@@ -7045,7 +7045,7 @@ paths:
       summary: 创建同步实例任务
       tags:
       - sync_instance
-  /v1/sync_instance/{task_id}/:
+  /v1/sync_instances/{task_id}/:
     delete:
       description: delete sync instance task
       operationId: deleteSyncInstanceTaskV1
@@ -7109,7 +7109,7 @@ paths:
       summary: 更新同步实例任务
       tags:
       - sync_instance
-  /v1/sync_instance/{task_id}/trigger:
+  /v1/sync_instances/{task_id}/trigger:
     post:
       description: trigger sync instance
       operationId: triggerSyncInstanceV1
@@ -7129,7 +7129,7 @@ paths:
       summary: 触发同步实例
       tags:
       - sync_instance
-  /v1/sync_instance/source_tips:
+  /v1/sync_instances/source_tips:
     get:
       description: get sync task tips
       operationId: GetSyncTaskSourceTips
