@@ -21,6 +21,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
+	instSync "github.com/actiontech/sqle/sqle/pkg/sync"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -195,6 +196,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 			ProjectId: project.ID,
 			Password:  password,
 			DbType:    d.DbType,
+			Source:    instSync.ActiontechDmp,
 		}
 
 		instances = append(instances, inst)
