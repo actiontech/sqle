@@ -9654,6 +9654,10 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string"
                 },
+                "source": {
+                    "type": "string",
+                    "example": "SQLE"
+                },
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
@@ -12026,6 +12030,10 @@ var doc = `{
                 "rule_template": {
                     "type": "object",
                     "$ref": "#/definitions/v2.RuleTemplateV2"
+                },
+                "source": {
+                    "type": "string",
+                    "example": "SQLE"
                 },
                 "sql_query_config": {
                     "type": "object",
