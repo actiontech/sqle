@@ -5291,7 +5291,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance": {
+        "/v1/sync_instances": {
             "get": {
                 "security": [
                     {
@@ -5349,7 +5349,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/source_tips": {
+        "/v1/sync_instances/source_tips": {
             "get": {
                 "security": [
                     {
@@ -5372,7 +5372,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/{task_id}/": {
+        "/v1/sync_instances/{task_id}/": {
             "get": {
                 "security": [
                     {
@@ -5473,7 +5473,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/{task_id}/trigger": {
+        "/v1/sync_instances/{task_id}/trigger": {
             "post": {
                 "security": [
                     {
