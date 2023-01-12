@@ -142,7 +142,7 @@ type InstanceTaskDetailResV1 struct {
 	Version              string `json:"version" example:"1.23.1"`
 	URL                  string `json:"url" example:"http://10.186.62.56:10000"`
 	DbType               string `json:"db_type" example:"mysql"`
-	GlobalRuleTemplate   string `json:"global_rule_template" example:"default_mysql"`
+	RuleTemplate         string `json:"rule_template" example:"default_mysql"`
 	SyncInstanceInterval string `json:"sync_instance_interval" example:"0 0 * * *"`
 }
 

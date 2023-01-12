@@ -2045,12 +2045,12 @@ definitions:
       db_type:
         example: mysql
         type: string
-      global_rule_template:
-        example: default_mysql
-        type: string
       id:
         example: 1
         type: integer
+      rule_template:
+        example: default_mysql
+        type: string
       source:
         example: actiontech-dmp
         type: string
