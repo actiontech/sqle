@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
 )
@@ -23,7 +25,7 @@ type CreateSyncInstanceTaskReqV1 struct {
 // @Accept json
 // @Param sync_task body v1.CreateSyncInstanceTaskReqV1 true "create sync instance task request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/sync_instance [post]
+// @router /v1/sync_instances [post]
 func CreateSyncInstanceTask(c echo.Context) error {
 	return createSyncInstanceTask(c)
 }
@@ -44,7 +46,7 @@ type UpdateSyncInstanceTaskReqV1 struct {
 // @Param task_id path string true "sync task id"
 // @param sync_task body v1.UpdateSyncInstanceTaskReqV1 true "update sync instance request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/sync_instance/{task_id}/ [patch]
+// @router /v1/sync_instances/{task_id}/ [patch]
 func UpdateSyncInstanceTask(c echo.Context) error {
 	return updateSyncInstanceTask(c)
 }
@@ -57,7 +59,7 @@ func UpdateSyncInstanceTask(c echo.Context) error {
 // @Security ApiKeyAuth
 // @param task_id path string true "sync task id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/sync_instance/{task_id}/ [delete]
+// @router /v1/sync_instances/{task_id}/ [delete]
 func DeleteSyncInstanceTask(c echo.Context) error {
 	return deleteSyncInstanceTask(c)
 }
@@ -80,7 +82,7 @@ type TriggerSyncInstanceResV1 struct {
 // @Security ApiKeyAuth
 // @param task_id path string true "sync task id"
 // @Success 200 {object} v1.TriggerSyncInstanceResV1
-// @router /v1/sync_instance/{task_id}/trigger [post]
+// @router /v1/sync_instances/{task_id}/trigger [post]
 func TriggerSyncInstance(c echo.Context) error {
 	return triggerSyncInstance(c)
 }
@@ -91,13 +93,13 @@ type GetSyncInstanceTaskListResV1 struct {
 }
 
 type InstanceTaskResV1 struct {
-	ID                  int    `json:"id" example:"1"`
-	Source              string `json:"source" example:"actiontech-dmp"`
-	Version             string `json:"version" example:"1.23.1"`
-	URL                 string `json:"url" example:"http://10.186.62.56:10000"`
-	DbType              string `json:"db_type" example:"mysql"`
-	LastSyncStatus      string `json:"last_sync_status" enums:"success,fail" example:"success"`
-	LastSyncSuccessTime string `json:"last_sync_success_time" example:"2021-08-12 12:00:00"`
+	ID                  int        `json:"id" example:"1"`
+	Source              string     `json:"source" example:"actiontech-dmp"`
+	Version             string     `json:"version" example:"1.23.1"`
+	URL                 string     `json:"url" example:"http://10.186.62.56:10000"`
+	DbType              string     `json:"db_type" example:"mysql"`
+	LastSyncStatus      string     `json:"last_sync_status" enums:"success,fail" example:"success"`
+	LastSyncSuccessTime *time.Time `json:"last_sync_success_time" example:"2021-08-12 12:00:00"`
 }
 
 // GetSyncInstanceTaskList get sync instance task list
@@ -107,7 +109,7 @@ type InstanceTaskResV1 struct {
 // @Tags sync_instance
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSyncInstanceTaskListResV1
-// @router /v1/sync_instance [get]
+// @router /v1/sync_instances [get]
 func GetSyncInstanceTaskList(c echo.Context) error {
 	return getSyncInstanceTaskList(c)
 }
@@ -129,7 +131,7 @@ type GetSyncTaskSourceTipsResV1 struct {
 // @Tags sync_instance
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSyncTaskSourceTipsResV1
-// @router /v1/sync_instance/source_tips [get]
+// @router /v1/sync_instances/source_tips [get]
 func GetSyncTaskSourceTips(c echo.Context) error {
 	return getSyncTaskSourceTips(c)
 }
@@ -140,7 +142,7 @@ type InstanceTaskDetailResV1 struct {
 	Version              string `json:"version" example:"1.23.1"`
 	URL                  string `json:"url" example:"http://10.186.62.56:10000"`
 	DbType               string `json:"db_type" example:"mysql"`
-	GlobalRuleTemplate   string `json:"global_rule_template" example:"default_mysql"`
+	RuleTemplate         string `json:"rule_template" example:"default_mysql"`
 	SyncInstanceInterval string `json:"sync_instance_interval" example:"0 0 * * *"`
 }
 
@@ -157,7 +159,7 @@ type GetSyncInstanceTaskResV1 struct {
 // @Security ApiKeyAuth
 // @param task_id path string true "sync task id"
 // @Success 200 {object} v1.GetSyncInstanceTaskResV1
-// @router /v1/sync_instance/{task_id}/ [get]
+// @router /v1/sync_instances/{task_id}/ [get]
 func GetSyncInstanceTask(c echo.Context) error {
 	return getSyncInstanceTask(c)
 }

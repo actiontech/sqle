@@ -5291,7 +5291,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance": {
+        "/v1/sync_instances": {
             "get": {
                 "security": [
                     {
@@ -5349,7 +5349,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/source_tips": {
+        "/v1/sync_instances/source_tips": {
             "get": {
                 "security": [
                     {
@@ -5372,7 +5372,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/{task_id}/": {
+        "/v1/sync_instances/{task_id}/": {
             "get": {
                 "security": [
                     {
@@ -5473,7 +5473,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/sync_instance/{task_id}/trigger": {
+        "/v1/sync_instances/{task_id}/trigger": {
             "post": {
                 "security": [
                     {
@@ -9704,13 +9704,13 @@ var doc = `{
                     "type": "string",
                     "example": "mysql"
                 },
-                "global_rule_template": {
-                    "type": "string",
-                    "example": "default_mysql"
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
                 },
                 "source": {
                     "type": "string",
