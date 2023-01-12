@@ -31,6 +31,7 @@ type Instance struct {
 	AdditionalParams   params.Params  `json:"additional_params" gorm:"type:text"`
 	MaintenancePeriod  Periods        `json:"maintenance_period" gorm:"type:text"`
 	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:varchar(255); default:'{\"max_pre_query_rows\":100,\"query_timeout_second\":10}'"`
+	Source             string         `json:"source" gorm:"not null"`
 
 	// relation table
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
