@@ -9704,13 +9704,13 @@ var doc = `{
                     "type": "string",
                     "example": "mysql"
                 },
-                "global_rule_template": {
-                    "type": "string",
-                    "example": "default_mysql"
-                },
                 "id": {
                     "type": "integer",
                     "example": 1
+                },
+                "rule_template": {
+                    "type": "string",
+                    "example": "default_mysql"
                 },
                 "source": {
                     "type": "string",
