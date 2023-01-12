@@ -69,10 +69,8 @@ func getSyncInstanceTask(c echo.Context) error {
 	return nil
 }
 
-const ActiontechDmp = "actiontech-dmp"
-
 var (
-	syncTaskSourceList = []string{ActiontechDmp}
+	syncTaskSourceList = []string{instSync.ActiontechDmp}
 	// todo: 使用接口获取
 	dmpSupportDbType = []string{driver.DriverTypeMySQL}
 )
@@ -91,7 +89,7 @@ func getSyncTaskSourceTips(c echo.Context) error {
 
 		// 外部平台和sqle共同支持的数据源
 		switch source {
-		case ActiontechDmp:
+		case instSync.ActiontechDmp:
 			for _, dbType := range dmpSupportDbType {
 				if _, ok := m[dbType]; ok {
 					commonDbTypes = append(commonDbTypes, dbType)
