@@ -460,6 +460,11 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 	return dingTalkInstances, nil
 }
 
+const (
+	SyncInstanceStatusSuccess = "success"
+	SyncInstanceStatusFailed  = "failed"
+)
+
 type SyncInstanceTask struct {
 	Model
 	Source         string `json:"source" gorm:"not null"`
