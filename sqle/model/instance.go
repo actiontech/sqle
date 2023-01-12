@@ -364,3 +364,29 @@ func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName st
 
 	return instCache, nil
 }
+
+type InstancesTemplate struct {
+	Instances    []*Instance
+	RuleTemplate *RuleTemplate
+}
+
+func (s *Storage) BatchInsertInstTemplate(instTemplate *InstancesTemplate) error {
+	err := s.Tx(func(tx *gorm.DB) error {
+		for _, instance := range instTemplate.Instances {
+			if err := tx.Save(instance).Error; err != nil {
+				return err
+			}
+
+			if err := s.UpdateInstanceRuleTemplates(instance, instTemplate.RuleTemplate); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	return nil
+}
