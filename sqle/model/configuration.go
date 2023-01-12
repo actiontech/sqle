@@ -354,6 +354,14 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 	return sysVariables, nil
 }
 
+func (s *Storage) GetSqleUrl() (string, error) {
+	sys, err := s.GetAllSystemVariables()
+	if err != nil {
+		return "", err
+	}
+	return sys[SystemVariableSqleUrl].Value, nil
+}
+
 func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 	var svs []SystemVariable
 	err := s.db.Find(&svs).Error

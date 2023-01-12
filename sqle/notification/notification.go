@@ -20,6 +20,10 @@ type Notifier interface {
 	Notify(Notification, []*model.User) error
 }
 
+type NotifyConfig struct {
+	SQLEUrl *string
+}
+
 var Notifiers = []Notifier{}
 
 func Notify(notification Notification, users []*model.User) error {
@@ -45,12 +49,14 @@ const (
 type WorkflowNotification struct {
 	notifyType WorkflowNotifyType
 	workflow   *model.Workflow
+	config     NotifyConfig
 }
 
-func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType) *WorkflowNotification {
+func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType, config NotifyConfig) *WorkflowNotification {
 	return &WorkflowNotification{
 		notifyType: notifyType,
 		workflow:   w,
+		config:     config,
 	}
 }
 
@@ -108,6 +114,14 @@ func (w *WorkflowNotification) NotificationBody() string {
 		w.workflow.CreateUserName(),
 		w.workflow.CreatedAt)
 	buf.WriteString(head)
+
+	if w.config.SQLEUrl != nil {
+		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
+			*w.config.SQLEUrl,
+			w.workflow.Project.Name,
+			w.workflow.Subject,
+		))
+	}
 
 	for _, t := range tasks {
 		buf.WriteString("\n--------------\n")
@@ -203,8 +217,15 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if !exist {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
 	}
-
-	wn := NewWorkflowNotification(workflow, wt)
+	sqleUrl, err := s.GetSqleUrl()
+	if err != nil {
+		log.NewEntry().Errorf("get sqle url error, %v", err)
+	}
+	config := NotifyConfig{}
+	if len(sqleUrl) > 0 {
+		config.SQLEUrl = &sqleUrl
+	}
+	wn := NewWorkflowNotification(workflow, wt, config)
 	users := wn.notifyUser()
 	// workflow has been finished.
 	if len(users) == 0 {
