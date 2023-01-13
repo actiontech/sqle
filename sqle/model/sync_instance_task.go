@@ -29,7 +29,7 @@ type SyncInstanceTask struct {
 	RuleTemplate *RuleTemplate `gorm:"foreignKey:RuleTemplateID"`
 }
 
-func (s *Storage) GetAllSyncTasks() ([]SyncInstanceTask, error) {
+func (s *Storage) GetAllSyncInstanceTasks() ([]SyncInstanceTask, error) {
 	var syncTasks []SyncInstanceTask
 	if err := s.db.Model(&SyncInstanceTask{}).Preload("RuleTemplate").Find(&syncTasks).Error; err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
@@ -38,7 +38,7 @@ func (s *Storage) GetAllSyncTasks() ([]SyncInstanceTask, error) {
 	return syncTasks, nil
 }
 
-func (s *Storage) GetSyncTaskById(id uint) (*SyncInstanceTask, bool, error) {
+func (s *Storage) GetSyncInstanceTaskById(id uint) (*SyncInstanceTask, bool, error) {
 	syncInstTask := new(SyncInstanceTask)
 	err := s.db.Model(&SyncInstanceTask{}).Where("id = ?", id).First(&syncInstTask).Error
 	if err == gorm.ErrRecordNotFound {
