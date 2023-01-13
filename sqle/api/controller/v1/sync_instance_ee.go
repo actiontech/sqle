@@ -59,12 +59,12 @@ func updateSyncInstanceTask(c echo.Context) error {
 	taskId := c.Param("task_id")
 
 	s := model.GetStorage()
-	taskIdStr, err := strconv.Atoi(taskId)
+	taskIdInt, err := strconv.Atoi(taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdStr))
+	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdInt))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
