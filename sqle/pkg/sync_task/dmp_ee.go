@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/common"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/pkg/errors"
@@ -195,7 +197,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 
 		for _, inst := range instancesBySource {
 			if _, ok := dmpInst[inst.Name]; !ok {
-				if err := CheckDeleteInstance(inst.ID); err == nil {
+				if err := common.CheckDeleteInstance(inst.ID); err == nil {
 					needDeletedInstances = append(needDeletedInstances, inst)
 				}
 			}
@@ -244,28 +246,6 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	} else {
 		isSyncSuccess = true
 	}
-}
-
-func CheckDeleteInstance(instanceId uint) error {
-	s := model.GetStorage()
-
-	tasks, err := s.GetTaskByInstanceId(instanceId)
-	if err != nil {
-		return err
-	}
-	taskIds := make([]uint, 0, len(tasks))
-	for _, task := range tasks {
-		taskIds = append(taskIds, task.ID)
-	}
-	isRunning, err := s.TaskWorkflowIsUnfinished(taskIds)
-	if err != nil {
-		return err
-	}
-	if isRunning {
-		return fmt.Errorf("instance %s is running,cannot be deleted", instanceId)
-	}
-
-	return nil
 }
 
 func getDmpFilterType(dbType string) string {
