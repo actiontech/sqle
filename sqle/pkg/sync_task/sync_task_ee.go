@@ -32,7 +32,7 @@ func ReloadSyncInstanceTask(ctx context.Context, reloadReason string) {
 }
 
 func EnableSyncInstanceTask(ctx context.Context) {
-	newLog := log.NewEntry()
+	newLog := log.NewEntry().WithField("task", "sync_instance_task")
 
 	c := cron.New()
 
