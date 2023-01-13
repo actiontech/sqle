@@ -10,7 +10,7 @@ import (
 
 const (
 	SyncInstanceStatusSuccess = "success"
-	SyncInstanceStatusFailed  = "failed"
+	SyncInstanceStatusFailed  = "fail"
 )
 
 type SyncInstanceTask struct {
@@ -40,7 +40,7 @@ func (s *Storage) GetAllSyncInstanceTasks() ([]SyncInstanceTask, error) {
 
 func (s *Storage) GetSyncInstanceTaskById(id uint) (*SyncInstanceTask, bool, error) {
 	syncInstTask := new(SyncInstanceTask)
-	err := s.db.Model(&SyncInstanceTask{}).Where("id = ?", id).First(&syncInstTask).Error
+	err := s.db.Model(&SyncInstanceTask{}).Preload("RuleTemplate").Where("id = ?", id).First(&syncInstTask).Error
 	if err == gorm.ErrRecordNotFound {
 		return syncInstTask, false, errors.ConnectStorageErrWrapper(err)
 	}
