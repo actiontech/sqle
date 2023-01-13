@@ -22,7 +22,7 @@ func CheckDeleteInstance(instanceId uint) error {
 		return err
 	}
 	if isRunning {
-		return fmt.Errorf("instance %s is running,cannot be deleted", instanceId)
+		return fmt.Errorf("instance %d is running,cannot be deleted", instanceId)
 	}
 
 	return nil
