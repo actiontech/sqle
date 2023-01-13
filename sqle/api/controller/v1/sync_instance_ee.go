@@ -17,6 +17,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var (
+	ErrSyncInstanceTaskNotExist = func(taskId int) error {
+		return errors.New(errors.DataNotExist, fmt.Errorf("sync instance task [%s] not exist", taskId))
+	}
+)
+
 func createSyncInstanceTask(c echo.Context) error {
 	req := new(CreateSyncInstanceTaskReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -69,7 +75,7 @@ func updateSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskIdInt))
 	}
 
 	if req.Version != nil {
@@ -118,7 +124,7 @@ func deleteSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskId))
 	}
 
 	if err := s.Delete(&syncTask); err != nil {
