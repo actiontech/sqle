@@ -88,7 +88,7 @@ func Run(config *config.Config) error {
 	server.InitSqled(exitChan)
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
 
-	go syncTask.EnableInstanceSync(context.TODO())
+	go syncTask.EnableSyncInstanceTask(context.TODO())
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)

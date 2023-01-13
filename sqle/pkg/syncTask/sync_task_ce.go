@@ -4,10 +4,10 @@ import (
 	"context"
 )
 
-func ReloadSyncTask(ctx context.Context, reloadReason string) {
+func ReloadSyncInstanceTask(ctx context.Context, reloadReason string) {
 	return
 }
 
-func EnableInstanceSync(ctx context.Context) {
+func EnableSyncInstanceTask(ctx context.Context) {
 	return
 }
