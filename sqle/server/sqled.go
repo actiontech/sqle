@@ -138,10 +138,10 @@ func (s *Sqled) Start() {
 	go s.cleanLoop()
 	go s.dingTalkLoop()
 	go s.workflowScheduleLoop()
-	go s.syncTaskLoop()
+	go s.syncInstanceTaskLoop()
 }
 
-func (s *Sqled) syncTaskLoop() {
+func (s *Sqled) syncInstanceTaskLoop() {
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
@@ -150,7 +150,7 @@ func (s *Sqled) syncTaskLoop() {
 		case <-s.exit:
 			return
 		case <-ticker.C:
-			syncTask.ReloadSyncTask(context.Background(), "ticker reload")
+			syncTask.ReloadSyncInstanceTask(context.Background(), "ticker reload")
 		}
 	}
 }
