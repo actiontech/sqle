@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/pkg/syncTask"
+
 	"github.com/actiontech/sqle/sqle/notification"
 
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
@@ -136,6 +138,23 @@ func (s *Sqled) Start() {
 	go s.cleanLoop()
 	go s.dingTalkLoop()
 	go s.workflowScheduleLoop()
+	go s.syncInstanceTaskLoop()
+}
+
+func (s *Sqled) syncInstanceTaskLoop() {
+	ticker := time.NewTicker(24 * time.Hour)
+	defer ticker.Stop()
+
+	syncTask.EnableSyncInstanceTask(context.TODO())
+
+	for {
+		select {
+		case <-s.exit:
+			return
+		case <-ticker.C:
+			syncTask.ReloadSyncInstanceTask(context.Background(), "ticker reload")
+		}
+	}
 }
 
 func (s *Sqled) dingTalkLoop() {

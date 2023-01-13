@@ -11127,12 +11127,6 @@ var doc = `{
         },
         "v1.UpdateSyncInstanceTaskReqV1": {
             "type": "object",
-            "required": [
-                "global_rule_template",
-                "sync_instance_interval",
-                "url",
-                "version"
-            ],
             "properties": {
                 "global_rule_template": {
                     "type": "string",
