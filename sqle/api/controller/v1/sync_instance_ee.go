@@ -45,7 +45,7 @@ func createSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instSync.ReloadSyncTask(context.Background(), "create new sync instance task")
+	instSync.ReloadSyncInstanceTask(context.Background(), "create new sync instance task")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -99,7 +99,7 @@ func updateSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instSync.ReloadSyncTask(context.Background(), "update sync instance task")
+	instSync.ReloadSyncInstanceTask(context.Background(), "update sync instance task")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -125,7 +125,7 @@ func deleteSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instSync.ReloadSyncTask(context.Background(), "delete sync instance task")
+	instSync.ReloadSyncInstanceTask(context.Background(), "delete sync instance task")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

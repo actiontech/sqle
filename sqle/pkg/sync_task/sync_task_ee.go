@@ -21,17 +21,17 @@ func init() {
 
 const SyncTaskActiontechDmp = "actiontech-dmp"
 
-type SyncInstance interface {
-	Sync(context.Context) func()
+type SyncInstanceTask interface {
+	GetSyncInstanceTaskFunc(context.Context) func()
 }
 
-func ReloadSyncTask(ctx context.Context, reloadReason string) {
+func ReloadSyncInstanceTask(ctx context.Context, reloadReason string) {
 	// 退出当前运行cron任务
 	ExitCronChan <- reloadReason
-	go EnableInstanceSync(ctx)
+	go EnableSyncInstanceTask(ctx)
 }
 
-func EnableInstanceSync(ctx context.Context) {
+func EnableSyncInstanceTask(ctx context.Context) {
 	newLog := log.NewEntry()
 
 	c := cron.New()
@@ -45,8 +45,8 @@ func EnableInstanceSync(ctx context.Context) {
 	for _, syncTask := range syncTasks {
 		var syncFunc func()
 
-		syncInstance := NewSyncInstance(newLog, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
-		syncFunc = syncInstance.Sync(ctx)
+		syncInstance := NewSyncInstanceTask(newLog, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
+		syncFunc = syncInstance.GetSyncInstanceTaskFunc(ctx)
 
 		_, err := c.AddFunc(syncTask.SyncInstanceInterval, syncFunc)
 		if err != nil {
@@ -63,7 +63,7 @@ func EnableInstanceSync(ctx context.Context) {
 	newLog.Infof("exit cron task, reason: %s", exitReason)
 }
 
-func NewSyncInstance(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) SyncInstance {
+func NewSyncInstanceTask(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
 	switch dbType {
 	case SyncTaskActiontechDmp:
 		return dmp.NewDmpSync(log, url, dmpVersion, dbType, ruleTemplateName)

@@ -90,7 +90,7 @@ type ListService struct {
 	Tags []Tag `json:"tags,omitempty"`
 }
 
-func (d *DmpSync) Sync(ctx context.Context) func() {
+func (d *DmpSync) GetSyncInstanceTaskFunc(ctx context.Context) func() {
 	return func() {
 		d.StartSyncDmpData(ctx)
 	}
