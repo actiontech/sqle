@@ -153,6 +153,11 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	var instTemplate *model.InstancesTemplate
 	var instances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
+		if dmpInstance.DataSrcSip == "" {
+			d.L.Error("dmp data source sip is empty")
+			continue
+		}
+
 		//var projectName string
 		//for _, tag := range dmpInstance.Tags {
 		//	if tag.TagAttribute == SqleTag {
