@@ -166,11 +166,6 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	var instances []*model.Instance
 	var needDeletedInstances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
-		if dmpInstance.DataSrcSip == "" {
-			d.L.Errorf("dmp data source [%v] sip is empty", dmpInstance.DataSrcID)
-			continue
-		}
-
 		//for _, tag := range dmpInstance.Tags {
 		//	if tag.TagAttribute == SqleTag {
 		//		projectName = tag.TagValue
@@ -198,9 +193,15 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		for _, inst := range instancesBySource {
 			if _, ok := dmpInst[inst.Name]; !ok {
 				if err := common.CheckDeleteInstance(inst.ID); err == nil {
+					d.L.Errorf("instance %s not exist in dmp, delete it", inst.Name)
 					needDeletedInstances = append(needDeletedInstances, inst)
 				}
 			}
+		}
+
+		if dmpInstance.DataSrcSip == "" {
+			d.L.Error("dmp data source sip is empty")
+			continue
 		}
 
 		m := make(map[string]struct{})
