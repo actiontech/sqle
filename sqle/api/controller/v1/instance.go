@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	syncTask "github.com/actiontech/sqle/sqle/pkg/sync_task"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -384,7 +385,6 @@ func GetInstance(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/instances/{instance_name}/ [delete]
 func DeleteInstance(c echo.Context) error {
-	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	projectName := c.Param("project_name")
 	userName := controller.GetUserName(c)
@@ -394,39 +394,23 @@ func DeleteInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	s := model.GetStorage()
 	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+		return fmt.Errorf("instance %s not exist", instanceName)
 	}
 
-	tasks, err := s.GetTaskByInstanceId(instance.ID)
-	if err != nil {
+	if err = syncTask.CheckDeleteInstance(instance.ID); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	taskIds := make([]uint, 0, len(tasks))
-	for _, task := range tasks {
-		taskIds = append(taskIds, task.ID)
-	}
-	isRunning, err := s.TaskWorkflowIsUnfinished(taskIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if isRunning {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist,
-			fmt.Errorf("%s can't be deleted,cause wait_for_audit or wait_for_execution workflow exist", instanceName)))
 	}
 
-	err = s.DeleteRoleByInstanceID(instance.ID)
-	if err != nil {
+	if err := s.DeleteInstance(instance); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.Delete(instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
