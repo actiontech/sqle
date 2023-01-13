@@ -3011,11 +3011,6 @@ definitions:
       version:
         example: 5.23.01.0
         type: string
-    required:
-    - global_rule_template
-    - sync_instance_interval
-    - url
-    - version
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:

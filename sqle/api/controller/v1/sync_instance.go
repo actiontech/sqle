@@ -31,10 +31,10 @@ func CreateSyncInstanceTask(c echo.Context) error {
 }
 
 type UpdateSyncInstanceTaskReqV1 struct {
-	Version              *string `json:"version" form:"version" validate:"required" example:"5.23.01.0"`
-	URL                  *string `json:"url" form:"url" validate:"required" example:"http://10.186.62.56:10000"`
-	GlobalRuleTemplate   *string `json:"global_rule_template" form:"global_rule_template" validate:"required" example:"default_mysql"`
-	SyncInstanceInterval *string `json:"sync_instance_interval" form:"sync_instance_interval" validate:"required" example:"0 0 * * *"`
+	Version              *string `json:"version" form:"version" example:"5.23.01.0"`
+	URL                  *string `json:"url" form:"url" example:"http://10.186.62.56:10000"`
+	GlobalRuleTemplate   *string `json:"global_rule_template" form:"global_rule_template" example:"default_mysql"`
+	SyncInstanceInterval *string `json:"sync_instance_interval" form:"sync_instance_interval" example:"0 0 * * *"`
 }
 
 // UpdateSyncInstanceTask update sync instance task
