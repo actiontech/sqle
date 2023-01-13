@@ -8,7 +8,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/sync_task/dmp"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -66,7 +65,7 @@ func EnableSyncInstanceTask(ctx context.Context) {
 func NewSyncInstanceTask(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
 	switch dbType {
 	case SyncTaskActiontechDmp:
-		return dmp.NewDmpSync(log, url, dmpVersion, dbType, ruleTemplateName)
+		return NewDmpSync(log, url, dmpVersion, dbType, ruleTemplateName)
 	}
 	return nil
 }
