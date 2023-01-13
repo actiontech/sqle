@@ -193,6 +193,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		for _, inst := range instancesBySource {
 			if _, ok := dmpInst[inst.Name]; !ok {
 				if err := common.CheckDeleteInstance(inst.ID); err == nil {
+					d.L.Errorf("instance %s not exist in dmp, delete it", inst.Name)
 					needDeletedInstances = append(needDeletedInstances, inst)
 				}
 			}
