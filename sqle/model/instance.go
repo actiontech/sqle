@@ -134,6 +134,26 @@ func (s *Storage) GetInstanceByNameAndProjectID(instName string, projectID uint)
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetInstancesByProjectIdAndSource(projectId uint, source string) ([]*Instance, error) {
+	instances := []*Instance{}
+	if err := s.db.Where("project_id = ? and source = ?", projectId, source).Find(&instances).Error; err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return instances, nil
+}
+
+func (s *Storage) DeleteInstance(instance *Instance) error {
+	err := s.DeleteRoleByInstanceID(instance.ID)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	err = s.Delete(instance)
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	return nil
+}
+
 func (s *Storage) GetInstanceDetailByNameAndProjectName(instName string, projectName string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("WorkflowTemplate").Preload("RuleTemplates").
@@ -365,12 +385,13 @@ func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName st
 	return instCache, nil
 }
 
-type InstancesTemplate struct {
-	Instances    []*Instance
-	RuleTemplate *RuleTemplate
+type SyncTaskInstance struct {
+	Instances            []*Instance
+	RuleTemplate         *RuleTemplate
+	NeedDeletedInstances []*Instance
 }
 
-func (s *Storage) BatchInsertInstTemplate(instTemplate *InstancesTemplate) error {
+func (s *Storage) BatchUpdateSyncTask(instTemplate *SyncTaskInstance) error {
 	err := s.Tx(func(tx *gorm.DB) error {
 		for _, instance := range instTemplate.Instances {
 			if err := tx.Save(instance).Error; err != nil {
@@ -381,6 +402,13 @@ func (s *Storage) BatchInsertInstTemplate(instTemplate *InstancesTemplate) error
 				return err
 			}
 		}
+
+		for _, instance := range instTemplate.NeedDeletedInstances {
+			if err := s.DeleteInstance(instance); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	})
 
