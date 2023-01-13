@@ -111,15 +111,15 @@ func updateSyncInstanceTask(c echo.Context) error {
 }
 
 func deleteSyncInstanceTask(c echo.Context) error {
-	taskId := c.Param("task_id")
+	taskIdStr := c.Param("task_id")
 
 	s := model.GetStorage()
-	taskIdStr, err := strconv.Atoi(taskId)
+	taskId, err := strconv.Atoi(taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdStr))
+	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
