@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	syncTask "github.com/actiontech/sqle/sqle/pkg/sync_task"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -403,7 +402,7 @@ func DeleteInstance(c echo.Context) error {
 		return fmt.Errorf("instance %s not exist", instanceName)
 	}
 
-	if err = syncTask.CheckDeleteInstance(instance.ID); err != nil {
+	if err = common.CheckDeleteInstance(instance.ID); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
