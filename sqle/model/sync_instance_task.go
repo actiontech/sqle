@@ -47,3 +47,10 @@ func (s *Storage) GetSyncInstanceTaskById(id uint) (*SyncInstanceTask, bool, err
 
 	return syncInstTask, true, nil
 }
+
+func (s *Storage) UpdateSyncInstanceTaskById(id uint, syncTask map[string]interface{}) error {
+	if err := s.db.Model(&SyncInstanceTask{}).Where("id = ?", id).Updates(syncTask).Error; err != nil {
+		return errors.ConnectStorageErrWrapper(err)
+	}
+	return nil
+}
