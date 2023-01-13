@@ -64,7 +64,7 @@ func updateSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	syncTask, exist, err := s.GetSyncTaskById(uint(taskIdStr))
+	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdStr))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -113,7 +113,7 @@ func deleteSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	syncTask, exist, err := s.GetSyncTaskById(uint(taskIdStr))
+	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdStr))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

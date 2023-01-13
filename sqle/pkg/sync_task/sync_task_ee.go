@@ -37,7 +37,7 @@ func EnableInstanceSync(ctx context.Context) {
 	c := cron.New()
 
 	s := model.GetStorage()
-	syncTasks, err := s.GetAllSyncTasks()
+	syncTasks, err := s.GetAllSyncInstanceTasks()
 	if err != nil {
 		newLog.Errorf("get all sync tasks error: %v", err)
 	}
