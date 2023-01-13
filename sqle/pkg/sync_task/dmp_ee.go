@@ -218,14 +218,15 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		}
 
 		inst := &model.Instance{
-			Name:      dmpInstance.DataSrcID,
-			Host:      dmpInstance.DataSrcSip,
-			Port:      dmpInstance.DataSrcPort,
-			User:      dmpInstance.DataSrcUser,
-			ProjectId: project.ID,
-			Password:  password,
-			DbType:    d.DbType,
-			Source:    SyncTaskActiontechDmp,
+			Name:               dmpInstance.DataSrcID,
+			Host:               dmpInstance.DataSrcSip,
+			Port:               dmpInstance.DataSrcPort,
+			User:               dmpInstance.DataSrcUser,
+			WorkflowTemplateId: ruleTemplate.ID,
+			ProjectId:          project.ID,
+			Password:           password,
+			DbType:             d.DbType,
+			Source:             SyncTaskActiontechDmp,
 		}
 
 		instances = append(instances, inst)
