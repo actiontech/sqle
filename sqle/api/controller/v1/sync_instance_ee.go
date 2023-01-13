@@ -10,11 +10,19 @@ import (
 	"strconv"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	instSync "github.com/actiontech/sqle/sqle/pkg/sync_task"
 	"github.com/labstack/echo/v4"
+)
+
+var (
+	ErrSyncInstanceTaskNotExist = func(taskId int) error {
+		return errors.New(errors.DataNotExist, fmt.Errorf("sync instance task [%s] not exist", taskId))
+	}
 )
 
 func createSyncInstanceTask(c echo.Context) error {
@@ -69,7 +77,7 @@ func updateSyncInstanceTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskIdInt))
 	}
 
 	if req.Version != nil {
@@ -105,20 +113,20 @@ func updateSyncInstanceTask(c echo.Context) error {
 }
 
 func deleteSyncInstanceTask(c echo.Context) error {
-	taskId := c.Param("task_id")
+	taskIdStr := c.Param("task_id")
 
 	s := model.GetStorage()
-	taskIdStr, err := strconv.Atoi(taskId)
+	taskId, err := strconv.Atoi(taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskIdStr))
+	syncTask, exist, err := s.GetSyncInstanceTaskById(uint(taskId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync task %s not exist", taskId))
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskId))
 	}
 
 	if err := s.Delete(&syncTask); err != nil {
@@ -131,15 +139,81 @@ func deleteSyncInstanceTask(c echo.Context) error {
 }
 
 func triggerSyncInstance(c echo.Context) error {
-	return nil
+	taskIdStr := c.Param("task_id")
+	s := model.GetStorage()
+
+	taskId, err := strconv.Atoi(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	task, exist, err := s.GetSyncInstanceTaskById(uint(taskId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskId))
+	}
+
+	l := log.Logger().WithField("action", "trigger_sync_instance_task")
+	syncInstanceTaskEntity := instSync.NewSyncInstanceTask(l, uint(taskId), task.URL, task.Version, task.DbType, task.Source, task.RuleTemplate.Name)
+	syncFunc := syncInstanceTaskEntity.GetSyncInstanceTaskFunc(context.Background())
+	syncFunc()
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func getSyncInstanceTaskList(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+
+	tasks, err := s.GetAllSyncInstanceTasks()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	tasksRes := make([]InstanceTaskResV1, len(tasks))
+	for i, t := range tasks {
+		tasksRes[i].ID = int(t.ID)
+		tasksRes[i].Source = t.Source
+		tasksRes[i].Version = t.Version
+		tasksRes[i].URL = t.URL
+		tasksRes[i].DbType = t.DbType
+		tasksRes[i].LastSyncStatus = t.LastSyncStatus
+		tasksRes[i].LastSyncSuccessTime = t.LastSyncSuccessTime
+	}
+	return c.JSON(http.StatusOK, GetSyncInstanceTaskListResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    tasksRes,
+	})
 }
 
 func getSyncInstanceTask(c echo.Context) error {
-	return nil
+	taskIdStr := c.Param("task_id")
+	s := model.GetStorage()
+
+	taskId, err := strconv.Atoi(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	task, exist, err := s.GetSyncInstanceTaskById(uint(taskId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrSyncInstanceTaskNotExist(taskId))
+	}
+	taskRes := InstanceTaskDetailResV1{
+		ID:                   int(task.ID),
+		Source:               task.Source,
+		Version:              task.Version,
+		URL:                  task.URL,
+		DbType:               task.DbType,
+		RuleTemplate:         task.RuleTemplate.Name,
+		SyncInstanceInterval: task.SyncInstanceInterval,
+	}
+	return c.JSON(http.StatusOK, GetSyncInstanceTaskResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    taskRes,
+	})
 }
 
 var (

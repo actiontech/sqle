@@ -167,7 +167,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	var needDeletedInstances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
 		if dmpInstance.DataSrcSip == "" {
-			d.L.Error("dmp data source sip is empty")
+			d.L.Errorf("dmp data source [%v] sip is empty", dmpInstance.DataSrcID)
 			continue
 		}
 
