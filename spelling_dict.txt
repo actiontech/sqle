@@ -365,3 +365,4 @@ errmsg
 userid
 getbymobile
 processcode
+gosimple
