@@ -1,14 +1,14 @@
 //go:build enterprise
 // +build enterprise
 
-package sync
+package sync_task
 
 import (
 	"context"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/sync/dmp"
+	"github.com/actiontech/sqle/sqle/pkg/sync_task/dmp"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )

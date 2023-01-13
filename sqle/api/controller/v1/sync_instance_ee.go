@@ -13,7 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	instSync "github.com/actiontech/sqle/sqle/pkg/sync"
+	instSync "github.com/actiontech/sqle/sqle/pkg/sync_task"
 	"github.com/labstack/echo/v4"
 )
 

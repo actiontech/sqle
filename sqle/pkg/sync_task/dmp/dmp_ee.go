@@ -21,7 +21,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
-	instSync "github.com/actiontech/sqle/sqle/pkg/sync"
+	instSync "github.com/actiontech/sqle/sqle/pkg/sync_task"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
