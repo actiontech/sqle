@@ -33,6 +33,7 @@ const (
 )
 
 type DmpSync struct {
+	SyncTaskID     uint
 	DmpVersion     string
 	Url            string
 	DbType         string
@@ -42,8 +43,9 @@ type DmpSync struct {
 	L              *logrus.Entry
 }
 
-func NewDmpSync(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) *DmpSync {
+func NewDmpSync(log *logrus.Entry, id uint, url, dmpVersion, dbType, ruleTemplateName string) *DmpSync {
 	return &DmpSync{
+		SyncTaskID:     id,
 		DmpVersion:     dmpVersion,
 		Url:            url,
 		DbType:         dbType,
@@ -107,7 +109,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 			m["last_sync_status"] = model.SyncInstanceStatusFailed
 		}
 
-		if err := s.Update(&model.SyncInstanceTask{}, m); err != nil {
+		if err := s.UpdateSyncInstanceTaskById(d.SyncTaskID, m); err != nil {
 			d.L.Errorf("update sync instance task failed, err: %v", err)
 		}
 	}()
@@ -149,15 +151,24 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		return
 	}
 
-	var instTemplate *model.InstancesTemplate
+	dmpInst := make(map[string]struct{})
+	for _, dmpInstance := range getDmpInstanceResp.Data {
+		if dmpInstance.DataSrcSip == "" {
+			d.L.Error("dmp data source sip is empty")
+			continue
+		}
+		dmpInst[dmpInstance.DataSrcID] = struct{}{}
+	}
+
+	var syncTaskInstance *model.SyncTaskInstance
 	var instances []*model.Instance
+	var needDeletedInstances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
 		if dmpInstance.DataSrcSip == "" {
 			d.L.Error("dmp data source sip is empty")
 			continue
 		}
 
-		//var projectName string
 		//for _, tag := range dmpInstance.Tags {
 		//	if tag.TagAttribute == SqleTag {
 		//		projectName = tag.TagValue
@@ -174,6 +185,20 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		if !exist {
 			d.L.Errorf("project %s not exist", projectName)
 			return
+		}
+
+		instancesBySource, err := s.GetInstancesByProjectIdAndSource(project.ID, SyncTaskActiontechDmp)
+		if err != nil {
+			d.L.Errorf("get instances by source fail: %s", err)
+			return
+		}
+
+		for _, inst := range instancesBySource {
+			if _, ok := dmpInst[inst.Name]; !ok {
+				if err := CheckDeleteInstance(inst.ID); err == nil {
+					needDeletedInstances = append(needDeletedInstances, inst)
+				}
+			}
 		}
 
 		m := make(map[string]struct{})
@@ -193,30 +218,54 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		}
 
 		inst := &model.Instance{
-			Name:      dmpInstance.DataSrcID,
-			Host:      dmpInstance.DataSrcSip,
-			Port:      dmpInstance.DataSrcPort,
-			User:      dmpInstance.DataSrcUser,
-			ProjectId: project.ID,
-			Password:  password,
-			DbType:    d.DbType,
-			Source:    SyncTaskActiontechDmp,
+			Name:               dmpInstance.DataSrcID,
+			Host:               dmpInstance.DataSrcSip,
+			Port:               dmpInstance.DataSrcPort,
+			User:               dmpInstance.DataSrcUser,
+			WorkflowTemplateId: ruleTemplate.ID,
+			ProjectId:          project.ID,
+			Password:           password,
+			DbType:             d.DbType,
+			Source:             SyncTaskActiontechDmp,
 		}
 
 		instances = append(instances, inst)
 	}
 
-	instTemplate = &model.InstancesTemplate{
-		Instances:    instances,
-		RuleTemplate: ruleTemplate,
+	syncTaskInstance = &model.SyncTaskInstance{
+		Instances:            instances,
+		RuleTemplate:         ruleTemplate,
+		NeedDeletedInstances: needDeletedInstances,
 	}
 
-	if err := s.BatchInsertInstTemplate(instTemplate); err != nil {
+	if err := s.BatchUpdateSyncTask(syncTaskInstance); err != nil {
 		d.L.Errorf("batch insert instance template fail: %s", err)
 		return
 	} else {
 		isSyncSuccess = true
 	}
+}
+
+func CheckDeleteInstance(instanceId uint) error {
+	s := model.GetStorage()
+
+	tasks, err := s.GetTaskByInstanceId(instanceId)
+	if err != nil {
+		return err
+	}
+	taskIds := make([]uint, 0, len(tasks))
+	for _, task := range tasks {
+		taskIds = append(taskIds, task.ID)
+	}
+	isRunning, err := s.TaskWorkflowIsUnfinished(taskIds)
+	if err != nil {
+		return err
+	}
+	if isRunning {
+		return fmt.Errorf("instance %s is running,cannot be deleted", instanceId)
+	}
+
+	return nil
 }
 
 func getDmpFilterType(dbType string) string {

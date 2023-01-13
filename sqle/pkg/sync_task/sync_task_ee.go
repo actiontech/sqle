@@ -44,7 +44,7 @@ func EnableSyncInstanceTask(ctx context.Context) {
 	for _, syncTask := range syncTasks {
 		var syncFunc func()
 
-		syncInstance := NewSyncInstanceTask(newLog, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
+		syncInstance := NewSyncInstanceTask(newLog, syncTask.ID, syncTask.Source, syncTask.URL, syncTask.Version, syncTask.DbType, syncTask.RuleTemplate.Name)
 		syncFunc = syncInstance.GetSyncInstanceTaskFunc(ctx)
 
 		_, err := c.AddFunc(syncTask.SyncInstanceInterval, syncFunc)
@@ -62,10 +62,10 @@ func EnableSyncInstanceTask(ctx context.Context) {
 	newLog.Infof("exit cron task, reason: %s", exitReason)
 }
 
-func NewSyncInstanceTask(log *logrus.Entry, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
-	switch dbType {
+func NewSyncInstanceTask(log *logrus.Entry, id uint, source, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
+	switch source {
 	case SyncTaskActiontechDmp:
-		return NewDmpSync(log, url, dmpVersion, dbType, ruleTemplateName)
+		return NewDmpSync(log, id, url, dmpVersion, dbType, ruleTemplateName)
 	}
 	return nil
 }
