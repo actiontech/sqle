@@ -156,7 +156,7 @@ func triggerSyncInstance(c echo.Context) error {
 	}
 
 	l := log.Logger().WithField("action", "trigger_sync_instance_task")
-	syncInstanceTaskEntity := instSync.NewSyncInstanceTask(l, uint(taskId), task.URL, task.Version, task.DbType, task.Source, task.RuleTemplate.Name)
+	syncInstanceTaskEntity := instSync.NewSyncInstanceTask(l, uint(taskId),task.Source, task.URL, task.Version, task.DbType,  task.RuleTemplate.Name)
 	syncFunc := syncInstanceTaskEntity.GetSyncInstanceTaskFunc(context.Background())
 	syncFunc()
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
