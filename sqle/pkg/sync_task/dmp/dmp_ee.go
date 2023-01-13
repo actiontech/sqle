@@ -196,7 +196,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 			ProjectId: project.ID,
 			Password:  password,
 			DbType:    d.DbType,
-			Source:    instSync.ActiontechDmp,
+			Source:    instSync.SyncTaskActiontechDmp,
 		}
 
 		instances = append(instances, inst)
