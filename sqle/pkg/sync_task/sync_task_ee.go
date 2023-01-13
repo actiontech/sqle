@@ -25,7 +25,7 @@ type SyncInstance interface {
 	Sync(context.Context) func()
 }
 
-func ReloadInstance(ctx context.Context, reloadReason string) {
+func ReloadSyncTask(ctx context.Context, reloadReason string) {
 	// 退出当前运行cron任务
 	ExitCronChan <- reloadReason
 	go EnableInstanceSync(ctx)
