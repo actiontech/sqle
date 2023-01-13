@@ -145,6 +145,8 @@ func (s *Sqled) syncInstanceTaskLoop() {
 	ticker := time.NewTicker(24 * time.Hour)
 	defer ticker.Stop()
 
+	syncTask.EnableSyncInstanceTask(context.TODO())
+
 	for {
 		select {
 		case <-s.exit:

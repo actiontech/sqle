@@ -1,13 +1,10 @@
 package sqled
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/actiontech/sqle/sqle/pkg/syncTask"
 
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
@@ -87,8 +84,6 @@ func Run(config *config.Config) error {
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
 	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
-
-	go syncTask.EnableSyncInstanceTask(context.TODO())
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)
