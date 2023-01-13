@@ -33,7 +33,7 @@ const (
 )
 
 type DmpSync struct {
-	ID             uint
+	SyncTaskID     uint
 	DmpVersion     string
 	Url            string
 	DbType         string
@@ -45,7 +45,7 @@ type DmpSync struct {
 
 func NewDmpSync(log *logrus.Entry, id uint, url, dmpVersion, dbType, ruleTemplateName string) *DmpSync {
 	return &DmpSync{
-		ID:             id,
+		SyncTaskID:     id,
 		DmpVersion:     dmpVersion,
 		Url:            url,
 		DbType:         dbType,
@@ -109,7 +109,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 			m["last_sync_status"] = model.SyncInstanceStatusFailed
 		}
 
-		if err := s.UpdateSyncInstanceTaskById(d.ID, m); err != nil {
+		if err := s.UpdateSyncInstanceTaskById(d.SyncTaskID, m); err != nil {
 			d.L.Errorf("update sync instance task failed, err: %v", err)
 		}
 	}()
