@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	syncTask "github.com/actiontech/sqle/sqle/pkg/sync_Task"
+	syncTask "github.com/actiontech/sqle/sqle/pkg/sync_task"
 
 	"github.com/actiontech/sqle/sqle/notification"
 

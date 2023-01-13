@@ -1,4 +1,4 @@
-package sync_Task
+package sync_task
 
 import (
 	"context"
