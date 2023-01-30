@@ -166,14 +166,13 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 	var instances []*model.Instance
 	var needDeletedInstances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
-		//for _, tag := range dmpInstance.Tags {
-		//	if tag.TagAttribute == SqleTag {
-		//		projectName = tag.TagValue
-		//	}
-		//}
+		var projectName string
+		for _, tag := range dmpInstance.Tags {
+			if tag.TagAttribute == SqleTag {
+				projectName = tag.TagValue
+			}
+		}
 
-		// todo: 后续更新为从dmp获取
-		projectName := "default"
 		project, exist, err := s.GetProjectByName(projectName)
 		if err != nil {
 			d.L.Errorf("get Instances by project name fail: %s", err)
