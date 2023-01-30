@@ -95,11 +95,11 @@ type ListService struct {
 
 func (d *DmpSync) GetSyncInstanceTaskFunc(ctx context.Context) func() {
 	return func() {
-		d.StartSyncDmpData(ctx)
+		d.startSyncDmpData(ctx)
 	}
 }
 
-func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
+func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 	s := model.GetStorage()
 	isSyncSuccess := false
 	defer func() {
