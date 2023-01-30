@@ -156,7 +156,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	dmpInst := make(map[string]struct{})
 	for _, dmpInstance := range getDmpInstanceResp.Data {
 		if dmpInstance.DataSrcSip == "" {
-			d.L.Error("dmp data source sip is empty")
+			d.L.Errorf("dmp data source %s sip is empty", dmpInstance.DataSrcID)
 			continue
 		}
 		dmpInst[dmpInstance.DataSrcID] = struct{}{}
@@ -200,7 +200,7 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		}
 
 		if dmpInstance.DataSrcSip == "" {
-			d.L.Error("dmp data source sip is empty")
+			d.L.Errorf("dmp data source %s sip is empty", dmpInstance.DataSrcID)
 			continue
 		}
 
