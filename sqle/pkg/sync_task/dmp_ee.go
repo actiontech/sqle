@@ -204,32 +204,47 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 			continue
 		}
 
-		m := make(map[string]struct{})
-		for _, instance := range project.Instances {
-			m[instance.Name] = struct{}{}
-		}
-
-		if _, ok := m[dmpInstance.DataSrcID]; ok {
-			d.L.Errorf("instance %s already exist,skip sync", dmpInstance.DataSrcID)
-			continue
-		}
-
 		password, err := DecryptPassword(dmpInstance.DataSrcPassword)
 		if err != nil {
 			d.L.Errorf("decrypt password fail: %s", err)
 			return
 		}
 
-		inst := &model.Instance{
-			Name:               dmpInstance.DataSrcID,
-			Host:               dmpInstance.DataSrcSip,
-			Port:               dmpInstance.DataSrcPort,
-			User:               dmpInstance.DataSrcUser,
-			WorkflowTemplateId: ruleTemplate.ID,
-			ProjectId:          project.ID,
-			Password:           password,
-			DbType:             d.DbType,
-			Source:             SyncTaskActiontechDmp,
+		m := make(map[string]*model.Instance)
+		for _, instance := range project.Instances {
+			m[instance.Name] = instance
+		}
+
+		var inst *model.Instance
+		var ok bool
+		if inst, ok = m[dmpInstance.DataSrcID]; ok {
+			if inst.Source != SyncTaskActiontechDmp {
+				d.L.Errorf("instance has already exist and  %s source is not dmp", inst.Name)
+				continue
+			}
+
+			isHostOrPortDiff := dmpInstance.DataSrcSip != inst.Host || dmpInstance.DataSrcPort != inst.Port
+			isUserOrPasswdDiff := dmpInstance.DataSrcUser != inst.User || password != inst.Password
+			if isHostOrPortDiff || isUserOrPasswdDiff {
+				inst.Host = dmpInstance.DataSrcSip
+				inst.Port = dmpInstance.DataSrcPort
+				inst.User = dmpInstance.DataSrcUser
+				inst.Password = password
+			} else {
+				continue
+			}
+		} else {
+			inst = &model.Instance{
+				Name:               dmpInstance.DataSrcID,
+				Host:               dmpInstance.DataSrcSip,
+				Port:               dmpInstance.DataSrcPort,
+				User:               dmpInstance.DataSrcUser,
+				WorkflowTemplateId: ruleTemplate.ID,
+				ProjectId:          project.ID,
+				Password:           password,
+				DbType:             d.DbType,
+				Source:             SyncTaskActiontechDmp,
+			}
 		}
 
 		instances = append(instances, inst)
