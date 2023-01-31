@@ -153,13 +153,30 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		return
 	}
 
-	dmpInst := make(map[string]struct{})
+	dmpInst := make(map[string] /*project name*/ map[string] /*数据源名*/ struct{})
+	instProjectName := make(map[string] /*数据源名*/ string /*project name*/)
 	for _, dmpInstance := range getDmpInstanceResp.Data {
 		if dmpInstance.DataSrcSip == "" {
 			d.L.Errorf("dmp data source %s sip is empty", dmpInstance.DataSrcID)
 			continue
 		}
-		dmpInst[dmpInstance.DataSrcID] = struct{}{}
+
+		var projectName string
+		for _, tag := range dmpInstance.Tags {
+			if tag.TagAttribute == SqleTag {
+				projectName = tag.TagValue
+			}
+		}
+
+		if _, ok := dmpInst[projectName]; !ok {
+			dmpInst[projectName] = make(map[string]struct{})
+		}
+
+		instProjectName[dmpInstance.DataSrcID] = projectName
+	}
+
+	for instName, projectName := range instProjectName {
+		dmpInst[projectName][instName] = struct{}{}
 	}
 
 	var syncTaskInstance *model.SyncTaskInstance
@@ -190,7 +207,7 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		}
 
 		for _, inst := range instancesBySource {
-			if _, ok := dmpInst[inst.Name]; !ok {
+			if _, ok := dmpInst[projectName][inst.Name]; !ok {
 				if err := common.CheckDeleteInstance(inst.ID); err == nil {
 					d.L.Errorf("instance %s not exist in dmp, delete it", inst.Name)
 					needDeletedInstances = append(needDeletedInstances, inst)
