@@ -3508,6 +3508,20 @@ definitions:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
     type: object
+  v2.BatchCancelWorkflowsReqV2:
+    properties:
+      workflow_id_list:
+        items:
+          type: string
+        type: array
+    type: object
+  v2.BatchCompleteWorkflowsReqV2:
+    properties:
+      workflow_names:
+        items:
+          type: string
+        type: array
+    type: object
   v2.CreateInstanceReqV2:
     properties:
       additional_params:
@@ -3545,6 +3559,19 @@ definitions:
         $ref: '#/definitions/v1.SQLQueryConfigReqV1'
         type: object
     type: object
+  v2.CreateWorkflowReqV2:
+    properties:
+      desc:
+        type: string
+      task_ids:
+        items:
+          type: integer
+        type: array
+      workflow_id:
+        type: string
+      workflow_subject:
+        type: string
+    type: object
   v2.GetAuditPlansResV2:
     properties:
       code:
@@ -3568,6 +3595,83 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v2.InstanceResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v2.GetWorkflowResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.WorkflowResV2'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.GetWorkflowTasksItemV2:
+    properties:
+      current_step_assignee_user_name_list:
+        items:
+          type: string
+        type: array
+      exec_end_time:
+        type: string
+      exec_start_time:
+        type: string
+      execution_user_name:
+        type: string
+      instance_maintenance_times:
+        items:
+          $ref: '#/definitions/v1.MaintenanceTimeResV1'
+        type: array
+      instance_name:
+        type: string
+      schedule_time:
+        type: string
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - exec_scheduled
+        - exec_failed
+        - exec_succeeded
+        - executing
+        - manually_executed
+        type: string
+      task_id:
+        type: integer
+      task_pass_rate:
+        type: number
+      task_score:
+        type: integer
+    type: object
+  v2.GetWorkflowTasksResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.GetWorkflowTasksItemV2'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.GetWorkflowsResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.WorkflowDetailResV2'
         type: array
       message:
         example: ok
@@ -3612,12 +3716,148 @@ definitions:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
     type: object
+  v2.RejectWorkflowReqV2:
+    properties:
+      reason:
+        type: string
+    type: object
   v2.RuleTemplateV2:
     properties:
       is_global_rule_template:
         type: boolean
       name:
         type: string
+    type: object
+  v2.UpdateWorkflowReqV2:
+    properties:
+      task_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  v2.UpdateWorkflowScheduleReqV2:
+    properties:
+      schedule_time:
+        type: string
+    type: object
+  v2.WorkflowDetailResV2:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      current_step_assignee_user_name_list:
+        items:
+          type: string
+        type: array
+      current_step_type:
+        enum:
+        - sql_review
+        - sql_execute
+        type: string
+      desc:
+        type: string
+      project_name:
+        type: string
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+    type: object
+  v2.WorkflowRecordResV2:
+    properties:
+      current_step_number:
+        type: integer
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
+      tasks:
+        items:
+          $ref: '#/definitions/v2.WorkflowTaskItem'
+        type: array
+      workflow_step_list:
+        items:
+          $ref: '#/definitions/v2.WorkflowStepResV2'
+        type: array
+    type: object
+  v2.WorkflowResV2:
+    properties:
+      create_time:
+        type: string
+      create_user_name:
+        type: string
+      desc:
+        type: string
+      mode:
+        enum:
+        - same_sqls
+        - different_sqls
+        type: string
+      record:
+        $ref: '#/definitions/v2.WorkflowRecordResV2'
+        type: object
+      record_history_list:
+        items:
+          $ref: '#/definitions/v2.WorkflowRecordResV2'
+        type: array
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+    type: object
+  v2.WorkflowStepResV2:
+    properties:
+      assignee_user_name_list:
+        items:
+          type: string
+        type: array
+      desc:
+        type: string
+      number:
+        type: integer
+      operation_time:
+        type: string
+      operation_user_name:
+        type: string
+      reason:
+        type: string
+      state:
+        enum:
+        - initialized
+        - approved
+        - rejected
+        type: string
+      type:
+        enum:
+        - create_workflow
+        - update_workflow
+        - sql_review
+        - sql_execute
+        type: string
+      workflow_step_id:
+        type: integer
+    type: object
+  v2.WorkflowTaskItem:
+    properties:
+      task_id:
+        type: integer
     type: object
 info:
   contact: {}
@@ -7931,6 +8171,501 @@ paths:
       summary: 添加实例
       tags:
       - instance
+  /v2/projects/{project_name}/workflows:
+    get:
+      description: get workflow list
+      operationId: getWorkflowsV2
+      parameters:
+      - description: filter subject
+        in: query
+        name: filter_subject
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: filter_task_execute_start_time_from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter_task_execute_start_time_to
+        in: query
+        name: filter_task_execute_start_time_to
+        type: string
+      - description: filter create user name
+        in: query
+        name: filter_create_user_name
+        type: string
+      - description: filter workflow status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        name: filter_status
+        type: string
+      - description: filter current step assignee user name
+        in: query
+        name: filter_current_step_assignee_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_task_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetWorkflowsResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单列表
+      tags:
+      - workflow
+    post:
+      consumes:
+      - application/json
+      description: create workflow
+      operationId: createWorkflowV2
+      parameters:
+      - description: create workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.CreateWorkflowReqV2'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建工单
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/:
+    get:
+      description: get workflow detail
+      operationId: getWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetWorkflowResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单详情
+      tags:
+      - workflow
+    patch:
+      consumes:
+      - application/json
+      description: update workflow when it is rejected to creator.
+      operationId: updateWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: update workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UpdateWorkflowReqV2'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新工单（驳回后才可更新）
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/cancel:
+    post:
+      description: cancel workflow
+      operationId: cancelWorkflowV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 审批关闭（中止）
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/approve:
+    post:
+      description: approve workflow
+      operationId: approveWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: workflow step id
+        in: path
+        name: workflow_step_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 审批通过
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/reject:
+    post:
+      description: reject workflow
+      operationId: rejectWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow step id
+        in: path
+        name: workflow_step_id
+        required: true
+        type: string
+      - description: workflow approve request
+        in: body
+        name: workflow_approve
+        required: true
+        schema:
+          $ref: '#/definitions/v2.RejectWorkflowReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 审批驳回
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks:
+    get:
+      description: get summary of workflow instance tasks
+      operationId: getSummaryOfInstanceTasksV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetWorkflowTasksResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单数据源任务概览
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/execute:
+    post:
+      description: execute one task on workflow
+      operationId: executeOneTaskOnWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单提交单个数据源上线
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/schedule:
+    put:
+      consumes:
+      - application/json
+      description: update workflow schedule.
+      operationId: updateWorkflowScheduleV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: update workflow schedule request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UpdateWorkflowScheduleReqV2'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks/execute:
+    post:
+      description: execute tasks on workflow
+      operationId: executeTasksOnWorkflowV2
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 多数据源批量上线
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/cancel:
+    post:
+      description: batch cancel workflows
+      operationId: batchCancelWorkflowsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch cancel workflows request
+        in: body
+        name: BatchCancelWorkflowsReqV2
+        required: true
+        schema:
+          $ref: '#/definitions/v2.BatchCancelWorkflowsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量取消工单
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/complete:
+    post:
+      description: this api will directly change the work order status to finished
+        without real online operation
+      operationId: batchCompleteWorkflowsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch complete workflows request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v2.BatchCompleteWorkflowsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量完成工单
+      tags:
+      - workflow
+  /v2/workflows:
+    get:
+      description: get global workflow list
+      operationId: getGlobalWorkflowsV2
+      parameters:
+      - description: filter subject
+        in: query
+        name: filter_subject
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: filter_task_execute_start_time_from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter_task_execute_start_time_to
+        in: query
+        name: filter_task_execute_start_time_to
+        type: string
+      - description: filter create user name
+        in: query
+        name: filter_create_user_name
+        type: string
+      - description: filter workflow status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        name: filter_status
+        type: string
+      - description: filter current step assignee user name
+        in: query
+        name: filter_current_step_assignee_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_task_instance_name
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetWorkflowsResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单列表
+      tags:
+      - workflow
 securityDefinitions:
   ApiKeyAuth:
     in: header
