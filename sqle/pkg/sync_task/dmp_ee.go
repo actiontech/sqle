@@ -266,6 +266,28 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		instances = append(instances, inst)
 	}
 
+	projectList, err := s.GetProjectListByDmp()
+	if err != nil {
+		d.L.Errorf("get project name list fail: %s", err)
+		return
+	}
+
+	for _, project := range projectList {
+		if _, ok := dmpInst[project.Name]; !ok {
+			instanceList, err := s.GetInstancesByProjectIdAndSource(project.ID, SyncTaskActiontechDmp)
+			if err != nil {
+				d.L.Errorf("get instances by source fail: %s", err)
+				return
+			}
+			for _, instance := range instanceList {
+				if err := common.CheckDeleteInstance(instance.ID); err == nil {
+					d.L.Errorf("instance %s not exist in dmp, delete it", instance.Name)
+					needDeletedInstances = append(needDeletedInstances, instance)
+				}
+			}
+		}
+	}
+
 	syncTaskInstance = &model.SyncTaskInstance{
 		Instances:            instances,
 		RuleTemplate:         ruleTemplate,
