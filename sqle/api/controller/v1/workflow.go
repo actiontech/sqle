@@ -1199,6 +1199,7 @@ type GetWorkflowsResV1 struct {
 type WorkflowDetailResV1 struct {
 	ProjectName             string     `json:"project_name"`
 	Name                    string     `json:"workflow_name"`
+	WorkflowId              string     `json:"workflow_id" `
 	Desc                    string     `json:"desc"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
