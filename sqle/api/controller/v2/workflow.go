@@ -86,7 +86,7 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 }
 
 type BatchCompleteWorkflowsReqV2 struct {
-	WorkflowNames []string `json:"workflow_names" form:"workflow_names"`
+	WorkflowIDList []string `json:"workflow_id_list" form:"workflow_id_list"`
 }
 
 // BatchCompleteWorkflowsV2 complete workflows.
