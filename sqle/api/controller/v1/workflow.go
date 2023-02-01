@@ -1109,7 +1109,7 @@ func CreateWorkflowV1(c echo.Context) error {
 
 	// check user role operations
 	{
-		err = checkCurrentUserCanCreateWorkflow(user, tasks, projectName)
+		err = CheckCurrentUserCanCreateWorkflow(user, tasks, projectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1199,6 +1199,7 @@ type GetWorkflowsResV1 struct {
 type WorkflowDetailResV1 struct {
 	ProjectName             string     `json:"project_name"`
 	Name                    string     `json:"workflow_name"`
+	WorkflowId              string     `json:"workflow_id" `
 	Desc                    string     `json:"desc"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
