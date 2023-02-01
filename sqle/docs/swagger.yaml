@@ -3517,7 +3517,7 @@ definitions:
     type: object
   v2.BatchCompleteWorkflowsReqV2:
     properties:
-      workflow_names:
+      workflow_id_list:
         items:
           type: string
         type: array

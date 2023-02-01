@@ -12655,7 +12655,7 @@ var doc = `{
         "v2.BatchCompleteWorkflowsReqV2": {
             "type": "object",
             "properties": {
-                "workflow_names": {
+                "workflow_id_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
