@@ -6727,113 +6727,6 @@ var doc = `{
             }
         },
         "/v2/projects/{project_name}/workflows": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow list",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单列表",
-                "operationId": "getWorkflowsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter subject",
-                        "name": "filter_subject",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time from",
-                        "name": "filter_create_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time to",
-                        "name": "filter_create_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_from",
-                        "name": "filter_task_execute_start_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_to",
-                        "name": "filter_task_execute_start_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "wait_for_audit",
-                            "wait_for_execution",
-                            "rejected",
-                            "executing",
-                            "canceled",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "string",
-                        "description": "filter workflow status",
-                        "name": "filter_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_task_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetWorkflowsResV2"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -7373,108 +7266,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/workflows": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get global workflow list",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取全局工单列表",
-                "operationId": "getGlobalWorkflowsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter subject",
-                        "name": "filter_subject",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time from",
-                        "name": "filter_create_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time to",
-                        "name": "filter_create_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_from",
-                        "name": "filter_task_execute_start_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_to",
-                        "name": "filter_task_execute_start_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "wait_for_audit",
-                            "wait_for_execution",
-                            "rejected",
-                            "executing",
-                            "canceled",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "string",
-                        "description": "filter workflow status",
-                        "name": "filter_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_task_instance_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetWorkflowsResV2"
                         }
                     }
                 }
@@ -12323,6 +12114,9 @@ var doc = `{
                         "finished"
                     ]
                 },
+                "workflow_id": {
+                    "type": "string"
+                },
                 "workflow_name": {
                     "type": "string"
                 }
@@ -12868,28 +12662,6 @@ var doc = `{
                 }
             }
         },
-        "v2.GetWorkflowsResV2": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.WorkflowDetailResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
         "v2.InstanceResV2": {
             "type": "object",
             "properties": {
@@ -12976,54 +12748,6 @@ var doc = `{
             "type": "object",
             "properties": {
                 "schedule_time": {
-                    "type": "string"
-                }
-            }
-        },
-        "v2.WorkflowDetailResV2": {
-            "type": "object",
-            "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "create_user_name": {
-                    "type": "string"
-                },
-                "current_step_assignee_user_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "current_step_type": {
-                    "type": "string",
-                    "enum": [
-                        "sql_review",
-                        "sql_execute"
-                    ]
-                },
-                "desc": {
-                    "type": "string"
-                },
-                "project_name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "wait_for_audit",
-                        "wait_for_execution",
-                        "rejected",
-                        "canceled",
-                        "exec_failed",
-                        "executing",
-                        "finished"
-                    ]
-                },
-                "workflow_id": {
-                    "type": "string"
-                },
-                "workflow_name": {
                     "type": "string"
                 }
             }

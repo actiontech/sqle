@@ -3293,6 +3293,8 @@ definitions:
         - executing
         - finished
         type: string
+      workflow_id:
+        type: string
       workflow_name:
         type: string
     type: object
@@ -3664,21 +3666,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v2.GetWorkflowsResV2:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v2.WorkflowDetailResV2'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
   v2.InstanceResV2:
     properties:
       additional_params:
@@ -3738,40 +3725,6 @@ definitions:
   v2.UpdateWorkflowScheduleReqV2:
     properties:
       schedule_time:
-        type: string
-    type: object
-  v2.WorkflowDetailResV2:
-    properties:
-      create_time:
-        type: string
-      create_user_name:
-        type: string
-      current_step_assignee_user_name_list:
-        items:
-          type: string
-        type: array
-      current_step_type:
-        enum:
-        - sql_review
-        - sql_execute
-        type: string
-      desc:
-        type: string
-      project_name:
-        type: string
-      status:
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - canceled
-        - exec_failed
-        - executing
-        - finished
-        type: string
-      workflow_id:
-        type: string
-      workflow_name:
         type: string
     type: object
   v2.WorkflowRecordResV2:
@@ -8172,79 +8125,6 @@ paths:
       tags:
       - instance
   /v2/projects/{project_name}/workflows:
-    get:
-      description: get workflow list
-      operationId: getWorkflowsV2
-      parameters:
-      - description: filter subject
-        in: query
-        name: filter_subject
-        type: string
-      - description: filter create time from
-        in: query
-        name: filter_create_time_from
-        type: string
-      - description: filter create time to
-        in: query
-        name: filter_create_time_to
-        type: string
-      - description: filter_task_execute_start_time_from
-        in: query
-        name: filter_task_execute_start_time_from
-        type: string
-      - description: filter_task_execute_start_time_to
-        in: query
-        name: filter_task_execute_start_time_to
-        type: string
-      - description: filter create user name
-        in: query
-        name: filter_create_user_name
-        type: string
-      - description: filter workflow status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        name: filter_status
-        type: string
-      - description: filter current step assignee user name
-        in: query
-        name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_task_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetWorkflowsResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单列表
-      tags:
-      - workflow
     post:
       consumes:
       - application/json
@@ -8595,75 +8475,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 批量完成工单
-      tags:
-      - workflow
-  /v2/workflows:
-    get:
-      description: get global workflow list
-      operationId: getGlobalWorkflowsV2
-      parameters:
-      - description: filter subject
-        in: query
-        name: filter_subject
-        type: string
-      - description: filter create time from
-        in: query
-        name: filter_create_time_from
-        type: string
-      - description: filter create time to
-        in: query
-        name: filter_create_time_to
-        type: string
-      - description: filter_task_execute_start_time_from
-        in: query
-        name: filter_task_execute_start_time_from
-        type: string
-      - description: filter_task_execute_start_time_to
-        in: query
-        name: filter_task_execute_start_time_to
-        type: string
-      - description: filter create user name
-        in: query
-        name: filter_create_user_name
-        type: string
-      - description: filter workflow status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        name: filter_status
-        type: string
-      - description: filter current step assignee user name
-        in: query
-        name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_task_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetWorkflowsResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局工单列表
       tags:
       - workflow
 securityDefinitions:
