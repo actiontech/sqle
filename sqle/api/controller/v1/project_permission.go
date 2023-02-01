@@ -181,7 +181,7 @@ func CheckCurrentUserCanViewWorkflow(c echo.Context, workflowName, projectName s
 	return ErrWorkflowNoAccess
 }
 
-func checkCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task, projectName string) error {
+func CheckCurrentUserCanCreateWorkflow(user *model.User, tasks []*model.Task, projectName string) error {
 	if model.IsDefaultAdminUser(user.Name) {
 		return nil
 	}
