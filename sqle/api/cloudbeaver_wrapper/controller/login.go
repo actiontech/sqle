@@ -51,6 +51,7 @@ func (r *QueryResolverImpl) AuthLogin(ctx context.Context, provider string, conf
 	return resp.Data.AuthInfo, RedirectCookie(r.Ctx)
 }
 
+// login页面无法访问sql_query页面的cookie, 这将导致登录SQLE时无法判断CloudBeaver当前登陆状态, 所以需要改名并将cookie放到根目录下, 使用时在还原回原来的名称, 还原位置: cloudbeaver_wrapper.RedirectCookie
 func RedirectCookie(c echo.Context) error {
 	// cookie示例: cb-session-id=yhl4lmtzm4mo19gp72pcfkswn90; Path=/sql_query/
 	cookie := c.Response().Header().Get("Set-Cookie")

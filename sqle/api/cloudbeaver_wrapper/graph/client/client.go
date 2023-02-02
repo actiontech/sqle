@@ -285,6 +285,7 @@ func NewRequest(q string, variables map[string]interface{}) *Request {
 }
 
 // SetOperationName set operation name
+// 发往SQLE的请求如果指定了OperationName, 请求会被SQLE拦截并通过对应逻辑处理, 不添加OperationName的请求会被SQLE直接转发
 func (req *Request) SetOperationName(operationName string) {
 	req.operationName = operationName
 }

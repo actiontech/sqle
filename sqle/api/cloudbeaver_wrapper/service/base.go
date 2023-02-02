@@ -27,10 +27,12 @@ const (
 	CBUserRole = "user"
 )
 
+// 这个客户端会用当前用户操作, 请求会发给SQLE, 由SQLE转发到CB
 func GetSQLEGQLClientWithCurrentUser(ctx echo.Context) (*gqlClient.Client, error) {
 	return gqlClient.NewClient(GetSQLEGqlServerURI(), gqlClient.WithCookie(ctx.Cookies())), nil
 }
 
+// 这个客户端会用CB管理员操作, 请求会直接发到CB
 func GetGQLClientWithRootUser() (*gqlClient.Client, error) {
 	cookies, err := LoginToCBServer(GetSQLQueryConfig().CloudBeaverAdminUser, GetSQLQueryConfig().CloudBeaverAdminPassword)
 	if err != nil {
@@ -39,6 +41,7 @@ func GetGQLClientWithRootUser() (*gqlClient.Client, error) {
 	return gqlClient.NewClient(GetGqlServerURI(), gqlClient.WithCookie(cookies)), nil
 }
 
+// 这个客户端会用指定用户操作, 请求会直接发到CB
 func GetGQLClient(username, password string) (*gqlClient.Client, error) {
 	cookies, err := LoginToCBServer(username, password)
 	if err != nil {
