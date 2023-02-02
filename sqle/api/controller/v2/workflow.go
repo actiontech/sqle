@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/server"
+
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/im"
@@ -44,7 +46,74 @@ type WorkflowStepResV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflowV2(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowId := c.Param("workflow_id")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
+	userName := controller.GetUserName(c)
+	if err := v1.CheckIsProjectMember(userName, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	err = v1.CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	stepIdStr := c.Param("workflow_step_id")
+	stepId, err := v1.FormatStringToInt(stepIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	nextStep := workflow.NextStep()
+
+	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	if err := server.ApproveWorkflowProcess(workflow, user, s); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusAgree, "")
+
+	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type RejectWorkflowReqV2 struct {
