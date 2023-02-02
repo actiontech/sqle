@@ -153,6 +153,7 @@ func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 type Workflow struct {
 	Model
 	Subject          string
+	WorkflowId       string
 	Desc             string
 	CreateUserId     uint
 	WorkflowRecordId uint
@@ -356,6 +357,135 @@ func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task
 
 	workflow := &Workflow{
 		Subject:      subject,
+		Desc:         desc,
+		ProjectId:    projectId,
+		CreateUserId: user.ID,
+		Mode:         workflowMode,
+	}
+
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+	}
+
+	record := &WorkflowRecord{
+		InstanceRecords: instanceRecords,
+	}
+
+	if len(stepTemplates) == 1 {
+		record.Status = WorkflowStatusWaitForExecution
+	}
+
+	allUsers := make([][]*User, len(tasks))
+	allExecutor := make([][]*User, len(tasks))
+	for i, task := range tasks {
+		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
+		if err != nil {
+			return err
+		}
+		allUsers[i] = users
+
+		executor, err := s.GetCanExecuteWorkflowUsers(task.Instance)
+		if err != nil {
+			return err
+		}
+		allExecutor[i] = executor
+	}
+
+	canOptUsers := allUsers[0]
+	canExecUsers := allExecutor[0]
+	for i := 1; i < len(allUsers); i++ {
+		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
+		canExecUsers = getOverlapOfUsers(canExecUsers, allExecutor[i])
+	}
+
+	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
+		adminUser, _, err := s.GetUserByName(DefaultAdminUser)
+		if err != nil {
+			return err
+		}
+		if len(canOptUsers) == 0 {
+			canOptUsers = append(canOptUsers, adminUser)
+		}
+		if len(canExecUsers) == 0 {
+			canExecUsers = append(canExecUsers, adminUser)
+		}
+	}
+
+	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+
+	tx := s.db.Begin()
+
+	err := tx.Save(record).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
+	}
+
+	workflow.WorkflowRecordId = record.ID
+	err = tx.Save(workflow).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, step := range steps {
+		currentStep := step
+		currentStep.WorkflowRecordId = record.ID
+		currentStep.WorkflowId = workflow.ID
+		users := currentStep.Assignees
+		currentStep.Assignees = nil
+		err = tx.Save(currentStep).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
+	if len(steps) > 0 {
+		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
+		if err != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
+
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId uint) error {
+	if len(tasks) <= 0 {
+		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
+	}
+
+	workflowMode := WorkflowModeSameSQLs
+	groupId := tasks[0].GroupId
+	for _, task := range tasks {
+		if task.GroupId != groupId {
+			workflowMode = WorkflowModeDifferentSQLs
+			break
+		}
+	}
+
+	// 相同sql模式下，数据源类型必须相同
+	if workflowMode == WorkflowModeSameSQLs && len(tasks) > 1 {
+		dbType := tasks[0].Instance.DbType
+		for _, task := range tasks {
+			if dbType != task.Instance.DbType {
+				return errors.New(errors.DataConflict, fmt.Errorf("the instance types must be the same"))
+			}
+		}
+	}
+
+	workflow := &Workflow{
+		Subject:      subject,
+		WorkflowId:   workflowId,
 		Desc:         desc,
 		ProjectId:    projectId,
 		CreateUserId: user.ID,
@@ -1145,6 +1275,19 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName 
 	err := s.db.Model(&Workflow{}).Joins("left join projects on workflows.project_id = projects.id").
 		Where("projects.name = ?", projectName).
 		Where("workflows.subject = ?", workflowName).
+		First(&workflow).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflow, false, nil
+	}
+
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId string) (*Workflow, bool, error) {
+	workflow := &Workflow{}
+	err := s.db.Model(&Workflow{}).Joins("left join projects on workflows.project_id = projects.id").
+		Where("projects.name = ?", projectName).
+		Where("workflows.workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil

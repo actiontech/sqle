@@ -1,13 +1,25 @@
 package v2
 
 import (
+	"fmt"
+	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/pkg/im"
+	"github.com/actiontech/sqle/sqle/utils"
+
+	"github.com/actiontech/sqle/sqle/model"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
 )
+
+var errTaskHasBeenUsed = errors.New(errors.DataConflict, fmt.Errorf("task has been used in other workflow"))
 
 type WorkflowStepResV2 struct {
 	Id            uint       `json:"workflow_step_id,omitempty"`
@@ -171,7 +183,143 @@ type CreateWorkflowReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows [post]
 func CreateWorkflowV2(c echo.Context) error {
-	return nil
+	req := new(CreateWorkflowReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := v1.CheckIsProjectMember(user.Name, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	_, exist, err = s.GetWorkflowByProjectNameAndWorkflowId(project.Name, req.WorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow is exist")))
+	}
+
+	taskIds := utils.RemoveDuplicateUint(req.TaskIds)
+	if len(taskIds) > v1.MaximumDataSourceNum {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the max task count of a workflow is %v", v1.MaximumDataSourceNum)))
+	}
+	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !foundAllTasks {
+		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
+	}
+
+	insIdtMap := make(map[uint] /* project instance id */ struct{}, len(project.Instances))
+	for _, instance := range project.Instances {
+		insIdtMap[instance.ID] = struct{}{}
+	}
+
+	workflowTemplateId := tasks[0].Instance.WorkflowTemplateId
+	for _, task := range tasks {
+		if task.Instance == nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. taskId=%v", task.ID)))
+		}
+
+		if _, ok := insIdtMap[task.InstanceId]; !ok {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not in project. taskId=%v", task.ID)))
+		}
+
+		count, err := s.GetTaskSQLCountByTaskID(task.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if count == 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow's execute sql is null. taskId=%v", task.ID)))
+		}
+
+		if task.CreateUserId != user.ID {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+				fmt.Errorf("the task is not created by yourself. taskId=%v", task.ID)))
+		}
+
+		if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+			return controller.JSONBaseErrorReq(c, v1.ErrForbidMyBatisXMLTask(task.ID))
+		}
+
+		// all instances must use the same workflow template
+		if task.Instance.WorkflowTemplateId != workflowTemplateId {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
+				fmt.Errorf("all instances must use the same workflow template")))
+		}
+	}
+
+	// check user role operations
+	{
+		err = v1.CheckCurrentUserCanCreateWorkflow(user, tasks, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	count, err := s.GetWorkflowRecordCountByTaskIds(taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if count > 0 {
+		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
+	}
+
+	template, exist, err := s.GetWorkflowTemplateById(workflowTemplateId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("the task instance is not bound workflow template")))
+	}
+
+	err = v1.CheckWorkflowCanCommit(template, tasks)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	stepTemplates, err := s.GetWorkflowStepsByTemplateId(template.ID)
+	if err != nil {
+		return err
+	}
+	err = s.CreateWorkflowV2(req.Subject, req.WorkflowId, req.Desc, user, tasks, stepTemplates, project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err := s.GetLastWorkflow()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
+	}
+
+	workFlowId := strconv.Itoa(int(workflow.ID))
+	go notification.NotifyWorkflow(workFlowId, notification.WorkflowNotifyTypeCreate)
+
+	go im.CreateApprove(workFlowId)
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateWorkflowReqV2 struct {
