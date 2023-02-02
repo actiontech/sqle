@@ -310,7 +310,34 @@ type BatchCancelWorkflowsReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/cancel [post]
 func BatchCancelWorkflowsV2(c echo.Context) error {
-	return nil
+	req := new(BatchCancelWorkflowsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	if err := v1.CheckIsProjectManager(userName, projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
+	for i, workflowID := range req.WorkflowIDList {
+		workflow, err := checkCancelWorkflow(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		workflows[i] = workflow
+
+		workflow.Record.Status = model.WorkflowStatusCancel
+		workflow.Record.CurrentWorkflowStepId = 0
+	}
+
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type BatchCompleteWorkflowsReqV2 struct {
