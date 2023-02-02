@@ -355,7 +355,76 @@ type BatchCompleteWorkflowsReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/complete [post]
 func BatchCompleteWorkflowsV2(c echo.Context) error {
-	return nil
+	req := new(BatchCancelWorkflowsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectName := c.Param("project_name")
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
+	for i, workflowID := range req.WorkflowIDList {
+		workflow, err := checkCanCompleteWorkflow(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
+		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
+		canFinishWorkflow := isManager
+		if !canFinishWorkflow {
+			for _, assignee := range lastStep.Assignees {
+				if assignee.Name == user.Name {
+					canFinishWorkflow = true
+					break
+				}
+			}
+		}
+
+		if !canFinishWorkflow {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("the current user does not have permission to end these work orders")))
+		}
+
+		lastStep.State = model.WorkflowStepStateApprove
+		workflows[i] = workflow
+		workflow.Record.Status = model.WorkflowStatusFinish
+		workflow.Record.CurrentWorkflowStepId = 0
+		for j := range workflow.Record.InstanceRecords {
+			workflow.Record.InstanceRecords[j].ExecutionUserId = user.ID
+			workflow.Record.InstanceRecords[j].IsSQLExecuted = true
+		}
+	}
+
+	if err := model.GetStorage().BatchCompletionWorkflow(workflows); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func checkCanCompleteWorkflow(projectName, workflowID string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailByWorkflowID(projectName, workflowID)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, v1.ErrWorkflowNoAccess
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 // ExecuteOneTaskOnWorkflowV2
