@@ -417,5 +417,174 @@ type WorkflowResV2 struct {
 // @Success 200 {object} GetWorkflowResV2
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/ [get]
 func GetWorkflowV2(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+
+	s := model.GetStorage()
+
+	err := CheckCurrentUserCanViewWorkflow(c, workflowID, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(projectName, workflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	history, err := s.GetWorkflowHistoryById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	workflow.RecordHistory = history
+
+	return c.JSON(http.StatusOK, &GetWorkflowResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowToRes(workflow),
+	})
+}
+
+func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
+	workflowRes := &WorkflowResV2{
+		Name:       workflow.Subject,
+		WorkflowID: workflow.WorkflowId,
+		Desc:       workflow.Desc,
+		Mode:       workflow.Mode,
+		CreateUser: workflow.CreateUser.Name,
+		CreateTime: &workflow.CreatedAt,
+	}
+
+	// convert workflow record
+	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
+
+	// convert workflow record history
+	recordHistory := make([]*WorkflowRecordResV2, 0, len(workflow.RecordHistory))
+	for _, record := range workflow.RecordHistory {
+		recordRes := convertWorkflowRecordToRes(workflow, record)
+		recordHistory = append(recordHistory, recordRes)
+	}
+	workflowRes.RecordHistory = recordHistory
+	workflowRes.Record = workflowRecordRes
+
+	return workflowRes
+}
+
+func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
+	steps := make([]*WorkflowStepResV2, 0, len(record.Steps)+1)
+	// It is filled by create user and create time;
+	// and tell others that this is a creating or updating operation.
+	var stepType string
+	if workflow.IsFirstRecord(record) {
+		stepType = model.WorkflowStepTypeCreateWorkflow
+	} else {
+		stepType = model.WorkflowStepTypeUpdateWorkflow
+	}
+
+	firstVirtualStep := &WorkflowStepResV2{
+		Type:          stepType,
+		OperationTime: &record.CreatedAt,
+		OperationUser: workflow.CreateUserName(),
+	}
+	steps = append(steps, firstVirtualStep)
+
+	// convert workflow actual step
+	for _, step := range record.Steps {
+		stepRes := convertWorkflowStepToRes(step)
+		steps = append(steps, stepRes)
+	}
+	// fill step number
+	var currentStepNum uint
+	for i, step := range steps {
+		number := uint(i + 1)
+		step.Number = number
+		if step.Id != 0 && step.Id == record.CurrentWorkflowStepId {
+			currentStepNum = number
+		}
+	}
+
+	tasksRes := make([]*WorkflowTaskItem, len(record.InstanceRecords))
+	for i, inst := range record.InstanceRecords {
+		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
+	}
+
+	return &WorkflowRecordResV2{
+		Tasks:             tasksRes,
+		CurrentStepNumber: currentStepNum,
+		Status:            record.Status,
+		Steps:             steps,
+	}
+}
+
+func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
+	stepRes := &WorkflowStepResV2{
+		Id:            step.ID,
+		Type:          step.Template.Typ,
+		Desc:          step.Template.Desc,
+		OperationTime: step.OperateAt,
+		State:         step.State,
+		Reason:        step.Reason,
+		Users:         []string{},
+	}
+	if step.OperationUser != nil {
+		stepRes.OperationUser = step.OperationUser.Name
+	}
+	if step.Assignees != nil {
+		for _, user := range step.Assignees {
+			stepRes.Users = append(stepRes.Users, user.Name)
+		}
+	}
+	return stepRes
+}
+
+func CheckCurrentUserCanViewWorkflow(c echo.Context, workflowID, projectName string) error {
+	userName := controller.GetUserName(c)
+	s := model.GetStorage()
+	isManager, err := s.IsProjectManager(userName, projectName)
+	if err != nil {
+		return err
+	}
+	if userName == model.DefaultAdminUser || isManager {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	workflow, _, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowID)
+	if err != nil {
+		return err
+	}
+
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return err
+	}
+	ok, err := s.CheckUserHasOpToAnyInstance(user, instances, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+	return v1.ErrWorkflowNoAccess
 }
