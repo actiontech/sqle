@@ -439,7 +439,55 @@ func checkCanCompleteWorkflow(projectName, workflowID string) (*model.Workflow, 
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	workflowId := fmt.Sprintf("%v", workflow.ID)
+
+	taskIdStr := c.Param("task_id")
+	taskId, err := v1.FormatStringToInt(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = v1.PrepareForWorkflowExecution(c, projectName, workflow, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	isCan, err := v1.IsTaskCanExecute(s, taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !isCan {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
+	}
+
+	err = server.ExecuteWorkflow(workflow, map[uint]uint{uint(taskId): user.ID})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetWorkflowTasksResV2 struct {
