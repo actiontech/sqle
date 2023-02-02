@@ -77,7 +77,7 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 	if err := registerAnalysisDriver(pluginName, gRPCClient); err != nil {
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginName,
-			"plugin_type": PluginNameQueryDriver,
+			"plugin_type": PluginNameAnalysisDriver,
 		}).Infof("plugin not exist or failed to load. err: %v", err)
 	}
 

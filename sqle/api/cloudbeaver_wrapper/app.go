@@ -137,12 +137,12 @@ func StartApp(e *echo.Echo) error {
 	return nil
 }
 
-// login页面无法访问sql_query页面的cookie, 这将导致登录SQLE时无法判断CloudBeaver当前登陆状态, 所以需要将cookie放到根目录下, 使用时在还原回原来的位置
+// cookie改写位置和原因见 controller.RedirectCookie
 func RedirectCookie() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			var cookie string
-			// 如果用户传了cookie, 则还原cookie的路径
+			// 如果用户传了cookie, 则还原cookie的名称
 			for _, c := range c.Cookies() {
 				if c.Name == "cb-session-id-sqle" {
 					cookie = c.Value
