@@ -956,7 +956,7 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 		res[i] = &GetWorkflowTasksItemV1{
 			TaskId:                   taskDetail.TaskId,
 			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
-			Status:                   getTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
+			Status:                   GetTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
 			ExecStartTime:            taskDetail.TaskExecStartAt,
 			ExecEndTime:              taskDetail.TaskExecEndAt,
 			ScheduleTime:             taskDetail.InstanceScheduledAt,
@@ -980,7 +980,7 @@ const (
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
 
-func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
+func GetTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
 	if workflowStatus == model.WorkflowStatusWaitForAudit {
 		return taskDisplayStatusWaitForAudit
 	}
