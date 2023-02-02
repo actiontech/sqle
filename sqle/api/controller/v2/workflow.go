@@ -778,7 +778,46 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/execute [post]
 func ExecuteTasksOnWorkflowV2(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowId := c.Param("workflow_id")
+
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	workflowId = fmt.Sprintf("%v", workflow.ID)
+
+	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if err := v1.PrepareForWorkflowExecution(c, projectName, workflow, user); err != nil {
+		return err
+	}
+
+	needExecTaskIds, err := v1.GetNeedExecTaskIds(s, workflow, user)
+	if err != nil {
+		return err
+	}
+
+	err = server.ExecuteWorkflow(workflow, needExecTaskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetWorkflowResV2 struct {
