@@ -864,6 +864,42 @@ func (s *Storage) GetWorkflowDetailBySubject(projectName, workflowName string) (
 	return workflow, true, nil
 }
 
+func (s *Storage) GetWorkflowDetailByWorkflowID(projectName, workflowID string) (*Workflow, bool, error) {
+	workflow := &Workflow{}
+	err := s.db.Model(&Workflow{}).Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
+		Where("workflow_id = ?", workflowID).
+		Where("projects.name = ?", projectName).
+		First(workflow).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	if workflow.Record == nil {
+		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
+	}
+
+	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.InstanceRecords = instanceRecords
+
+	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.Steps = steps
+	for _, step := range steps {
+		if step.ID == workflow.Record.CurrentWorkflowStepId {
+			workflow.Record.CurrentStep = step
+		}
+	}
+	return workflow, true, nil
+}
+
 func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
 	records := []*WorkflowRecord{}
 	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.*").
