@@ -1132,7 +1132,7 @@ func CreateWorkflowV1(c echo.Context) error {
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
 
-	err = checkWorkflowCanCommit(template, tasks)
+	err = CheckWorkflowCanCommit(template, tasks)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1162,7 +1162,7 @@ func CreateWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func checkWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
+func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
 	allowLevel := driver.RuleLevelError
 	if template.AllowSubmitWhenLessAuditLevel != "" {
 		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
@@ -1502,7 +1502,7 @@ func UpdateWorkflowV1(c echo.Context) error {
 			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
 	}
 
-	err = checkWorkflowCanCommit(template, tasks)
+	err = CheckWorkflowCanCommit(template, tasks)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
