@@ -520,7 +520,49 @@ type GetWorkflowTasksItemV2 struct {
 // @Success 200 {object} v2.GetWorkflowTasksResV2
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks [get]
 func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	workflowId := c.Param("workflow_id")
+
+	if err := CheckCurrentUserCanViewWorkflow(c, workflowId, projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	queryData := map[string]interface{}{
+		"workflow_id":  workflowId,
+		"project_name": projectName,
+	}
+
+	taskDetails, err := s.GetWorkflowTasksSummaryByReqV2(queryData)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
+	})
+}
+
+func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail) []*GetWorkflowTasksItemV2 {
+	res := make([]*GetWorkflowTasksItemV2, len(taskDetails))
+
+	for i, taskDetail := range taskDetails {
+		res[i] = &GetWorkflowTasksItemV2{
+			TaskId:                   taskDetail.TaskId,
+			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
+			Status:                   v1.GetTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
+			ExecStartTime:            taskDetail.TaskExecStartAt,
+			ExecEndTime:              taskDetail.TaskExecEndAt,
+			ScheduleTime:             taskDetail.InstanceScheduledAt,
+			CurrentStepAssigneeUser:  taskDetail.CurrentStepAssigneeUsers,
+			TaskPassRate:             taskDetail.TaskPassRate,
+			TaskScore:                taskDetail.TaskScore,
+			InstanceMaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
+			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
+		}
+	}
+	return res
 }
 
 type CreateWorkflowReqV2 struct {

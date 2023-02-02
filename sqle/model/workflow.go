@@ -1279,6 +1279,27 @@ AND projects.name = :project_name
 {{ end }}
 `
 
+var workflowTasksSummaryQueryBodyTplV2 = `
+{{ define "body" }}
+FROM workflow_instance_records AS wir
+LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
+LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
+LEFT JOIN projects ON projects.id = w.project_id
+LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
+LEFT JOIN tasks ON wir.task_id = tasks.id
+LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
+LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
+LEFT JOIN workflow_step_user AS curr_ws_user ON curr_ws.id = curr_ws_user.workflow_step_id
+LEFT JOIN users AS curr_ass_user ON curr_ws_user.user_id = curr_ass_user.id
+
+WHERE
+w.deleted_at IS NULL
+AND w.workflow_id = :workflow_id
+AND projects.name = :project_name
+
+{{ end }}
+`
+
 func (s *Storage) GetWorkflowTasksSummaryByReq(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
 
@@ -1287,6 +1308,21 @@ func (s *Storage) GetWorkflowTasksSummaryByReq(data map[string]interface{}) (
 	}
 
 	err = s.getListResult(workflowTasksSummaryQueryBodyTpl, workflowTasksSummaryQueryTpl, data, &result)
+	if err != nil {
+		return result, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return result, nil
+}
+
+func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
+	result []*WorkflowTasksSummaryDetail, err error) {
+
+	if data["workflow_id"] == nil || data["project_name"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	}
+
+	err = s.getListResult(workflowTasksSummaryQueryBodyTplV2, workflowTasksSummaryQueryTpl, data, &result)
 	if err != nil {
 		return result, errors.New(errors.ConnectStorageError, err)
 	}
