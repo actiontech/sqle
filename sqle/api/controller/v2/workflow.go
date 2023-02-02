@@ -132,7 +132,78 @@ type RejectWorkflowReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/reject [post]
 func RejectWorkflowV2(c echo.Context) error {
-	return nil
+	req := new(RejectWorkflowReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+
+	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
+	workflowID := c.Param("workflow_id")
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(project.Name, workflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	// RejectWorkflow no need extra operation code for now.
+	err = v1.CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	stepIdStr := c.Param("workflow_step_id")
+	stepId, err := v1.FormatStringToInt(stepIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowIdStr := strconv.Itoa(int(workflow.ID))
+	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+	}
+
+	for _, inst := range workflow.Record.InstanceRecords {
+		if inst.IsSQLExecuted {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is executed"))
+		}
+		if inst.ScheduledAt != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("can not reject workflow, cause there is any task is scheduled to be executed"))
+		}
+	}
+
+	if err := server.RejectWorkflowProcess(workflow, req.Reason, user, s); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // @Summary 审批关闭（中止）
