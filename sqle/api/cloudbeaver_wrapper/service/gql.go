@@ -105,7 +105,7 @@ func (v CBVersion) LessThan(version CBVersion) bool {
 }
 
 // 不同版本的CloudBeaver间存在不兼容查询语句
-// 说明: 接口传参时不要删除旧版查询语句的查询参数
+// 说明: 接口传参时不要删除旧版查询语句的查询参数,多余的参数对新接口没有影响但是可以兼容旧版本
 type GetQueryGQL interface {
 	CreateConnectionQuery() string
 	UpdateConnectionQuery() string
