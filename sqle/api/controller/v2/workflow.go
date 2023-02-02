@@ -216,7 +216,83 @@ func RejectWorkflowV2(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/cancel [post]
 func CancelWorkflowV2(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+
+	projectName := c.Param("project_name")
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
+	workflowID := c.Param("workflow_id")
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(project.Name, workflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
+	}
+
+	err = v1.CheckCurrentUserCanOperateWorkflow(c, project, workflow, []uint{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflow, err = checkCancelWorkflow(project.Name, workflow.WorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	workflowStatus := workflow.Record.Status
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if !(user.ID == workflow.CreateUserId || user.Name == model.DefaultAdminUser || isManager) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("you are not allow to operate the workflow")))
+	}
+
+	workflow.Record.Status = model.WorkflowStatusCancel
+	workflow.Record.CurrentWorkflowStepId = 0
+
+	err = s.UpdateWorkflowStatus(workflow, nil, nil)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if workflowStatus == model.WorkflowStatusWaitForAudit {
+		go im.CancelApprove(workflow.ID)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func checkCancelWorkflow(projectName, workflowID string) (*model.Workflow, error) {
+	workflow, exist, err := model.GetStorage().GetWorkflowDetailByWorkflowID(projectName, workflowID)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, v1.ErrWorkflowNoAccess
+	}
+	if !(workflow.Record.Status == model.WorkflowStatusWaitForAudit ||
+		workflow.Record.Status == model.WorkflowStatusWaitForExecution ||
+		workflow.Record.Status == model.WorkflowStatusReject) {
+		return nil, errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
+	}
+	return workflow, nil
 }
 
 type BatchCancelWorkflowsReqV2 struct {
