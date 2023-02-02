@@ -1270,6 +1270,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
 			Name:                    workflow.Subject,
+			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
