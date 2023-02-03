@@ -333,6 +333,7 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 	return nil
 }
 
+// @Deprecated
 // @Summary 审批通过
 // @Description approve workflow
 // @Tags workflow
@@ -419,6 +420,7 @@ type RejectWorkflowReqV1 struct {
 	Reason string `json:"reason" form:"reason"`
 }
 
+// @Deprecated
 // @Summary 审批驳回
 // @Description reject workflow
 // @Tags workflow
@@ -506,6 +508,7 @@ func RejectWorkflow(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// @Deprecated
 // @Summary 审批关闭（中止）
 // @Description cancel workflow
 // @Tags workflow
@@ -583,6 +586,7 @@ type BatchCancelWorkflowsReqV1 struct {
 }
 
 // BatchCancelWorkflows batch cancel workflows.
+// @Deprecated
 // @Summary 批量取消工单
 // @Description batch cancel workflows
 // @Tags workflow
@@ -628,6 +632,7 @@ type BatchCompleteWorkflowsReqV1 struct {
 }
 
 // BatchCompleteWorkflows complete workflows.
+// @Deprecated
 // @Summary 批量完成工单
 // @Description this api will directly change the work order status to finished without real online operation
 // @Tags workflow
@@ -753,6 +758,7 @@ func FormatStringToUint64(s string) (ret uint64, err error) {
 }
 
 // ExecuteOneTaskOnWorkflowV1
+// @Deprecated
 // @Summary 工单提交单个数据源上线
 // @Description execute one task on workflow
 // @Tags workflow
@@ -915,6 +921,7 @@ type GetWorkflowTasksItemV1 struct {
 }
 
 // GetSummaryOfWorkflowTasksV1
+// @Deprecated
 // @Summary 获取工单数据源任务概览
 // @Description get summary of workflow instance tasks
 // @Tags workflow
@@ -1011,6 +1018,7 @@ type CreateWorkflowReqV1 struct {
 }
 
 // CreateWorkflowV1
+// @Deprecated
 // @Summary 创建工单
 // @Description create workflow
 // @Accept json
@@ -1390,6 +1398,7 @@ type UpdateWorkflowReqV1 struct {
 }
 
 // UpdateWorkflowV1
+// @Deprecated
 // @Summary 更新工单（驳回后才可更新）
 // @Description update workflow when it is rejected to creator.
 // @Tags workflow
@@ -1531,6 +1540,7 @@ type UpdateWorkflowScheduleReqV1 struct {
 }
 
 // UpdateWorkflowScheduleV1
+// @Deprecated
 // @Summary 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
 // @Description update workflow schedule.
 // @Tags workflow
@@ -1640,6 +1650,7 @@ func UpdateWorkflowScheduleV1(c echo.Context) error {
 }
 
 // ExecuteTasksOnWorkflowV1
+// @Deprecated
 // @Summary 多数据源批量上线
 // @Description execute tasks on workflow
 // @Tags workflow
@@ -1717,6 +1728,7 @@ type WorkflowResV1 struct {
 }
 
 // GetWorkflowV1
+// @Deprecated
 // @Summary 获取工单详情
 // @Description get workflow detail
 // @Tags workflow

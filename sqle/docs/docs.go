@@ -3805,6 +3805,7 @@ var doc = `{
                 ],
                 "summary": "创建工单",
                 "operationId": "createWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "create workflow request",
@@ -3846,6 +3847,7 @@ var doc = `{
                 ],
                 "summary": "批量取消工单",
                 "operationId": "batchCancelWorkflowsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3887,6 +3889,7 @@ var doc = `{
                 ],
                 "summary": "批量完成工单",
                 "operationId": "batchCompleteWorkflowsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3928,6 +3931,7 @@ var doc = `{
                 ],
                 "summary": "获取工单详情",
                 "operationId": "getWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3971,6 +3975,7 @@ var doc = `{
                 ],
                 "summary": "更新工单（驳回后才可更新）",
                 "operationId": "updateWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4019,6 +4024,7 @@ var doc = `{
                 ],
                 "summary": "审批关闭（中止）",
                 "operationId": "cancelWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4058,6 +4064,7 @@ var doc = `{
                 ],
                 "summary": "审批通过",
                 "operationId": "approveWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4104,6 +4111,7 @@ var doc = `{
                 ],
                 "summary": "审批驳回",
                 "operationId": "rejectWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4159,6 +4167,7 @@ var doc = `{
                 ],
                 "summary": "获取工单数据源任务概览",
                 "operationId": "getSummaryOfInstanceTasksV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4198,6 +4207,7 @@ var doc = `{
                 ],
                 "summary": "多数据源批量上线",
                 "operationId": "executeTasksOnWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4237,6 +4247,7 @@ var doc = `{
                 ],
                 "summary": "工单提交单个数据源上线",
                 "operationId": "executeOneTaskOnWorkflowV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -4289,6 +4300,7 @@ var doc = `{
                 ],
                 "summary": "设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）",
                 "operationId": "updateWorkflowScheduleV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",

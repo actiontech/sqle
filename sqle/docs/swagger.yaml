@@ -6242,6 +6242,7 @@ paths:
     post:
       consumes:
       - application/json
+      deprecated: true
       description: create workflow
       operationId: createWorkflowV1
       parameters:
@@ -6270,6 +6271,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/:
     get:
+      deprecated: true
       description: get workflow detail
       operationId: getWorkflowV1
       parameters:
@@ -6296,6 +6298,7 @@ paths:
     patch:
       consumes:
       - application/json
+      deprecated: true
       description: update workflow when it is rejected to creator.
       operationId: updateWorkflowV1
       parameters:
@@ -6329,6 +6332,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/cancel:
     post:
+      deprecated: true
       description: cancel workflow
       operationId: cancelWorkflowV1
       parameters:
@@ -6354,6 +6358,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/approve:
     post:
+      deprecated: true
       description: approve workflow
       operationId: approveWorkflowV1
       parameters:
@@ -6384,6 +6389,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/steps/{workflow_step_id}/reject:
     post:
+      deprecated: true
       description: reject workflow
       operationId: rejectWorkflowV1
       parameters:
@@ -6420,6 +6426,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/tasks:
     get:
+      deprecated: true
       description: get summary of workflow instance tasks
       operationId: getSummaryOfInstanceTasksV1
       parameters:
@@ -6445,6 +6452,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/tasks/{task_id}/execute:
     post:
+      deprecated: true
       description: execute one task on workflow
       operationId: executeOneTaskOnWorkflowV1
       parameters:
@@ -6477,6 +6485,7 @@ paths:
     put:
       consumes:
       - application/json
+      deprecated: true
       description: update workflow schedule.
       operationId: updateWorkflowScheduleV1
       parameters:
@@ -6515,6 +6524,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/tasks/execute:
     post:
+      deprecated: true
       description: execute tasks on workflow
       operationId: executeTasksOnWorkflowV1
       parameters:
@@ -6540,6 +6550,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/cancel:
     post:
+      deprecated: true
       description: batch cancel workflows
       operationId: batchCancelWorkflowsV1
       parameters:
@@ -6566,6 +6577,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/complete:
     post:
+      deprecated: true
       description: this api will directly change the work order status to finished
         without real online operation
       operationId: batchCompleteWorkflowsV1
