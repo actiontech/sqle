@@ -610,7 +610,10 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowId := time.Now().Format("20060102150405")
+	workflowId, err := utils.GenUid()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	_, exist, err = s.GetWorkflowByProjectNameAndWorkflowId(project.Name, workflowId)
 	if err != nil {
