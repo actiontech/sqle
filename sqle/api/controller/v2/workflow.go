@@ -1086,7 +1086,7 @@ func GetWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowName(projectName, workflowID)
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
