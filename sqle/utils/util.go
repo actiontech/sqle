@@ -198,11 +198,11 @@ func InitSnowflake(nodeNo int64) error {
 }
 
 // GenUid genUid为生成随机uid
-func GenUid() (int64, error) {
+func GenUid() (string, error) {
 	if node == nil {
 		if err := InitSnowflake(defaultNodeNo); err != nil {
-			return 0, err
+			return "", err
 		}
 	}
-	return node.Generate().Int64(), nil
+	return node.Generate().String(), nil
 }
