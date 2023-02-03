@@ -12521,9 +12521,6 @@ var doc = `{
                         "type": "integer"
                     }
                 },
-                "workflow_id": {
-                    "type": "string"
-                },
                 "workflow_subject": {
                     "type": "string"
                 }
