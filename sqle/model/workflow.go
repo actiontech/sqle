@@ -153,7 +153,7 @@ func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 type Workflow struct {
 	Model
 	Subject          string
-	WorkflowId       string
+	WorkflowId       string `gorm:"unique"`
 	Desc             string
 	CreateUserId     uint
 	WorkflowRecordId uint
