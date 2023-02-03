@@ -567,10 +567,9 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 }
 
 type CreateWorkflowReqV2 struct {
-	Subject    string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	WorkflowId string `json:"workflow_id" form:"workflow_id" valid:"required"`
-	Desc       string `json:"desc" form:"desc"`
-	TaskIds    []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required"`
+	Desc    string `json:"desc" form:"desc"`
+	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 // CreateWorkflowV2
@@ -611,7 +610,9 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	_, exist, err = s.GetWorkflowByProjectNameAndWorkflowId(project.Name, req.WorkflowId)
+	workflowId := time.Now().Format("20060102150405")
+
+	_, exist, err = s.GetWorkflowByProjectNameAndWorkflowId(project.Name, workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -704,7 +705,7 @@ func CreateWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	err = s.CreateWorkflowV2(req.Subject, req.WorkflowId, req.Desc, user, tasks, stepTemplates, project.ID)
+	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, project.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
