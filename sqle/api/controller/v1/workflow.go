@@ -333,6 +333,7 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 	return nil
 }
 
+// @Deprecated
 // @Summary 审批通过
 // @Description approve workflow
 // @Tags workflow
@@ -419,6 +420,7 @@ type RejectWorkflowReqV1 struct {
 	Reason string `json:"reason" form:"reason"`
 }
 
+// @Deprecated
 // @Summary 审批驳回
 // @Description reject workflow
 // @Tags workflow
@@ -506,6 +508,7 @@ func RejectWorkflow(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+// @Deprecated
 // @Summary 审批关闭（中止）
 // @Description cancel workflow
 // @Tags workflow
@@ -583,6 +586,7 @@ type BatchCancelWorkflowsReqV1 struct {
 }
 
 // BatchCancelWorkflows batch cancel workflows.
+// @Deprecated
 // @Summary 批量取消工单
 // @Description batch cancel workflows
 // @Tags workflow
@@ -628,6 +632,7 @@ type BatchCompleteWorkflowsReqV1 struct {
 }
 
 // BatchCompleteWorkflows complete workflows.
+// @Deprecated
 // @Summary 批量完成工单
 // @Description this api will directly change the work order status to finished without real online operation
 // @Tags workflow
@@ -753,6 +758,7 @@ func FormatStringToUint64(s string) (ret uint64, err error) {
 }
 
 // ExecuteOneTaskOnWorkflowV1
+// @Deprecated
 // @Summary 工单提交单个数据源上线
 // @Description execute one task on workflow
 // @Tags workflow
@@ -915,6 +921,7 @@ type GetWorkflowTasksItemV1 struct {
 }
 
 // GetSummaryOfWorkflowTasksV1
+// @Deprecated
 // @Summary 获取工单数据源任务概览
 // @Description get summary of workflow instance tasks
 // @Tags workflow
@@ -956,7 +963,7 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 		res[i] = &GetWorkflowTasksItemV1{
 			TaskId:                   taskDetail.TaskId,
 			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
-			Status:                   getTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
+			Status:                   GetTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
 			ExecStartTime:            taskDetail.TaskExecStartAt,
 			ExecEndTime:              taskDetail.TaskExecEndAt,
 			ScheduleTime:             taskDetail.InstanceScheduledAt,
@@ -980,7 +987,7 @@ const (
 	taskDisplayStatusScheduled        = "exec_scheduled"
 )
 
-func getTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
+func GetTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
 	if workflowStatus == model.WorkflowStatusWaitForAudit {
 		return taskDisplayStatusWaitForAudit
 	}
@@ -1011,6 +1018,7 @@ type CreateWorkflowReqV1 struct {
 }
 
 // CreateWorkflowV1
+// @Deprecated
 // @Summary 创建工单
 // @Description create workflow
 // @Accept json
@@ -1132,7 +1140,7 @@ func CreateWorkflowV1(c echo.Context) error {
 			fmt.Errorf("the task instance is not bound workflow template")))
 	}
 
-	err = checkWorkflowCanCommit(template, tasks)
+	err = CheckWorkflowCanCommit(template, tasks)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1162,7 +1170,7 @@ func CreateWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func checkWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
+func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
 	allowLevel := driver.RuleLevelError
 	if template.AllowSubmitWhenLessAuditLevel != "" {
 		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
@@ -1270,6 +1278,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
 			Name:                    workflow.Subject,
+			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
@@ -1366,6 +1375,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectName,
 			Name:                    workflow.Subject,
+			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
@@ -1388,6 +1398,7 @@ type UpdateWorkflowReqV1 struct {
 }
 
 // UpdateWorkflowV1
+// @Deprecated
 // @Summary 更新工单（驳回后才可更新）
 // @Description update workflow when it is rejected to creator.
 // @Tags workflow
@@ -1502,7 +1513,7 @@ func UpdateWorkflowV1(c echo.Context) error {
 			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
 	}
 
-	err = checkWorkflowCanCommit(template, tasks)
+	err = CheckWorkflowCanCommit(template, tasks)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1529,6 +1540,7 @@ type UpdateWorkflowScheduleReqV1 struct {
 }
 
 // UpdateWorkflowScheduleV1
+// @Deprecated
 // @Summary 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
 // @Description update workflow schedule.
 // @Tags workflow
@@ -1638,6 +1650,7 @@ func UpdateWorkflowScheduleV1(c echo.Context) error {
 }
 
 // ExecuteTasksOnWorkflowV1
+// @Deprecated
 // @Summary 多数据源批量上线
 // @Description execute tasks on workflow
 // @Tags workflow
@@ -1715,6 +1728,7 @@ type WorkflowResV1 struct {
 }
 
 // GetWorkflowV1
+// @Deprecated
 // @Summary 获取工单详情
 // @Description get workflow detail
 // @Tags workflow
