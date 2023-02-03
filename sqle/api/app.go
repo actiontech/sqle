@@ -241,6 +241,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.PATCH("/projects/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
 
 	// workflow
+	// todo: 移除存在v2版本的v1接口
 	v1Router.POST("/projects/:project_name/workflows", v1.CreateWorkflowV1)
 	v2Router.POST("/projects/:project_name/workflows", v2.CreateWorkflowV2)
 	v1Router.GET("/projects/:project_name/workflows/:workflow_name/", v1.GetWorkflowV1)
