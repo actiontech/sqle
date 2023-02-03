@@ -529,19 +529,19 @@ outerLoop:
 			txSQLs = append(txSQLs, executeSQL)
 
 			if i == len(task.ExecuteSQLs)-1 {
-				if err = a.execSQLs(txSQLs); err != nil {
+				if err = a.execSQLs(txSQLs, task.DBType); err != nil {
 					break outerLoop
 				}
 			}
 
 		default:
 			if len(txSQLs) > 0 {
-				if err = a.execSQLs(txSQLs); err != nil {
+				if err = a.execSQLs(txSQLs, task.DBType); err != nil {
 					break outerLoop
 				}
 				txSQLs = nil
 			}
-			if err = a.execSQL(executeSQL); err != nil {
+			if err = a.execSQL(executeSQL, task.DBType); err != nil {
 				break outerLoop
 			}
 		}
@@ -571,7 +571,7 @@ outerLoop:
 }
 
 // execSQL execute SQL and update SQL's executed status to storage.
-func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
+func (a *action) execSQL(executeSQL *model.ExecuteSQL, dbType string) error {
 	st := model.GetStorage()
 
 	if err := st.UpdateExecuteSqlStatus(&executeSQL.BaseSQL, model.SQLExecuteStatusDoing, ""); err != nil {
@@ -581,7 +581,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 	_, execErr := a.driver.Exec(context.TODO(), executeSQL.Content)
 	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
-		executeSQL.ExecResult = execErr.Error()
+		executeSQL.ExecResult = fmt.Sprintf("[%v] %v", dbType, execErr.Error())
 	} else {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 		executeSQL.ExecResult = model.TaskExecResultOK
@@ -596,7 +596,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 }
 
 // execSQLs execute SQLs and update SQLs' executed status to storage.
-func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
+func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL, dbType string) error {
 	st := model.GetStorage()
 
 	for _, executeSQL := range executeSQLs {
@@ -615,7 +615,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 	for idx, executeSQL := range executeSQLs {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
-			executeSQL.ExecResult = txErr.Error()
+			executeSQL.ExecResult = fmt.Sprintf("[%v] %v", dbType, txErr.Error())
 			continue
 		}
 		rowAffects, _ := results[idx].RowsAffected()
