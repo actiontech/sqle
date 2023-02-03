@@ -6532,6 +6532,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows/workflow_id": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow id",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单id",
+                "operationId": "GetWorkflowIDV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowIDRespV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [
@@ -9833,6 +9856,31 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStageDuration"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetWorkflowIDDataV1": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetWorkflowIDRespV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetWorkflowIDDataV1"
                 },
                 "message": {
                     "type": "string",

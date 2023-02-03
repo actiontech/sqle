@@ -6501,26 +6501,49 @@
                     {
                         "type": "integer",
                         "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
+                      "name": "page_size",
+                      "in": "query",
+                      "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
-                        }
-                    }
+              "responses": {
+                "200": {
+                  "description": "OK",
+                  "schema": {
+                    "$ref": "#/definitions/v1.GetWorkflowsResV1"
+                  }
                 }
+              }
             }
         },
-        "/v2/projects/{project_name}/audit_plans": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
+      "/v1/workflows/workflow_id": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "get workflow id",
+          "tags": [
+            "workflow"
+          ],
+          "summary": "获取工单id",
+          "operationId": "GetWorkflowIDV1",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetWorkflowIDRespV1"
+              }
+            }
+          }
+        }
+      },
+      "/v2/projects/{project_name}/audit_plans": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
                     }
                 ],
                 "description": "get audit plan info list",
@@ -9812,26 +9835,51 @@
             "properties": {
                 "code": {
                     "type": "integer",
-                    "example": 0
+                  "example": 0
                 },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.WorkflowStageDuration"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
+              "data": {
+                "type": "object",
+                "$ref": "#/definitions/v1.WorkflowStageDuration"
+              },
+              "message": {
+                "type": "string",
+                "example": "ok"
+              }
             }
         },
-        "v1.GetWorkflowPassPercentResV1": {
+      "v1.GetWorkflowIDDataV1": {
+        "type": "object",
+        "properties": {
+          "workflow_id": {
+            "type": "integer"
+          }
+        }
+      },
+      "v1.GetWorkflowIDRespV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
             "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
+            "$ref": "#/definitions/v1.GetWorkflowIDDataV1"
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetWorkflowPassPercentResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowPassPercentV1"
                 },

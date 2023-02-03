@@ -1765,6 +1765,23 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowIDDataV1:
+    properties:
+      workflow_id:
+        type: integer
+    type: object
+  v1.GetWorkflowIDRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GetWorkflowIDDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowPassPercentResV1:
     properties:
       code:
@@ -7993,18 +8010,32 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetWorkflowsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: [ ]
       summary: 获取全局工单列表
       tags:
-      - workflow
+        - workflow
+  /v1/workflows/workflow_id:
+    get:
+      description: get workflow id
+      operationId: GetWorkflowIDV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowIDRespV1'
+      security:
+        - ApiKeyAuth: [ ]
+      summary: 获取工单id
+      tags:
+        - workflow
   /v2/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
       operationId: getAuditPlansV2
       parameters:
-      - description: project name
-        in: path
-        name: project_name
+        - description: project name
+          in: path
+          name: project_name
         required: true
         type: string
       - description: filter audit plan db type
