@@ -46,14 +46,14 @@ func TestCustomValidateErrorMessage(t *testing.T) {
 	type tSingleError struct {
 		Name string `json:"name" valid:"name"`
 	}
-	assert.Equal(t, "tSingleError.name must match regexp `^[a-zA-Z][a-zA-Z0-9\\_\\-]{0,59}$`",
+	assert.Equal(t, "tSingleError.name must match regexp `^[a-zA-Z一-龥][a-zA-Z0-9一-龥_-]{0,59}$`",
 		Validate(&tSingleError{Name: "_name"}).Error())
 
 	type tMultiError struct {
 		Name string `json:"name" valid:"name"`
 		Port string `json:"port" valid:"port"`
 	}
-	assert.Equal(t, "tMultiError.name must match regexp `^[a-zA-Z][a-zA-Z0-9\\_\\-]{0,59}$`; "+
+	assert.Equal(t, "tMultiError.name must match regexp `^[a-zA-Z一-龥][a-zA-Z0-9一-龥_-]{0,59}$`; "+
 		"tMultiError.port is invalid port",
 		Validate(&tMultiError{Name: "_name", Port: "0"}).Error())
 }
