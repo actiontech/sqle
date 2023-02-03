@@ -166,7 +166,7 @@ func (cv *CustomValidator) RegisterTranslation(tag, enText, zhText string, param
 	return err
 }
 
-var ValidateNameRegexpPattern = `^[a-zA-Z][a-zA-Z0-9\_\-]{0,59}$`
+var ValidateNameRegexpPattern = "^[a-zA-Z0-9\u4e00-\u9fa5]+$"
 
 // ValidateName implements validator.Func
 func ValidateName(fl validator.FieldLevel) bool {
