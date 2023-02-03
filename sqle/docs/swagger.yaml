@@ -3569,8 +3569,6 @@ definitions:
         items:
           type: integer
         type: array
-      workflow_id:
-        type: string
       workflow_subject:
         type: string
     type: object
