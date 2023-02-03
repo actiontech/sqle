@@ -1855,3 +1855,34 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
 	}
 	return stepRes
 }
+
+type GetWorkflowIDRespV1 struct {
+	controller.BaseRes
+	Data GetWorkflowIDDataV1 `json:"data"`
+}
+
+type GetWorkflowIDDataV1 struct {
+	WorkflowID int64 `json:"workflow_id"`
+}
+
+// GetWorkflowIDV1
+// @Summary 获取工单id
+// @Description get workflow id
+// @Tags workflow
+// @Id GetWorkflowIDV1
+// @Security ApiKeyAuth
+// @Success 200 {object} GetWorkflowIDRespV1
+// @router /v1/workflows/workflow_id [get]
+func GetWorkflowIDV1(c echo.Context) error {
+	uid, err := utils.GenUid()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("gen uid failed: %v", err))
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowIDRespV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: GetWorkflowIDDataV1{
+			WorkflowID: uid,
+		},
+	})
+}
