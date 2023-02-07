@@ -10,6 +10,7 @@ import (
 type WorkflowListDetail struct {
 	ProjectName             string         `json:"project_name"`
 	Subject                 string         `json:"subject"`
+	WorkflowId              string         `json:"workflow_id"`
 	Desc                    string         `json:"desc"`
 	CreateUser              sql.NullString `json:"create_user_name"`
 	CreateUserDeletedAt     *time.Time     `json:"create_user_deleted_at"`
@@ -23,6 +24,7 @@ type WorkflowListDetail struct {
 var workflowsQueryTpl = `
 SELECT p.name 														 AS project_name,
        w.subject,
+       w.workflow_id,
        w.desc,
        create_user.login_name                                        AS create_user_name,
 	   create_user.deleted_at                                        AS create_user_deleted_at,

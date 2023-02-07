@@ -188,6 +188,8 @@ func GetCurrentCloudBeaverUserID(ctx echo.Context) (string, bool, error) {
 			UserID string `json:"userId"`
 		} `json:"user"`
 	}{}
+
+	// 发往SQLE的请求如果指定了OperationName, 请求会被SQLE拦截并通过对应逻辑处理, 不添加OperationName的请求会被SQLE直接转发
 	req.SetOperationName("getActiveUser")
 
 	err = client.Run(context.TODO(), req, &res)

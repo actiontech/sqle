@@ -84,9 +84,9 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
-# github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13
+# github.com/bwmarrin/snowflake v0.3.0
 ## explicit
-github.com/chanxuehong/util/security
+github.com/bwmarrin/snowflake
 # github.com/clbanning/mxj/v2 v2.5.6
 ## explicit
 github.com/clbanning/mxj/v2
