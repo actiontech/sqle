@@ -864,41 +864,162 @@
                 "summary": "绑定 Oauth2 和 sqle用户",
                 "operationId": "bindOauth2User",
                 "parameters": [
-                    {
-                        "description": "bind oauth2 user req",
-                        "name": "conf",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BindOauth2UserReqV1"
-                        }
+                  {
+                    "description": "bind oauth2 user req",
+                    "name": "conf",
+                    "in": "body",
+                    "required": true,
+                    "schema": {
+                      "$ref": "#/definitions/v1.BindOauth2UserReqV1"
                     }
+                  }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.BindOauth2UserResV1"
-                        }
-                    }
+              "responses": {
+                "200": {
+                  "description": "OK",
+                  "schema": {
+                    "$ref": "#/definitions/v1.BindOauth2UserResV1"
+                  }
                 }
+              }
             }
         },
-        "/v1/operations": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get permission operations",
-                "tags": [
-                    "operation"
-                ],
-                "summary": "获取权限动作列表",
-                "operationId": "GetOperationsV1",
-                "responses": {
-                    "200": {
+      "/v1/operation_records": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "Get operation record list",
+          "tags": [
+            "OperationRecord"
+          ],
+          "summary": "获取操作记录列表",
+          "operationId": "getOperationRecordListV1",
+          "parameters": [
+            {
+              "type": "string",
+              "description": "filter_operate_time_from",
+              "name": "filter_operate_time_from",
+              "in": "query"
+            },
+            {
+              "type": "string",
+              "description": "filter_operate_time_to",
+              "name": "filter_operate_time_to",
+              "in": "query"
+            },
+            {
+              "type": "string",
+              "description": "filter_operate_project_name",
+              "name": "filter_operate_project_name",
+              "in": "query"
+            },
+            {
+              "type": "string",
+              "description": "fuzzy_search_operate_user_name",
+              "name": "fuzzy_search_operate_user_name",
+              "in": "query"
+            },
+            {
+              "type": "string",
+              "description": "filter_operate_type_name",
+              "name": "filter_operate_type_name",
+              "in": "query"
+            },
+            {
+              "type": "string",
+              "description": "filter_operate_content",
+              "name": "filter_operate_content",
+              "in": "query"
+            },
+            {
+              "type": "integer",
+              "description": "page_index",
+              "name": "page_index",
+              "in": "query",
+              "required": true
+            },
+            {
+              "type": "integer",
+              "description": "page_size",
+              "name": "page_size",
+              "in": "query",
+              "required": true
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetOperationRecordListResV1"
+              }
+            }
+          }
+        }
+      },
+      "/v1/operation_records/operation_contents": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "Get operation content list",
+          "tags": [
+            "OperationRecord"
+          ],
+          "summary": "获取操作内容列表",
+          "operationId": "getOperationContentList",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetOperationContentListResV1"
+              }
+            }
+          }
+        }
+      },
+      "/v1/operation_records/operation_type_names": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "Get operation type name list",
+          "tags": [
+            "OperationRecord"
+          ],
+          "summary": "获取操作类型名列表",
+          "operationId": "GetOperationTypeNameList",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetOperationTypeNamesListResV1"
+              }
+            }
+          }
+        }
+      },
+      "/v1/operations": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "get permission operations",
+          "tags": [
+            "operation"
+          ],
+          "summary": "获取权限动作列表",
+          "operationId": "GetOperationsV1",
+          "responses": {
+            "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetOperationsResV1"
@@ -910,24 +1031,35 @@
         "/v1/project_tips": {
             "get": {
                 "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
+                  {
+                    "ApiKeyAuth": []
+                  }
                 ],
-                "description": "get project tip list",
-                "tags": [
-                    "project"
-                ],
-                "summary": "获取项目提示列表",
-                "operationId": "getProjectTipsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetProjectTipsResV1"
-                        }
-                    }
+              "description": "get project tip list",
+              "tags": [
+                "project"
+              ],
+              "summary": "获取项目提示列表",
+              "operationId": "getProjectTipsV1",
+              "parameters": [
+                {
+                  "enum": [
+                    "operation_record"
+                  ],
+                  "type": "string",
+                  "description": "functional module",
+                  "name": "functional_module",
+                  "in": "query"
                 }
+              ],
+              "responses": {
+                "200": {
+                  "description": "OK",
+                  "schema": {
+                    "$ref": "#/definitions/v1.GetProjectTipsResV1"
+                  }
+                }
+              }
             }
         },
         "/v1/projects": {
@@ -9092,43 +9224,100 @@
                 }
             }
         },
-        "v1.GetOauth2TipsResV1": {
+      "v1.GetOauth2TipsResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
             "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.GetOauth2TipsResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
+            "$ref": "#/definitions/v1.GetOauth2TipsResDataV1"
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetOperationContentListResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/v1.OperationContentList"
             }
-        },
-        "v1.GetOperationsResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.OperationResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetOperationRecordListResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/v1.OperationRecordList"
             }
-        },
-        "v1.GetProjectDetailResV1": {
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetOperationTypeNamesListResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/v1.OperationTypeNameList"
+            }
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetOperationsResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/v1.OperationResV1"
+            }
+          },
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetProjectDetailResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -10569,46 +10758,107 @@
                     "type": "string"
                 },
                 "server_token_url": {
-                    "type": "string"
+                  "type": "string"
                 },
-                "server_user_id_url": {
-                    "type": "string"
-                },
-                "user_id_tag": {
-                    "type": "string"
-                }
+              "server_user_id_url": {
+                "type": "string"
+              },
+              "user_id_tag": {
+                "type": "string"
+              }
             }
         },
-        "v1.Operation": {
+      "v1.Operation": {
+        "type": "object",
+        "properties": {
+          "op_code": {
+            "type": "integer"
+          },
+          "op_desc": {
+            "type": "string"
+          }
+        }
+      },
+      "v1.OperationContentList": {
+        "type": "object",
+        "properties": {
+          "operation_content": {
+            "type": "string"
+          }
+        }
+      },
+      "v1.OperationRecordList": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "operation_content": {
+            "type": "string"
+          },
+          "operation_object_name": {
+            "type": "string"
+          },
+          "operation_time": {
+            "type": "string"
+          },
+          "operation_type_name": {
+            "type": "string"
+          },
+          "operation_user": {
             "type": "object",
-            "properties": {
-                "op_code": {
-                    "type": "integer"
-                },
-                "op_desc": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.OperationResV1": {
-            "type": "object",
-            "properties": {
-                "op_code": {
-                    "type": "integer"
-                },
-                "op_desc": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.ParseProjectRuleTemplateFileResDataV1": {
-            "type": "object",
-            "properties": {
-                "db_type": {
-                    "type": "string"
-                },
-                "desc": {
-                    "type": "string"
+            "$ref": "#/definitions/v1.OperationUser"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "fail"
+            ]
+          }
+        }
+      },
+      "v1.OperationResV1": {
+        "type": "object",
+        "properties": {
+          "op_code": {
+            "type": "integer"
+          },
+          "op_desc": {
+            "type": "string"
+          }
+        }
+      },
+      "v1.OperationTypeNameList": {
+        "type": "object",
+        "properties": {
+          "operation_type_name": {
+            "type": "string"
+          }
+        }
+      },
+      "v1.OperationUser": {
+        "type": "object",
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "user_name": {
+            "type": "string"
+          }
+        }
+      },
+      "v1.ParseProjectRuleTemplateFileResDataV1": {
+        "type": "object",
+        "properties": {
+          "db_type": {
+            "type": "string"
+          },
+          "desc": {
+            "type": "string"
                 },
                 "name": {
                     "type": "string"
