@@ -51,7 +51,8 @@ func GetOperationContentList(c echo.Context) error {
 
 type GetOperationRecordListResV1 struct {
 	controller.BaseRes
-	Data []OperationRecordList `json:"data"`
+	Data      []OperationRecordList `json:"data"`
+	TotalNums uint64                `json:"total_nums"`
 }
 
 type OperationRecordList struct {
