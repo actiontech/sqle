@@ -1020,47 +1020,47 @@
           "operationId": "GetOperationsV1",
           "responses": {
             "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOperationsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/project_tips": {
-            "get": {
-                "security": [
-                  {
-                    "ApiKeyAuth": []
-                  }
-                ],
-              "description": "get project tip list",
-              "tags": [
-                "project"
-              ],
-              "summary": "获取项目提示列表",
-              "operationId": "getProjectTipsV1",
-              "parameters": [
-                {
-                  "enum": [
-                    "operation_record"
-                  ],
-                  "type": "string",
-                  "description": "functional module",
-                  "name": "functional_module",
-                  "in": "query"
-                }
-              ],
-              "responses": {
-                "200": {
-                  "description": "OK",
-                  "schema": {
-                    "$ref": "#/definitions/v1.GetProjectTipsResV1"
-                  }
-                }
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetOperationsResV1"
               }
             }
+          }
+        }
+      },
+      "/v1/project_tips": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "get project tip list",
+          "tags": [
+            "project"
+          ],
+          "summary": "获取项目提示列表",
+          "operationId": "getProjectTipsV1",
+          "parameters": [
+            {
+              "enum": [
+                "operation_record"
+              ],
+              "type": "string",
+              "description": "functional module",
+              "name": "functional_module",
+              "in": "query"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "schema": {
+                "$ref": "#/definitions/v1.GetProjectTipsResV1"
+              }
+            }
+          }
+        }
         },
         "/v1/projects": {
             "get": {
@@ -9214,15 +9214,15 @@
             }
         },
         "v1.GetOauth2TipsResDataV1": {
-            "type": "object",
-            "properties": {
-                "enable_oauth2": {
-                    "type": "boolean"
-                },
-                "login_tip": {
-                    "type": "string"
-                }
+          "type": "object",
+          "properties": {
+            "enable_oauth2": {
+              "type": "boolean"
+            },
+            "login_tip": {
+              "type": "string"
             }
+          }
         },
       "v1.GetOauth2TipsResV1": {
         "type": "object",
@@ -9276,6 +9276,9 @@
           "message": {
             "type": "string",
             "example": "ok"
+          },
+          "total_num": {
+            "type": "integer"
           }
         }
       },
@@ -9318,16 +9321,16 @@
         }
       },
       "v1.GetProjectDetailResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
             "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.ProjectDetailItem"
-                },
+            "$ref": "#/definitions/v1.ProjectDetailItem"
+          },
                 "message": {
                     "type": "string",
                     "example": "ok"
@@ -10750,16 +10753,16 @@
                 },
                 "scopes": {
                     "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "server_auth_url": {
+                  "items": {
                     "type": "string"
+                  }
                 },
-                "server_token_url": {
-                  "type": "string"
-                },
+              "server_auth_url": {
+                "type": "string"
+              },
+              "server_token_url": {
+                "type": "string"
+              },
               "server_user_id_url": {
                 "type": "string"
               },
@@ -10859,16 +10862,16 @@
           },
           "desc": {
             "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rule_list": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.RuleResV1"
-                    }
-                }
+          },
+          "name": {
+            "type": "string"
+          },
+          "rule_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/v1.RuleResV1"
+            }
+          }
             }
         },
         "v1.ParseProjectRuleTemplateFileResV1": {
