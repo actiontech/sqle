@@ -9292,6 +9292,9 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "total_num": {
+                    "type": "integer"
                 }
             }
         },
