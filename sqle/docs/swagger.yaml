@@ -1288,6 +1288,8 @@ definitions:
       message:
         example: ok
         type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetOperationTypeNamesListResV1:
     properties:
