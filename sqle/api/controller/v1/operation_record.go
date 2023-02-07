@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
 )
@@ -34,14 +36,19 @@ type GetOperationRecordListResV1 struct {
 }
 
 type OperationRecordList struct {
-	ID                     uint64 `json:"id"`
-	OperationTime          string `json:"operation_time"`
-	OperationUserNameAndIP string `json:"operation_user_name_and_ip"`
-	OperationTypeName      string `json:"operation_type_name"`
-	OperationContent       string `json:"operation_content"`
-	OperationObjectName    string `json:"operation_object_name"`
-	ProjectName            string `json:"project_name"`
-	Status                 string `json:"status" enums:"success,fail"`
+	ID                  uint64        `json:"id"`
+	OperationTime       *time.Time    `json:"operation_time"`
+	OperationUser       OperationUser `json:"operation_user"`
+	OperationTypeName   string        `json:"operation_type_name"`
+	OperationContent    string        `json:"operation_content"`
+	OperationObjectName string        `json:"operation_object_name"`
+	ProjectName         string        `json:"project_name"`
+	Status              string        `json:"status" enums:"success,fail"`
+}
+
+type OperationUser struct {
+	UserName string `json:"user_name"`
+	IP       string `json:"ip"`
 }
 
 // GetOperationRecordListV1
