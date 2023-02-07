@@ -1061,16 +1061,16 @@
             }
           }
         }
-        },
-        "/v1/projects": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get project list",
-                "tags": [
+      },
+      "/v1/projects": {
+        "get": {
+          "security": [
+            {
+              "ApiKeyAuth": []
+            }
+          ],
+          "description": "get project list",
+          "tags": [
                     "project"
                 ],
                 "summary": "获取项目列表",
@@ -9277,7 +9277,7 @@
             "type": "string",
             "example": "ok"
           },
-          "total_num": {
+          "total_nums": {
             "type": "integer"
           }
         }
@@ -9331,16 +9331,16 @@
             "type": "object",
             "$ref": "#/definitions/v1.ProjectDetailItem"
           },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetProjectResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
+          "message": {
+            "type": "string",
+            "example": "ok"
+          }
+        }
+      },
+      "v1.GetProjectResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
                     "type": "integer",
                     "example": 0
                 },
@@ -10748,15 +10748,15 @@
                 "enable_oauth2": {
                     "type": "boolean"
                 },
-                "login_tip": {
-                    "type": "string"
-                },
-                "scopes": {
-                    "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                },
+              "login_tip": {
+                "type": "string"
+              },
+              "scopes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
               "server_auth_url": {
                 "type": "string"
               },
@@ -10872,16 +10872,16 @@
               "$ref": "#/definitions/v1.RuleResV1"
             }
           }
-            }
-        },
-        "v1.ParseProjectRuleTemplateFileResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
+        }
+      },
+      "v1.ParseProjectRuleTemplateFileResV1": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 0
+          },
+          "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.ParseProjectRuleTemplateFileResDataV1"
                 },

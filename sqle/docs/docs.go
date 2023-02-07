@@ -9293,7 +9293,7 @@ var doc = `{
                     "type": "string",
                     "example": "ok"
                 },
-                "total_num": {
+                "total_nums": {
                     "type": "integer"
                 }
             }
