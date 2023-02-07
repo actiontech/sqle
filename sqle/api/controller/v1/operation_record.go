@@ -39,7 +39,7 @@ type OperationRecordList struct {
 	OperationUserNameAndIP string `json:"operation_user_name_and_ip"`
 	OperationTypeName      string `json:"operation_type_name"`
 	OperationContent       string `json:"operation_content"`
-	OperationObject        string `json:"operation_object"`
+	OperationObjectName    string `json:"operation_object_name"`
 	ProjectName            string `json:"project_name"`
 	Status                 string `json:"status" enums:"success,fail"`
 }
