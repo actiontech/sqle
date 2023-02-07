@@ -1263,6 +1263,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetOperationContentListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OperationContentList'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetOperationRecordListResV1:
     properties:
       code:
@@ -1276,14 +1289,15 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetOperationRecordTipsResV1:
+  v1.GetOperationTypeNamesListResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.OperationRecordTips'
-        type: object
+        items:
+          $ref: '#/definitions/v1.OperationTypeNameList'
+        type: array
       message:
         example: ok
         type: string
@@ -2301,20 +2315,26 @@ definitions:
       op_desc:
         type: string
     type: object
+  v1.OperationContentList:
+    properties:
+      operation_content:
+        type: string
+    type: object
   v1.OperationRecordList:
     properties:
       id:
         type: integer
       operation_content:
         type: string
-      operation_object:
+      operation_object_name:
         type: string
       operation_time:
         type: string
       operation_type_name:
         type: string
-      operation_user_name_and_ip:
-        type: string
+      operation_user:
+        $ref: '#/definitions/v1.OperationUser'
+        type: object
       project_name:
         type: string
       status:
@@ -2323,26 +2343,23 @@ definitions:
           - fail
         type: string
     type: object
-  v1.OperationRecordTips:
-    properties:
-      operation_content_list:
-        items:
-          type: string
-        type: array
-      operation_project_name_list:
-        items:
-          type: string
-        type: array
-      operation_type_name_list:
-        items:
-          type: string
-        type: array
-    type: object
   v1.OperationResV1:
     properties:
       op_code:
         type: integer
       op_desc:
+        type: string
+    type: object
+  v1.OperationTypeNameList:
+    properties:
+      operation_type_name:
+        type: string
+    type: object
+  v1.OperationUser:
+    properties:
+      ip:
+        type: string
+      user_name:
         type: string
     type: object
   v1.ParseProjectRuleTemplateFileResDataV1:
@@ -4443,9 +4460,9 @@ paths:
           in: query
           name: filter_operate_project_name
           type: string
-        - description: filter_operate_user_name
+        - description: fuzzy_search_operate_user_name
           in: query
-          name: filter_operate_user_name
+          name: fuzzy_search_operate_user_name
           type: string
         - description: filter_operate_type_name
           in: query
@@ -4475,18 +4492,32 @@ paths:
       summary: 获取操作记录列表
       tags:
         - OperationRecord
-  /v1/operation_records/tips:
+  /v1/operation_records/operation_contents:
     get:
-      description: Get operation record tips
-      operationId: getOperationRecordTipsV1
+      description: Get operation content list
+      operationId: getOperationContentList
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetOperationRecordTipsResV1'
+            $ref: '#/definitions/v1.GetOperationContentListResV1'
       security:
         - ApiKeyAuth: [ ]
-      summary: 获取操作记录tips
+      summary: 获取操作内容列表
+      tags:
+        - OperationRecord
+  /v1/operation_records/operation_type_names:
+    get:
+      description: Get operation type name list
+      operationId: GetOperationTypeNameList
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOperationTypeNamesListResV1'
+      security:
+        - ApiKeyAuth: [ ]
+      summary: 获取操作类型名列表
       tags:
         - OperationRecord
   /v1/operations:
@@ -4507,16 +4538,23 @@ paths:
     get:
       description: get project tip list
       operationId: getProjectTipsV1
+      parameters:
+        - description: functional module
+          enum:
+            - operation_record
+          in: query
+          name: functional_module
+          type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetProjectTipsResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: [ ]
       summary: 获取项目提示列表
       tags:
-      - project
+        - project
   /v1/projects:
     get:
       description: get project list

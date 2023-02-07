@@ -934,8 +934,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter_operate_user_name",
-                        "name": "filter_operate_user_name",
+                        "description": "fuzzy_search_operate_user_name",
+                        "name": "fuzzy_search_operate_user_name",
                         "in": "query"
                     },
                     {
@@ -975,24 +975,47 @@ var doc = `{
                 }
             }
         },
-        "/v1/operation_records/tips": {
+        "/v1/operation_records/operation_contents": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get operation record tips",
+                "description": "Get operation content list",
                 "tags": [
                     "OperationRecord"
                 ],
-                "summary": "获取操作记录tips",
-                "operationId": "getOperationRecordTipsV1",
+                "summary": "获取操作内容列表",
+                "operationId": "getOperationContentList",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetOperationRecordTipsResV1"
+                            "$ref": "#/definitions/v1.GetOperationContentListResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/operation_records/operation_type_names": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get operation type name list",
+                "tags": [
+                    "OperationRecord"
+                ],
+                "summary": "获取操作类型名列表",
+                "operationId": "GetOperationTypeNameList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOperationTypeNamesListResV1"
                         }
                     }
                 }
@@ -1034,6 +1057,17 @@ var doc = `{
                 ],
                 "summary": "获取项目提示列表",
                 "operationId": "getProjectTipsV1",
+                "parameters": [
+                    {
+                        "enum": [
+                            "operation_record"
+                        ],
+                        "type": "string",
+                        "description": "functional module",
+                        "name": "functional_module",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -9223,6 +9257,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetOperationContentListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OperationContentList"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetOperationRecordListResV1": {
             "type": "object",
             "properties": {
@@ -9242,7 +9295,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetOperationRecordTipsResV1": {
+        "v1.GetOperationTypeNamesListResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9250,8 +9303,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.OperationRecordTips"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OperationTypeNameList"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -10740,6 +10795,14 @@ var doc = `{
                 }
             }
         },
+        "v1.OperationContentList": {
+            "type": "object",
+            "properties": {
+                "operation_content": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.OperationRecordList": {
             "type": "object",
             "properties": {
@@ -10749,7 +10812,7 @@ var doc = `{
                 "operation_content": {
                     "type": "string"
                 },
-                "operation_object": {
+                "operation_object_name": {
                     "type": "string"
                 },
                 "operation_time": {
@@ -10758,8 +10821,9 @@ var doc = `{
                 "operation_type_name": {
                     "type": "string"
                 },
-                "operation_user_name_and_ip": {
-                    "type": "string"
+                "operation_user": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.OperationUser"
                 },
                 "project_name": {
                     "type": "string"
@@ -10773,29 +10837,6 @@ var doc = `{
                 }
             }
         },
-        "v1.OperationRecordTips": {
-            "type": "object",
-            "properties": {
-                "operation_content_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "operation_project_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "operation_type_name_list": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "v1.OperationResV1": {
             "type": "object",
             "properties": {
@@ -10803,6 +10844,25 @@ var doc = `{
                     "type": "integer"
                 },
                 "op_desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OperationTypeNameList": {
+            "type": "object",
+            "properties": {
+                "operation_type_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OperationUser": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "user_name": {
                     "type": "string"
                 }
             }
