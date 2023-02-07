@@ -7,26 +7,45 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type GetOperationRecordTipsResV1 struct {
+type GetOperationTypeNamesListResV1 struct {
 	controller.BaseRes
-	Data OperationRecordTips `json:"data"`
+	Data []OperationTypeNameList `json:"data"`
 }
 
-type OperationRecordTips struct {
-	OperationProjectNameList []string `json:"operation_project_name_list"`
-	OperationTypeNameList    []string `json:"operation_type_name_list"`
-	OperationContentList     []string `json:"operation_content_list"`
+type OperationTypeNameList struct {
+	OperationTypeName string `json:"operation_type_name"`
 }
 
-// GetOperationRecordTips
-// @Summary 获取操作记录tips
-// @Description Get operation record tips
-// @Id getOperationRecordTipsV1
+// GetOperationTypeNameList
+// @Summary 获取操作类型名列表
+// @Description Get operation type name list
+// @Id GetOperationTypeNameList
 // @Tags OperationRecord
 // @Security ApiKeyAuth
-// @Success 200 {object} GetOperationRecordTipsResV1
-// @Router /v1/operation_records/tips [get]
-func GetOperationRecordTips(c echo.Context) error {
+// @Success 200 {object} GetOperationTypeNamesListResV1
+// @Router /v1/operation_records/operation_type_names [get]
+func GetOperationTypeNameList(c echo.Context) error {
+	return nil
+}
+
+type GetOperationContentListResV1 struct {
+	controller.BaseRes
+	Data []OperationContentList `json:"data"`
+}
+
+type OperationContentList struct {
+	OperationContent string `json:"operation_content"`
+}
+
+// GetOperationContentList
+// @Summary 获取操作内容列表
+// @Description Get operation content list
+// @Id getOperationContentList
+// @Tags OperationRecord
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetOperationContentListResV1
+// @Router /v1/operation_records/operation_contents [get]
+func GetOperationContentList(c echo.Context) error {
 	return nil
 }
 
