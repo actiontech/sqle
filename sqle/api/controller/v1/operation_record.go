@@ -60,7 +60,7 @@ type OperationUser struct {
 // @Param filter_operate_time_from query string false "filter_operate_time_from"
 // @Param filter_operate_time_to query string false "filter_operate_time_to"
 // @Param filter_operate_project_name query string false "filter_operate_project_name"
-// @Param filter_operate_user_name query string false "filter_operate_user_name"
+// @Param fuzzy_search_operate_user_name query string false "fuzzy_search_operate_user_name"
 // @Param filter_operate_type_name query string false "filter_operate_type_name"
 // @Param filter_operate_content query string false "filter_operate_content"
 // @Param page_index query uint32 true "page_index"
