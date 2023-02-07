@@ -232,6 +232,7 @@ type ProjectTipResV1 struct {
 // @Tags project
 // @Id getProjectTipsV1
 // @Security ApiKeyAuth
+// @Param functional_module query string false "functional module" Enums(operation_record)
 // @Success 200 {object} v1.GetProjectTipsResV1
 // @router /v1/project_tips [get]
 func GetProjectTipsV1(c echo.Context) error {
