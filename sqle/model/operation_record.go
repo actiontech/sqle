@@ -10,6 +10,10 @@ const (
 
 	// Content operation record content
 	CreateProjectOperationRecordContent = "create_project"
+
+	// Status operation record status
+	SuccessOperationRecordStatus = "success"
+	FailOperationRecordStatus    = "fail"
 )
 
 type OperationRecord struct {
