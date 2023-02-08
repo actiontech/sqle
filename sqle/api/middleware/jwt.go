@@ -28,6 +28,13 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 	}
 }
 
+func JWTWithConfig(key interface{}) echo.MiddlewareFunc {
+	c := middleware.DefaultJWTConfig
+	c.SigningKey = key
+	c.TokenLookup = "cookie:sqle-token,header:Authorization" // tell the middleware where to get token: from cookie and header
+	return middleware.JWTWithConfig(c)
+}
+
 var errAuditPlanMisMatch = errors.New("audit plan name don't match the token or audit plan not found")
 
 // ScannerVerifier is a `echo` middleware. Every audit plan should be
