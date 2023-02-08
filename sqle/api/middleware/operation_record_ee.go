@@ -12,8 +12,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -21,19 +22,40 @@ import (
 )
 
 type apiInterfaceInfo struct {
-	reg              *regexp.Regexp
-	method           string
-	operationType    string
-	operationContent string
+	reg                     *regexp.Regexp
+	method                  string
+	operationType           string
+	operationContent        string
+	getProjectAndObjectFunc func(c echo.Context) (projectName, objectName string, err error)
 }
 
 var apiInterfaceInfoList = []apiInterfaceInfo{
 	{
-		reg:              regexp.MustCompile("/v1/projects"),
-		method:           http.MethodPost,
-		operationType:    model.ProjectManageOperationRecordType,
-		operationContent: model.CreateProjectOperationRecordContent,
+		reg:                     regexp.MustCompile("/v1/projects"),
+		method:                  http.MethodPost,
+		operationType:           model.ProjectManageOperationRecordType,
+		operationContent:        model.CreateProjectOperationRecordContent,
+		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
 	},
+}
+
+func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error) {
+	req := new(v1.CreateProjectReqV1)
+
+	reqBody, err := getReqBodyBytes(c)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := json.Unmarshal(reqBody, req); err != nil {
+		return "", "", err
+	}
+
+	if err := controller.Validate(req); err != nil {
+		return "", "", err
+	}
+
+	return model.PlatformOperationRecord, req.Name, nil
 }
 
 type ResponseBodyWrite struct {
@@ -69,7 +91,7 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						Content:       interfaceInfo.operationContent,
 					}
 
-					projectName, objectName, err := getObjectAndProject(c, interfaceInfo.operationContent)
+					projectName, objectName, err := interfaceInfo.getProjectAndObjectFunc(c)
 					if err != nil {
 						newLog.Errorf("get object and project name error: %s", err)
 					}
@@ -113,30 +135,6 @@ func OperationLogRecord() echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-}
-
-func getObjectAndProject(c echo.Context, content string) (projectName, objectName string, err error) {
-	switch content {
-	case model.CreateProjectOperationRecordContent:
-		req := new(v1.CreateProjectReqV1)
-
-		reqBody, err := getReqBodyBytes(c)
-		if err != nil {
-			return "", "", err
-		}
-
-		if err := json.Unmarshal(reqBody, req); err != nil {
-			return "", "", err
-		}
-
-		if err := controller.Validate(req); err != nil {
-			return "", "", err
-		}
-
-		return model.PlatformOperationRecord, req.Name, nil
-	}
-
-	return "", "", fmt.Errorf("not support content: %s", content)
 }
 
 func getReqBodyBytes(c echo.Context) ([]byte, error) {
