@@ -44,28 +44,41 @@ func Login(c echo.Context) error {
 		return err
 	}
 
-	loginChecker, err := GetLoginCheckerByUserName(req.UserName)
+	t, err := GetSqleToken(c, req.UserName, req.Password)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+		return err
 	}
-	err = loginChecker.login(req.Password)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
-	}
-
-	t, err := generateToken(req.UserName)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	c.Set(config.LoginUserNameKey, req.UserName)
 
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: UserLoginResV1{
-			Token: t,
+			Token: t, // this token won't be used any more
 		},
 	})
+}
+
+func GetSqleToken(c echo.Context, userName, password string) (token string, err error) {
+	loginChecker, err := GetLoginCheckerByUserName(userName)
+	if err != nil {
+		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+	}
+	err = loginChecker.login(password)
+	if err != nil {
+		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+	}
+
+	token, err = generateToken(userName)
+	if err != nil {
+		return "", echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	c.Set(config.LoginUserNameKey, userName)
+	c.SetCookie(&http.Cookie{
+		Name:  "sqle-token",
+		Value: token,
+		Path:  "/",
+	})
+	return
 }
 
 func generateToken(userName string) (string, error) {

@@ -817,6 +817,7 @@ var doc = `{
                 ],
                 "summary": "用户登录",
                 "operationId": "loginV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "user login request",
@@ -6671,6 +6672,35 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/login": {
+            "post": {
+                "description": "user login",
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户登录",
+                "operationId": "loginV2",
+                "parameters": [
+                    {
+                        "description": "user login request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UserLoginReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
