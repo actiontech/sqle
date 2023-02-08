@@ -3,7 +3,7 @@ package model
 import "time"
 
 const (
-	PlatformOperationRecord = 0
+	PlatformOperationRecord = "--"
 
 	// operation record type
 	ProjectManageOperationRecordType = "project_manage"
@@ -15,14 +15,10 @@ const (
 type OperationRecord struct {
 	Model
 	OperationTime *time.Time `gorm:"column:operation_time;type:datetime;not null" json:"operation_time"`
-	UserID        int64      `gorm:"column:user_id;type:bigint(20);not null" json:"user_id"`
+	UserName      string     `gorm:"column:user_name;type:varchar(255);not null" json:"user_name"`
 	TypeName      string     `gorm:"column:type_name;type:varchar(255);not null" json:"type_name"`
 	Content       string     `gorm:"column:content;type:varchar(255);not null" json:"content"`
 	ObjectName    string     `gorm:"column:object_name;type:varchar(255);not null" json:"object_name"`
-	// ProjectID is 0 means platform operation
-	ProjectID int64  `gorm:"column:project_id;type:bigint(20);not null" json:"project_id"`
-	Status    string `gorm:"column:status;type:varchar(255);not null" json:"status"`
-
-	User    *User    `gorm:"foreignKey:UserID" json:"user"`
-	Project *Project `gorm:"foreignKey:ProjectID" json:"project"`
+	ProjectName   string     `gorm:"column:project_name;type:varchar(255);not null" json:"project_name"`
+	Status        string     `gorm:"column:status;type:varchar(255);not null" json:"status"`
 }
