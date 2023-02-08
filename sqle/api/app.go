@@ -63,6 +63,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.POST("/v1/login", v1.Login, cloudbeaver_wrapper.TriggerLogin())
+	e.POST("/v2/login", v2.Login, cloudbeaver_wrapper.TriggerLogin())
 
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
