@@ -2,7 +2,15 @@ package model
 
 import "time"
 
-const PlatformOperation = 0
+const (
+	PlatformOperationRecord = 0
+
+	// operation record type
+	ProjectManageOperationRecordType = "project_manage"
+
+	// Content operation record content
+	CreateProjectOperationRecordContent = "create_project"
+)
 
 type OperationRecord struct {
 	Model
