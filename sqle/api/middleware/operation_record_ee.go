@@ -64,7 +64,7 @@ func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error
 		return "", "", err
 	}
 
-	return model.OperationRecordPlatform, req.Name, nil
+	return req.Name, req.Name, nil
 }
 
 func marshalRequestBody(c echo.Context, pattern interface{}) error {
