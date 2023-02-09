@@ -29,6 +29,7 @@ type apiInterfaceInfo struct {
 }
 
 var apiInterfaceInfoList = []apiInterfaceInfo{
+	// 项目
 	{
 		routerPath:              "/v1/projects",
 		method:                  http.MethodPost,
@@ -48,17 +49,8 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 
 func getProjectAndObjectFromCreateProjectRuleTemplate(c echo.Context) (string, string, error) {
 	req := new(v1.CreateProjectRuleTemplateReqV1)
-
-	reqBody, err := getReqBodyBytes(c)
+	err := marshalRequestBody(c, req)
 	if err != nil {
-		return "", "", err
-	}
-
-	if err := json.Unmarshal(reqBody, req); err != nil {
-		return "", "", err
-	}
-
-	if err := controller.Validate(req); err != nil {
 		return "", "", err
 	}
 	projectName := c.Param("project_name")
@@ -67,21 +59,28 @@ func getProjectAndObjectFromCreateProjectRuleTemplate(c echo.Context) (string, s
 
 func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error) {
 	req := new(v1.CreateProjectReqV1)
-
-	reqBody, err := getReqBodyBytes(c)
+	err := marshalRequestBody(c, req)
 	if err != nil {
 		return "", "", err
 	}
 
-	if err := json.Unmarshal(reqBody, req); err != nil {
-		return "", "", err
-	}
-
-	if err := controller.Validate(req); err != nil {
-		return "", "", err
-	}
-
 	return model.OperationRecordPlatform, req.Name, nil
+}
+
+func marshalRequestBody(c echo.Context, pattern interface{}) error {
+	reqBody, err := getReqBodyBytes(c)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(reqBody, pattern); err != nil {
+		return err
+	}
+
+	if err := controller.Validate(pattern); err != nil {
+		return err
+	}
+	return nil
 }
 
 type ResponseBodyWrite struct {
