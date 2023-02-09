@@ -14,6 +14,7 @@ type GetOperationTypeNamesListResV1 struct {
 
 type OperationTypeNameList struct {
 	OperationTypeName string `json:"operation_type_name"`
+	Desc              string `json:"desc"`
 }
 
 // GetOperationTypeNameList
@@ -35,6 +36,7 @@ type GetOperationContentListResV1 struct {
 
 type OperationContentList struct {
 	OperationContent string `json:"operation_content"`
+	Desc             string `json:"desc"`
 }
 
 // GetOperationContentList
