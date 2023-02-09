@@ -2319,6 +2319,8 @@ definitions:
     type: object
   v1.OperationContentList:
     properties:
+      desc:
+        type: string
       operation_content:
         type: string
     type: object
@@ -2341,8 +2343,8 @@ definitions:
         type: string
       status:
         enum:
-          - success
-          - fail
+        - success
+        - fail
         type: string
     type: object
   v1.OperationResV1:
@@ -2354,6 +2356,8 @@ definitions:
     type: object
   v1.OperationTypeNameList:
     properties:
+      desc:
+        type: string
       operation_type_name:
         type: string
     type: object
@@ -4444,56 +4448,56 @@ paths:
             $ref: '#/definitions/v1.BindOauth2UserResV1'
       summary: 绑定 Oauth2 和 sqle用户
       tags:
-        - oauth2
+      - oauth2
   /v1/operation_records:
     get:
       description: Get operation record list
       operationId: getOperationRecordListV1
       parameters:
-        - description: filter_operate_time_from
-          in: query
-          name: filter_operate_time_from
-          type: string
-        - description: filter_operate_time_to
-          in: query
-          name: filter_operate_time_to
-          type: string
-        - description: filter_operate_project_name
-          in: query
-          name: filter_operate_project_name
-          type: string
-        - description: fuzzy_search_operate_user_name
-          in: query
-          name: fuzzy_search_operate_user_name
-          type: string
-        - description: filter_operate_type_name
-          in: query
-          name: filter_operate_type_name
-          type: string
-        - description: filter_operate_content
-          in: query
-          name: filter_operate_content
-          type: string
-        - description: page_index
-          in: query
-          name: page_index
-          required: true
-          type: integer
-        - description: page_size
-          in: query
-          name: page_size
-          required: true
-          type: integer
+      - description: filter_operate_time_from
+        in: query
+        name: filter_operate_time_from
+        type: string
+      - description: filter_operate_time_to
+        in: query
+        name: filter_operate_time_to
+        type: string
+      - description: filter_operate_project_name
+        in: query
+        name: filter_operate_project_name
+        type: string
+      - description: fuzzy_search_operate_user_name
+        in: query
+        name: fuzzy_search_operate_user_name
+        type: string
+      - description: filter_operate_type_name
+        in: query
+        name: filter_operate_type_name
+        type: string
+      - description: filter_operate_content
+        in: query
+        name: filter_operate_content
+        type: string
+      - description: page_index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: page_size
+        in: query
+        name: page_size
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetOperationRecordListResV1'
       security:
-        - ApiKeyAuth: [ ]
+      - ApiKeyAuth: []
       summary: 获取操作记录列表
       tags:
-        - OperationRecord
+      - OperationRecord
   /v1/operation_records/operation_contents:
     get:
       description: Get operation content list
@@ -4504,10 +4508,10 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetOperationContentListResV1'
       security:
-        - ApiKeyAuth: [ ]
+      - ApiKeyAuth: []
       summary: 获取操作内容列表
       tags:
-        - OperationRecord
+      - OperationRecord
   /v1/operation_records/operation_type_names:
     get:
       description: Get operation type name list
@@ -4518,10 +4522,10 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetOperationTypeNamesListResV1'
       security:
-        - ApiKeyAuth: [ ]
+      - ApiKeyAuth: []
       summary: 获取操作类型名列表
       tags:
-        - OperationRecord
+      - OperationRecord
   /v1/operations:
     get:
       description: get permission operations
@@ -4541,22 +4545,22 @@ paths:
       description: get project tip list
       operationId: getProjectTipsV1
       parameters:
-        - description: functional module
-          enum:
-            - operation_record
-          in: query
-          name: functional_module
-          type: string
+      - description: functional module
+        enum:
+        - operation_record
+        in: query
+        name: functional_module
+        type: string
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetProjectTipsResV1'
       security:
-        - ApiKeyAuth: [ ]
+      - ApiKeyAuth: []
       summary: 获取项目提示列表
       tags:
-        - project
+      - project
   /v1/projects:
     get:
       description: get project list
