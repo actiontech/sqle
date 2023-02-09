@@ -80,7 +80,7 @@ func OperationLogRecord() echo.MiddlewareFunc {
 			path := c.Request().URL.Path
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range apiInterfaceInfoList {
-				if interfaceInfo.reg.MatchString(path) && c.Request().Method == interfaceInfo.method {
+				if c.Request().Method == interfaceInfo.method && interfaceInfo.reg.MatchString(path) {
 					userName := controller.GetUserName(c)
 
 					operationRecord := &model.OperationRecord{
