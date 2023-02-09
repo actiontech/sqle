@@ -21,3 +21,7 @@ func getOperationTypeNameList(c echo.Context) error {
 func getOperationActionList(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFeatureOperationRecord)
 }
+
+func getOperationRecordList(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFeatureOperationRecord)
+}

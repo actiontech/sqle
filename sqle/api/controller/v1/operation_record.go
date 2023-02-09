@@ -90,5 +90,5 @@ type OperationUser struct {
 // @Success 200 {object} v1.GetOperationRecordListResV1
 // @Router /v1/operation_records [get]
 func GetOperationRecordListV1(c echo.Context) error {
-	return nil
+	return getOperationRecordList(c)
 }
