@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"time"
 
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -22,7 +21,7 @@ import (
 )
 
 type apiInterfaceInfo struct {
-	reg                     *regexp.Regexp
+	routerPath              string
 	method                  string
 	operationType           string
 	operationAction         string
@@ -31,7 +30,7 @@ type apiInterfaceInfo struct {
 
 var apiInterfaceInfoList = []apiInterfaceInfo{
 	{
-		reg:                     regexp.MustCompile("/v1/projects"),
+		routerPath:              "/v1/projects",
 		method:                  http.MethodPost,
 		operationType:           model.OperationRecordTypeProjectManage,
 		operationAction:         model.OperationRecordActionCreateProject,
@@ -77,10 +76,10 @@ func OperationLogRecord() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
 			reqIP := c.Request().Host
-			path := c.Request().URL.Path
+			path := c.Path()
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range apiInterfaceInfoList {
-				if c.Request().Method == interfaceInfo.method && interfaceInfo.reg.MatchString(path) {
+				if c.Request().Method == interfaceInfo.method && interfaceInfo.routerPath == path {
 					userName := controller.GetUserName(c)
 
 					operationRecord := &model.OperationRecord{
