@@ -1263,14 +1263,14 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetOperationContentListResV1:
+  v1.GetOperationActionListResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/v1.OperationContentList'
+          $ref: '#/definitions/v1.OperationActionList'
         type: array
       message:
         example: ok
@@ -2317,18 +2317,18 @@ definitions:
       op_desc:
         type: string
     type: object
-  v1.OperationContentList:
+  v1.OperationActionList:
     properties:
       desc:
         type: string
-      operation_content:
+      operation_action:
         type: string
     type: object
   v1.OperationRecordList:
     properties:
       id:
         type: integer
-      operation_content:
+      operation_action:
         type: string
       operation_object_name:
         type: string
@@ -4454,59 +4454,59 @@ paths:
       description: Get operation record list
       operationId: getOperationRecordListV1
       parameters:
-      - description: filter_operate_time_from
-        in: query
-        name: filter_operate_time_from
-        type: string
-      - description: filter_operate_time_to
-        in: query
-        name: filter_operate_time_to
-        type: string
-      - description: filter_operate_project_name
-        in: query
-        name: filter_operate_project_name
-        type: string
-      - description: fuzzy_search_operate_user_name
-        in: query
-        name: fuzzy_search_operate_user_name
-        type: string
-      - description: filter_operate_type_name
-        in: query
-        name: filter_operate_type_name
-        type: string
-      - description: filter_operate_content
-        in: query
-        name: filter_operate_content
-        type: string
-      - description: page_index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: page_size
-        in: query
-        name: page_size
-        required: true
-        type: integer
+        - description: filter_operate_time_from
+          in: query
+          name: filter_operate_time_from
+          type: string
+        - description: filter_operate_time_to
+          in: query
+          name: filter_operate_time_to
+          type: string
+        - description: filter_operate_project_name
+          in: query
+          name: filter_operate_project_name
+          type: string
+        - description: fuzzy_search_operate_user_name
+          in: query
+          name: fuzzy_search_operate_user_name
+          type: string
+        - description: filter_operate_type_name
+          in: query
+          name: filter_operate_type_name
+          type: string
+        - description: filter_operate_action
+          in: query
+          name: filter_operate_action
+          type: string
+        - description: page_index
+          in: query
+          name: page_index
+          required: true
+          type: integer
+        - description: page_size
+          in: query
+          name: page_size
+          required: true
+          type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetOperationRecordListResV1'
       security:
-      - ApiKeyAuth: []
+        - ApiKeyAuth: [ ]
       summary: 获取操作记录列表
       tags:
-      - OperationRecord
-  /v1/operation_records/operation_contents:
+        - OperationRecord
+  /v1/operation_records/operation_actions:
     get:
-      description: Get operation content list
-      operationId: getOperationContentList
+      description: Get operation action list
+      operationId: getOperationActionList
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetOperationContentListResV1'
+            $ref: '#/definitions/v1.GetOperationActionListResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取操作内容列表
