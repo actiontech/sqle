@@ -10801,12 +10801,12 @@ var doc = `{
         "v1.OperationActionList": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "operation_action": {
                     "type": "string"
-                },
-	            "desc": {
-                    "type": "string"
-                },
+                }
             }
         },
         "v1.OperationRecordList": {
