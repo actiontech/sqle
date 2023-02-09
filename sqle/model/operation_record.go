@@ -8,8 +8,8 @@ const (
 	// operation record type
 	OperationRecordTypeProjectManage = "project_manage"
 
-	// Content operation record content
-	OperationRecordContentCreateProject = "create_project"
+	// operation record action
+	OperationRecordActionCreateProject = "create_project"
 
 	// Status operation record status
 	OperationRecordStatusSuccess = "success"
