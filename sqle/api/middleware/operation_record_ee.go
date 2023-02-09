@@ -45,6 +45,19 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		operationAction:         model.OperationRecordActionCreateProjectRuleTemplate,
 		getProjectAndObjectFunc: getProjectAndObjectFromCreateProjectRuleTemplate,
 	},
+	{
+		routerPath:              "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+		method:                  http.MethodDelete,
+		operationType:           model.OperationRecordTypeProjectRuleTemplate,
+		operationAction:         model.OperationRecordActionDeleteProjectRuleTemplate,
+		getProjectAndObjectFunc: getProjectAndObjectFromDeleteProjectRuleTemplate,
+	},
+}
+
+func getProjectAndObjectFromDeleteProjectRuleTemplate(c echo.Context) (string, string, error) {
+	projectName := c.Param("project_name")
+	tpName := c.Param("rule_template_name")
+	return projectName, tpName, nil
 }
 
 func getProjectAndObjectFromCreateProjectRuleTemplate(c echo.Context) (string, string, error) {
