@@ -11,7 +11,6 @@ const (
 	OperationRecordTypeInstance            = "instance"
 	OperationRecordTypeProjectRuleTemplate = "project_rule_template"
 	OperationRecordTypeWorkflowTemplate    = "workflow_template"
-	OperationRecordTypeWhiteList           = "white_list"
 	OperationRecordTypeAuditPlan           = "audit_plan"
 	OperationRecordTypeWorkflow            = "workflow"
 
@@ -21,6 +20,9 @@ const (
 	OperationRecordActionDeleteProjectRuleTemplate = "delete_project_rule_template"
 	OperationRecordActionUpdateProjectRuleTemplate = "update_project_rule_template"
 	OperationRecordActionUpdateWorkflowTemplate    = "update_workflow_template"
+	OperationRecordActionCreateAuditPlan           = "create_audit_plan"
+	OperationRecordActionDeleteAuditPlan           = "delete_audit_plan"
+	OperationRecordActionUpdateAuditPlan           = "update_audit_plan"
 
 	// Status operation record status
 	OperationRecordStatusSuccess = "success"

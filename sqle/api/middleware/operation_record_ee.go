@@ -71,6 +71,23 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		operationAction:         model.OperationRecordActionUpdateWorkflowTemplate,
 		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) { return c.Param("project_name"), "", nil },
 	},
+	// 智能扫描
+	{
+		routerPath:              "/v1/projects/:project_name/audit_plans",
+		method:                  http.MethodPost,
+		operationType:           model.OperationRecordTypeAuditPlan,
+		operationAction:         model.OperationRecordActionCreateAuditPlan,
+		getProjectAndObjectFunc: getProjectAndObjectFromCreatingAuditPlan,
+	},
+}
+
+func getProjectAndObjectFromCreatingAuditPlan(c echo.Context) (string, string, error) {
+	req := new(v1.CreateAuditPlanReqV1)
+	err := marshalRequestBody(c, req)
+	if err != nil {
+		return "", "", err
+	}
+	return c.Param("project_name"), req.Name, nil
 }
 
 func getProjectAndObjectFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
@@ -79,8 +96,7 @@ func getProjectAndObjectFromCreatingProjectRuleTemplate(c echo.Context) (string,
 	if err != nil {
 		return "", "", err
 	}
-	projectName := c.Param("project_name")
-	return projectName, req.Name, nil
+	return c.Param("project_name"), req.Name, nil
 }
 
 func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error) {
