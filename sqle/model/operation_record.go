@@ -3,17 +3,17 @@ package model
 import "time"
 
 const (
-	PlatformOperationRecord = "--"
+	OperationRecordPlatform = "--"
 
 	// operation record type
-	ProjectManageOperationRecordType = "project_manage"
+	OperationRecordProjectManageType = "project_manage"
 
 	// Content operation record content
-	CreateProjectOperationRecordContent = "create_project"
+	OperationRecordCreateProjectContent = "create_project"
 
 	// Status operation record status
-	SuccessOperationRecordStatus = "success"
-	FailOperationRecordStatus    = "fail"
+	OperationRecordSuccessStatus = "success"
+	OperationRecordFailStatus    = "fail"
 )
 
 type OperationRecord struct {
