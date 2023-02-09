@@ -26,7 +26,7 @@ type OperationTypeNameList struct {
 // @Success 200 {object} GetOperationTypeNamesListResV1
 // @Router /v1/operation_records/operation_type_names [get]
 func GetOperationTypeNameList(c echo.Context) error {
-	return nil
+	return getOperationTypeNameList(c)
 }
 
 type GetOperationActionListResV1 struct {
@@ -48,7 +48,7 @@ type OperationActionList struct {
 // @Success 200 {object} v1.GetOperationActionListResV1
 // @Router /v1/operation_records/operation_actions [get]
 func GetOperationActionList(c echo.Context) error {
-	return nil
+	return getOperationActionList(c)
 }
 
 type GetOperationRecordListResV1 struct {
@@ -90,5 +90,5 @@ type OperationUser struct {
 // @Success 200 {object} v1.GetOperationRecordListResV1
 // @Router /v1/operation_records [get]
 func GetOperationRecordListV1(c echo.Context) error {
-	return nil
+	return getOperationRecordList(c)
 }
