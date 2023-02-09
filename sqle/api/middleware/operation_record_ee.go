@@ -43,24 +43,37 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		method:                  http.MethodPost,
 		operationType:           model.OperationRecordTypeProjectRuleTemplate,
 		operationAction:         model.OperationRecordActionCreateProjectRuleTemplate,
-		getProjectAndObjectFunc: getProjectAndObjectFromCreateProjectRuleTemplate,
+		getProjectAndObjectFunc: getProjectAndObjectFromCreatingProjectRuleTemplate,
 	},
 	{
 		routerPath:              "/v1/projects/:project_name/rule_templates/:rule_template_name/",
 		method:                  http.MethodDelete,
 		operationType:           model.OperationRecordTypeProjectRuleTemplate,
 		operationAction:         model.OperationRecordActionDeleteProjectRuleTemplate,
-		getProjectAndObjectFunc: getProjectAndObjectFromDeleteProjectRuleTemplate,
+		getProjectAndObjectFunc: getProjectAndObjectFromDeletingProjectRuleTemplate,
+	},
+	{
+		routerPath:              "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+		method:                  http.MethodPatch,
+		operationType:           model.OperationRecordTypeProjectRuleTemplate,
+		operationAction:         model.OperationRecordActionUpdateProjectRuleTemplate,
+		getProjectAndObjectFunc: getProjectAndObjectFromUpdatingProjectRuleTemplate,
 	},
 }
 
-func getProjectAndObjectFromDeleteProjectRuleTemplate(c echo.Context) (string, string, error) {
+func getProjectAndObjectFromUpdatingProjectRuleTemplate(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
 	tpName := c.Param("rule_template_name")
 	return projectName, tpName, nil
 }
 
-func getProjectAndObjectFromCreateProjectRuleTemplate(c echo.Context) (string, string, error) {
+func getProjectAndObjectFromDeletingProjectRuleTemplate(c echo.Context) (string, string, error) {
+	projectName := c.Param("project_name")
+	tpName := c.Param("rule_template_name")
+	return projectName, tpName, nil
+}
+
+func getProjectAndObjectFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
 	req := new(v1.CreateProjectRuleTemplateReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
