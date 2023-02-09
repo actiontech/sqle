@@ -46,18 +46,22 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		getProjectAndObjectFunc: getProjectAndObjectFromCreatingProjectRuleTemplate,
 	},
 	{
-		routerPath:              "/v1/projects/:project_name/rule_templates/:rule_template_name/",
-		method:                  http.MethodDelete,
-		operationType:           model.OperationRecordTypeProjectRuleTemplate,
-		operationAction:         model.OperationRecordActionDeleteProjectRuleTemplate,
-		getProjectAndObjectFunc: getProjectAndObjectFromDeletingProjectRuleTemplate,
+		routerPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+		method:          http.MethodDelete,
+		operationType:   model.OperationRecordTypeProjectRuleTemplate,
+		operationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
+		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), c.Param("rule_template_name"), nil
+		},
 	},
 	{
-		routerPath:              "/v1/projects/:project_name/rule_templates/:rule_template_name/",
-		method:                  http.MethodPatch,
-		operationType:           model.OperationRecordTypeProjectRuleTemplate,
-		operationAction:         model.OperationRecordActionUpdateProjectRuleTemplate,
-		getProjectAndObjectFunc: getProjectAndObjectFromUpdatingProjectRuleTemplate,
+		routerPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+		method:          http.MethodPatch,
+		operationType:   model.OperationRecordTypeProjectRuleTemplate,
+		operationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
+		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), c.Param("rule_template_name"), nil
+		},
 	},
 	// 流程模板
 	{
@@ -67,18 +71,6 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		operationAction:         model.OperationRecordActionUpdateWorkflowTemplate,
 		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) { return c.Param("project_name"), "", nil },
 	},
-}
-
-func getProjectAndObjectFromUpdatingProjectRuleTemplate(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	tpName := c.Param("rule_template_name")
-	return projectName, tpName, nil
-}
-
-func getProjectAndObjectFromDeletingProjectRuleTemplate(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	tpName := c.Param("rule_template_name")
-	return projectName, tpName, nil
 }
 
 func getProjectAndObjectFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
