@@ -25,7 +25,7 @@ type apiInterfaceInfo struct {
 	reg                     *regexp.Regexp
 	method                  string
 	operationType           string
-	operationContent        string
+	operationAction         string
 	getProjectAndObjectFunc func(c echo.Context) (projectName, objectName string, err error)
 }
 
@@ -34,7 +34,7 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		reg:                     regexp.MustCompile("/v1/projects"),
 		method:                  http.MethodPost,
 		operationType:           model.OperationRecordTypeProjectManage,
-		operationContent:        model.OperationRecordActionCreateProject,
+		operationAction:         model.OperationRecordActionCreateProject,
 		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
 	},
 }
@@ -88,7 +88,7 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						OperationUserName: userName,
 						OperationReqIP:    reqIP,
 						OperationTypeName: interfaceInfo.operationType,
-						OperationAction:   interfaceInfo.operationContent,
+						OperationAction:   interfaceInfo.operationAction,
 					}
 
 					projectName, objectName, err := interfaceInfo.getProjectAndObjectFunc(c)
