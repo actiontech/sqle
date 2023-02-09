@@ -154,8 +154,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.POST("/sync_instances/:task_id/trigger", v1.TriggerSyncInstance, AdminUserAllowed())
 
 		// operation record
-		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList)
-		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList)
+		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, AdminUserAllowed())
+		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, AdminUserAllowed())
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, AdminUserAllowed())
 
 		// other
