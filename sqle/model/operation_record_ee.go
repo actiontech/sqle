@@ -20,6 +20,7 @@ const (
 	OperationRecordActionCreateProjectRuleTemplate = "create_project_rule_template"
 	OperationRecordActionDeleteProjectRuleTemplate = "delete_project_rule_template"
 	OperationRecordActionUpdateProjectRuleTemplate = "update_project_rule_template"
+	OperationRecordActionUpdateWorkflowTemplate    = "update_workflow_template"
 
 	// Status operation record status
 	OperationRecordStatusSuccess = "success"

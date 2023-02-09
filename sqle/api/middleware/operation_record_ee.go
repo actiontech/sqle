@@ -59,6 +59,14 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		operationAction:         model.OperationRecordActionUpdateProjectRuleTemplate,
 		getProjectAndObjectFunc: getProjectAndObjectFromUpdatingProjectRuleTemplate,
 	},
+	// 流程模板
+	{
+		routerPath:              "/v1/projects/:project_name/workflow_template",
+		method:                  http.MethodPatch,
+		operationType:           model.OperationRecordTypeWorkflowTemplate,
+		operationAction:         model.OperationRecordActionUpdateWorkflowTemplate,
+		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) { return c.Param("project_name"), "", nil },
+	},
 }
 
 func getProjectAndObjectFromUpdatingProjectRuleTemplate(c echo.Context) (string, string, error) {
