@@ -32,10 +32,37 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 	{
 		routerPath:              "/v1/projects",
 		method:                  http.MethodPost,
-		operationType:           model.OperationRecordTypeProjectManage,
+		operationType:           model.OperationRecordTypeProject,
 		operationAction:         model.OperationRecordActionCreateProject,
 		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
 	},
+	// 项目规则模板
+	{
+		routerPath:              "/v1/projects/:project_name/rule_templates",
+		method:                  http.MethodPost,
+		operationType:           model.OperationRecordTypeProjectRuleTemplate,
+		operationAction:         model.OperationRecordActionCreateProjectRuleTemplate,
+		getProjectAndObjectFunc: getProjectAndObjectFromCreateProjectRuleTemplate,
+	},
+}
+
+func getProjectAndObjectFromCreateProjectRuleTemplate(c echo.Context) (string, string, error) {
+	req := new(v1.CreateProjectRuleTemplateReqV1)
+
+	reqBody, err := getReqBodyBytes(c)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := json.Unmarshal(reqBody, req); err != nil {
+		return "", "", err
+	}
+
+	if err := controller.Validate(req); err != nil {
+		return "", "", err
+	}
+	projectName := c.Param("project_name")
+	return projectName, req.Name, nil
 }
 
 func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error) {
