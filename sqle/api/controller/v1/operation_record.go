@@ -26,7 +26,7 @@ type OperationTypeNameList struct {
 // @Success 200 {object} GetOperationTypeNamesListResV1
 // @Router /v1/operation_records/operation_type_names [get]
 func GetOperationTypeNameList(c echo.Context) error {
-	return nil
+	return getOperationTypeNameList(c)
 }
 
 type GetOperationActionListResV1 struct {
