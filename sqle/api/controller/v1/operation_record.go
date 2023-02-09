@@ -48,7 +48,7 @@ type OperationActionList struct {
 // @Success 200 {object} v1.GetOperationActionListResV1
 // @Router /v1/operation_records/operation_actions [get]
 func GetOperationActionList(c echo.Context) error {
-	return nil
+	return getOperationActionList(c)
 }
 
 type GetOperationRecordListResV1 struct {

@@ -17,3 +17,7 @@ var errCommunityEditionDoesNotSupportFeatureOperationRecord = errors.New(errors.
 func getOperationTypeNameList(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFeatureOperationRecord)
 }
+
+func getOperationActionList(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFeatureOperationRecord)
+}
