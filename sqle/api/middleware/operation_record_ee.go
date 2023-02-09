@@ -33,8 +33,8 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 	{
 		reg:                     regexp.MustCompile("/v1/projects"),
 		method:                  http.MethodPost,
-		operationType:           model.OperationRecordProjectManageType,
-		operationContent:        model.OperationRecordCreateProjectContent,
+		operationType:           model.OperationRecordTypeProjectManage,
+		operationContent:        model.OperationRecordActionCreateProject,
 		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
 	},
 }
@@ -84,11 +84,11 @@ func OperationLogRecord() echo.MiddlewareFunc {
 					userName := controller.GetUserName(c)
 
 					operationRecord := &model.OperationRecord{
-						OperationTime: time.Now(),
-						UserName:      userName,
-						IP:            reqIP,
-						TypeName:      interfaceInfo.operationType,
-						Content:       interfaceInfo.operationContent,
+						OperationTime:     time.Now(),
+						OperationUserName: userName,
+						OperationReqIP:    reqIP,
+						OperationTypeName: interfaceInfo.operationType,
+						OperationAction:   interfaceInfo.operationContent,
 					}
 
 					projectName, objectName, err := interfaceInfo.getProjectAndObjectFunc(c)
@@ -96,8 +96,8 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						newLog.Errorf("get object and project name error: %s", err)
 					}
 
-					operationRecord.ProjectName = projectName
-					operationRecord.ObjectName = objectName
+					operationRecord.OperationProjectName = projectName
+					operationRecord.OperationObjectName = objectName
 
 					respBodyWrite := &ResponseBodyWrite{body: new(bytes.Buffer), ResponseWriter: c.Response().Writer}
 
@@ -113,13 +113,13 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						if code, ok := respBody["code"]; ok {
 							codeInt := int(code.(float64))
 							if codeInt != 0 {
-								operationRecord.Status = model.OperationRecordFailStatus
+								operationRecord.OperationStatus = model.OperationRecordStatusFail
 							} else {
-								operationRecord.Status = model.OperationRecordSuccessStatus
+								operationRecord.OperationStatus = model.OperationRecordStatusSuccess
 							}
 						}
 					} else {
-						operationRecord.Status = model.OperationRecordFailStatus
+						operationRecord.OperationStatus = model.OperationRecordStatusFail
 					}
 
 					s := model.GetStorage()
