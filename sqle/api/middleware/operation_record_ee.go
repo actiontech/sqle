@@ -88,6 +88,15 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 			return c.Param("project_name"), c.Param("audit_plan_name"), nil
 		},
 	},
+	{
+		routerPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
+		method:          http.MethodPatch,
+		operationType:   model.OperationRecordTypeAuditPlan,
+		operationAction: model.OperationRecordActionUpdateAuditPlan,
+		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), c.Param("audit_plan_name"), nil
+		},
+	},
 }
 
 func getProjectAndObjectFromCreatingAuditPlan(c echo.Context) (string, string, error) {
