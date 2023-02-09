@@ -6,14 +6,14 @@ const (
 	OperationRecordPlatform = "--"
 
 	// operation record type
-	OperationRecordProjectManageType = "project_manage"
+	OperationRecordTypeProjectManage = "project_manage"
 
 	// Content operation record content
-	OperationRecordCreateProjectContent = "create_project"
+	OperationRecordContentCreateProject = "create_project"
 
 	// Status operation record status
-	OperationRecordSuccessStatus = "success"
-	OperationRecordFailStatus    = "fail"
+	OperationRecordStatusSuccess = "success"
+	OperationRecordStatusFail    = "fail"
 )
 
 type OperationRecord struct {
