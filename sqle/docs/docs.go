@@ -946,8 +946,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter_operate_content",
-                        "name": "filter_operate_content",
+                        "description": "filter_operate_action",
+                        "name": "filter_operate_action",
                         "in": "query"
                     },
                     {
@@ -975,24 +975,24 @@ var doc = `{
                 }
             }
         },
-        "/v1/operation_records/operation_contents": {
+        "/v1/operation_records/operation_actions": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get operation content list",
+                "description": "Get operation action list",
                 "tags": [
                     "OperationRecord"
                 ],
                 "summary": "获取操作内容列表",
-                "operationId": "getOperationContentList",
+                "operationId": "getOperationActionList",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetOperationContentListResV1"
+                            "$ref": "#/definitions/v1.GetOperationActionListResV1"
                         }
                     }
                 }
@@ -9257,7 +9257,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetOperationContentListResV1": {
+        "v1.GetOperationActionListResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9267,7 +9267,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.OperationContentList"
+                        "$ref": "#/definitions/v1.OperationActionList"
                     }
                 },
                 "message": {
@@ -10798,15 +10798,15 @@ var doc = `{
                 }
             }
         },
-        "v1.OperationContentList": {
+        "v1.OperationActionList": {
             "type": "object",
             "properties": {
-                "desc": {
+                "operation_action": {
                     "type": "string"
                 },
-                "operation_content": {
+	            "desc": {
                     "type": "string"
-                }
+                },
             }
         },
         "v1.OperationRecordList": {
@@ -10815,7 +10815,7 @@ var doc = `{
                 "id": {
                     "type": "integer"
                 },
-                "operation_content": {
+                "operation_action": {
                     "type": "string"
                 },
                 "operation_object_name": {
