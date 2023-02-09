@@ -33,8 +33,8 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 	{
 		reg:                     regexp.MustCompile("/v1/projects"),
 		method:                  http.MethodPost,
-		operationType:           model.ProjectManageOperationRecordType,
-		operationContent:        model.CreateProjectOperationRecordContent,
+		operationType:           model.OperationRecordProjectManageType,
+		operationContent:        model.OperationRecordCreateProjectContent,
 		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
 	},
 }
@@ -55,7 +55,7 @@ func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error
 		return "", "", err
 	}
 
-	return model.PlatformOperationRecord, req.Name, nil
+	return model.OperationRecordPlatform, req.Name, nil
 }
 
 type ResponseBodyWrite struct {
@@ -113,13 +113,13 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						if code, ok := respBody["code"]; ok {
 							codeInt := int(code.(float64))
 							if codeInt != 0 {
-								operationRecord.Status = model.FailOperationRecordStatus
+								operationRecord.Status = model.OperationRecordFailStatus
 							} else {
-								operationRecord.Status = model.SuccessOperationRecordStatus
+								operationRecord.Status = model.OperationRecordSuccessStatus
 							}
 						}
 					} else {
-						operationRecord.Status = model.FailOperationRecordStatus
+						operationRecord.Status = model.OperationRecordFailStatus
 					}
 
 					s := model.GetStorage()
