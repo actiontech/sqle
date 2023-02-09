@@ -10801,6 +10801,9 @@ var doc = `{
         "v1.OperationContentList": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "operation_content": {
                     "type": "string"
                 }
@@ -10854,6 +10857,9 @@ var doc = `{
         "v1.OperationTypeNameList": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "operation_type_name": {
                     "type": "string"
                 }
