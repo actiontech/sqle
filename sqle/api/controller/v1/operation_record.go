@@ -29,25 +29,25 @@ func GetOperationTypeNameList(c echo.Context) error {
 	return nil
 }
 
-type GetOperationContentListResV1 struct {
+type GetOperationActionListResV1 struct {
 	controller.BaseRes
-	Data []OperationContentList `json:"data"`
+	Data []OperationActionList `json:"data"`
 }
 
-type OperationContentList struct {
-	OperationContent string `json:"operation_content"`
-	Desc             string `json:"desc"`
+type OperationActionList struct {
+	OperationAction string `json:"operation_action"`
+	Desc            string `json:"desc"`
 }
 
-// GetOperationContentList
+// GetOperationActionList
 // @Summary 获取操作内容列表
-// @Description Get operation content list
-// @Id getOperationContentList
+// @Description Get operation action list
+// @Id getOperationActionList
 // @Tags OperationRecord
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetOperationContentListResV1
-// @Router /v1/operation_records/operation_contents [get]
-func GetOperationContentList(c echo.Context) error {
+// @Success 200 {object} v1.GetOperationActionListResV1
+// @Router /v1/operation_records/operation_actions [get]
+func GetOperationActionList(c echo.Context) error {
 	return nil
 }
 
@@ -62,7 +62,7 @@ type OperationRecordList struct {
 	OperationTime       *time.Time    `json:"operation_time"`
 	OperationUser       OperationUser `json:"operation_user"`
 	OperationTypeName   string        `json:"operation_type_name"`
-	OperationContent    string        `json:"operation_content"`
+	OperationAction     string        `json:"operation_action"`
 	OperationObjectName string        `json:"operation_object_name"`
 	ProjectName         string        `json:"project_name"`
 	Status              string        `json:"status" enums:"success,fail"`
@@ -84,7 +84,7 @@ type OperationUser struct {
 // @Param filter_operate_project_name query string false "filter_operate_project_name"
 // @Param fuzzy_search_operate_user_name query string false "fuzzy_search_operate_user_name"
 // @Param filter_operate_type_name query string false "filter_operate_type_name"
-// @Param filter_operate_content query string false "filter_operate_content"
+// @Param filter_operate_action query string false "filter_operate_action"
 // @Param page_index query uint32 true "page_index"
 // @Param page_size query uint32 true "page_size"
 // @Success 200 {object} v1.GetOperationRecordListResV1
