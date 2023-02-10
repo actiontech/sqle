@@ -237,12 +237,15 @@ func getOperationRecordList(c echo.Context) error {
 	data := map[string]interface{}{
 		"filter_operate_time_from":       req.FilterOperateTimeFrom,
 		"filter_operate_time_to":         req.FilterOperateTimeTo,
-		"filter_operate_project_name":    req.FilterOperateProjectName,
 		"fuzzy_search_operate_user_name": req.FuzzySearchOperateUserName,
 		"filter_operate_type_name":       req.FilterOperateTypeName,
 		"filter_operate_action":          req.FilterOperateAction,
 		"limit":                          req.PageSize,
 		"offset":                         offset,
+	}
+
+	if req.FilterOperateProjectName != nil {
+		data["filter_operate_project_name"] = req.FilterOperateProjectName
 	}
 
 	s := model.GetStorage()
