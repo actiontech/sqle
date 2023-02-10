@@ -9,7 +9,7 @@ type OperationRecord struct {
 	OperationReqIP       string    `gorm:"column:operation_req_ip" json:"operation_req_ip"`
 	OperationTypeName    string    `gorm:"column:operation_type_name" json:"operation_type_name"`
 	OperationAction      string    `gorm:"column:operation_action" json:"operation_action"`
-	OperationObjectName  string    `gorm:"column:operation_object_name" json:"operation_object_name"`
+	OperationContent     string    `gorm:"column:operation_content" json:"operation_content"`
 	OperationProjectName string    `gorm:"column:operation_project_name" json:"operation_project_name"`
 	OperationStatus      string    `gorm:"column:operation_status" json:"operation_status"`
 }
