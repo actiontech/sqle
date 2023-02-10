@@ -27,3 +27,12 @@ type OperationRecord struct {
 	OperationProjectName string    `gorm:"column:operation_project_name" json:"operation_project_name"`
 	OperationStatus      string    `gorm:"column:operation_status" json:"operation_status"`
 }
+
+func (s *Storage) GetOperationRecordProjectNameList() ([]string, error) {
+	var projectNameList []string
+	err := s.db.Model(&OperationRecord{}).Group("operation_project_name").Pluck("operation_project_name", &projectNameList).Error
+	if err != nil {
+		return nil, err
+	}
+	return projectNameList, err
+}
