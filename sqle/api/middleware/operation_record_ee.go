@@ -44,7 +44,7 @@ func (w *ResponseBodyWrite) WriteString(s string) (int, error) {
 func OperationLogRecord() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
-			reqIP := c.Request().Host
+			reqIP := c.Request().RemoteAddr
 			path := c.Path()
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range ApiInterfaceInfoList {
