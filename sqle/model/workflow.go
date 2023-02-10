@@ -1375,15 +1375,11 @@ func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
 }
 
 func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
-	workflows := []*Workflow{}
-	err := s.db.Model(&Workflow{}).Select("subject").Where("workflow_id IN (?)", ids).Scan(&workflows).Error
+	names := []string{}
+	err := s.db.Model(&Workflow{}).Select("subject").Where("workflow_id IN (?)", ids).Scan(&names).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 
-	names := make([]string, len(workflows))
-	for i, w := range workflows {
-		names[i] = w.Subject
-	}
 	return names, nil
 }
