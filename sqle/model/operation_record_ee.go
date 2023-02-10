@@ -28,3 +28,70 @@ const (
 	OperationRecordStatusSuccess = "success"
 	OperationRecordStatusFail    = "fail"
 )
+
+var operationRecordQueryTpl = `
+SELECT o.id,
+       o.operation_time,
+       o.operation_user_name,
+       o.operation_req_ip,
+       o.operation_type_name,
+       o.operation_action,
+       o.operation_content,
+       o.operation_project_name,
+       o.operation_status
+{{- template "body" . -}}
+ORDER BY o.operation_time DESC
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var operationRecordWorkflowsCountTpl = `SELECT COUNT(*)
+
+{{- template "body" . -}}
+`
+
+var operationRecordQueryBodyTpl = `
+{{ define "body" }}
+FROM operation_records o
+
+WHERE o.deleted_at IS NULL 
+
+{{- if .filter_operate_time_from }}
+AND o.operation_time > :filter_operate_time_from
+{{- end }}
+
+{{- if .filter_operate_time_to }}
+AND o.operation_time < :filter_operate_time_to
+{{- end }}
+
+{{- if .filter_operate_project_name }}
+AND o.operation_project_name = :filter_operate_project_name
+{{- end }}
+
+{{- if .fuzzy_search_operate_user_name }}
+AND o.operation_user_name LIKE '%{{ .fuzzy_search_operate_user_name }}%'
+{{- end }}
+
+{{- if .filter_operate_type_name }}
+AND o.operation_type_name = :filter_operate_type_name
+{{- end }}
+
+{{- if .filter_operate_action }}
+AND o.operation_action = :filter_operate_action
+{{- end }}
+
+{{ end }}
+
+`
+
+func (s *Storage) GetOperationRecordList(data map[string]interface{}) (result []*OperationRecord, count uint64, err error) {
+	err = s.getListResult(operationRecordQueryBodyTpl, operationRecordQueryTpl, data, &result)
+	if err != nil {
+		return result, 0, err
+	}
+
+	count, err = s.getCountResult(operationRecordQueryBodyTpl, operationRecordWorkflowsCountTpl, data)
+
+	return result, count, err
+}
