@@ -51,6 +51,17 @@ func GetOperationActionList(c echo.Context) error {
 	return getOperationActionList(c)
 }
 
+type GetOperationRecordListReqV1 struct {
+	FilterOperateTimeFrom      string  `json:"filter_operate_time_from" query:"filter_operate_time_from"`
+	FilterOperateTimeTo        string  `json:"filter_operate_time_to" query:"filter_operate_time_to"`
+	FilterOperateProjectName   *string `json:"filter_operate_project_name" query:"filter_operate_project_name"`
+	FuzzySearchOperateUserName string  `json:"fuzzy_search_operate_user_name" query:"fuzzy_search_operate_user_name"`
+	FilterOperateTypeName      string  `json:"filter_operate_type_name" query:"filter_operate_type_name"`
+	FilterOperateAction        string  `json:"filter_operate_action" query:"filter_operate_action"`
+	PageIndex                  uint32  `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                   uint32  `json:"page_size" query:"page_size" valid:"required"`
+}
+
 type GetOperationRecordListResV1 struct {
 	controller.BaseRes
 	Data      []OperationRecordList `json:"data"`
