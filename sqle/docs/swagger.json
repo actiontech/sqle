@@ -10802,8 +10802,8 @@
                 "operation_action": {
                     "type": "string"
                 },
-                "operation_object_name": {
-                    "type": "string"
+                "operation_content": {
+                  "type": "string"
                 },
                 "operation_time": {
                     "type": "string"
