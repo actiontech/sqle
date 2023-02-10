@@ -41,40 +41,44 @@ type PluginClient struct {
 	c    *goPlugin.Client
 }
 
-func newClientFromFile(path string) *PluginClient {
-	return &PluginClient{
-		path: path,
+func TestPluginDriver(path string) bool {
+	c := newClientFromFile(path)
+	cp, err := c.Client()
+	if err != nil {
+		log.NewEntry().Errorf("test conn plugin failed: %v", err)
+		return false
 	}
+	defer c.Kill()
+
+	err = cp.Ping()
+	if err != nil {
+		log.NewEntry().Errorf("test conn plugin failed: %v", err)
+		return false
+	}
+	return true
 }
 
-func (p *PluginClient) Kill() {
-	p.c.Kill()
-}
+func RegisterDrivers(path string) (pluginName string, err error) {
+	c := newClientFromFile(path)
+	cp, err := c.Client()
+	if err != nil {
+		return "", err
+	}
+	defer c.Kill()
 
-func (p *PluginClient) Client() (goPlugin.ClientProtocol, error) {
-	p.resetClient()
-	return p.c.Client()
-}
-
-func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err error) {
-	gRPCClient, err := c.Client()
+	pluginName, version, drvClient, err := registerAuditDriver(cp)
 	if err != nil {
 		return "", err
 	}
 
-	pluginName, version, drvClient, err := registerAuditDriver(gRPCClient)
-	if err != nil {
-		return "", err
-	}
-
-	if err := registerQueryDriver(pluginName, gRPCClient); err != nil {
+	if err := registerQueryDriver(pluginName, cp); err != nil {
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginName,
 			"plugin_type": PluginNameQueryDriver,
 		}).Infof("plugin not exist or failed to load. err: %v", err)
 	}
 
-	if err := registerAnalysisDriver(pluginName, gRPCClient); err != nil {
+	if err := registerAnalysisDriver(pluginName, cp); err != nil {
 		log.Logger().WithFields(logrus.Fields{
 			"plugin_name": pluginName,
 			"plugin_type": PluginNameAnalysisDriver,
@@ -89,57 +93,52 @@ func (p *PluginClient) RegisterDrivers(c *PluginClient) (pluginName string, err 
 			log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
 		}
 	}
-	c.Kill()
 	return pluginName, nil
 }
 
-func (p *PluginClient) resetClient() {
-	if p.c != nil {
-		p.c.Kill()
-	}
-	p.c = goPlugin.NewClient(&goPlugin.ClientConfig{
+func newClientFromFile(path string) *PluginClient {
+	client := goPlugin.NewClient(&goPlugin.ClientConfig{
 		HandshakeConfig:  handshakeConfig,
 		VersionedPlugins: defaultPluginSet,
-		Cmd:              exec.Command(p.path),
+		Cmd:              exec.Command(path),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		GRPCDialOptions:  SQLEGRPCDialOptions,
 	})
+	return &PluginClient{
+		path: path,
+		c:    client,
+	}
+}
+
+func (p *PluginClient) Kill() {
+	if p.c != nil {
+		p.c.Kill()
+	}
+}
+
+func (p *PluginClient) Client() (goPlugin.ClientProtocol, error) {
+	return p.c.Client()
 }
 
 var SQLEGRPCDialOptions = []grpc.DialOption{}
-
-func testConnClient(client *PluginClient) bool {
-	c, err := client.Client()
-	if err != nil {
-		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return false
-	}
-	defer client.Kill()
-	err = c.Ping()
-	if err != nil {
-		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return false
-	}
-	return true
-}
 
 var driverManagerMu = &sync.RWMutex{}
 var driverManagers = make(map[string]driverManagerHandler)
 
 type driverManagerHandler struct {
-	pluginClient         *PluginClient
 	newDriverManagerFunc newDriverManagerHandler
 }
 
-type newDriverManagerHandler func(log *logrus.Entry, dbType string, config *Config, client *PluginClient) (DriverManager, error)
+type newDriverManagerHandler func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error)
 
-func RegisterDriverFromClient(client *PluginClient) error {
-	pluginName, err := client.RegisterDrivers(client)
+func RegisterDriverFromClient(path string) error {
+	pluginName, err := RegisterDrivers(path)
 	if err != nil {
 		return fmt.Errorf("register plugin failed: %v", err)
 	}
 
-	handler := func(log *logrus.Entry, dbType string, config *Config, client *PluginClient) (DriverManager, error) {
+	handler := func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
+		client := newClientFromFile(path)
 		gRPCClient, err := client.Client()
 		if err != nil {
 			return nil, err
@@ -171,11 +170,11 @@ func RegisterDriverFromClient(client *PluginClient) error {
 		return drvMgr, nil
 	}
 
-	RegisterDriverManger(client, pluginName, handler)
+	RegisterDriverManger(pluginName, handler)
 	return nil
 }
 
-func RegisterDriverManger(client *PluginClient, pluginName string, handler newDriverManagerHandler) {
+func RegisterDriverManger(pluginName string, handler newDriverManagerHandler) {
 	driverManagerMu.RLock()
 	_, exist := driverManagers[pluginName]
 	driverManagerMu.RUnlock()
@@ -185,7 +184,6 @@ func RegisterDriverManger(client *PluginClient, pluginName string, handler newDr
 
 	driverManagerMu.Lock()
 	driverManagers[pluginName] = driverManagerHandler{
-		pluginClient:         client,
 		newDriverManagerFunc: handler,
 	}
 	driverManagerMu.Unlock()
@@ -372,7 +370,7 @@ func NewDriverManger(log *logrus.Entry, dbType string, config *Config) (DriverMa
 		return nil, fmt.Errorf("driver type %v is not supported", dbType)
 	}
 
-	return h.newDriverManagerFunc(log, dbType, config, h.pluginClient)
+	return h.newDriverManagerFunc(log, dbType, config)
 }
 
 // InitPlugins init plugins at plugins directory. It should be called on host process.
@@ -402,11 +400,11 @@ func InitPlugins(pluginDir string) error {
 		binaryPath := filepath.Join(pluginDir, p.Name())
 
 		// check plugin
-		client := newClientFromFile(binaryPath)
-		if !testConnClient(client) {
+		if !TestPluginDriver(binaryPath) {
 			return fmt.Errorf("unable to load plugin: %v", binaryPath)
 		}
-		if err := RegisterDriverFromClient(client); err != nil {
+
+		if err := RegisterDriverFromClient(binaryPath); err != nil {
 			return err
 		}
 
