@@ -218,7 +218,7 @@ func DeleteProjectV1(c echo.Context) error {
 }
 
 type GetProjectTipsReqV1 struct {
-	FunctionalModule string `json:"functional_module"`
+	FunctionalModule string `json:"functional_module" query:"functional_module"`
 }
 
 type GetProjectTipsResV1 struct {
