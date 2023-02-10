@@ -16,6 +16,9 @@ const (
 	OperationRecordActionCreateProject             = "create_project"
 	OperationRecordActionDeleteProject             = "delete_project"
 	OperationRecordActionUpdateProject             = "update_project"
+	OperationRecordActionCreateInstance            = "create_instance"
+	OperationRecordActionUpdateInstance            = "update_instance"
+	OperationRecordActionDeleteInstance            = "delete_instance"
 	OperationRecordActionCreateProjectRuleTemplate = "create_project_rule_template"
 	OperationRecordActionDeleteProjectRuleTemplate = "delete_project_rule_template"
 	OperationRecordActionUpdateProjectRuleTemplate = "update_project_rule_template"
@@ -28,7 +31,7 @@ const (
 	OperationRecordActionApproveWorkflow           = "approve_workflow"
 	OperationRecordActionRejectWorkflow            = "reject_workflow"
 	OperationRecordActionExecuteWorkflow           = "execute_workflow"
-	OperationRecordActionScheduleWorkflow          = "schedule_workflow" // todo issue1281 定时上线功能有缺陷，修复后再添加操作记录
+	OperationRecordActionScheduleWorkflow          = "schedule_workflow" // todo issue1281 定时上线功能有缺陷，修复后再添加操作记录  https://github.com/actiontech/sqle/issues/1304
 
 	// Status operation record status
 	OperationRecordStatusSuccess = "success"
