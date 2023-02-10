@@ -9,14 +9,22 @@ import (
 	"net/http"
 	"time"
 
-	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
 )
+
+type ApiInterfaceInfo struct {
+	RouterPath               string
+	Method                   string
+	OperationType            string
+	OperationAction          string
+	GetProjectAndContentFunc func(c echo.Context) (projectName, objectName string, err error)
+}
+
+var ApiInterfaceInfoList []ApiInterfaceInfo
 
 type ResponseBodyWrite struct {
 	http.ResponseWriter
@@ -39,7 +47,7 @@ func OperationLogRecord() echo.MiddlewareFunc {
 			reqIP := c.Request().Host
 			path := c.Path()
 			newLog := log.NewEntry()
-			for _, interfaceInfo := range v1.ApiInterfaceInfoList {
+			for _, interfaceInfo := range ApiInterfaceInfoList {
 				if c.Request().Method == interfaceInfo.Method && interfaceInfo.RouterPath == path {
 					userName := controller.GetUserName(c)
 

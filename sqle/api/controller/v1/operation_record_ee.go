@@ -10,198 +10,125 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
-	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
 
-type ApiInterfaceInfo struct {
-	RouterPath               string
-	Method                   string
-	OperationType            string
-	OperationAction          string
-	GetProjectAndContentFunc func(c echo.Context) (projectName, objectName string, err error)
-}
-
-var ApiInterfaceInfoList = []ApiInterfaceInfo{
-	// 项目
-	{
-		RouterPath:               "/v1/projects",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeProject,
-		OperationAction:          model.OperationRecordActionCreateProject,
-		GetProjectAndContentFunc: getProjectAndContentFromCreateProject,
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/",
-		Method:          http.MethodPatch,
-		OperationType:   model.OperationRecordTypeProject,
-		OperationAction: model.OperationRecordActionUpdateProject,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			name := c.Param("project_name")
-			return name, fmt.Sprintf("编辑项目，项目名：%v", name), nil
+func init() {
+	sqleMiddleware.ApiInterfaceInfoList = append(sqleMiddleware.ApiInterfaceInfoList, []sqleMiddleware.ApiInterfaceInfo{
+		// 项目
+		{
+			RouterPath:               "/v1/projects",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeProject,
+			OperationAction:          model.OperationRecordActionCreateProject,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateProject,
 		},
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/",
-		Method:          http.MethodPost,
-		OperationType:   model.OperationRecordTypeProject,
-		OperationAction: model.OperationRecordActionDeleteProject,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			name := c.Param("project_name")
-			return name, fmt.Sprintf("删除项目，项目名：%v", name), nil
+		{
+			RouterPath:      "/v1/projects/:project_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeProject,
+			OperationAction: model.OperationRecordActionUpdateProject,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				name := c.Param("project_name")
+				return name, fmt.Sprintf("编辑项目，项目名：%v", name), nil
+			},
 		},
-	},
-	// 数据源
-	{
-		RouterPath:               "/v2/projects/:project_name/instances",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeInstance,
-		OperationAction:          model.OperationRecordActionCreateInstance,
-		GetProjectAndContentFunc: getProjectAndContentFromCreatingInstance,
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
-		Method:          http.MethodPatch,
-		OperationType:   model.OperationRecordTypeInstance,
-		OperationAction: model.OperationRecordActionUpdateInstance,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("编辑数据源，数据源名称：%v", c.Param("instance_name")), nil
+		{
+			RouterPath:      "/v1/projects/:project_name/",
+			Method:          http.MethodPost,
+			OperationType:   model.OperationRecordTypeProject,
+			OperationAction: model.OperationRecordActionDeleteProject,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				name := c.Param("project_name")
+				return name, fmt.Sprintf("删除项目，项目名：%v", name), nil
+			},
 		},
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
-		Method:          http.MethodDelete,
-		OperationType:   model.OperationRecordTypeInstance,
-		OperationAction: model.OperationRecordActionDeleteInstance,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("删除数据源，数据源名称：%v", c.Param("instance_name")), nil
+		{
+			RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeInstance,
+			OperationAction: model.OperationRecordActionUpdateInstance,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("编辑数据源，数据源名称：%v", c.Param("instance_name")), nil
+			},
 		},
-	},
-	// 项目规则模板
-	{
-		RouterPath:               "/v1/projects/:project_name/rule_templates",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeProjectRuleTemplate,
-		OperationAction:          model.OperationRecordActionCreateProjectRuleTemplate,
-		GetProjectAndContentFunc: getProjectAndContentFromCreatingProjectRuleTemplate,
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
-		Method:          http.MethodDelete,
-		OperationType:   model.OperationRecordTypeProjectRuleTemplate,
-		OperationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("删除规则模板，模板名：%v", c.Param("rule_template_name")), nil
+		{
+			RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeInstance,
+			OperationAction: model.OperationRecordActionDeleteInstance,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("删除数据源，数据源名称：%v", c.Param("instance_name")), nil
+			},
 		},
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
-		Method:          http.MethodPatch,
-		OperationType:   model.OperationRecordTypeProjectRuleTemplate,
-		OperationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("编辑规则模板，模板名：%v", c.Param("rule_template_name")), nil
+		// 项目规则模板
+		{
+			RouterPath:               "/v1/projects/:project_name/rule_templates",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeProjectRuleTemplate,
+			OperationAction:          model.OperationRecordActionCreateProjectRuleTemplate,
+			GetProjectAndContentFunc: getProjectAndContentFromCreatingProjectRuleTemplate,
 		},
-	},
-	// 流程模板
-	{
-		RouterPath:      "/v1/projects/:project_name/workflow_template",
-		Method:          http.MethodPatch,
-		OperationType:   model.OperationRecordTypeWorkflowTemplate,
-		OperationAction: model.OperationRecordActionUpdateWorkflowTemplate,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), "编辑流程模板", nil
+		{
+			RouterPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
+			OperationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("删除规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
 		},
-	},
-	// 智能扫描
-	{
-		RouterPath:               "/v1/projects/:project_name/audit_plans",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeAuditPlan,
-		OperationAction:          model.OperationRecordActionCreateAuditPlan,
-		GetProjectAndContentFunc: getProjectAndContentFromCreatingAuditPlan,
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
-		Method:          http.MethodDelete,
-		OperationType:   model.OperationRecordTypeAuditPlan,
-		OperationAction: model.OperationRecordActionDeleteAuditPlan,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("删除智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+		{
+			RouterPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
+			OperationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("编辑规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
 		},
-	},
-	{
-		RouterPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
-		Method:          http.MethodPatch,
-		OperationType:   model.OperationRecordTypeAuditPlan,
-		OperationAction: model.OperationRecordActionUpdateAuditPlan,
-		GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+		// 流程模板
+		{
+			RouterPath:      "/v1/projects/:project_name/workflow_template",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeWorkflowTemplate,
+			OperationAction: model.OperationRecordActionUpdateWorkflowTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), "编辑流程模板", nil
+			},
 		},
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionCreateWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromCreatingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/cancel", // 取消工单
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionCancelWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromCancelingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/cancel", // 批量取消工单
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionCancelWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromBatchCancelingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/steps/:workflow_step_id/approve",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionApproveWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromApprovingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/steps/:workflow_step_id/reject",
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionRejectWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromRejectingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/tasks/:task_id/execute", // 上线单个数据源
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionExecuteWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromExecutingWorkflow,
-	},
-	{
-		RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/tasks/execute", //多数据源上线
-		Method:                   http.MethodPost,
-		OperationType:            model.OperationRecordTypeWorkflow,
-		OperationAction:          model.OperationRecordActionExecuteWorkflow,
-		GetProjectAndContentFunc: getProjectAndContentFromBatchExecutingWorkflow,
-	},
-}
-
-func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
-	req := new(v2.CreateInstanceReqV2)
-	err := marshalRequestBody(c, req)
-	if err != nil {
-		return "", "", err
-	}
-	projectName := c.Param("project_name")
-	return projectName, fmt.Sprintf("添加数据源，数据源名称：%v", req.Name), nil
+		// 智能扫描
+		{
+			RouterPath:               "/v1/projects/:project_name/audit_plans",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeAuditPlan,
+			OperationAction:          model.OperationRecordActionCreateAuditPlan,
+			GetProjectAndContentFunc: getProjectAndContentFromCreatingAuditPlan,
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeAuditPlan,
+			OperationAction: model.OperationRecordActionDeleteAuditPlan,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("删除智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeAuditPlan,
+			OperationAction: model.OperationRecordActionUpdateAuditPlan,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+			},
+		}}...)
 }
 
 func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, string, error) {
@@ -230,20 +157,6 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, 
 		return "", "", ErrWorkflowNoAccess
 	}
 	return projectName, fmt.Sprintf("上线工单的单个数据源，工单名称：%v", workflow.Subject), nil // todo issue1281 添加数据源名称到记录里
-}
-
-func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, string, error) {
-	req := new(v2.BatchCancelWorkflowsReqV2)
-	err := marshalRequestBody(c, req)
-	if err != nil {
-		return "", "", err
-	}
-	projectName := c.Param("project_name")
-	workflowNames, err := model.GetStorage().GetWorkflowNamesByIDs(req.WorkflowIDList)
-	if err != nil {
-		return "", "", err
-	}
-	return projectName, fmt.Sprintf("批量取消工单，工单名称：%v", workflowNames), nil
 }
 
 func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, string, error) {
@@ -286,15 +199,6 @@ func getProjectAndContentFromRejectingWorkflow(c echo.Context) (string, string, 
 		return "", "", ErrWorkflowNoAccess
 	}
 	return projectName, fmt.Sprintf("驳回工单，工单名称：%v", workflow.Subject), nil
-}
-
-func getProjectAndContentFromCreatingWorkflow(c echo.Context) (string, string, error) {
-	req := new(v2.CreateWorkflowReqV2)
-	err := marshalRequestBody(c, req)
-	if err != nil {
-		return "", "", err
-	}
-	return c.Param("project_name"), fmt.Sprintf("创建工单，工单名：%v", req.Subject), nil
 }
 
 func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, string, error) {
@@ -370,7 +274,7 @@ var typeNameDescMap = map[string]string{
 
 func getOperationTypeNameList(c echo.Context) error {
 	var operationTypeList []string
-	for _, info := range ApiInterfaceInfoList {
+	for _, info := range sqleMiddleware.ApiInterfaceInfoList {
 		operationTypeList = append(operationTypeList, info.OperationType)
 	}
 
@@ -413,7 +317,7 @@ var actionNameDescMap = map[string]string{
 
 func getOperationActionList(c echo.Context) error {
 	var operationActionList []string
-	for _, info := range ApiInterfaceInfoList {
+	for _, info := range sqleMiddleware.ApiInterfaceInfoList {
 		operationActionList = append(operationActionList, info.OperationAction)
 	}
 
