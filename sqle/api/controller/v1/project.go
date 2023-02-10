@@ -217,6 +217,10 @@ func DeleteProjectV1(c echo.Context) error {
 	return deleteProjectV1(c)
 }
 
+type GetProjectTipsReqV1 struct {
+	FunctionalModule string `json:"functional_module"`
+}
+
 type GetProjectTipsResV1 struct {
 	controller.BaseRes
 	Data []ProjectTipResV1 `json:"data"`
@@ -236,17 +240,38 @@ type ProjectTipResV1 struct {
 // @Success 200 {object} v1.GetProjectTipsResV1
 // @router /v1/project_tips [get]
 func GetProjectTipsV1(c echo.Context) error {
-	s := model.GetStorage()
-	projects, err := s.GetProjectTips(controller.GetUserName(c))
-	if err != nil {
+	req := new(GetProjectTipsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	s := model.GetStorage()
+
 	data := []ProjectTipResV1{}
-	for _, project := range projects {
-		data = append(data, ProjectTipResV1{
-			Name: project.Name,
-		})
+
+	switch req.FunctionalModule {
+	case "operation_record":
+		projectNameList, err := s.GetOperationRecordProjectNameList()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		for _, projectName := range projectNameList {
+			data = append(data, ProjectTipResV1{
+				Name: projectName,
+			})
+		}
+	default:
+		projects, err := s.GetProjectTips(controller.GetUserName(c))
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		for _, project := range projects {
+			data = append(data, ProjectTipResV1{
+				Name: project.Name,
+			})
+		}
 	}
+
 	return c.JSON(http.StatusOK, GetProjectTipsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
