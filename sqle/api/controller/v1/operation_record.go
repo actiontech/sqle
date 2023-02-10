@@ -58,14 +58,14 @@ type GetOperationRecordListResV1 struct {
 }
 
 type OperationRecordList struct {
-	ID                  uint64        `json:"id"`
-	OperationTime       *time.Time    `json:"operation_time"`
-	OperationUser       OperationUser `json:"operation_user"`
-	OperationTypeName   string        `json:"operation_type_name"`
-	OperationAction     string        `json:"operation_action"`
-	OperationObjectName string        `json:"operation_object_name"`
-	ProjectName         string        `json:"project_name"`
-	Status              string        `json:"status" enums:"success,fail"`
+	ID                uint64        `json:"id"`
+	OperationTime     *time.Time    `json:"operation_time"`
+	OperationUser     OperationUser `json:"operation_user"`
+	OperationTypeName string        `json:"operation_type_name"`
+	OperationAction   string        `json:"operation_action"`
+	OperationContent  string        `json:"operation_content"`
+	ProjectName       string        `json:"project_name"`
+	Status            string        `json:"status" enums:"success,fail"`
 }
 
 type OperationUser struct {
