@@ -2,20 +2,6 @@ package model
 
 import "time"
 
-const (
-	OperationRecordPlatform = "--"
-
-	// operation record type
-	OperationRecordTypeProjectManage = "project_manage"
-
-	// operation record action
-	OperationRecordActionCreateProject = "create_project"
-
-	// Status operation record status
-	OperationRecordStatusSuccess = "success"
-	OperationRecordStatusFail    = "fail"
-)
-
 type OperationRecord struct {
 	Model
 	OperationTime        time.Time `gorm:"column:operation_time;type:datetime;" json:"operation_time"`
@@ -23,7 +9,16 @@ type OperationRecord struct {
 	OperationReqIP       string    `gorm:"column:operation_req_ip" json:"operation_req_ip"`
 	OperationTypeName    string    `gorm:"column:operation_type_name" json:"operation_type_name"`
 	OperationAction      string    `gorm:"column:operation_action" json:"operation_action"`
-	OperationObjectName  string    `gorm:"column:operation_object_name" json:"operation_object_name"`
+	OperationContent     string    `gorm:"column:operation_content" json:"operation_content"`
 	OperationProjectName string    `gorm:"column:operation_project_name" json:"operation_project_name"`
 	OperationStatus      string    `gorm:"column:operation_status" json:"operation_status"`
+}
+
+func (s *Storage) GetOperationRecordProjectNameList() ([]string, error) {
+	var projectNameList []string
+	err := s.db.Model(&OperationRecord{}).Group("operation_project_name").Pluck("operation_project_name", &projectNameList).Error
+	if err != nil {
+		return nil, err
+	}
+	return projectNameList, err
 }
