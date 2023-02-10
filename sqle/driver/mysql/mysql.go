@@ -28,7 +28,7 @@ func init() {
 	}
 
 	driver.RegisterAuditDriver(driver.DriverTypeMySQL, allRules, params.Params{})
-	driver.RegisterDriverManger(nil, driver.DriverTypeMySQL, NewDriverManagerFunc)
+	driver.RegisterDriverManger(driver.DriverTypeMySQL, NewDriverManagerFunc)
 
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
@@ -535,7 +535,7 @@ func (d *DriverManager) Close(ctx context.Context) {
 	d.inspect.Close(ctx)
 }
 
-func NewDriverManagerFunc(log *logrus.Entry, dbType string, config *driver.Config, client *driver.PluginClient) (driver.DriverManager, error) {
+func NewDriverManagerFunc(log *logrus.Entry, dbType string, config *driver.Config) (driver.DriverManager, error) {
 	inspect, err := NewInspect(log, config)
 	if err != nil {
 		return nil, err
