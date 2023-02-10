@@ -1,3 +1,6 @@
+//go:build enterprise
+// +build enterprise
+
 package v1
 
 import (
