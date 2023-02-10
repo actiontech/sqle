@@ -392,6 +392,11 @@ func getOperationTypeNameList(c echo.Context) error {
 
 var actionNameDescMap = map[string]string{
 	model.OperationRecordActionCreateProject:             "创建项目",
+	model.OperationRecordActionDeleteProject:             "删除项目",
+	model.OperationRecordActionUpdateProject:             "编辑项目",
+	model.OperationRecordActionCreateInstance:            "创建数据源",
+	model.OperationRecordActionUpdateInstance:            "编辑数据源",
+	model.OperationRecordActionDeleteInstance:            "删除数据源",
 	model.OperationRecordActionCreateProjectRuleTemplate: "添加规则模版",
 	model.OperationRecordActionDeleteProjectRuleTemplate: "删除规则模版",
 	model.OperationRecordActionUpdateProjectRuleTemplate: "编辑规则模版",
@@ -399,6 +404,11 @@ var actionNameDescMap = map[string]string{
 	model.OperationRecordActionCreateAuditPlan:           "创建智能扫描任务",
 	model.OperationRecordActionDeleteAuditPlan:           "删除智能扫描任务",
 	model.OperationRecordActionUpdateAuditPlan:           "编辑智能扫描任务",
+	model.OperationRecordActionCreateWorkflow:            "创建工单",
+	model.OperationRecordActionCancelWorkflow:            "关闭工单",
+	model.OperationRecordActionApproveWorkflow:           "审核通过工单",
+	model.OperationRecordActionRejectWorkflow:            "驳回工单",
+	model.OperationRecordActionExecuteWorkflow:           "上线工单",
 }
 
 func getOperationActionList(c echo.Context) error {
