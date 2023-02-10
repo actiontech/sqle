@@ -2,20 +2,6 @@ package model
 
 import "time"
 
-const (
-	OperationRecordPlatform = "--"
-
-	// operation record type
-	OperationRecordTypeProjectManage = "project_manage"
-
-	// operation record action
-	OperationRecordActionCreateProject = "create_project"
-
-	// Status operation record status
-	OperationRecordStatusSuccess = "success"
-	OperationRecordStatusFail    = "fail"
-)
-
 type OperationRecord struct {
 	Model
 	OperationTime        time.Time `gorm:"column:operation_time;type:datetime;" json:"operation_time"`
