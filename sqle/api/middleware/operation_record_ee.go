@@ -21,37 +21,37 @@ import (
 )
 
 type apiInterfaceInfo struct {
-	routerPath              string
-	method                  string
-	operationType           string
-	operationAction         string
-	getProjectAndObjectFunc func(c echo.Context) (projectName, objectName string, err error)
+	routerPath               string
+	method                   string
+	operationType            string
+	operationAction          string
+	getProjectAndContentFunc func(c echo.Context) (projectName, content string, err error)
 }
 
 var apiInterfaceInfoList = []apiInterfaceInfo{
 	// 项目
 	{
-		routerPath:              "/v1/projects",
-		method:                  http.MethodPost,
-		operationType:           model.OperationRecordTypeProject,
-		operationAction:         model.OperationRecordActionCreateProject,
-		getProjectAndObjectFunc: getProjectAndObjectFromCreateProject,
+		routerPath:               "/v1/projects",
+		method:                   http.MethodPost,
+		operationType:            model.OperationRecordTypeProject,
+		operationAction:          model.OperationRecordActionCreateProject,
+		getProjectAndContentFunc: getProjectAndContentFromCreateProject,
 	},
 	// 项目规则模板
 	{
-		routerPath:              "/v1/projects/:project_name/rule_templates",
-		method:                  http.MethodPost,
-		operationType:           model.OperationRecordTypeProjectRuleTemplate,
-		operationAction:         model.OperationRecordActionCreateProjectRuleTemplate,
-		getProjectAndObjectFunc: getProjectAndObjectFromCreatingProjectRuleTemplate,
+		routerPath:               "/v1/projects/:project_name/rule_templates",
+		method:                   http.MethodPost,
+		operationType:            model.OperationRecordTypeProjectRuleTemplate,
+		operationAction:          model.OperationRecordActionCreateProjectRuleTemplate,
+		getProjectAndContentFunc: getProjectAndContentFromCreatingProjectRuleTemplate,
 	},
 	{
 		routerPath:      "/v1/projects/:project_name/rule_templates/:rule_template_name/",
 		method:          http.MethodDelete,
 		operationType:   model.OperationRecordTypeProjectRuleTemplate,
 		operationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
-		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), c.Param("rule_template_name"), nil
+		getProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), fmt.Sprintf("删除规则模板，模板名：%v", c.Param("rule_template_name")), nil
 		},
 	},
 	{
@@ -59,33 +59,35 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		method:          http.MethodPatch,
 		operationType:   model.OperationRecordTypeProjectRuleTemplate,
 		operationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
-		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), c.Param("rule_template_name"), nil
+		getProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), fmt.Sprintf("编辑规则模板，模板名：%v", c.Param("rule_template_name")), nil
 		},
 	},
 	// 流程模板
 	{
-		routerPath:              "/v1/projects/:project_name/workflow_template",
-		method:                  http.MethodPatch,
-		operationType:           model.OperationRecordTypeWorkflowTemplate,
-		operationAction:         model.OperationRecordActionUpdateWorkflowTemplate,
-		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) { return c.Param("project_name"), "", nil },
+		routerPath:      "/v1/projects/:project_name/workflow_template",
+		method:          http.MethodPatch,
+		operationType:   model.OperationRecordTypeWorkflowTemplate,
+		operationAction: model.OperationRecordActionUpdateWorkflowTemplate,
+		getProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), "编辑流程模板", nil
+		},
 	},
 	// 智能扫描
 	{
-		routerPath:              "/v1/projects/:project_name/audit_plans",
-		method:                  http.MethodPost,
-		operationType:           model.OperationRecordTypeAuditPlan,
-		operationAction:         model.OperationRecordActionCreateAuditPlan,
-		getProjectAndObjectFunc: getProjectAndObjectFromCreatingAuditPlan,
+		routerPath:               "/v1/projects/:project_name/audit_plans",
+		method:                   http.MethodPost,
+		operationType:            model.OperationRecordTypeAuditPlan,
+		operationAction:          model.OperationRecordActionCreateAuditPlan,
+		getProjectAndContentFunc: getProjectAndContentFromCreatingAuditPlan,
 	},
 	{
 		routerPath:      "/v1/projects/:project_name/audit_plans/:audit_plan_name/",
 		method:          http.MethodDelete,
 		operationType:   model.OperationRecordTypeAuditPlan,
 		operationAction: model.OperationRecordActionDeleteAuditPlan,
-		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), c.Param("audit_plan_name"), nil
+		getProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), fmt.Sprintf("删除智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
 		},
 	},
 	{
@@ -93,38 +95,38 @@ var apiInterfaceInfoList = []apiInterfaceInfo{
 		method:          http.MethodPatch,
 		operationType:   model.OperationRecordTypeAuditPlan,
 		operationAction: model.OperationRecordActionUpdateAuditPlan,
-		getProjectAndObjectFunc: func(c echo.Context) (string, string, error) {
-			return c.Param("project_name"), c.Param("audit_plan_name"), nil
+		getProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+			return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
 		},
 	},
 }
 
-func getProjectAndObjectFromCreatingAuditPlan(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, string, error) {
 	req := new(v1.CreateAuditPlanReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
 		return "", "", err
 	}
-	return c.Param("project_name"), req.Name, nil
+	return c.Param("project_name"), fmt.Sprintf("创建智能扫描任务，任务名：%v", req.Name), nil
 }
 
-func getProjectAndObjectFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
 	req := new(v1.CreateProjectRuleTemplateReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
 		return "", "", err
 	}
-	return c.Param("project_name"), req.Name, nil
+	return c.Param("project_name"), fmt.Sprintf("添加规则模板，模板名：%v", req.Name), nil
 }
 
-func getProjectAndObjectFromCreateProject(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreateProject(c echo.Context) (string, string, error) {
 	req := new(v1.CreateProjectReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
 		return "", "", err
 	}
 
-	return req.Name, req.Name, nil
+	return req.Name, fmt.Sprintf("创建项目，项目名：%v", req.Name), nil
 }
 
 func marshalRequestBody(c echo.Context, pattern interface{}) error {
@@ -176,13 +178,13 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						OperationAction:   interfaceInfo.operationAction,
 					}
 
-					projectName, objectName, err := interfaceInfo.getProjectAndObjectFunc(c)
+					projectName, content, err := interfaceInfo.getProjectAndContentFunc(c)
 					if err != nil {
-						newLog.Errorf("get object and project name error: %s", err)
+						newLog.Errorf("get content and project name error: %s", err)
 					}
 
 					operationRecord.OperationProjectName = projectName
-					operationRecord.OperationObjectName = objectName
+					operationRecord.OperationContent = content
 
 					respBodyWrite := &ResponseBodyWrite{body: new(bytes.Buffer), ResponseWriter: c.Response().Writer}
 
