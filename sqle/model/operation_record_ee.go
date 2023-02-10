@@ -4,8 +4,6 @@
 package model
 
 const (
-	OperationRecordPlatform = "--"
-
 	// operation record type
 	OperationRecordTypeProject             = "project"
 	OperationRecordTypeInstance            = "instance"
@@ -15,21 +13,22 @@ const (
 	OperationRecordTypeWorkflow            = "workflow"
 
 	// operation record action
-	OperationRecordActionCreateProject                   = "create_project"
-	OperationRecordActionCreateProjectRuleTemplate       = "create_project_rule_template"
-	OperationRecordActionDeleteProjectRuleTemplate       = "delete_project_rule_template"
-	OperationRecordActionUpdateProjectRuleTemplate       = "update_project_rule_template"
-	OperationRecordActionUpdateWorkflowTemplate          = "update_workflow_template"
-	OperationRecordActionCreateAuditPlan                 = "create_audit_plan"
-	OperationRecordActionDeleteAuditPlan                 = "delete_audit_plan"
-	OperationRecordActionUpdateAuditPlan                 = "update_audit_plan"
-	OperationRecordActionCreateWorkflow                  = "create_workflow"
-	OperationRecordActionCancelWorkflow                  = "cancel_workflow"
-	OperationRecordActionApproveWorkflow                 = "approve_workflow"
-	OperationRecordActionRejectWorkflow                  = "reject_workflow"
-	OperationRecordActionExecuteWorkflow                 = "execute_workflow"
-	OperationRecordActionScheduleWorkflow                = "schedule_workflow"
-	OperationRecordActionCancelScheduledStatusOfWorkflow = "cancel_scheduled_status_of_workflow"
+	OperationRecordActionCreateProject             = "create_project"
+	OperationRecordActionDeleteProject             = "delete_project"
+	OperationRecordActionUpdateProject             = "update_project"
+	OperationRecordActionCreateProjectRuleTemplate = "create_project_rule_template"
+	OperationRecordActionDeleteProjectRuleTemplate = "delete_project_rule_template"
+	OperationRecordActionUpdateProjectRuleTemplate = "update_project_rule_template"
+	OperationRecordActionUpdateWorkflowTemplate    = "update_workflow_template"
+	OperationRecordActionCreateAuditPlan           = "create_audit_plan"
+	OperationRecordActionDeleteAuditPlan           = "delete_audit_plan"
+	OperationRecordActionUpdateAuditPlan           = "update_audit_plan"
+	OperationRecordActionCreateWorkflow            = "create_workflow"
+	OperationRecordActionCancelWorkflow            = "cancel_workflow"
+	OperationRecordActionApproveWorkflow           = "approve_workflow"
+	OperationRecordActionRejectWorkflow            = "reject_workflow"
+	OperationRecordActionExecuteWorkflow           = "execute_workflow"
+	OperationRecordActionScheduleWorkflow          = "schedule_workflow" // todo issue1281 定时上线功能有缺陷，修复后再添加操作记录
 
 	// Status operation record status
 	OperationRecordStatusSuccess = "success"
