@@ -190,6 +190,11 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 			}
 		}
 
+		if projectName == "" {
+			d.L.Infof("dmp data source %s not have SqleTag,skip record", dmpInstance.DataSrcID)
+			continue
+		}
+
 		project, exist, err := s.GetProjectByName(projectName)
 		if err != nil {
 			d.L.Errorf("get Instances by project name fail: %s", err)
