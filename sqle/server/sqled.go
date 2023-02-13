@@ -5,6 +5,7 @@ import (
 	_errors "errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -325,6 +326,26 @@ func (s *Sqled) dingTalkRotation() error {
 	}
 
 	return nil
+}
+
+func (s *Sqled) CleanExpiredOperationLog(entry *logrus.Entry) {
+	start := time.Now().Add(-OperationLogExpiredTime * time.Hour)
+
+	st := model.GetStorage()
+	idList, err := st.GetExpiredOperationRcordIDListByStartTime(start)
+	if err != nil {
+		entry.Errorf("get expired operation record id list error: %v", err)
+		return
+	}
+
+	if len(idList) > 0 {
+		if err := st.DeleteExpiredOperationRecordByIDList(idList); err != nil {
+			entry.Errorf("delete expired operation record error: %v", err)
+			return
+		}
+
+		entry.Infof("delete expired operation record success, count: %d id: %s", len(idList), strings.Join(idList, ","))
+	}
 }
 
 func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage) error {
