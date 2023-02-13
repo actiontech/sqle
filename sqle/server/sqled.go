@@ -332,7 +332,7 @@ func (s *Sqled) CleanExpiredOperationLog(entry *logrus.Entry) {
 	start := time.Now().Add(-OperationLogExpiredTime * time.Hour)
 
 	st := model.GetStorage()
-	idList, err := st.GetExpiredOperationRcordIDListByStartTime(start)
+	idList, err := st.GetExpiredOperationRecordIDListByStartTime(start)
 	if err != nil {
 		entry.Errorf("get expired operation record id list error: %v", err)
 		return
