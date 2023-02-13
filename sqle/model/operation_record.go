@@ -33,5 +33,5 @@ func (s *Storage) GetExpiredOperationRcordIDListByStartTime(start time.Time) ([]
 }
 
 func (s *Storage) DeleteExpiredOperationRecordByIDList(idList []string) error {
-	return s.db.Where("id in (?)", idList).Delete(&OperationRecord{}).Error
+	return s.db.Exec("DELETE FROM operation_records WHERE id IN (?)", idList).Error
 }
