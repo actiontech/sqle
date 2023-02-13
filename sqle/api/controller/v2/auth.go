@@ -20,13 +20,13 @@ type UserLoginReqV2 struct {
 // @Param user body v1.UserLoginReqV1 true "user login request"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/login [post]
-func Login(c echo.Context) error {
+func LoginV2(c echo.Context) error {
 	req := new(UserLoginReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 
-	_, err := v1.GetSqleToken(c, req.UserName, req.Password)
+	_, err := v1.Login(c, req.UserName, req.Password)
 	if err != nil {
 		return err
 	}

@@ -62,8 +62,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	e.POST("/v1/login", v1.Login)
-	e.POST("/v2/login", v2.Login)
+	e.POST("/v1/login", v1.LoginV1)
+	e.POST("/v2/login", v2.LoginV2)
 
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
