@@ -344,7 +344,7 @@ func (s *Sqled) CleanExpiredOperationLog(entry *logrus.Entry) {
 			return
 		}
 
-		entry.Infof("delete expired operation record succeed, count: %d id: %s", len(idList), strings.Join(idList, ","))
+		entry.Infof("delete expired operation record succeeded, count: %d id: %s", len(idList), strings.Join(idList, ","))
 	}
 }
 
