@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	SqlAuditTaskExpiredTime = 3 * 24 // 3 days
+	SqlAuditTaskExpiredTime = 3 * 24  // 3 days
+	OperationLogExpiredTime = 90 * 24 // 90 days
 )
 
 func (s *Sqled) cleanLoop() {
@@ -21,6 +22,8 @@ func (s *Sqled) cleanLoop() {
 	entry := log.NewEntry().WithField("type", "cron")
 	s.CleanExpiredWorkflows(entry)
 	s.CleanExpiredTasks(entry)
+	s.CleanExpiredOperationLog(entry)
+
 	for {
 		select {
 		case <-s.exit:
@@ -28,6 +31,7 @@ func (s *Sqled) cleanLoop() {
 		case <-tick.C:
 			s.CleanExpiredWorkflows(entry)
 			s.CleanExpiredTasks(entry)
+			s.CleanExpiredOperationLog(entry)
 		}
 	}
 }

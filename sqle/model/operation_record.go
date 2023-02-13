@@ -22,3 +22,16 @@ func (s *Storage) GetOperationRecordProjectNameList() ([]string, error) {
 	}
 	return projectNameList, err
 }
+
+func (s *Storage) GetExpiredOperationRcordIDListByStartTime(start time.Time) ([]string, error) {
+	var idList []string
+	err := s.db.Model(&OperationRecord{}).Where("operation_time < ?", start).Pluck("id", &idList).Error
+	if err != nil {
+		return nil, err
+	}
+	return idList, err
+}
+
+func (s *Storage) DeleteExpiredOperationRecordByIDList(idList []string) error {
+	return s.db.Where("id in (?)", idList).Delete(&OperationRecord{}).Error
+}
