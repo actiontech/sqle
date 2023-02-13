@@ -38,13 +38,13 @@ type UserLoginResV1 struct {
 // @Param user body v1.UserLoginReqV1 true "user login request"
 // @Success 200 {object} v1.GetUserLoginResV1
 // @router /v1/login [post]
-func Login(c echo.Context) error {
+func LoginV1(c echo.Context) error {
 	req := new(UserLoginReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 
-	t, err := GetSqleToken(c, req.UserName, req.Password)
+	t, err := Login(c, req.UserName, req.Password)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func Login(c echo.Context) error {
 	})
 }
 
-func GetSqleToken(c echo.Context, userName, password string) (token string, err error) {
+func Login(c echo.Context, userName, password string) (token string, err error) {
 	loginChecker, err := GetLoginCheckerByUserName(userName)
 	if err != nil {
 		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
