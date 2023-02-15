@@ -5,9 +5,11 @@ package v1
 
 import (
 	"context"
+	e "errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -138,6 +140,8 @@ func deleteSyncInstanceTask(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+const TriggerSyncInstanceTimeout = 30 * time.Second
+
 func triggerSyncInstance(c echo.Context) error {
 	taskIdStr := c.Param("task_id")
 	s := model.GetStorage()
@@ -157,9 +161,30 @@ func triggerSyncInstance(c echo.Context) error {
 
 	l := log.Logger().WithField("action", "trigger_sync_instance_task")
 	syncInstanceTaskEntity := instSync.NewSyncInstanceTask(l, uint(taskId), task.Source, task.URL, task.Version, task.DbType, task.RuleTemplate.Name)
-	syncFunc := syncInstanceTaskEntity.GetSyncInstanceTaskFunc(context.Background())
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TriggerSyncInstanceTimeout)
+	defer cancel()
+
+	syncFunc := syncInstanceTaskEntity.GetSyncInstanceTaskFunc(ctx)
 	syncFunc()
+
+	if ctx.Err() != nil && e.Is(ctx.Err(), context.DeadlineExceeded) {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync instance task timeout: %v,timeout configuration: %v seconds", ctx.Err(), TriggerSyncInstanceTimeout))
+	}
+
+	if getSyncTaskStatus(s, task.ID) == model.SyncInstanceStatusFailed {
+		return controller.JSONBaseErrorReq(c, e.New("sync instance task failed"))
+	}
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func getSyncTaskStatus(s *model.Storage, taskId uint) string {
+	syncTask, exist, err := s.GetSyncInstanceTaskById(taskId)
+	if err != nil || !exist {
+		return model.SyncInstanceStatusFailed
+	}
+	return syncTask.LastSyncStatus
 }
 
 func getSyncInstanceTaskList(c echo.Context) error {

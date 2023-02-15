@@ -30,7 +30,6 @@ import (
 
 const (
 	DataObjectSourceDMPSupportedVersion = "5.23.01.0"
-	RequestHttpTimeout                  = 30 * time.Second
 	Token                               = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJoYXNoIjoiWzUyIDMgMTI5IDE4NCAyMzggNjcgMiAzMCA5NSAyMzkgNTMgMjExIDE1MyAxNzQgODkgMjQ3XSIsIm5iZiI6MTY3MDU2MTg1NSwic2VlZCI6ImdaQ0J4RFJxUm1DQzJpaG4iLCJ1c2VyIjoic3FsZSJ9.SxGEi6QP8Dtl3ChsetDeZQxbcYpqsXmQibmytRuDbsg"
 	SqleTag                             = "SQLE项目"
 )
@@ -53,7 +52,7 @@ func NewDmpSync(log *logrus.Entry, id uint, url, dmpVersion, dbType, ruleTemplat
 		Url:            url,
 		DbType:         dbType,
 		RuleTempleName: ruleTemplateName,
-		client:         &http.Client{Timeout: RequestHttpTimeout},
+		client:         &http.Client{},
 		token:          Token,
 		L:              log,
 	}
