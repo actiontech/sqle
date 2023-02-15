@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	SyncTaskSourceActiontechDmp = "actiontech-dmp"
+
 	SyncInstanceStatusSuccess = "success"
 	SyncInstanceStatusFailed  = "fail"
 )
