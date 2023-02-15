@@ -5,6 +5,7 @@ package v1
 
 import (
 	"context"
+	e "errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -167,12 +168,12 @@ func triggerSyncInstance(c echo.Context) error {
 	syncFunc := syncInstanceTaskEntity.GetSyncInstanceTaskFunc(ctx)
 	syncFunc()
 
-	if ctx.Err() != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("trigger sync instance task timeout: %v,timeout configuration: %v second", ctx.Err(), TriggerSyncInstanceTimeout))
+	if ctx.Err() != nil && e.Is(ctx.Err(), context.DeadlineExceeded) {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sync instance task timeout: %v,timeout configuration: %v seconds", ctx.Err(), TriggerSyncInstanceTimeout))
 	}
 
 	if getSyncTaskStatus(s, task.ID) == model.SyncInstanceStatusFailed {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("trigger sync instance task failed"))
+		return controller.JSONBaseErrorReq(c, e.New("sync instance task failed"))
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
