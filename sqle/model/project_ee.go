@@ -5,8 +5,6 @@ package model
 
 import (
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/pkg/sync_task"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -93,10 +91,10 @@ func (s *Storage) deleteProjectByID(tx *gorm.DB, projectID uint) error {
 	return tx.Where("id = ?", projectID).Delete(&Project{}).Error
 }
 
-func (s *Storage) GetProjectListByDmp() ([]*Project, error) {
+func (s *Storage) GetProjectListBySyncTaskId(syncTaskID uint) ([]*Project, error) {
 	projectList := make([]*Project, 0)
 	err := s.db.Model(&Project{}).Preload("Instances", func(db *gorm.DB) *gorm.DB {
-		return db.Where("source = ?", sync_task.SyncTaskActiontechDmp)
+		return db.Where("sync_instance_task_id = ?", syncTaskID)
 	}).Find(&projectList).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
