@@ -301,3 +301,14 @@ func (s *sqleLogin) login(password string) (err error) {
 	}
 	return nil
 }
+
+// LogoutV1
+// @Summary 用户登出
+// @Description user logout
+// @Tags user
+// @Id logoutV1
+// @Success 200 {object} controller.BaseRes
+// @router /v1/logout [post]
+func LogoutV1(c echo.Context) error {
+	return nil
+}
