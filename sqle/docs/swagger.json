@@ -822,6 +822,24 @@
                 }
             }
         },
+        "/v1/logout": {
+            "post": {
+                "description": "user logout",
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户登出",
+                "operationId": "logoutV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/management_permissions": {
             "get": {
                 "security": [
@@ -6660,6 +6678,35 @@
                 }
             }
         },
+        "/v2/login": {
+            "post": {
+                "description": "user login",
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户登录",
+                "operationId": "loginV2",
+                "parameters": [
+                    {
+                        "description": "user login request",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UserLoginReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [
@@ -10803,7 +10850,7 @@
                     "type": "string"
                 },
                 "operation_content": {
-                  "type": "string"
+                    "type": "string"
                 },
                 "operation_time": {
                     "type": "string"

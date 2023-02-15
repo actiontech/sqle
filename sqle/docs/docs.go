@@ -817,7 +817,6 @@ var doc = `{
                 ],
                 "summary": "用户登录",
                 "operationId": "loginV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "description": "user login request",
@@ -834,6 +833,24 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetUserLoginResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/logout": {
+            "post": {
+                "description": "user logout",
+                "tags": [
+                    "user"
+                ],
+                "summary": "用户登出",
+                "operationId": "logoutV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
