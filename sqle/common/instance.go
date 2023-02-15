@@ -30,19 +30,11 @@ func CheckInstanceIsConnectable(instance *model.Instance) error {
 func CheckDeleteInstance(instanceId uint) error {
 	s := model.GetStorage()
 
-	tasks, err := s.GetTaskByInstanceId(instanceId)
+	isUnFinished, err := s.IsWorkflowUnFinishedByInstanceId(instanceId)
 	if err != nil {
-		return err
+		return fmt.Errorf("check instance %d is finished failed: %v", instanceId, err)
 	}
-	taskIds := make([]uint, 0, len(tasks))
-	for _, task := range tasks {
-		taskIds = append(taskIds, task.ID)
-	}
-	isRunning, err := s.TaskWorkflowIsUnfinished(taskIds)
-	if err != nil {
-		return err
-	}
-	if isRunning {
+	if isUnFinished {
 		return fmt.Errorf("instance %d is running,cannot be deleted", instanceId)
 	}
 

@@ -34,6 +34,7 @@ type Instance struct {
 	MaintenancePeriod  Periods        `json:"maintenance_period" gorm:"type:text"`
 	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:varchar(255); default:'{\"max_pre_query_rows\":100,\"query_timeout_second\":10}'"`
 	Source             string         `json:"source" gorm:"not null"`
+	SyncInstanceTaskID uint           `json:"sync_instance_task_id"`
 
 	// relation table
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`
@@ -134,9 +135,9 @@ func (s *Storage) GetInstanceByNameAndProjectID(instName string, projectID uint)
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByProjectIdAndSource(projectId uint, source string) ([]*Instance, error) {
+func (s *Storage) GetInstancesBySyncTaskId(projectID, syncTaskID uint) ([]*Instance, error) {
 	instances := []*Instance{}
-	if err := s.db.Where("project_id = ? and source = ?", projectId, source).Find(&instances).Error; err != nil {
+	if err := s.db.Where("project_id = ? and sync_instance_task_id = ?", projectID, syncTaskID).Find(&instances).Error; err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
 	return instances, nil

@@ -1037,12 +1037,13 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) TaskWorkflowIsUnfinished(taskIds []uint) (bool, error) {
+func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error) {
 	count := 0
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
 		Where("workflow_records.status = ? OR workflow_records.status = ?", WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution).
-		Where("workflow_instance_records.task_id IN (?)", taskIds).
+		Where("workflow_instance_records.instance_id = ?", instanceId).
+		Where("workflow_instance_records.deleted_at IS NULL").
 		Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
