@@ -18,8 +18,6 @@ func init() {
 	ExitCronChan = make(chan string)
 }
 
-const SyncTaskActiontechDmp = "actiontech-dmp"
-
 type SyncInstanceTask interface {
 	GetSyncInstanceTaskFunc(context.Context) func()
 }
@@ -64,7 +62,7 @@ func EnableSyncInstanceTask(ctx context.Context) {
 
 func NewSyncInstanceTask(log *logrus.Entry, id uint, source, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
 	switch source {
-	case SyncTaskActiontechDmp:
+	case model.SyncTaskActiontechDmp:
 		return NewDmpSync(log, id, url, dmpVersion, dbType, ruleTemplateName)
 	}
 	return nil
