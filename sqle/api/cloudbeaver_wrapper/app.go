@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -12,14 +13,15 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"sync"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/controller"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/resolver"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
-	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/log"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/executor"
@@ -36,27 +38,6 @@ type gqlBehavior struct {
 }
 
 var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
-	"authLogin": {
-		useLocalHandler:     true,
-		needModifyRemoteRes: true,
-		preprocessing: func(ctx echo.Context, params *graphql.RawParams) error {
-			// 还原参数中的用户名
-			if credentials, ok := params.Variables["credentials"].(map[string]interface{}); ok {
-				if credentials["user"] != nil {
-					params.Variables["credentials"].(map[string]interface{})["user"] = service.GenerateCloudBeaverUserName(fmt.Sprintf("%v", params.Variables["credentials"].(map[string]interface{})["user"]))
-				}
-			}
-
-			// 更新context
-			body, err := json.Marshal(params)
-			if err != nil {
-				return err
-			}
-			ctx.Request().Body = ioutil.NopCloser(bytes.NewBuffer(body))
-			ctx.Request().ContentLength = int64(len(body))
-			return nil
-		},
-	},
 	"asyncSqlExecuteQuery": {
 		useLocalHandler:     true,
 		needModifyRemoteRes: false,
@@ -127,7 +108,7 @@ func StartApp(e *echo.Echo) error {
 
 	q := e.Group(service.CbRootUri)
 
-	q.Use(RedirectCookie())
+	q.Use(TriggerLogin())
 	q.Use(GraphqlDistributor())
 	q.Use(middleware.ProxyWithConfig(middleware.ProxyConfig{
 		Skipper:  middleware.DefaultSkipper,
@@ -137,70 +118,84 @@ func StartApp(e *echo.Echo) error {
 	return nil
 }
 
-// cookie改写位置和原因见 controller.RedirectCookie
-func RedirectCookie() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			var cookie string
-			// 如果用户传了cookie, 则还原cookie的名称
-			for _, c := range c.Cookies() {
-				if c.Name == "cb-session-id-sqle" {
-					cookie = c.Value
-				}
-			}
-			c.Request().Header.Del("Cookie")
-			c.Request().Header.Set("Cookie", "cb-session-id="+cookie)
+var (
+	sqleTokenToCBSessionId = make(map[string]string)
+	tokenMapMutex          = &sync.Mutex{}
+)
 
-			return next(c)
-		}
-	}
+func getCBSessionIdBySqleToken(token string) string {
+	tokenMapMutex.Lock()
+	defer tokenMapMutex.Unlock()
+	return sqleTokenToCBSessionId[token]
 }
 
-// 登录CloudBeaver不应该影响SQLE登录
+func setCBSessionIdBySqleToken(token, cbSessionId string) {
+	tokenMapMutex.Lock()
+	defer tokenMapMutex.Unlock()
+	sqleTokenToCBSessionId[token] = cbSessionId
+}
+
+// 如果当前用户没有登录cloudbeaver，则登录
 func TriggerLogin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			resWrite := &responseProcessWriter{tmp: &bytes.Buffer{}, ResponseWriter: c.Response().Writer}
-			c.Response().Writer = resWrite
-			respFunc := func() error {
-				_, err := resWrite.ResponseWriter.Write(resWrite.tmp.Bytes())
-				return err
+			var sqleToken string
+			// 根据cookie中的sqle-token查找对应用户的cb-session-id
+			for _, c := range c.Cookies() {
+				if c.Name == "sqle-token" {
+					sqleToken = c.Value
+					break
+				}
+			}
+			if sqleToken == "" {
+				// 没有找到sqle-token，有可能是用户直接通过url访问cb页面，但没有登录sqle
+				// todo: 跳转到sqle登录页面，登录后再跳转回来
+				return c.NoContent(http.StatusUnauthorized)
+			}
+			CBSessionId := getCBSessionIdBySqleToken(sqleToken)
+			if CBSessionId != "" {
+				// todo 处理sessionId超时的情况
+				c.Request().Header.Set("Cookie", "cb-session-id="+CBSessionId)
+				return next(c)
 			}
 
-			err := next(c)
+			// CBSessionId不存在认为当前用户没有登录cb，登录cb
+			l := log.NewEntry().WithField("action", "trigger cloudbeaver login")
+			userName, err := utils.GetUserNameFromJWTToken(sqleToken)
 			if err != nil {
-				return err
+				l.Errorf("get user name from token failed: %v", err)
+				return errors.New("get user name to login failed")
 			}
-
-			// 如果登陆失败, userName应该取不出来
-			userName, ok := c.Get(config.LoginUserNameKey).(string)
-			if !ok || !service.IsCloudBeaverConfigured() {
-				return respFunc()
-			}
-
-			l := log.NewEntry()
 			s := sqleModel.GetStorage()
 			user, _, err := s.GetUserByName(userName)
 			if err != nil {
 				l.Errorf("get user info err: %v", err)
-				return respFunc()
+				return err
 			}
 
-			_, isLogin, _ := service.GetCurrentCloudBeaverUserID(c)
-			if isLogin {
-				return respFunc()
+			cbUser := service.GenerateCloudBeaverUserName(userName)
+			// 同步信息
+			if err = service.SyncCurrentUser(cbUser); err != nil {
+				l.Errorf("sync cloudbeaver user %v info failed: %v", cbUser, err)
 			}
-
-			cookies, err := service.Login(user.Name, user.Password)
+			err = service.SyncUserBindInstance(cbUser)
+			if err != nil {
+				l.Errorf("sync cloudbeaver user %v bind instance failed: %v", cbUser, err)
+			}
+			cookies, err := service.LoginToCBServer(cbUser, user.Password)
 			if err != nil {
 				l.Errorf("login to cloudbeaver failed: %v", err)
-				return respFunc()
-			}
-			for _, cookie := range cookies {
-				c.SetCookie(cookie)
+				return err
 			}
 
-			return respFunc()
+			// 添加sqle和cb的用户映射
+			for _, ck := range cookies {
+				if ck.Name == "cb-session-id" {
+					setCBSessionIdBySqleToken(sqleToken, ck.Value)
+				}
+			}
+
+			return next(c)
 		}
 	}
 }

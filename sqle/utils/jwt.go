@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/golang-jwt/jwt"
 )
 
@@ -78,4 +80,23 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 		return "", jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
 	}
 	return apn.(string), nil
+}
+
+func GetUserNameFromJWTToken(token string) (string, error) {
+	type MyClaims struct {
+		Username string `json:"name"`
+		jwt.StandardClaims
+	}
+
+	t, err := jwt.ParseWithClaims(token, &MyClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return JWTSecretKey, nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("parse token failed: %v", err)
+	}
+
+	if claims, ok := t.Claims.(*MyClaims); ok && t.Valid {
+		return claims.Username, nil
+	}
+	return "", fmt.Errorf("can not get out user name")
 }
