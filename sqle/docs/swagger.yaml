@@ -4409,6 +4409,18 @@ paths:
       summary: 用户登录
       tags:
       - user
+  /v1/logout:
+    post:
+      description: user logout
+      operationId: logoutV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 用户登出
+      tags:
+      - user
   /v1/management_permissions:
     get:
       description: get platform management permissions
@@ -4454,50 +4466,50 @@ paths:
       description: Get operation record list
       operationId: getOperationRecordListV1
       parameters:
-        - description: filter_operate_time_from
-          in: query
-          name: filter_operate_time_from
-          type: string
-        - description: filter_operate_time_to
-          in: query
-          name: filter_operate_time_to
-          type: string
-        - description: filter_operate_project_name
-          in: query
-          name: filter_operate_project_name
-          type: string
-        - description: fuzzy_search_operate_user_name
-          in: query
-          name: fuzzy_search_operate_user_name
-          type: string
-        - description: filter_operate_type_name
-          in: query
-          name: filter_operate_type_name
-          type: string
-        - description: filter_operate_action
-          in: query
-          name: filter_operate_action
-          type: string
-        - description: page_index
-          in: query
-          name: page_index
-          required: true
-          type: integer
-        - description: page_size
-          in: query
-          name: page_size
-          required: true
-          type: integer
+      - description: filter_operate_time_from
+        in: query
+        name: filter_operate_time_from
+        type: string
+      - description: filter_operate_time_to
+        in: query
+        name: filter_operate_time_to
+        type: string
+      - description: filter_operate_project_name
+        in: query
+        name: filter_operate_project_name
+        type: string
+      - description: fuzzy_search_operate_user_name
+        in: query
+        name: fuzzy_search_operate_user_name
+        type: string
+      - description: filter_operate_type_name
+        in: query
+        name: filter_operate_type_name
+        type: string
+      - description: filter_operate_action
+        in: query
+        name: filter_operate_action
+        type: string
+      - description: page_index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: page_size
+        in: query
+        name: page_size
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
           schema:
             $ref: '#/definitions/v1.GetOperationRecordListResV1'
       security:
-        - ApiKeyAuth: [ ]
+      - ApiKeyAuth: []
       summary: 获取操作记录列表
       tags:
-        - OperationRecord
+      - OperationRecord
   /v1/operation_records/operation_actions:
     get:
       description: Get operation action list
@@ -8176,6 +8188,25 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
+  /v2/login:
+    post:
+      description: user login
+      operationId: loginV2
+      parameters:
+      - description: user login request
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UserLoginReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      summary: 用户登录
+      tags:
+      - user
   /v2/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
