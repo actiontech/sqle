@@ -154,7 +154,8 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		return
 	}
 
-	dmpInst := d.getDmpProjectInst(getDmpInstanceResp)
+	dmpInst := make(map[string] /*project name*/ map[string] /*数据源名*/ struct{})
+	instProjectName := make(map[string] /*数据源名*/ string /*project name*/)
 
 	var syncTaskInstance *model.SyncTaskInstance
 	var instances []*model.Instance
@@ -175,6 +176,12 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 			d.L.Infof("dmp data source %s not have SqleTag,skip record", dmpInstance.DataSrcID)
 			continue
 		}
+
+		if _, ok := dmpInst[projectName]; !ok {
+			dmpInst[projectName] = make(map[string]struct{})
+		}
+
+		instProjectName[dmpInstance.DataSrcID] = projectName
 
 		project, exist, err := s.GetProjectByName(projectName)
 		if err != nil {
@@ -234,6 +241,10 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		instances = append(instances, inst)
 	}
 
+	for instName, projectName := range instProjectName {
+		dmpInst[projectName][instName] = struct{}{}
+	}
+
 	canDeletedInstances, err := d.getNeedDeletedInstList(s, dmpInst)
 	if err != nil {
 		d.L.Errorf("get need deleted instance list fail: %s", err)
@@ -252,37 +263,6 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 	} else {
 		isSyncSuccess = true
 	}
-}
-
-// getDmpProjectInst 获取dmp数据源对应的project字典
-func (d *DmpSync) getDmpProjectInst(getDmpInstanceResp GetDmpInstanceResp) map[string]map[string]struct{} {
-	dmpInst := make(map[string] /*project name*/ map[string] /*数据源名*/ struct{})
-	instProjectName := make(map[string] /*数据源名*/ string /*project name*/)
-	for _, dmpInstance := range getDmpInstanceResp.Data {
-		if dmpInstance.DataSrcSip == "" {
-			d.L.Errorf("dmp data source %s sip is empty", dmpInstance.DataSrcID)
-			continue
-		}
-
-		var projectName string
-		for _, tag := range dmpInstance.Tags {
-			if tag.TagAttribute == SqleTag {
-				projectName = tag.TagValue
-			}
-		}
-
-		if _, ok := dmpInst[projectName]; !ok {
-			dmpInst[projectName] = make(map[string]struct{})
-		}
-
-		instProjectName[dmpInstance.DataSrcID] = projectName
-	}
-
-	for instName, projectName := range instProjectName {
-		dmpInst[projectName][instName] = struct{}{}
-	}
-
-	return dmpInst
 }
 
 func (d *DmpSync) getNeedDeletedInstList(s *model.Storage, dmpInst map[string]map[string]struct{}) ([]*model.Instance, error) {
