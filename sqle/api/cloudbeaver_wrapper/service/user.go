@@ -10,8 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
-
-	"github.com/labstack/echo/v4"
 )
 
 func SyncCurrentUser(cloudBeaverUser string) error {
@@ -123,33 +121,6 @@ func RestoreFromCloudBeaverUserName(name string) string {
 	return strings.TrimPrefix(name, CBNamePrefix)
 }
 
-func Login(user, pwd string) (cookie []*http.Cookie, err error) {
-	client := gqlClient.NewClient(GetSQLEGqlServerURI(), gqlClient.WithHttpResHandler(
-		func(response *http.Response) {
-			if response != nil {
-				cookie = response.Cookies()
-			}
-		}))
-	req := gqlClient.NewRequest(QueryGQL.LoginQuery(), map[string]interface{}{
-		"credentials": model.JSON{
-			"user":     user,
-			"password": strings.ToUpper(utils.Md5(pwd)), // the password is an all-caps md5-32 string
-		},
-	})
-	req.SetOperationName("authLogin")
-
-	res := struct {
-		AuthInfo struct {
-			AuthId interface{} `json:"authId"`
-		} `json:"authInfo"`
-	}{}
-	if err := client.Run(context.TODO(), req, &res); err != nil {
-		return cookie, fmt.Errorf("cloudbeaver login failed: %v", err)
-	}
-
-	return cookie, nil
-}
-
 // LoginToCBServer 的登录请求会直接被转发, 不会被中间件拦截处理
 func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 	client := gqlClient.NewClient(GetGqlServerURI(), gqlClient.WithHttpResHandler(
@@ -177,21 +148,3 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 	return cookie, nil
 }
 
-func GetCurrentCloudBeaverUserID(ctx echo.Context) (string, bool, error) {
-	client, err := GetSQLEGQLClientWithCurrentUser(ctx)
-	if err != nil {
-		return "", false, err
-	}
-	req := gqlClient.NewRequest(QueryGQL.GetActiveUserQuery(), nil)
-	res := struct {
-		User struct {
-			UserID string `json:"userId"`
-		} `json:"user"`
-	}{}
-
-	// 发往SQLE的请求如果指定了OperationName, 请求会被SQLE拦截并通过对应逻辑处理, 不添加OperationName的请求会被SQLE直接转发
-	req.SetOperationName("getActiveUser")
-
-	err = client.Run(context.TODO(), req, &res)
-	return res.User.UserID, res.User.UserID != "", err
-}
