@@ -62,7 +62,7 @@ func EnableSyncInstanceTask(ctx context.Context) {
 
 func NewSyncInstanceTask(log *logrus.Entry, id uint, source, url, dmpVersion, dbType, ruleTemplateName string) SyncInstanceTask {
 	switch source {
-	case model.SyncTaskActiontechDmp:
+	case model.SyncTaskSourceActiontechDmp:
 		return NewDmpSync(log, id, url, dmpVersion, dbType, ruleTemplateName)
 	}
 	return nil

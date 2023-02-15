@@ -217,7 +217,7 @@ func getSyncInstanceTask(c echo.Context) error {
 }
 
 var (
-	syncTaskSourceList = []string{model.SyncTaskActiontechDmp}
+	syncTaskSourceList = []string{model.SyncTaskSourceActiontechDmp}
 	// todo: 使用接口获取
 	dmpSupportDbType = []string{driver.DriverTypeMySQL}
 )
@@ -236,7 +236,7 @@ func getSyncTaskSourceTips(c echo.Context) error {
 
 		// 外部平台和sqle共同支持的数据源
 		switch source {
-		case model.SyncTaskActiontechDmp:
+		case model.SyncTaskSourceActiontechDmp:
 			for _, dbType := range dmpSupportDbType {
 				if _, ok := m[dbType]; ok {
 					commonDbTypes = append(commonDbTypes, dbType)

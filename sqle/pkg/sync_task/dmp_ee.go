@@ -201,7 +201,7 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 		var ok bool
 		// 如果数据源已经存在，检测是否需要更新；如果数据源不存在，新增数据源到sqle
 		if inst, ok = m[dmpInstance.DataSrcID]; ok {
-			if inst.Source != model.SyncTaskActiontechDmp {
+			if inst.Source != model.SyncTaskSourceActiontechDmp {
 				d.L.Errorf("instance has already exist and  %s source is not dmp", inst.Name)
 				continue
 			}
@@ -226,7 +226,7 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 				ProjectId:          project.ID,
 				Password:           password,
 				DbType:             d.DbType,
-				Source:             model.SyncTaskActiontechDmp,
+				Source:             model.SyncTaskSourceActiontechDmp,
 				SyncInstanceTaskID: d.SyncTaskID,
 			}
 		}
