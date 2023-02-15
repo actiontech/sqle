@@ -168,7 +168,7 @@ func triggerSyncInstance(c echo.Context) error {
 	syncFunc()
 
 	if ctx.Err() != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("trigger sync instance task timeout: %v", ctx.Err()))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("trigger sync instance task timeout: %v,timeout configuration: %v second", ctx.Err(), TriggerSyncInstanceTimeout))
 	}
 
 	if getSyncTaskStatus(s, task.ID) == model.SyncInstanceStatusFailed {
