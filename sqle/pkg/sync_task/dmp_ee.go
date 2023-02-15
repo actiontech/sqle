@@ -13,17 +13,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
+
 	"github.com/actiontech/sqle/sqle/common"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,11 +96,11 @@ type ListService struct {
 
 func (d *DmpSync) GetSyncInstanceTaskFunc(ctx context.Context) func() {
 	return func() {
-		d.StartSyncDmpData(ctx)
+		d.startSyncDmpData(ctx)
 	}
 }
 
-func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
+func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 	s := model.GetStorage()
 	isSyncSuccess := false
 	defer func() {
@@ -153,27 +154,35 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 		return
 	}
 
-	dmpInst := make(map[string]struct{})
-	for _, dmpInstance := range getDmpInstanceResp.Data {
-		if dmpInstance.DataSrcSip == "" {
-			d.L.Error("dmp data source sip is empty")
-			continue
-		}
-		dmpInst[dmpInstance.DataSrcID] = struct{}{}
-	}
+	dmpInst := make(map[string] /*project name*/ map[string] /*数据源名*/ struct{})
+	instProjectName := make(map[string] /*数据源名*/ string /*project name*/)
 
 	var syncTaskInstance *model.SyncTaskInstance
 	var instances []*model.Instance
-	var needDeletedInstances []*model.Instance
 	for _, dmpInstance := range getDmpInstanceResp.Data {
-		//for _, tag := range dmpInstance.Tags {
-		//	if tag.TagAttribute == SqleTag {
-		//		projectName = tag.TagValue
-		//	}
-		//}
+		if dmpInstance.DataSrcSip == "" {
+			d.L.Errorf("dmp data source %s sip is empty", dmpInstance.DataSrcID)
+			continue
+		}
 
-		// todo: 后续更新为从dmp获取
-		projectName := "default"
+		var projectName string
+		for _, tag := range dmpInstance.Tags {
+			if tag.TagAttribute == SqleTag {
+				projectName = tag.TagValue
+			}
+		}
+
+		if projectName == "" {
+			d.L.Infof("dmp data source %s not have SqleTag,skip record", dmpInstance.DataSrcID)
+			continue
+		}
+
+		if _, ok := dmpInst[projectName]; !ok {
+			dmpInst[projectName] = make(map[string]struct{})
+		}
+
+		instProjectName[dmpInstance.DataSrcID] = projectName
+
 		project, exist, err := s.GetProjectByName(projectName)
 		if err != nil {
 			d.L.Errorf("get Instances by project name fail: %s", err)
@@ -184,61 +193,68 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 			return
 		}
 
-		instancesBySource, err := s.GetInstancesByProjectIdAndSource(project.ID, SyncTaskActiontechDmp)
-		if err != nil {
-			d.L.Errorf("get instances by source fail: %s", err)
-			return
-		}
-
-		for _, inst := range instancesBySource {
-			if _, ok := dmpInst[inst.Name]; !ok {
-				if err := common.CheckDeleteInstance(inst.ID); err == nil {
-					d.L.Errorf("instance %s not exist in dmp, delete it", inst.Name)
-					needDeletedInstances = append(needDeletedInstances, inst)
-				}
-			}
-		}
-
-		if dmpInstance.DataSrcSip == "" {
-			d.L.Error("dmp data source sip is empty")
-			continue
-		}
-
-		m := make(map[string]struct{})
-		for _, instance := range project.Instances {
-			m[instance.Name] = struct{}{}
-		}
-
-		if _, ok := m[dmpInstance.DataSrcID]; ok {
-			d.L.Errorf("instance %s already exist,skip sync", dmpInstance.DataSrcID)
-			continue
-		}
-
 		password, err := DecryptPassword(dmpInstance.DataSrcPassword)
 		if err != nil {
 			d.L.Errorf("decrypt password fail: %s", err)
 			return
 		}
 
-		inst := &model.Instance{
-			Name:               dmpInstance.DataSrcID,
-			Host:               dmpInstance.DataSrcSip,
-			Port:               dmpInstance.DataSrcPort,
-			User:               dmpInstance.DataSrcUser,
-			WorkflowTemplateId: ruleTemplate.ID,
-			ProjectId:          project.ID,
-			Password:           password,
-			DbType:             d.DbType,
-			Source:             SyncTaskActiontechDmp,
+		m := make(map[string]*model.Instance)
+		for _, instance := range project.Instances {
+			m[instance.Name] = instance
+		}
+
+		var inst *model.Instance
+		var ok bool
+		// 如果数据源已经存在，检测是否需要更新；如果数据源不存在，新增数据源到sqle
+		if inst, ok = m[dmpInstance.DataSrcID]; ok {
+			if inst.Source != model.SyncTaskSourceActiontechDmp {
+				d.L.Errorf("instance has already exist and  %s source is not dmp", inst.Name)
+				continue
+			}
+
+			isHostOrPortDiff := dmpInstance.DataSrcSip != inst.Host || dmpInstance.DataSrcPort != inst.Port
+			isUserOrPasswdDiff := dmpInstance.DataSrcUser != inst.User || password != inst.Password
+			if isHostOrPortDiff || isUserOrPasswdDiff {
+				inst.Host = dmpInstance.DataSrcSip
+				inst.Port = dmpInstance.DataSrcPort
+				inst.User = dmpInstance.DataSrcUser
+				inst.Password = password
+			} else {
+				continue
+			}
+		} else {
+			inst = &model.Instance{
+				Name:               dmpInstance.DataSrcID,
+				Host:               dmpInstance.DataSrcSip,
+				Port:               dmpInstance.DataSrcPort,
+				User:               dmpInstance.DataSrcUser,
+				WorkflowTemplateId: ruleTemplate.ID,
+				ProjectId:          project.ID,
+				Password:           password,
+				DbType:             d.DbType,
+				Source:             model.SyncTaskSourceActiontechDmp,
+				SyncInstanceTaskID: d.SyncTaskID,
+			}
 		}
 
 		instances = append(instances, inst)
 	}
 
+	for instName, projectName := range instProjectName {
+		dmpInst[projectName][instName] = struct{}{}
+	}
+
+	canDeletedInstances, err := d.getNeedDeletedInstList(s, dmpInst)
+	if err != nil {
+		d.L.Errorf("get need deleted instance list fail: %s", err)
+		return
+	}
+
 	syncTaskInstance = &model.SyncTaskInstance{
 		Instances:            instances,
 		RuleTemplate:         ruleTemplate,
-		NeedDeletedInstances: needDeletedInstances,
+		NeedDeletedInstances: canDeletedInstances,
 	}
 
 	if err := s.BatchUpdateSyncTask(syncTaskInstance); err != nil {
@@ -247,6 +263,42 @@ func (d *DmpSync) StartSyncDmpData(ctx context.Context) {
 	} else {
 		isSyncSuccess = true
 	}
+}
+
+func (d *DmpSync) getNeedDeletedInstList(s *model.Storage, dmpInst map[string]map[string]struct{}) ([]*model.Instance, error) {
+	projectList, err := s.GetProjectListBySyncTaskId(d.SyncTaskID)
+	if err != nil {
+		return nil, fmt.Errorf("get project name list failed: %s", err)
+	}
+
+	var canDeletedInstList []*model.Instance
+	var needDeletedInstList []*model.Instance
+	for _, project := range projectList {
+		// 项目不存在，删除该项目下所有该同步任务的数据源
+		if _, ok := dmpInst[project.Name]; !ok {
+			instanceList, err := s.GetInstancesBySyncTaskId(project.ID, d.SyncTaskID)
+			if err != nil {
+				return nil, fmt.Errorf("get instance list failed: %s", err)
+			}
+			needDeletedInstList = append(needDeletedInstList, instanceList...)
+		} else {
+			// 删除在sqle中存在，在dmp中不存在的数据源
+			for _, instance := range project.Instances {
+				if _, ok = dmpInst[project.Name][instance.Name]; !ok {
+					needDeletedInstList = append(needDeletedInstList, instance)
+				}
+			}
+		}
+	}
+
+	for _, instance := range needDeletedInstList {
+		if err := common.CheckDeleteInstance(instance.ID); err == nil {
+			d.L.Errorf("instance %s not exist in dmp, delete it", instance.Name)
+			canDeletedInstList = append(canDeletedInstList, instance)
+		}
+	}
+
+	return canDeletedInstList, nil
 }
 
 func getDmpFilterType(dbType string) string {
