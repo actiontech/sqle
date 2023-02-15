@@ -38,34 +38,47 @@ type UserLoginResV1 struct {
 // @Param user body v1.UserLoginReqV1 true "user login request"
 // @Success 200 {object} v1.GetUserLoginResV1
 // @router /v1/login [post]
-func Login(c echo.Context) error {
+func LoginV1(c echo.Context) error {
 	req := new(UserLoginReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 
-	loginChecker, err := GetLoginCheckerByUserName(req.UserName)
+	t, err := Login(c, req.UserName, req.Password)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+		return err
 	}
-	err = loginChecker.login(req.Password)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
-	}
-
-	t, err := generateToken(req.UserName)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	c.Set(config.LoginUserNameKey, req.UserName)
 
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: UserLoginResV1{
-			Token: t,
+			Token: t, // this token won't be used any more
 		},
 	})
+}
+
+func Login(c echo.Context, userName, password string) (token string, err error) {
+	loginChecker, err := GetLoginCheckerByUserName(userName)
+	if err != nil {
+		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+	}
+	err = loginChecker.login(password)
+	if err != nil {
+		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+	}
+
+	token, err = generateToken(userName)
+	if err != nil {
+		return "", echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	c.Set(config.LoginUserNameKey, userName)
+	c.SetCookie(&http.Cookie{
+		Name:  "sqle-token",
+		Value: token,
+		Path:  "/",
+	})
+	return
 }
 
 func generateToken(userName string) (string, error) {
@@ -286,5 +299,16 @@ func (s *sqleLogin) login(password string) (err error) {
 	if password != s.user.Password {
 		return fmt.Errorf("password is wrong or user does not exist")
 	}
+	return nil
+}
+
+// LogoutV1
+// @Summary 用户登出
+// @Description user logout
+// @Tags user
+// @Id logoutV1
+// @Success 200 {object} controller.BaseRes
+// @router /v1/logout [post]
+func LogoutV1(c echo.Context) error {
 	return nil
 }
