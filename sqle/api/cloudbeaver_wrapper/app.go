@@ -119,7 +119,7 @@ func StartApp(e *echo.Echo) error {
 }
 
 var (
-	sqleTokenToCBSessionId = make(map[string]string, 0)
+	sqleTokenToCBSessionId = make(map[string]string)
 	tokenMapMutex          = &sync.Mutex{}
 )
 
