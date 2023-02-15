@@ -135,6 +135,12 @@ func setCBSessionIdBySqleToken(token, cbSessionId string) {
 	sqleTokenToCBSessionId[token] = cbSessionId
 }
 
+func UnbindCBSessionIdBySqleToken(token string) {
+	tokenMapMutex.Lock()
+	defer tokenMapMutex.Unlock()
+	delete(sqleTokenToCBSessionId, token)
+}
+
 // 如果当前用户没有登录cloudbeaver，则登录
 func TriggerLogin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {

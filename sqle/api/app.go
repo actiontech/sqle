@@ -164,6 +164,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	}
 
+	// auth
+	v1Router.POST("/logout", v1.LogoutV1)
+
 	// statistic
 	v1Router.GET("/projects/:project_name/statistics", v1.GetProjectStatisticsV1)
 
