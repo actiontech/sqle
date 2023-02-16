@@ -313,7 +313,7 @@ func LogoutV1(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	cookie.Expires = time.Now()
+	cookie.MaxAge = -1 // MaxAge<0 means delete cookie now
 	cookie.Path = "/"
 	c.SetCookie(cookie)
 	cloudbeaver_wrapper.UnbindCBSessionIdBySqleToken(cookie.Value)
