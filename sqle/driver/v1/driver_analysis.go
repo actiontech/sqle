@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/driver/v1/proto"
 	"github.com/actiontech/sqle/sqle/log"
 
 	goPlugin "github.com/hashicorp/go-plugin"
