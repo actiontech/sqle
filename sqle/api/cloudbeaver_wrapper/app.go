@@ -144,18 +144,6 @@ func UnbindCBSessionIdBySqleToken(token string) {
 	delete(sqleTokenToCBSessionId, token)
 }
 
-func Logout() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			if err := service.Logout(c); err != nil {
-				// cb登出失败不会影响下次登录，相同用户可重复调登录
-				log.NewEntry().Errorf("logout cloudbeaver failed: %v", err)
-			}
-			return next(c)
-		}
-	}
-}
-
 // 如果当前用户没有登录cloudbeaver，则登录
 func TriggerLogin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
