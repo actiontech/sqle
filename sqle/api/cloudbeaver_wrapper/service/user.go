@@ -147,4 +147,3 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 
 	return cookie, nil
 }
-
