@@ -6,10 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/common"
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
+
+	"github.com/labstack/echo/v4"
 )
 
 func SyncCurrentUser(cloudBeaverUser string) error {
@@ -148,3 +151,24 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 	return cookie, nil
 }
 
+func Logout(ctx echo.Context) (err error) {
+	client := gqlClient.NewClient(GetSQLEGqlServerURI(), gqlClient.WithCookie(ctx.Cookies()))
+	req := gqlClient.NewRequest(LogoutQuery, nil)
+	req.SetOperationName("authLogout")
+	req.Header.Set(common.InvokedBySqleKey, common.InvokedBySqleValue)
+
+	res := struct {
+		Data struct {
+			AuthLogout *bool `json:"authLogout"`
+		} `json:"data"`
+	}{}
+	if err := client.Run(ctx.Request().Context(), req, &res); err != nil {
+		return fmt.Errorf("cloudbeaver logout failed: %v", err)
+	}
+	return nil
+}
+
+const LogoutQuery = `
+query authLogout {
+	authLogout
+}`
