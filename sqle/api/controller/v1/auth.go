@@ -73,16 +73,19 @@ func Login(c echo.Context, userName, password string) (token string, err error) 
 	}
 
 	c.SetCookie(&http.Cookie{
-		Name:  "sqle-token",
-		Value: token,
-		Path:  "/",
+		Name:    "sqle-token",
+		Value:   token,
+		Expires: time.Now().Add(tokenLifeTime),
+		Path:    "/",
 	})
 	return
 }
 
+const tokenLifeTime = time.Hour * 24
+
 func generateToken(userName string) (string, error) {
 	j := utils.NewJWT(utils.JWTSecretKey)
-	return j.CreateToken(userName, time.Now().Add(time.Hour*24).Unix())
+	return j.CreateToken(userName, time.Now().Add(tokenLifeTime).Unix())
 }
 
 // GetLoginCheckerByUserName get login checker by user name and init login checker
