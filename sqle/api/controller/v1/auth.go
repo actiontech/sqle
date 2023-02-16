@@ -46,7 +46,7 @@ func LoginV1(c echo.Context) error {
 
 	t, err := Login(c, req.UserName, req.Password)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetUserLoginResV1{
@@ -60,16 +60,16 @@ func LoginV1(c echo.Context) error {
 func Login(c echo.Context, userName, password string) (token string, err error) {
 	loginChecker, err := GetLoginCheckerByUserName(userName)
 	if err != nil {
-		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+		return "", errors.New(errors.LoginAuthFail, err)
 	}
 	err = loginChecker.login(password)
 	if err != nil {
-		return "", controller.JSONBaseErrorReq(c, errors.New(errors.LoginAuthFail, err))
+		return "", errors.New(errors.LoginAuthFail, err)
 	}
 
 	token, err = generateToken(userName)
 	if err != nil {
-		return "", echo.NewHTTPError(http.StatusInternalServerError, err)
+		return "", errors.New(http.StatusInternalServerError, err)
 	}
 
 	c.Set(config.LoginUserNameKey, userName)
