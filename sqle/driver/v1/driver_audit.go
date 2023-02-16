@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/driver/v1/proto"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
