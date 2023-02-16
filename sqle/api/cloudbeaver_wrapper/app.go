@@ -170,8 +170,12 @@ func TriggerLogin() echo.MiddlewareFunc {
 			}
 			if sqleToken == "" {
 				// 没有找到sqle-token，有可能是用户直接通过url访问cb页面，但没有登录sqle
-				// todo: 跳转到sqle登录页面，登录后再跳转回来
-				return c.NoContent(http.StatusUnauthorized)
+				cfg := service.GetSQLQueryConfig()
+				protocol := "http"
+				if cfg.EnableHttps {
+					protocol = "https"
+				}
+				return c.Redirect(http.StatusFound, fmt.Sprintf("%v://%v/login?target=/sqlQuery", protocol, c.Request().Host))
 			}
 			CBSessionId := getCBSessionIdBySqleToken(sqleToken)
 			if CBSessionId != "" {
