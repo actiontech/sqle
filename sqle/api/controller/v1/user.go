@@ -461,7 +461,7 @@ func UpdateCurrentUserPassword(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, nil)
+	return controller.JSONBaseErrorReq(c, logout(c))
 }
 
 type GetUsersReqV1 struct {
