@@ -56,8 +56,9 @@ var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
 		needModifyRemoteRes: true,
 	}, "authLogout": {
 		disable: true,
-	},
-	"configureServer": {
+	}, "authLogin": {
+		disable: true,
+	}, "configureServer": {
 		disable: true,
 	}, "createUser": {
 		disable: true,
