@@ -28,7 +28,7 @@ func LoginV2(c echo.Context) error {
 
 	_, err := v1.Login(c, req.UserName, req.Password)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
