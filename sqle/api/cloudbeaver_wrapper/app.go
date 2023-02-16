@@ -55,8 +55,7 @@ var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
 		useLocalHandler:     true,
 		needModifyRemoteRes: true,
 	}, "authLogout": {
-		useLocalHandler:     true,
-		needModifyRemoteRes: true,
+		disable: true,
 	},
 	"configureServer": {
 		disable: true,
@@ -158,12 +157,7 @@ func TriggerLogin() echo.MiddlewareFunc {
 			}
 			if sqleToken == "" {
 				// 没有找到sqle-token，有可能是用户直接通过url访问cb页面，但没有登录sqle
-				cfg := service.GetSQLQueryConfig()
-				protocol := "http"
-				if cfg.EnableHttps {
-					protocol = "https"
-				}
-				return c.Redirect(http.StatusFound, fmt.Sprintf("%v://%v/login?target=/sqlQuery", protocol, c.Request().Host))
+				return c.Redirect(http.StatusFound, fmt.Sprintf("/login?target=/sqlQuery"))
 			}
 			CBSessionId := getCBSessionIdBySqleToken(sqleToken)
 			if CBSessionId != "" {
