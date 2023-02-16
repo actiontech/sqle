@@ -316,6 +316,6 @@ func LogoutV1(c echo.Context) error {
 	cookie.Expires = time.Now()
 	cookie.Path = "/"
 	c.SetCookie(cookie)
-	cloudbeaver_wrapper.UnbindCBSessionIdBySqleToken(cookie.Name)
+	cloudbeaver_wrapper.UnbindCBSessionIdBySqleToken(cookie.Value)
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
