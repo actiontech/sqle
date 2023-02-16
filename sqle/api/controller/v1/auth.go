@@ -73,16 +73,19 @@ func Login(c echo.Context, userName, password string) (token string, err error) 
 	}
 
 	c.SetCookie(&http.Cookie{
-		Name:  "sqle-token",
-		Value: token,
-		Path:  "/",
+		Name:    "sqle-token",
+		Value:   token,
+		Expires: time.Now().Add(tokenLifeTime),
+		Path:    "/",
 	})
 	return
 }
 
+const tokenLifeTime = time.Hour * 24
+
 func generateToken(userName string) (string, error) {
 	j := utils.NewJWT(utils.JWTSecretKey)
-	return j.CreateToken(userName, time.Now().Add(time.Hour*24).Unix())
+	return j.CreateToken(userName, time.Now().Add(tokenLifeTime).Unix())
 }
 
 // GetLoginCheckerByUserName get login checker by user name and init login checker
@@ -309,13 +312,17 @@ func (s *sqleLogin) login(password string) (err error) {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/logout [post]
 func LogoutV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(logout(c)))
+}
+
+func logout(c echo.Context) error {
 	cookie, err := c.Cookie("sqle-token")
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return err
 	}
 	cookie.MaxAge = -1 // MaxAge<0 means delete cookie now
 	cookie.Path = "/"
 	c.SetCookie(cookie)
 	cloudbeaver_wrapper.UnbindCBSessionIdBySqleToken(cookie.Value)
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return nil
 }
