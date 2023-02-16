@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
-
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/config"
 	_ "github.com/actiontech/sqle/sqle/docs"
@@ -163,6 +162,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
 
 	}
+
+	// auth
+	v1Router.POST("/logout", v1.LogoutV1)
 
 	// statistic
 	v1Router.GET("/projects/:project_name/statistics", v1.GetProjectStatisticsV1)

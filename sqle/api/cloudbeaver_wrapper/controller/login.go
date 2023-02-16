@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/model"
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 )
