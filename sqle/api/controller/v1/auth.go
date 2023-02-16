@@ -309,13 +309,17 @@ func (s *sqleLogin) login(password string) (err error) {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/logout [post]
 func LogoutV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(logout(c)))
+}
+
+func logout(c echo.Context) error {
 	cookie, err := c.Cookie("sqle-token")
 	if err != nil {
-		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
+		return err
 	}
 	cookie.MaxAge = -1 // MaxAge<0 means delete cookie now
 	cookie.Path = "/"
 	c.SetCookie(cookie)
 	cloudbeaver_wrapper.UnbindCBSessionIdBySqleToken(cookie.Value)
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return nil
 }
