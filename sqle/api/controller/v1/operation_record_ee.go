@@ -128,77 +128,198 @@ func init() {
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
 				return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
 			},
-		}}...)
+		},
+		// 平台用户
+		{
+			RouterPath:               "/v1/users",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeGlobalUser,
+			OperationAction:          model.OperationRecordActionCreateUser,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateUser,
+		},
+		{
+			RouterPath:      "/v1/users/:user_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeGlobalUser,
+			OperationAction: model.OperationRecordActionUpdateUser,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("编辑用户，用户名：%v", c.Param("user_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/users/:user_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeGlobalUser,
+			OperationAction: model.OperationRecordActionDeleteUser,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("删除用户，用户名：%v", c.Param("user_name")), nil
+			},
+		},
+		// 全局规则模板
+		{
+			RouterPath:               "/v1/rule_templates",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction:          model.OperationRecordActionCreateGlobalRuleTemplate,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateRuleTemplate,
+		},
+		{
+			RouterPath:      "/v1/rule_templates/:rule_template_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction: model.OperationRecordActionUpdateGlobalRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("编辑全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/rule_templates/:rule_template_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction: model.OperationRecordActionDeleteGlobalRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("删除全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
+		},
+		// 系统配置
+		{
+			RouterPath:      "/v1/configurations/ding_talk",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateDingTalkConfiguration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改钉钉配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/smtp",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateSMTPConfiguration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改SMTP配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/wechat",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateWechatConfiguration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改微信配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/system_variables",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateSystemVariables,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改全局配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/ldap",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateLDAPConfiguration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改LDAP配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/oauth2",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateOAuth2Configuration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改OAuth2配置", nil
+			},
+		},
+		// 成员
+		{
+			RouterPath:               "/v1/projects/:project_name/members",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeProjectMember,
+			OperationAction:          model.OperationRecordActionCreateMember,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateMember,
+		},
+		{
+			RouterPath:               "/v1/projects/:project_name/member_groups",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeProjectMember,
+			OperationAction:          model.OperationRecordActionCreateMemberGroup,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateMemberGroup,
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/members/:user_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeProjectMember,
+			OperationAction: model.OperationRecordActionDeleteMember,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("删除成员，用户名：%v", c.Param("user_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeProjectMember,
+			OperationAction: model.OperationRecordActionDeleteMemberGroup,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("删除成员组，组名：%v", c.Param("user_group_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/members/:user_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeProjectMember,
+			OperationAction: model.OperationRecordActionUpdateMember,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("编辑成员，用户名：%v", c.Param("user_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeProjectMember,
+			OperationAction: model.OperationRecordActionUpdateMemberGroup,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return c.Param("project_name"), fmt.Sprintf("编辑成员组，组名：%v", c.Param("user_group_name")), nil
+			},
+		},
+	}...)
 }
 
-func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	id := c.Param("workflow_id")
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
-	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
+func getProjectAndContentFromCreateMemberGroup(c echo.Context) (string, string, error) {
+	req := new(CreateMemberGroupReqV1)
+	if err := marshalRequestBody(c, req); err != nil {
+		return "", "", err
 	}
-	if !exist {
-		return "", "", ErrWorkflowNoAccess
-	}
-	return projectName, fmt.Sprintf("上线工单，工单名称：%v", workflow.Subject), nil
+	return c.Param("project_name"), fmt.Sprintf("添加成员组，组名：%v", req.UserGroupName), nil
 }
 
-func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	id := c.Param("workflow_id")
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
-	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
+func getProjectAndContentFromCreateMember(c echo.Context) (string, string, error) {
+	req := new(CreateMemberReqV1)
+	if err := marshalRequestBody(c, req); err != nil {
+		return "", "", err
 	}
-	if !exist {
-		return "", "", ErrWorkflowNoAccess
-	}
-	return projectName, fmt.Sprintf("上线工单的单个数据源，工单名称：%v", workflow.Subject), nil // todo issue1281 添加数据源名称到记录里
+	return c.Param("project_name"), fmt.Sprintf("添加成员，用户名：%v", req.UserName), nil
 }
 
-func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	id := c.Param("workflow_id")
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
-	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
+func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, string, error) {
+	req := new(CreateRuleTemplateReqV1)
+	if err := marshalRequestBody(c, req); err != nil {
+		return "", "", err
 	}
-	if !exist {
-		return "", "", ErrWorkflowNoAccess
-	}
-	return projectName, fmt.Sprintf("取消工单，工单名称：%v", workflow.Subject), nil
+	return "", fmt.Sprintf("创建全局规则模板，模板名：%v", req.Name), nil
 }
 
-func getProjectAndContentFromApprovingWorkflow(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	id := c.Param("workflow_id")
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
-	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
+func getProjectAndContentFromCreateUser(c echo.Context) (string, string, error) {
+	req := new(CreateUserReqV1)
+	if err := marshalRequestBody(c, req); err != nil {
+		return "", "", err
 	}
-	if !exist {
-		return "", "", ErrWorkflowNoAccess
-	}
-	return projectName, fmt.Sprintf("审核通过工单，工单名称：%v", workflow.Subject), nil
-}
-
-func getProjectAndContentFromRejectingWorkflow(c echo.Context) (string, string, error) {
-	projectName := c.Param("project_name")
-	id := c.Param("workflow_id")
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
-	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
-	}
-	if !exist {
-		return "", "", ErrWorkflowNoAccess
-	}
-	return projectName, fmt.Sprintf("驳回工单，工单名称：%v", workflow.Subject), nil
+	return "", fmt.Sprintf("创建用户，用户名：%v", req.Name), nil
 }
 
 func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, string, error) {
@@ -270,6 +391,10 @@ var typeNameDescMap = map[string]string{
 	model.OperationRecordTypeWorkflowTemplate:    "流程模板",
 	model.OperationRecordTypeAuditPlan:           "智能扫描任务",
 	model.OperationRecordTypeWorkflow:            "工单",
+	model.OperationRecordTypeGlobalUser:          "平台用户",
+	model.OperationRecordTypeGlobalRuleTemplate:  "全局规则模板",
+	model.OperationRecordTypeSystemConfiguration: "系统配置",
+	model.OperationRecordTypeProjectMember:       "项目成员",
 }
 
 func getOperationTypeNameList(c echo.Context) error {
@@ -295,24 +420,43 @@ func getOperationTypeNameList(c echo.Context) error {
 }
 
 var actionNameDescMap = map[string]string{
-	model.OperationRecordActionCreateProject:             "创建项目",
-	model.OperationRecordActionDeleteProject:             "删除项目",
-	model.OperationRecordActionUpdateProject:             "编辑项目",
-	model.OperationRecordActionCreateInstance:            "创建数据源",
-	model.OperationRecordActionUpdateInstance:            "编辑数据源",
-	model.OperationRecordActionDeleteInstance:            "删除数据源",
-	model.OperationRecordActionCreateProjectRuleTemplate: "添加规则模版",
-	model.OperationRecordActionDeleteProjectRuleTemplate: "删除规则模版",
-	model.OperationRecordActionUpdateProjectRuleTemplate: "编辑规则模版",
-	model.OperationRecordActionUpdateWorkflowTemplate:    "编辑流程模版",
-	model.OperationRecordActionCreateAuditPlan:           "创建智能扫描任务",
-	model.OperationRecordActionDeleteAuditPlan:           "删除智能扫描任务",
-	model.OperationRecordActionUpdateAuditPlan:           "编辑智能扫描任务",
-	model.OperationRecordActionCreateWorkflow:            "创建工单",
-	model.OperationRecordActionCancelWorkflow:            "关闭工单",
-	model.OperationRecordActionApproveWorkflow:           "审核通过工单",
-	model.OperationRecordActionRejectWorkflow:            "驳回工单",
-	model.OperationRecordActionExecuteWorkflow:           "上线工单",
+	model.OperationRecordActionCreateProject:               "创建项目",
+	model.OperationRecordActionDeleteProject:               "删除项目",
+	model.OperationRecordActionUpdateProject:               "编辑项目",
+	model.OperationRecordActionCreateInstance:              "创建数据源",
+	model.OperationRecordActionUpdateInstance:              "编辑数据源",
+	model.OperationRecordActionDeleteInstance:              "删除数据源",
+	model.OperationRecordActionCreateProjectRuleTemplate:   "添加规则模版",
+	model.OperationRecordActionDeleteProjectRuleTemplate:   "删除规则模版",
+	model.OperationRecordActionUpdateProjectRuleTemplate:   "编辑规则模版",
+	model.OperationRecordActionUpdateWorkflowTemplate:      "编辑流程模版",
+	model.OperationRecordActionCreateAuditPlan:             "创建智能扫描任务",
+	model.OperationRecordActionDeleteAuditPlan:             "删除智能扫描任务",
+	model.OperationRecordActionUpdateAuditPlan:             "编辑智能扫描任务",
+	model.OperationRecordActionCreateWorkflow:              "创建工单",
+	model.OperationRecordActionCancelWorkflow:              "关闭工单",
+	model.OperationRecordActionApproveWorkflow:             "审核通过工单",
+	model.OperationRecordActionRejectWorkflow:              "驳回工单",
+	model.OperationRecordActionExecuteWorkflow:             "上线工单",
+	model.OperationRecordActionScheduleWorkflow:            "定时上线",
+	model.OperationRecordActionCreateUser:                  "创建用户",
+	model.OperationRecordActionUpdateUser:                  "编辑用户",
+	model.OperationRecordActionDeleteUser:                  "删除用户",
+	model.OperationRecordActionCreateGlobalRuleTemplate:    "创建全局规则模版",
+	model.OperationRecordActionUpdateGlobalRuleTemplate:    "编辑全局规则模版",
+	model.OperationRecordActionDeleteGlobalRuleTemplate:    "删除全局规则模版",
+	model.OperationRecordActionUpdateDingTalkConfiguration: "修改钉钉配置",
+	model.OperationRecordActionUpdateSMTPConfiguration:     "修改SMTP配置",
+	model.OperationRecordActionUpdateWechatConfiguration:   "修改微信配置",
+	model.OperationRecordActionUpdateSystemVariables:       "修改系统变量",
+	model.OperationRecordActionUpdateLDAPConfiguration:     "修改LDAP配置",
+	model.OperationRecordActionUpdateOAuth2Configuration:   "修改OAuth2配置",
+	model.OperationRecordActionCreateMember:                "添加成员",
+	model.OperationRecordActionCreateMemberGroup:           "添加成员组",
+	model.OperationRecordActionDeleteMember:                "删除成员",
+	model.OperationRecordActionDeleteMemberGroup:           "删除成员组",
+	model.OperationRecordActionUpdateMember:                "编辑成员",
+	model.OperationRecordActionUpdateMemberGroup:           "编辑成员组",
 }
 
 func getOperationActionList(c echo.Context) error {

@@ -75,7 +75,49 @@ func init() {
 			OperationType:            model.OperationRecordTypeWorkflow,
 			OperationAction:          model.OperationRecordActionExecuteWorkflow,
 			GetProjectAndContentFunc: getProjectAndContentFromBatchExecutingWorkflow,
-		}}...)
+		},
+		{
+			RouterPath:               "/v2/projects/:project_name/workflows/:workflow_id/tasks/:task_id/schedule", // 设置定时上线
+			Method:                   http.MethodPut,
+			OperationType:            model.OperationRecordTypeWorkflow,
+			OperationAction:          model.OperationRecordActionScheduleWorkflow,
+			GetProjectAndContentFunc: getProjectAndContentFromSchedulingWorkflow,
+		},
+	}...)
+}
+
+func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string, error) {
+	projectName := c.Param("project_name")
+	id := c.Param("workflow_id")
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	if err != nil {
+		return "", "", fmt.Errorf("get workflow failed: %v", err)
+	}
+	if !exist {
+		return "", "", v1.ErrWorkflowNoAccess
+	}
+
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return "", "", fmt.Errorf("get task failed: %v", err)
+	}
+	if !exist {
+		return "", "", v1.ErrTaskNoAccess
+	}
+
+	req := new(UpdateWorkflowScheduleReqV2)
+	err = marshalRequestBody(c, req)
+	if err != nil {
+		return "", "", err
+	}
+
+	if req.ScheduleTime != nil {
+		return projectName, fmt.Sprintf("设置定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
+	} else {
+		return projectName, fmt.Sprintf("取消定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
+	}
 }
 
 func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
@@ -113,7 +155,17 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, 
 	if !exist {
 		return "", "", v1.ErrWorkflowNoAccess
 	}
-	return projectName, fmt.Sprintf("上线工单的单个数据源，工单名称：%v", workflow.Subject), nil // todo issue1281 添加数据源名称到记录里
+
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return "", "", fmt.Errorf("get task failed: %v", err)
+	}
+	if !exist {
+		return "", "", v1.ErrTaskNoAccess
+	}
+
+	return projectName, fmt.Sprintf("上线工单的单个数据源, 工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
 }
 
 func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, string, error) {
