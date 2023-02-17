@@ -105,7 +105,7 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 	defer func() {
 		m := make(map[string]interface{})
 		if isSyncSuccess {
-			m["last_sync_status"] = model.SyncInstanceStatusSuccess
+			m["last_sync_status"] = model.SyncInstanceStatusSucceeded
 			m["last_sync_success_time"] = time.Now()
 		} else {
 			m["last_sync_status"] = model.SyncInstanceStatusFailed
