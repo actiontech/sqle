@@ -24,20 +24,10 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 					fmt.Sprintf("%s %s", middleware.DefaultJWTConfig.AuthScheme, auth))
 			}
 			// sqle-token为空时，可能是cookie过期被清理了，希望返回的错误是http.StatusUnauthorized
-			// 但sqle-token为空时jwt返回的错误是http.StatusBadRequest，所以替换成一个非法值
-			cookies := c.Cookies()
-			sqleToken := ""
-			for _, ck := range cookies {
-				if ck.Name == "sqle-token" {
-					sqleToken = ck.Value
-				}
-			}
-			if sqleToken == "" {
-				c.Request().AddCookie(&http.Cookie{
-					Name:  "sqle-token",
-					Value: "invalid token",
-					Path:  "/",
-				})
+			// 但sqle-token为空时jwt返回的错误是http.StatusBadRequest
+			_, err := c.Cookie("sqle-token")
+			if err == http.ErrNoCookie && auth == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized, "can not find sqle-token")
 			}
 
 			return next(c)
