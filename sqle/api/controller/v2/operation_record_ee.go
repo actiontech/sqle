@@ -145,7 +145,17 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, 
 	if !exist {
 		return "", "", v1.ErrWorkflowNoAccess
 	}
-	return projectName, fmt.Sprintf("上线工单的单个数据源，工单名称：%v", workflow.Subject), nil // todo issue1281 添加数据源名称到记录里
+
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return "", "", fmt.Errorf("get task failed: %v", err)
+	}
+	if !exist {
+		return "", "", v1.ErrTaskNoAccess
+	}
+
+	return projectName, fmt.Sprintf("上线工单的单个数据源, 工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
 }
 
 func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, string, error) {
