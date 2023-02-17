@@ -438,6 +438,7 @@ var actionNameDescMap = map[string]string{
 	model.OperationRecordActionApproveWorkflow:             "审核通过工单",
 	model.OperationRecordActionRejectWorkflow:              "驳回工单",
 	model.OperationRecordActionExecuteWorkflow:             "上线工单",
+	model.OperationRecordActionScheduleWorkflow:            "定时上线",
 	model.OperationRecordActionCreateUser:                  "创建用户",
 	model.OperationRecordActionUpdateUser:                  "编辑用户",
 	model.OperationRecordActionDeleteUser:                  "删除用户",

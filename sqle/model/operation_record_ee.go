@@ -35,7 +35,7 @@ const (
 	OperationRecordActionApproveWorkflow             = "approve_workflow"
 	OperationRecordActionRejectWorkflow              = "reject_workflow"
 	OperationRecordActionExecuteWorkflow             = "execute_workflow"
-	OperationRecordActionScheduleWorkflow            = "schedule_workflow" // todo issue1281 定时上线功能有缺陷，修复后再添加操作记录  https://github.com/actiontech/sqle/issues/1304
+	OperationRecordActionScheduleWorkflow            = "schedule_workflow"
 	OperationRecordActionCreateUser                  = "create_user"
 	OperationRecordActionUpdateUser                  = "update_user"
 	OperationRecordActionDeleteUser                  = "delete_user"
