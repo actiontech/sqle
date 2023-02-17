@@ -81,13 +81,13 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						if code, ok := respBody["code"]; ok {
 							codeInt := int(code.(float64))
 							if codeInt != 0 {
-								operationRecord.OperationStatus = model.OperationRecordStatusFail
+								operationRecord.OperationStatus = model.OperationRecordStatusFailed
 							} else {
-								operationRecord.OperationStatus = model.OperationRecordStatusSuccess
+								operationRecord.OperationStatus = model.OperationRecordStatusSucceeded
 							}
 						}
 					} else {
-						operationRecord.OperationStatus = model.OperationRecordStatusFail
+						operationRecord.OperationStatus = model.OperationRecordStatusFailed
 					}
 
 					s := model.GetStorage()
