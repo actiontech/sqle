@@ -23,6 +23,13 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 				c.Request().Header.Set(echo.HeaderAuthorization,
 					fmt.Sprintf("%s %s", middleware.DefaultJWTConfig.AuthScheme, auth))
 			}
+			// sqle-token为空时，可能是cookie过期被清理了，希望返回的错误是http.StatusUnauthorized
+			// 但sqle-token为空时jwt返回的错误是http.StatusBadRequest
+			_, err := c.Cookie("sqle-token")
+			if err == http.ErrNoCookie && auth == "" {
+				return echo.NewHTTPError(http.StatusUnauthorized, "can not find sqle-token")
+			}
+
 			return next(c)
 		}
 	}
