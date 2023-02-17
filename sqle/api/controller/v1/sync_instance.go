@@ -98,7 +98,7 @@ type InstanceTaskResV1 struct {
 	Version             string     `json:"version" example:"1.23.1"`
 	URL                 string     `json:"url" example:"http://10.186.62.56:10000"`
 	DbType              string     `json:"db_type" example:"mysql"`
-	LastSyncStatus      string     `json:"last_sync_status" enums:"success,fail" example:"success"`
+	LastSyncStatus      string     `json:"last_sync_status" enums:"succeeded,failed" example:"succeeded"`
 	LastSyncSuccessTime *time.Time `json:"last_sync_success_time" example:"2021-08-12 12:00:00"`
 }
 

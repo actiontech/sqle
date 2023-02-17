@@ -2115,9 +2115,9 @@ definitions:
         type: integer
       last_sync_status:
         enum:
-        - success
-        - fail
-        example: success
+          - succeeded
+          - failed
+        example: succeeded
         type: string
       last_sync_success_time:
         example: "2021-08-12 12:00:00"
@@ -2343,8 +2343,8 @@ definitions:
         type: string
       status:
         enum:
-        - success
-        - fail
+          - succeeded
+          - failed
         type: string
     type: object
   v1.OperationResV1:

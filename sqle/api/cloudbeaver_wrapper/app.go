@@ -54,8 +54,11 @@ var gqlHandlerRouters = map[string] /* gql operation name */ gqlBehavior{
 	"getActiveUser": {
 		useLocalHandler:     true,
 		needModifyRemoteRes: true,
-	},
-	"configureServer": {
+	}, "authLogout": {
+		disable: true,
+	}, "authLogin": {
+		disable: true,
+	}, "configureServer": {
 		disable: true,
 	}, "createUser": {
 		disable: true,
@@ -135,6 +138,12 @@ func setCBSessionIdBySqleToken(token, cbSessionId string) {
 	sqleTokenToCBSessionId[token] = cbSessionId
 }
 
+func UnbindCBSessionIdBySqleToken(token string) {
+	tokenMapMutex.Lock()
+	defer tokenMapMutex.Unlock()
+	delete(sqleTokenToCBSessionId, token)
+}
+
 // 如果当前用户没有登录cloudbeaver，则登录
 func TriggerLogin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -149,8 +158,7 @@ func TriggerLogin() echo.MiddlewareFunc {
 			}
 			if sqleToken == "" {
 				// 没有找到sqle-token，有可能是用户直接通过url访问cb页面，但没有登录sqle
-				// todo: 跳转到sqle登录页面，登录后再跳转回来
-				return c.NoContent(http.StatusUnauthorized)
+				return c.Redirect(http.StatusFound, "/login?target=/sqlQuery")
 			}
 			CBSessionId := getCBSessionIdBySqleToken(sqleToken)
 			if CBSessionId != "" {
