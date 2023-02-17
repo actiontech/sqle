@@ -107,7 +107,17 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string,
 		return "", "", v1.ErrTaskNoAccess
 	}
 
-	return projectName, fmt.Sprintf("设置定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
+	req := new(UpdateWorkflowScheduleReqV2)
+	err = marshalRequestBody(c, req)
+	if err != nil {
+		return "", "", err
+	}
+
+	if req.ScheduleTime != nil {
+		return projectName, fmt.Sprintf("设置定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
+	} else {
+		return projectName, fmt.Sprintf("取消定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
+	}
 }
 
 func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
