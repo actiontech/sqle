@@ -56,8 +56,8 @@ const (
 	OperationRecordActionUpdateMemberGroup           = "update_member_group"
 
 	// Status operation record status
-	OperationRecordStatusSuccess = "success"
-	OperationRecordStatusFail    = "fail"
+	OperationRecordStatusSucceeded = "succeeded"
+	OperationRecordStatusFailed    = "failed"
 )
 
 var operationRecordQueryTpl = `
