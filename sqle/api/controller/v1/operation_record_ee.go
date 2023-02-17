@@ -295,7 +295,7 @@ func getProjectAndContentFromCreateMemberGroup(c echo.Context) (string, string, 
 	if err := marshalRequestBody(c, req); err != nil {
 		return "", "", err
 	}
-	return c.Param("project_name"), fmt.Sprintf("创建成员组，组名：%v", req.UserGroupName), nil
+	return c.Param("project_name"), fmt.Sprintf("添加成员组，组名：%v", req.UserGroupName), nil
 }
 
 func getProjectAndContentFromCreateMember(c echo.Context) (string, string, error) {
@@ -451,8 +451,8 @@ var actionNameDescMap = map[string]string{
 	model.OperationRecordActionUpdateSystemVariables:       "修改系统变量",
 	model.OperationRecordActionUpdateLDAPConfiguration:     "修改LDAP配置",
 	model.OperationRecordActionUpdateOAuth2Configuration:   "修改OAuth2配置",
-	model.OperationRecordActionCreateMember:                "创建成员",
-	model.OperationRecordActionCreateMemberGroup:           "创建成员组",
+	model.OperationRecordActionCreateMember:                "添加成员",
+	model.OperationRecordActionCreateMemberGroup:           "添加成员组",
 	model.OperationRecordActionDeleteMember:                "删除成员",
 	model.OperationRecordActionDeleteMemberGroup:           "删除成员组",
 	model.OperationRecordActionUpdateMember:                "编辑成员",
