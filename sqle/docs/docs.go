@@ -10540,10 +10540,10 @@ var doc = `{
                 "last_sync_status": {
                     "type": "string",
                     "enum": [
-                        "success",
-                        "fail"
+                        "succeeded",
+                        "failed"
                     ],
-                    "example": "success"
+                    "example": "succeeded"
                 },
                 "last_sync_success_time": {
                     "type": "string",
@@ -10884,8 +10884,8 @@ var doc = `{
                 "status": {
                     "type": "string",
                     "enum": [
-                        "success",
-                        "fail"
+                        "succeeded",
+                        "failed"
                     ]
                 }
             }
