@@ -240,21 +240,21 @@ func init() {
 		{
 			RouterPath:               "/v1/projects/:project_name/members",
 			Method:                   http.MethodPost,
-			OperationType:            model.OperationRecordTypeMember,
+			OperationType:            model.OperationRecordTypeProjectMember,
 			OperationAction:          model.OperationRecordActionCreateMember,
 			GetProjectAndContentFunc: getProjectAndContentFromCreateMember,
 		},
 		{
 			RouterPath:               "/v1/projects/:project_name/member_groups",
 			Method:                   http.MethodPost,
-			OperationType:            model.OperationRecordTypeMember,
+			OperationType:            model.OperationRecordTypeProjectMember,
 			OperationAction:          model.OperationRecordActionCreateMemberGroup,
 			GetProjectAndContentFunc: getProjectAndContentFromCreateMemberGroup,
 		},
 		{
 			RouterPath:      "/v1/projects/:project_name/members/:user_name/",
 			Method:          http.MethodDelete,
-			OperationType:   model.OperationRecordTypeMember,
+			OperationType:   model.OperationRecordTypeProjectMember,
 			OperationAction: model.OperationRecordActionDeleteMember,
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
 				return c.Param("project_name"), fmt.Sprintf("删除成员，用户名：%v", c.Param("user_name")), nil
@@ -263,7 +263,7 @@ func init() {
 		{
 			RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
 			Method:          http.MethodDelete,
-			OperationType:   model.OperationRecordTypeMember,
+			OperationType:   model.OperationRecordTypeProjectMember,
 			OperationAction: model.OperationRecordActionDeleteMemberGroup,
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
 				return c.Param("project_name"), fmt.Sprintf("删除成员组，组名：%v", c.Param("user_group_name")), nil
@@ -272,7 +272,7 @@ func init() {
 		{
 			RouterPath:      "/v1/projects/:project_name/members/:user_name/",
 			Method:          http.MethodPatch,
-			OperationType:   model.OperationRecordTypeMember,
+			OperationType:   model.OperationRecordTypeProjectMember,
 			OperationAction: model.OperationRecordActionUpdateMember,
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
 				return c.Param("project_name"), fmt.Sprintf("编辑成员，用户名：%v", c.Param("user_name")), nil
@@ -281,7 +281,7 @@ func init() {
 		{
 			RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
 			Method:          http.MethodPatch,
-			OperationType:   model.OperationRecordTypeMember,
+			OperationType:   model.OperationRecordTypeProjectMember,
 			OperationAction: model.OperationRecordActionUpdateMemberGroup,
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
 				return c.Param("project_name"), fmt.Sprintf("编辑成员组，组名：%v", c.Param("user_group_name")), nil
@@ -394,7 +394,7 @@ var typeNameDescMap = map[string]string{
 	model.OperationRecordTypeGlobalUser:          "平台用户",
 	model.OperationRecordTypeGlobalRuleTemplate:  "全局规则模板",
 	model.OperationRecordTypeSystemConfiguration: "系统配置",
-	model.OperationRecordTypeMember:              "成员",
+	model.OperationRecordTypeProjectMember:       "项目成员",
 }
 
 func getOperationTypeNameList(c echo.Context) error {

@@ -14,7 +14,7 @@ const (
 	OperationRecordTypeGlobalUser          = "global_user"
 	OperationRecordTypeGlobalRuleTemplate  = "global_rule_template"
 	OperationRecordTypeSystemConfiguration = "system_configuration"
-	OperationRecordTypeMember              = "member"
+	OperationRecordTypeProjectMember       = "project_member"
 
 	// operation record action
 	OperationRecordActionCreateProject               = "create_project"
