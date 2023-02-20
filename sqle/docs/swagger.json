@@ -957,15 +957,15 @@
                         "description": "page_index",
                         "name": "page_index",
                         "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page_size",
-                      "name": "page_size",
-                      "in": "query",
                       "required": true
-                    }
+                    },
+                  {
+                    "type": "integer",
+                    "description": "page_size",
+                    "name": "page_size",
+                    "in": "query",
+                    "required": true
+                  }
                 ],
               "responses": {
                 "200": {
@@ -1030,9 +1030,9 @@
           ],
           "responses": {
             "200": {
-              "description": "OK",
+              "description": "get export operation record list",
               "schema": {
-                "$ref": "#/definitions/controller.BaseRes"
+                "type": "file"
               }
             }
           }
@@ -1043,16 +1043,16 @@
           "security": [
             {
               "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get operation action list",
-                "tags": [
-                    "OperationRecord"
-                ],
-                "summary": "获取操作内容列表",
-                "operationId": "getOperationActionList",
-                "responses": {
-                    "200": {
+            }
+          ],
+          "description": "Get operation action list",
+          "tags": [
+            "OperationRecord"
+          ],
+          "summary": "获取操作内容列表",
+          "operationId": "getOperationActionList",
+          "responses": {
+            "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetOperationActionListResV1"
