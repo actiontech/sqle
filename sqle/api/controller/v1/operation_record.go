@@ -103,3 +103,21 @@ type OperationUser struct {
 func GetOperationRecordListV1(c echo.Context) error {
 	return getOperationRecordList(c)
 }
+
+// GetExportOperationRecordListV1
+// @Summary 导出操作记录列表
+// @Description Export operation record list
+// @Id getExportOperationRecordListV1
+// @Tags OperationRecord
+// @Security ApiKeyAuth
+// @Param filter_operate_time_from query string false "filter_operate_time_from"
+// @Param filter_operate_time_to query string false "filter_operate_time_to"
+// @Param filter_operate_project_name query string false "filter_operate_project_name"
+// @Param fuzzy_search_operate_user_name query string false "fuzzy_search_operate_user_name"
+// @Param filter_operate_type_name query string false "filter_operate_type_name"
+// @Param filter_operate_action query string false "filter_operate_action"
+// @Success 200 {object} controller.BaseRes
+// @Router /v1/operation_records/exports [get]
+func GetExportOperationRecordListV1(c echo.Context) error {
+	return exportOperationRecordList(c)
+}
