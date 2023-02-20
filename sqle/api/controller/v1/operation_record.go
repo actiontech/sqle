@@ -116,7 +116,7 @@ func GetOperationRecordListV1(c echo.Context) error {
 // @Param fuzzy_search_operate_user_name query string false "fuzzy_search_operate_user_name"
 // @Param filter_operate_type_name query string false "filter_operate_type_name"
 // @Param filter_operate_action query string false "filter_operate_action"
-// @Success 200 file 1 "get export operation record list"
+// @Success 200 {file} file "get export operation record list"
 // @Router /v1/operation_records/exports [get]
 func GetExportOperationRecordListV1(c echo.Context) error {
 	return exportOperationRecordList(c)
