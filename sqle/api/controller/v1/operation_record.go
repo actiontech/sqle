@@ -104,6 +104,15 @@ func GetOperationRecordListV1(c echo.Context) error {
 	return getOperationRecordList(c)
 }
 
+type GetExportOperationRecordListReqV1 struct {
+	FilterOperateTimeFrom      string  `json:"filter_operate_time_from" query:"filter_operate_time_from"`
+	FilterOperateTimeTo        string  `json:"filter_operate_time_to" query:"filter_operate_time_to"`
+	FilterOperateProjectName   *string `json:"filter_operate_project_name" query:"filter_operate_project_name"`
+	FuzzySearchOperateUserName string  `json:"fuzzy_search_operate_user_name" query:"fuzzy_search_operate_user_name"`
+	FilterOperateTypeName      string  `json:"filter_operate_type_name" query:"filter_operate_type_name"`
+	FilterOperateAction        string  `json:"filter_operate_action" query:"filter_operate_action"`
+}
+
 // GetExportOperationRecordListV1
 // @Summary 导出操作记录列表
 // @Description Export operation record list
