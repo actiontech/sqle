@@ -1046,9 +1046,9 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "get export operation record list",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "type": "file"
                         }
                     }
                 }

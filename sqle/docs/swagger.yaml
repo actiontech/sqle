@@ -4541,9 +4541,9 @@ paths:
           type: string
       responses:
         "200":
-          description: OK
+          description: get export operation record list
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            type: file
       security:
         - ApiKeyAuth: [ ]
       summary: 导出操作记录列表
