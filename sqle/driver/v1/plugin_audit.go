@@ -10,10 +10,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	PluginNameAuditDriver = "audit-driver"
-)
-
 // auditDriverPlugin use for hide gRPC detail.
 type auditDriverGRPCServer struct {
 	newDriver func(cfg *Config) Driver
@@ -134,10 +130,10 @@ func (d *auditDriverGRPCServer) Audit(ctx context.Context, req *proto.AuditReque
 	}
 
 	resp := &proto.AuditResponse{}
-	for _, result := range auditResults.results {
+	for _, result := range auditResults.Results {
 		resp.Results = append(resp.Results, &proto.AuditResult{
-			Level:   string(result.level),
-			Message: result.message,
+			Level:   string(result.Level),
+			Message: result.Message,
 		})
 	}
 	return resp, nil
