@@ -278,6 +278,17 @@ var doc = `{
                 ],
                 "summary": "测试飞书配置",
                 "operationId": "testFeishuConfigV1",
+                "parameters": [
+                    {
+                        "description": "test feishu configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestFeishuConfigurationReqV1"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -11701,6 +11712,21 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.TestFeishuConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string"
+                },
+                "account_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone"
+                    ]
                 }
             }
         },
