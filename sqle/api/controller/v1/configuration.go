@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
-
-	"github.com/actiontech/sqle/sqle/pkg/im"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/pkg/im"
+	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -371,7 +373,25 @@ type FeishuConfigurationV1 struct {
 // @Success 200 {object} v1.GetFeishuConfigurationResV1
 // @router /v1/configurations/feishu [get]
 func GetFeishuConfigurationV1(c echo.Context) error {
-	return nil
+	s := model.GetStorage()
+	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishu)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    FeishuConfigurationV1{},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: FeishuConfigurationV1{
+			AppID:                       feishuCfg.AppKey,
+			IsFeishuNotificationEnabled: feishuCfg.IsEnable,
+		},
+	})
 }
 
 type UpdateFeishuConfigurationReqV1 struct {
@@ -391,7 +411,31 @@ type UpdateFeishuConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/feishu [patch]
 func UpdateFeishuConfigurationV1(c echo.Context) error {
-	return nil
+	req := new(UpdateFeishuConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishu)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if req.AppID != nil {
+		feishuCfg.AppKey = *req.AppID
+	}
+	if req.AppSecret != nil {
+		feishuCfg.AppSecret = *req.AppSecret
+	}
+	if req.IsFeishuNotificationEnabled != nil {
+		feishuCfg.IsEnable = *req.IsFeishuNotificationEnabled
+	}
+	feishuCfg.Type = model.ImTypeFeishu
+
+	if err := s.Save(feishuCfg); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type TestFeishuConfigurationReqV1 struct {
@@ -409,6 +453,11 @@ type TestFeishuConfigResV1 struct {
 	Data TestFeishuConfigResDataV1 `json:"data"`
 }
 
+const (
+	FeishuAccountTypeEmail = "email"
+	FeishuAccountTypePhone = "phone"
+)
+
 // TestFeishuConfigV1
 // @Summary 测试飞书配置
 // @Description test feishu configuration
@@ -420,7 +469,84 @@ type TestFeishuConfigResV1 struct {
 // @Success 200 {object} v1.TestFeishuConfigResV1
 // @router /v1/configurations/feishu/test [post]
 func TestFeishuConfigV1(c echo.Context) error {
-	return nil
+	req := new(TestFeishuConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var email, phone []string
+	switch req.AccountType {
+	case FeishuAccountTypeEmail:
+		err := controller.Validate(struct {
+			Email string `valid:"email"`
+		}{req.Account})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+		}
+		email = append(email, req.Account)
+	case FeishuAccountTypePhone:
+		phone = append(phone, req.Account)
+	default:
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("unknown account type: %v", req.AccountType)))
+	}
+
+	s := model.GetStorage()
+	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishu)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestFeishuConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          "feishu configuration doesn't exist",
+			},
+		})
+	}
+
+	client := feishu.NewFeishuClient(feishuCfg.AppKey, feishuCfg.AppSecret)
+	feishuUsers, err := client.GetUserIdsByEmailOrMobile(email, phone)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestFeishuConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          fmt.Sprintf("get user_ids failed: %v", err),
+			},
+		})
+	}
+
+	if len(feishuUsers) == 0 || utils.NvlString(feishuUsers[0].UserId) == "" {
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestFeishuConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          "can not find matched feishu user",
+			},
+		})
+	}
+
+	n := &notification.TestNotify{}
+	// content是要作为json文本的一个value传给飞书，需要转换为显式的换行符
+	content := strings.Replace(n.NotificationBody(), "\n", "\\n", -1)
+	if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, *feishuUsers[0].UserId, feishu.FeishuSendMessageMsgTypePost, fmt.Sprintf(notification.FeishuContentPattern, n.NotificationSubject(), content)); err != nil {
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestFeishuConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          err.Error(),
+			},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestFeishuConfigResDataV1{
+			IsMessageSentNormally: true,
+		},
+	})
+
 }
 
 type UpdateWeChatConfigurationReqV1 struct {
