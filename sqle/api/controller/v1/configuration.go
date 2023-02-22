@@ -352,6 +352,71 @@ func TestDingTalkConfigV1(c echo.Context) error {
 	})
 }
 
+type GetFeishuConfigurationResV1 struct {
+	controller.BaseRes
+	Data FeishuConfigurationV1 `json:"data"`
+}
+
+type FeishuConfigurationV1 struct {
+	AppID                       string `json:"app_id"`
+	IsFeishuNotificationEnabled bool   `json:"is_feishu_notification_enabled"`
+}
+
+// GetFeishuConfigurationV1
+// @Summary 获取飞书配置
+// @Description get feishu configuration
+// @Id getFeishuConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetFeishuConfigurationResV1
+// @router /v1/configurations/feishu [get]
+func GetFeishuConfigurationV1(c echo.Context) error {
+	return nil
+}
+
+type UpdateFeishuConfigurationReqV1 struct {
+	AppID                       *string `json:"app_id" form:"app_id"`
+	AppSecret                   *string `json:"app_secret" form:"app_secret" `
+	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" description:"是否启用飞书推送"`
+}
+
+// UpdateFeishuConfigurationV1
+// @Summary 添加或更新飞书配置
+// @Description update feishu configuration
+// @Accept json
+// @Id updateFeishuConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param param body v1.UpdateFeishuConfigurationReqV1 true "update feishu configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/feishu [patch]
+func UpdateFeishuConfigurationV1(c echo.Context) error {
+	return nil
+}
+
+type TestFeishuConfigResDataV1 struct {
+	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
+	ErrorMessage          string `json:"error_message,omitempty"`
+}
+
+type TestFeishuConfigResV1 struct {
+	controller.BaseRes
+	Data TestFeishuConfigResDataV1 `json:"data"`
+}
+
+// TestFeishuConfigV1
+// @Summary 测试飞书配置
+// @Description test feishu configuration
+// @Accept json
+// @Id testFeishuConfigV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestFeishuConfigResV1
+// @router /v1/configurations/feishu/test [post]
+func TestFeishuConfigV1(c echo.Context) error {
+	return nil
+}
+
 type UpdateWeChatConfigurationReqV1 struct {
 	EnableWeChatNotify *bool   `json:"enable_wechat_notify" from:"enable_wechat_notify" description:"是否启用微信通知"`
 	CorpID             *string `json:"corp_id" from:"corp_id" description:"企业微信ID"`
