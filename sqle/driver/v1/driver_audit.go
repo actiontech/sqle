@@ -7,29 +7,11 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
-	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-)
-
-var (
-	// auditDrivers store instantiate handlers for MySQL or gRPC plugin.
-	auditDrivers = make(map[string]struct{})
-	driversMu    sync.RWMutex
-
-	// rules store audit rules for each driver.
-	rules   map[string][]*Rule
-	rulesMu sync.RWMutex
-
-	// additionalParams store driver additional params
-	additionalParams   map[string]params.Params
-	additionalParamsMu sync.RWMutex
 )
 
 const (
@@ -143,69 +125,12 @@ func NewConfig(dsn *DSN, rules []*Rule) (*Config, error) {
 	}, nil
 }
 
-// RegisterAuditDriver like sql.RegisterAuditDriver.
-//
-// RegisterAuditDriver makes a database driver available by the provided driver name.
-// Driver's initialize handler and audit rules register by RegisterAuditDriver.
-func RegisterAuditDriver(name string, rs []*Rule, ap params.Params) {
-	_, exist := auditDrivers[name]
-	if exist {
-		panic("duplicated driver name")
-	}
-
-	driversMu.Lock()
-	auditDrivers[name] = struct{}{}
-	driversMu.Unlock()
-
-	rulesMu.Lock()
-	if rules == nil {
-		rules = make(map[string][]*Rule)
-	}
-	rules[name] = rs
-	rulesMu.Unlock()
-
-	additionalParamsMu.Lock()
-	if additionalParams == nil {
-		additionalParams = make(map[string]params.Params)
-	}
-	additionalParams[name] = ap
-	additionalParamsMu.Unlock()
-}
-
 type DriverNotSupportedError struct {
 	DriverTyp string
 }
 
 func (e *DriverNotSupportedError) Error() string {
 	return fmt.Sprintf("driver type %v is not supported", e.DriverTyp)
-}
-
-func AllRules() map[string][]*Rule {
-	rulesMu.RLock()
-	defer rulesMu.RUnlock()
-	return rules
-}
-
-func AllDrivers() []string {
-	rulesMu.RLock()
-	defer rulesMu.RUnlock()
-
-	driverNames := make([]string, 0, len(auditDrivers))
-	for n := range auditDrivers {
-		driverNames = append(driverNames, n)
-	}
-	return driverNames
-}
-
-func AllAdditionalParams() map[string] /*driver name*/ params.Params {
-	additionalParamsMu.RLock()
-	defer additionalParamsMu.RUnlock()
-
-	newParams := map[string]params.Params{}
-	for k, v := range additionalParams {
-		newParams[k] = v.Copy()
-	}
-	return newParams
 }
 
 var ErrNodesCountExceedOne = errors.New("after parse, nodes count exceed one")
@@ -242,7 +167,7 @@ type Driver interface {
 	// 		driver.Audit(..., "SELECT * FROM t1 WHERE id = 1")
 	//      ...
 	// driver should keep SQL context during it's lifecycle.
-	Audit(ctx context.Context, sql string) (*AuditResult, error)
+	Audit(ctx context.Context, sql string) (*AuditResults, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
 	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
@@ -283,37 +208,37 @@ type Node struct {
 // 	DBName string
 // }
 
+type AuditResults struct {
+	Results []*AuditResult
+}
+
 type AuditResult struct {
-	results []*auditResult
+	Level   RuleLevel
+	Message string
 }
 
-type auditResult struct {
-	level   RuleLevel
-	message string
-}
-
-func NewInspectResults() *AuditResult {
-	return &AuditResult{
-		results: []*auditResult{},
+func NewInspectResults() *AuditResults {
+	return &AuditResults{
+		Results: []*AuditResult{},
 	}
 }
 
 // Level find highest Level in result
-func (rs *AuditResult) Level() RuleLevel {
+func (rs *AuditResults) Level() RuleLevel {
 	level := RuleLevelNull
-	for _, curr := range rs.results {
-		if ruleLevelMap[curr.level] > ruleLevelMap[level] {
-			level = curr.level
+	for _, curr := range rs.Results {
+		if ruleLevelMap[curr.Level] > ruleLevelMap[level] {
+			level = curr.Level
 		}
 	}
 	return level
 }
 
-func (rs *AuditResult) Message() string {
+func (rs *AuditResults) Message() string {
 	repeatCheck := map[string]struct{}{}
 	messages := []string{}
-	for _, result := range rs.results {
-		token := result.message + string(result.level)
+	for _, result := range rs.Results {
+		token := result.Message + string(result.Level)
 		if _, ok := repeatCheck[token]; ok {
 			continue
 		}
@@ -322,37 +247,37 @@ func (rs *AuditResult) Message() string {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
 			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
-			result.message)
+			result.Message)
 		if match {
-			message = result.message
+			message = result.Message
 		} else {
-			message = fmt.Sprintf("[%s]%s", result.level, result.message)
+			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)
 		}
 		messages = append(messages, message)
 	}
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResult) Add(level RuleLevel, message string, args ...interface{}) {
+func (rs *AuditResults) Add(level RuleLevel, message string, args ...interface{}) {
 	if level == "" || message == "" {
 		return
 	}
 
-	rs.results = append(rs.results, &auditResult{
-		level:   level,
-		message: fmt.Sprintf(message, args...),
+	rs.Results = append(rs.Results, &AuditResult{
+		Level:   level,
+		Message: fmt.Sprintf(message, args...),
 	})
 	rs.SortByLevel()
 }
 
-func (rs *AuditResult) SortByLevel() {
-	sort.Slice(rs.results, func(i, j int) bool {
-		return rs.results[i].level.More(rs.results[j].level)
+func (rs *AuditResults) SortByLevel() {
+	sort.Slice(rs.Results, func(i, j int) bool {
+		return rs.Results[i].Level.More(rs.Results[j].Level)
 	})
 }
 
-func (rs *AuditResult) HasResult() bool {
-	return len(rs.results) != 0
+func (rs *AuditResults) HasResult() bool {
+	return len(rs.Results) != 0
 }
 
 // driverImpl implement Driver. It use for hide gRPC detail, just like DriverGRPCServer.
@@ -450,17 +375,17 @@ func (s *driverImpl) Parse(ctx context.Context, sqlText string) ([]Node, error) 
 	return nodes, nil
 }
 
-func (s *driverImpl) Audit(ctx context.Context, sql string) (*AuditResult, error) {
+func (s *driverImpl) Audit(ctx context.Context, sql string) (*AuditResults, error) {
 	resp, err := s.plugin.Audit(ctx, &proto.AuditRequest{Sql: sql})
 	if err != nil {
 		return nil, err
 	}
 
-	ret := &AuditResult{}
+	ret := &AuditResults{}
 	for _, result := range resp.Results {
-		ret.results = append(ret.results, &auditResult{
-			level:   RuleLevel(result.Level),
-			message: result.Message,
+		ret.Results = append(ret.Results, &AuditResult{
+			Level:   RuleLevel(result.Level),
+			Message: result.Message,
 		})
 	}
 	return ret, nil
@@ -513,38 +438,4 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 		Category:   rule.Category,
 		Params:     params,
 	}
-}
-
-func registerAuditDriver(gRPCClient goPlugin.ClientProtocol) (pluginName string, pluginVersion int32, drvClient proto.DriverClient, err error) {
-	rawI, err := gRPCClient.Dispense(PluginNameAuditDriver)
-	if err != nil {
-		return "", 0, nil, err
-	}
-	// client can only be proto.DriverClient
-	//nolint:forcetypeassert
-	client := rawI.(proto.DriverClient)
-
-	pluginMeta, err := client.Metas(context.TODO(), &proto.Empty{})
-	if err != nil {
-		return "", 0, nil, err
-	}
-	// init audit driver, so that we can use Close to inform all plugins with the same progress to recycle resource
-	_, err = client.Init(context.TODO(), &proto.InitRequest{})
-	if err != nil {
-		return "", 0, nil, err
-	}
-
-	// driverRules get from plugin when plugin initialize.
-	var driverRules = make([]*Rule, 0, len(pluginMeta.Rules))
-	for _, rule := range pluginMeta.Rules {
-		driverRules = append(driverRules, convertRuleFromProtoToDriver(rule))
-	}
-
-	RegisterAuditDriver(pluginMeta.Name, driverRules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()))
-
-	log.Logger().WithFields(logrus.Fields{
-		"plugin_name": pluginMeta.Name,
-		"plugin_type": PluginNameAuditDriver,
-	}).Infoln("plugin inited")
-	return pluginMeta.Name, pluginMeta.GetVersion(), client, nil
 }

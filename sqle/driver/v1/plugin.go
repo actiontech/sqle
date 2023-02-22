@@ -18,12 +18,6 @@ const (
 	DefaultPluginVersion = 1
 )
 
-var defaultPluginSet = map[int]goPlugin.PluginSet{
-	DefaultPluginVersion: goPlugin.PluginSet{
-		PluginNameAuditDriver: &auditDriverPlugin{},
-	},
-}
-
 type PluginServer struct {
 	plugins map[int]goPlugin.PluginSet
 	mutex   *sync.Mutex
@@ -70,19 +64,12 @@ func (p *PluginServer) AddPlugin(pluginName string, pluginVersion int, plugin go
 	p.mutex.Unlock()
 }
 
-var handshakeConfig = goPlugin.HandshakeConfig{
-	ProtocolVersion:  1,
-	MagicCookieKey:   "BASIC_PLUGIN",
-	MagicCookieValue: "hello",
-}
-
 // ServePlugin start plugin process service. It should be called on plugin process.
 // Deprecated: Use PluginServer.AddDriverPlugin and PluginServer.Serve instead.
 func ServePlugin(r Registerer, newDriver func(cfg *Config) Driver) {
 	name := r.Name()
 	goPlugin.Serve(&goPlugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
-
 		Plugins: goPlugin.PluginSet{
 			name: &auditDriverPlugin{Srv: &auditDriverGRPCServer{r: r, newDriver: newDriver}},
 		},

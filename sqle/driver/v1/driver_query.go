@@ -2,15 +2,9 @@ package v1
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-
-	goPlugin "github.com/hashicorp/go-plugin"
-	"github.com/sirupsen/logrus"
 )
 
 // SQLQueryDriver is a SQL rewrite and execute driver
@@ -24,14 +18,6 @@ type ErrorType string
 const (
 	ErrorTypeNotQuery = "not query"
 	ErrorTypeNotError = "not error"
-)
-
-func init() {
-	defaultPluginSet[DefaultPluginVersion][PluginNameQueryDriver] = &queryDriverPlugin{}
-}
-
-const (
-	PluginNameQueryDriver = "query-driver"
 )
 
 type QueryPrepareConf struct {
@@ -122,58 +108,4 @@ func (q *queryDriverImpl) Query(ctx context.Context, sql string, conf *QueryConf
 		result.Rows = append(result.Rows, r)
 	}
 	return result, nil
-}
-
-var queryDriverMu = &sync.RWMutex{}
-var queryDrivers = make(map[string]struct{})
-
-// QueryDriverName = InstanceType
-func GetQueryDriverNames() []string {
-	queryDriverMu.RLock()
-	defer queryDriverMu.RUnlock()
-	names := []string{}
-	for s := range queryDrivers {
-		names = append(names, s)
-	}
-	return names
-}
-
-// RegisterSQLQueryDriver like sql.RegisterAuditDriver.
-//
-// RegisterSQLQueryDriver makes a database driver available by the provided driver name.
-// SQLQueryDriver's initialize handler and audit rules register by RegisterSQLQueryDriver.
-func RegisterSQLQueryDriver(name string) {
-	queryDriverMu.RLock()
-	_, exist := queryDrivers[name]
-	queryDriverMu.RUnlock()
-	if exist {
-		panic(fmt.Sprintf("duplicated driver name %v", name))
-	}
-
-	queryDriverMu.Lock()
-	queryDrivers[name] = struct{}{}
-	queryDriverMu.Unlock()
-}
-
-func registerQueryDriver(pluginName string, gRPCClient goPlugin.ClientProtocol) error {
-	rawI, err := gRPCClient.Dispense(PluginNameQueryDriver)
-	if err != nil {
-		return err
-	}
-	// srv can only be proto.QueryDriverClient
-	//nolint:forcetypeassert
-	s := rawI.(proto.QueryDriverClient)
-
-	// The test target plugin implements the QueryDriver plugin
-	_, err = s.Init(context.TODO(), &proto.InitRequest{})
-	if err != nil {
-		return err
-	}
-
-	RegisterSQLQueryDriver(pluginName)
-	log.Logger().WithFields(logrus.Fields{
-		"plugin_name": pluginName,
-		"plugin_type": PluginNameQueryDriver,
-	}).Infoln("plugin inited")
-	return nil
 }
