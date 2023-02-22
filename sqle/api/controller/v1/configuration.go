@@ -394,6 +394,11 @@ func UpdateFeishuConfigurationV1(c echo.Context) error {
 	return nil
 }
 
+type TestFeishuConfigurationReqV1 struct {
+	AccountType string `json:"account_type" form:"account_type" enums:"email,phone" valid:"required"`
+	Account     string `json:"account" form:"account" valid:"required" description:"绑定了飞书的手机号或邮箱"`
+}
+
 type TestFeishuConfigResDataV1 struct {
 	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
 	ErrorMessage          string `json:"error_message,omitempty"`
@@ -411,6 +416,7 @@ type TestFeishuConfigResV1 struct {
 // @Id testFeishuConfigV1
 // @Tags configuration
 // @Security ApiKeyAuth
+// @Param req body v1.TestFeishuConfigurationReqV1 true "test feishu configuration req"
 // @Success 200 {object} v1.TestFeishuConfigResV1
 // @router /v1/configurations/feishu/test [post]
 func TestFeishuConfigV1(c echo.Context) error {

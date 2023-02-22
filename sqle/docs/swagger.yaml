@@ -2833,6 +2833,16 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TestFeishuConfigurationReqV1:
+    properties:
+      account:
+        type: string
+      account_type:
+        enum:
+        - email
+        - phone
+        type: string
+    type: object
   v1.TestSMTPConfigurationReqV1:
     properties:
       recipient_addr:
@@ -4102,6 +4112,13 @@ paths:
       - application/json
       description: test feishu configuration
       operationId: testFeishuConfigV1
+      parameters:
+      - description: test feishu configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestFeishuConfigurationReqV1'
       responses:
         "200":
           description: OK
