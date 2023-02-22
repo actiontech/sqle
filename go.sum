@@ -96,10 +96,6 @@ github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrU
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/VividCortex/mysqlerr v0.0.0-20201215173831-4c396ae82aac/go.mod h1:f3HiCrHjHBdcm6E83vGaXh1KomZMA2P6aeo3hKx/wg0=
-github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98 h1:wQKAwTHt0Beelc7BYDEs/W6pd7smBkPABOritq7jMps=
-github.com/actiontech/mybatis-mapper-2-sql v0.1.1-0.20220728081924-8483c9ff0a98/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
-github.com/actiontech/mybatis-mapper-2-sql v0.2.0 h1:pjlVbuQb+lu1NOunKqz4EfqvXNJ4ckOuFN9HMossBEI=
-github.com/actiontech/mybatis-mapper-2-sql v0.2.0/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
 github.com/actiontech/mybatis-mapper-2-sql v0.3.0 h1:EMVKKgnCaqj1+3p21yfTIZpXYUUwv7tnKGvDQKRTZok=
 github.com/actiontech/mybatis-mapper-2-sql v0.3.0/go.mod h1:C2CICYfJ/MRX9XpBqjp15MXN3X15mlhDJc35CTZTzWQ=
 github.com/agiledragon/gomonkey v2.0.2+incompatible h1:eXKi9/piiC3cjJD1658mEE2o3NjkJ5vDLgYjCQu0Xlw=
@@ -721,7 +717,6 @@ github.com/klauspost/cpuid v1.2.0/go.mod h1:Pj4uuM528wm8OyEC2QMXAi2YiTZ96dNQPGgo
 github.com/klauspost/pgzip v1.2.4/go.mod h1:Ch1tH69qFZu15pkjo5kYi6mth2Zzwzt50oCQKQE9RUs=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.2/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
-github.com/konsorten/go-windows-terminal-sequences v1.0.3 h1:CE8S1cTafDpPvMhIxNJKvHsGVBgn1xWYf1NbHQhywc8=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/fs v0.1.0/go.mod h1:FFnZGqtBN9Gxj7eW1uZ42v5BccTP0vu6NEaFoC2HwRg=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
@@ -744,6 +739,8 @@ github.com/labstack/echo/v4 v4.6.1/go.mod h1:RnjgMWNDB9g/HucVWhQYNQP9PvbYf6adqft
 github.com/labstack/gommon v0.2.8/go.mod h1:/tj9csK2iPSBvn+3NLM9e52usepMtrd5ilFYA+wQNJ4=
 github.com/labstack/gommon v0.3.0 h1:JEeO0bvc78PKdyHxloTKiF8BD5iGrH8T6MSeGvSgob0=
 github.com/labstack/gommon v0.3.0/go.mod h1:MULnywXg0yavhxWKc+lOruYdAhDwPK9wf0OL7NoOu+k=
+github.com/larksuite/oapi-sdk-go/v3 v3.0.18 h1:I91VJQMC2dpwIDMfF7RO0kQ+bg6X4+2RMMLrg/z6m5E=
+github.com/larksuite/oapi-sdk-go/v3 v3.0.18/go.mod h1:FKi8vBgtkBt/xNRQUwdWvoDmsPh7/wP75Sn5IBIBQLk=
 github.com/leodido/go-urn v1.1.0/go.mod h1:+cyI34gQWZcE1eQU7NVgKkkzdXDQHr1dBMtdAPozLkw=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/leodido/go-urn v1.2.1 h1:BqpAaACuzVSgi/VLzGZIobT2z4v53pjosyNd9Yv6n/w=
@@ -1060,8 +1057,9 @@ github.com/sirupsen/logrus v1.0.5/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjM
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
-github.com/sirupsen/logrus v1.6.0 h1:UBcNElsrwanuuMsnGSlYmtmgbb23qDR5dG+6X6Oo89I=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
+github.com/sirupsen/logrus v1.7.0 h1:ShrD1U9pZB12TX0cVy0DtePoCH97K8EtX+mg7ZARUtM=
+github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833 h1:0JHwfRBrBZr/QcLo7+q9C3xOt8oXRKLCnZOrHN+Bza0=
 github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833/go.mod h1:Qq2tnreUXwVo7NAKAHmbWFsgqpDUkxwhJCClY+ZCudA=
 github.com/sjmudd/stopwatch v0.0.0-20170613150411-f380bf8a9be1/go.mod h1:Pgf1sZ2KrHK8vdRTV5UHGp80LT7HMUKuNAiKC402abY=
