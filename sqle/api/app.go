@@ -157,6 +157,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, AdminUserAllowed())
 		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, AdminUserAllowed())
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, AdminUserAllowed())
+		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, AdminUserAllowed())
 
 		// other
 		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
