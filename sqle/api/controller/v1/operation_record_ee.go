@@ -595,7 +595,7 @@ func exportOperationRecordList(c echo.Context) error {
 
 	csvWriter.Flush()
 
-	fileName := fmt.Sprintf("操作记录-%s.csv", time.Now().Format("2006-01-02"))
+	fileName := fmt.Sprintf("%s_操作记录.csv", time.Now().Format("20060102"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
