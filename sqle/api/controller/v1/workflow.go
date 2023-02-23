@@ -1869,3 +1869,38 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV1 {
 	}
 	return stepRes
 }
+
+type GetWorkflowsExportListReqV1 struct {
+	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
+	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
+	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
+	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskExecuteStartTimeFrom    string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+}
+
+// GetWorkflowExportListV1
+// @Summary 导出工单列表
+// @Description export workflow list
+// @Id getWorkflowExportListV1
+// @Tags workflow
+// @Security ApiKeyAuth
+// @Param filter_subject query string false "filter subject"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
+// @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
+// @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
+// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
+// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
+// @Param filter_task_instance_name query string false "filter instance name"
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
+// @Success 200 {file} file "get export workflow list"
+// @Router /v1/projects/{project_name}/workflows/{workflow_id}/exports [get]
+func GetWorkflowExportListV1(c echo.Context) error {
+	return getWorkflowExportListV1(c)
+}
