@@ -470,6 +470,7 @@ func getOperationActionList(c echo.Context) error {
 		if _, ok := removeDuplicate[info.OperationAction]; ok {
 			continue
 		}
+		removeDuplicate[info.OperationAction] = struct{}{}
 		operationActionList = append(operationActionList, action{
 			info.OperationType,
 			info.OperationAction,
