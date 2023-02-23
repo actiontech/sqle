@@ -35,6 +35,7 @@ type GetOperationActionListResV1 struct {
 }
 
 type OperationActionList struct {
+	OperationType   string `json:"operation_type"`
 	OperationAction string `json:"operation_action"`
 	Desc            string `json:"desc"`
 }
