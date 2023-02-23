@@ -132,7 +132,7 @@ func CreateApprove(id string) {
 			}
 
 			sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
-			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.Subject)
+			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.WorkflowId)
 			if sqleUrl == "" {
 				newLog.Errorf("sqle url is empty")
 				workflowUrl = ""
