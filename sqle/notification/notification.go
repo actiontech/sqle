@@ -119,7 +119,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
 			strings.TrimRight(*w.config.SQLEUrl, "/"),
 			w.workflow.Project.Name,
-			w.workflow.Subject,
+			w.workflow.WorkflowId,
 		))
 	}
 
