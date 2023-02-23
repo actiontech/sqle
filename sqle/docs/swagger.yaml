@@ -2115,8 +2115,8 @@ definitions:
         type: integer
       last_sync_status:
         enum:
-          - succeeded
-          - failed
+        - succeeded
+        - failed
         example: succeeded
         type: string
       last_sync_success_time:
@@ -2323,6 +2323,8 @@ definitions:
         type: string
       operation_action:
         type: string
+      operation_type:
+        type: string
     type: object
   v1.OperationRecordList:
     properties:
@@ -2343,8 +2345,8 @@ definitions:
         type: string
       status:
         enum:
-          - succeeded
-          - failed
+        - succeeded
+        - failed
         type: string
     type: object
   v1.OperationResV1:

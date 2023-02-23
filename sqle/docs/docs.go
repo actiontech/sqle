@@ -10853,6 +10853,9 @@ var doc = `{
                 },
                 "operation_action": {
                     "type": "string"
+                },
+                "operation_type": {
+                    "type": "string"
                 }
             }
         },
