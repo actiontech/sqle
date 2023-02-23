@@ -460,18 +460,29 @@ var actionNameDescMap = map[string]string{
 }
 
 func getOperationActionList(c echo.Context) error {
-	var operationActionList []string
+	type action struct {
+		OperationType   string
+		OperationAction string
+	}
+	var operationActionList []action
+	removeDuplicate := make(map[string]struct{})
 	for _, info := range sqleMiddleware.ApiInterfaceInfoList {
-		operationActionList = append(operationActionList, info.OperationAction)
+		if _, ok := removeDuplicate[info.OperationAction]; ok {
+			continue
+		}
+		removeDuplicate[info.OperationAction] = struct{}{}
+		operationActionList = append(operationActionList, action{
+			info.OperationType,
+			info.OperationAction,
+		})
 	}
 
-	distinctOperationActionList := utils.RemoveDuplicate(operationActionList)
-
 	var operationActionNameList []OperationActionList
-	for _, operationAction := range distinctOperationActionList {
+	for _, operationAction := range operationActionList {
 		operationActionNameList = append(operationActionNameList, OperationActionList{
-			OperationAction: operationAction,
-			Desc:            actionNameDescMap[operationAction],
+			OperationType:   operationAction.OperationType,
+			OperationAction: operationAction.OperationAction,
+			Desc:            actionNameDescMap[operationAction.OperationAction],
 		})
 	}
 
