@@ -4068,19 +4068,19 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/exports": {
+        "/v1/projects/{project_name}/workflows/exports": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "export workflow list",
+                "description": "export workflow",
                 "tags": [
                     "workflow"
                 ],
-                "summary": "导出工单列表",
-                "operationId": "getWorkflowExportListV1",
+                "summary": "导出工单",
+                "operationId": "exportWorkflowV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -4151,18 +4151,11 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "get export workflow list",
+                        "description": "export workflow",
                         "schema": {
                             "type": "file"
                         }
