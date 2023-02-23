@@ -13,6 +13,6 @@ import (
 
 var errCommunityEditionDoesNotSupportFeatureExportWorkflowList = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support feature export workflow list"))
 
-func getWorkflowExportListV1(c echo.Context) error {
+func exportWorkflowV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFeatureExportWorkflowList)
 }

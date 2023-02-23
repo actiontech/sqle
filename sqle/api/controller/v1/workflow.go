@@ -1882,10 +1882,10 @@ type GetWorkflowsExportListReqV1 struct {
 	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 }
 
-// GetWorkflowExportListV1
-// @Summary 导出工单列表
-// @Description export workflow list
-// @Id getWorkflowExportListV1
+// ExportWorkflowV1
+// @Summary 导出工单
+// @Description export workflow
+// @Id exportWorkflowV1
 // @Tags workflow
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
@@ -1898,9 +1898,8 @@ type GetWorkflowsExportListReqV1 struct {
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param project_name path string true "project name"
-// @Param workflow_id path string true "workflow id"
-// @Success 200 {file} file "get export workflow list"
-// @Router /v1/projects/{project_name}/workflows/{workflow_id}/exports [get]
-func GetWorkflowExportListV1(c echo.Context) error {
-	return getWorkflowExportListV1(c)
+// @Success 200 {file} file "export workflow"
+// @Router /v1/projects/{project_name}/workflows/exports [get]
+func ExportWorkflowV1(c echo.Context) error {
+	return exportWorkflowV1(c)
 }

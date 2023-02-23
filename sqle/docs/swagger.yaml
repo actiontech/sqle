@@ -6450,75 +6450,6 @@ paths:
       summary: 创建工单
       tags:
       - workflow
-  /v1/projects/{project_name}/workflows/{workflow_id}/exports:
-    get:
-      description: export workflow list
-      operationId: getWorkflowExportListV1
-      parameters:
-      - description: filter subject
-        in: query
-        name: filter_subject
-        type: string
-      - description: filter create time from
-        in: query
-        name: filter_create_time_from
-        type: string
-      - description: filter create time to
-        in: query
-        name: filter_create_time_to
-        type: string
-      - description: filter_task_execute_start_time_from
-        in: query
-        name: filter_task_execute_start_time_from
-        type: string
-      - description: filter_task_execute_start_time_to
-        in: query
-        name: filter_task_execute_start_time_to
-        type: string
-      - description: filter create user name
-        in: query
-        name: filter_create_user_name
-        type: string
-      - description: filter workflow status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        name: filter_status
-        type: string
-      - description: filter current step assignee user name
-        in: query
-        name: filter_current_step_assignee_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_task_instance_name
-        type: string
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: get export workflow list
-          schema:
-            type: file
-      security:
-      - ApiKeyAuth: []
-      summary: 导出工单列表
-      tags:
-      - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/:
     get:
       deprecated: true
@@ -6851,6 +6782,70 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 批量完成工单
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/exports:
+    get:
+      description: export workflow
+      operationId: exportWorkflowV1
+      parameters:
+      - description: filter subject
+        in: query
+        name: filter_subject
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: filter_task_execute_start_time_from
+        in: query
+        name: filter_task_execute_start_time_from
+        type: string
+      - description: filter_task_execute_start_time_to
+        in: query
+        name: filter_task_execute_start_time_to
+        type: string
+      - description: filter create user name
+        in: query
+        name: filter_create_user_name
+        type: string
+      - description: filter workflow status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        name: filter_status
+        type: string
+      - description: filter current step assignee user name
+        in: query
+        name: filter_current_step_assignee_user_name
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_task_instance_name
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: export workflow
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出工单
       tags:
       - workflow
   /v1/role_tips:
