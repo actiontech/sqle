@@ -2365,6 +2365,7 @@ var doc = `{
                 ],
                 "summary": "添加实例",
                 "operationId": "createInstanceV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
