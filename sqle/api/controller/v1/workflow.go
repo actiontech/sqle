@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
@@ -1171,12 +1171,12 @@ func CreateWorkflowV1(c echo.Context) error {
 }
 
 func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
-	allowLevel := driver.RuleLevelError
+	allowLevel := driverV2.RuleLevelError
 	if template.AllowSubmitWhenLessAuditLevel != "" {
-		allowLevel = driver.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
+		allowLevel = driverV2.RuleLevel(template.AllowSubmitWhenLessAuditLevel)
 	}
 	for _, task := range tasks {
-		if driver.RuleLevel(task.AuditLevel).More(allowLevel) {
+		if driverV2.RuleLevel(task.AuditLevel).More(allowLevel) {
 			return errors.New(errors.DataInvalid,
 				fmt.Errorf("there is an audit result with an error level higher than the allowable submission level(%v), please modify it before submitting. taskId=%v", allowLevel, task.ID))
 		}

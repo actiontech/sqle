@@ -3,7 +3,7 @@ package driver
 import (
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 
 	// DRIVER LIST:
 	// 	https://github.com/golang/go/wiki/SQLDrivers
@@ -15,7 +15,7 @@ import (
 // Dialector is a interface for database dialect. It used for sql.Open()
 type Dialector interface {
 	// Dialect return the driver name and dsn detail. The return value is used for sql.Open().
-	Dialect(dsn *driver.DSN) (driverName string, dsnDetail string)
+	Dialect(dsn *driverV1.DSN) (driverName string, dsnDetail string)
 
 	// ShowDatabaseSQL return the sql to show all databases.
 	ShowDatabaseSQL() string
@@ -28,7 +28,7 @@ type Dialector interface {
 type PostgresDialector struct {
 }
 
-func (d *PostgresDialector) Dialect(dsn *driver.DSN) (string, string) {
+func (d *PostgresDialector) Dialect(dsn *driverV1.DSN) (string, string) {
 	if dsn.DatabaseName == "" {
 		dsn.DatabaseName = "postgres"
 	}
@@ -48,7 +48,7 @@ func (d *PostgresDialector) ShowDatabaseSQL() string {
 type OracleDialector struct {
 }
 
-func (d *OracleDialector) Dialect(dsn *driver.DSN) (string, string) {
+func (d *OracleDialector) Dialect(dsn *driverV1.DSN) (string, string) {
 	if dsn.DatabaseName == "" {
 		dsn.DatabaseName = "xe"
 	}
@@ -67,7 +67,7 @@ func (d *OracleDialector) ShowDatabaseSQL() string {
 type MssqlDialector struct {
 }
 
-func (d *MssqlDialector) Dialect(dsn *driver.DSN) (string, string) {
+func (d *MssqlDialector) Dialect(dsn *driverV1.DSN) (string, string) {
 	// connect by:
 	// 1. host and port (we used)
 	// 2. host and instance

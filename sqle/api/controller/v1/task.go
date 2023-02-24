@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/utils"
 	"mime"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/common"
+	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -158,17 +159,13 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer drvMgr.Close(context.TODO())
+	defer plugin.Close(context.TODO())
 
-	d, err := drvMgr.GetAuditDriver()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if err := d.Ping(context.TODO()); err != nil {
+	if err := plugin.Ping(context.TODO()); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -188,7 +185,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := d.Parse(context.TODO(), sql)
+	nodes, err := plugin.Parse(context.TODO(), sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -676,18 +673,14 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	l := log.NewEntry()
 	for _, instance := range instances {
-		driverManager, err := common.NewDriverManagerWithoutAudit(l, instance, "")
+		plugin, err := common.NewDriverManagerWithoutAudit(l, instance, "")
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		d, err := driverManager.GetAuditDriver()
-		if err != nil {
+		if err := plugin.Ping(context.TODO()); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		if err := d.Ping(context.TODO()); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		d.Close(context.TODO())
+		plugin.Close(context.TODO())
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -792,15 +785,11 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	driverManager, err := common.NewDriverManagerWithoutCfg(l, driver.DriverTypeMySQL)
+	plugin, err := common.NewDriverManagerWithoutCfg(l, v2.DriverTypeMySQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	d, err := driverManager.GetAuditDriver()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	nodes, err := d.Parse(context.TODO(), sql)
+	nodes, err := plugin.Parse(context.TODO(), sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

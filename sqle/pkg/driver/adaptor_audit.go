@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	hclog "github.com/hashicorp/go-hclog"
@@ -16,11 +16,11 @@ import (
 type AuditAdaptor struct {
 	l hclog.Logger
 
-	cfg *driver.Config
+	cfg *driverV1.Config
 
 	dt Dialector
 
-	rules            []*driver.Rule
+	rules            []*driverV1.Rule
 	ruleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
 	ruleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
 
@@ -33,8 +33,8 @@ type adaptorOptions struct {
 	sqlParser func(string) (interface{}, error)
 }
 
-type rawSQLRuleHandler func(ctx context.Context, rule *driver.Rule, rawSQL string) (string, error)
-type astSQLRuleHandler func(ctx context.Context, rule *driver.Rule, astSQL interface{}) (string, error)
+type rawSQLRuleHandler func(ctx context.Context, rule *driverV1.Rule, rawSQL string) (string, error)
+type astSQLRuleHandler func(ctx context.Context, rule *driverV1.Rule, astSQL interface{}) (string, error)
 
 // NewAdaptor create a database plugin AuditAdaptor with dialector.
 // NewAdaptor is actually NewAuditAdaptor, but the method name cannot be changed for historical reasons
@@ -54,7 +54,7 @@ func NewAdaptor(dt Dialector) *AuditAdaptor {
 	}
 }
 
-func (a *AuditAdaptor) AddRule(r *driver.Rule, h rawSQLRuleHandler) {
+func (a *AuditAdaptor) AddRule(r *driverV1.Rule, h rawSQLRuleHandler) {
 	a.rules = append(a.rules, r)
 	a.ruleToRawHandler[r.Name] = h
 }
@@ -63,7 +63,7 @@ func (a *AuditAdaptor) AddAdditionalParams(p *params.Param) {
 	a.additionalParams = append(a.additionalParams, p)
 }
 
-func (a *AuditAdaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler) {
+func (a *AuditAdaptor) AddRuleWithSQLParser(r *driverV1.Rule, h astSQLRuleHandler) {
 	a.rules = append(a.rules, r)
 	a.ruleToASTHandler[r.Name] = h
 }
@@ -71,8 +71,8 @@ func (a *AuditAdaptor) AddRuleWithSQLParser(r *driver.Rule, h astSQLRuleHandler)
 func (a *AuditAdaptor) Serve(opts ...AdaptorOption) {
 	plugin := a.GeneratePlugin(opts...)
 	a.l.Info("start serve plugin", "name", a.dt)
-	p := driver.NewPlugin()
-	p.AddPlugin(driver.PluginNameAuditDriver, driver.DefaultPluginVersion, plugin)
+	p := driverV1.NewPlugin()
+	p.AddPlugin(driverV1.PluginNameAuditDriver, driverV1.DefaultPluginVersion, plugin)
 	p.Serve()
 }
 
@@ -101,8 +101,8 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 		additionalParams: a.additionalParams,
 	}
 
-	newDriver := func(cfg *driver.Config) driver.Driver {
-		if p, exist := pluginImpls[driver.PluginNameAuditDriver]; exist {
+	newDriver := func(cfg *driverV1.Config) driverV1.Driver {
+		if p, exist := pluginImpls[driverV1.PluginNameAuditDriver]; exist {
 			return p
 		}
 
@@ -111,7 +111,7 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 		di := &pluginImpl{auditAdaptor: a}
 
 		if cfg.DSN == nil {
-			pluginImpls[driver.PluginNameAuditDriver] = di
+			pluginImpls[driverV1.PluginNameAuditDriver] = di
 			return di
 		}
 
@@ -119,11 +119,11 @@ func (a *AuditAdaptor) GeneratePlugin(opts ...AdaptorOption) goPlugin.Plugin {
 		db, conn := getDbConn(driverName, dsnDetail)
 		di.db = db
 		di.conn = conn
-		pluginImpls[driver.PluginNameAuditDriver] = di
+		pluginImpls[driverV1.PluginNameAuditDriver] = di
 		return di
 	}
 
-	return driver.NewAuditDriverPlugin(r, newDriver)
+	return driverV1.NewAuditDriverPlugin(r, newDriver)
 }
 
 // AdaptorOption store some custom options for the driver adaptor.
@@ -154,12 +154,12 @@ func WithSQLParser(parser func(sql string) (ast interface{}, err error)) Adaptor
 	})
 }
 
-var _ driver.Driver = (*pluginImpl)(nil)
-var _ driver.Registerer = (*auditRegistererImpl)(nil)
+var _ driverV1.Driver = (*pluginImpl)(nil)
+var _ driverV1.Registerer = (*auditRegistererImpl)(nil)
 
 type auditRegistererImpl struct {
 	dt               Dialector
-	rules            []*driver.Rule
+	rules            []*driverV1.Rule
 	additionalParams params.Params
 }
 
@@ -167,7 +167,7 @@ func (r *auditRegistererImpl) Name() string {
 	return r.dt.String()
 }
 
-func (r *auditRegistererImpl) Rules() []*driver.Rule {
+func (r *auditRegistererImpl) Rules() []*driverV1.Rule {
 	return r.rules
 }
 
