@@ -3,14 +3,12 @@ package v1
 import (
 	"context"
 	"fmt"
-	"os/exec"
 	"sync"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
-	"github.com/hashicorp/go-plugin"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 )
@@ -31,12 +29,10 @@ const (
 	PluginNameAnalysisDriver = "analysis-driver"
 )
 
-var defaultPluginSet = map[int]goPlugin.PluginSet{
-	DefaultPluginVersion: goPlugin.PluginSet{
-		PluginNameAuditDriver:    &auditDriverPlugin{},
-		PluginNameAnalysisDriver: &analysisDriverPlugin{},
-		PluginNameQueryDriver:    &queryDriverPlugin{},
-	},
+var PluginSet = goPlugin.PluginSet{
+	PluginNameAuditDriver:    &auditDriverPlugin{},
+	PluginNameAnalysisDriver: &analysisDriverPlugin{},
+	PluginNameQueryDriver:    &queryDriverPlugin{},
 }
 
 var (
@@ -51,21 +47,7 @@ var queryDrivers = make(map[string]struct{})
 var analysisDriverMu = &sync.RWMutex{}
 var analysisDrivers = make(map[string]struct{})
 
-func newClientFromFile(path string) *PluginClient {
-	client := plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig:  handshakeConfig,
-		VersionedPlugins: defaultPluginSet,
-		Cmd:              exec.Command(path),
-		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		// GRPCDialOptions:  SQLEGRPCDialOptions,
-	})
-	return &PluginClient{
-		path: path,
-		c:    client,
-	}
-}
-
-func checkQueryDriver(cp plugin.ClientProtocol) error {
+func checkQueryDriver(cp goPlugin.ClientProtocol) error {
 	rawI, err := cp.Dispense(PluginNameQueryDriver)
 	if err != nil {
 		return err //todo
@@ -82,7 +64,7 @@ func checkQueryDriver(cp plugin.ClientProtocol) error {
 	return nil
 }
 
-func checkAnalysisDriver(cp plugin.ClientProtocol) error {
+func checkAnalysisDriver(cp goPlugin.ClientProtocol) error {
 	rawI, err := cp.Dispense(PluginNameAnalysisDriver)
 	if err != nil {
 		return err
@@ -98,8 +80,7 @@ func checkAnalysisDriver(cp plugin.ClientProtocol) error {
 	return nil
 }
 
-func RegisterDrivers(path string) (pluginName string, rules []*Rule, additionalParams params.Params, err error) {
-	c := newClientFromFile(path)
+func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string, rules []*Rule, additionalParams params.Params, err error) {
 	cp, err := c.Client()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
@@ -180,7 +161,8 @@ func RegisterDrivers(path string) (pluginName string, rules []*Rule, additionalP
 	}
 
 	handler := func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
-		client := newClientFromFile(path)
+
+		client := goPlugin.NewClient(clientCfg(path))
 		gRPCClient, err := client.Client()
 		if err != nil {
 			return nil, err
