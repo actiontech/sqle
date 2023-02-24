@@ -5,17 +5,17 @@ import (
 	"database/sql"
 	"os"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 
 	hclog "github.com/hashicorp/go-hclog"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
 
-type ListTablesInSchemaFunc func(ctx context.Context, conf *driver.ListTablesInSchemaConf, dbConf DbConf) (*driver.ListTablesInSchemaResult, error)
-type GetTableMetaByTableNameFunc func(ctx context.Context, conf *driver.GetTableMetaByTableNameConf, dbConf DbConf) (*driver.GetTableMetaByTableNameResult, error)
-type GetTableMetaBySQLFunc func(ctx context.Context, conf *driver.GetTableMetaBySQLConf, dbConf DbConf) (*driver.GetTableMetaBySQLResult, error)
-type ExplainFunc func(ctx context.Context, conf *driver.ExplainConf, dbConf DbConf) (*driver.ExplainResult, error)
+type ListTablesInSchemaFunc func(ctx context.Context, conf *driverV1.ListTablesInSchemaConf, dbConf DbConf) (*driverV1.ListTablesInSchemaResult, error)
+type GetTableMetaByTableNameFunc func(ctx context.Context, conf *driverV1.GetTableMetaByTableNameConf, dbConf DbConf) (*driverV1.GetTableMetaByTableNameResult, error)
+type GetTableMetaBySQLFunc func(ctx context.Context, conf *driverV1.GetTableMetaBySQLConf, dbConf DbConf) (*driverV1.GetTableMetaBySQLResult, error)
+type ExplainFunc func(ctx context.Context, conf *driverV1.ExplainConf, dbConf DbConf) (*driverV1.ExplainResult, error)
 
 type DbConf struct {
 	Db   *sql.DB
@@ -26,7 +26,7 @@ type AnalysisAdaptor struct {
 	l hclog.Logger
 
 	dt  Dialector
-	dsn *driver.DSN
+	dsn *driverV1.DSN
 
 	listTablesInSchemaFunc      ListTablesInSchemaFunc
 	getTableMetaByTableNameFunc GetTableMetaByTableNameFunc
@@ -67,8 +67,8 @@ func (a *AnalysisAdaptor) GeneratePlugin() goPlugin.Plugin {
 			a.l.Error("panic", "err", err)
 		}
 	}()
-	newDriver := func(dsn *driver.DSN) driver.AnalysisDriver {
-		if p, exist := pluginImpls[driver.PluginNameAnalysisDriver]; exist {
+	newDriver := func(dsn *driverV1.DSN) driverV1.AnalysisDriver {
+		if p, exist := pluginImpls[driverV1.PluginNameAnalysisDriver]; exist {
 			return p
 		}
 
@@ -77,17 +77,17 @@ func (a *AnalysisAdaptor) GeneratePlugin() goPlugin.Plugin {
 			analysisAdaptor: a,
 		}
 		if a.dsn == nil {
-			pluginImpls[driver.PluginNameAnalysisDriver] = di
+			pluginImpls[driverV1.PluginNameAnalysisDriver] = di
 			return di
 		}
 		driverName, dsnDetail := a.dt.Dialect(dsn)
 		db, conn := getDbConn(driverName, dsnDetail)
 		di.db = db
 		di.conn = conn
-		pluginImpls[driver.PluginNameAnalysisDriver] = di
+		pluginImpls[driverV1.PluginNameAnalysisDriver] = di
 		return di
 	}
-	return driver.NewAnalysisDriverPlugin(newDriver)
+	return driverV1.NewAnalysisDriverPlugin(newDriver)
 }
 
 func getDbConn(driverName, dsnDetail string) (db *sql.DB, conn *sql.Conn) {

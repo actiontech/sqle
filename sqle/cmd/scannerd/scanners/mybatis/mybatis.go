@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+
+	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,7 +24,7 @@ type MyBatis struct {
 
 	sqls []scanners.SQL
 
-	allSQL []driver.Node
+	allSQL []driverV2.Node
 	getAll chan struct{}
 
 	apName         string
@@ -125,7 +126,7 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	return mb.c.GetAuditReportReq(mb.apName, reportID)
 }
 
-func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL []driver.Node, err error) {
+func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL []driverV2.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -139,7 +140,7 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL 
 		return nil, err
 	}
 	for _, fi := range fileInfos {
-		var sqlList []driver.Node
+		var sqlList []driverV2.Node
 		pathJoin := path.Join(pathName, fi.Name())
 
 		if fi.IsDir() {
@@ -160,7 +161,7 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL 
 	return allSQL, err
 }
 
-func GetSQLFromFile(file string, skipErrorQuery bool) (r []driver.Node, err error) {
+func GetSQLFromFile(file string, skipErrorQuery bool) (r []driverV2.Node, err error) {
 	content, err := ReadFileContent(file)
 	if err != nil {
 		return nil, err
