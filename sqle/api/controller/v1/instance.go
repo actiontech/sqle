@@ -127,6 +127,7 @@ func ConvertMaintenanceTimeReqV1ToPeriod(mt []*MaintenanceTimeReqV1) model.Perio
 }
 
 // CreateInstance create instance
+// @Deprecated
 // @Summary 添加实例
 // @Description create a instance
 // @Id createInstanceV1
