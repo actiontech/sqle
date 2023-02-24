@@ -34,9 +34,10 @@ func Run(config *config.Config) error {
 		}
 	}
 
-	if err := driver.InitPlugins(sqleCnf.PluginPath); err != nil {
+	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
+	defer driver.GetPluginManager().Stop()
 
 	service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
@@ -65,10 +66,10 @@ func Run(config *config.Config) error {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
-		if err := s.CreateRulesIfNotExist(driver.AllRules()); err != nil {
+		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(driver.AllRules()); err != nil {
+		if err := s.CreateDefaultTemplate(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
 		if err := s.CreateAdminUser(); err != nil {
