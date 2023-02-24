@@ -101,7 +101,9 @@ var LicenseCheckers = []LicenseChecker{
 }
 
 var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error) {
-	if c.Request().Method != http.MethodPost || strings.TrimSuffix(c.Path(), "/") != "/v1/projects/:project_name/instances" {
+	if c.Request().Method == http.MethodPost &&
+		(strings.TrimSuffix(c.Path(), "/") == "/v1/projects/:project_name/instances" ||
+			strings.TrimSuffix(c.Path(), "/") == "/v2/projects/:project_name/instances") {
 		return false, true, nil
 	}
 
