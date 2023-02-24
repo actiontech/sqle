@@ -14,26 +14,14 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-func init() {
-	allRules := make([]*driver.Rule, len(rulepkg.RuleHandlers))
-	for i := range rulepkg.RuleHandlers {
-		allRules[i] = &rulepkg.RuleHandlers[i].Rule
-	}
-
-	driver.RegisterAuditDriver(driver.DriverTypeMySQL, allRules, params.Params{})
-	driver.RegisterDriverManger(driver.DriverTypeMySQL, NewDriverManagerFunc)
-
-	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
-		panic(err)
-	}
-}
 
 // MysqlDriverImpl implements driver.Driver interface
 type MysqlDriverImpl struct {
@@ -42,15 +30,15 @@ type MysqlDriverImpl struct {
 	// cnf is task cnf, cnf variables record in rules.
 	cnf *Config
 
-	rules []*driver.Rule
+	rules []*driverV2.Rule
 
 	// result keep inspect result for single audited SQL.
 	// It refresh on every Audit.
-	result *driver.AuditResult
+	result *driverV2.AuditResults
 	// HasInvalidSql represent one of the commit sql base-validation failed.
 	HasInvalidSql bool
 
-	inst *driver.DSN
+	inst *driverV2.DSN
 
 	log *logrus.Entry
 	// dbConn is a SQL driver for MySQL.
@@ -61,7 +49,7 @@ type MysqlDriverImpl struct {
 	isOfflineAudit bool
 }
 
-func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error) {
+func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, error) {
 	var inspect = &MysqlDriverImpl{}
 
 	if cfg.DSN != nil {
@@ -84,7 +72,7 @@ func NewInspect(log *logrus.Entry, cfg *driver.Config) (*MysqlDriverImpl, error)
 
 	inspect.log = log
 	inspect.rules = cfg.Rules
-	inspect.result = driver.NewInspectResults()
+	inspect.result = driverV2.NewInspectResults()
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
@@ -234,7 +222,7 @@ func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...inter
 	return conn.Db.Query(query, args...)
 }
 
-func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
+func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
 	nodes, err := i.ParseSql(sqlText)
 	if err != nil {
 		return nil, err
@@ -245,9 +233,9 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driver.N
 		return nil, err
 	}
 
-	ns := make([]driver.Node, len(nodes))
+	ns := make([]driverV2.Node, len(nodes))
 	for i := range nodes {
-		n := driver.Node{}
+		n := driverV2.Node{}
 		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
 		if err != nil {
 			return nil, err
@@ -256,9 +244,9 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driver.N
 		n.Text = nodes[i].Text()
 		switch nodes[i].(type) {
 		case ast.DMLNode:
-			n.Type = driver.SQLTypeDML
+			n.Type = driverV2.SQLTypeDML
 		default:
-			n.Type = driver.SQLTypeDDL
+			n.Type = driverV2.SQLTypeDDL
 		}
 
 		ns[i] = n
@@ -266,12 +254,25 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driver.N
 	return ns, nil
 }
 
-func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
-	i.result = driver.NewInspectResults()
-
-	if sql == "" {
-		return nil, errors.New("sql is empty")
+func (i *MysqlDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
+	for _, sql := range sqls {
+		if sql == "" {
+			return nil, errors.New("has empty sql")
+		}
 	}
+	results := make([]*driverV2.AuditResults, 0, len(sqls))
+	for _, sql := range sqls {
+		result, err := i.audit(ctx, sql)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}
+
+func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.AuditResults, error) {
+	i.result = driverV2.NewInspectResults()
 
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
@@ -298,7 +299,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		i.Logger().Warnf("SQL %s invalid, %s", nodes[0].Text(), i.result.Message())
 	}
 
-	var ghostRule *driver.Rule
+	var ghostRule *driverV2.Rule
 	for _, rule := range i.rules {
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
 			ghostRule = rule
@@ -352,7 +353,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 				buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
 			}
 		}
-		i.result.Add(driver.RuleLevelNotice, buf.String())
+		i.result.Add(driverV2.RuleLevelNotice, buf.String())
 	}
 
 	// dry run gh-ost
@@ -362,7 +363,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 	}
 	if useGhost {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
-			i.result.Add(driver.RuleLevelError, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
+			i.result.Add(driverV2.RuleLevelError, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
 		} else {
 			i.result.Add(ghostRule.Level, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
 		}
@@ -374,7 +375,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sql string) (*driver.AuditR
 		return nil, err
 	}
 	if oscCommandLine != "" {
-		i.result.Add(driver.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+		i.result.Add(driverV2.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 
 	if !i.IsExecutedSQL() {
@@ -515,32 +516,32 @@ func (i *MysqlDriverImpl) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]s
 	return pkColumnsName, hasPk, nil
 }
 
-type DriverManager struct {
-	inspect *MysqlDriverImpl
-}
+type PluginBoot struct{}
 
-func (d *DriverManager) GetAuditDriver() (driver.Driver, error) {
-	return d.inspect, nil
-}
-
-func (d *DriverManager) GetSQLQueryDriver() (driver.SQLQueryDriver, error) {
-	return d.getSQLQueryDriver()
-}
-
-func (d *DriverManager) GetAnalysisDriver() (driver.AnalysisDriver, error) {
-	return d.getAnalysisDriver()
-}
-
-func (d *DriverManager) Close(ctx context.Context) {
-	d.inspect.Close(ctx)
-}
-
-func NewDriverManagerFunc(log *logrus.Entry, dbType string, config *driver.Config) (driver.DriverManager, error) {
-	inspect, err := NewInspect(log, config)
-	if err != nil {
-		return nil, err
+func (p *PluginBoot) Register() (*driverV2.DriverMetas, error) {
+	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
+		panic(err)
 	}
-	return &DriverManager{
-		inspect: inspect,
+	allRules := make([]*driverV2.Rule, len(rulepkg.RuleHandlers))
+	for i := range rulepkg.RuleHandlers {
+		allRules[i] = &rulepkg.RuleHandlers[i].Rule
+	}
+	return &driverV2.DriverMetas{
+		PluginName:               driverV2.DriverTypeMySQL,
+		DatabaseDefaultPort:      3306,
+		Rules:                    allRules,
+		DatabaseAdditionalParams: params.Params{},
 	}, nil
+}
+
+func (p *PluginBoot) Open(cfg *driverV2.Config) (driver.Plugin, error) {
+	return NewInspect(log.NewEntry(), cfg)
+}
+
+func (p *PluginBoot) Stop() error {
+	return nil
+}
+
+func init() {
+	driver.BuiltInPluginBoots[driverV2.DriverTypeMySQL] = &PluginBoot{}
 }
