@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -21,18 +21,18 @@ import (
 )
 
 type testResult struct {
-	Results *driver.AuditResult
+	Results *driverV2.AuditResults
 	rules   map[string]rulepkg.RuleHandler
 }
 
 func newTestResult() *testResult {
 	return &testResult{
-		Results: driver.NewInspectResults(),
+		Results: driverV2.NewInspectResults(),
 		rules:   rulepkg.RuleHandlerMap,
 	}
 }
 
-func (t *testResult) add(level driver.RuleLevel, message string, args ...interface{}) *testResult {
+func (t *testResult) add(level driverV2.RuleLevel, message string, args ...interface{}) *testResult {
 	t.Results.Add(level, message, args...)
 	return t
 }
@@ -48,7 +48,7 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 	return t.add(level, message, args...)
 }
 
-func (t *testResult) level() driver.RuleLevel {
+func (t *testResult) level() driverV2.RuleLevel {
 	return t.Results.Level()
 }
 
@@ -60,7 +60,7 @@ func DefaultMysqlInspect() *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &MysqlDriverImpl{
 		log: log.NewEntry(),
-		inst: &driver.DSN{
+		inst: &driverV2.DSN{
 			Host:         "127.0.0.1",
 			Port:         "3306",
 			User:         "root",
@@ -80,7 +80,7 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &MysqlDriverImpl{
 		log: log.NewEntry(),
-		inst: &driver.DSN{
+		inst: &driverV2.DSN{
 			Host:         "127.0.0.1",
 			Port:         "3306",
 			User:         "root",
@@ -97,13 +97,13 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	}
 }
 
-func runSingleRuleInspectCase(rule driver.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
-	i.rules = []*driver.Rule{&rule}
+func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
+	i.rules = []*driverV2.Rule{&rule}
 	inspectCase(t, desc, i, sql, results...)
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
-	ptrRules := []*driver.Rule{}
+	ptrRules := []*driverV2.Rule{}
 	// this rule will be test in single rule
 	filterRule := map[string]struct{}{
 		rulepkg.DDLCheckObjectNameUseCN:                     struct{}{},
@@ -141,7 +141,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 }
 
 func runEmptyRuleInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
-	i.rules = []*driver.Rule{}
+	i.rules = []*driverV2.Rule{}
 	inspectCase(t, desc, i, sql, results...)
 }
 
@@ -156,31 +156,44 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 		t.Errorf("%s test failed, error: result is unknow\n", desc)
 		return
 	}
+	sqls := make([]string, 0, len(stmts))
+	for _, stmt := range stmts {
+		sqls = append(sqls, stmt.Text())
+	}
+	actualResults, err := i.Audit(context.TODO(), sqls)
+	if err != nil {
+		t.Error()
+		return
+	}
+	if len(stmts) != len(actualResults) {
+		t.Errorf("%s test failed, error: actual result is unknow\n", desc)
+		return
+	}
 
 	for idx, stmt := range stmts {
-		result, err := i.Audit(context.TODO(), stmt.Text())
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		if result.Level() != results[idx].level() || result.Message() != results[idx].message() {
+		// result, err := i.Audit(context.TODO(), stmt.Text())
+		// if err != nil {
+		// 	t.Error(err)
+		// 	return
+		// }
+		if actualResults[idx].Level() != results[idx].level() || actualResults[idx].Message() != results[idx].message() {
 			t.Errorf("%s test failed, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
-				desc, stmt.Text(), results[idx].level(), results[idx].message(), result.Level(), result.Message())
+				desc, stmt.Text(), results[idx].level(), results[idx].message(), actualResults[idx].Level(), actualResults[idx].Message())
 		} else {
-			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, result.Level(), result.Message()))
+			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message()))
 		}
 	}
 }
 
 func TestMessage(t *testing.T) {
 	runDefaultRulesInspectCase(t, "check inspect message", DefaultMysqlInspect(),
-		"use no_exist_db", newTestResult().add(driver.RuleLevelError, "schema no_exist_db 不存在"))
+		"use no_exist_db", newTestResult().add(driverV2.RuleLevelError, "schema no_exist_db 不存在"))
 }
 
 func TestCheckInvalidUse(t *testing.T) {
 	runDefaultRulesInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
 		"use no_exist_db",
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			SchemaNotExistMessage, "no_exist_db"),
 	)
 
@@ -197,8 +210,8 @@ func TestCaseSensitive(t *testing.T) {
 		`
 select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelError,
-			TableNotExistMessage, "exist_db.EXIST_TB_1").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
+		newTestResult().add(driverV2.RuleLevelError,
+			TableNotExistMessage, "exist_db.EXIST_TB_1").add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	inspect1 := DefaultMysqlInspect()
 	inspect1.Ctx.AddSystemVariable(session.SysVarLowerCaseTableNames, "1")
@@ -206,7 +219,7 @@ select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 		`
 select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 }
 
 func TestDDLCheckTableSize(t *testing.T) {
@@ -278,7 +291,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			SchemaNotExistMessage, "not_exist_db"),
 	)
 
@@ -311,7 +324,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			TableExistMessage, "exist_db.exist_tb_1"),
 	)
 
@@ -319,7 +332,7 @@ PRIMARY KEY (id)
 		`
 CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2;
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			TableNotExistMessage, "exist_db.not_exist_tb_2"),
 	)
 
@@ -334,7 +347,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, MultiPrimaryKeyMessage))
+		newTestResult().add(driverV2.RuleLevelError, MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
 		`
@@ -348,7 +361,7 @@ PRIMARY KEY (id),
 PRIMARY KEY (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, MultiPrimaryKeyMessage))
+		newTestResult().add(driverV2.RuleLevelError, MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
 		`
@@ -361,7 +374,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateColumnsMessage,
+		newTestResult().add(driverV2.RuleLevelError, DuplicateColumnsMessage,
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
@@ -377,7 +390,7 @@ INDEX idx_1 (v1),
 INDEX idx_1 (v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexesMessage,
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexesMessage,
 			"idx_1"))
 
 	runDefaultRulesInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
@@ -393,7 +406,7 @@ INDEX idx_1 (v3),
 INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			"v3,v4,v5"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
@@ -407,7 +420,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
@@ -421,7 +434,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id,id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+		newTestResult().add(driverV2.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 			"id"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate", DefaultMysqlInspect(),
@@ -436,7 +449,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_1",
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_1",
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(2)", DefaultMysqlInspect(),
@@ -451,7 +464,7 @@ PRIMARY KEY (id),
 INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
 			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
@@ -467,8 +480,8 @@ INDEX idx_1 (v1,v1),
 INDEX idx_2 (v1,v2,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_1",
-			"v1").add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "v2"))
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_1",
+			"v1").add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "v2"))
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
@@ -488,7 +501,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage,
 			"not_exist_db"),
 	)
 
@@ -496,7 +509,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 		`
 ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage,
 			"exist_db.not_exist_tb_1"),
 	)
 
@@ -504,7 +517,7 @@ ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT 
 		`
 ALTER TABLE exist_db.exist_tb_1 Add column v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, ColumnExistMessage,
 			"v1"),
 	)
 
@@ -512,7 +525,7 @@ ALTER TABLE exist_db.exist_tb_1 Add column v1 varchar(255) NOT NULL DEFAULT "uni
 		`
 ALTER TABLE exist_db.exist_tb_1 drop column v5;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -520,7 +533,7 @@ ALTER TABLE exist_db.exist_tb_1 drop column v5;
 		`
 ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -535,7 +548,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v1 v1 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			"v5"),
 	)
 
@@ -543,7 +556,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, ColumnExistMessage,
 			"v1"),
 	)
 
@@ -558,14 +571,14 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 `,
-		newTestResult().add(driver.RuleLevelError, PrimaryKeyExistMessage).addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
+		newTestResult().add(driverV2.RuleLevelError, PrimaryKeyExistMessage).addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but key column not exist", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id11);
 `,
-		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			"id11"),
 	)
 
@@ -573,7 +586,7 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id11);
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id,id);
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+		newTestResult().add(driverV2.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 			"id"),
 	)
 
@@ -581,7 +594,7 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_1 (v1);
 `,
-		newTestResult().add(driver.RuleLevelError, IndexExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, IndexExistMessage,
 			"idx_1"),
 	)
 
@@ -589,7 +602,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_1 (v1);
 		`
 ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 `,
-		newTestResult().add(driver.RuleLevelError, IndexNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, IndexNotExistMessage,
 			"idx_2"),
 	)
 
@@ -597,7 +610,7 @@ ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (v3);
 `,
-		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		newTestResult().add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			"v3"),
 	)
 
@@ -605,7 +618,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (v3);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2",
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2",
 			"id"),
 	)
 
@@ -613,7 +626,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index (id,id);
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
 			"id").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 }
@@ -630,7 +643,7 @@ CREATE DATABASE if not exists exist_db;
 		`
 CREATE DATABASE exist_db;
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaExistMessage, "exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaExistMessage, "exist_db"),
 	)
 }
 
@@ -639,42 +652,42 @@ func TestCheckInvalidCreateIndex(t *testing.T) {
 		`
 CREATE INDEX idx_1 ON not_exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: table not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().add(driver.RuleLevelError, IndexExistMessage, "idx_1"),
+		newTestResult().add(driverV2.RuleLevelError, IndexExistMessage, "idx_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
 `,
-		newTestResult().add(driver.RuleLevelError, KeyedColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, KeyedColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id);
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "id"),
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "id"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "id"),
+		newTestResult().add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, "idx_2", "id"),
 	)
 }
 
@@ -702,7 +715,7 @@ DROP DATABASE if exists not_exist_db;
 		`
 DROP DATABASE not_exist_db;
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			SchemaNotExistMessage, "not_exist_db"),
 	)
 
@@ -724,7 +737,7 @@ DROP TABLE if exists not_exist_db.not_exist_tb_1;
 		`
 DROP TABLE not_exist_db.not_exist_tb_1;
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			SchemaNotExistMessage, "not_exist_db"),
 	)
 
@@ -732,7 +745,7 @@ DROP TABLE not_exist_db.not_exist_tb_1;
 		`
 DROP TABLE exist_db.not_exist_tb_1;
 `,
-		newTestResult().add(driver.RuleLevelError,
+		newTestResult().add(driverV2.RuleLevelError,
 			TableNotExistMessage, "exist_db.not_exist_tb_1"),
 	)
 
@@ -747,7 +760,7 @@ DROP INDEX idx_1 ON exist_db.exist_tb_1;
 		`
 DROP INDEX idx_2 ON exist_db.exist_tb_1;
 `,
-		newTestResult().add(driver.RuleLevelError, IndexNotExistMessage, "idx_2"),
+		newTestResult().add(driverV2.RuleLevelError, IndexNotExistMessage, "idx_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_index: if exists and index not exist", DefaultMysqlInspect(),
@@ -763,49 +776,49 @@ func TestCheckInvalidInsert(t *testing.T) {
 		`
 insert into not_exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: table not exist", DefaultMysqlInspect(),
 		`
 insert into exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v3) values (1,"1","1");
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v3="1";
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v1) values (1,"1","1");
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateColumnsMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, DuplicateColumnsMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v1="1";
 `,
-		newTestResult().add(driver.RuleLevelError, DuplicateColumnsMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, DuplicateColumnsMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: do not match values and columns", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnsValuesNotMatchMessage),
+		newTestResult().add(driverV2.RuleLevelError, ColumnsValuesNotMatchMessage),
 	)
 }
 
@@ -828,28 +841,28 @@ update exist_tb_1 set v1="2" where exist_db.exist_tb_1.id=1;
 		`
 update not_exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
 		`
 update exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v3="2" where id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: where column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v1="2" where v3=1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: ok", DefaultMysqlInspect(),
@@ -862,28 +875,28 @@ update exist_tb_1 as t set t.v1 = "1" where t.id = 1;
 		`
 update exist_db.not_exist_tb as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "t.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v1 = "1" where t.v3 = 1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "t.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -904,42 +917,42 @@ update exist_tb_1 inner join exist_tb_2 on exist_tb_1.id = exist_tb_2.id set exi
 		`
 update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_3.v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_3.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
@@ -953,21 +966,21 @@ update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnIsAmbiguousMessage, "v1"),
 	)
 }
 
@@ -983,35 +996,35 @@ delete from exist_db.exist_tb_1 where id=1;
 		`
 delete from not_exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where v3=1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_1.v3=1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_2.id=1;
 `,
-		newTestResult().add(driver.RuleLevelError, ColumnNotExistMessage, "exist_tb_2.id"),
+		newTestResult().add(driverV2.RuleLevelError, ColumnNotExistMessage, "exist_tb_2.id"),
 	)
 }
 
@@ -1020,14 +1033,14 @@ func TestCheckInvalidSelect(t *testing.T) {
 		`
 select id from not_exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelError, SchemaNotExistMessage, "not_exist_db").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelError, SchemaNotExistMessage, "not_exist_db").add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select: table not exist", DefaultMysqlInspect(),
 		`
 select id from exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelError, TableNotExistMessage, "exist_db.not_exist_tb").add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 }
 
@@ -1041,27 +1054,27 @@ func TestCheckSelectAll(t *testing.T) {
 func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id > 1 limit 1;",
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 limit 1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=1 and 2=2 limit 1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(3)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id=id limit 1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "select_from: no where condition(4)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id limit 1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
@@ -1121,19 +1134,19 @@ func TestCheckWhereInvalid(t *testing.T) {
 func TestCheckWhereInvalid_FP(t *testing.T) {
 	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id=? limit ?;",
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: has where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where exist_tb_1.id=? limit ?;",
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(1)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where 1=? and 2=2 limit ?;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[pf]select_from: no where condition(2)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where ?=? limit ?;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "[pf]update: has where condition", DefaultMysqlInspect(),
@@ -2259,13 +2272,13 @@ func TestDMLCheckSelectLimit(t *testing.T) {
 		`
 select id from exist_db.exist_tb_1 where id =1 limit 1000;
 `,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "success 2", DefaultMysqlInspect(),
 		`
 select id from exist_db.exist_tb_1 where id =1 limit 1;
 `,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "success 3", DefaultMysqlInspectOffline(),
 		`
@@ -2284,14 +2297,14 @@ select sleep(1);
 		`
 select id from exist_db.exist_tb_1 where id =1 limit 1001;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "failed big 2", DefaultMysqlInspect(),
 		`
 select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driver.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N").add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driverV2.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N").add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 
 	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspect(),
@@ -2307,7 +2320,7 @@ func TestDMLCheckSelectLimit_FP(t *testing.T) {
 		`
 select id from exist_db.exist_tb_1 where id =1 limit ?;
 `,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"),
 	)
 	runDefaultRulesInspectCase(t, "[fp]failed", DefaultMysqlInspect(),
 		`
@@ -3900,7 +3913,7 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	ruleDMLCheckExplainExtraUsingTemporary := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingTemporary].Rule
 	ruleDMLCheckExplainAccessTypeAll := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainAccessTypeAll].Rule
 
-	inspect4.rules = []*driver.Rule{
+	inspect4.rules = []*driverV2.Rule{
 		&ruleDMLCheckExplainExtraUsingFilesort,
 		&ruleDMLCheckExplainExtraUsingTemporary,
 		&ruleDMLCheckExplainAccessTypeAll}
@@ -3921,7 +3934,7 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).
 			AddRow(executor.ExplainRecordExtraUsingTemporary))
 
-	inspect5.rules = []*driver.Rule{
+	inspect5.rules = []*driverV2.Rule{
 		&ruleDMLCheckExplainExtraUsingFilesort,
 		&ruleDMLCheckExplainExtraUsingTemporary,
 		&ruleDMLCheckExplainAccessTypeAll}
@@ -4009,7 +4022,7 @@ SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
 `, newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
-		newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"),
+		newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"),
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 }
 
@@ -4040,7 +4053,7 @@ CREATE
 	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
 `,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -4050,7 +4063,7 @@ CREATE
 		`CREATE TRIGGER BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 
@@ -4067,7 +4080,7 @@ CREATE
 	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
 `,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
@@ -4076,7 +4089,7 @@ CREATE
 		`CREATE hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 
@@ -4123,7 +4136,7 @@ select * from t1;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspect(), sql,
-			newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").
+			newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").
 				addResult(rulepkg.DDLCheckCreateProcedure))
 	}
 
@@ -4158,7 +4171,7 @@ end;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspect(), sql,
-			newTestResult().add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 
@@ -4277,12 +4290,12 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-1", getLowerCaseOpenInspect(),
 			`use not_exist_db;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "not_exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-2", getLowerCaseOpenInspect(),
 			`use NOT_EXIST_DB;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-3", getLowerCaseOpenInspect(),
@@ -4301,12 +4314,12 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-1", getLowerCaseOpenInspect(),
 			`create database EXIST_DB;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-2", getLowerCaseOpenInspect(),
 			`create database exist_db;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-3", getLowerCaseOpenInspect(),
@@ -4321,45 +4334,45 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 			`create database NOT_EXIST_DB;
 create database NOT_EXIST_DB;`,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-6", getLowerCaseOpenInspect(),
 			`create database NOT_EXIST_DB;
 create database not_exist_db;`,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "not_exist_db"))
 	}
 	// check table
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-1", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.exist_tb_1 (id int);`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "EXIST_DB.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-2", getLowerCaseOpenInspect(),
 			`create table exist_db.exist_tb_1 (id int);`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "exist_db.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-3", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.EXIST_TB_1 (id int);`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "EXIST_DB.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-4", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.EXIST_TB_2 (id int);
 create table EXIST_DB.exist_tb_2 (id int);`,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "EXIST_DB.exist_tb_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-5", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.exist_tb_2 (id int);
 create table EXIST_DB.EXIST_TB_2 (id int);`,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "EXIST_DB.EXIST_TB_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-6", getLowerCaseOpenInspect(),
@@ -4371,7 +4384,7 @@ create table EXIST_DB.EXIST_TB_2 (id int);`,
 alter table exist_db.EXIST_TB_1 add column v3 varchar(255) COMMENT "unit test";
 `,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-8", getLowerCaseOpenInspect(),
@@ -4393,12 +4406,12 @@ alter table exist_db.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-1", getLowerCaseOpenInspect(),
 			`select id from exist_db.EXIST_TB_2 where id = 1;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db.EXIST_TB_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-2", getLowerCaseOpenInspect(),
 			`select id from exist_db.exist_tb_2 where id = 1;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db.exist_tb_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-3", getLowerCaseOpenInspect(),
@@ -4419,12 +4432,12 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-1", getLowerCaseCloseInspect(),
 			`use not_exist_db;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "not_exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-2", getLowerCaseCloseInspect(),
 			`use NOT_EXIST_DB;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-3", getLowerCaseCloseInspect(),
@@ -4433,12 +4446,12 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-4", getLowerCaseCloseInspect(),
 			`use EXIST_DB_1;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "EXIST_DB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-5", getLowerCaseCloseInspect(),
 			`use exist_DB_1;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "exist_DB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-6", getLowerCaseCloseInspect(),
@@ -4447,14 +4460,14 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-7", getLowerCaseCloseInspect(),
 			`use exist_db_2;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaNotExistMessage, "exist_db_2"))
 	}
 	// check schema
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name close 2-1", getLowerCaseCloseInspect(),
 			`create database exist_db_1;`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "exist_db_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 2-2", getLowerCaseCloseInspect(),
@@ -4475,14 +4488,14 @@ create database not_exist_db;`,
 			`create database NOT_EXIST_DB;
 create database NOT_EXIST_DB;`,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				SchemaExistMessage, "NOT_EXIST_DB"))
 	}
 	// check table
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-1", getLowerCaseCloseInspect(),
 			`create table exist_db_1.exist_tb_1 (id int);`,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableExistMessage, "exist_db_1.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-2", getLowerCaseCloseInspect(),
@@ -4492,7 +4505,7 @@ create database NOT_EXIST_DB;`,
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-3", getLowerCaseCloseInspect(),
 			`alter table exist_db_1.EXIST_TB_1 rename AS exist_tb_2;
 `,
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db_1.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-4", getLowerCaseCloseInspect(),
@@ -4500,7 +4513,7 @@ create database NOT_EXIST_DB;`,
 alter table exist_db_1.exist_tb_1 add column v3 varchar(255) COMMENT "unit test";
 `,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db_1.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-5", getLowerCaseCloseInspect(),
@@ -4515,7 +4528,7 @@ alter table exist_db_1.exist_tb_2 add column v3 varchar(255) COMMENT "unit test"
 alter table exist_db_1.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
 `,
 			newTestResult(),
-			newTestResult().add(driver.RuleLevelError,
+			newTestResult().add(driverV2.RuleLevelError,
 				TableNotExistMessage, "exist_db_1.EXIST_TB_2"))
 	}
 }
@@ -4562,13 +4575,13 @@ func TestInspect_CheckColumn(t *testing.T) {
 		`
 	select id, v1 from exist_db.exist_tb_1 where id in (1, 2) limit 1;
 	`,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	runDefaultRulesInspectCase(t, "check column 8", DefaultMysqlInspect(),
 		`
 	select ID, V1 from exist_db.exist_tb_1 where ID in (1, 2) limit 1;
 	`,
-		newTestResult().add(driver.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
+		newTestResult().add(driverV2.RuleLevelNotice, "未使用 ORDER BY 的 LIMIT 查询"))
 
 	runDefaultRulesInspectCase(t, "check column 9", DefaultMysqlInspect(),
 		`

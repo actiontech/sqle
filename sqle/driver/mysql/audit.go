@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
@@ -81,7 +81,7 @@ func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 		_, err = i.Ctx.GetExecutionPlan(node.Text())
 	}
 	if err != nil {
-		i.result.Add(driver.RuleLevelWarn, fmt.Sprintf(CheckInvalidErrorFormat, err))
+		i.result.Add(driverV2.RuleLevelWarn, fmt.Sprintf(CheckInvalidErrorFormat, err))
 	}
 	return nil
 
@@ -123,14 +123,14 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 	} else {
 		tableExist, err := i.Ctx.IsTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
 		if tableExist && !stmt.IfNotExists {
-			i.result.Add(driver.RuleLevelError, TableExistMessage,
+			i.result.Add(driverV2.RuleLevelError, TableExistMessage,
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
@@ -139,7 +139,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 				return err
 			}
 			if !referTableExist {
-				i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+				i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 					i.getTableName(stmt.ReferTable))
 			}
 		}
@@ -184,7 +184,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+				i.result.Add(driverV2.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateName, ","))
 			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
@@ -202,23 +202,23 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, constraintName,
+				i.result.Add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, constraintName,
 					strings.Join(duplicateName, ","))
 			}
 		}
 	}
 	if d := utils.GetDuplicate(colsName); len(d) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateColumnsMessage,
+		i.result.Add(driverV2.RuleLevelError, DuplicateColumnsMessage,
 			strings.Join(d, ","))
 	}
 
 	if d := utils.GetDuplicate(indexesName); len(d) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateIndexesMessage,
+		i.result.Add(driverV2.RuleLevelError, DuplicateIndexesMessage,
 			strings.Join(d, ","))
 	}
 
 	if pkCounter > 1 {
-		i.result.Add(driver.RuleLevelError, MultiPrimaryKeyMessage)
+		i.result.Add(driverV2.RuleLevelError, MultiPrimaryKeyMessage)
 	}
 	notExistKeyColsName := []string{}
 	for _, colName := range keyColsName {
@@ -227,7 +227,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 		}
 	}
 	if len(notExistKeyColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(notExistKeyColsName), ","))
 	}
 	return nil
@@ -256,7 +256,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -264,7 +264,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -333,7 +333,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			} else {
 				colNameMap[colName] = struct{}{}
 				if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-					i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+					i.result.Add(driverV2.RuleLevelError, PrimaryKeyExistMessage)
 				} else {
 					hasPk = true
 				}
@@ -357,7 +357,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 
 	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
-		i.result.Add(driver.RuleLevelError, PrimaryKeyNotExistMessage)
+		i.result.Add(driverV2.RuleLevelError, PrimaryKeyNotExistMessage)
 	}
 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
@@ -389,7 +389,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+				i.result.Add(driverV2.RuleLevelError, PrimaryKeyExistMessage)
 			} else {
 				hasPk = true
 			}
@@ -403,7 +403,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+				i.result.Add(driverV2.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
@@ -427,30 +427,30 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
+				i.result.Add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
 	}
 
 	if len(needExistsColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsColsName), ","))
 	}
 	if len(needNotExistsColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnExistMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnExistMessage,
 			strings.Join(utils.RemoveDuplicate(needNotExistsColsName), ","))
 	}
 	if len(needExistsIndexesName) > 0 {
-		i.result.Add(driver.RuleLevelError, IndexNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, IndexNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsIndexesName), ","))
 	}
 	if len(needNotExistsIndexesName) > 0 {
-		i.result.Add(driver.RuleLevelError, IndexExistMessage,
+		i.result.Add(driverV2.RuleLevelError, IndexExistMessage,
 			strings.Join(utils.RemoveDuplicate(needNotExistsIndexesName), ","))
 	}
 	if len(needExistsKeyColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsKeyColsName), ","))
 	}
 	return nil
@@ -471,7 +471,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
 			if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+				i.result.Add(driverV2.RuleLevelError, PrimaryKeyExistMessage)
 			} else {
 				hasPk = true
 			}
@@ -484,7 +484,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				i.result.Add(driver.RuleLevelError, PrimaryKeyExistMessage)
+				i.result.Add(driverV2.RuleLevelError, PrimaryKeyExistMessage)
 			} else {
 				hasPk = true
 			}
@@ -495,7 +495,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
+				i.result.Add(driverV2.RuleLevelError, DuplicatePrimaryKeyedColumnMessage,
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
@@ -510,7 +510,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
+				i.result.Add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
@@ -551,11 +551,11 @@ func (i *MysqlDriverImpl) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -574,7 +574,7 @@ func (i *MysqlDriverImpl) checkInvalidUse(stmt *ast.UseStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, stmt.DBName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, stmt.DBName)
 	}
 	return nil
 }
@@ -596,7 +596,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStm
 		return err
 	}
 	if schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaExistMessage, schemaName)
 	}
 	return nil
 }
@@ -618,7 +618,7 @@ func (i *MysqlDriverImpl) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) e
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 	}
 	return nil
 }
@@ -640,7 +640,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -648,7 +648,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -663,7 +663,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; ok {
-		i.result.Add(driver.RuleLevelError, IndexExistMessage, stmt.IndexName)
+		i.result.Add(driverV2.RuleLevelError, IndexExistMessage, stmt.IndexName)
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
@@ -676,12 +676,12 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 	}
 	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
+		i.result.Add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 
 	if len(keyColNeedExist) > 0 {
-		i.result.Add(driver.RuleLevelError, KeyedColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, KeyedColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(keyColNeedExist), ","))
 	}
 	return nil
@@ -702,7 +702,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndexOffline(stmt *ast.CreateIndexSt
 	}
 	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
+		i.result.Add(driverV2.RuleLevelError, DuplicateIndexedColumnMessage, stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 	return nil
@@ -727,7 +727,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -735,7 +735,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -746,7 +746,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; !ok {
-		i.result.Add(driver.RuleLevelError, IndexNotExistMessage, stmt.IndexName)
+		i.result.Add(driverV2.RuleLevelError, IndexNotExistMessage, stmt.IndexName)
 	}
 	return nil
 }
@@ -771,7 +771,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage, schemaName)
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage, schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
@@ -779,7 +779,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			i.getTableName(table))
 		return nil
 	}
@@ -805,7 +805,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		}
 	}
 	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
+		i.result.Add(driverV2.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
 	}
 
 	needExistColsName := []string{}
@@ -815,14 +815,14 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		}
 	}
 	if len(needExistColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if stmt.Lists != nil {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
+				i.result.Add(driverV2.RuleLevelError, ColumnsValuesNotMatchMessage)
 				break
 			}
 		}
@@ -851,13 +851,13 @@ func (i *MysqlDriverImpl) checkInvalidInsertOffline(stmt *ast.InsertStmt) error 
 		}
 	}
 	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
-		i.result.Add(driver.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
+		i.result.Add(driverV2.RuleLevelError, DuplicateColumnsMessage, strings.Join(d, ","))
 	}
 
 	if stmt.Lists != nil && len(insertColsName) > 0 {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				i.result.Add(driver.RuleLevelError, ColumnsValuesNotMatchMessage)
+				i.result.Add(driverV2.RuleLevelError, ColumnsValuesNotMatchMessage)
 				break
 			}
 		}
@@ -916,11 +916,11 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 
@@ -981,12 +981,12 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnIsAmbiguousMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnIsAmbiguousMessage,
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -1044,11 +1044,11 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
@@ -1096,12 +1096,12 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		i.result.Add(driver.RuleLevelError, ColumnIsAmbiguousMessage,
+		i.result.Add(driverV2.RuleLevelError, ColumnIsAmbiguousMessage,
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -1155,11 +1155,11 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driver.RuleLevelError, SchemaNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, SchemaNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driver.RuleLevelError, TableNotExistMessage,
+		i.result.Add(driverV2.RuleLevelError, TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -1167,6 +1167,6 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 
 // checkUnparsedStmt might add more check in future.
 func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driver.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性")
+	i.result.Add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性")
 	return nil
 }
