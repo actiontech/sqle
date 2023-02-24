@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pkg/errors"
@@ -20,46 +21,38 @@ func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName 
 }
 
 func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
-	drvMgr, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId, ruleTemplateName)
+	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId, ruleTemplateName)
 	if err != nil {
 		return err
 	}
-	defer drvMgr.Close(context.TODO())
+	defer plugin.Close(context.TODO())
 
-	d, err := drvMgr.GetAuditDriver()
-	if err != nil {
-		return err
-	}
-	return hookAudit(l, task, d, hook)
+	return hookAudit(l, task, plugin, hook)
 }
 
 const AuditSchema = "AuditSchema"
 
 func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *uint, ruleTemplateName string) (*model.Task, error) {
-	manager, err := newDriverManagerWithAudit(l, nil, "", dbType, projectId, ruleTemplateName)
+	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, projectId, ruleTemplateName)
 	if err != nil {
 		return nil, err
 	}
-	defer manager.Close(context.TODO())
+	defer plugin.Close(context.TODO())
 
-	auditDriver, err := manager.GetAuditDriver()
-	if err != nil {
-		return nil, err
-	}
-	return AuditSQLByDriver(l, sql, auditDriver)
+	return AuditSQLByDriver(l, sql, plugin)
 }
 
-func AuditSQLByDriver(l *logrus.Entry, sql string, d driver.Driver) (*model.Task, error) {
-	task, err := convertSQLsToTask(sql, d)
+func AuditSQLByDriver(l *logrus.Entry, sql string, p driver.Plugin) (*model.Task, error) {
+	task, err := convertSQLsToTask(sql, p)
 	if err != nil {
 		return nil, err
 	}
-	return task, audit(l, task, d)
+	return task, audit(l, task, p)
 }
 
-func convertSQLsToTask(sql string, auditDriver driver.Driver) (*model.Task, error) {
+func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	task := &model.Task{}
-	nodes, err := auditDriver.Parse(context.TODO(), sql)
+	nodes, err := p.Parse(context.TODO(), sql)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +67,8 @@ func convertSQLsToTask(sql string, auditDriver driver.Driver) (*model.Task, erro
 	return task, nil
 }
 
-func audit(l *logrus.Entry, task *model.Task, d driver.Driver) (err error) {
-	return hookAudit(l, task, d, &EmptyAuditHook{})
+func audit(l *logrus.Entry, task *model.Task, p driver.Plugin) (err error) {
+	return hookAudit(l, task, p, &EmptyAuditHook{})
 }
 
 type AuditHook interface {
@@ -89,7 +82,7 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
-func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHook) (err error) {
+func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
@@ -104,6 +97,10 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 	if err != nil {
 		return err
 	}
+
+	auditSqls := []*model.ExecuteSQL{}
+	sqls := []string{}
+	nodes := []driverV2.Node{}
 	for _, executeSQL := range task.ExecuteSQLs {
 		// We always trust the ExecuteSQL.Content is single SQL.
 		//
@@ -114,14 +111,14 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 		// 2. from audit plan
 		//		- the audit plan may collect SQLs which plugins can not Parse.
 		//      - In these case, we pass the raw SQL to plugins, it's ok.
-		node, err := parse(l, d, executeSQL.Content)
+		node, err := parse(l, p, executeSQL.Content)
 		if err != nil {
 			return err
 		}
 		var whitelistMatch bool
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
-				wlNode, err := parse(l, d, wl.Value)
+				wlNode, err := parse(l, p, wl.Value)
 				if err != nil {
 					l.Errorf("parse whitelist sql error: %v,please check the accuracy of whitelist SQL: %s", err, wl.Value)
 				}
@@ -134,42 +131,51 @@ func hookAudit(l *logrus.Entry, task *model.Task, d driver.Driver, hook AuditHoo
 				}
 			}
 		}
-		result := driver.NewInspectResults()
 		if whitelistMatch {
-			result.Add(driver.RuleLevelNormal, "白名单")
+			result := driverV2.NewInspectResults()
+			result.Add(driverV2.RuleLevelNormal, "白名单")
+			executeSQL.AuditStatus = model.SQLAuditStatusFinished
+			executeSQL.AuditLevel = string(result.Level())
+			executeSQL.AuditResult = result.Message()
+			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
 		} else {
-			hook.BeforeAudit(executeSQL)
-			result, err = d.Audit(context.TODO(), executeSQL.Content)
-			if err != nil {
-				return err
-			}
+			auditSqls = append(auditSqls, executeSQL)
+			sqls = append(sqls, executeSQL.Content)
+			nodes = append(nodes, node)
 		}
-		hook.AfterAudit(executeSQL)
-		executeSQL.AuditStatus = model.SQLAuditStatusFinished
-		executeSQL.AuditLevel = string(result.Level())
-		executeSQL.AuditResult = result.Message()
-		executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
+	}
+	for _, sql := range auditSqls {
+		hook.BeforeAudit(sql)
+	}
 
-		l.WithFields(logrus.Fields{
-			"SQL":    executeSQL.Content,
-			"level":  executeSQL.AuditLevel,
-			"result": executeSQL.AuditResult}).Info("audit finished")
+	results, err := p.Audit(context.TODO(), sqls)
+	if err != nil {
+		return err
+	}
+	if len(results) != len(sqls) {
+		return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
+	}
+	for i, sql := range auditSqls {
+		hook.AfterAudit(sql)
+		sql.AuditStatus = model.SQLAuditStatusFinished
+		sql.AuditLevel = string(results[i].Level())
+		sql.AuditResult = results[i].Message()
+		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
 	}
 
 	replenishTaskStatistics(task)
-
 	return nil
 }
 
 func replenishTaskStatistics(task *model.Task) {
 	var normalCount float64
-	maxAuditLevel := driver.RuleLevelNull
+	maxAuditLevel := driverV2.RuleLevelNull
 	for _, executeSQL := range task.ExecuteSQLs {
-		if driver.RuleLevelNormal.MoreOrEqual(driver.RuleLevel(executeSQL.AuditLevel)) {
+		if driverV2.RuleLevelNormal.MoreOrEqual(driverV2.RuleLevel(executeSQL.AuditLevel)) {
 			normalCount += 1
 		}
-		if driver.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
-			maxAuditLevel = driver.RuleLevel(executeSQL.AuditLevel)
+		if driverV2.RuleLevel(executeSQL.AuditLevel).More(maxAuditLevel) {
+			maxAuditLevel = driverV2.RuleLevel(executeSQL.AuditLevel)
 		}
 	}
 	task.PassRate = utils.Round(normalCount/float64(len(task.ExecuteSQLs)), 4)
@@ -199,12 +205,12 @@ func scoreTask(task *model.Task) int32 {
 		numberOfTask = float64(len(task.ExecuteSQLs))
 
 		for _, e := range task.ExecuteSQLs {
-			switch driver.RuleLevel(e.AuditLevel) {
-			case driver.RuleLevelError:
+			switch driverV2.RuleLevel(e.AuditLevel) {
+			case driverV2.RuleLevelError:
 				numberOfLessThanError++
-			case driver.RuleLevelWarn:
+			case driverV2.RuleLevelWarn:
 				numberOfLessThanWarn++
-			case driver.RuleLevelNotice:
+			case driverV2.RuleLevelNotice:
 				numberOfLessThanNotice++
 			}
 		}
@@ -254,8 +260,8 @@ func scoreTask(task *model.Task) int32 {
 	return int32(math.Floor(totalScore))
 }
 
-func parse(l *logrus.Entry, d driver.Driver, sql string) (node driver.Node, err error) {
-	nodes, err := d.Parse(context.TODO(), sql)
+func parse(l *logrus.Entry, p driver.Plugin, sql string) (node driverV2.Node, err error) {
+	nodes, err := p.Parse(context.TODO(), sql)
 	if err != nil {
 		return node, errors.Wrapf(err, "parse sql: %s", sql)
 	}
@@ -268,17 +274,17 @@ func parse(l *logrus.Entry, d driver.Driver, sql string) (node driver.Node, err 
 	return nodes[0], nil
 }
 
-func genRollbackSQL(l *logrus.Entry, task *model.Task, d driver.Driver) ([]*model.RollbackSQL, error) {
+func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*model.RollbackSQL, error) {
 	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
 	for _, executeSQL := range task.ExecuteSQLs {
-		rollbackSQL, reason, err := d.GenRollbackSQL(context.TODO(), executeSQL.Content)
+		rollbackSQL, reason, err := p.GenRollbackSQL(context.TODO(), executeSQL.Content)
 		if err != nil {
 			l.Errorf("gen rollback sql error, %v", err)
 			return nil, err
 		}
-		result := driver.NewInspectResults()
-		result.Add(driver.RuleLevel(executeSQL.AuditLevel), executeSQL.AuditResult)
-		result.Add(driver.RuleLevelNotice, reason)
+		result := driverV2.NewInspectResults()
+		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.AuditResult)
+		result.Add(driverV2.RuleLevelNotice, reason)
 		executeSQL.AuditLevel = string(result.Level())
 		executeSQL.AuditResult = result.Message()
 
