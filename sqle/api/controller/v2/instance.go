@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
@@ -198,7 +199,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if req.DBType == "" {
-		req.DBType = driver.DriverTypeMySQL
+		req.DBType = driverV2.DriverTypeMySQL
 	}
 
 	maintenancePeriod := v1.ConvertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
@@ -206,7 +207,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWrongTimePeriod)
 	}
 
-	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	additionalParams := driver.GetPluginManager().AllAdditionalParams()[req.DBType]
 	for _, additionalParam := range req.AdditionalParams {
 		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 		if err != nil {
@@ -233,7 +234,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
-		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
+		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driverV2.RuleLevelError)
 	}
 
 	project, exist, err := s.GetProjectByName(projectName)

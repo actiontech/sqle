@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
 )
@@ -280,19 +280,19 @@ func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance, project *sq
 	config := generateCommonCloudBeaverConfigParams(sqleInst, project)
 
 	switch sqleInst.DbType {
-	case driver.DriverTypeMySQL:
+	case driverV2.DriverTypeMySQL:
 		err = fillMySQLParams(config)
-	case driver.DriverTypeTiDB:
+	case driverV2.DriverTypeTiDB:
 		err = fillTiDBParams(config)
-	case driver.DriverTypePostgreSQL:
+	case driverV2.DriverTypePostgreSQL:
 		err = fillPGSQLParams(config)
-	case driver.DriverTypeSQLServer:
+	case driverV2.DriverTypeSQLServer:
 		err = fillMSSQLParams(config)
-	case driver.DriverTypeOracle:
+	case driverV2.DriverTypeOracle:
 		err = fillOracleParams(sqleInst, config)
-	case driver.DriverTypeDB2:
+	case driverV2.DriverTypeDB2:
 		err = fillDB2Params(sqleInst, config)
-	case driver.DriverTypeOceanBase:
+	case driverV2.DriverTypeOceanBase:
 		err = fillOceanBaseParams(sqleInst, config)
 	default:
 		return nil, fmt.Errorf("temporarily unsupported instance types")

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -123,7 +123,7 @@ func (p *pluginImpl) Schemas(ctx context.Context) ([]string, error) {
 	return schemas, nil
 }
 
-func (p *pluginImpl) Parse(ctx context.Context, sql string) ([]driver.Node, error) {
+func (p *pluginImpl) Parse(ctx context.Context, sql string) ([]driverV1.Node, error) {
 	sqls, err := sqlparser.SplitStatementToPieces(sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "split sql")
@@ -132,9 +132,9 @@ func (p *pluginImpl) Parse(ctx context.Context, sql string) ([]driver.Node, erro
 		return nil, errors.Wrapf(err, "split sql %s error", sql)
 	}
 
-	nodes := make([]driver.Node, 0, len(sqls))
+	nodes := make([]driverV1.Node, 0, len(sqls))
 	for _, sql := range sqls {
-		n := driver.Node{
+		n := driverV1.Node{
 			Text:        sql,
 			Type:        classifySQL(sql),
 			Fingerprint: query.Fingerprint(sql),
@@ -148,13 +148,13 @@ func classifySQL(sql string) (sqlType string) {
 	if utils.HasPrefix(sql, "update", false) ||
 		utils.HasPrefix(sql, "insert", false) ||
 		utils.HasPrefix(sql, "delete", false) {
-		return driver.SQLTypeDML
+		return driverV1.SQLTypeDML
 	}
 
-	return driver.SQLTypeDDL
+	return driverV1.SQLTypeDDL
 }
 
-func (p *pluginImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
+func (p *pluginImpl) Audit(ctx context.Context, sql string) (*driverV1.AuditResults, error) {
 	var err error
 	var ast interface{}
 	if p.auditAdaptor.ao.sqlParser != nil {
@@ -164,7 +164,7 @@ func (p *pluginImpl) Audit(ctx context.Context, sql string) (*driver.AuditResult
 		}
 	}
 
-	result := driver.NewInspectResults()
+	result := driverV1.NewInspectResults()
 	for _, rule := range p.auditAdaptor.cfg.Rules {
 		handler, ok := p.auditAdaptor.ruleToRawHandler[rule.Name]
 		if ok {
@@ -192,21 +192,21 @@ func (p *pluginImpl) GenRollbackSQL(ctx context.Context, sql string) (string, st
 	return "", "", nil
 }
 
-func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
+func (p *pluginImpl) QueryPrepare(ctx context.Context, sql string, conf *driverV1.QueryPrepareConf) (*driverV1.QueryPrepareResult, error) {
 	if p.queryAdaptor.queryPrepare != nil {
 		return p.queryAdaptor.queryPrepare(ctx, sql, conf, DbConf{
 			Db:   p.db,
 			Conn: p.conn,
 		})
 	}
-	return &driver.QueryPrepareResult{
+	return &driverV1.QueryPrepareResult{
 		NewSQL:    sql,
-		ErrorType: driver.ErrorTypeNotError,
+		ErrorType: driverV1.ErrorTypeNotError,
 		Error:     "",
 	}, nil
 }
 
-func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.QueryConf) (*driver.QueryResult, error) {
+func (p *pluginImpl) Query(ctx context.Context, query string, conf *driverV1.QueryConf) (*driverV1.QueryResult, error) {
 	if p.queryAdaptor.query != nil {
 		return p.queryAdaptor.query(ctx, query, conf, DbConf{
 			Db:   p.db,
@@ -221,9 +221,9 @@ func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.Query
 		return nil, err
 	}
 	defer rows.Close()
-	result := &driver.QueryResult{
+	result := &driverV1.QueryResult{
 		Column: params.Params{},
-		Rows:   []*driver.QueryResultRow{},
+		Rows:   []*driverV1.QueryResultRow{},
 	}
 	columns, err := rows.Columns()
 	if err != nil {
@@ -246,11 +246,11 @@ func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.Query
 		if err := rows.Scan(buf...); err != nil {
 			return nil, err
 		}
-		value := &driver.QueryResultRow{
-			Values: []*driver.QueryResultValue{},
+		value := &driverV1.QueryResultRow{
+			Values: []*driverV1.QueryResultValue{},
 		}
 		for i := 0; i < len(columns); i++ {
-			value.Values = append(value.Values, &driver.QueryResultValue{Value: data[i].String})
+			value.Values = append(value.Values, &driverV1.QueryResultValue{Value: data[i].String})
 		}
 		result.Rows = append(result.Rows, value)
 	}
@@ -260,7 +260,7 @@ func (p *pluginImpl) Query(ctx context.Context, query string, conf *driver.Query
 	return result, nil
 }
 
-func (p *pluginImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
+func (p *pluginImpl) ListTablesInSchema(ctx context.Context, conf *driverV1.ListTablesInSchemaConf) (*driverV1.ListTablesInSchemaResult, error) {
 	if p.analysisAdaptor.listTablesInSchemaFunc != nil {
 		return p.analysisAdaptor.listTablesInSchemaFunc(ctx, conf, DbConf{
 			Db:   p.db,
@@ -268,9 +268,9 @@ func (p *pluginImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTa
 		})
 	}
 
-	return &driver.ListTablesInSchemaResult{}, nil
+	return &driverV1.ListTablesInSchemaResult{}, nil
 }
-func (p *pluginImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
+func (p *pluginImpl) GetTableMetaByTableName(ctx context.Context, conf *driverV1.GetTableMetaByTableNameConf) (*driverV1.GetTableMetaByTableNameResult, error) {
 	if p.analysisAdaptor.getTableMetaByTableNameFunc != nil {
 		return p.analysisAdaptor.getTableMetaByTableNameFunc(ctx, conf, DbConf{
 			Db:   p.db,
@@ -278,9 +278,9 @@ func (p *pluginImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.G
 		})
 	}
 
-	return &driver.GetTableMetaByTableNameResult{}, nil
+	return &driverV1.GetTableMetaByTableNameResult{}, nil
 }
-func (p *pluginImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
+func (p *pluginImpl) GetTableMetaBySQL(ctx context.Context, conf *driverV1.GetTableMetaBySQLConf) (*driverV1.GetTableMetaBySQLResult, error) {
 	if p.analysisAdaptor.getTableMetaBySQLFunc != nil {
 		return p.analysisAdaptor.getTableMetaBySQLFunc(ctx, conf, DbConf{
 			Db:   p.db,
@@ -288,9 +288,9 @@ func (p *pluginImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTabl
 		})
 	}
 
-	return &driver.GetTableMetaBySQLResult{}, nil
+	return &driverV1.GetTableMetaBySQLResult{}, nil
 }
-func (p *pluginImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
+func (p *pluginImpl) Explain(ctx context.Context, conf *driverV1.ExplainConf) (*driverV1.ExplainResult, error) {
 	if p.analysisAdaptor.explainFunc != nil {
 		return p.analysisAdaptor.explainFunc(ctx, conf, DbConf{
 			Db:   p.db,
@@ -298,5 +298,5 @@ func (p *pluginImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*dr
 		})
 	}
 
-	return &driver.ExplainResult{}, nil
+	return &driverV1.ExplainResult{}, nil
 }

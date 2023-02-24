@@ -8,6 +8,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -48,7 +49,7 @@ type InstanceAdditionalParamResV1 struct {
 // @Success 200 {object} v1.GetInstanceAdditionalMetasResV1
 // @router /v1/instance_additional_metas [get]
 func GetInstanceAdditionalMetas(c echo.Context) error {
-	additionalParams := driver.AllAdditionalParams()
+	additionalParams := driver.GetPluginManager().AllAdditionalParams()
 	res := &GetInstanceAdditionalMetasResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Metas:   []*InstanceAdditionalMetaV1{},
@@ -160,7 +161,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if req.DBType == "" {
-		req.DBType = driver.DriverTypeMySQL
+		req.DBType = driverV2.DriverTypeMySQL
 	}
 
 	maintenancePeriod := ConvertMaintenanceTimeReqV1ToPeriod(req.MaintenanceTimes)
@@ -168,7 +169,7 @@ func CreateInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrWrongTimePeriod)
 	}
 
-	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	additionalParams := driver.GetPluginManager().AllAdditionalParams()[req.DBType]
 	for _, additionalParam := range req.AdditionalParams {
 		err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 		if err != nil {
@@ -195,7 +196,7 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
-		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
+		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driverV2.RuleLevelError)
 	}
 
 	project, exist, err := s.GetProjectByName(projectName)
@@ -526,7 +527,7 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	if req.AdditionalParams != nil {
-		additionalParams := driver.AllAdditionalParams()[instance.DbType]
+		additionalParams := driver.GetPluginManager().AllAdditionalParams()[instance.DbType]
 		for _, additionalParam := range req.AdditionalParams {
 			err = additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 			if err != nil {
@@ -538,7 +539,7 @@ func UpdateInstance(c echo.Context) error {
 
 	if req.SQLQueryConfig != nil {
 		if req.SQLQueryConfig.AuditEnabled && req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
-			req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driver.RuleLevelError)
+			req.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driverV2.RuleLevelError)
 		}
 
 		maxPreQueryRows := req.SQLQueryConfig.MaxPreQueryRows
@@ -856,10 +857,10 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 		return err
 	}
 	if req.DBType == "" {
-		req.DBType = driver.DriverTypeMySQL
+		req.DBType = driverV2.DriverTypeMySQL
 	}
 
-	additionalParams := driver.AllAdditionalParams()[req.DBType]
+	additionalParams := driver.GetPluginManager().AllAdditionalParams()[req.DBType]
 	for _, additionalParam := range req.AdditionalParams {
 		err := additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 		if err != nil {
@@ -935,17 +936,13 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer drvMgr.Close(context.TODO())
+	defer plugin.Close(context.TODO())
 
-	d, err := drvMgr.GetAuditDriver()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	schemas, err := d.Schemas(context.TODO())
+	schemas, err := plugin.Schemas(context.TODO())
 	if err != nil {
 		return err
 	}

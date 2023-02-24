@@ -623,7 +623,7 @@ type DriversResV1 struct {
 func GetDrivers(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetDriversResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    DriversResV1{Drivers: driver.AllDrivers()},
+		Data:    DriversResV1{Drivers: driver.GetPluginManager().AllDrivers()},
 	})
 }
 
