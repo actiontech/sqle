@@ -51,7 +51,7 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 	mobiles = utils.RemoveDuplicate(mobiles)
 
 	client := feishu.NewFeishuClient(cfg.AppKey, cfg.AppSecret)
-	feishuUsers, err := client.GetUserIdsByEmailOrMobile(emails, mobiles)
+	feishuUsers, err := client.GetUsersByEmailOrMobile(emails, mobiles)
 	if err != nil {
 		return fmt.Errorf("get user_ids from feishu failed: %v", err)
 	}
