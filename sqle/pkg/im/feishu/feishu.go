@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/utils"
+
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcontact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
@@ -19,7 +21,12 @@ func NewFeishuClient(appId, appSecret string) *FeishuClient {
 	return &FeishuClient{client: lark.NewClient(appId, appSecret)}
 }
 
-func (f *FeishuClient) GetUserIdsByEmailOrMobile(emails, mobiles []string) ([]*larkcontact.UserContactInfo, error) {
+type UserContactInfo struct {
+	Email  string
+	Mobile string
+}
+
+func (f *FeishuClient) GetUserIdsByEmailOrMobile(emails, mobiles []string) (map[string]*UserContactInfo, error) {
 	req := larkcontact.NewBatchGetIdUserReqBuilder().
 		UserIdType(`user_id`).
 		Body(larkcontact.NewBatchGetIdUserReqBodyBuilder().
@@ -35,7 +42,31 @@ func (f *FeishuClient) GetUserIdsByEmailOrMobile(emails, mobiles []string) ([]*l
 	if !resp.Success() {
 		return nil, fmt.Errorf("get user ids failed: respCode=%v, respMsg=%v", resp.Code, resp.Msg)
 	}
-	return resp.Data.UserList, nil
+
+	users := make(map[string] /*user_id*/ *UserContactInfo)
+	for _, user := range resp.Data.UserList {
+		id := utils.NvlString(user.UserId)
+		if id == "" {
+			continue
+		}
+
+		_, ok := users[id]
+		if !ok {
+			users[id] = &UserContactInfo{}
+		}
+		info := users[id]
+
+		// 飞书接口的响应结构里不会同时有email和mobile
+		if email := utils.NvlString(user.Email); email != "" {
+			info.Email = email
+			continue
+		}
+		if mobile := utils.NvlString(user.Mobile); mobile != "" {
+			info.Mobile = mobile
+			continue
+		}
+	}
+	return users, nil
 }
 
 const (

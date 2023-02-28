@@ -1,7 +1,6 @@
 package notification
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -9,6 +8,8 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
 	"github.com/actiontech/sqle/sqle/utils"
+
+	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
 func init() {
@@ -61,23 +62,10 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 	}
 	errMsgs := []string{}
 	l := log.NewEntry()
-	sentUserIds := make(map[string]struct{})
-	for _, u := range feishuUsers {
-		id := utils.NvlString(u.UserId)
-		if id == "" {
-			continue
-		}
-		// feishuUsers是通过email和phone获取的userId，可能会有重复的userId
-		if _, ok := sentUserIds[id]; ok {
-			continue
-		} else {
-			sentUserIds[id] = struct{}{}
-		}
-		email := utils.NvlString(u.Email)
-		phone := utils.NvlString(u.Mobile)
-		l.Infof("send message to feishu, email=%v, phone=%v, userId=%v", email, phone, id)
+	for id, u := range feishuUsers {
+		l.Infof("send message to feishu, email=%v, phone=%v, userId=%v", u.Email, u.Mobile, id)
 		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, id, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
-			errMsgs = append(errMsgs, fmt.Sprintf("send message to feishu failed: %v; email=%v; phone=%v", err, email, phone))
+			errMsgs = append(errMsgs, fmt.Sprintf("send message to feishu failed: %v; email=%v; phone=%v", err, u.Email, u.Mobile))
 		}
 	}
 	if len(errMsgs) > 0 {
