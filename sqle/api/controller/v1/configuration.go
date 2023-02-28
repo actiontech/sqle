@@ -504,7 +504,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 	}
 
 	client := feishu.NewFeishuClient(feishuCfg.AppKey, feishuCfg.AppSecret)
-	feishuUsers, err := client.GetUserIdsByEmailOrMobile(email, phone)
+	feishuUsers, err := client.GetUsersByEmailOrMobile(email, phone)
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 			BaseRes: controller.NewBaseReq(nil),
