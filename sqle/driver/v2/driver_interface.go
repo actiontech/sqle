@@ -54,7 +54,11 @@ type DriverPlugin struct {
 }
 
 func (dp *DriverPlugin) GRPCServer(broker *goPlugin.GRPCBroker, s *grpc.Server) error {
-	protoV2.RegisterDriverServer(s, &DriverGrpcServer{Meta: dp.Meta, DriverFactory: dp.DriverFactory})
+	protoV2.RegisterDriverServer(s, &DriverGrpcServer{
+		Meta:          dp.Meta,
+		DriverFactory: dp.DriverFactory,
+		Drivers:       map[string]Driver{},
+	})
 	return nil
 }
 
