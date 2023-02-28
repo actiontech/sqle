@@ -5,10 +5,13 @@ package v1
 
 import (
 	"bytes"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"mime"
 	"net/http"
+	"time"
 
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 
@@ -545,4 +548,68 @@ func getOperationRecordList(c echo.Context) error {
 		Data:      operationRecordListRes,
 		TotalNums: count,
 	})
+}
+
+var operationRecordStatusMap = map[string]string{
+	model.OperationRecordStatusSucceeded: "成功",
+	model.OperationRecordStatusFailed:    "失败",
+}
+
+func exportOperationRecordList(c echo.Context) error {
+	req := new(GetExportOperationRecordListReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	data := map[string]interface{}{
+		"filter_operate_time_from":       req.FilterOperateTimeFrom,
+		"filter_operate_time_to":         req.FilterOperateTimeTo,
+		"fuzzy_search_operate_user_name": req.FuzzySearchOperateUserName,
+		"filter_operate_type_name":       req.FilterOperateTypeName,
+		"filter_operate_action":          req.FilterOperateAction,
+	}
+	if req.FilterOperateProjectName != nil {
+		data["filter_operate_project_name"] = req.FilterOperateProjectName
+	}
+
+	s := model.GetStorage()
+	exportList, err := s.GetOperationRecordExportList(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	buff := new(bytes.Buffer)
+	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM，为了兼容 windows 系统
+
+	csvWriter := csv.NewWriter(buff)
+
+	csvColumnNameList := []string{"操作时间", "项目", "操作人", "操作对象", "操作内容", "状态"}
+	err = csvWriter.Write(csvColumnNameList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	for _, record := range exportList {
+		csvLine := []string{
+			record.OperationTime.Format("2006-01-02 15:04:05"),
+			record.OperationProjectName,
+			record.OperationUserName,
+			actionNameDescMap[record.OperationAction],
+			record.OperationContent,
+			operationRecordStatusMap[record.OperationStatus],
+		}
+		err = csvWriter.Write(csvLine)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	csvWriter.Flush()
+
+	fileName := fmt.Sprintf("%s_操作记录.csv", time.Now().Format("20060102150405"))
+	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
+		"filename": fileName,
+	}))
+
+	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
