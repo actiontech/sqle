@@ -46,6 +46,13 @@ var workflowsCountTpl = `SELECT COUNT(DISTINCT w.id)
 {{- template "body" . -}}
 `
 
+var exportWorkflowIDListTpl = `
+SELECT w.id AS workflow_id
+{{- template "body" . -}}
+GROUP BY w.id
+ORDER BY w.id DESC
+`
+
 var workflowsQueryBodyTpl = `
 {{ define "body" }}
 FROM workflows w
@@ -207,4 +214,26 @@ func (s *Storage) GetWorkflowTemplatesByReq(data map[string]interface{}) (
 	}
 	count, err = s.getCountResult(workflowTemplatesQueryBodyTpl, workflowTemplatesCountTpl, data)
 	return result, count, err
+}
+
+func (s *Storage) GetExportWorkflowIDListByReq(data map[string]interface{}, user *User) (idList []string, err error) {
+	var ids []uint
+	{
+		instances, err := s.GetUserCanOpInstances(user, []uint{OP_WORKFLOW_VIEW_OTHERS})
+		if err != nil {
+			return idList, err
+		}
+		ids = getInstanceIDsFromInstances(instances)
+	}
+
+	if len(ids) > 0 {
+		data["viewable_instance_ids"] = utils.JoinUintSliceToString(ids, ", ")
+	}
+
+	err = s.getListResult(workflowsQueryBodyTpl, exportWorkflowIDListTpl, data, &idList)
+	if err != nil {
+		return idList, err
+	}
+
+	return idList, nil
 }
