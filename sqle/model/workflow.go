@@ -179,6 +179,16 @@ const (
 	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
+var WorkflowStatus = map[string]string{
+	WorkflowStatusWaitForAudit:     "待审核",
+	WorkflowStatusWaitForExecution: "待上线",
+	WorkflowStatusReject:           "已驳回",
+	WorkflowStatusCancel:           "已关闭",
+	WorkflowStatusExecuting:        "正在上线",
+	WorkflowStatusExecFailed:       "上线失败",
+	WorkflowStatusFinish:           "上线成功",
+}
+
 type WorkflowRecord struct {
 	Model
 	CurrentWorkflowStepId uint
@@ -228,6 +238,13 @@ type WorkflowStep struct {
 	Assignees     []*User               `gorm:"many2many:workflow_step_user"`
 	Template      *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
 	OperationUser *User                 `gorm:"foreignkey:OperationUserId"`
+}
+
+func (ws *WorkflowStep) OperationTime() string {
+	if ws.OperateAt == nil {
+		return ""
+	}
+	return ws.OperateAt.Format("2006-01-02 15:04:05")
 }
 
 func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User, allExecutor []*User) []*WorkflowStep {
@@ -293,6 +310,14 @@ func (w *Workflow) NextStep() *WorkflowStep {
 		return w.Record.Steps[nextIndex]
 	}
 	return nil
+}
+
+func (w *Workflow) AuditStepList() []*WorkflowStep {
+	// 没有审核步骤
+	if len(w.Record.Steps) <= 1 {
+		return []*WorkflowStep{}
+	}
+	return w.Record.Steps[:len(w.Record.Steps)-1]
 }
 
 func (w *Workflow) FinalStep() *WorkflowStep {
