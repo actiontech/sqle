@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -528,9 +527,18 @@ func TestFeishuConfigV1(c echo.Context) error {
 	}
 
 	n := &notification.TestNotify{}
-	// content是要作为json文本的一个value传给飞书，需要转换为显式的换行符
-	content := strings.Replace(n.NotificationBody(), "\n", "\\n", -1)
-	if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, *feishuUsers[0].UserId, feishu.FeishuSendMessageMsgTypePost, fmt.Sprintf(notification.FeishuContentPattern, n.NotificationSubject(), content)); err != nil {
+	content, err := notification.BuildFeishuMessageBody(n)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestFeishuConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          fmt.Sprintf("convert content failed: %v", err),
+			},
+		})
+	}
+
+	if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, *feishuUsers[0].UserId, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: TestFeishuConfigResDataV1{
