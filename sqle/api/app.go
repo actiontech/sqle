@@ -157,6 +157,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, AdminUserAllowed())
 		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, AdminUserAllowed())
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, AdminUserAllowed())
+		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, AdminUserAllowed())
 
 		// other
 		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
@@ -276,6 +277,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v2Router.PUT("/projects/:project_name/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
 	v1Router.PATCH("/projects/:project_name/workflows/:workflow_name/", v1.UpdateWorkflowV1)
 	v2Router.PATCH("/projects/:project_name/workflows/:workflow_id/", v2.UpdateWorkflowV2)
+	v1Router.GET("/projects/:project_name/workflows/exports", v1.ExportWorkflowV1)
 
 	// task
 	v1Router.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
