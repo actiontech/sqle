@@ -89,7 +89,8 @@ func exportWorkflowV1(c echo.Context) error {
 		"[节点4]审核时间",
 		"[节点4]审核结果",
 		"上线人",
-		"上线时间",
+		"上线开始时间",
+		"上线结束时间",
 		"上线结果",
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -155,6 +156,7 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	auditAndExecuteList = append(auditAndExecuteList,
 		getUserNameList(workflow.FinalStep().Assignees),
 		instanceRecord.Task.TaskExecStartAt(),
+		instanceRecord.Task.TaskExecEndAt(),
 		executeStateMap[instanceRecord.Task.Status],
 	)
 	return auditAndExecuteList
