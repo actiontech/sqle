@@ -75,10 +75,7 @@ var SQLEGRPCDialOptions = []grpc.DialOption{}
 
 func getClientConfig(path string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
-		HandshakeConfig: goPlugin.HandshakeConfig{
-			MagicCookieKey:   "BASIC_PLUGIN",
-			MagicCookieValue: "hello",
-		},
+		HandshakeConfig: v2.HandshakeConfig,
 		VersionedPlugins: map[int]goPlugin.PluginSet{
 			v1.ProtocolVersion: v1.PluginSet,
 			v2.ProtocolVersion: v2.PluginSet,

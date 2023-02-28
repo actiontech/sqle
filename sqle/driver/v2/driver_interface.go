@@ -24,6 +24,28 @@ var PluginSet = goPlugin.PluginSet{
 	PluginSetName: &DriverPlugin{},
 }
 
+var HandshakeConfig = goPlugin.HandshakeConfig{
+	ProtocolVersion:  ProtocolVersion,
+	MagicCookieKey:   "BASIC_PLUGIN",
+	MagicCookieValue: "hello",
+}
+
+func ServePlugin(meta DriverMetas, fn func(cfg *Config) (Driver, error)) {
+	goPlugin.Serve(&goPlugin.ServeConfig{
+		HandshakeConfig: HandshakeConfig,
+		Plugins: goPlugin.PluginSet{
+			PluginSetName: &DriverPlugin{
+				Meta:          meta,
+				DriverFactory: fn,
+			},
+		},
+		// A non-nil value here enables gRPC serving for this plugin...
+		GRPCServer: SQLEGrpcServer,
+	})
+}
+
+var SQLEGrpcServer = goPlugin.DefaultGRPCServer
+
 type DriverPlugin struct {
 	goPlugin.NetRPCUnsupportedPlugin
 
