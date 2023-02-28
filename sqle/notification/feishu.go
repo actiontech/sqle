@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -54,8 +55,10 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 		return fmt.Errorf("get user_ids from feishu failed: %v", err)
 	}
 
-	// content是要作为json文本的一个value传给飞书，需要转换为显式的换行符
-	content := strings.Replace(notification.NotificationBody(), "\n", "\\n", -1)
+	content, err := BuildFeishuMessageBody(notification)
+	if err != nil {
+		return fmt.Errorf("convert content failed: %v", err)
+	}
 	errMsgs := []string{}
 	l := log.NewEntry()
 	sentUserIds := make(map[string]struct{})
@@ -73,7 +76,7 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 		email := utils.NvlString(u.Email)
 		phone := utils.NvlString(u.Mobile)
 		l.Infof("send message to feishu, email=%v, phone=%v, userId=%v", email, phone, id)
-		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, id, feishu.FeishuSendMessageMsgTypePost, fmt.Sprintf(FeishuContentPattern, notification.NotificationSubject(), content)); err != nil {
+		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, id, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("send message to feishu failed: %v; email=%v; phone=%v", err, email, phone))
 		}
 	}
@@ -83,17 +86,13 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 	return nil
 }
 
-var FeishuContentPattern = `
-{
-  "zh_cn": {
-    "title": "%v",
-    "content": [
-      [
-        {
-          "tag": "text",
-          "text": "%v"
-        }
-      ]
-    ]
-  }
-}`
+func BuildFeishuMessageBody(n Notification) (string, error) {
+	zhCnPostText := &larkim.MessagePostText{Text: n.NotificationBody()}
+	zhCnMessagePostContent := &larkim.MessagePostContent{Title: n.NotificationSubject(), Content: [][]larkim.MessagePostElement{{zhCnPostText}}}
+	messagePostText := &larkim.MessagePost{ZhCN: zhCnMessagePostContent}
+	content, err := messagePostText.String()
+	if err != nil {
+		return "", err
+	}
+	return content, nil
+}
