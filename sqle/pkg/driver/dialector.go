@@ -1,9 +1,12 @@
 package driver
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 
-	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/pkg/errors"
 
 	// DRIVER LIST:
 	// 	https://github.com/golang/go/wiki/SQLDrivers
@@ -15,7 +18,7 @@ import (
 // Dialector is a interface for database dialect. It used for sql.Open()
 type Dialector interface {
 	// Dialect return the driver name and dsn detail. The return value is used for sql.Open().
-	Dialect(dsn *driverV1.DSN) (driverName string, dsnDetail string)
+	Dialect(dsn *driverV2.DSN) (driverName string, dsnDetail string)
 
 	// ShowDatabaseSQL return the sql to show all databases.
 	ShowDatabaseSQL() string
@@ -28,7 +31,7 @@ type Dialector interface {
 type PostgresDialector struct {
 }
 
-func (d *PostgresDialector) Dialect(dsn *driverV1.DSN) (string, string) {
+func (d *PostgresDialector) Dialect(dsn *driverV2.DSN) (string, string) {
 	if dsn.DatabaseName == "" {
 		dsn.DatabaseName = "postgres"
 	}
@@ -48,7 +51,7 @@ func (d *PostgresDialector) ShowDatabaseSQL() string {
 type OracleDialector struct {
 }
 
-func (d *OracleDialector) Dialect(dsn *driverV1.DSN) (string, string) {
+func (d *OracleDialector) Dialect(dsn *driverV2.DSN) (string, string) {
 	if dsn.DatabaseName == "" {
 		dsn.DatabaseName = "xe"
 	}
@@ -67,7 +70,7 @@ func (d *OracleDialector) ShowDatabaseSQL() string {
 type MssqlDialector struct {
 }
 
-func (d *MssqlDialector) Dialect(dsn *driverV1.DSN) (string, string) {
+func (d *MssqlDialector) Dialect(dsn *driverV2.DSN) (string, string) {
 	// connect by:
 	// 1. host and port (we used)
 	// 2. host and instance
@@ -81,4 +84,21 @@ func (d *MssqlDialector) String() string {
 
 func (d *MssqlDialector) ShowDatabaseSQL() string {
 	return "select name from sys.databases"
+}
+
+func getDbConn(driverName, dsnDetail string) (db *sql.DB, conn *sql.Conn, err error) {
+	db, err = sql.Open(driverName, dsnDetail)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "open database failed when new driver")
+	}
+	conn, err = db.Conn(context.TODO())
+	if err != nil {
+		db.Close()
+		return nil, nil, errors.Wrap(err, "get database connection failed when new driver")
+	}
+	if err := conn.PingContext(context.TODO()); err != nil {
+		db.Close()
+		return nil, nil, errors.Wrap(err, "ping database connection failed when new driver")
+	}
+	return
 }
