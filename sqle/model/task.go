@@ -66,6 +66,13 @@ func (t *Task) TaskExecStartAt() string {
 	return t.ExecStartAt.Format("2006-01-02 15:04:05")
 }
 
+func (t *Task) TaskExecEndAt() string {
+	if t.ExecEndAt == nil {
+		return ""
+	}
+	return t.ExecEndAt.Format("2006-01-02 15:04:05")
+}
+
 const (
 	SQLAuditStatusInitialized = "initialized"
 	SQLAuditStatusDoing       = "doing"
