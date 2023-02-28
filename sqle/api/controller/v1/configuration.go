@@ -15,7 +15,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
-	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -516,7 +515,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 		})
 	}
 
-	if len(feishuUsers) == 0 || utils.NvlString(feishuUsers[0].UserId) == "" {
+	if len(feishuUsers) == 0 {
 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: TestFeishuConfigResDataV1{
@@ -529,7 +528,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 	n := &notification.TestNotify{}
 	content, err := notification.BuildFeishuMessageBody(n)
 	if err != nil {
-		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{                    
 			BaseRes: controller.NewBaseReq(nil),
 			Data: TestFeishuConfigResDataV1{
 				IsMessageSentNormally: false,
@@ -537,15 +536,16 @@ func TestFeishuConfigV1(c echo.Context) error {
 			},
 		})
 	}
-
-	if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, *feishuUsers[0].UserId, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
-		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: TestFeishuConfigResDataV1{
-				IsMessageSentNormally: false,
-				ErrorMessage:          err.Error(),
-			},
-		})
+	for uid, _ := range feishuUsers {
+		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, uid, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
+			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+				BaseRes: controller.NewBaseReq(nil),
+				Data: TestFeishuConfigResDataV1{
+					IsMessageSentNormally: false,
+					ErrorMessage:          err.Error(),
+				},
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
