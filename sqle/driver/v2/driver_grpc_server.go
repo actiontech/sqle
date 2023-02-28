@@ -70,8 +70,8 @@ func (d *DriverGrpcServer) getDriverBySession(session *protoV2.Session) (Driver,
 
 func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*protoV2.MetasResponse, error) {
 	rules := make([]*protoV2.Rule, 0, len(d.Meta.Rules))
-	for i, r := range d.Meta.Rules {
-		rules[i] = ConvertRuleFromDriverToProto(r)
+	for _, r := range d.Meta.Rules {
+		rules = append(rules, ConvertRuleFromDriverToProto(r))
 	}
 
 	ms := make([]protoV2.OptionalModule, 0, len(d.Meta.EnabledOptionalModule))
@@ -105,7 +105,7 @@ func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (
 			AdditionalParams: ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams()),
 		}
 	}
-	id := "1" // todo: gen id.
+	id := RandStr(20)
 	driver, err := d.DriverFactory(&Config{
 		DSN:   dsn,
 		Rules: rules,
@@ -114,6 +114,10 @@ func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (
 		return nil, errors.Wrap(err, "init config")
 	}
 	d.Mutex.Lock()
+	if _, ok := d.Drivers[id]; ok {
+		driver.Close(ctx)
+		return nil, errors.New("session id is duplicated") // 几乎不会发生.
+	}
 	d.Drivers[id] = driver
 	d.Mutex.Unlock()
 

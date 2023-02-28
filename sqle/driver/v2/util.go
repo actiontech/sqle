@@ -2,6 +2,8 @@ package v2
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -181,4 +183,15 @@ func ConvertProtoTableMetaToDriver(meta *protoV2.TableMeta) *TableMeta {
 		IndexesInfo:    IndexesInfo{TabularData: ConvertProtoTabularDataToDriver(meta.IndexesInfo.Data)},
 		CreateTableSQL: meta.CreateTableSQL,
 	}
+}
+
+func RandStr(length int) string {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[rand.Intn(len(bytes))])
+	}
+	return string(result)
 }
