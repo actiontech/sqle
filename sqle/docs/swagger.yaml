@@ -4512,6 +4512,45 @@ paths:
       summary: 获取操作记录列表
       tags:
       - OperationRecord
+  /v1/operation_records/exports:
+    get:
+      description: Export operation record list
+      operationId: getExportOperationRecordListV1
+      parameters:
+      - description: filter_operate_time_from
+        in: query
+        name: filter_operate_time_from
+        type: string
+      - description: filter_operate_time_to
+        in: query
+        name: filter_operate_time_to
+        type: string
+      - description: filter_operate_project_name
+        in: query
+        name: filter_operate_project_name
+        type: string
+      - description: fuzzy_search_operate_user_name
+        in: query
+        name: fuzzy_search_operate_user_name
+        type: string
+      - description: filter_operate_type_name
+        in: query
+        name: filter_operate_type_name
+        type: string
+      - description: filter_operate_action
+        in: query
+        name: filter_operate_action
+        type: string
+      responses:
+        "200":
+          description: get export operation record list
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出操作记录列表
+      tags:
+      - OperationRecord
   /v1/operation_records/operation_actions:
     get:
       description: Get operation action list

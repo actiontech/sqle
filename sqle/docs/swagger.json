@@ -977,6 +977,67 @@
                 }
             }
         },
+        "/v1/operation_records/exports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Export operation record list",
+                "tags": [
+                    "OperationRecord"
+                ],
+                "summary": "导出操作记录列表",
+                "operationId": "getExportOperationRecordListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter_operate_time_from",
+                        "name": "filter_operate_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_operate_time_to",
+                        "name": "filter_operate_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_operate_project_name",
+                        "name": "filter_operate_project_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy_search_operate_user_name",
+                        "name": "fuzzy_search_operate_user_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_operate_type_name",
+                        "name": "filter_operate_type_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter_operate_action",
+                        "name": "filter_operate_action",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "get export operation record list",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/operation_records/operation_actions": {
             "get": {
                 "security": [

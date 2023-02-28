@@ -104,3 +104,30 @@ type OperationUser struct {
 func GetOperationRecordListV1(c echo.Context) error {
 	return getOperationRecordList(c)
 }
+
+type GetExportOperationRecordListReqV1 struct {
+	FilterOperateTimeFrom      string  `json:"filter_operate_time_from" query:"filter_operate_time_from"`
+	FilterOperateTimeTo        string  `json:"filter_operate_time_to" query:"filter_operate_time_to"`
+	FilterOperateProjectName   *string `json:"filter_operate_project_name" query:"filter_operate_project_name"`
+	FuzzySearchOperateUserName string  `json:"fuzzy_search_operate_user_name" query:"fuzzy_search_operate_user_name"`
+	FilterOperateTypeName      string  `json:"filter_operate_type_name" query:"filter_operate_type_name"`
+	FilterOperateAction        string  `json:"filter_operate_action" query:"filter_operate_action"`
+}
+
+// GetExportOperationRecordListV1
+// @Summary 导出操作记录列表
+// @Description Export operation record list
+// @Id getExportOperationRecordListV1
+// @Tags OperationRecord
+// @Security ApiKeyAuth
+// @Param filter_operate_time_from query string false "filter_operate_time_from"
+// @Param filter_operate_time_to query string false "filter_operate_time_to"
+// @Param filter_operate_project_name query string false "filter_operate_project_name"
+// @Param fuzzy_search_operate_user_name query string false "fuzzy_search_operate_user_name"
+// @Param filter_operate_type_name query string false "filter_operate_type_name"
+// @Param filter_operate_action query string false "filter_operate_action"
+// @Success 200 {file} file "get export operation record list"
+// @Router /v1/operation_records/exports [get]
+func GetExportOperationRecordListV1(c echo.Context) error {
+	return exportOperationRecordList(c)
+}
