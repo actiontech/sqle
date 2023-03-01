@@ -101,7 +101,7 @@ var LicenseCheckers = []LicenseChecker{
 				return true, false, err
 			}
 			if count+1 > std.GetPermission(LimitTypeUser) {
-				logger.Errorf("user count reachs the limitation. current user count is %v", count)
+				logger.Errorf("user count reaches the limitation. current user count is %v", count)
 				return true, false, nil
 			}
 		}
@@ -149,7 +149,7 @@ var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, che
 	}
 
 	if calculateIdleCustomAmount(count) < 0 {
-		logger.Errorf("instance count reachs the limitation. %v count is %v", dbType, currentCount)
+		logger.Errorf("instance count reaches the limitation. %v count is %v", dbType, currentCount)
 		return true, false, nil
 	}
 	return true, true, nil
