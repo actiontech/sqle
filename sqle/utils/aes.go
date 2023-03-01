@@ -40,26 +40,32 @@ func SetSecretKey(key []byte) error {
 	return nil
 }
 
-func (e *encryptor) SetAesSecretKey(key []byte) (err error) {
+func (e *encryptor) SetAesSecretKey(key []byte) error {
+	if err := testEncryptAndDecrypt(key); err != nil {
+		return err
+	}
 	e.mutex.Lock()
-	defer e.mutex.Unlock()
-
-	origKey := e.SecretKey
 	e.SecretKey = key
-	origData := "test"
-	var secretData string
-	defer func() {
-		if err != nil {
-			e.SecretKey = origKey
-		}
-	}()
-	if secretData, err = e.AesEncrypt(origData); err != nil {
-		return
+	e.mutex.Unlock()
+	return nil
+}
+
+// 测试加解密是否正常
+func testEncryptAndDecrypt(key []byte) error {
+	e := &encryptor{
+		SecretKey: key,
+		mutex:     &sync.RWMutex{},
+	}
+
+	testData := "test"
+	secretData, err := e.AesEncrypt(testData)
+	if err != nil {
+		return err
 	}
 	if _, err = e.AesDecrypt(secretData); err != nil {
-		return
+		return err
 	}
-	return
+	return nil
 }
 
 func (e *encryptor) aesEncrypt(origData []byte) ([]byte, error) {
