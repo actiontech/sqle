@@ -58,6 +58,8 @@ var LicenseCheckers = []LicenseChecker{
 		path := c.Path()
 		if c.Request().Method == http.MethodGet ||
 			strings.TrimSuffix(path, "/") == "/v1/login" ||
+			strings.TrimSuffix(path, "/") == "/v2/login" ||
+			strings.TrimSuffix(path, "/") == "/v1/logout" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license/check" ||
 			strings.TrimSuffix(path, "/") == "/v1/configurations/license/info" {
