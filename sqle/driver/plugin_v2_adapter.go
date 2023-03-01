@@ -8,9 +8,11 @@ import (
 
 	v2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	goPlugin "github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 )
 
@@ -18,20 +20,23 @@ type PluginBootV2 struct {
 	path   string
 	cfg    func(path string) *goPlugin.ClientConfig
 	client *goPlugin.Client
+	meta   *v2.DriverMetas
 	sync.Mutex
 }
 
-func (d *PluginBootV2) getDriverClient() (protoV2.DriverClient, error) {
+func (d *PluginBootV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, error) {
 	var client *goPlugin.Client
 
 	d.Lock()
 	if d.client.Exited() {
+		l.Infof("plugin process is exited, restart it")
 		newClient := goPlugin.NewClient(d.cfg(d.path))
 		_, err := newClient.Client()
 		if err != nil {
 			d.Unlock()
 			return nil, err
 		}
+		l.Infof("restart plugin success")
 		d.client.Kill()
 		d.client = newClient
 	}
@@ -56,7 +61,7 @@ func (d *PluginBootV2) getDriverClient() (protoV2.DriverClient, error) {
 }
 
 func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
-	c, err := d.getDriverClient()
+	c, err := d.getDriverClient(log.NewEntry())
 	if err != nil {
 		return nil, err
 	}
@@ -75,18 +80,23 @@ func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
 	for _, m := range result.EnabledOptionalModule {
 		ms = append(ms, v2.OptionalModule(m))
 	}
-
-	return &v2.DriverMetas{
+	meta := &v2.DriverMetas{
 		PluginName:               result.PluginName,
 		DatabaseDefaultPort:      result.DatabaseDefaultPort,
 		DatabaseAdditionalParams: v2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,
-	}, nil
+	}
+	d.meta = meta
+	return meta, nil
 }
 
-func (d *PluginBootV2) Open(cfgV2 *v2.Config) (Plugin, error) {
-	c, err := d.getDriverClient()
+func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
+	l = l.WithFields(logrus.Fields{
+		"plugin":         d.meta.PluginName,
+		"plugin_version": v2.ProtocolVersion,
+	})
+	c, err := d.getDriverClient(l)
 	if err != nil {
 		return nil, err
 	}
@@ -107,17 +117,20 @@ func (d *PluginBootV2) Open(cfgV2 *v2.Config) (Plugin, error) {
 	for _, rule := range cfgV2.Rules {
 		rules = append(rules, v2.ConvertRuleFromDriverToProto(rule))
 	}
-
+	l.Infof("starting call plugin interface [Init]")
 	result, err := c.Init(context.TODO(), &protoV2.InitRequest{
 		Dsn:   dsn,
 		Rules: rules,
 	})
 	if err != nil {
-		return nil, err //todo
+		l.Errorf("fail to call plugin interface [Init], error: %v", err)
+		return nil, err
 	}
+	l.Infof("call plugin interface [Init] success")
 	return &PluginImplV2{
 		client:  c,
 		Session: result.Session,
+		l:       l.WithField("session_id", result.Session.Id),
 	}, nil
 }
 
@@ -131,24 +144,44 @@ func (d *PluginBootV2) Stop() error {
 }
 
 type PluginImplV2 struct {
+	l       *logrus.Entry
 	client  protoV2.DriverClient
 	Session *protoV2.Session
 }
 
+func (s *PluginImplV2) preLog(ApiName string) {
+	s.l.Infof("starting call plugin interface [%s]", ApiName)
+}
+
+func (s *PluginImplV2) afterLog(ApiName string, err error) {
+	if err != nil {
+		s.l.Errorf("fail to call plugin interface [%s], error: %v", ApiName, err)
+	} else {
+		s.l.Infof("call plugin interface [%s] success", ApiName)
+	}
+}
+
 func (s *PluginImplV2) Close(ctx context.Context) {
-	s.client.Close(ctx, &protoV2.CloseRequest{
+	api := "Close"
+	s.preLog(api)
+	_, err := s.client.Close(ctx, &protoV2.CloseRequest{
 		Session: s.Session,
 	})
+	s.afterLog(api, err)
 }
 
 // audit
 
 func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]v2.Node, error) {
+	api := "Parse"
+	s.preLog(api)
 	resp, err := s.client.Parse(ctx, &protoV2.ParseRequest{
 		Session: s.Session,
 		Sql: &protoV2.ParsedSQL{
 			Query: sqlText,
-		}})
+		}},
+	)
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -165,6 +198,8 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]v2.Node, er
 }
 
 func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*v2.AuditResults, error) {
+	api := "Audit"
+	s.preLog(api)
 	auditSqls := make([]*protoV2.AuditSQL, 0, len(sqls))
 	for _, sql := range sqls {
 		auditSqls = append(auditSqls, &protoV2.AuditSQL{Query: sql})
@@ -173,6 +208,7 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*v2.AuditRes
 		Session: s.Session,
 		Sqls:    auditSqls,
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -188,37 +224,46 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*v2.AuditRes
 		}
 		rets = append(rets, ret)
 	}
+	s.afterLog(api, nil)
 	return rets, nil
 }
 
 func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+	api := "GenRollbackSQL"
+	s.preLog(api)
 	resp, err := s.client.GenRollbackSQL(ctx, &protoV2.GenRollbackSQLRequest{
 		Session: s.Session,
 		Sql: &protoV2.NeedRollbackSQL{
 			Query: sql,
 		},
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return "", "", err
 	}
-
 	return resp.Sql.Query, resp.Sql.Message, nil
 }
 
 // executor
 
 func (s *PluginImplV2) Ping(ctx context.Context) error {
+	api := "Ping"
+	s.preLog(api)
 	_, err := s.client.Ping(ctx, &protoV2.PingRequest{
 		Session: s.Session,
 	})
+	s.afterLog(api, err)
 	return err
 }
 
 func (s *PluginImplV2) Exec(ctx context.Context, sql string) (sqlDriver.Result, error) {
+	api := "Exec"
+	s.preLog(api)
 	resp, err := s.client.Exec(ctx, &protoV2.ExecRequest{
 		Session: s.Session,
 		Sql:     &protoV2.ExecSQL{Query: sql},
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +276,8 @@ func (s *PluginImplV2) Exec(ctx context.Context, sql string) (sqlDriver.Result, 
 }
 
 func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
+	api := "Tx"
+	s.preLog(api)
 	execSqls := make([]*protoV2.ExecSQL, 0, len(sqls))
 	for _, sql := range sqls {
 		execSqls = append(execSqls, &protoV2.ExecSQL{Query: sql})
@@ -239,6 +286,7 @@ func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Resu
 		Session: s.Session,
 		Sqls:    execSqls,
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +304,8 @@ func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Resu
 }
 
 func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf) (*v2.QueryResult, error) {
+	api := "Query"
+	s.preLog(api)
 	req := &protoV2.QueryRequest{
 		Session: s.Session,
 		Sql: &protoV2.QuerySQL{
@@ -266,6 +316,7 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf
 		},
 	}
 	res, err := s.client.Query(ctx, req)
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -296,6 +347,8 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf
 }
 
 func (s *PluginImplV2) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.ExplainResult, error) {
+	api := "Explain"
+	s.preLog(api)
 	req := &protoV2.ExplainRequest{
 		Session: s.Session,
 		Sql: &protoV2.ExplainSQL{
@@ -303,6 +356,7 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.E
 		},
 	}
 	res, err := s.client.Explain(ctx, req)
+	s.afterLog(api, err)
 	if err != nil && status.Code(err) == v2.GrpcErrSQLIsNotSupported {
 		return nil, v2.ErrSQLIsNotSupported
 	} else if err != nil {
@@ -319,9 +373,12 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.E
 // metadata
 
 func (s *PluginImplV2) Schemas(ctx context.Context) ([]string, error) {
+	api := "GetDatabases"
+	s.preLog(api)
 	resp, err := s.client.GetDatabases(ctx, &protoV2.GetDatabasesRequest{
 		Session: s.Session,
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +390,8 @@ func (s *PluginImplV2) Schemas(ctx context.Context) ([]string, error) {
 }
 
 func (s *PluginImplV2) getTableMeta(ctx context.Context, table *v2.Table) (*v2.TableMeta, error) {
+	api := "GetTableMeta"
+	s.preLog(api)
 	result, err := s.client.GetTableMeta(ctx, &protoV2.GetTableMetaRequest{
 		Session: s.Session,
 		Table: &protoV2.Table{
@@ -340,6 +399,7 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *v2.Table) (*v2.T
 			Schema: table.Schema,
 		},
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}
@@ -347,10 +407,13 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *v2.Table) (*v2.T
 }
 
 func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*v2.Table, error) {
+	api := "ExtractTableFromSQL"
+	s.preLog(api)
 	result, err := s.client.ExtractTableFromSQL(ctx, &protoV2.ExtractTableFromSQLRequest{
 		Session: s.Session,
 		Sql:     &protoV2.ExtractedSQL{Query: sql},
 	})
+	s.afterLog(api, err)
 	if err != nil {
 		return nil, err
 	}

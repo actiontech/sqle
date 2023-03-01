@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 
 	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Plugin interface {
@@ -36,7 +38,7 @@ type Plugin interface {
 
 type PluginBoot interface {
 	Register() (*v2.DriverMetas, error)
-	Open(*v2.Config) (Plugin, error)
+	Open(*logrus.Entry, *v2.Config) (Plugin, error)
 	Stop() error
 }
 

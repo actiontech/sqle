@@ -6,9 +6,9 @@ import (
 
 	v1 "github.com/actiontech/sqle/sqle/driver/v1"
 	v2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 )
 
 type PluginBootV1 struct {
@@ -59,7 +59,11 @@ func (d *PluginBootV1) Register() (*v2.DriverMetas, error) {
 	return meta, nil
 }
 
-func (d *PluginBootV1) Open(cfgV2 *v2.Config) (Plugin, error) {
+func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
+	l = l.WithFields(logrus.Fields{
+		"plugin":         d.metas.PluginName,
+		"plugin_version": v1.ProtocolVersion,
+	})
 	cfg := &v1.Config{
 		DSN: &v1.DSN{
 			Host:             cfgV2.DSN.Host,
@@ -80,7 +84,7 @@ func (d *PluginBootV1) Open(cfgV2 *v2.Config) (Plugin, error) {
 			Params:     rule.Params,
 		})
 	}
-	dm, err := v1.NewDriverManger(log.NewEntry(), d.metas.PluginName, cfg)
+	dm, err := v1.NewDriverManger(l, d.metas.PluginName, cfg)
 	if err != nil {
 		return nil, err
 	}
