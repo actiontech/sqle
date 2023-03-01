@@ -15,7 +15,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pingcap/parser/ast"
@@ -534,8 +533,8 @@ func (p *PluginBoot) Register() (*driverV2.DriverMetas, error) {
 	}, nil
 }
 
-func (p *PluginBoot) Open(cfg *driverV2.Config) (driver.Plugin, error) {
-	return NewInspect(log.NewEntry(), cfg)
+func (p *PluginBoot) Open(l *logrus.Entry, cfg *driverV2.Config) (driver.Plugin, error) {
+	return NewInspect(l, cfg)
 }
 
 func (p *PluginBoot) Stop() error {

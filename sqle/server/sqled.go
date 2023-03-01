@@ -748,5 +748,5 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 		DSN:   dsn,
 		Rules: rules,
 	}
-	return driver.GetPluginManager().OpenPlugin(dbType, cfg)
+	return driver.GetPluginManager().OpenPlugin(l, dbType, cfg)
 }

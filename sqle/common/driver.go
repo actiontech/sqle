@@ -21,7 +21,7 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 	cfg := &v2.Config{
 		DSN: dsn,
 	}
-	plugin, err := driver.GetPluginManager().OpenPlugin(inst.DbType, cfg)
+	plugin, err := driver.GetPluginManager().OpenPlugin(l, inst.DbType, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "open plugin")
 	}
@@ -30,7 +30,7 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 }
 
 func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.Plugin, error) {
-	return driver.GetPluginManager().OpenPlugin(dbType, &v2.Config{})
+	return driver.GetPluginManager().OpenPlugin(l, dbType, &v2.Config{})
 }
 
 func NewDSN(instance *model.Instance, database string) (*v2.DSN, error) {
