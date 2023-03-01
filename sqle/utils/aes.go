@@ -9,8 +9,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/log"
 	"sync"
+
+	"github.com/actiontech/sqle/sqle/log"
 
 	_err "errors"
 )
