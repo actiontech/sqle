@@ -132,10 +132,14 @@ func (pm *pluginManager) Start(pluginDir string) error {
 		case v2.ProtocolVersion:
 			boot = &PluginBootV2{client: client}
 		}
-		err = pm.register(boot)
-		if err != nil {
+		if err := pm.register(boot); err != nil {
+			stopErr := boot.Stop()
+			if stopErr != nil {
+				log.NewEntry().Warnf("stop plugin %s failed, error: %v", stopErr)
+			}
 			return fmt.Errorf("unable to load plugin: %v, error: %v", path, err)
 		}
+
 	}
 	return nil
 }

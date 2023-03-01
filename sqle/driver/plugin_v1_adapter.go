@@ -39,11 +39,11 @@ func convertRuleFromV1ToV2(rule *v1.Rule) *v2.Rule {
 }
 
 func (d *PluginBootV1) Register() (*v2.DriverMetas, error) {
+	defer d.client.Kill()
 	name, rules, params, err := v1.RegisterDrivers(d.client, d.cfg, d.path)
 	if err != nil {
 		return nil, err
 	}
-	defer d.client.Kill()
 
 	rulesV2 := make([]*v2.Rule, 0, len(rules))
 	for _, rule := range rules {

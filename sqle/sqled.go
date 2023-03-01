@@ -34,10 +34,10 @@ func Run(config *config.Config) error {
 		}
 	}
 
+	defer driver.GetPluginManager().Stop()
 	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
-	defer driver.GetPluginManager().Stop()
 
 	service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
