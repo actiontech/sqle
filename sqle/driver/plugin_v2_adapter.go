@@ -4,6 +4,7 @@ import (
 	"context"
 	sqlDriver "database/sql/driver"
 	"fmt"
+	"sync"
 
 	v2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
@@ -14,22 +15,53 @@ import (
 )
 
 type PluginBootV2 struct {
+	path   string
+	cfg    func(path string) *goPlugin.ClientConfig
 	client *goPlugin.Client
+	sync.Mutex
 }
 
-func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
-	cp, err := d.client.Client()
+func (d *PluginBootV2) getDriverClient() (protoV2.DriverClient, error) {
+	var client *goPlugin.Client
+
+	d.Lock()
+	if d.client.Exited() {
+		newClient := goPlugin.NewClient(d.cfg(d.path))
+		_, err := newClient.Client()
+		if err != nil {
+			d.Unlock()
+			return nil, err
+		}
+		d.client.Kill()
+		d.client = newClient
+	}
+
+	client = d.client
+	d.Unlock()
+
+	cp, err := client.Client()
 	if err != nil {
 		return nil, err
 	}
 	rawI, err := cp.Dispense(v2.PluginSetName)
 	if err != nil {
-		return nil, err //todo
+		return nil, err
 	}
 	//nolint:forcetypeassert
-	s := rawI.(protoV2.DriverClient)
+	s, ok := rawI.(protoV2.DriverClient)
+	if !ok {
+		return nil, fmt.Errorf("client is not implement protoV2.DriverClient")
+	}
+	return s, nil
+}
 
-	result, err := s.Metas(context.TODO(), &protoV2.Empty{})
+func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
+	c, err := d.getDriverClient()
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := c.Metas(context.TODO(), &protoV2.Empty{})
 	if err != nil {
 		return nil, err
 	}
@@ -54,16 +86,11 @@ func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
 }
 
 func (d *PluginBootV2) Open(cfgV2 *v2.Config) (Plugin, error) {
-	cp, err := d.client.Client()
+	c, err := d.getDriverClient()
 	if err != nil {
 		return nil, err
 	}
-	rawI, err := cp.Dispense(v2.PluginSetName)
-	if err != nil {
-		return nil, err //todo
-	}
-	//nolint:forcetypeassert
-	s := rawI.(protoV2.DriverClient)
+
 	var dsn *protoV2.DSN
 	if cfgV2.DSN != nil {
 		dsn = &protoV2.DSN{
@@ -81,7 +108,7 @@ func (d *PluginBootV2) Open(cfgV2 *v2.Config) (Plugin, error) {
 		rules = append(rules, v2.ConvertRuleFromDriverToProto(rule))
 	}
 
-	result, err := s.Init(context.TODO(), &protoV2.InitRequest{
+	result, err := c.Init(context.TODO(), &protoV2.InitRequest{
 		Dsn:   dsn,
 		Rules: rules,
 	})
@@ -89,15 +116,17 @@ func (d *PluginBootV2) Open(cfgV2 *v2.Config) (Plugin, error) {
 		return nil, err //todo
 	}
 	return &PluginImplV2{
-		client:  s,
+		client:  c,
 		Session: result.Session,
 	}, nil
 }
 
 func (d *PluginBootV2) Stop() error {
+	d.Lock()
 	if d.client != nil {
 		d.client.Kill()
 	}
+	d.Unlock()
 	return nil
 }
 

@@ -130,7 +130,7 @@ func (pm *pluginManager) Start(pluginDir string) error {
 		case v1.ProtocolVersion:
 			boot = &PluginBootV1{cfg: getClientConfig, path: path, client: client}
 		case v2.ProtocolVersion:
-			boot = &PluginBootV2{client: client}
+			boot = &PluginBootV2{cfg: getClientConfig, path: path, client: client}
 		}
 		if err := pm.register(boot); err != nil {
 			stopErr := boot.Stop()
