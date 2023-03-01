@@ -178,6 +178,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 }
 
 func Test_action_execute(t *testing.T) {
+	driver.GetPluginManager().Start("")
 	mockUpdateTaskStatus := func(t *testing.T) {
 		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
 			a, ok := attr[0].(map[string]interface{})
