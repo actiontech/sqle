@@ -10,10 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-
-	"github.com/actiontech/sqle/sqle/log"
-
-	_err "errors"
 )
 
 var SecretKey = []byte("471F77D078C5994BD06B65B8B5B1935B")
@@ -45,8 +41,8 @@ func SetSecretKey(key []byte) error {
 }
 
 func (e *encryptor) SetAesSecretKey(key []byte) error {
-	if !isEncryptAndDecryptNormal(key) {
-		return _err.New("set secret key error, check your secret key")
+	if err := testEncryptAndDecrypt(key); err != nil {
+		return err
 	}
 	e.mutex.Lock()
 	e.SecretKey = key
@@ -55,8 +51,7 @@ func (e *encryptor) SetAesSecretKey(key []byte) error {
 }
 
 // 测试加解密是否正常
-func isEncryptAndDecryptNormal(key []byte) bool {
-	newLog := log.NewEntry()
+func testEncryptAndDecrypt(key []byte) error {
 	e := &encryptor{
 		SecretKey: key,
 		mutex:     &sync.RWMutex{},
@@ -65,14 +60,12 @@ func isEncryptAndDecryptNormal(key []byte) bool {
 	testData := "test"
 	secretData, err := e.AesEncrypt(testData)
 	if err != nil {
-		newLog.Errorf("encrypt error: %v", err)
-		return false
+		return err
 	}
 	if _, err = e.AesDecrypt(secretData); err != nil {
-		newLog.Errorf("decrypt error: %v", err)
-		return false
+		return err
 	}
-	return true
+	return nil
 }
 
 func (e *encryptor) aesEncrypt(origData []byte) ([]byte, error) {
