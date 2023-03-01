@@ -136,7 +136,7 @@ type PluginImplV2 struct {
 }
 
 func (s *PluginImplV2) Close(ctx context.Context) {
-	s.client.Close(ctx, &protoV2.CloseResquest{
+	s.client.Close(ctx, &protoV2.CloseRequest{
 		Session: s.Session,
 	})
 }

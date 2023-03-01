@@ -128,10 +128,10 @@ func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (
 	}, nil
 }
 
-func (d *DriverGrpcServer) Close(ctx context.Context, req *protoV2.CloseResquest) (*protoV2.Empty, error) {
+func (d *DriverGrpcServer) Close(ctx context.Context, req *protoV2.CloseRequest) (*protoV2.Empty, error) {
 	driver, err := d.getDriverBySession(req.Session)
 	if err != nil {
-		return &protoV2.Empty{}, nil
+		return &protoV2.Empty{}, err
 	}
 	driver.Close(ctx)
 
