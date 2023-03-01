@@ -10,10 +10,11 @@ import (
 	v2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"google.golang.org/grpc"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
 var ErrPluginNotFound = errors.New("plugin not found")
@@ -160,9 +161,9 @@ func (pm *pluginManager) isPluginExists(pluginName string) bool {
 	return false
 }
 
-func (pm *pluginManager) OpenPlugin(pluginName string, cfg *v2.Config) (Plugin, error) {
+func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *v2.Config) (Plugin, error) {
 	if !pm.isPluginExists(pluginName) {
 		return nil, ErrPluginNotFound
 	}
-	return pm.driverBoots[pluginName].Open(cfg)
+	return pm.driverBoots[pluginName].Open(l, cfg)
 }
