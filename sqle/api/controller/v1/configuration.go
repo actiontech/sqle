@@ -528,7 +528,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 	n := &notification.TestNotify{}
 	content, err := notification.BuildFeishuMessageBody(n)
 	if err != nil {
-		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{                    
+		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: TestFeishuConfigResDataV1{
 				IsMessageSentNormally: false,
@@ -536,7 +536,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 			},
 		})
 	}
-	for uid, _ := range feishuUsers {
+	for uid := range feishuUsers {
 		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, uid, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 				BaseRes: controller.NewBaseReq(nil),
