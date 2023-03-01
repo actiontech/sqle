@@ -14,6 +14,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -51,6 +52,8 @@ const (
 // 当 skipSubsequentCheck==true 或 checkResult==false 或 err!=nil 时将会停止继续校验,并返回当前校验结果
 type LicenseChecker func(c echo.Context) (skipSubsequentCheck bool, checkResult bool, err error)
 
+var logger = log.NewEntry().WithField("action", "check-license")
+
 // 有序检查列表
 var LicenseCheckers = []LicenseChecker{
 	// 跳过永远放行的接口
@@ -73,6 +76,7 @@ var LicenseCheckers = []LicenseChecker{
 		defer std.mutex.RUnlock()
 
 		if std.hardwareInfo != std.limitInstallLocation {
+			logger.Errorf("incorrect machine info")
 			return true, false, nil
 		}
 		return false, true, nil
@@ -83,6 +87,7 @@ var LicenseCheckers = []LicenseChecker{
 		defer std.mutex.RUnlock()
 
 		if std.timerHour/24 >= std.WorkDurationDay {
+			logger.Errorf("expired license")
 			return true, false, nil
 		}
 		return false, true, nil
@@ -92,7 +97,13 @@ var LicenseCheckers = []LicenseChecker{
 		s := model.GetStorage()
 		if c.Request().Method == http.MethodPost && strings.TrimSuffix(c.Path(), "/") == "/v1/users" {
 			count, err := s.GetAllUserCount()
-			return true, count+1 <= std.GetPermission(LimitTypeUser), err
+			if err != nil {
+				return true, false, err
+			}
+			if count+1 > std.GetPermission(LimitTypeUser) {
+				logger.Errorf("user count reachs the limitation. current user count is %v", count)
+				return true, false, nil
+			}
 		}
 		return false, true, nil
 	},
@@ -121,8 +132,10 @@ var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, che
 	}
 
 	addedCount := false
+	var currentCount int64
 	for _, dbCount := range count {
 		if dbCount.DBType == dbType {
+			currentCount = dbCount.Count
 			dbCount.Count++
 			addedCount = true
 			break
@@ -135,7 +148,11 @@ var InstanceLicenseChecker = func(c echo.Context) (skipSubsequentCheck bool, che
 		})
 	}
 
-	return true, calculateIdleCustomAmount(count) >= 0, nil
+	if calculateIdleCustomAmount(count) < 0 {
+		logger.Errorf("instance count reachs the limitation. %v count is %v", dbType, currentCount)
+		return true, false, nil
+	}
+	return true, true, nil
 }
 
 // 复制结构体是为了防止循环依赖
