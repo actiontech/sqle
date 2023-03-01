@@ -135,7 +135,7 @@ func (pm *pluginManager) Start(pluginDir string) error {
 		if err := pm.register(boot); err != nil {
 			stopErr := boot.Stop()
 			if stopErr != nil {
-				log.NewEntry().Warnf("stop plugin %s failed, error: %v", stopErr)
+				log.NewEntry().Warnf("stop plugin %s failed, error: %v", path, stopErr)
 			}
 			return fmt.Errorf("unable to load plugin: %v, error: %v", path, err)
 		}

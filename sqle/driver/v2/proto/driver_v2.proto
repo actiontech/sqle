@@ -11,7 +11,7 @@ service Driver {
   // we consider that put this info to the executable binary environment.
   // We put all communication on gRPC for unification in the end.
   rpc Init(InitRequest) returns (InitResponse);
-  rpc Close(CloseResquest) returns (Empty);
+  rpc Close(CloseRequest) returns (Empty);
 
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
@@ -90,7 +90,7 @@ message InitResponse {
 }
 
 // Close
-message CloseResquest {
+message CloseRequest {
   Session session = 1;
 }
 

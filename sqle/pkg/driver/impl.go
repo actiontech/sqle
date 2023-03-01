@@ -19,8 +19,8 @@ import (
 type DriverImpl struct {
 	l hclog.Logger
 
-	cfg    *driverV2.Config
-	Builer *DriverBuilder
+	cfg     *driverV2.Config
+	Builder *DriverBuilder
 
 	db   *sql.DB
 	conn *sql.Conn
@@ -28,9 +28,9 @@ type DriverImpl struct {
 
 func NewDriverImpl(b *DriverBuilder, cfg *driverV2.Config) (driverV2.Driver, error) {
 	di := &DriverImpl{
-		l:      b.l,
-		cfg:    cfg,
-		Builer: b,
+		l:       b.l,
+		cfg:     cfg,
+		Builder: b,
 	}
 
 	if cfg.DSN == nil {
@@ -50,6 +50,7 @@ func NewDriverImpl(b *DriverBuilder, cfg *driverV2.Config) (driverV2.Driver, err
 var _ driverV2.Driver = &DriverImpl{}
 
 func (p *DriverImpl) Close(ctx context.Context) {
+	p.conn.Close()
 	p.db.Close()
 }
 
@@ -107,7 +108,7 @@ func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 }
 
 func (p *DriverImpl) Query(ctx context.Context, query string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(conf.TimeOutSecond)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(conf.TimeOutSecond)*time.Second)
 	defer cancel()
 	rows, err := p.conn.QueryContext(ctx, query)
 	if err != nil {
@@ -198,7 +199,7 @@ func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 func (p *DriverImpl) audit(ctx context.Context, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
 	result := driverV2.NewInspectResults()
 	for _, rule := range p.cfg.Rules {
-		handler, ok := p.Builer.RuleToRawHandler[rule.Name]
+		handler, ok := p.Builder.RuleToRawHandler[rule.Name]
 		if ok {
 			msg, err := handler(ctx, rule, sql, nextSQL)
 			if err != nil {
@@ -206,12 +207,12 @@ func (p *DriverImpl) audit(ctx context.Context, sql string, nextSQL []string) (*
 			}
 			result.Add(rule.Level, msg)
 		} else {
-			handler, ok := p.Builer.RuleToASTHandler[rule.Name]
+			handler, ok := p.Builder.RuleToASTHandler[rule.Name]
 			if ok {
 				var err error
 				var ast interface{}
-				if p.Builer.Opts.sqlParser != nil {
-					ast, err = p.Builer.Opts.sqlParser(sql)
+				if p.Builder.Opts.sqlParser != nil {
+					ast, err = p.Builder.Opts.sqlParser(sql)
 					if err != nil {
 						return nil, errors.Wrap(err, "parse sql")
 					}
@@ -233,7 +234,7 @@ func (p *DriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, st
 }
 
 func (p *DriverImpl) GetDatabases(ctx context.Context) ([]string, error) {
-	rows, err := p.conn.QueryContext(ctx, p.Builer.Dt.ShowDatabaseSQL())
+	rows, err := p.conn.QueryContext(ctx, p.Builder.Dt.ShowDatabaseSQL())
 	if err != nil {
 		return nil, errors.Wrap(err, "query database in driver adaptor")
 	}
