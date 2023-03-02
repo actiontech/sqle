@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -20,7 +20,7 @@ type PluginBootV2 struct {
 	path   string
 	cfg    func(path string) *goPlugin.ClientConfig
 	client *goPlugin.Client
-	meta   *v2.DriverMetas
+	meta   *driverV2.DriverMetas
 	sync.Mutex
 }
 
@@ -48,7 +48,7 @@ func (d *PluginBootV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, e
 	if err != nil {
 		return nil, err
 	}
-	rawI, err := cp.Dispense(v2.PluginSetName)
+	rawI, err := cp.Dispense(driverV2.PluginSetName)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (d *PluginBootV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, e
 	return s, nil
 }
 
-func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
+func (d *PluginBootV2) Register() (*driverV2.DriverMetas, error) {
 	c, err := d.getDriverClient(log.NewEntry())
 	if err != nil {
 		return nil, err
@@ -71,19 +71,19 @@ func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
 		return nil, err
 	}
 
-	rules := make([]*v2.Rule, 0, len(result.Rules))
+	rules := make([]*driverV2.Rule, 0, len(result.Rules))
 	for _, r := range result.Rules {
-		rules = append(rules, v2.ConvertRuleFromProtoToDriver(r))
+		rules = append(rules, driverV2.ConvertRuleFromProtoToDriver(r))
 	}
 
-	ms := make([]v2.OptionalModule, 0, len(result.EnabledOptionalModule))
+	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
 	for _, m := range result.EnabledOptionalModule {
-		ms = append(ms, v2.OptionalModule(m))
+		ms = append(ms, driverV2.OptionalModule(m))
 	}
-	meta := &v2.DriverMetas{
+	meta := &driverV2.DriverMetas{
 		PluginName:               result.PluginName,
 		DatabaseDefaultPort:      result.DatabaseDefaultPort,
-		DatabaseAdditionalParams: v2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
+		DatabaseAdditionalParams: driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,
 	}
@@ -91,10 +91,10 @@ func (d *PluginBootV2) Register() (*v2.DriverMetas, error) {
 	return meta, nil
 }
 
-func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
+func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
 	l = l.WithFields(logrus.Fields{
 		"plugin":         d.meta.PluginName,
-		"plugin_version": v2.ProtocolVersion,
+		"plugin_version": driverV2.ProtocolVersion,
 	})
 	c, err := d.getDriverClient(l)
 	if err != nil {
@@ -109,13 +109,13 @@ func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
 			User:             cfgV2.DSN.User,
 			Password:         cfgV2.DSN.Password,
 			Database:         cfgV2.DSN.DatabaseName,
-			AdditionalParams: v2.ConvertParamToProtoParam(cfgV2.DSN.AdditionalParams),
+			AdditionalParams: driverV2.ConvertParamToProtoParam(cfgV2.DSN.AdditionalParams),
 		}
 	}
 
 	var rules = make([]*protoV2.Rule, 0, len(cfgV2.Rules))
 	for _, rule := range cfgV2.Rules {
-		rules = append(rules, v2.ConvertRuleFromDriverToProto(rule))
+		rules = append(rules, driverV2.ConvertRuleFromDriverToProto(rule))
 	}
 	l.Infof("starting call plugin interface [Init]")
 	result, err := c.Init(context.TODO(), &protoV2.InitRequest{
@@ -172,7 +172,7 @@ func (s *PluginImplV2) Close(ctx context.Context) {
 
 // audit
 
-func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]v2.Node, error) {
+func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
 	api := "Parse"
 	s.preLog(api)
 	resp, err := s.client.Parse(ctx, &protoV2.ParseRequest{
@@ -186,9 +186,9 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]v2.Node, er
 		return nil, err
 	}
 
-	nodes := make([]v2.Node, len(resp.Nodes))
+	nodes := make([]driverV2.Node, len(resp.Nodes))
 	for i, node := range resp.Nodes {
-		nodes[i] = v2.Node{
+		nodes[i] = driverV2.Node{
 			Type:        node.Type,
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
@@ -197,7 +197,7 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]v2.Node, er
 	return nodes, nil
 }
 
-func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*v2.AuditResults, error) {
+func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	api := "Audit"
 	s.preLog(api)
 	auditSqls := make([]*protoV2.AuditSQL, 0, len(sqls))
@@ -213,12 +213,12 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*v2.AuditRes
 		return nil, err
 	}
 
-	rets := []*v2.AuditResults{}
+	rets := []*driverV2.AuditResults{}
 	for _, results := range resp.AuditResults {
-		ret := &v2.AuditResults{}
+		ret := &driverV2.AuditResults{}
 		for _, result := range results.Results {
-			ret.Results = append(ret.Results, &v2.AuditResult{
-				Level:   v2.RuleLevel(result.Level),
+			ret.Results = append(ret.Results, &driverV2.AuditResult{
+				Level:   driverV2.RuleLevel(result.Level),
 				Message: result.Message,
 			})
 		}
@@ -303,7 +303,7 @@ func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Resu
 	return ret, nil
 }
 
-func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf) (*v2.QueryResult, error) {
+func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
 	api := "Query"
 	s.preLog(api)
 	req := &protoV2.QueryRequest{
@@ -320,9 +320,9 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf
 	if err != nil {
 		return nil, err
 	}
-	result := &v2.QueryResult{
+	result := &driverV2.QueryResult{
 		Column: params.Params{},
-		Rows:   []*v2.QueryResultRow{},
+		Rows:   []*driverV2.QueryResultRow{},
 	}
 	for _, p := range res.GetColumn() {
 		result.Column = append(result.Column, &params.Param{
@@ -333,11 +333,11 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf
 		})
 	}
 	for _, row := range res.GetRows() {
-		r := &v2.QueryResultRow{
-			Values: []*v2.QueryResultValue{},
+		r := &driverV2.QueryResultRow{
+			Values: []*driverV2.QueryResultValue{},
 		}
 		for _, value := range row.GetValues() {
-			r.Values = append(r.Values, &v2.QueryResultValue{
+			r.Values = append(r.Values, &driverV2.QueryResultValue{
 				Value: value.GetValue(),
 			})
 		}
@@ -346,7 +346,7 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *v2.QueryConf
 	return result, nil
 }
 
-func (s *PluginImplV2) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.ExplainResult, error) {
+func (s *PluginImplV2) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {
 	api := "Explain"
 	s.preLog(api)
 	req := &protoV2.ExplainRequest{
@@ -357,15 +357,15 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.E
 	}
 	res, err := s.client.Explain(ctx, req)
 	s.afterLog(api, err)
-	if err != nil && status.Code(err) == v2.GrpcErrSQLIsNotSupported {
-		return nil, v2.ErrSQLIsNotSupported
+	if err != nil && status.Code(err) == driverV2.GrpcErrSQLIsNotSupported {
+		return nil, driverV2.ErrSQLIsNotSupported
 	} else if err != nil {
 		return nil, err
 	}
 
-	return &v2.ExplainResult{
-		ClassicResult: v2.ExplainClassicResult{
-			TabularData: v2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data),
+	return &driverV2.ExplainResult{
+		ClassicResult: driverV2.ExplainClassicResult{
+			TabularData: driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data),
 		},
 	}, nil
 }
@@ -389,7 +389,7 @@ func (s *PluginImplV2) Schemas(ctx context.Context) ([]string, error) {
 	return databases, nil
 }
 
-func (s *PluginImplV2) getTableMeta(ctx context.Context, table *v2.Table) (*v2.TableMeta, error) {
+func (s *PluginImplV2) getTableMeta(ctx context.Context, table *driverV2.Table) (*driverV2.TableMeta, error) {
 	api := "GetTableMeta"
 	s.preLog(api)
 	result, err := s.client.GetTableMeta(ctx, &protoV2.GetTableMetaRequest{
@@ -403,10 +403,10 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *v2.Table) (*v2.T
 	if err != nil {
 		return nil, err
 	}
-	return v2.ConvertProtoTableMetaToDriver(result.TableMeta), nil
+	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta), nil
 }
 
-func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*v2.Table, error) {
+func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*driverV2.Table, error) {
 	api := "ExtractTableFromSQL"
 	s.preLog(api)
 	result, err := s.client.ExtractTableFromSQL(ctx, &protoV2.ExtractTableFromSQLRequest{
@@ -417,9 +417,9 @@ func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*
 	if err != nil {
 		return nil, err
 	}
-	tables := make([]*v2.Table, 0, len(result.Tables))
+	tables := make([]*driverV2.Table, 0, len(result.Tables))
 	for _, table := range result.Tables {
-		tables = append(tables, &v2.Table{
+		tables = append(tables, &driverV2.Table{
 			Name:   table.Name,
 			Schema: table.Schema,
 		})
