@@ -224,7 +224,6 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 		}
 		rets = append(rets, ret)
 	}
-	s.afterLog(api, nil)
 	return rets, nil
 }
 
