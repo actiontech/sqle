@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 
-	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 
 	"github.com/sirupsen/logrus"
 )
@@ -13,10 +13,10 @@ type Plugin interface {
 	Close(ctx context.Context)
 
 	// Parse parse sqlText to Node array. sqlText may be single SQL or batch SQLs.
-	Parse(ctx context.Context, sqlText string) ([]v2.Node, error)
+	Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error)
 
 	// Audit sql with rules. sql is single SQL text or multi audit.
-	Audit(ctx context.Context, sqls []string) ([]*v2.AuditResults, error)
+	Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
 	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
@@ -24,8 +24,8 @@ type Plugin interface {
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)
 	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
-	Query(ctx context.Context, sql string, conf *v2.QueryConf) (*v2.QueryResult, error)
-	Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.ExplainResult, error)
+	Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error)
+	Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error)
 
 	// Schemas export all supported schemas.
 	//
@@ -37,8 +37,8 @@ type Plugin interface {
 }
 
 type PluginBoot interface {
-	Register() (*v2.DriverMetas, error)
-	Open(*logrus.Entry, *v2.Config) (Plugin, error)
+	Register() (*driverV2.DriverMetas, error)
+	Open(*logrus.Entry, *driverV2.Config) (Plugin, error)
 	Stop() error
 }
 
@@ -52,6 +52,6 @@ type GetTableMetaBySQLResult struct {
 }
 
 type TableMeta struct {
-	v2.Table
-	v2.TableMeta
+	driverV2.Table
+	driverV2.TableMeta
 }

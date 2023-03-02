@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/common"
-	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -785,7 +785,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	plugin, err := common.NewDriverManagerWithoutCfg(l, v2.DriverTypeMySQL)
+	plugin, err := common.NewDriverManagerWithoutCfg(l, driverV2.DriverTypeMySQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

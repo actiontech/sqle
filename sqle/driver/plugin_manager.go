@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	v1 "github.com/actiontech/sqle/sqle/driver/v1"
-	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -23,13 +23,13 @@ var BuiltInPluginBoots = map[string] /*plugin name*/ PluginBoot{}
 
 type pluginManager struct {
 	pluginNames []string
-	metas       map[string]v2.DriverMetas
+	metas       map[string]driverV2.DriverMetas
 	driverBoots map[string]PluginBoot
 }
 
 var PluginManager = &pluginManager{
 	pluginNames: []string{},
-	metas:       map[string]v2.DriverMetas{},
+	metas:       map[string]driverV2.DriverMetas{},
 	driverBoots: map[string]PluginBoot{},
 }
 
@@ -37,8 +37,8 @@ func GetPluginManager() *pluginManager {
 	return PluginManager
 }
 
-func (pm *pluginManager) GetAllRules() map[string][]*v2.Rule {
-	rules := map[string][]*v2.Rule{}
+func (pm *pluginManager) GetAllRules() map[string][]*driverV2.Rule {
+	rules := map[string][]*driverV2.Rule{}
 	for _, p := range pm.pluginNames {
 		meta := pm.metas[p]
 		rules[p] = meta.Rules
@@ -76,10 +76,10 @@ var SQLEGRPCDialOptions = []grpc.DialOption{}
 
 func getClientConfig(path string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
-		HandshakeConfig: v2.HandshakeConfig,
+		HandshakeConfig: driverV2.HandshakeConfig,
 		VersionedPlugins: map[int]goPlugin.PluginSet{
-			v1.ProtocolVersion: v1.PluginSet,
-			v2.ProtocolVersion: v2.PluginSet,
+			driverV1.ProtocolVersion: driverV1.PluginSet,
+			driverV2.ProtocolVersion: driverV2.PluginSet,
 		},
 		Cmd:              exec.Command(path),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
@@ -128,9 +128,9 @@ func (pm *pluginManager) Start(pluginDir string) error {
 
 		var boot PluginBoot
 		switch client.NegotiatedVersion() {
-		case v1.ProtocolVersion:
+		case driverV1.ProtocolVersion:
 			boot = &PluginBootV1{cfg: getClientConfig, path: path, client: client}
-		case v2.ProtocolVersion:
+		case driverV2.ProtocolVersion:
 			boot = &PluginBootV2{cfg: getClientConfig, path: path, client: client}
 		}
 		if err := pm.register(boot); err != nil {
@@ -161,7 +161,7 @@ func (pm *pluginManager) isPluginExists(pluginName string) bool {
 	return false
 }
 
-func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *v2.Config) (Plugin, error) {
+func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *driverV2.Config) (Plugin, error) {
 	if !pm.isPluginExists(pluginName) {
 		return nil, ErrPluginNotFound
 	}
