@@ -7,8 +7,8 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
-	larkcontact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
-	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
+	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
+	larkIm "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
 var wrapSendRequestFailedError = func(err error) error { return fmt.Errorf("send message failed: %v", err) }
@@ -39,9 +39,9 @@ func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []s
 		tempMobiles = mobiles[:MaxCountOfIdThatUsedToFindUser]
 	}
 
-	req := larkcontact.NewBatchGetIdUserReqBuilder().
+	req := larkContact.NewBatchGetIdUserReqBuilder().
 		UserIdType(`user_id`).
-		Body(larkcontact.NewBatchGetIdUserReqBodyBuilder().
+		Body(larkContact.NewBatchGetIdUserReqBodyBuilder().
 			Emails(tempEmails).
 			Mobiles(tempMobiles).
 			Build()).
@@ -60,7 +60,7 @@ func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []s
 	return users, nil
 }
 
-func (f *FeishuClient) convertUsersResp(raw []*larkcontact.UserContactInfo, users map[string]*UserContactInfo) {
+func (f *FeishuClient) convertUsersResp(raw []*larkContact.UserContactInfo, users map[string]*UserContactInfo) {
 	for _, user := range raw {
 		id := utils.NvlString(user.UserId)
 		if id == "" {
@@ -86,15 +86,15 @@ func (f *FeishuClient) convertUsersResp(raw []*larkcontact.UserContactInfo, user
 }
 
 const (
-	FeishuRceiveIdTypeUserId = "user_id"
+	FeishuReceiverIdTypeUserId = "user_id"
 
 	FeishuSendMessageMsgTypePost = "post"
 )
 
 func (f FeishuClient) SendMessage(receiveIdType, receiveId, msgType, content string) error {
-	req := larkim.NewCreateMessageReqBuilder().
+	req := larkIm.NewCreateMessageReqBuilder().
 		ReceiveIdType(receiveIdType).
-		Body(larkim.NewCreateMessageReqBodyBuilder().
+		Body(larkIm.NewCreateMessageReqBodyBuilder().
 			ReceiveId(receiveId).
 			MsgType(msgType).
 			Content(content).
