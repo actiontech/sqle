@@ -61,6 +61,8 @@ type DriverGrpcServer struct {
 }
 
 func (d *DriverGrpcServer) getDriverBySession(session *protoV2.Session) (Driver, error) {
+	d.Lock()
+	defer d.Unlock()
 	driver, ok := d.Drivers[session.Id]
 	if !ok {
 		return nil, fmt.Errorf("session %s not found", session.Id)
@@ -113,13 +115,14 @@ func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (
 	if err != nil {
 		return nil, errors.Wrap(err, "init config")
 	}
-	d.Mutex.Lock()
+	d.Lock()
 	if _, ok := d.Drivers[id]; ok {
+		d.Unlock()
 		driver.Close(ctx)
 		return nil, errors.New("session id is duplicated") // 几乎不会发生.
 	}
 	d.Drivers[id] = driver
-	d.Mutex.Unlock()
+	d.Unlock()
 
 	return &protoV2.InitResponse{
 		Session: &protoV2.Session{
@@ -133,11 +136,11 @@ func (d *DriverGrpcServer) Close(ctx context.Context, req *protoV2.CloseRequest)
 	if err != nil {
 		return &protoV2.Empty{}, err
 	}
-	driver.Close(ctx)
-
 	d.Mutex.Lock()
 	delete(d.Drivers, req.Session.Id)
 	d.Mutex.Unlock()
+
+	driver.Close(ctx)
 	return &protoV2.Empty{}, nil
 }
 
