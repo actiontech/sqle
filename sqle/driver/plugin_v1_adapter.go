@@ -4,8 +4,8 @@ import (
 	"context"
 	sqlDriver "database/sql/driver"
 
-	v1 "github.com/actiontech/sqle/sqle/driver/v1"
-	v2 "github.com/actiontech/sqle/sqle/driver/v2"
+	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
@@ -15,10 +15,10 @@ type PluginBootV1 struct {
 	cfg    func(path string) *goPlugin.ClientConfig
 	path   string
 	client *goPlugin.Client // this client will be killed after Register.
-	metas  *v2.DriverMetas
+	metas  *driverV2.DriverMetas
 }
 
-func convertRuleFromV1ToV2(rule *v1.Rule) *v2.Rule {
+func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 	var ps = make(params.Params, 0, len(rule.Params))
 	for _, p := range rule.Params {
 		ps = append(ps, &params.Param{
@@ -28,28 +28,28 @@ func convertRuleFromV1ToV2(rule *v1.Rule) *v2.Rule {
 			Type:  p.Type,
 		})
 	}
-	return &v2.Rule{
+	return &driverV2.Rule{
 		Name:       rule.Name,
 		Category:   rule.Category,
 		Desc:       rule.Desc,
 		Annotation: rule.Annotation,
-		Level:      v2.RuleLevel(rule.Level),
+		Level:      driverV2.RuleLevel(rule.Level),
 		Params:     ps,
 	}
 }
 
-func (d *PluginBootV1) Register() (*v2.DriverMetas, error) {
+func (d *PluginBootV1) Register() (*driverV2.DriverMetas, error) {
 	defer d.client.Kill()
-	name, rules, params, err := v1.RegisterDrivers(d.client, d.cfg, d.path)
+	name, rules, params, err := driverV1.RegisterDrivers(d.client, d.cfg, d.path)
 	if err != nil {
 		return nil, err
 	}
 
-	rulesV2 := make([]*v2.Rule, 0, len(rules))
+	rulesV2 := make([]*driverV2.Rule, 0, len(rules))
 	for _, rule := range rules {
 		rulesV2 = append(rulesV2, convertRuleFromV1ToV2(rule))
 	}
-	meta := &v2.DriverMetas{
+	meta := &driverV2.DriverMetas{
 		PluginName:               name,
 		DatabaseDefaultPort:      0,
 		Rules:                    rulesV2,
@@ -59,13 +59,13 @@ func (d *PluginBootV1) Register() (*v2.DriverMetas, error) {
 	return meta, nil
 }
 
-func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
+func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
 	l = l.WithFields(logrus.Fields{
 		"plugin":         d.metas.PluginName,
-		"plugin_version": v1.ProtocolVersion,
+		"plugin_version": driverV1.ProtocolVersion,
 	})
-	cfg := &v1.Config{
-		DSN: &v1.DSN{
+	cfg := &driverV1.Config{
+		DSN: &driverV1.DSN{
 			Host:             cfgV2.DSN.Host,
 			Port:             cfgV2.DSN.Port,
 			User:             cfgV2.DSN.User,
@@ -75,16 +75,16 @@ func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *v2.Config) (Plugin, error) {
 		},
 	}
 	for _, rule := range cfgV2.Rules {
-		cfg.Rules = append(cfg.Rules, &v1.Rule{
+		cfg.Rules = append(cfg.Rules, &driverV1.Rule{
 			Name:       rule.Name,
 			Desc:       rule.Desc,
 			Annotation: rule.Annotation,
 			Category:   rule.Category,
-			Level:      v1.RuleLevel(rule.Level),
+			Level:      driverV1.RuleLevel(rule.Level),
 			Params:     rule.Params,
 		})
 	}
-	dm, err := v1.NewDriverManger(l, d.metas.PluginName, cfg)
+	dm, err := driverV1.NewDriverManger(l, d.metas.PluginName, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -99,14 +99,14 @@ func (d *PluginBootV1) Stop() error {
 }
 
 type PluginImplV1 struct {
-	v1.DriverManager
+	driverV1.DriverManager
 }
 
 func (p *PluginImplV1) Close(ctx context.Context) {
 	p.DriverManager.Close(ctx)
 }
 
-func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]v2.Node, error) {
+func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
 		return nil, err
@@ -115,9 +115,9 @@ func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]v2.Node, er
 	if err != nil {
 		return nil, err
 	}
-	nodesV2 := []v2.Node{}
+	nodesV2 := []driverV2.Node{}
 	for _, node := range nodes {
-		nodesV2 = append(nodesV2, v2.Node{
+		nodesV2 = append(nodesV2, driverV2.Node{
 			Text:        node.Text,
 			Type:        node.Type,
 			Fingerprint: node.Fingerprint,
@@ -126,21 +126,21 @@ func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]v2.Node, er
 	return nodesV2, nil
 }
 
-func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*v2.AuditResults, error) {
+func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
 		return nil, err
 	}
-	resultsV2 := []*v2.AuditResults{}
+	resultsV2 := []*driverV2.AuditResults{}
 	for _, sql := range sqls {
 		resultV1, err := client.Audit(ctx, sql)
 		if err != nil {
 			return nil, err
 		}
-		resultV2 := &v2.AuditResults{}
+		resultV2 := &driverV2.AuditResults{}
 		for _, result := range resultV1.Results {
-			resultV2.Results = append(resultV2.Results, &v2.AuditResult{
-				Level:   v2.RuleLevel(result.Level),
+			resultV2.Results = append(resultV2.Results, &driverV2.AuditResult{
+				Level:   driverV2.RuleLevel(result.Level),
 				Message: result.Message,
 			})
 		}
@@ -181,53 +181,53 @@ func (p *PluginImplV1) Tx(ctx context.Context, queries ...string) ([]sqlDriver.R
 	return client.Tx(ctx, queries...)
 }
 
-func (p *PluginImplV1) Query(ctx context.Context, sql string, conf *v2.QueryConf) (*v2.QueryResult, error) {
+func (p *PluginImplV1) Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
 	client, err := p.DriverManager.GetSQLQueryDriver()
 	if err != nil {
 		return nil, err
 	}
-	resultV1, err := client.Query(ctx, sql, &v1.QueryConf{TimeOutSecond: conf.TimeOutSecond})
+	resultV1, err := client.Query(ctx, sql, &driverV1.QueryConf{TimeOutSecond: conf.TimeOutSecond})
 	if err != nil {
 		return nil, err
 	}
-	rowsV2 := []*v2.QueryResultRow{}
+	rowsV2 := []*driverV2.QueryResultRow{}
 	for _, row := range resultV1.Rows {
-		rowV2 := &v2.QueryResultRow{}
+		rowV2 := &driverV2.QueryResultRow{}
 		for _, v := range row.Values {
-			rowV2.Values = append(rowV2.Values, &v2.QueryResultValue{
+			rowV2.Values = append(rowV2.Values, &driverV2.QueryResultValue{
 				Value: v.Value,
 			})
 		}
 		rowsV2 = append(rowsV2, rowV2)
 	}
 
-	return &v2.QueryResult{
+	return &driverV2.QueryResult{
 		Column: resultV1.Column,
 		Rows:   rowsV2,
 	}, nil
 }
 
-func (p *PluginImplV1) Explain(ctx context.Context, conf *v2.ExplainConf) (*v2.ExplainResult, error) {
+func (p *PluginImplV1) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {
 	client, err := p.DriverManager.GetAnalysisDriver()
 	if err != nil {
 		return nil, err
 	}
-	resultV1, err := client.Explain(ctx, &v1.ExplainConf{
+	resultV1, err := client.Explain(ctx, &driverV1.ExplainConf{
 		Sql: conf.Sql,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	columnsV2 := []v2.TabularDataHead{}
+	columnsV2 := []driverV2.TabularDataHead{}
 	for _, column := range resultV1.ClassicResult.Columns {
-		columnsV2 = append(columnsV2, v2.TabularDataHead{
+		columnsV2 = append(columnsV2, driverV2.TabularDataHead{
 			Name: column.Name,
 			Desc: column.Desc,
 		})
 	}
 
-	resultV2 := &v2.ExplainResult{}
+	resultV2 := &driverV2.ExplainResult{}
 	resultV2.ClassicResult.Rows = resultV1.ClassicResult.Rows
 	resultV2.ClassicResult.Columns = columnsV2
 	return resultV2, nil
@@ -247,7 +247,7 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 	if err != nil {
 		return nil, err
 	}
-	resultV1, err := client.GetTableMetaBySQL(ctx, &v1.GetTableMetaBySQLConf{
+	resultV1, err := client.GetTableMetaBySQL(ctx, &driverV1.GetTableMetaBySQLConf{
 		Sql: conf.Sql,
 	})
 	if err != nil {
@@ -262,9 +262,9 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		tmV2.CreateTableSQL = tm.CreateTableSQL
 		tmV2.Message = tm.Message
 
-		columnV2 := []v2.TabularDataHead{}
+		columnV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.ColumnsInfo.Columns {
-			columnV2 = append(columnV2, v2.TabularDataHead{
+			columnV2 = append(columnV2, driverV2.TabularDataHead{
 				Name: column.Name,
 				Desc: column.Desc,
 			})
@@ -272,9 +272,9 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		tmV2.ColumnsInfo.Columns = columnV2
 		tmV2.ColumnsInfo.Rows = tm.ColumnsInfo.Rows
 
-		indexesColV2 := []v2.TabularDataHead{}
+		indexesColV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.IndexesInfo.Columns {
-			indexesColV2 = append(indexesColV2, v2.TabularDataHead{
+			indexesColV2 = append(indexesColV2, driverV2.TabularDataHead{
 				Name: column.Name,
 				Desc: column.Desc,
 			})
