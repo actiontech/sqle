@@ -26,41 +26,37 @@ type UserContactInfo struct {
 	Mobile string
 }
 
-func (f *FeishuClient) GetUsersByEmailOrMobile(emails, mobiles []string) (map[string]*UserContactInfo, error) {
-	//查询限制每次最多50条emails和mobiles，https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
-	limitation := 50
-	users := make(map[string] /*user_id*/ *UserContactInfo)
-	tempMobiles, tempEmails := mobiles, emails
-	for len(tempMobiles) > 0 || len(tempEmails) > 0 {
-		endEmails := limitation
-		endMobiles := limitation
-		if len(tempEmails) < limitation {
-			endEmails = len(tempEmails)
-		}
-		if len(tempMobiles) < limitation {
-			endMobiles = len(tempMobiles)
-		}
+const MaxCountOfIdThatUsedToFindUser = 50
 
-		req := larkcontact.NewBatchGetIdUserReqBuilder().
-			UserIdType(`user_id`).
-			Body(larkcontact.NewBatchGetIdUserReqBodyBuilder().
-				Emails(tempEmails[:endEmails]).
-				Mobiles(tempMobiles[:endMobiles]).
-				Build()).
-			Build()
-
-		resp, err := f.client.Contact.User.BatchGetId(context.Background(), req)
-		if err != nil {
-			return nil, wrapSendRequestFailedError(err)
-		}
-		if !resp.Success() {
-			return nil, fmt.Errorf("get user ids failed: respCode=%v, respMsg=%v", resp.Code, resp.Msg)
-		}
-
-		f.convertUsersResp(resp.Data.UserList, users)
-		tempMobiles = tempMobiles[endMobiles:]
-		tempEmails = tempEmails[endEmails:]
+// 查询限制每次最多50条emails和mobiles，https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
+// 每次最多查询50个邮箱和50个手机号，如果超出50个，只查询前50个
+func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []string) (map[string]*UserContactInfo, error) {
+	tempEmails, tempMobiles := emails, mobiles
+	if len(emails) > MaxCountOfIdThatUsedToFindUser {
+		tempEmails = emails[:MaxCountOfIdThatUsedToFindUser]
 	}
+	if len(mobiles) > MaxCountOfIdThatUsedToFindUser {
+		tempMobiles = mobiles[:MaxCountOfIdThatUsedToFindUser]
+	}
+
+	req := larkcontact.NewBatchGetIdUserReqBuilder().
+		UserIdType(`user_id`).
+		Body(larkcontact.NewBatchGetIdUserReqBodyBuilder().
+			Emails(tempEmails).
+			Mobiles(tempMobiles).
+			Build()).
+		Build()
+
+	resp, err := f.client.Contact.User.BatchGetId(context.Background(), req)
+	if err != nil {
+		return nil, wrapSendRequestFailedError(err)
+	}
+	if !resp.Success() {
+		return nil, fmt.Errorf("get user ids failed: respCode=%v, respMsg=%v", resp.Code, resp.Msg)
+	}
+
+	users := make(map[string]*UserContactInfo)
+	f.convertUsersResp(resp.Data.UserList, users)
 	return users, nil
 }
 

@@ -7,8 +7,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
@@ -39,19 +37,25 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 
 	// 通过邮箱、手机从飞书获取用户ids
 	var emails, mobiles []string
+	userCount := 0
 	for _, u := range users {
+		if u.Email == "" && u.Phone == "" {
+			continue
+		}
 		if u.Email != "" {
 			emails = append(emails, u.Email)
 		}
 		if u.Phone != "" {
 			mobiles = append(mobiles, u.Phone)
 		}
+		userCount++
+		if userCount == feishu.MaxCountOfIdThatUsedToFindUser {
+			break
+		}
 	}
-	emails = utils.RemoveDuplicate(emails)
-	mobiles = utils.RemoveDuplicate(mobiles)
 
 	client := feishu.NewFeishuClient(cfg.AppKey, cfg.AppSecret)
-	feishuUsers, err := client.GetUsersByEmailOrMobile(emails, mobiles)
+	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation(emails, mobiles)
 	if err != nil {
 		return fmt.Errorf("get user_ids from feishu failed: %v", err)
 	}
