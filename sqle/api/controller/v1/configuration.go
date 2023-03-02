@@ -537,7 +537,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 		})
 	}
 	for uid := range feishuUsers {
-		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, uid, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
+		if err = client.SendMessage(feishu.FeishuReceiverIdTypeUserId, uid, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 				BaseRes: controller.NewBaseReq(nil),
 				Data: TestFeishuConfigResDataV1{
