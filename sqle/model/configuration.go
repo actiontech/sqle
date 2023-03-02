@@ -384,6 +384,7 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 const (
 	ImTypeDingTalk = "dingTalk"
+	ImTypeFeishu   = "feishu"
 )
 
 type IM struct {
