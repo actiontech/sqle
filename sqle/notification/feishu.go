@@ -7,7 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
-	larkim "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
+	larkIm "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
 func init() {
@@ -68,7 +68,7 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 	l := log.NewEntry()
 	for id, u := range feishuUsers {
 		l.Infof("send message to feishu, email=%v, phone=%v, userId=%v", u.Email, u.Mobile, id)
-		if err = client.SendMessage(feishu.FeishuRceiveIdTypeUserId, id, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
+		if err = client.SendMessage(feishu.FeishuReceiverIdTypeUserId, id, feishu.FeishuSendMessageMsgTypePost, content); err != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("send message to feishu failed: %v; email=%v; phone=%v", err, u.Email, u.Mobile))
 		}
 	}
@@ -79,9 +79,9 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 }
 
 func BuildFeishuMessageBody(n Notification) (string, error) {
-	zhCnPostText := &larkim.MessagePostText{Text: n.NotificationBody()}
-	zhCnMessagePostContent := &larkim.MessagePostContent{Title: n.NotificationSubject(), Content: [][]larkim.MessagePostElement{{zhCnPostText}}}
-	messagePostText := &larkim.MessagePost{ZhCN: zhCnMessagePostContent}
+	zhCnPostText := &larkIm.MessagePostText{Text: n.NotificationBody()}
+	zhCnMessagePostContent := &larkIm.MessagePostContent{Title: n.NotificationSubject(), Content: [][]larkIm.MessagePostElement{{zhCnPostText}}}
+	messagePostText := &larkIm.MessagePost{ZhCN: zhCnMessagePostContent}
 	content, err := messagePostText.String()
 	if err != nil {
 		return "", err
