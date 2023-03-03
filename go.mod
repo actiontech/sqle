@@ -51,6 +51,7 @@ require (
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.6.1
+	github.com/larksuite/oapi-sdk-go/v3 v3.0.18
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/moby/sys/mountinfo v0.6.2
 	github.com/nxadm/tail v1.4.8
@@ -62,7 +63,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sijms/go-ora/v2 v2.2.15
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/echo-swagger v1.0.0

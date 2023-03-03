@@ -1,0 +1,12 @@
+output
+*.pyc
+*.sw?
+.idea
+.vscode
+.DS_Store
+coverage
+modules.txt
+*.log
+*.json
+*.sh
+test.go
