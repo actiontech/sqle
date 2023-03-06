@@ -144,7 +144,7 @@ type AuditResult struct {
 	Message string
 }
 
-func NewInspectResults() *AuditResults {
+func NewAuditResults() *AuditResults {
 	return &AuditResults{
 		Results: []*AuditResult{},
 	}

@@ -71,7 +71,7 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 
 	inspect.log = log
 	inspect.rules = cfg.Rules
-	inspect.result = driverV2.NewInspectResults()
+	inspect.result = driverV2.NewAuditResults()
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
@@ -271,7 +271,7 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2
 }
 
 func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.AuditResults, error) {
-	i.result = driverV2.NewInspectResults()
+	i.result = driverV2.NewAuditResults()
 
 	nodes, err := i.ParseSql(sql)
 	if err != nil {

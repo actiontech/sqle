@@ -197,7 +197,7 @@ func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 }
 
 func (p *DriverImpl) audit(ctx context.Context, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
-	result := driverV2.NewInspectResults()
+	result := driverV2.NewAuditResults()
 	for _, rule := range p.cfg.Rules {
 		handler, ok := p.Builder.RuleToRawHandler[rule.Name]
 		if ok {
