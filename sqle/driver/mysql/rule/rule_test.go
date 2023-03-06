@@ -8,7 +8,7 @@ import (
 )
 
 func TestInspectResults(t *testing.T) {
-	results := driverV2.NewInspectResults()
+	results := driverV2.NewAuditResults()
 	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
 	results.Add(handler.Rule.Level, handler.Message)
 	assert.Equal(t, driverV2.RuleLevelError, results.Level())
@@ -20,7 +20,7 @@ func TestInspectResults(t *testing.T) {
 		`[error]新建表必须加入 if not exists，保证重复执行不报错
 [error]表 not_exist_tb 不存在`, results.Message())
 
-	results2 := driverV2.NewInspectResults()
+	results2 := driverV2.NewAuditResults()
 	results2.Add(results.Level(), results.Message())
 	results2.Add(driverV2.RuleLevelNotice, "test")
 	assert.Equal(t, driverV2.RuleLevelError, results2.Level())
@@ -29,7 +29,7 @@ func TestInspectResults(t *testing.T) {
 [error]表 not_exist_tb 不存在
 [notice]test`, results2.Message())
 
-	results3 := driverV2.NewInspectResults()
+	results3 := driverV2.NewAuditResults()
 	results3.Add(results2.Level(), results2.Message())
 	results3.Add(driverV2.RuleLevelNotice, "[osc]test")
 	assert.Equal(t, driverV2.RuleLevelError, results3.Level())
@@ -39,7 +39,7 @@ func TestInspectResults(t *testing.T) {
 [notice]test
 [osc]test`, results3.Message())
 
-	results4 := driverV2.NewInspectResults()
+	results4 := driverV2.NewAuditResults()
 	results4.Add(driverV2.RuleLevelNotice, "[notice]test")
 	results4.Add(driverV2.RuleLevelError, "[osc]test")
 	assert.Equal(t, driverV2.RuleLevelError, results4.Level())
@@ -47,7 +47,7 @@ func TestInspectResults(t *testing.T) {
 		`[osc]test
 [notice]test`, results4.Message())
 
-	results5 := driverV2.NewInspectResults()
+	results5 := driverV2.NewAuditResults()
 	results5.Add(driverV2.RuleLevelWarn, "[warn]test")
 	results5.Add(driverV2.RuleLevelNotice, "[osc]test")
 	assert.Equal(t, driverV2.RuleLevelWarn, results5.Level())

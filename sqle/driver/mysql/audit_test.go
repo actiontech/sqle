@@ -27,7 +27,7 @@ type testResult struct {
 
 func newTestResult() *testResult {
 	return &testResult{
-		Results: driverV2.NewInspectResults(),
+		Results: driverV2.NewAuditResults(),
 		rules:   rulepkg.RuleHandlerMap,
 	}
 }
