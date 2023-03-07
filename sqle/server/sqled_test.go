@@ -12,13 +12,14 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/agiledragon/gomonkey"
 	"github.com/stretchr/testify/assert"
 )
 
-func getAction(sqls []string, typ int, d driver.Driver) *action {
+func getAction(sqls []string, typ int, p driver.Plugin) *action {
 	task := &model.Task{
 		Model:      model.Model{ID: 1},
 		SQLSource:  model.TaskSQLSourceFromMyBatisXMLFile,
@@ -34,7 +35,7 @@ func getAction(sqls []string, typ int, d driver.Driver) *action {
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	return &action{
 		task:   task,
-		driver: d,
+		plugin: p,
 		typ:    typ,
 		entry:  entry,
 		done:   make(chan struct{}),
@@ -63,20 +64,32 @@ func (d *mockDriver) Schemas(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
 
-func (d *mockDriver) Parse(ctx context.Context, sqlText string) ([]driver.Node, error) {
+func (d *mockDriver) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
 	if d.parseError {
 		return nil, errors.New("mock error: mockDriver.Parse")
 	}
 
-	return []driver.Node{{Text: sqlText}}, nil
+	return []driverV2.Node{{Text: sqlText}}, nil
 }
 
-func (d *mockDriver) Audit(ctx context.Context, sql string) (*driver.AuditResult, error) {
+func (d *mockDriver) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	return nil, nil
 }
 
 func (d *mockDriver) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	return "", "", nil
+}
+
+func (d *mockDriver) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {
+	return nil, nil
+}
+
+func (d *mockDriver) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
+	return nil, nil
+}
+
+func (d *mockDriver) Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
+	return nil, nil
 }
 
 func TestAction_validation(t *testing.T) {
@@ -154,7 +167,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("UPDATE `tasks`")).
-		WithArgs(driver.RuleLevelNormal, float64(1), 100, model.TaskStatusAudited, act.task.ID).
+		WithArgs(driverV2.RuleLevelNormal, float64(1), 100, model.TaskStatusAudited, act.task.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
@@ -165,6 +178,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 }
 
 func Test_action_execute(t *testing.T) {
+	driver.GetPluginManager().Start("")
 	mockUpdateTaskStatus := func(t *testing.T) {
 		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
 			a, ok := attr[0].(map[string]interface{})
@@ -190,29 +204,29 @@ func Test_action_execute(t *testing.T) {
 		})
 	}
 
-	newDriver := func() (driver.Driver, error) {
-		drvMgr, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driver.DriverTypeMySQL, nil, "")
+	newDriver := func() (driver.Plugin, error) {
+		p, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driverV2.DriverTypeMySQL, nil, "")
 		if err != nil {
 			return nil, err
 		}
-		defer drvMgr.Close(context.TODO())
+		defer p.Close(context.TODO())
 
-		d, err := drvMgr.GetAuditDriver()
-		if err != nil {
-			return nil, err
-		}
-		return d, nil
+		// d, err := drvMgr.GetAuditDriver()
+		// if err != nil {
+		// 	return nil, err
+		// }
+		return p, nil
 	}
 
 	tests := []struct {
 		name    string
-		setUp   func(t *testing.T) (driver.Driver, error)
+		setUp   func(t *testing.T) (driver.Plugin, error)
 		sqls    []string
 		wantErr bool
 	}{
 		{
 			name: "Given: one SQL;Parse error, then Update Task Status to Failed",
-			setUp: func(t *testing.T) (driver.Driver, error) {
+			setUp: func(t *testing.T) (driver.Plugin, error) {
 				mockUpdateTaskStatus(t)
 				return &mockDriver{parseError: true}, nil
 			},
@@ -222,7 +236,7 @@ func Test_action_execute(t *testing.T) {
 
 		{
 			name: "Given: one SQL;execSQLs error, then Update Task Status to Failed",
-			setUp: func(t *testing.T) (driver.Driver, error) {
+			setUp: func(t *testing.T) (driver.Plugin, error) {
 				mockUpdateTaskStatus(t)
 
 				gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateExecuteSQLs", func(_ *model.Storage, _ []*model.ExecuteSQL) error {
@@ -237,7 +251,7 @@ func Test_action_execute(t *testing.T) {
 
 		{
 			name: "Given: one SQL;execSQL error, then Update Task Status to Failed",
-			setUp: func(t *testing.T) (driver.Driver, error) {
+			setUp: func(t *testing.T) (driver.Plugin, error) {
 				mockUpdateTaskStatus(t)
 
 				gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateExecuteSqlStatus", func(_ *model.Storage, _ *model.BaseSQL, _ string, _ string) error {
@@ -252,7 +266,7 @@ func Test_action_execute(t *testing.T) {
 
 		{
 			name: "Given: two SQLs;execSQLs error, then Update Task Status to Failed",
-			setUp: func(t *testing.T) (driver.Driver, error) {
+			setUp: func(t *testing.T) (driver.Plugin, error) {
 				mockUpdateTaskStatus(t)
 
 				gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateExecuteSQLs", func(_ *model.Storage, _ []*model.ExecuteSQL) error {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/jinzhu/gorm"
@@ -21,7 +21,7 @@ type RuleTemplate struct {
 	RuleList  []RuleTemplateRule `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
 
-func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
+func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 	return &Rule{
 		Name:       dr.Name,
 		Desc:       dr.Desc,
@@ -33,13 +33,13 @@ func GenerateRuleByDriverRule(dr *driver.Rule, dbType string) *Rule {
 	}
 }
 
-func ConvertRuleToDriverRule(r *Rule) *driver.Rule {
-	return &driver.Rule{
+func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
+	return &driverV2.Rule{
 		Name:       r.Name,
 		Desc:       r.Desc,
 		Annotation: r.Annotation,
 		Category:   r.Typ,
-		Level:      driver.RuleLevel(r.Level),
+		Level:      driverV2.RuleLevel(r.Level),
 		Params:     r.Params,
 	}
 }
