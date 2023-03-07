@@ -60,7 +60,7 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		return false, nil, err
 	}
 
-	if driver.RuleLevel(task.AuditLevel).MoreOrEqual(driver.RuleLevel(inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel)) {
+	if driver.RuleLevel(task.AuditLevel).More(driver.RuleLevel(inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel)) {
 		return false, &AuditResult{
 			Result:     generateAuditResult(task),
 			LimitLevel: inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
