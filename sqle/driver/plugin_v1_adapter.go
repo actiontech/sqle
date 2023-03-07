@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PluginBootV1 struct {
+type PluginProcessorV1 struct {
 	cfg    func(path string) *goPlugin.ClientConfig
 	path   string
 	client *goPlugin.Client // this client will be killed after Register.
@@ -38,7 +38,7 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 	}
 }
 
-func (d *PluginBootV1) Register() (*driverV2.DriverMetas, error) {
+func (d *PluginProcessorV1) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	defer d.client.Kill()
 	name, rules, params, err := driverV1.RegisterDrivers(d.client, d.cfg, d.path)
 	if err != nil {
@@ -59,7 +59,7 @@ func (d *PluginBootV1) Register() (*driverV2.DriverMetas, error) {
 	return meta, nil
 }
 
-func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
+func (d *PluginProcessorV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
 	l = l.WithFields(logrus.Fields{
 		"plugin":         d.metas.PluginName,
 		"plugin_version": driverV1.ProtocolVersion,
@@ -94,7 +94,7 @@ func (d *PluginBootV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, er
 	return p, nil
 }
 
-func (d *PluginBootV1) Stop() error {
+func (d *PluginProcessorV1) Stop() error {
 	return nil
 }
 
