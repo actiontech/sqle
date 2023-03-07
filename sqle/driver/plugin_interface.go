@@ -36,8 +36,8 @@ type Plugin interface {
 	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
 }
 
-type PluginBoot interface {
-	Register() (*driverV2.DriverMetas, error)
+type PluginProcessor interface {
+	GetDriverMetas() (*driverV2.DriverMetas, error)
 	Open(*logrus.Entry, *driverV2.Config) (Plugin, error)
 	Stop() error
 }

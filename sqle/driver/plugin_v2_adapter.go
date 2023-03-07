@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type PluginBootV2 struct {
+type PluginProcessorV2 struct {
 	path   string
 	cfg    func(path string) *goPlugin.ClientConfig
 	client *goPlugin.Client
@@ -24,7 +24,7 @@ type PluginBootV2 struct {
 	sync.Mutex
 }
 
-func (d *PluginBootV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, error) {
+func (d *PluginProcessorV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, error) {
 	var client *goPlugin.Client
 
 	d.Lock()
@@ -60,7 +60,7 @@ func (d *PluginBootV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClient, e
 	return s, nil
 }
 
-func (d *PluginBootV2) Register() (*driverV2.DriverMetas, error) {
+func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	c, err := d.getDriverClient(log.NewEntry())
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (d *PluginBootV2) Register() (*driverV2.DriverMetas, error) {
 	return meta, nil
 }
 
-func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
+func (d *PluginProcessorV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, error) {
 	l = l.WithFields(logrus.Fields{
 		"plugin":         d.meta.PluginName,
 		"plugin_version": driverV2.ProtocolVersion,
@@ -134,7 +134,7 @@ func (d *PluginBootV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugin, er
 	}, nil
 }
 
-func (d *PluginBootV2) Stop() error {
+func (d *PluginProcessorV2) Stop() error {
 	d.Lock()
 	if d.client != nil {
 		d.client.Kill()

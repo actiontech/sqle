@@ -19,18 +19,18 @@ import (
 
 var ErrPluginNotFound = errors.New("plugin not found")
 
-var BuiltInPluginBoots = map[string] /*plugin name*/ PluginBoot{}
+var BuiltInPluginProcessors = map[string] /*plugin name*/ PluginProcessor{}
 
 type pluginManager struct {
-	pluginNames []string
-	metas       map[string]driverV2.DriverMetas
-	driverBoots map[string]PluginBoot
+	pluginNames      []string
+	metas            map[string]driverV2.DriverMetas
+	pluginProcessors map[string]PluginProcessor
 }
 
 var PluginManager = &pluginManager{
-	pluginNames: []string{},
-	metas:       map[string]driverV2.DriverMetas{},
-	driverBoots: map[string]PluginBoot{},
+	pluginNames:      []string{},
+	metas:            map[string]driverV2.DriverMetas{},
+	pluginProcessors: map[string]PluginProcessor{},
 }
 
 func GetPluginManager() *pluginManager {
@@ -58,8 +58,8 @@ func (pm *pluginManager) AllAdditionalParams() map[string] /*driver name*/ param
 	return newParams
 }
 
-func (pm *pluginManager) register(boot PluginBoot) error {
-	meta, err := boot.Register()
+func (pm *pluginManager) register(pp PluginProcessor) error {
+	meta, err := pp.GetDriverMetas()
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (pm *pluginManager) register(boot PluginBoot) error {
 	}
 	pm.pluginNames = append(pm.pluginNames, meta.PluginName)
 	pm.metas[meta.PluginName] = *meta
-	pm.driverBoots[meta.PluginName] = boot
+	pm.pluginProcessors[meta.PluginName] = pp
 	return nil
 }
 
@@ -89,7 +89,7 @@ func getClientConfig(path string) *goPlugin.ClientConfig {
 
 func (pm *pluginManager) Start(pluginDir string) error {
 	// register built-in plugin, now is MySQL.
-	for name, b := range BuiltInPluginBoots {
+	for name, b := range BuiltInPluginProcessors {
 		err := pm.register(b)
 		if err != nil {
 			return fmt.Errorf("start built-in %s plugin failed, error: %v", name, err)
@@ -126,15 +126,15 @@ func (pm *pluginManager) Start(pluginDir string) error {
 			return err
 		}
 
-		var boot PluginBoot
+		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
 		case driverV1.ProtocolVersion:
-			boot = &PluginBootV1{cfg: getClientConfig, path: path, client: client}
+			pp = &PluginProcessorV1{cfg: getClientConfig, path: path, client: client}
 		case driverV2.ProtocolVersion:
-			boot = &PluginBootV2{cfg: getClientConfig, path: path, client: client}
+			pp = &PluginProcessorV2{cfg: getClientConfig, path: path, client: client}
 		}
-		if err := pm.register(boot); err != nil {
-			stopErr := boot.Stop()
+		if err := pm.register(pp); err != nil {
+			stopErr := pp.Stop()
 			if stopErr != nil {
 				log.NewEntry().Warnf("stop plugin %s failed, error: %v", path, stopErr)
 			}
@@ -146,8 +146,8 @@ func (pm *pluginManager) Start(pluginDir string) error {
 }
 
 func (pm *pluginManager) Stop() {
-	for name, b := range pm.driverBoots {
-		err := b.Stop()
+	for name, pp := range pm.pluginProcessors {
+		err := pp.Stop()
 		if err != nil {
 			log.NewEntry().Warnf("stop %s plugin failed, error: %v", name, err)
 		}
@@ -165,5 +165,5 @@ func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *dri
 	if !pm.isPluginExists(pluginName) {
 		return nil, ErrPluginNotFound
 	}
-	return pm.driverBoots[pluginName].Open(l, cfg)
+	return pm.pluginProcessors[pluginName].Open(l, cfg)
 }

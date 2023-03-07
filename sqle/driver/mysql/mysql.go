@@ -515,9 +515,9 @@ func (i *MysqlDriverImpl) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]s
 	return pkColumnsName, hasPk, nil
 }
 
-type PluginBoot struct{}
+type PluginProcessor struct{}
 
-func (p *PluginBoot) Register() (*driverV2.DriverMetas, error) {
+func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
 	}
@@ -533,14 +533,14 @@ func (p *PluginBoot) Register() (*driverV2.DriverMetas, error) {
 	}, nil
 }
 
-func (p *PluginBoot) Open(l *logrus.Entry, cfg *driverV2.Config) (driver.Plugin, error) {
+func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (driver.Plugin, error) {
 	return NewInspect(l, cfg)
 }
 
-func (p *PluginBoot) Stop() error {
+func (p *PluginProcessor) Stop() error {
 	return nil
 }
 
 func init() {
-	driver.BuiltInPluginBoots[driverV2.DriverTypeMySQL] = &PluginBoot{}
+	driver.BuiltInPluginProcessors[driverV2.DriverTypeMySQL] = &PluginProcessor{}
 }
