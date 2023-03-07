@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	_driver "database/sql/driver"
+	"fmt"
 	"time"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -17,52 +18,70 @@ import (
 )
 
 type DriverImpl struct {
-	l hclog.Logger
+	Log    hclog.Logger
+	Config *driverV2.Config
+	Ah     *AuditHandler
 
-	cfg     *driverV2.Config
-	Builder *DriverBuilder
-
-	db   *sql.DB
-	conn *sql.Conn
+	Dt   Dialector
+	DB   *sql.DB
+	Conn *sql.Conn
 }
 
-func NewDriverImpl(b *DriverBuilder, cfg *driverV2.Config) (driverV2.Driver, error) {
+func NewDriverImpl(l hclog.Logger, dt Dialector, ah *AuditHandler, cfg *driverV2.Config) (driverV2.Driver, error) {
 	di := &DriverImpl{
-		l:       b.l,
-		cfg:     cfg,
-		Builder: b,
+		Log:    l,
+		Config: cfg,
+		Ah:     ah,
+		Dt:     dt,
 	}
-
 	if cfg.DSN == nil {
 		return di, nil
 	}
-	driverName, dsnDetail := b.Dt.Dialect(cfg.DSN)
-	db, conn, err := getDbConn(driverName, dsnDetail)
+	db, conn, err := dt.Open(cfg.DSN)
 	if err != nil {
 		return nil, err
 	}
-	di.db = db
-	di.conn = conn
+	di.DB = db     // will be closed by DriverImpl.Close
+	di.Conn = conn // will be closed by DriverImpl.Close
 	return di, nil
+}
+
+func (p *DriverImpl) GetConn() (*sql.Conn, error) {
+	if p.Conn == nil {
+		return nil, fmt.Errorf("database conn not initialized")
+	}
+	return p.Conn, nil
 }
 
 // check pluginImpl is implement driver.plugin
 var _ driverV2.Driver = &DriverImpl{}
 
 func (p *DriverImpl) Close(ctx context.Context) {
-	p.conn.Close()
-	p.db.Close()
+	if p.Conn != nil {
+		p.Conn.Close()
+	}
+	if p.DB != nil {
+		p.DB.Close()
+	}
 }
 
 func (p *DriverImpl) Ping(ctx context.Context) error {
-	if err := p.conn.PingContext(ctx); err != nil {
+	conn, err := p.GetConn()
+	if err != nil {
+		return err
+	}
+	if err := conn.PingContext(ctx); err != nil {
 		return errors.Wrap(err, "ping in driver adaptor")
 	}
 	return nil
 }
 
 func (p *DriverImpl) Exec(ctx context.Context, sql string) (_driver.Result, error) {
-	res, err := p.conn.ExecContext(ctx, sql)
+	conn, err := p.GetConn()
+	if err != nil {
+		return nil, err
+	}
+	res, err := conn.ExecContext(ctx, sql)
 	if err != nil {
 		return nil, errors.Wrap(err, "exec sql in driver adaptor")
 	}
@@ -74,8 +93,11 @@ func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 		err error
 		tx  *sql.Tx
 	)
-
-	tx, err = p.conn.BeginTx(ctx, nil)
+	conn, err := p.GetConn()
+	if err != nil {
+		return nil, err
+	}
+	tx, err = conn.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "begin tx in driver adaptor")
 	}
@@ -110,7 +132,12 @@ func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 func (p *DriverImpl) Query(ctx context.Context, query string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(conf.TimeOutSecond)*time.Second)
 	defer cancel()
-	rows, err := p.conn.QueryContext(ctx, query)
+
+	conn, err := p.GetConn()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +214,8 @@ func classifySQL(sql string) (sqlType string) {
 func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	results := make([]*driverV2.AuditResults, 0, len(sqls))
 	for i, sql := range sqls {
-		result, err := p.audit(ctx, sql, sqls[i:])
+		result, err := p.Ah.Audit(ctx, p.Config.Rules, sql, sqls[i:])
+		// result, err := p.audit(ctx, sql, sqls[i:])
 		if err != nil {
 			return nil, err
 		}
@@ -196,45 +224,16 @@ func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 	return results, nil
 }
 
-func (p *DriverImpl) audit(ctx context.Context, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
-	result := driverV2.NewAuditResults()
-	for _, rule := range p.cfg.Rules {
-		handler, ok := p.Builder.RuleToRawHandler[rule.Name]
-		if ok {
-			msg, err := handler(ctx, rule, sql, nextSQL)
-			if err != nil {
-				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
-			}
-			result.Add(rule.Level, msg)
-		} else {
-			handler, ok := p.Builder.RuleToASTHandler[rule.Name]
-			if ok {
-				var err error
-				var ast interface{}
-				if p.Builder.Opts.sqlParser != nil {
-					ast, err = p.Builder.Opts.sqlParser(sql)
-					if err != nil {
-						return nil, errors.Wrap(err, "parse sql")
-					}
-				}
-				msg, err := handler(ctx, rule, ast, nextSQL)
-				if err != nil {
-					return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
-				}
-				result.Add(rule.Level, msg)
-			}
-		}
-	}
-
-	return result, nil
-}
-
 func (p *DriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
 	return "", "", nil
 }
 
 func (p *DriverImpl) GetDatabases(ctx context.Context) ([]string, error) {
-	rows, err := p.conn.QueryContext(ctx, p.Builder.Dt.ShowDatabaseSQL())
+	conn, err := p.GetConn()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := conn.QueryContext(ctx, p.Dt.ShowDatabaseSQL())
 	if err != nil {
 		return nil, errors.Wrap(err, "query database in driver adaptor")
 	}
