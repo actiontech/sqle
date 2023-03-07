@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	mdriver "github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
@@ -37,7 +37,7 @@ type BaseConn struct {
 	conn *sql.Conn
 }
 
-func newConn(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*BaseConn, error) {
+func newConn(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*BaseConn, error) {
 	var db *sql.DB
 	var err error
 
@@ -49,7 +49,7 @@ func newConn(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*BaseCo
 	config.ParseTime = true
 	config.Loc = time.Local
 	config.Timeout = DAIL_TIMEOUT
-	config.Params = map[string]string {
+	config.Params = map[string]string{
 		"charset": "utf8",
 	}
 	driver, err := mysql.NewConnector(config)
@@ -225,7 +225,7 @@ func (c *Executor) SetLowerCaseTableNames(lowerCaseTableNames bool) {
 	c.lowerCaseTableNames = lowerCaseTableNames
 }
 
-func NewExecutor(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*Executor, error) {
+func NewExecutor(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*Executor, error) {
 	var executor = &Executor{}
 	var conn Db
 	var err error
@@ -237,7 +237,7 @@ func NewExecutor(entry *logrus.Entry, instance *mdriver.DSN, schema string) (*Ex
 	return executor, nil
 }
 
-func Ping(entry *logrus.Entry, instance *mdriver.DSN) error {
+func Ping(entry *logrus.Entry, instance *driverV2.DSN) error {
 	conn, err := NewExecutor(entry, instance, "")
 	if err != nil {
 		return err

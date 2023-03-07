@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -46,7 +46,7 @@ func (s *Storage) CreateProject(name string, desc string, createUserID uint) err
 	wt := &WorkflowTemplate{
 		Name:                          fmt.Sprintf("%v-WorkflowTemplate", name),
 		Desc:                          fmt.Sprintf("%v 默认模板", name),
-		AllowSubmitWhenLessAuditLevel: string(driver.RuleLevelWarn),
+		AllowSubmitWhenLessAuditLevel: string(driverV2.RuleLevelWarn),
 		Steps: []*WorkflowStepTemplate{
 			{
 				Number: 1,

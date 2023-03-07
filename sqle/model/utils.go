@@ -12,7 +12,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/jinzhu/gorm"
@@ -185,7 +185,7 @@ func (s *Storage) AutoMigrate() error {
 	return nil
 }
 
-func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driver.Rule) error {
+func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
 	for dbType, rules := range rules {
 		for _, rule := range rules {
 			existedRule, exist, err := s.GetRule(rule.Name, dbType)
@@ -244,7 +244,7 @@ func (s *Storage) CreateDefaultRole() error {
 
 	return nil
 }
-func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
+func (s *Storage) CreateDefaultTemplate(rules map[string][]*driverV2.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
 		exist, err := s.IsRuleTemplateExistFromAnyProject(templateName)
@@ -266,7 +266,7 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driver.Rule) error {
 
 		ruleList := make([]RuleTemplateRule, 0, len(r))
 		for _, rule := range r {
-			if rule.Level != driver.RuleLevelError {
+			if rule.Level != driverV2.RuleLevelError {
 				continue
 			}
 			modelRule := GenerateRuleByDriverRule(rule, dbType)

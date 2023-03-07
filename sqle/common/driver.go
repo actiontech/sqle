@@ -2,12 +2,13 @@ package common
 
 import (
 	"github.com/actiontech/sqle/sqle/driver"
+	v2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.DriverManager, error) {
+func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, database string) (driver.Plugin, error) {
 	if inst == nil {
 		return nil, errors.Errorf("instance is nil")
 	}
@@ -17,24 +18,27 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 		return nil, errors.Wrap(err, "new dsn")
 	}
 
-	cfg, err := driver.NewConfig(dsn, nil)
+	cfg := &v2.Config{
+		DSN: dsn,
+	}
+	plugin, err := driver.GetPluginManager().OpenPlugin(l, inst.DbType, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "new driver without audit")
+		return nil, errors.Wrap(err, "open plugin")
 	}
 
-	return driver.NewDriverManger(l, inst.DbType, cfg)
+	return plugin, nil
 }
 
-func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.DriverManager, error) {
-	return driver.NewDriverManger(l, dbType, &driver.Config{})
+func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.Plugin, error) {
+	return driver.GetPluginManager().OpenPlugin(l, dbType, &v2.Config{})
 }
 
-func NewDSN(instance *model.Instance, database string) (*driver.DSN, error) {
+func NewDSN(instance *model.Instance, database string) (*v2.DSN, error) {
 	if instance == nil {
 		return nil, errors.Errorf("instance is nil")
 	}
 
-	return &driver.DSN{
+	return &v2.DSN{
 		Host:             instance.Host,
 		Port:             instance.Port,
 		User:             instance.User,

@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -205,8 +206,8 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if !dry.StringInSlice(req.InstanceType, driver.AllDrivers()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driver.DriverNotSupportedError{DriverTyp: req.InstanceType}))
+	if !dry.StringInSlice(req.InstanceType, driver.GetPluginManager().AllDrivers()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driverV2.DriverNotSupportedError{DriverTyp: req.InstanceType}))
 	}
 
 	if req.InstanceDatabase != "" && req.InstanceName == "" {
@@ -258,18 +259,13 @@ func CreateAuditPlan(c echo.Context) error {
 		}
 		// check instance database
 		if req.InstanceDatabase != "" {
-			drvMgr, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, "")
+			plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, "")
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
-			defer drvMgr.Close(context.TODO())
+			defer plugin.Close(context.TODO())
 
-			d, err := drvMgr.GetAuditDriver()
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-
-			schemas, err := d.Schemas(context.TODO())
+			schemas, err := plugin.Schemas(context.TODO())
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -863,18 +859,13 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
-	var drvMgr driver.DriverManager
-	var drv driver.Driver
+	var p driver.Plugin
 	var err error
 
 	// lazy load driver
 	initDriver := func() error {
-		if drv == nil {
-			drvMgr, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), auditPlan.DBType)
-			if err != nil {
-				return err
-			}
-			drv, err = drvMgr.GetAuditDriver()
+		if p == nil {
+			p, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), auditPlan.DBType)
 			if err != nil {
 				return err
 			}
@@ -882,8 +873,8 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		return nil
 	}
 	defer func() {
-		if drvMgr != nil {
-			drvMgr.Close(context.TODO())
+		if p != nil {
+			p.Close(context.TODO())
 		}
 	}()
 
@@ -898,7 +889,7 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 			if err != nil {
 				return nil, err
 			}
-			nodes, err := drv.Parse(context.TODO(), reqSQL.LastReceiveText)
+			nodes, err := p.Parse(context.TODO(), reqSQL.LastReceiveText)
 			if err != nil {
 				return nil, err
 			}
