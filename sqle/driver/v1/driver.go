@@ -1,144 +1,168 @@
-package driver
+package driverV1
 
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"sync"
 
-	"github.com/actiontech/sqle/sqle/driver/proto"
+	"github.com/actiontech/sqle/sqle/driver/v1/proto"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/pkg/errors"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
-// DSN provide necessary information to connect to database.
-type DSN struct {
-	Host             string
-	Port             string
-	User             string
-	Password         string
-	AdditionalParams params.Params
-
-	// DatabaseName is the default database to connect.
-	DatabaseName string
+var handshakeConfig = goPlugin.HandshakeConfig{
+	ProtocolVersion:  ProtocolVersion,
+	MagicCookieKey:   "BASIC_PLUGIN",
+	MagicCookieValue: "hello",
 }
 
-// Config define the configuration for driver.
-type Config struct {
-	DSN   *DSN
-	Rules []*Rule
+const (
+	ProtocolVersion = 1
+)
+
+const (
+	PluginNameAuditDriver    = "audit-driver"
+	PluginNameQueryDriver    = "query-driver"
+	PluginNameAnalysisDriver = "analysis-driver"
+)
+
+var PluginSet = goPlugin.PluginSet{
+	PluginNameAuditDriver:    &auditDriverPlugin{},
+	PluginNameAnalysisDriver: &analysisDriverPlugin{},
+	PluginNameQueryDriver:    &queryDriverPlugin{},
 }
 
-type PluginClient struct {
-	path string
-	c    *goPlugin.Client
+var (
+	// auditDrivers store instantiate handlers for MySQL or gRPC plugin.
+	auditDrivers = make(map[string]struct{})
+	driversMu    sync.RWMutex
+)
+
+var queryDriverMu = &sync.RWMutex{}
+var queryDrivers = make(map[string]struct{})
+
+var analysisDriverMu = &sync.RWMutex{}
+var analysisDrivers = make(map[string]struct{})
+
+func checkQueryDriver(cp goPlugin.ClientProtocol) error {
+	rawI, err := cp.Dispense(PluginNameQueryDriver)
+	if err != nil {
+		return err //todo
+	}
+	// srv can only be proto.QueryDriverClient
+	//nolint:forcetypeassert
+	s := rawI.(proto.QueryDriverClient)
+
+	// The test target plugin implements the QueryDriver plugin
+	_, err = s.Init(context.TODO(), &proto.InitRequest{})
+	if err != nil {
+		return err //todo
+	}
+	return nil
 }
 
-func TestPluginDriver(path string) bool {
-	c := newClientFromFile(path)
+func checkAnalysisDriver(cp goPlugin.ClientProtocol) error {
+	rawI, err := cp.Dispense(PluginNameAnalysisDriver)
+	if err != nil {
+		return err
+	}
+	//nolint:forcetypeassert
+	a := rawI.(proto.AnalysisDriverClient)
+
+	// The test target plugin implements the AnalysisDriver plugin
+	_, err = a.Init(context.TODO(), &proto.AnalysisDriverInitRequest{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string, rules []*Rule, additionalParams params.Params, err error) {
 	cp, err := c.Client()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return false
+		return "", nil, nil, err
 	}
 	defer c.Kill()
 
 	err = cp.Ping()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return false
+		return "", nil, nil, err
 	}
-	return true
-}
 
-func RegisterDrivers(path string) (pluginName string, err error) {
-	c := newClientFromFile(path)
-	cp, err := c.Client()
+	rawI, err := cp.Dispense(PluginNameAuditDriver)
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
 	}
-	defer c.Kill()
+	// client can only be proto.DriverClient
+	//nolint:forcetypeassert
+	client := rawI.(proto.DriverClient)
 
-	pluginName, version, drvClient, err := registerAuditDriver(cp)
+	pluginMeta, err := client.Metas(context.TODO(), &proto.Empty{})
 	if err != nil {
-		return "", err
+		return "", nil, nil, err
+	}
+	l := log.Logger().WithField("plugin_name", pluginMeta.Name)
+
+	_, exist := auditDrivers[pluginMeta.Name]
+	if exist {
+		panic("duplicated driver name")
 	}
 
-	if err := registerQueryDriver(pluginName, cp); err != nil {
-		log.Logger().WithFields(logrus.Fields{
-			"plugin_name": pluginName,
-			"plugin_type": PluginNameQueryDriver,
-		}).Infof("plugin not exist or failed to load. err: %v", err)
+	// init audit driver, so that we can use Close to inform all plugins with the same progress to recycle resource
+	_, err = client.Init(context.TODO(), &proto.InitRequest{})
+	if err != nil {
+		return "", nil, nil, err
+	}
+	l.WithField("plugin_type", PluginNameAuditDriver).Infoln("plugin inited")
+
+	driversMu.Lock()
+	auditDrivers[pluginMeta.Name] = struct{}{}
+	driversMu.Unlock()
+
+	rules = make([]*Rule, 0, len(pluginMeta.Rules))
+	for _, rule := range pluginMeta.Rules {
+		rules = append(rules, convertRuleFromProtoToDriver(rule))
 	}
 
-	if err := registerAnalysisDriver(pluginName, cp); err != nil {
-		log.Logger().WithFields(logrus.Fields{
-			"plugin_name": pluginName,
-			"plugin_type": PluginNameAnalysisDriver,
-		}).Infof("plugin not exist or failed to load. err: %v", err)
+	// check and init query driver
+	err = checkQueryDriver(cp)
+	if err != nil {
+		l.WithField("plugin_type", PluginNameQueryDriver).Infof("plugin not exist or failed to load. err: %v", err)
+	} else {
+		queryDriverMu.Lock()
+		queryDrivers[pluginMeta.Name] = struct{}{}
+		queryDriverMu.Unlock()
+		l.WithField("plugin_type", PluginNameQueryDriver).Infoln("plugin inited")
+	}
+
+	// check and init analysis driver
+	err = checkAnalysisDriver(cp)
+	if err != nil {
+		l.WithField("plugin_type", PluginNameAnalysisDriver).Infof("plugin not exist or failed to load. err: %v", err)
+	} else {
+		analysisDriverMu.Lock()
+		analysisDrivers[pluginMeta.Name] = struct{}{}
+		analysisDriverMu.Unlock()
+		l.WithField("plugin_type", PluginNameAnalysisDriver).Infoln("plugin inited")
 	}
 
 	// to be compatible with old plugins
 	// the old plugin will panic if it call close() here
-	if version >= DefaultPluginVersion {
-		_, err = drvClient.Close(context.TODO(), &proto.Empty{})
+	if pluginMeta.Version >= DefaultPluginVersion {
+		_, err = client.Close(context.TODO(), &proto.Empty{})
 		if err != nil {
 			log.Logger().Errorf("gracefully close plugins failed, will force kill the sub progress. err: %v", err)
 		}
 	}
-	return pluginName, nil
-}
-
-func newClientFromFile(path string) *PluginClient {
-	client := goPlugin.NewClient(&goPlugin.ClientConfig{
-		HandshakeConfig:  handshakeConfig,
-		VersionedPlugins: defaultPluginSet,
-		Cmd:              exec.Command(path),
-		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
-		GRPCDialOptions:  SQLEGRPCDialOptions,
-	})
-	return &PluginClient{
-		path: path,
-		c:    client,
-	}
-}
-
-func (p *PluginClient) Kill() {
-	if p.c != nil {
-		p.c.Kill()
-	}
-}
-
-func (p *PluginClient) Client() (goPlugin.ClientProtocol, error) {
-	return p.c.Client()
-}
-
-var SQLEGRPCDialOptions = []grpc.DialOption{}
-
-var driverManagerMu = &sync.RWMutex{}
-var driverManagers = make(map[string]driverManagerHandler)
-
-type driverManagerHandler struct {
-	newDriverManagerFunc newDriverManagerHandler
-}
-
-type newDriverManagerHandler func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error)
-
-func RegisterDriverFromClient(path string) error {
-	pluginName, err := RegisterDrivers(path)
-	if err != nil {
-		return fmt.Errorf("register plugin failed: %v", err)
-	}
 
 	handler := func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
-		client := newClientFromFile(path)
+
+		client := goPlugin.NewClient(clientCfg(path))
 		gRPCClient, err := client.Client()
 		if err != nil {
 			return nil, err
@@ -170,9 +194,52 @@ func RegisterDriverFromClient(path string) error {
 		return drvMgr, nil
 	}
 
-	RegisterDriverManger(pluginName, handler)
-	return nil
+	RegisterDriverManger(pluginMeta.Name, handler)
+
+	return pluginMeta.Name, rules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()), nil
 }
+
+// DSN provide necessary information to connect to database.
+type DSN struct {
+	Host             string
+	Port             string
+	User             string
+	Password         string
+	AdditionalParams params.Params
+
+	// DatabaseName is the default database to connect.
+	DatabaseName string
+}
+
+// Config define the configuration for driver.
+type Config struct {
+	DSN   *DSN
+	Rules []*Rule
+}
+
+type PluginClient struct {
+	path string
+	c    *goPlugin.Client
+}
+
+func (p *PluginClient) Kill() {
+	if p.c != nil {
+		p.c.Kill()
+	}
+}
+
+func (p *PluginClient) Client() (goPlugin.ClientProtocol, error) {
+	return p.c.Client()
+}
+
+var driverManagerMu = &sync.RWMutex{}
+var driverManagers = make(map[string]driverManagerHandler)
+
+type driverManagerHandler struct {
+	newDriverManagerFunc newDriverManagerHandler
+}
+
+type newDriverManagerHandler func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error)
 
 func RegisterDriverManger(pluginName string, handler newDriverManagerHandler) {
 	driverManagerMu.RLock()
@@ -209,11 +276,36 @@ type PluginDriverManager struct {
 	analysisPluginClient proto.AnalysisDriverClient
 }
 
+func NewDriverManger(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
+	driverManagerMu.RLock()
+	defer driverManagerMu.RUnlock()
+	h, exist := driverManagers[dbType]
+	if !exist {
+		return nil, fmt.Errorf("driver type %v is not supported", dbType)
+	}
+
+	return h.newDriverManagerFunc(log, dbType, config)
+}
+
 func (d *PluginDriverManager) GetAuditDriver() (Driver, error) {
 	if d.auditPluginClient == nil {
 		return nil, fmt.Errorf("audit driver type %v is not supported", d.dbType)
 	}
 	return &driverImpl{d.auditPluginClient, d.pluginCloseCh}, nil
+}
+
+func (d *PluginDriverManager) GetSQLQueryDriver() (SQLQueryDriver, error) {
+	if d.queryPluginClient == nil {
+		return nil, fmt.Errorf("SQL query driver type %v is not supported", d.dbType)
+	}
+	return &queryDriverImpl{d.queryPluginClient}, nil
+}
+
+func (d *PluginDriverManager) GetAnalysisDriver() (AnalysisDriver, error) {
+	if d.analysisPluginClient == nil {
+		return nil, fmt.Errorf("analysis driver type %v is not supported", d.dbType)
+	}
+	return &analysisDriverImpl{d.analysisPluginClient}, nil
 }
 
 func (d *PluginDriverManager) initAuditDriver() error {
@@ -264,13 +356,6 @@ func (d *PluginDriverManager) initAuditDriver() error {
 	return nil
 }
 
-func (d *PluginDriverManager) GetSQLQueryDriver() (SQLQueryDriver, error) {
-	if d.queryPluginClient == nil {
-		return nil, fmt.Errorf("SQL query driver type %v is not supported", d.dbType)
-	}
-	return &queryDriverImpl{d.queryPluginClient}, nil
-}
-
 func (d *PluginDriverManager) initSQLQueryDriver() error {
 	_, exist := queryDrivers[d.dbType]
 	if !exist {
@@ -310,13 +395,6 @@ func (d *PluginDriverManager) initSQLQueryDriver() error {
 	}
 	d.queryPluginClient = pluginInst
 	return nil
-}
-
-func (d *PluginDriverManager) GetAnalysisDriver() (AnalysisDriver, error) {
-	if d.analysisPluginClient == nil {
-		return nil, fmt.Errorf("analysis driver type %v is not supported", d.dbType)
-	}
-	return &analysisDriverImpl{d.analysisPluginClient}, nil
 }
 
 func (d *PluginDriverManager) initAnalysisDriver() error {
@@ -360,54 +438,4 @@ func (d *PluginDriverManager) initAnalysisDriver() error {
 func (d *PluginDriverManager) Close(ctx context.Context) {
 	impl := &driverImpl{d.auditPluginClient, d.pluginCloseCh}
 	impl.Close(ctx)
-}
-
-func NewDriverManger(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
-	driverManagerMu.RLock()
-	defer driverManagerMu.RUnlock()
-	h, exist := driverManagers[dbType]
-	if !exist {
-		return nil, fmt.Errorf("driver type %v is not supported", dbType)
-	}
-
-	return h.newDriverManagerFunc(log, dbType, config)
-}
-
-// InitPlugins init plugins at plugins directory. It should be called on host process.
-func InitPlugins(pluginDir string) error {
-	if pluginDir == "" {
-		return nil
-	}
-
-	// read plugin file
-	var plugins []os.FileInfo
-	if err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return errors.Wrap(err, "init plugin")
-		}
-
-		if info.IsDir() || info.Mode()&0111 == 0 {
-			return nil
-		}
-		plugins = append(plugins, info)
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	// register plugin
-	for _, p := range plugins {
-		binaryPath := filepath.Join(pluginDir, p.Name())
-
-		// check plugin
-		if !TestPluginDriver(binaryPath) {
-			return fmt.Errorf("unable to load plugin: %v", binaryPath)
-		}
-
-		if err := RegisterDriverFromClient(binaryPath); err != nil {
-			return err
-		}
-
-	}
-	return nil
 }

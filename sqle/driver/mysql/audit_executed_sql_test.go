@@ -3,10 +3,10 @@ package mysql
 import (
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +16,7 @@ func NewSQLExecutedInspect(e *executor.Executor) *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &MysqlDriverImpl{
 		log: log.NewEntry(),
-		inst: &driver.DSN{
+		inst: &driverV2.DSN{
 			Host:         "127.0.0.1",
 			Port:         "3306",
 			User:         "root",
@@ -93,8 +93,8 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 				newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).
-					add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-					add(driver.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+					add(driverV2.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+					add(driverV2.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
 				newTestResult(),
 				newTestResult(),
 				newTestResult(),
@@ -197,8 +197,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
-				newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-					add(driver.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+				newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).add(driverV2.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+					add(driverV2.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
 				newTestResult(),
 			)
 
@@ -215,8 +215,8 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
-				newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).add(driver.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-					add(driver.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+				newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).add(driverV2.RuleLevelWarn, "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+					add(driverV2.RuleLevelWarn, "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
 				newTestResult(),
 			)
 

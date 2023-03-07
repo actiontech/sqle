@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	sqleModel "github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -60,7 +60,7 @@ func AuditSQL(sql string, connectionID string) (auditSuccess bool, result *Audit
 		return false, nil, err
 	}
 
-	if driver.RuleLevel(task.AuditLevel).MoreOrEqual(driver.RuleLevel(inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel)) {
+	if driverV2.RuleLevel(task.AuditLevel).More(driverV2.RuleLevel(inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel)) {
 		return false, &AuditResult{
 			Result:     generateAuditResult(task),
 			LimitLevel: inst.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,

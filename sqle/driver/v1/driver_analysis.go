@@ -1,15 +1,10 @@
-package driver
+package driverV1
 
 import (
 	"context"
-	"fmt"
-	"sync"
 
-	"github.com/actiontech/sqle/sqle/driver/proto"
-	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/driver/v1/proto"
 
-	goPlugin "github.com/hashicorp/go-plugin"
-	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 )
 
@@ -20,14 +15,6 @@ type AnalysisDriver interface {
 	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
 	Explain(ctx context.Context, conf *ExplainConf) (*ExplainResult, error)
 }
-
-func init() {
-	defaultPluginSet[DefaultPluginVersion][PluginNameAnalysisDriver] = &analysisDriverPlugin{}
-}
-
-const (
-	PluginNameAnalysisDriver = "analysis-driver"
-)
 
 type ListTablesInSchemaConf struct {
 	Schema string
@@ -114,26 +101,6 @@ type ExplainClassicResult struct {
 
 type ExplainResult struct {
 	ClassicResult ExplainClassicResult
-}
-
-var analysisDriverMu = &sync.RWMutex{}
-var analysisDrivers = make(map[string]struct{})
-
-// RegisterAnalysisDriver like sql.RegisterAuditDriver.
-//
-// RegisterAnalysisDriver makes a database driver available by the provided driver name.
-// RegisterAnalysisDriver's initialize handler registered by RegisterAnalysisDriver.
-func RegisterAnalysisDriver(name string) {
-	analysisDriverMu.RLock()
-	_, exist := analysisDrivers[name]
-	analysisDriverMu.RUnlock()
-	if exist {
-		panic(fmt.Sprintf("duplicated driver name %v", name))
-	}
-
-	analysisDriverMu.Lock()
-	analysisDrivers[name] = struct{}{}
-	analysisDriverMu.Unlock()
 }
 
 // analysisDriverImpl implement AnalysisDriver. It use for hide gRPC detail, just like DriverGRPCServer.
@@ -271,26 +238,4 @@ func (a *analysisDriverImpl) Explain(ctx context.Context, conf *ExplainConf) (*E
 			Rows:    rows,
 		}},
 	}, nil
-}
-
-func registerAnalysisDriver(pluginName string, gRPCClient goPlugin.ClientProtocol) error {
-	rawI, err := gRPCClient.Dispense(PluginNameAnalysisDriver)
-	if err != nil {
-		return err
-	}
-	//nolint:forcetypeassert
-	s := rawI.(proto.AnalysisDriverClient)
-
-	// The test target plugin implements the AnalysisDriver plugin
-	_, err = s.Init(context.TODO(), &proto.AnalysisDriverInitRequest{})
-	if err != nil {
-		return err
-	}
-
-	RegisterAnalysisDriver(pluginName)
-	log.Logger().WithFields(logrus.Fields{
-		"plugin_name": pluginName,
-		"plugin_type": PluginNameAnalysisDriver,
-	}).Infoln("plugin inited")
-	return nil
 }

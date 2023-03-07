@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 )
@@ -330,7 +330,7 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 		config.ProjectName = &project.Name
 	}
 
-	if driver.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
+	if driverV2.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
 		n := NewAuditPlanNotification(ap, report, config)
 		return GetAuditPlanNotifier().Notify(n, ap)
 	}

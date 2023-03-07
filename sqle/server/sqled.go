@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	syncTask "github.com/actiontech/sqle/sqle/pkg/sync_task"
 
 	"github.com/actiontech/sqle/sqle/notification"
@@ -16,8 +17,8 @@ import (
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -66,8 +67,8 @@ func (s *Sqled) HasTask(taskId string) bool {
 // action will be validated, and sent to Sqled.queue.
 func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	var err error
-	var d driver.Driver
-	var drvMgr driver.DriverManager
+	var p driver.Plugin
+	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &action{
 		typ:   typ,
@@ -99,16 +100,12 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	}
 	action.task = task
 
-	// d will be closed by drvMgr in Sqled.do().
-	drvMgr, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, nil, "")
+	// plugin will be closed by drvMgr in Sqled.do().
+	p, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, nil, "")
 	if err != nil {
 		goto Error
 	}
-	if d, err = drvMgr.GetAuditDriver(); err != nil {
-		goto Error
-	}
-	action.driver = d
-	action.driverMgr = drvMgr
+	action.plugin = p
 
 	s.queue <- action
 	return action, nil
@@ -204,7 +201,7 @@ func (s *Sqled) do(action *action) error {
 		action.err = err
 	}
 
-	action.driverMgr.Close(context.TODO())
+	action.plugin.Close(context.TODO())
 
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)
@@ -422,9 +419,7 @@ const (
 type action struct {
 	sync.Mutex
 
-	// driver is interface which communicate with specify instance.
-	driver    driver.Driver
-	driverMgr driver.DriverManager
+	plugin driver.Plugin
 
 	task  *model.Task
 	entry *logrus.Entry
@@ -473,7 +468,7 @@ func (a *action) validation(task *model.Task) error {
 func (a *action) audit() (err error) {
 	st := model.GetStorage()
 
-	err = audit(a.entry, a.task, a.driver)
+	err = audit(a.entry, a.task, a.plugin)
 	if err != nil {
 		return err
 	}
@@ -482,18 +477,13 @@ func (a *action) audit() (err error) {
 	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else {
-		drvMgr, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, nil, "")
+		p, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, nil, "")
 		if err != nil {
 			return xerrors.Wrap(err, "new driver for generate rollback SQL")
 		}
-		defer drvMgr.Close(context.TODO())
+		defer p.Close(context.TODO())
 
-		d, err := drvMgr.GetAuditDriver()
-		if err != nil {
-			return err
-		}
-
-		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, d)
+		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, p)
 		if err != nil {
 			return err
 		}
@@ -540,13 +530,13 @@ func (a *action) execute() (err error) {
 
 outerLoop:
 	for i, executeSQL := range task.ExecuteSQLs {
-		var nodes []driver.Node
-		if nodes, err = a.driver.Parse(context.TODO(), executeSQL.Content); err != nil {
+		var nodes []driverV2.Node
+		if nodes, err = a.plugin.Parse(context.TODO(), executeSQL.Content); err != nil {
 			break outerLoop
 		}
 
 		switch nodes[0].Type {
-		case driver.SQLTypeDML:
+		case driverV2.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
 
 			if i == len(task.ExecuteSQLs)-1 {
@@ -599,7 +589,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 		return err
 	}
 
-	_, execErr := a.driver.Exec(context.TODO(), executeSQL.Content)
+	_, execErr := a.plugin.Exec(context.TODO(), executeSQL.Content)
 	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 		executeSQL.ExecResult = execErr.Error()
@@ -632,7 +622,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		qs = append(qs, executeSQL.Content)
 	}
 
-	results, txErr := a.driver.Tx(context.TODO(), qs...)
+	results, txErr := a.plugin.Tx(context.TODO(), qs...)
 	for idx, executeSQL := range executeSQLs {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
@@ -668,7 +658,7 @@ ExecSQLs:
 			return err
 		}
 
-		nodes, err := a.driver.Parse(context.TODO(), rollbackSQL.Content)
+		nodes, err := a.plugin.Parse(context.TODO(), rollbackSQL.Content)
 		if err != nil {
 			return err
 		}
@@ -678,7 +668,7 @@ ExecSQLs:
 				TaskId:  rollbackSQL.TaskId,
 				Content: node.Text,
 			}, ExecuteSQLId: rollbackSQL.ExecuteSQLId}
-			_, execErr := a.driver.Exec(context.TODO(), node.Text)
+			_, execErr := a.plugin.Exec(context.TODO(), node.Text)
 			if execErr != nil {
 				currentSQL.ExecStatus = model.SQLExecuteStatusFailed
 				currentSQL.ExecResult = execErr.Error()
@@ -700,7 +690,7 @@ ExecSQLs:
 	return execErr
 }
 
-func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, projectId *uint, ruleTemplateName string) (driver.DriverManager, error) {
+func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, projectId *uint, ruleTemplateName string) (driver.Plugin, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
 	}
@@ -712,7 +702,7 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 	st := model.GetStorage()
 
 	var err error
-	var dsn *driver.DSN
+	var dsn *driverV2.DSN
 	var modelRules []*model.Rule
 
 	// 填充规则
@@ -738,7 +728,7 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 
 	// 填充dsn
 	if inst != nil {
-		dsn = &driver.DSN{
+		dsn = &driverV2.DSN{
 			Host:             inst.Host,
 			Port:             inst.Port,
 			User:             inst.User,
@@ -749,15 +739,14 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 		}
 	}
 
-	rules := make([]*driver.Rule, len(modelRules))
+	rules := make([]*driverV2.Rule, len(modelRules))
 	for i, rule := range modelRules {
 		rules[i] = model.ConvertRuleToDriverRule(rule)
 	}
 
-	cfg, err := driver.NewConfig(dsn, rules)
-	if err != nil {
-		return nil, xerrors.Wrap(err, "new driver with audit")
+	cfg := &driverV2.Config{
+		DSN:   dsn,
+		Rules: rules,
 	}
-
-	return driver.NewDriverManger(l, dbType, cfg)
+	return driver.GetPluginManager().OpenPlugin(l, dbType, cfg)
 }

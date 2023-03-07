@@ -1,0 +1,311 @@
+syntax = "proto3";
+package protoV2;
+option go_package = "./;protoV2";
+
+service Driver {
+  // Metas returns some base info from plugin server.
+  rpc Metas(Empty) returns (MetasResponse);
+
+  // Init will should be called at first before calling following methods.
+  // It will pass some necessary info to plugin server. In the beginning,
+  // we consider that put this info to the executable binary environment.
+  // We put all communication on gRPC for unification in the end.
+  rpc Init(InitRequest) returns (InitResponse);
+  rpc Close(CloseRequest) returns (Empty);
+
+  // db audit
+  rpc Parse(ParseRequest) returns (ParseResponse);
+  rpc Audit(AuditRequest) returns (AuditResponse);
+  rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
+
+  // db executor
+  rpc Ping(PingRequest) returns (Empty);
+  rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc Tx(TxRequest) returns (TxResponse);
+  rpc Query(QueryRequest) returns (QueryResponse);
+  rpc Explain(ExplainRequest) returns (ExplainResponse);
+
+  // db metadata
+  rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesResponse);
+  rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
+  rpc ExtractTableFromSQL(ExtractTableFromSQLRequest) returns (ExtractTableFromSQLResponse);
+}
+
+message Empty {}
+
+message Session {
+  string id = 1;
+}
+
+enum OptionalModule {
+    GenRollbackSQL = 0;
+    Query = 1;
+    Explain = 2;
+    GetTableMeta = 3;
+    ExtractTableFromSQL = 4;
+}
+
+message Param {
+  string key = 1;
+  string value = 2;
+  string desc = 3;
+  string type = 4;
+}
+
+message DSN {
+  string host = 1;
+  string port = 2;
+  string user = 3;
+  string password = 4;
+  string database = 5;
+  repeated Param additionalParams = 6;
+}
+
+message Rule {
+  string name = 1;
+  string desc = 2;
+  string level = 3;
+  string category = 4;
+  repeated Param params = 5;
+  string annotation = 6;
+}
+
+// Metas
+message MetasResponse {
+  string pluginName = 1;
+  int64 databaseDefaultPort = 2;
+  repeated Param databaseAdditionalParams = 3;
+  repeated Rule rules = 4;
+  repeated OptionalModule enabledOptionalModule = 5;
+}
+
+// Init 
+message InitRequest {
+  DSN dsn = 1;
+  repeated Rule rules = 2;
+}
+
+message InitResponse {
+  Session session = 1;
+}
+
+// Close
+message CloseRequest {
+  Session session = 1;
+}
+
+// Parse
+message ParsedSQL {
+  string query = 1;
+}
+
+message ParseRequest {
+  Session session = 1;
+  ParsedSQL sql = 2;
+}
+
+message Node {
+  string text = 1;
+  string type = 2;
+  string fingerprint = 3;
+}
+
+message ParseResponse {
+  repeated Node nodes = 1;
+}
+
+// Audit
+message AuditSQL {
+  string query = 1;
+}
+
+message AuditRequest {
+  Session session = 1;
+  repeated AuditSQL sqls = 2;
+}
+
+message AuditResult {
+  string message = 1;
+  string level = 2;
+}
+
+message AuditResults {
+  repeated AuditResult results = 1;    
+}
+
+message AuditResponse {
+  repeated AuditResults auditResults = 1;
+}
+
+// GenRollbackSQL
+message NeedRollbackSQL {
+  string query = 1;
+} 
+
+message GenRollbackSQLRequest {
+  Session session = 1;
+  NeedRollbackSQL sql = 2;
+}
+
+message RollbackSQL {
+  string query = 1;
+  string message = 2;
+} 
+
+message GenRollbackSQLResponse {
+  RollbackSQL sql = 1;
+}
+
+// Ping
+message PingRequest {
+  Session session = 1;  
+}
+
+// Exec
+message ExecSQL {
+  string query = 1;
+}
+
+message ExecRequest {
+  Session session = 1;
+  ExecSQL sql = 2;
+}
+
+message ExecResult {
+  int64 lastInsertId = 1;
+  string lastInsertIdError = 2;
+  int64 rowsAffected = 3;
+  string rowsAffectedError = 4;
+}
+
+message ExecResponse {
+  ExecResult result = 1;
+}
+
+// Tx
+message TxRequest {
+  Session session = 1;
+  repeated ExecSQL sqls = 2;
+}
+
+message TxResponse {
+  repeated ExecResult results = 1;
+}
+
+// Query
+message QuerySQL {
+  string query = 1;
+}
+
+message QueryConf {
+  uint32 timeoutSecond = 1;
+}
+
+message QueryRequest {
+  Session session = 1;
+  QuerySQL sql = 2;
+  QueryConf conf = 3;
+}
+
+message QueryResponse {
+  repeated Param column = 1;
+  repeated QueryResultRow rows = 2;
+}
+
+message QueryResultRow {
+  repeated QueryResultValue values = 1;
+}
+
+message QueryResultValue {
+  string value = 1;
+}
+
+// explain 
+message ExplainSQL {
+  string query = 1;  
+}
+
+message ExplainRequest {
+  Session session = 1;
+  ExplainSQL sql = 2;
+}
+
+message ExplainResponse {
+  ExplainClassicResult classicResult = 1;
+}
+
+message ExplainClassicResult {
+  TabularData data = 1;
+}
+
+// gETDatabases
+message GetDatabasesRequest {
+  Session session = 1;
+}
+
+message Database {
+  string name = 1;
+}
+
+message GetDatabasesResponse {
+  repeated Database databases = 1;
+}
+
+// GetTableMeta
+message Table {
+  string name = 1;
+  string schema = 2;  
+}
+
+message GetTableMetaRequest {
+  Session session = 1;
+  Table table = 2;
+}
+
+message GetTableMetaResponse {
+  TableMeta tableMeta = 1;
+}
+
+message TableMeta {
+  ColumnsInfo columnsInfo = 1;
+  IndexesInfo indexesInfo = 2;
+  string createTableSQL = 3;
+  string message = 4;
+}
+
+message ColumnsInfo {
+  TabularData data = 1;
+}
+
+message IndexesInfo {
+  TabularData data = 1;
+}
+
+message TabularDataHead {
+  string name = 1;
+  string desc = 2;
+}
+
+message TabularDataRows {
+  repeated string items = 1;
+}
+
+message TabularData {
+  repeated TabularDataHead columns = 1;
+  repeated TabularDataRows rows = 2;  
+}
+
+// ExtractTableFromSQL
+message ExtractedSQL {
+  string query = 1;  
+}
+
+message ExtractTableFromSQLRequest {
+  Session session = 1;
+  ExtractedSQL sql = 2;
+}
+
+message ExtractTableFromSQLResponse {
+  repeated Table tables = 1;
+}
+

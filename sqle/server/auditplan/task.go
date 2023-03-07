@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -380,7 +380,7 @@ func (at *SchemaMetaTask) collectorDo() {
 	if err != nil {
 		return
 	}
-	db, err := executor.NewExecutor(at.logger, &driver.DSN{
+	db, err := executor.NewExecutor(at.logger, &driverV2.DSN{
 		Host:             instance.Host,
 		Port:             instance.Port,
 		User:             instance.User,
@@ -658,16 +658,21 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 			schema = schemaStr
 		}
 
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+		executeSQL := &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
 				Content: sql.SQLContent,
 				Schema:  schema,
 			},
-		})
+		}
+
+		task.ExecuteSQLs = append(task.ExecuteSQLs, executeSQL)
 	}
 
-	err = server.HookAudit(at.logger, task, &TiDBAuditHook{}, &at.ap.ProjectId, at.ap.RuleTemplateName)
+	hook := &TiDBAuditHook{
+		originalSQLs: map[*model.ExecuteSQL]string{},
+	}
+	err = server.HookAudit(at.logger, task, hook, &at.ap.ProjectId, at.ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}
@@ -694,14 +699,14 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 
 // 审核前填充上缺失的schema, 审核后还原被审核SQL, 并添加注释说明sql在哪个库执行的
 type TiDBAuditHook struct {
-	originalSQL string
+	originalSQLs map[*model.ExecuteSQL]string
 }
 
 func (t *TiDBAuditHook) BeforeAudit(sql *model.ExecuteSQL) {
 	if sql.Schema == "" {
 		return
 	}
-	t.originalSQL = sql.Content
+	t.originalSQLs[sql] = sql.Content
 	newSQL, err := tidbCompletionSchema(sql.Content, sql.Schema)
 	if err != nil {
 		return
@@ -713,7 +718,9 @@ func (t *TiDBAuditHook) AfterAudit(sql *model.ExecuteSQL) {
 	if sql.Schema == "" {
 		return
 	}
-	sql.Content = fmt.Sprintf("%v -- current schema: %v", t.originalSQL, sql.Schema)
+	if o, ok := t.originalSQLs[sql]; ok {
+		sql.Content = fmt.Sprintf("%v -- current schema: %v", o, sql.Schema)
+	}
 }
 
 // 填充sql缺失的schema
