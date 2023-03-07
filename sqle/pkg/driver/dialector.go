@@ -135,7 +135,7 @@ func (d *OracleDialector) Open(dsn *driverV2.DSN) (*sql.DB, *sql.Conn, error) {
 }
 
 func (d *OracleDialector) ShowDatabaseSQL() string {
-	return "select global_name from global_name"
+	return "SELECT username FROM all_users"
 }
 
 type MssqlDialector struct {
