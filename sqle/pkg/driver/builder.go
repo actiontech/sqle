@@ -5,25 +5,62 @@ import (
 	"os"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	hclog "github.com/hashicorp/go-hclog"
+	"github.com/pkg/errors"
 )
 
 type rawSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, rawSQL string, nextSQL []string) (string, error)
 
 type astSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, astSQL interface{}, nextSQL []string) (string, error)
 
-type DriverBuilder struct {
-	l    hclog.Logger
-	Dt   Dialector
-	Opts *adaptorOptions
-
-	Meta             *driverV2.DriverMetas
+type AuditHandler struct {
+	SqlParserFn      func(string) (interface{}, error)
 	RuleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
 	RuleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
 }
 
-func NewDriverBuilder(dt Dialector, opts ...AdaptorOption) *DriverBuilder {
+func (a *AuditHandler) Audit(ctx context.Context, rules []*driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
+	result := driverV2.NewAuditResults()
+	for _, rule := range rules {
+		handler, ok := a.RuleToRawHandler[rule.Name]
+		if ok {
+			msg, err := handler(ctx, rule, sql, nextSQL)
+			if err != nil {
+				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
+			}
+			result.Add(rule.Level, msg)
+		} else {
+			handler, ok := a.RuleToASTHandler[rule.Name]
+			if ok {
+				var err error
+				var ast interface{}
+				if a.SqlParserFn != nil {
+					ast, err = a.SqlParserFn(sql)
+					if err != nil {
+						return nil, errors.Wrap(err, "parse sql")
+					}
+				}
+				msg, err := handler(ctx, rule, ast, nextSQL)
+				if err != nil {
+					return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
+				}
+				result.Add(rule.Level, msg)
+			}
+		}
+	}
+	return result, nil
+}
+
+type DriverBuilder struct {
+	l hclog.Logger
+
+	Dt Dialector
+	ah *AuditHandler
+
+	Meta *driverV2.DriverMetas
+}
+
+func NewDriverBuilder(dt Dialector) *DriverBuilder {
 	b := &DriverBuilder{
 		l: hclog.New(&hclog.LoggerOptions{
 			JSONFormat: true,
@@ -32,13 +69,13 @@ func NewDriverBuilder(dt Dialector, opts ...AdaptorOption) *DriverBuilder {
 		}),
 		Dt: dt,
 		Meta: &driverV2.DriverMetas{
-			PluginName: dt.String(),
+			PluginName:               dt.String(),
+			DatabaseAdditionalParams: dt.DatabaseAdditionalParam(),
 		},
-		RuleToRawHandler: make(map[string]rawSQLRuleHandler),
-		RuleToASTHandler: make(map[string]astSQLRuleHandler),
-	}
-	for _, opt := range opts {
-		opt.apply(b.Opts)
+		ah: &AuditHandler{
+			RuleToRawHandler: make(map[string]rawSQLRuleHandler),
+			RuleToASTHandler: make(map[string]astSQLRuleHandler),
+		},
 	}
 	return b
 }
@@ -48,7 +85,7 @@ func (b *DriverBuilder) DefaultServe() {
 	b.Serve(NewDriverImpl)
 }
 
-func (b *DriverBuilder) Serve(fn func(*DriverBuilder, *driverV2.Config) (driverV2.Driver, error)) {
+func (b *DriverBuilder) Serve(fn func(hclog.Logger, Dialector, *AuditHandler, *driverV2.Config) (driverV2.Driver, error)) {
 	defer func() {
 		if err := recover(); err != nil {
 			b.l.Error("panic", "err", err)
@@ -59,12 +96,12 @@ func (b *DriverBuilder) Serve(fn func(*DriverBuilder, *driverV2.Config) (driverV
 		b.l.Info("no rule in plugin adaptor", "name", b.Dt)
 	}
 
-	if len(b.RuleToASTHandler) != 0 && b.Opts.sqlParser == nil {
+	if len(b.ah.RuleToASTHandler) != 0 && b.ah.SqlParserFn == nil {
 		panic("Add rule by AddRuleWithSQLParser(), but no SQL parser provided.")
 	}
 
 	newDriver := func(cfg *driverV2.Config) (driverV2.Driver, error) {
-		return fn(b, cfg)
+		return fn(b.l, b.Dt, b.ah, cfg)
 
 	}
 	driverV2.ServePlugin(*b.Meta, newDriver)
@@ -72,50 +109,18 @@ func (b *DriverBuilder) Serve(fn func(*DriverBuilder, *driverV2.Config) (driverV
 
 func (a *DriverBuilder) AddRule(r *driverV2.Rule, h rawSQLRuleHandler) {
 	a.Meta.Rules = append(a.Meta.Rules, r)
-	a.RuleToRawHandler[r.Name] = h
+	a.ah.RuleToRawHandler[r.Name] = h
 }
 
 func (a *DriverBuilder) AddRuleWithSQLParser(r *driverV2.Rule, h astSQLRuleHandler) {
 	a.Meta.Rules = append(a.Meta.Rules, r)
-	a.RuleToASTHandler[r.Name] = h
+	a.ah.RuleToASTHandler[r.Name] = h
 }
 
-func (a *DriverBuilder) AddDatabaseAdditionalParam(p *params.Param) {
-	a.Meta.DatabaseAdditionalParams = append(a.Meta.DatabaseAdditionalParams, p)
+func (b *DriverBuilder) SetSQLParserFn(parser func(string) (interface{}, error)) {
+	b.ah.SqlParserFn = parser
 }
 
 func (b *DriverBuilder) SetEnableOptionalModule(modules ...driverV2.OptionalModule) {
 	b.Meta.EnabledOptionalModule = modules
-}
-
-// AdaptorOption store some custom options for the driver adaptor.
-type AdaptorOption interface {
-	apply(*adaptorOptions)
-}
-
-type optionFunc struct {
-	f func(*adaptorOptions)
-}
-
-func newOptionFunc(f func(*adaptorOptions)) *optionFunc {
-	return &optionFunc{
-		f: f,
-	}
-}
-
-func (this *optionFunc) apply(a *adaptorOptions) {
-	this.f(a)
-}
-
-type adaptorOptions struct {
-	sqlParser func(string) (interface{}, error)
-}
-
-// WithSQLParser define custom SQL parser. If set, the adaptor
-// will use it to parse the SQL. User can assert the SQL to correspond
-// ast structure in ruleHandler.
-func WithSQLParser(parser func(sql string) (ast interface{}, err error)) AdaptorOption {
-	return newOptionFunc(func(a *adaptorOptions) {
-		a.sqlParser = parser
-	})
 }
