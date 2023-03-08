@@ -3,6 +3,7 @@ package driverV1
 import (
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/driver/common"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 )
@@ -37,11 +38,9 @@ func (p *PluginServer) Serve() {
 		HandshakeConfig:  handshakeConfig,
 		VersionedPlugins: p.plugins,
 		// A non-nil value here enables gRPC serving for this plugin...
-		GRPCServer: SQLEGrpcServer,
+		GRPCServer: common.NewGRPCServer,
 	})
 }
-
-var SQLEGrpcServer = goPlugin.DefaultGRPCServer
 
 func (p *PluginServer) AddDriverPlugin(plugin goPlugin.Plugin) {
 	p.AddPlugin(PluginNameAuditDriver, DefaultPluginVersion, plugin)

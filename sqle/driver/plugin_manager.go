@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/actiontech/sqle/sqle/driver/common"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
@@ -14,7 +15,6 @@ import (
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 var ErrPluginNotFound = errors.New("plugin not found")
@@ -72,8 +72,6 @@ func (pm *pluginManager) register(pp PluginProcessor) error {
 	return nil
 }
 
-var SQLEGRPCDialOptions = []grpc.DialOption{}
-
 func getClientConfig(path string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
 		HandshakeConfig: driverV2.HandshakeConfig,
@@ -83,7 +81,7 @@ func getClientConfig(path string) *goPlugin.ClientConfig {
 		},
 		Cmd:              exec.Command(path),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
-		GRPCDialOptions:  SQLEGRPCDialOptions,
+		GRPCDialOptions:  common.GRPCDialOptions,
 	}
 }
 
