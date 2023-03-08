@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -52,12 +53,12 @@ func getTaskAnalysisData(c echo.Context) error {
 	})
 }
 
-func convertExplainAndMetaDataToRes(explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
+func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetTaskAnalysisDataResItemV1 {
 
 	explainResult := explainResultInput
 	if explainResult == nil {
-		explainResult = &driver.ExplainResult{}
+		explainResult = &driverV2.ExplainResult{}
 	}
 	metaDataResult := metaDataResultInput
 	if metaDataResult == nil {

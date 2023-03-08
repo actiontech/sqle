@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 
 	"github.com/actiontech/sqle/sqle/common"
 
@@ -302,7 +302,7 @@ func (d *DmpSync) getNeedDeletedInstList(s *model.Storage, dmpInst map[string]ma
 
 func getDmpFilterType(dbType string) string {
 	switch dbType {
-	case driver.DriverTypeMySQL:
+	case driverV2.DriverTypeMySQL:
 		return "mysql"
 	default:
 		return ""

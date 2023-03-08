@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -20,7 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var errSQLAnalysisSQLIsNotSupport = errors.New(errors.SQLAnalysisSQLIsNotSupported, driver.ErrSQLIsNotSupported)
+var errSQLAnalysisSQLIsNotSupport = errors.New(errors.SQLAnalysisSQLIsNotSupported, driverV2.ErrSQLIsNotSupported)
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
@@ -86,46 +87,55 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	})
 }
 
-func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, instance *model.Instance) (explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult, err error) {
+func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, instance *model.Instance) (explainResult *driverV2.ExplainResult, explainMessage string, tableMetaResult *driver.GetTableMetaBySQLResult, err error) {
 	dsn, err := common.NewDSN(instance, database)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	drvMgr, err := driver.NewDriverManger(log.NewEntry(), instance.DbType, &driver.Config{DSN: dsn})
+
+	explainEnabled := driver.GetPluginManager().IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleExplain)
+
+	getTableMetaBySQLEnabled := driver.GetPluginManager().IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleExtractTableFromSQL) &&
+		driver.GetPluginManager().IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleGetTableMeta)
+
+	if !explainEnabled && !getTableMetaBySQLEnabled {
+		return nil, "", nil, fmt.Errorf("plugin don't support SQL analysis")
+	}
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(l, instance.DbType, &driverV2.Config{DSN: dsn})
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer drvMgr.Close(context.TODO())
+	defer plugin.Close(context.TODO())
 
-	analysisDriver, err := drvMgr.GetAnalysisDriver()
-	if err != nil {
-		return nil, "", nil, err
+	if explainEnabled {
+		explainResult, err = plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sql})
+		if err != nil && err == driverV2.ErrSQLIsNotSupported {
+			return nil, "", nil, errSQLAnalysisSQLIsNotSupport
+		} else if err != nil {
+			explainMessage = err.Error()
+		}
+	} else {
+		explainMessage = driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleExplain).Error()
 	}
 
-	explainResult, err := analysisDriver.Explain(context.TODO(), &driver.ExplainConf{Sql: sql})
-	if err != nil && err == driver.ErrSQLIsNotSupported {
-		return nil, "", nil, errSQLAnalysisSQLIsNotSupport
-	} else if err != nil {
-		explainMessage = err.Error()
-	}
-
-	tableMetaResult, err := analysisDriver.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{
-		Sql: sql,
-	})
-	if err != nil && err == driver.ErrSQLIsNotSupported {
-		return nil, "", nil, errSQLAnalysisSQLIsNotSupport
-	} else if err != nil {
-		l.Errorf("get table metadata failed: %v", err)
+	if getTableMetaBySQLEnabled {
+		tableMetaResult, err = plugin.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{Sql: sql})
+		if err != nil && err == driverV2.ErrSQLIsNotSupported {
+			return nil, "", nil, errSQLAnalysisSQLIsNotSupport
+		} else if err != nil {
+			l.Errorf("get table metadata failed: %v", err)
+		}
 	}
 	return explainResult, explainMessage, tableMetaResult, nil
 }
 
-func explainAndMetaDataToRes(explainResultInput *driver.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
+func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetSQLAnalysisDataResItemV1 {
 
 	explainResult := explainResultInput
 	if explainResult == nil {
-		explainResult = &driver.ExplainResult{}
+		explainResult = &driverV2.ExplainResult{}
 	}
 	metaDataResult := metaDataResultInput
 	if metaDataResult == nil {
