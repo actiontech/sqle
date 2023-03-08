@@ -19,6 +19,10 @@ import (
 
 var ErrPluginNotFound = errors.New("plugin not found")
 
+func NewErrPluginAPINotImplement(m driverV2.OptionalModule) error {
+	return fmt.Errorf("plugin not implement api %s", m)
+}
+
 var BuiltInPluginProcessors = map[string] /*plugin name*/ PluginProcessor{}
 
 type pluginManager struct {
@@ -56,6 +60,19 @@ func (pm *pluginManager) AllAdditionalParams() map[string] /*driver name*/ param
 		newParams[k] = v.DatabaseAdditionalParams.Copy()
 	}
 	return newParams
+}
+
+func (pm *pluginManager) IsOptionalModuleEnabled(pluginName string, expectModule driverV2.OptionalModule) bool {
+	meta, ok := pm.metas[pluginName]
+	if !ok {
+		return false
+	}
+	for _, m := range meta.EnabledOptionalModule {
+		if m == expectModule {
+			return true
+		}
+	}
+	return false
 }
 
 func (pm *pluginManager) register(pp PluginProcessor) error {
