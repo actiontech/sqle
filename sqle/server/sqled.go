@@ -476,6 +476,8 @@ func (a *action) audit() (err error) {
 	// skip generate if audit is static
 	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
+	} else if !driver.GetPluginManager().IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
+		a.entry.Infof("skip generate rollback SQLs, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGenRollbackSQL))
 	} else {
 		p, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, nil, "")
 		if err != nil {

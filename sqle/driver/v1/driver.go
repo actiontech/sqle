@@ -80,23 +80,24 @@ func checkAnalysisDriver(cp goPlugin.ClientProtocol) error {
 	return nil
 }
 
-func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string, rules []*Rule, additionalParams params.Params, err error) {
+func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string,
+	rules []*Rule, additionalParams params.Params, enableQuery, enableSQLAnalysis bool, err error) {
 	cp, err := c.Client()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return "", nil, nil, err
+		return "", nil, nil, false, false, err
 	}
 	defer c.Kill()
 
 	err = cp.Ping()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
-		return "", nil, nil, err
+		return "", nil, nil, false, false, err
 	}
 
 	rawI, err := cp.Dispense(PluginNameAuditDriver)
 	if err != nil {
-		return "", nil, nil, err
+		return "", nil, nil, false, false, err
 	}
 	// client can only be proto.DriverClient
 	//nolint:forcetypeassert
@@ -104,7 +105,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 
 	pluginMeta, err := client.Metas(context.TODO(), &proto.Empty{})
 	if err != nil {
-		return "", nil, nil, err
+		return "", nil, nil, false, false, err
 	}
 	l := log.Logger().WithField("plugin_name", pluginMeta.Name)
 
@@ -116,7 +117,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 	// init audit driver, so that we can use Close to inform all plugins with the same progress to recycle resource
 	_, err = client.Init(context.TODO(), &proto.InitRequest{})
 	if err != nil {
-		return "", nil, nil, err
+		return "", nil, nil, false, false, err
 	}
 	l.WithField("plugin_type", PluginNameAuditDriver).Infoln("plugin inited")
 
@@ -134,6 +135,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 	if err != nil {
 		l.WithField("plugin_type", PluginNameQueryDriver).Infof("plugin not exist or failed to load. err: %v", err)
 	} else {
+		enableQuery = true
 		queryDriverMu.Lock()
 		queryDrivers[pluginMeta.Name] = struct{}{}
 		queryDriverMu.Unlock()
@@ -145,6 +147,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 	if err != nil {
 		l.WithField("plugin_type", PluginNameAnalysisDriver).Infof("plugin not exist or failed to load. err: %v", err)
 	} else {
+		enableSQLAnalysis = true
 		analysisDriverMu.Lock()
 		analysisDrivers[pluginMeta.Name] = struct{}{}
 		analysisDriverMu.Unlock()
@@ -196,7 +199,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 
 	RegisterDriverManger(pluginMeta.Name, handler)
 
-	return pluginMeta.Name, rules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()), nil
+	return pluginMeta.Name, rules, proto.ConvertProtoParamToParam(pluginMeta.GetAdditionalParams()), enableQuery, enableSQLAnalysis, nil
 }
 
 // DSN provide necessary information to connect to database.
