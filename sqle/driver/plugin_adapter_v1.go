@@ -40,9 +40,23 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 
 func (d *PluginProcessorV1) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	defer d.client.Kill()
-	name, rules, params, err := driverV1.RegisterDrivers(d.client, d.cfg, d.path)
+	name, rules, params, enableQuery, enableSQLAnalysis, err := driverV1.RegisterDrivers(d.client, d.cfg, d.path)
 	if err != nil {
 		return nil, err
+	}
+
+	m := []driverV2.OptionalModule{
+		driverV2.OptionalModuleGenRollbackSQL, //在V1版本里面这个接口无法判断是否实现，需要插件返回空数据代表不生成。
+	}
+	if enableQuery {
+		m = append(m, driverV2.OptionalModuleQuery)
+	}
+	if enableSQLAnalysis {
+		m = append(m, []driverV2.OptionalModule{
+			driverV2.OptionalModuleExplain,
+			driverV2.OptionalModuleGetTableMeta,
+			driverV2.OptionalModuleExtractTableFromSQL,
+		}...)
 	}
 
 	rulesV2 := make([]*driverV2.Rule, 0, len(rules))
@@ -54,6 +68,7 @@ func (d *PluginProcessorV1) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		DatabaseDefaultPort:      0,
 		Rules:                    rulesV2,
 		DatabaseAdditionalParams: params,
+		EnabledOptionalModule:    m,
 	}
 	d.metas = meta
 	return meta, nil

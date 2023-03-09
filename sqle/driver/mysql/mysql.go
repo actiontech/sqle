@@ -530,6 +530,13 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		DatabaseDefaultPort:      3306,
 		Rules:                    allRules,
 		DatabaseAdditionalParams: params.Params{},
+		EnabledOptionalModule: []driverV2.OptionalModule{
+			driverV2.OptionalModuleGenRollbackSQL,
+			driverV2.OptionalModuleQuery,
+			driverV2.OptionalModuleExplain,
+			driverV2.OptionalModuleGetTableMeta,
+			driverV2.OptionalModuleExtractTableFromSQL,
+		},
 	}, nil
 }
 
