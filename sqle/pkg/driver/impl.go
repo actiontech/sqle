@@ -130,12 +130,15 @@ func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 }
 
 func (p *DriverImpl) Query(ctx context.Context, query string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Duration(conf.TimeOutSecond)*time.Second)
-	defer cancel()
-
 	conn, err := p.GetConn()
 	if err != nil {
 		return nil, err
+	}
+
+	var cancel func()
+	if conf != nil && conf.TimeOutSecond > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(conf.TimeOutSecond)*time.Second)
+		defer cancel()
 	}
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {

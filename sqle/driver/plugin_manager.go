@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/actiontech/sqle/sqle/driver/common"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
@@ -14,10 +15,13 @@ import (
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 var ErrPluginNotFound = errors.New("plugin not found")
+
+func NewErrPluginAPINotImplement(m driverV2.OptionalModule) error {
+	return fmt.Errorf("plugin not implement api %s", m)
+}
 
 var BuiltInPluginProcessors = map[string] /*plugin name*/ PluginProcessor{}
 
@@ -58,6 +62,19 @@ func (pm *pluginManager) AllAdditionalParams() map[string] /*driver name*/ param
 	return newParams
 }
 
+func (pm *pluginManager) IsOptionalModuleEnabled(pluginName string, expectModule driverV2.OptionalModule) bool {
+	meta, ok := pm.metas[pluginName]
+	if !ok {
+		return false
+	}
+	for _, m := range meta.EnabledOptionalModule {
+		if m == expectModule {
+			return true
+		}
+	}
+	return false
+}
+
 func (pm *pluginManager) register(pp PluginProcessor) error {
 	meta, err := pp.GetDriverMetas()
 	if err != nil {
@@ -72,8 +89,6 @@ func (pm *pluginManager) register(pp PluginProcessor) error {
 	return nil
 }
 
-var SQLEGRPCDialOptions = []grpc.DialOption{}
-
 func getClientConfig(path string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
 		HandshakeConfig: driverV2.HandshakeConfig,
@@ -83,7 +98,7 @@ func getClientConfig(path string) *goPlugin.ClientConfig {
 		},
 		Cmd:              exec.Command(path),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
-		GRPCDialOptions:  SQLEGRPCDialOptions,
+		GRPCDialOptions:  common.GRPCDialOptions,
 	}
 }
 
