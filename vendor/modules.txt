@@ -87,6 +87,9 @@ github.com/aliyun/credentials-go/credentials/utils
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
 github.com/bwmarrin/snowflake
+# github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13
+## explicit
+github.com/chanxuehong/util/security
 # github.com/clbanning/mxj/v2 v2.5.6
 ## explicit
 github.com/clbanning/mxj/v2
@@ -603,6 +606,12 @@ google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc
 ## explicit
 gopkg.in/alexcesaro/quotedprintable.v3
+# gopkg.in/chanxuehong/wechat.v1 v1.0.0-20171118020122-aad7e298d1e7
+## explicit
+gopkg.in/chanxuehong/wechat.v1/corp
+gopkg.in/chanxuehong/wechat.v1/corp/message/send
+gopkg.in/chanxuehong/wechat.v1/internal/util
+gopkg.in/chanxuehong/wechat.v1/json
 # gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 ## explicit
 gopkg.in/gomail.v2
