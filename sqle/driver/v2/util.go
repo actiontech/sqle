@@ -47,6 +47,23 @@ const (
 	OptionalModuleExtractTableFromSQL
 )
 
+func (m OptionalModule) String() string {
+	switch m {
+	case OptionalModuleGenRollbackSQL:
+		return "GenRollbackSQL"
+	case OptionalModuleQuery:
+		return "Query"
+	case OptionalModuleExplain:
+		return "Explain"
+	case OptionalModuleGetTableMeta:
+		return "GetTableMeta"
+	case OptionalModuleExtractTableFromSQL:
+		return "ExtractTableFromSQL"
+	default:
+		return "Unknown"
+	}
+}
+
 type DriverMetas struct {
 	PluginName               string
 	DatabaseDefaultPort      int64

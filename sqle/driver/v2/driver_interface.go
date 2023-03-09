@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/common"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -40,11 +41,9 @@ func ServePlugin(meta DriverMetas, fn func(cfg *Config) (Driver, error)) {
 			},
 		},
 		// A non-nil value here enables gRPC serving for this plugin...
-		GRPCServer: SQLEGrpcServer,
+		GRPCServer: common.NewGRPCServer,
 	})
 }
-
-var SQLEGrpcServer = goPlugin.DefaultGRPCServer
 
 type DriverPlugin struct {
 	goPlugin.NetRPCUnsupportedPlugin
