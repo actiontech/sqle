@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -244,13 +245,13 @@ func getSyncInstanceTask(c echo.Context) error {
 var (
 	syncTaskSourceList = []string{model.SyncTaskSourceActiontechDmp}
 	// todo: 使用接口获取
-	dmpSupportDbType = []string{driver.DriverTypeMySQL}
+	dmpSupportDbType = []string{driverV2.DriverTypeMySQL}
 )
 
 func getSyncTaskSourceTips(c echo.Context) error {
 	m := make(map[string]struct{}, 0)
 
-	drivers := driver.AllDrivers()
+	drivers := driver.GetPluginManager().AllDrivers()
 	for _, dbType := range drivers {
 		m[dbType] = struct{}{}
 	}

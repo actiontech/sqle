@@ -11,85 +11,82 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 )
 
-func init() {
-	driver.RegisterAnalysisDriver(driver.DriverTypeMySQL)
-}
-
 // ListTablesInSchema list tables in specified schema.
-func (i *MysqlDriverImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
-	conn, err := i.getDbConn()
-	if err != nil {
-		return nil, err
-	}
+// func (i *MysqlDriverImpl) ListTablesInSchema(ctx context.Context, conf *driver.ListTablesInSchemaConf) (*driver.ListTablesInSchemaResult, error) {
+// 	conn, err := i.getDbConn()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	schema := conf.Schema
-	if schema == "" {
-		schema = i.Ctx.CurrentSchema()
-	}
-	tables, err := conn.ShowSchemaTables(schema)
-	if err != nil {
-		return nil, err
-	}
+// 	schema := conf.Schema
+// 	if schema == "" {
+// 		schema = i.Ctx.CurrentSchema()
+// 	}
+// 	tables, err := conn.ShowSchemaTables(schema)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	resItems := make([]driver.Table, len(tables))
-	for i, t := range tables {
-		resItems[i].Name = t
-	}
-	return &driver.ListTablesInSchemaResult{Tables: resItems}, nil
-}
+// 	resItems := make([]driver.Table, len(tables))
+// 	for i, t := range tables {
+// 		resItems[i].Name = t
+// 	}
+// 	return &driver.ListTablesInSchemaResult{Tables: resItems}, nil
+// }
 
 // GetTableMetaByTableName get table's metadata by table name.
-func (i *MysqlDriverImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
-	schema := conf.Schema
-	if schema == "" {
-		schema = i.Ctx.CurrentSchema()
-	}
-	columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schema, conf.Table)
-	if err != nil {
-		return nil, err
-	}
+// func (i *MysqlDriverImpl) GetTableMetaByTableName(ctx context.Context, conf *driver.GetTableMetaByTableNameConf) (*driver.GetTableMetaByTableNameResult, error) {
+// 	schema := conf.Schema
+// 	if schema == "" {
+// 		schema = i.Ctx.CurrentSchema()
+// 	}
+// 	columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schema, conf.Table)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &driver.GetTableMetaByTableNameResult{TableMeta: driver.TableMetaItem{
-		Name:           conf.Table,
-		Schema:         schema,
-		ColumnsInfo:    columnsInfo,
-		IndexesInfo:    indexesInfo,
-		CreateTableSQL: sql,
-	}}, nil
-}
+// 	return &driver.GetTableMetaByTableNameResult{TableMeta: driver.TableMetaItem{
+// 		Name:           conf.Table,
+// 		Schema:         schema,
+// 		ColumnsInfo:    columnsInfo,
+// 		IndexesInfo:    indexesInfo,
+// 		CreateTableSQL: sql,
+// 	}}, nil
+// }
 
-func (i *MysqlDriverImpl) getTableMetaByTableName(ctx context.Context, schema, table string) (driver.ColumnsInfo, driver.IndexesInfo, string, error) {
+func (i *MysqlDriverImpl) getTableMetaByTableName(ctx context.Context, schema, table string) (driverV2.ColumnsInfo, driverV2.IndexesInfo, string, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
-		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+		return driverV2.ColumnsInfo{}, driverV2.IndexesInfo{}, "", err
 	}
 
 	columnsInfo, err := i.getTableColumnsInfo(conn, schema, table)
 	if err != nil {
-		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+		return driverV2.ColumnsInfo{}, driverV2.IndexesInfo{}, "", err
 	}
 
 	indexesInfo, err := i.getTableIndexesInfo(conn, schema, table)
 	if err != nil {
-		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+		return driverV2.ColumnsInfo{}, driverV2.IndexesInfo{}, "", err
 	}
 
 	sql, err := conn.ShowCreateTable(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(table))
 	if err != nil {
-		return driver.ColumnsInfo{}, driver.IndexesInfo{}, "", err
+		return driverV2.ColumnsInfo{}, driverV2.IndexesInfo{}, "", err
 	}
 
 	return columnsInfo, indexesInfo, sql, nil
 }
 
-func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driver.ColumnsInfo, error) {
-	columns := []driver.AnalysisInfoHead{
+func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driverV2.ColumnsInfo, error) {
+	columns := []driverV2.TabularDataHead{
 		{
 			Name: "COLUMN_NAME",
 			Desc: "列名",
@@ -123,7 +120,7 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 	}
 	records, err := conn.GetTableColumnsInfo(schema, tableName)
 	if err != nil {
-		return driver.ColumnsInfo{}, err
+		return driverV2.ColumnsInfo{}, err
 	}
 
 	rows := make([][]string, len(records))
@@ -141,14 +138,14 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 		rows[i] = row
 	}
 
-	ret := driver.ColumnsInfo{}
+	ret := driverV2.ColumnsInfo{}
 	ret.Columns = columns
 	ret.Rows = rows
 	return ret, nil
 }
 
-func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driver.IndexesInfo, error) {
-	columns := []driver.AnalysisInfoHead{
+func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driverV2.IndexesInfo, error) {
+	columns := []driverV2.TabularDataHead{
 		{
 			Name: "Column_name",
 			Desc: "列名",
@@ -180,7 +177,7 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 
 	indexRecords, err := conn.GetTableIndexesInfo(schema, tableName)
 	if err != nil {
-		return driver.IndexesInfo{}, err
+		return driverV2.IndexesInfo{}, err
 	}
 
 	rows := make([][]string, len(indexRecords))
@@ -207,7 +204,7 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 		rows[i] = row
 	}
 
-	ret := driver.IndexesInfo{}
+	ret := driverV2.IndexesInfo{}
 	ret.Columns = columns
 	ret.Rows = rows
 	return ret, nil
@@ -223,7 +220,7 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, driver.ErrSQLIsNotSupported
+		return nil, driverV2.ErrSQLIsNotSupported
 	}
 
 	node, err := util.ParseOneSql(conf.Sql)
@@ -293,21 +290,21 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
 	}
 
-	tableMetas := make([]driver.TableMetaItemBySQL, len(schemaTables))
+	tableMetas := make([]*driver.TableMeta, len(schemaTables))
 	for j, schemaTable := range schemaTables {
 		msg := ""
 		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
 		if err != nil {
 			msg = err.Error()
 		}
-		tableMetas[j] = driver.TableMetaItemBySQL{
-			Name:           schemaTable.Table,
-			Schema:         schemaTable.Schema,
-			ColumnsInfo:    columnsInfo,
-			IndexesInfo:    indexesInfo,
-			CreateTableSQL: sql,
-			Message:        msg,
-		}
+		tm := &driver.TableMeta{}
+		tm.Name = schemaTable.Table
+		tm.Schema = schemaTable.Schema
+		tm.ColumnsInfo = columnsInfo
+		tm.IndexesInfo = indexesInfo
+		tm.CreateTableSQL = sql
+		tm.Message = msg
+		tableMetas[j] = tm
 	}
 
 	return &driver.GetTableMetaBySQLResult{
@@ -330,13 +327,13 @@ func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {
 }
 
 // Explain get explain result for SQL.
-func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driver.ExplainConf) (*driver.ExplainResult, error) {
+func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {
 	// check sql
 	// only support dml
 	if isDML, err := i.isDML(conf.Sql); err != nil {
 		return nil, err
 	} else if !isDML {
-		return nil, driver.ErrSQLIsNotSupported
+		return nil, driverV2.ErrSQLIsNotSupported
 	}
 
 	conn, err := i.getDbConn()
@@ -348,9 +345,9 @@ func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driver.ExplainConf)
 		return nil, err
 	}
 
-	resColumn := make([]driver.AnalysisInfoHead, len(columns))
+	resColumn := make([]driverV2.TabularDataHead, len(columns))
 	for i, column := range columns {
-		resColumn[i] = driver.AnalysisInfoHead{Name: column}
+		resColumn[i] = driverV2.TabularDataHead{Name: column}
 	}
 
 	resRows := make([][]string, len(rows))
@@ -359,14 +356,14 @@ func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driver.ExplainConf)
 			resRows[i] = append(resRows[i], s.String)
 		}
 	}
-	res := driver.ExplainClassicResult{
-		AnalysisInfoInTableFormat: driver.AnalysisInfoInTableFormat{
+	res := driverV2.ExplainClassicResult{
+		TabularData: driverV2.TabularData{
 			Columns: resColumn,
 			Rows:    resRows,
 		},
 	}
 
-	return &driver.ExplainResult{
+	return &driverV2.ExplainResult{
 		ClassicResult: res,
 	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
@@ -50,8 +51,13 @@ func (at *OBMySQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	m, err := driver.NewDriverManger(at.logger, at.ap.DBType, &driver.Config{
-		DSN: &driver.DSN{
+	if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+		at.logger.Warnf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+		return
+	}
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(at.logger, inst.DbType, &driverV2.Config{
+		DSN: &driverV2.DSN{
 			Host:             inst.Host,
 			Port:             inst.Port,
 			User:             inst.User,
@@ -59,33 +65,26 @@ func (at *OBMySQLTopSQLTask) collectorDo() {
 			AdditionalParams: inst.AdditionalParams,
 		},
 	})
-
 	if err != nil {
-		at.logger.Warnf("get driver manager failed")
+		at.logger.Warnf("get plugin failed, error: %v", err)
 		return
 	}
-	defer m.Close(context.Background())
-
-	queryDriver, err := m.GetSQLQueryDriver()
-	if err != nil {
-		at.logger.Warnf("get sql query driver failed")
-		return
-	}
+	defer plugin.Close(context.Background())
 
 	sql := at.getCollectSQL()
 	if sql == "" {
 		at.logger.Warnf("unknown metric of interest")
 		return
 	}
-	err = at.collect(queryDriver, sql)
+	err = at.collect(plugin, sql)
 	if err != nil {
 		at.logger.Warnf("collect failed, error: %v", err)
 		return
 	}
 }
 
-func (at *OBMySQLTopSQLTask) collect(queryDriver driver.SQLQueryDriver, sql string) error {
-	result, err := queryDriver.Query(context.Background(), sql, &driver.QueryConf{TimeOutSecond: 5})
+func (at *OBMySQLTopSQLTask) collect(p driver.Plugin, sql string) error {
+	result, err := p.Query(context.Background(), sql, &driverV2.QueryConf{TimeOutSecond: 5})
 	if err != nil {
 		return err
 	}
