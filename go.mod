@@ -18,6 +18,7 @@ require (
 	github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13 // indirect
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
 	github.com/bwmarrin/snowflake v0.3.0
+	github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13 // indirect
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f
