@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -177,7 +177,7 @@ func getDBTypeWithReq(c echo.Context) (dbType string, err error) {
 
 	dbType = fmt.Sprintf("%v", req.DBType)
 	if dbType == "" {
-		dbType = driver.DriverTypeMySQL
+		dbType = driverV2.DriverTypeMySQL
 	}
 	return dbType, err
 }
