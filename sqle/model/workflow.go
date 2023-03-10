@@ -179,16 +179,6 @@ const (
 	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
-var WorkflowStatus = map[string]string{
-	WorkflowStatusWaitForAudit:     "待审核",
-	WorkflowStatusWaitForExecution: "待上线",
-	WorkflowStatusReject:           "已驳回",
-	WorkflowStatusCancel:           "已关闭",
-	WorkflowStatusExecuting:        "正在上线",
-	WorkflowStatusExecFailed:       "上线失败",
-	WorkflowStatusFinish:           "上线成功",
-}
-
 type WorkflowRecord struct {
 	Model
 	CurrentWorkflowStepId uint
@@ -354,134 +344,6 @@ func (w *Workflow) GetTaskIds() []uint {
 		taskIds[i] = inst.TaskId
 	}
 	return taskIds
-}
-
-func (s *Storage) CreateWorkflow(subject, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId uint) error {
-	if len(tasks) <= 0 {
-		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
-	}
-
-	workflowMode := WorkflowModeSameSQLs
-	groupId := tasks[0].GroupId
-	for _, task := range tasks {
-		if task.GroupId != groupId {
-			workflowMode = WorkflowModeDifferentSQLs
-			break
-		}
-	}
-
-	// 相同sql模式下，数据源类型必须相同
-	if workflowMode == WorkflowModeSameSQLs && len(tasks) > 1 {
-		dbType := tasks[0].Instance.DbType
-		for _, task := range tasks {
-			if dbType != task.Instance.DbType {
-				return errors.New(errors.DataConflict, fmt.Errorf("the instance types must be the same"))
-			}
-		}
-	}
-
-	workflow := &Workflow{
-		Subject:      subject,
-		Desc:         desc,
-		ProjectId:    projectId,
-		CreateUserId: user.ID,
-		Mode:         workflowMode,
-	}
-
-	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
-	for i, task := range tasks {
-		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
-		}
-	}
-
-	record := &WorkflowRecord{
-		InstanceRecords: instanceRecords,
-	}
-
-	if len(stepTemplates) == 1 {
-		record.Status = WorkflowStatusWaitForExecution
-	}
-
-	allUsers := make([][]*User, len(tasks))
-	allExecutor := make([][]*User, len(tasks))
-	for i, task := range tasks {
-		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
-		if err != nil {
-			return err
-		}
-		allUsers[i] = users
-
-		executor, err := s.GetCanExecuteWorkflowUsers(task.Instance)
-		if err != nil {
-			return err
-		}
-		allExecutor[i] = executor
-	}
-
-	canOptUsers := allUsers[0]
-	canExecUsers := allExecutor[0]
-	for i := 1; i < len(allUsers); i++ {
-		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
-		canExecUsers = getOverlapOfUsers(canExecUsers, allExecutor[i])
-	}
-
-	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
-		adminUser, _, err := s.GetUserByName(DefaultAdminUser)
-		if err != nil {
-			return err
-		}
-		if len(canOptUsers) == 0 {
-			canOptUsers = append(canOptUsers, adminUser)
-		}
-		if len(canExecUsers) == 0 {
-			canExecUsers = append(canExecUsers, adminUser)
-		}
-	}
-
-	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
-
-	tx := s.db.Begin()
-
-	err := tx.Save(record).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
-	}
-
-	workflow.WorkflowRecordId = record.ID
-	err = tx.Save(workflow).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
-	}
-
-	for _, step := range steps {
-		currentStep := step
-		currentStep.WorkflowRecordId = record.ID
-		currentStep.WorkflowId = workflow.ID
-		users := currentStep.Assignees
-		currentStep.Assignees = nil
-		err = tx.Save(currentStep).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
-	if len(steps) > 0 {
-		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
-	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
 func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId uint) error {
@@ -1284,27 +1146,6 @@ SELECT wr.status                                                     AS workflow
 GROUP BY tasks.id, wir.id
 `
 
-var workflowTasksSummaryQueryBodyTpl = `
-{{ define "body" }}
-FROM workflow_instance_records AS wir
-LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
-LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
-LEFT JOIN projects ON projects.id = w.project_id
-LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
-LEFT JOIN tasks ON wir.task_id = tasks.id
-LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
-LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
-LEFT JOIN workflow_step_user AS curr_ws_user ON curr_ws.id = curr_ws_user.workflow_step_id
-LEFT JOIN users AS curr_ass_user ON curr_ws_user.user_id = curr_ass_user.id
-
-WHERE
-w.deleted_at IS NULL
-AND w.subject = :workflow_name
-AND projects.name = :project_name
-
-{{ end }}
-`
-
 var workflowTasksSummaryQueryBodyTplV2 = `
 {{ define "body" }}
 FROM workflow_instance_records AS wir
@@ -1325,21 +1166,6 @@ AND projects.name = :project_name
 
 {{ end }}
 `
-
-func (s *Storage) GetWorkflowTasksSummaryByReq(data map[string]interface{}) (
-	result []*WorkflowTasksSummaryDetail, err error) {
-
-	if data["workflow_name"] == nil || data["project_name"] == nil {
-		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
-	}
-
-	err = s.getListResult(workflowTasksSummaryQueryBodyTpl, workflowTasksSummaryQueryTpl, data, &result)
-	if err != nil {
-		return result, errors.New(errors.ConnectStorageError, err)
-	}
-
-	return result, nil
-}
 
 func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
