@@ -784,6 +784,8 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
+
+	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
 	dbType := instances[0].DbType
 	plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
 	if err != nil {
