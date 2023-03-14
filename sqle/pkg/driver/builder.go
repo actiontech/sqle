@@ -22,40 +22,8 @@ type AstSQLRuleHandler interface {
 
 type AuditHandler struct {
 	SqlParserFn      func(string) (interface{}, error)
-	RuleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
-	RuleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
-}
-
-func (a *AuditHandler) Audit(ctx context.Context, rules []*driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
-	result := driverV2.NewAuditResults()
-	for _, rule := range rules {
-		handler, ok := a.RuleToRawHandler[rule.Name]
-		if ok {
-			msg, err := handler(ctx, rule, sql, nextSQL)
-			if err != nil {
-				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
-			}
-			result.Add(rule.Level, msg)
-		} else {
-			handler, ok := a.RuleToASTHandler[rule.Name]
-			if ok {
-				var err error
-				var ast interface{}
-				if a.SqlParserFn != nil {
-					ast, err = a.SqlParserFn(sql)
-					if err != nil {
-						return nil, errors.Wrap(err, "parse sql")
-					}
-				}
-				msg, err := handler(ctx, rule, ast, nextSQL)
-				if err != nil {
-					return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
-				}
-				result.Add(rule.Level, msg)
-			}
-		}
-	}
-	return result, nil
+	RuleToRawHandler map[string] /*rule name*/ RawSQLRuleHandler
+	RuleToASTHandler map[string] /*rule name*/ AstSQLRuleHandler
 }
 
 type DriverBuilder struct {
@@ -114,14 +82,14 @@ func (b *DriverBuilder) Serve(fn func(hclog.Logger, Dialector, *AuditHandler, *d
 	driverV2.ServePlugin(*b.Meta, newDriver)
 }
 
-func (a *DriverBuilder) AddRule(r *driverV2.Rule, h rawSQLRuleHandler) {
-	a.Meta.Rules = append(a.Meta.Rules, r)
-	a.ah.RuleToRawHandler[r.Name] = h
+func (a *DriverBuilder) AddRule(h RawSQLRuleHandler) {
+	a.Meta.Rules = append(a.Meta.Rules, h.GetRule())
+	a.ah.RuleToRawHandler[h.GetRule().Name] = h
 }
 
-func (a *DriverBuilder) AddRuleWithSQLParser(r *driverV2.Rule, h astSQLRuleHandler) {
-	a.Meta.Rules = append(a.Meta.Rules, r)
-	a.ah.RuleToASTHandler[r.Name] = h
+func (a *DriverBuilder) AddRuleWithSQLParser(h AstSQLRuleHandler) {
+	a.Meta.Rules = append(a.Meta.Rules, h.GetRule())
+	a.ah.RuleToASTHandler[h.GetRule().Name] = h
 }
 
 func (b *DriverBuilder) SetSQLParserFn(parser func(string) (interface{}, error)) {

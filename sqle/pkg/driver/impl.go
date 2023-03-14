@@ -223,7 +223,7 @@ func classifySQL(sql string) (sqlType string) {
 func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	results := make([]*driverV2.AuditResults, 0, len(sqls))
 	for i, sql := range sqls {
-		result, err := p.Ah.Audit(ctx, p.Config.Rules, sql, sqls[i:])
+		result, err := p.auditByRule(ctx, p.Config.Rules, sql, sqls[i:])
 		// result, err := p.audit(ctx, sql, sqls[i:])
 		if err != nil {
 			return nil, err
@@ -231,6 +231,54 @@ func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+func (p *DriverImpl) auditByRule(ctx context.Context, rules []*driverV2.Rule, curSql string, nextSQL []string) (*driverV2.AuditResults, error) {
+	conn := struct {
+		Db   *sql.DB
+		Conn *sql.Conn
+	}{
+		p.DB,
+		p.Conn,
+	}
+
+	result := driverV2.NewAuditResults()
+	for _, rule := range rules {
+		handler, ok := p.RuleToRawHandler[rule.Name]
+		if ok {
+			_, err := handler.BeforeAudit(&conn)
+			if err != nil {
+				return nil, errors.Wrapf(err, "before audit SQL %s in driver adaptor", curSql)
+			}
+			msg, err := handler.Audit(ctx, curSql, nextSQL)
+			if err != nil {
+				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", curSql)
+			}
+			result.Add(rule.Level, msg)
+		} else {
+			handler, ok := p.RuleToASTHandler[rule.Name]
+			if ok {
+				var err error
+				var ast interface{}
+				if p.SqlParserFn != nil {
+					ast, err = p.SqlParserFn(curSql)
+					if err != nil {
+						return nil, errors.Wrap(err, "parse sql")
+					}
+				}
+				_, err = handler.BeforeAudit(&conn)
+				if err != nil {
+					return nil, errors.Wrapf(err, "before audit SQL %s in driver adaptor", curSql)
+				}
+				msg, err := handler.Audit(ctx, ast, nextSQL)
+				if err != nil {
+					return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", curSql)
+				}
+				result.Add(rule.Level, msg)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (p *DriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
