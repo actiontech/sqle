@@ -6,12 +6,19 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	hclog "github.com/hashicorp/go-hclog"
-	"github.com/pkg/errors"
 )
 
-type rawSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, rawSQL string, nextSQL []string) (string, error)
+type RawSQLRuleHandler interface {
+	GetRule() *driverV2.Rule
+	BeforeAudit(interface{}) (interface{}, error)
+	Audit(ctx context.Context, rawSQL string, nextSQL []string) (string, error)
+}
 
-type astSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, astSQL interface{}, nextSQL []string) (string, error)
+type AstSQLRuleHandler interface {
+	GetRule() *driverV2.Rule
+	BeforeAudit(interface{}) (interface{}, error)
+	Audit(ctx context.Context, astSQL interface{}, nextSQL []string) (string, error)
+}
 
 type AuditHandler struct {
 	SqlParserFn      func(string) (interface{}, error)
@@ -73,8 +80,8 @@ func NewDriverBuilder(dt Dialector) *DriverBuilder {
 			DatabaseAdditionalParams: dt.DatabaseAdditionalParam(),
 		},
 		ah: &AuditHandler{
-			RuleToRawHandler: make(map[string]rawSQLRuleHandler),
-			RuleToASTHandler: make(map[string]astSQLRuleHandler),
+			RuleToRawHandler: make(map[string]RawSQLRuleHandler),
+			RuleToASTHandler: make(map[string]AstSQLRuleHandler),
 		},
 	}
 	return b

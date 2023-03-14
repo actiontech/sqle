@@ -20,19 +20,25 @@ import (
 type DriverImpl struct {
 	Log    hclog.Logger
 	Config *driverV2.Config
-	Ah     *AuditHandler
 
 	Dt   Dialector
 	DB   *sql.DB
 	Conn *sql.Conn
+
+	// for audit
+	SqlParserFn      func(string) (interface{}, error)
+	RuleToRawHandler map[string] /*rule name*/ RawSQLRuleHandler
+	RuleToASTHandler map[string] /*rule name*/ AstSQLRuleHandler
 }
 
 func NewDriverImpl(l hclog.Logger, dt Dialector, ah *AuditHandler, cfg *driverV2.Config) (driverV2.Driver, error) {
 	di := &DriverImpl{
-		Log:    l,
-		Config: cfg,
-		Ah:     ah,
-		Dt:     dt,
+		Log:              l,
+		Config:           cfg,
+		Dt:               dt,
+		SqlParserFn:      ah.SqlParserFn,
+		RuleToRawHandler: ah.RuleToRawHandler,
+		RuleToASTHandler: ah.RuleToASTHandler,
 	}
 	if cfg.DSN == nil {
 		return di, nil
