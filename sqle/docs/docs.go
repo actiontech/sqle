@@ -834,11 +834,45 @@ var doc = `{
                 ],
                 "summary": "获取 dashboard 信息",
                 "operationId": "getDashboardV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter project name",
+                        "name": "filter_project_name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetDashboardResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dashboard/project_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get dashboard project tips",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dashboard"
+                ],
+                "summary": "获取dashboard项目提示列表",
+                "operationId": "getDashboardProjectTipsV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDashboardProjectTipsResV1"
                         }
                     }
                 }
@@ -8659,6 +8693,18 @@ var doc = `{
                 }
             }
         },
+        "v1.DashboardProjectTipV1": {
+            "type": "object",
+            "properties": {
+                "project_name": {
+                    "type": "string"
+                },
+                "unfinished_workflow_count": {
+                    "description": "只统计与当前用户相关的未完成工单",
+                    "type": "integer"
+                }
+            }
+        },
         "v1.DashboardResV1": {
             "type": "object",
             "properties": {
@@ -9062,6 +9108,25 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetDashboardProjectTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DashboardProjectTipV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -11337,6 +11402,9 @@ var doc = `{
         "v1.ProjectTipResV1": {
             "type": "object",
             "properties": {
+                "count_of_unfinished_workflows_related_to_current_user": {
+                    "type": "integer"
+                },
                 "project_name": {
                     "type": "string"
                 }
