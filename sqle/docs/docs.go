@@ -11402,9 +11402,6 @@ var doc = `{
         "v1.ProjectTipResV1": {
             "type": "object",
             "properties": {
-                "count_of_unfinished_workflows_related_to_current_user": {
-                    "type": "integer"
-                },
                 "project_name": {
                     "type": "string"
                 }
@@ -12188,6 +12185,9 @@ var doc = `{
             "type": "object",
             "properties": {
                 "email": {
+                    "type": "string"
+                },
+                "phone": {
                     "type": "string"
                 },
                 "wechat_id": {
