@@ -384,6 +384,7 @@ func GetCurrentUser(c echo.Context) error {
 type UpdateCurrentUserReqV1 struct {
 	Email    *string `json:"email"`
 	WeChatID *string `json:"wechat_id" example:"UserID"`
+	Phone    *string `json:"phone" form:"phone"`
 }
 
 // @Summary 更新个人信息
@@ -397,7 +398,7 @@ type UpdateCurrentUserReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/user [patch]
 func UpdateCurrentUser(c echo.Context) error {
-	req := new(UpdateUserReqV1)
+	req := new(UpdateCurrentUserReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
