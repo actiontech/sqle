@@ -31,6 +31,7 @@ type WorkflowStatisticsResV1 struct {
 // @Id getDashboardV1
 // @Tags dashboard
 // @Security ApiKeyAuth
+// @Param filter_project_name query string false "filter project name"
 // @Produce json
 // @Success 200 {object} v1.GetDashboardResV1
 // @router /v1/dashboard [get]

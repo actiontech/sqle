@@ -227,7 +227,8 @@ type GetProjectTipsResV1 struct {
 }
 
 type ProjectTipResV1 struct {
-	Name string `json:"project_name"`
+	Name                                           string `json:"project_name"`
+	CountOfUnfinishedWorkflowsRelatedToCurrentUser int    `json:"count_of_unfinished_workflows_related_to_current_user"`
 }
 
 // GetProjectTipsV1
