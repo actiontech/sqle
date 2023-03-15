@@ -179,6 +179,16 @@ const (
 	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
+var WorkflowStatus = map[string]string{
+	WorkflowStatusWaitForAudit:     "待审核",
+	WorkflowStatusWaitForExecution: "待上线",
+	WorkflowStatusReject:           "已驳回",
+	WorkflowStatusCancel:           "已关闭",
+	WorkflowStatusExecuting:        "正在上线",
+	WorkflowStatusExecFailed:       "上线失败",
+	WorkflowStatusFinish:           "上线成功",
+}
+
 type WorkflowRecord struct {
 	Model
 	CurrentWorkflowStepId uint
