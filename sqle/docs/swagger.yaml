@@ -2475,6 +2475,8 @@ definitions:
     type: object
   v1.ProjectTipResV1:
     properties:
+      count_of_unfinished_workflows_related_to_current_user:
+        type: integer
       project_name:
         type: string
     type: object
@@ -4458,6 +4460,11 @@ paths:
     get:
       description: get dashboard info
       operationId: getDashboardV1
+      parameters:
+      - description: filter project name
+        in: query
+        name: filter_project_name
+        type: string
       produces:
       - application/json
       responses:

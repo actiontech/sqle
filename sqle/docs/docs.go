@@ -834,6 +834,14 @@ var doc = `{
                 ],
                 "summary": "获取 dashboard 信息",
                 "operationId": "getDashboardV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter project name",
+                        "name": "filter_project_name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -11337,6 +11345,9 @@ var doc = `{
         "v1.ProjectTipResV1": {
             "type": "object",
             "properties": {
+                "count_of_unfinished_workflows_related_to_current_user": {
+                    "type": "integer"
+                },
                 "project_name": {
                     "type": "string"
                 }
