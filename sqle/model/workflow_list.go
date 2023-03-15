@@ -178,6 +178,26 @@ func (s *Storage) GetWorkflowTotalByProjectName(projectName string) (uint64, err
 	return s.GetWorkflowCountByReq(data)
 }
 
+var projectWorkflowCountTpl = `
+SELECT p.name AS project_name, COUNT(DISTINCT w.id) AS workflow_count
+{{- template "body" . -}}
+GROUP BY p.name
+`
+
+type ProjectWorkflowCount struct {
+	ProjectName   string `json:"project_name"`
+	WorkflowCount int    `json:"workflow_count"`
+}
+
+func (s *Storage) GetWorkflowCountForDashboardProjectTipsByReq(data map[string]interface{}) (
+	result []*ProjectWorkflowCount, err error) {
+	err = s.getListResult(workflowsQueryBodyTpl, projectWorkflowCountTpl, data, &result)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 type WorkflowTemplateDetail struct {
 	Name string `json:"workflow_template_name"`
 	Desc string `json:"desc"`
