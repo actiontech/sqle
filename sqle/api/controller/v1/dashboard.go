@@ -114,3 +114,26 @@ func Dashboard(c echo.Context) error {
 		},
 	})
 }
+
+type DashboardProjectTipV1 struct {
+	Name                    string `json:"project_name"`
+	UnfinishedWorkflowCount int    `json:"unfinished_workflow_count"` // 只统计与当前用户相关的未完成工单
+}
+
+type GetDashboardProjectTipsResV1 struct {
+	controller.BaseRes
+	Data []*DashboardProjectTipV1 `json:"data"`
+}
+
+// DashboardProjectTipsV1
+// @Summary 获取dashboard项目提示列表
+// @Description get dashboard project tips
+// @Tags dashboard
+// @Id getDashboardProjectTipsV1
+// @Security ApiKeyAuth
+// @Produce json
+// @Success 200 {object} v1.GetDashboardProjectTipsResV1
+// @router /v1/dashboard/project_tips [get]
+func DashboardProjectTipsV1(c echo.Context) error {
+	return nil
+}

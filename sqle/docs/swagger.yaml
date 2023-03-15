@@ -646,6 +646,14 @@ definitions:
       workflow_subject:
         type: string
     type: object
+  v1.DashboardProjectTipV1:
+    properties:
+      project_name:
+        type: string
+      unfinished_workflow_count:
+        description: 只统计与当前用户相关的未完成工单
+        type: integer
+    type: object
   v1.DashboardResV1:
     properties:
       workflow_statistics:
@@ -923,6 +931,19 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetDashboardProjectTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DashboardProjectTipV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetDashboardResV1:
     properties:
@@ -4475,6 +4496,22 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取 dashboard 信息
+      tags:
+      - dashboard
+  /v1/dashboard/project_tips:
+    get:
+      description: get dashboard project tips
+      operationId: getDashboardProjectTipsV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDashboardProjectTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取dashboard项目提示列表
       tags:
       - dashboard
   /v1/instance_additional_metas:
