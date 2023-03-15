@@ -9,14 +9,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-type rawSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, rawSQL string, nextSQL []string) (string, error)
+type RawSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, rawSQL string, nextSQL []string) (string, error)
 
-type astSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, astSQL interface{}, nextSQL []string) (string, error)
+type AstSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, astSQL interface{}, nextSQL []string) (string, error)
 
 type AuditHandler struct {
 	SqlParserFn      func(string) (interface{}, error)
-	RuleToRawHandler map[string] /*rule name*/ rawSQLRuleHandler
-	RuleToASTHandler map[string] /*rule name*/ astSQLRuleHandler
+	RuleToRawHandler map[string] /*rule name*/ RawSQLRuleHandler
+	RuleToASTHandler map[string] /*rule name*/ AstSQLRuleHandler
 }
 
 func (a *AuditHandler) Audit(ctx context.Context, rules []*driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
@@ -73,8 +73,8 @@ func NewDriverBuilder(dt Dialector) *DriverBuilder {
 			DatabaseAdditionalParams: dt.DatabaseAdditionalParam(),
 		},
 		ah: &AuditHandler{
-			RuleToRawHandler: make(map[string]rawSQLRuleHandler),
-			RuleToASTHandler: make(map[string]astSQLRuleHandler),
+			RuleToRawHandler: make(map[string]RawSQLRuleHandler),
+			RuleToASTHandler: make(map[string]AstSQLRuleHandler),
 		},
 	}
 	return b
@@ -107,12 +107,12 @@ func (b *DriverBuilder) Serve(fn func(hclog.Logger, Dialector, *AuditHandler, *d
 	driverV2.ServePlugin(*b.Meta, newDriver)
 }
 
-func (a *DriverBuilder) AddRule(r *driverV2.Rule, h rawSQLRuleHandler) {
+func (a *DriverBuilder) AddRule(r *driverV2.Rule, h RawSQLRuleHandler) {
 	a.Meta.Rules = append(a.Meta.Rules, r)
 	a.ah.RuleToRawHandler[r.Name] = h
 }
 
-func (a *DriverBuilder) AddRuleWithSQLParser(r *driverV2.Rule, h astSQLRuleHandler) {
+func (a *DriverBuilder) AddRuleWithSQLParser(r *driverV2.Rule, h AstSQLRuleHandler) {
 	a.Meta.Rules = append(a.Meta.Rules, r)
 	a.ah.RuleToASTHandler[r.Name] = h
 }
