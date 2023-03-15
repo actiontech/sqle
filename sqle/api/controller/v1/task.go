@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/common"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -785,7 +784,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	plugin, err := common.NewDriverManagerWithoutCfg(l, driverV2.DriverTypeMySQL)
+
+	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
+	dbType := instances[0].DbType
+	plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
