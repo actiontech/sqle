@@ -184,14 +184,17 @@ func (rs *AuditResults) Message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResults) Add(level RuleLevel, message string, args ...interface{}) {
-	if level == "" || message == "" {
+func (rs *AuditResults) Add(level RuleLevel, messagePattern string, args ...interface{}) {
+	if level == "" || messagePattern == "" {
 		return
 	}
-
+	message := messagePattern
+	if len(args) > 0 {
+		message = fmt.Sprintf(message, args...)
+	}
 	rs.Results = append(rs.Results, &AuditResult{
 		Level:   level,
-		Message: fmt.Sprintf(message, args...),
+		Message: message,
 	})
 	rs.SortByLevel()
 }
