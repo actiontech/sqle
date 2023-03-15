@@ -26,6 +26,10 @@ type WorkflowStatisticsResV1 struct {
 	NeedMeExecuteNumber         uint64 `json:"need_me_to_execute_workflow_number"`
 }
 
+type GetDashboardReqV1 struct {
+	FilterProjectName string `json:"filter_project_name" query:"filter_project_name" form:"filter_project_name"`
+}
+
 // @Summary 获取 dashboard 信息
 // @Description get dashboard info
 // @Id getDashboardV1
@@ -36,6 +40,11 @@ type WorkflowStatisticsResV1 struct {
 // @Success 200 {object} v1.GetDashboardResV1
 // @router /v1/dashboard [get]
 func Dashboard(c echo.Context) error {
+	req := new(GetDashboardReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -43,6 +52,7 @@ func Dashboard(c echo.Context) error {
 	s := model.GetStorage()
 
 	createdNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":     req.FilterProjectName,
 		"filter_create_user_name": user.Name,
 		"filter_status":           model.WorkflowStatusWaitForAudit,
 		"check_user_can_access":   false,
@@ -52,6 +62,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	rejectedNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":     req.FilterProjectName,
 		"filter_create_user_name": user.Name,
 		"filter_status":           model.WorkflowStatusReject,
 		"check_user_can_access":   false,
@@ -61,6 +72,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedReviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":      req.FilterProjectName,
 		"filter_status":            model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
 		"filter_create_user_name":  user.Name,
@@ -71,6 +83,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedExecuteNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":      req.FilterProjectName,
 		"filter_status":            model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
 		"filter_create_user_name":  user.Name,
@@ -81,6 +94,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	reviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":                    req.FilterProjectName,
 		"filter_status":                          model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
 		"filter_current_step_assignee_user_name": user.Name,
@@ -91,6 +105,7 @@ func Dashboard(c echo.Context) error {
 	}
 
 	executeNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
+		"filter_project_name":                    req.FilterProjectName,
 		"filter_status":                          model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
 		"filter_current_step_assignee_user_name": user.Name,
@@ -100,7 +115,7 @@ func Dashboard(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	workflowStatisticsRes := &WorkflowStatisticsResV1{
-		MyWorkflowNumber:            createdNumber,
+		MyWorkflowNumber:            createdNumber, // todo 这个返回字段没有再用到了，可以在V2移除
 		MyRejectedWorkflowNumber:    rejectedNumber,
 		MyNeedReviewWorkflowNumber:  myNeedReviewNumber,
 		MyNeedExecuteWorkflowNumber: myNeedExecuteNumber,
