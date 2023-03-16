@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -187,15 +188,23 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	summingUpWorkflowCount(createdByMeWorkflowCounts)
 	summingUpWorkflowCount(needMeHandleWorkflowCounts)
 
-	data := make([]*DashboardProjectTipV1, len(projectToWorkflowCount))
+	// sort by project name
 	i := 0
-	for pName, count := range projectToWorkflowCount {
-		data[i] = &DashboardProjectTipV1{
-			Name:                    pName,
-			UnfinishedWorkflowCount: count,
-		}
+	projectNames := make([]string, len(projectToWorkflowCount))
+	for pName, _ := range projectToWorkflowCount {
+		projectNames[i] = pName
 		i++
 	}
+	sort.Strings(projectNames)
+
+	data := make([]*DashboardProjectTipV1, len(projectNames))
+	for j, pName := range projectNames {
+		data[j] = &DashboardProjectTipV1{
+			Name:                    pName,
+			UnfinishedWorkflowCount: projectToWorkflowCount[pName],
+		}
+	}
+
 	return c.JSON(http.StatusOK, &GetDashboardProjectTipsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
