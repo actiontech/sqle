@@ -191,7 +191,7 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	// sort by project name
 	i := 0
 	projectNames := make([]string, len(projectToWorkflowCount))
-	for pName, _ := range projectToWorkflowCount {
+	for pName := range projectToWorkflowCount {
 		projectNames[i] = pName
 		i++
 	}
