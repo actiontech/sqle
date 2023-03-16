@@ -118,7 +118,7 @@ AND curr_wst.type = :filter_current_step_type
 {{- end }}
 
 {{- if .filter_status }}
-AND wr.status = :filter_status
+AND wr.status IN (:filter_status)
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
@@ -191,7 +191,7 @@ type ProjectWorkflowCount struct {
 
 func (s *Storage) GetWorkflowCountForDashboardProjectTipsByReq(data map[string]interface{}) (
 	result []*ProjectWorkflowCount, err error) {
-	err = s.getListResult(workflowsQueryBodyTpl, projectWorkflowCountTpl, data, &result)
+	err = s.getTemplateQueryResult(data, &result, workflowsQueryBodyTpl, projectWorkflowCountTpl)
 	if err != nil {
 		return result, err
 	}

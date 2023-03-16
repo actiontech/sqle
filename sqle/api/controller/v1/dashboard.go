@@ -156,38 +156,17 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	myRejectedWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
+	createdByMeWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
 		"filter_create_user_name": user.Name,
-		"filter_status":           model.WorkflowStatusReject,
+		"filter_status":           []string{model.WorkflowStatusReject, model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution},
 		"check_user_can_access":   false,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	myNeedReviewWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
-		"filter_status":            model.WorkflowStatusWaitForAudit,
-		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
-		"filter_create_user_name":  user.Name,
-		"check_user_can_access":    false,
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	myNeedExecuteWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
-		"filter_status":            model.WorkflowStatusWaitForExecution,
-		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
-		"filter_create_user_name":  user.Name,
-		"check_user_can_access":    false,
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	needMeReviewWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
-		"filter_status":                          model.WorkflowStatusWaitForAudit,
-		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
+	needMeHandleWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
+		"filter_status":                          []string{model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution},
 		"filter_current_step_assignee_user_name": user.Name,
 		"check_user_can_access":                  false,
 	})
@@ -195,14 +174,7 @@ func DashboardProjectTipsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	needMeExecuteWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
-		"filter_status":                          model.WorkflowStatusWaitForExecution,
-		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
-		"filter_current_step_assignee_user_name": user.Name,
-		"check_user_can_access":                  false,
-	})
-
-	projectToWorkflowCount := make(map[string]int, 0)
+	projectToWorkflowCount := make(map[string]int)
 	summingUpWorkflowCount := func(records []*model.ProjectWorkflowCount) {
 		for _, record := range records {
 			if workflowCount, ok := projectToWorkflowCount[record.ProjectName]; ok {
@@ -212,11 +184,8 @@ func DashboardProjectTipsV1(c echo.Context) error {
 			}
 		}
 	}
-	summingUpWorkflowCount(myRejectedWorkflowCounts)
-	summingUpWorkflowCount(myNeedReviewWorkflowCounts)
-	summingUpWorkflowCount(myNeedExecuteWorkflowCounts)
-	summingUpWorkflowCount(needMeReviewWorkflowCounts)
-	summingUpWorkflowCount(needMeExecuteWorkflowCounts)
+	summingUpWorkflowCount(createdByMeWorkflowCounts)
+	summingUpWorkflowCount(needMeHandleWorkflowCounts)
 
 	data := make([]*DashboardProjectTipV1, len(projectToWorkflowCount))
 	i := 0
