@@ -188,25 +188,39 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	summingUpWorkflowCount(createdByMeWorkflowCounts)
 	summingUpWorkflowCount(needMeHandleWorkflowCounts)
 
-	// sort by project name
+	// sort by unfinished workflow count, project name
 	i := 0
-	projectNames := make([]string, len(projectToWorkflowCount))
-	for pName := range projectToWorkflowCount {
-		projectNames[i] = pName
+	projectTips := make(dashboardProjectTipSort, len(projectToWorkflowCount))
+	for pName, count := range projectToWorkflowCount {
+		projectTips[i] = &DashboardProjectTipV1{
+			Name:                    pName,
+			UnfinishedWorkflowCount: count,
+		}
 		i++
 	}
-	sort.Strings(projectNames)
+	sort.Sort(projectTips)
 
-	data := make([]*DashboardProjectTipV1, len(projectNames))
-	for j, pName := range projectNames {
-		data[j] = &DashboardProjectTipV1{
-			Name:                    pName,
-			UnfinishedWorkflowCount: projectToWorkflowCount[pName],
-		}
+	data := make([]*DashboardProjectTipV1, len(projectTips))
+	for j, projectTip := range projectTips {
+		data[j] = projectTip
 	}
 
 	return c.JSON(http.StatusOK, &GetDashboardProjectTipsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
 	})
+}
+
+type dashboardProjectTipSort []*DashboardProjectTipV1
+
+func (m dashboardProjectTipSort) Len() int {
+	return len(m)
+}
+
+func (m dashboardProjectTipSort) Less(i, j int) bool {
+	return m[i].UnfinishedWorkflowCount < m[j].UnfinishedWorkflowCount
+}
+
+func (m dashboardProjectTipSort) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
 }
