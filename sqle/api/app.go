@@ -295,6 +295,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)
+	v1Router.GET("/dashboard/project_tips", v1.DashboardProjectTipsV1)
 
 	// configurations
 	v1Router.GET("/configurations/drivers", v1.GetDrivers)
