@@ -99,7 +99,7 @@ func exportWorkflowV1(c echo.Context) error {
 	}
 
 	for _, id := range idList {
-		workflow, exist, err := s.GetWorkflowDetailById(id)
+		workflow, exist, err := s.GetWorkflowExportById(id)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -118,7 +118,9 @@ func exportWorkflowV1(c echo.Context) error {
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 				workflow.CreateUser.Name,
 				model.WorkflowStatus[workflow.Record.Status],
-				getUserNameList(workflow.CurrentAssigneeUser()),
+				instanceRecord.ExecuteUserName(),
+				instanceRecord.Task.TaskExecEndAt(),
+				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
 			}
 			exportWorkflowRecord = append(exportWorkflowRecord, getAuditAndExecuteList(workflow, instanceRecord)...)
 
@@ -156,7 +158,7 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	auditAndExecuteList = append(auditAndExecuteList, getAuditList(workflow)...)
 	// 上线节点
 	auditAndExecuteList = append(auditAndExecuteList,
-		getUserNameList(workflow.FinalStep().Assignees),
+		instanceRecord.ExecuteUserName(),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
 		executeStateMap[instanceRecord.Task.Status],
@@ -164,13 +166,14 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	return auditAndExecuteList
 }
 
-// 获取待操作人
-func getUserNameList(users []*model.User) string {
-	var names []string
-	for _, user := range users {
-		names = append(names, user.Name)
+// 获取上线sql
+func getExecuteSqlList(executeSQLList []*model.ExecuteSQL) string {
+	var stringBuilder strings.Builder
+	for _, executeSQL := range executeSQLList {
+		stringBuilder.WriteString(executeSQL.Content)
+		stringBuilder.WriteString("\n")
 	}
-	return strings.Join(names, ",")
+	return stringBuilder.String()
 }
 
 func getAuditList(workflow *model.Workflow) (workflowList []string) {
@@ -178,7 +181,7 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
 		i2 := i * stepSize
-		auditNodeList[i2] = getUserNameList(step.Assignees)
+		auditNodeList[i2] = step.OperationUserName()
 		auditNodeList[i2+1] = step.OperationTime()
 		auditNodeList[i2+2] = workflowStepStateMap[step.State]
 	}
