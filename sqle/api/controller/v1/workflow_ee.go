@@ -180,10 +180,10 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	auditNodeList := make([]string, 12) // 4个审核节点,每个节点有3个字段,最大3*4个字段
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
-		i2 := i * stepSize
-		auditNodeList[i2] = step.OperationUserName()
-		auditNodeList[i2+1] = step.OperationTime()
-		auditNodeList[i2+2] = workflowStepStateMap[step.State]
+		stepIndex := i * stepSize
+		auditNodeList[stepIndex] = step.OperationUserName()
+		auditNodeList[stepIndex+1] = step.OperationTime()
+		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
 	}
 	return auditNodeList
 }
