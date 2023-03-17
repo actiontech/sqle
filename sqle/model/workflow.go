@@ -213,6 +213,14 @@ type WorkflowInstanceRecord struct {
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
+	User     *User     `gorm:"foreignkey:ExecutionUserId"`
+}
+
+func (wir *WorkflowInstanceRecord) ExecuteUserName() string {
+	if wir.User == nil {
+		return ""
+	}
+	return wir.User.Name
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
@@ -245,6 +253,13 @@ func (ws *WorkflowStep) OperationTime() string {
 		return ""
 	}
 	return ws.OperateAt.Format("2006-01-02 15:04:05")
+}
+
+func (ws *WorkflowStep) OperationUserName() string {
+	if ws.OperationUser == nil {
+		return ""
+	}
+	return ws.OperationUser.Name
 }
 
 func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User, allExecutor []*User) []*WorkflowStep {
@@ -723,6 +738,50 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 		}
 	}
 	return workflow, true, nil
+}
+
+func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
+	w := new(Workflow)
+	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+		Preload("Record").Where("id = ?", id).First(&w).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+
+	if w.Record == nil {
+		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
+	}
+
+	instanceRecordList := make([]*WorkflowInstanceRecord, 0)
+	err = s.db.Preload("Instance").Preload("Task").Preload("User").
+		Where("workflow_record_id = ?", id).
+		Find(&instanceRecordList).Error
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range instanceRecordList {
+		err := s.db.Model(&ExecuteSQL{}).Where("task_id = ?", instanceRecord.Task.ID).Find(&instanceRecord.Task.ExecuteSQLs).Error
+		if err != nil {
+			return nil, false, errors.New(errors.ConnectStorageError, err)
+		}
+	}
+
+	w.Record.InstanceRecords = instanceRecordList
+
+	steps := make([]*WorkflowStep, 0)
+	err = s.db.Where("workflow_record_id = ?", w.Record.ID).
+		Preload("OperationUser").
+		Find(&steps).Error
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	w.Record.Steps = steps
+
+	return w, true, nil
 }
 
 func (s *Storage) GetWorkflowDetailBySubject(projectName, workflowName string) (*Workflow, bool, error) {
