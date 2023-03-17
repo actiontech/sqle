@@ -118,7 +118,7 @@ AND curr_wst.type = :filter_current_step_type
 {{- end }}
 
 {{- if .filter_status }}
-AND wr.status = :filter_status
+AND wr.status IN (:filter_status)
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
@@ -176,6 +176,26 @@ func (s *Storage) GetWorkflowTotalByProjectName(projectName string) (uint64, err
 		"filter_project_name": projectName,
 	}
 	return s.GetWorkflowCountByReq(data)
+}
+
+var projectWorkflowCountTpl = `
+SELECT p.name AS project_name, COUNT(DISTINCT w.id) AS workflow_count
+{{- template "body" . -}}
+GROUP BY p.name
+`
+
+type ProjectWorkflowCount struct {
+	ProjectName   string `json:"project_name"`
+	WorkflowCount int    `json:"workflow_count"`
+}
+
+func (s *Storage) GetWorkflowCountForDashboardProjectTipsByReq(data map[string]interface{}) (
+	result []*ProjectWorkflowCount, err error) {
+	err = s.getTemplateQueryResult(data, &result, workflowsQueryBodyTpl, projectWorkflowCountTpl)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 type WorkflowTemplateDetail struct {
