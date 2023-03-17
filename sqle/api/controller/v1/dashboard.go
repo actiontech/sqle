@@ -157,6 +157,10 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	allProjectsByCurrentUser, err := s.GetProjectTips(controller.GetUserName(c))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	createdByMeWorkflowCounts, err := s.GetWorkflowCountForDashboardProjectTipsByReq(map[string]interface{}{
 		"filter_create_user_name": user.Name,
 		"filter_status":           []string{model.WorkflowStatusReject, model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution},
@@ -176,8 +180,11 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	}
 
 	projectToWorkflowCount := make(map[string]int)
-	summingUpWorkflowCount := func(records []*model.ProjectWorkflowCount) {
+	summingUpWorkflowCount := func(projectName string, records []*model.ProjectWorkflowCount) {
 		for _, record := range records {
+			if record.ProjectName != projectName {
+				continue
+			}
 			if workflowCount, ok := projectToWorkflowCount[record.ProjectName]; ok {
 				projectToWorkflowCount[record.ProjectName] = workflowCount + record.WorkflowCount
 			} else {
@@ -185,8 +192,12 @@ func DashboardProjectTipsV1(c echo.Context) error {
 			}
 		}
 	}
-	summingUpWorkflowCount(createdByMeWorkflowCounts)
-	summingUpWorkflowCount(needMeHandleWorkflowCounts)
+
+	for _, p := range allProjectsByCurrentUser {
+		projectToWorkflowCount[p.Name] = 0
+		summingUpWorkflowCount(p.Name, createdByMeWorkflowCounts)
+		summingUpWorkflowCount(p.Name, needMeHandleWorkflowCounts)
+	}
 
 	// sort by unfinished workflow count, project name
 	i := 0
