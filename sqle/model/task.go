@@ -307,19 +307,9 @@ func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
 	}).Error
 }
 
-func (s *Storage) UpdateExecuteSQLStatusByTaskId(task *Task, status string) error {
-	tx := s.db.Begin()
-	err := updateExecuteSQLStatusByTaskId(tx, task, status)
-	if err != nil {
-		tx.Rollback()
-		return errors.ConnectStorageErrWrapper(err)
-	}
-	return tx.Commit().Error
-}
-
-func updateExecuteSQLStatusByTaskId(tx *gorm.DB, task *Task, status string) error {
+func updateExecuteSQLStatusByTaskId(tx *gorm.DB, taskId uint, status string) error {
 	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=?"
-	return tx.Exec(query, status, task.ID).Error
+	return tx.Exec(query, status, taskId).Error
 }
 
 func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string) error {
