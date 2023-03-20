@@ -11,6 +11,8 @@ type Server struct {
 }
 
 type SqleConfig struct {
+	ServerId           string `yaml:"server_id"`
+	EnableClusterMode  bool   `yaml:"enable_cluster_mode"`
 	SqleServerPort     int    `yaml:"server_port"`
 	EnableHttps        bool   `yaml:"enable_https"`
 	CertFilePath       string `yaml:"cert_file_path"`
