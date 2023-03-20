@@ -11417,6 +11417,9 @@
         "v1.ProjectListItem": {
             "type": "object",
             "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
                 "create_time": {
                     "type": "string"
                 },
@@ -11428,9 +11431,6 @@
                 },
                 "name": {
                     "type": "string"
-                },
-                "suspended": {
-                    "type": "boolean"
                 }
             }
         },

@@ -2467,6 +2467,8 @@ definitions:
     type: object
   v1.ProjectListItem:
     properties:
+      archived:
+        type: boolean
       create_time:
         type: string
       create_user_name:
@@ -2475,8 +2477,6 @@ definitions:
         type: string
       name:
         type: string
-      suspended:
-        type: boolean
     type: object
   v1.ProjectRuleTemplateInstance:
     properties:

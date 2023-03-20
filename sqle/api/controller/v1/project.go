@@ -34,7 +34,7 @@ type ProjectListItem struct {
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
 	CreateTime     *time.Time `json:"create_time"`
-	Suspended      bool       `json:"suspended"`
+	Archived       bool       `json:"archived"`
 }
 
 // GetProjectListV1

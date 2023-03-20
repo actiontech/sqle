@@ -11433,6 +11433,9 @@ var doc = `{
         "v1.ProjectListItem": {
             "type": "object",
             "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
                 "create_time": {
                     "type": "string"
                 },
@@ -11444,9 +11447,6 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "suspended": {
-                    "type": "boolean"
                 }
             }
         },
