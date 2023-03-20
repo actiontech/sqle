@@ -136,12 +136,10 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigs []config.PluginCo
 	// register plugin
 	for _, p := range plugins {
 		cmd := exec.Command(filepath.Join(pluginDir, p.Name()))
-		if pluginConfigs != nil {
-			for _, pluginConfig := range pluginConfigs {
-				if p.Name() == pluginConfig.PluginName {
-					cmd = exec.Command("sh", "-c", pluginConfig.CMD)
-					break
-				}
+		for _, pluginConfig := range pluginConfigs {
+			if p.Name() == pluginConfig.PluginName {
+				cmd = exec.Command("sh", "-c", pluginConfig.CMD)
+				break
 			}
 		}
 
