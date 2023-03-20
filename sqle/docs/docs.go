@@ -1395,6 +1395,42 @@ var doc = `{
                     }
                 }
             },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "suspend project",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "project"
+                ],
+                "summary": "暂停项目",
+                "operationId": "suspendProjectV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -11368,6 +11404,9 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "suspended": {
+                    "type": "boolean"
                 }
             }
         },

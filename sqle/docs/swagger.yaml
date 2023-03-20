@@ -2475,6 +2475,8 @@ definitions:
         type: string
       name:
         type: string
+      suspended:
+        type: boolean
     type: object
   v1.ProjectRuleTemplateInstance:
     properties:
@@ -4890,6 +4892,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新项目
+      tags:
+      - project
+    post:
+      consumes:
+      - application/json
+      description: suspend project
+      operationId: suspendProjectV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 暂停项目
       tags:
       - project
   /v1/projects/{project_name}/audit_plans:

@@ -13,8 +13,8 @@ import (
 )
 
 var errCommunityEditionDoesNotSupportCreateProject = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support create project"))
-
 var errCommunityEditionDoesNotSupportDeleteProject = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support delete project"))
+var errCommunityEditionDoesNotSupportSuspendProject = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support suspend project"))
 
 func createProjectV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportCreateProject)
@@ -22,4 +22,8 @@ func createProjectV1(c echo.Context) error {
 
 func deleteProjectV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportDeleteProject)
+}
+
+func suspendProjectV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportSuspendProject)
 }
