@@ -2456,6 +2456,8 @@ definitions:
     type: object
   v1.ProjectDetailItem:
     properties:
+      archived:
+        type: boolean
       create_time:
         type: string
       create_user_name:
