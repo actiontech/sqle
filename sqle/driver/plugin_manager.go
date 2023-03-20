@@ -139,7 +139,7 @@ func (pm *pluginManager) Start(pluginDir string, config *config.Config) error {
 		if config.Server.PluginConfig != nil {
 			for _, pluginConfig := range config.Server.PluginConfig {
 				if p.Name() == pluginConfig.PluginName {
-					cmd = exec.Command("/bin/bash", "-c", pluginConfig.CMD)
+					cmd = exec.Command("sh", "-c", pluginConfig.CMD)
 					break
 				}
 			}
