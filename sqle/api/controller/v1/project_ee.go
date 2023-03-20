@@ -8,9 +8,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"github.com/labstack/echo/v4"
 )
@@ -65,32 +63,10 @@ func deleteProjectV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-
-	apIDs, err := s.GetAuditPlanIDsByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	err = s.RemoveProject(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	manager := auditplan.GetManager()
-
-	l := log.NewEntry()
-	failedIDs := []uint{}
-	for _, id := range apIDs {
-		err = manager.SyncTask(id)
-		if err != nil {
-			failedIDs = append(failedIDs, id)
-			l.Errorf("stop audit plan (id: %v) failed: %v", id, err)
-		}
-	}
-
-	if len(failedIDs) > 0 {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("some audit plan failed to stop, failed task ID: %v", failedIDs)))
-	}
-
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
