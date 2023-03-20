@@ -34,6 +34,7 @@ type ProjectListItem struct {
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
 	CreateTime     *time.Time `json:"create_time"`
+	Suspended      bool       `json:"suspended"`
 }
 
 // GetProjectListV1
@@ -276,4 +277,19 @@ func GetProjectTipsV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
 	})
+}
+
+// SuspendProjectV1
+// @Summary 暂停项目
+// @Description suspend project
+// @Accept json
+// @Produce json
+// @Tags project
+// @Id suspendProjectV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/ [post]
+func SuspendProjectV1(c echo.Context) error {
+	return suspendProjectV1(c)
 }
