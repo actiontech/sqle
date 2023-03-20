@@ -338,8 +338,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 // customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
@@ -390,8 +389,7 @@ func DeleteAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type UpdateAuditPlanReqV1 struct {
@@ -462,8 +460,7 @@ func UpdateAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.SyncTask(ap.ID))
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 type GetAuditPlansReqV1 struct {
@@ -814,8 +811,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, false))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -853,9 +849,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	manager := auditplan.GetManager()
-	return controller.JSONBaseErrorReq(c, manager.UploadSQLs(ap.ID, sqls, true))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, true))
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
@@ -943,8 +937,7 @@ func TriggerAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	manager := auditplan.GetManager()
-	report, err := manager.Audit(ap.ID)
+	report, err := auditplan.Audit(log.NewEntry(), ap)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1268,8 +1261,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		"offset": offset,
 	}
 
-	manager := auditplan.GetManager()
-	head, rows, count, err := manager.GetSQLs(ap.ID, data)
+	head, rows, count, err := auditplan.GetSQLs(log.NewEntry(), ap, data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
