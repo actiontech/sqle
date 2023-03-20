@@ -34,6 +34,7 @@ type ProjectListItem struct {
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
 	CreateTime     *time.Time `json:"create_time"`
+	Archived       bool       `json:"archived"`
 }
 
 // GetProjectListV1
@@ -276,4 +277,34 @@ func GetProjectTipsV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    data,
 	})
+}
+
+// ArchiveProjectV1
+// @Summary 归档项目
+// @Description archive project
+// @Accept json
+// @Produce json
+// @Tags project
+// @Id archiveProjectV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/archive [post]
+func ArchiveProjectV1(c echo.Context) error {
+	return archiveProjectV1(c)
+}
+
+// UnarchiveProjectV1
+// @Summary 取消归档项目
+// @Description archive project
+// @Accept json
+// @Produce json
+// @Tags project
+// @Id unarchiveProjectV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/unarchive [post]
+func UnarchiveProjectV1(c echo.Context) error {
+	return unarchiveProjectV1(c)
 }
