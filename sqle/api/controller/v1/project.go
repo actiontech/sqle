@@ -293,3 +293,18 @@ func GetProjectTipsV1(c echo.Context) error {
 func ArchiveProjectV1(c echo.Context) error {
 	return archiveProjectV1(c)
 }
+
+// UnarchiveProjectV1
+// @Summary 取消归档项目
+// @Description archive project
+// @Accept json
+// @Produce json
+// @Tags project
+// @Id unarchiveProjectV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/unarchive [post]
+func UnarchiveProjectV1(c echo.Context) error {
+	return unarchiveProjectV1(c)
+}
