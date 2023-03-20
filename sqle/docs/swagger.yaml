@@ -2467,6 +2467,8 @@ definitions:
     type: object
   v1.ProjectListItem:
     properties:
+      archived:
+        type: boolean
       create_time:
         type: string
       create_user_name:
@@ -4892,6 +4894,30 @@ paths:
       summary: 更新项目
       tags:
       - project
+  /v1/projects/{project_name}/archive:
+    post:
+      consumes:
+      - application/json
+      description: archive project
+      operationId: archiveProjectV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 归档项目
+      tags:
+      - project
   /v1/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
@@ -6499,6 +6525,30 @@ paths:
       summary: 创建Sql扫描任务并提交审核
       tags:
       - task
+  /v1/projects/{project_name}/unarchive:
+    post:
+      consumes:
+      - application/json
+      description: archive project
+      operationId: unarchiveProjectV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 取消归档项目
+      tags:
+      - project
   /v1/projects/{project_name}/workflow_template:
     get:
       description: get workflow template detail
