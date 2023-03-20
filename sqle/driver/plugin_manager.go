@@ -104,7 +104,7 @@ func getClientConfig(cmd *exec.Cmd) *goPlugin.ClientConfig {
 	}
 }
 
-func (pm *pluginManager) Start(pluginDir string, config *config.Config) error {
+func (pm *pluginManager) Start(pluginDir string, pluginConfigs []config.PluginConfig) error {
 	// register built-in plugin, now is MySQL.
 	for name, b := range BuiltInPluginProcessors {
 		err := pm.register(b)
@@ -136,8 +136,8 @@ func (pm *pluginManager) Start(pluginDir string, config *config.Config) error {
 	// register plugin
 	for _, p := range plugins {
 		cmd := exec.Command(filepath.Join(pluginDir, p.Name()))
-		if config.Server.PluginConfig != nil {
-			for _, pluginConfig := range config.Server.PluginConfig {
+		if pluginConfigs != nil {
+			for _, pluginConfig := range pluginConfigs {
 				if p.Name() == pluginConfig.PluginName {
 					cmd = exec.Command("sh", "-c", pluginConfig.CMD)
 					break
