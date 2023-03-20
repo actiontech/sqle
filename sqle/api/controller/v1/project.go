@@ -96,6 +96,7 @@ type ProjectDetailItem struct {
 	Desc           string     `json:"desc"`
 	CreateUserName string     `json:"create_user_name"`
 	CreateTime     *time.Time `json:"create_time"`
+	Archived       bool       `json:"archived"`
 }
 
 // GetProjectDetailV1
