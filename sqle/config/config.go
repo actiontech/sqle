@@ -8,6 +8,7 @@ type Server struct {
 	SqleCnf        SqleConfig     `yaml:"sqle_config"`
 	DBCnf          DatabaseConfig `yaml:"db_config"`
 	SQLQueryConfig SQLQueryConfig `yaml:"sql_query_config"`
+	PluginConfig   []PluginConfig `yaml:"plugin_config"`
 }
 
 type SqleConfig struct {
@@ -43,4 +44,9 @@ type SQLQueryConfig struct {
 	CloudBeaverPort          string `yaml:"cloud_beaver_port"`
 	CloudBeaverAdminUser     string `yaml:"cloud_beaver_admin_user"`
 	CloudBeaverAdminPassword string `yaml:"cloud_beaver_admin_password"`
+}
+
+type PluginConfig struct {
+	PluginName string `yaml:"plugin_name"`
+	CMD        string `yaml:"cmd"`
 }
