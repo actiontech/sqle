@@ -4,6 +4,7 @@ import (
 	"context"
 	sqlDriver "database/sql/driver"
 	"fmt"
+	"os/exec"
 	"sync"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -17,8 +18,8 @@ import (
 )
 
 type PluginProcessorV2 struct {
-	path   string
-	cfg    func(path string) *goPlugin.ClientConfig
+	cmd    *exec.Cmd
+	cfg    func(cmd *exec.Cmd) *goPlugin.ClientConfig
 	client *goPlugin.Client
 	meta   *driverV2.DriverMetas
 	sync.Mutex
@@ -30,7 +31,7 @@ func (d *PluginProcessorV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClie
 	d.Lock()
 	if d.client.Exited() {
 		l.Infof("plugin process is exited, restart it")
-		newClient := goPlugin.NewClient(d.cfg(d.path))
+		newClient := goPlugin.NewClient(d.cfg(d.cmd))
 		_, err := newClient.Client()
 		if err != nil {
 			d.Unlock()
