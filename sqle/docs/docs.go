@@ -11416,6 +11416,9 @@ var doc = `{
         "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
+                "archived": {
+                    "type": "boolean"
+                },
                 "create_time": {
                     "type": "string"
                 },
