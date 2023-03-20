@@ -3,6 +3,7 @@ package driverV1
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"sync"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
@@ -80,7 +81,7 @@ func checkAnalysisDriver(cp goPlugin.ClientProtocol) error {
 	return nil
 }
 
-func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string,
+func RegisterDrivers(c *goPlugin.Client, clientCfg func(cmd *exec.Cmd) *goPlugin.ClientConfig, cmd *exec.Cmd) (pluginName string,
 	rules []*Rule, additionalParams params.Params, enableQuery, enableSQLAnalysis bool, err error) {
 	cp, err := c.Client()
 	if err != nil {
@@ -165,7 +166,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 
 	handler := func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
 
-		client := goPlugin.NewClient(clientCfg(path))
+		client := goPlugin.NewClient(clientCfg(cmd))
 		gRPCClient, err := client.Client()
 		if err != nil {
 			return nil, err
