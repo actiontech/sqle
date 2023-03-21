@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/actiontech/sqle/sqle/config"
+
 	"github.com/actiontech/sqle/sqle/driver/common"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -89,20 +91,20 @@ func (pm *pluginManager) register(pp PluginProcessor) error {
 	return nil
 }
 
-func getClientConfig(path string) *goPlugin.ClientConfig {
+func getClientConfig(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
 		HandshakeConfig: driverV2.HandshakeConfig,
 		VersionedPlugins: map[int]goPlugin.PluginSet{
 			driverV1.ProtocolVersion: driverV1.PluginSet,
 			driverV2.ProtocolVersion: driverV2.PluginSet,
 		},
-		Cmd:              exec.Command(path),
+		Cmd:              exec.Command(cmdBase, cmdArgs...),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		GRPCDialOptions:  common.GRPCDialOptions,
 	}
 }
 
-func (pm *pluginManager) Start(pluginDir string) error {
+func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.PluginConfig) error {
 	// register built-in plugin, now is MySQL.
 	for name, b := range BuiltInPluginProcessors {
 		err := pm.register(b)
@@ -133,9 +135,18 @@ func (pm *pluginManager) Start(pluginDir string) error {
 
 	// register plugin
 	for _, p := range plugins {
-		path := filepath.Join(pluginDir, p.Name())
+		cmdBase := filepath.Join(pluginDir, p.Name())
+		cmdArgs := make([]string, 0)
 
-		client := goPlugin.NewClient(getClientConfig(path))
+		for _, pluginConfig := range pluginConfigList {
+			if p.Name() == pluginConfig.PluginName {
+				cmdBase = "sh"
+				cmdArgs = append(cmdArgs, "-c", pluginConfig.CMD)
+				break
+			}
+		}
+
+		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
 		_, err := client.Client()
 		if err != nil {
 			return err
@@ -144,16 +155,16 @@ func (pm *pluginManager) Start(pluginDir string) error {
 		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
 		case driverV1.ProtocolVersion:
-			pp = &PluginProcessorV1{cfg: getClientConfig, path: path, client: client}
+			pp = &PluginProcessorV1{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		case driverV2.ProtocolVersion:
-			pp = &PluginProcessorV2{cfg: getClientConfig, path: path, client: client}
+			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		}
 		if err := pm.register(pp); err != nil {
 			stopErr := pp.Stop()
 			if stopErr != nil {
-				log.NewEntry().Warnf("stop plugin %s failed, error: %v", path, stopErr)
+				log.NewEntry().Warnf("stop plugin %s failed, error: %v", p.Name(), stopErr)
 			}
-			return fmt.Errorf("unable to load plugin: %v, error: %v", path, err)
+			return fmt.Errorf("unable to load plugin: %v, error: %v", p.Name(), err)
 		}
 
 	}

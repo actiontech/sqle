@@ -80,8 +80,9 @@ func checkAnalysisDriver(cp goPlugin.ClientProtocol) error {
 	return nil
 }
 
-func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.ClientConfig, path string) (pluginName string,
-	rules []*Rule, additionalParams params.Params, enableQuery, enableSQLAnalysis bool, err error) {
+func RegisterDrivers(c *goPlugin.Client, clientCfg func(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig,
+	cmdBase string, cmdArgs []string) (pluginName string, rules []*Rule, additionalParams params.Params,
+	enableQuery, enableSQLAnalysis bool, err error) {
 	cp, err := c.Client()
 	if err != nil {
 		log.NewEntry().Errorf("test conn plugin failed: %v", err)
@@ -165,7 +166,7 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(path string) *goPlugin.C
 
 	handler := func(log *logrus.Entry, dbType string, config *Config) (DriverManager, error) {
 
-		client := goPlugin.NewClient(clientCfg(path))
+		client := goPlugin.NewClient(clientCfg(cmdBase, cmdArgs))
 		gRPCClient, err := client.Client()
 		if err != nil {
 			return nil, err

@@ -17,10 +17,11 @@ import (
 )
 
 type PluginProcessorV2 struct {
-	path   string
-	cfg    func(path string) *goPlugin.ClientConfig
-	client *goPlugin.Client
-	meta   *driverV2.DriverMetas
+	cfg     func(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig
+	cmdBase string
+	cmdArgs []string
+	client  *goPlugin.Client
+	meta    *driverV2.DriverMetas
 	sync.Mutex
 }
 
@@ -30,7 +31,7 @@ func (d *PluginProcessorV2) getDriverClient(l *logrus.Entry) (protoV2.DriverClie
 	d.Lock()
 	if d.client.Exited() {
 		l.Infof("plugin process is exited, restart it")
-		newClient := goPlugin.NewClient(d.cfg(d.path))
+		newClient := goPlugin.NewClient(d.cfg(d.cmdBase, d.cmdArgs))
 		_, err := newClient.Client()
 		if err != nil {
 			d.Unlock()
