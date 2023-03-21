@@ -2454,6 +2454,28 @@ definitions:
           type: string
         type: array
     type: object
+  v1.PersonaliseReqV1:
+    properties:
+      title:
+        type: string
+    type: object
+  v1.PersonaliseRespDataV1:
+    properties:
+      title:
+        type: string
+    type: object
+  v1.PersonaliseRespV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.PersonaliseRespDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.ProjectDetailItem:
     properties:
       archived:
@@ -3258,6 +3280,15 @@ definitions:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
         type: array
+    type: object
+  v1.UploadAvatarResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
     type: object
   v1.UserBindProjectResV1:
     properties:
@@ -4311,6 +4342,69 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetOauth2TipsResV1'
       summary: 获取 Oauth2 基本信息
+      tags:
+      - configuration
+  /v1/configurations/personalise:
+    get:
+      description: get personalise config
+      operationId: getPersonalise
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PersonaliseRespV1'
+      summary: 获取个性化设置
+      tags:
+      - configuration
+    post:
+      description: add personalise config
+      operationId: personalise
+      parameters:
+      - description: personalise req
+        in: body
+        name: conf
+        required: true
+        schema:
+          $ref: '#/definitions/v1.PersonaliseReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加个性化设置
+      tags:
+      - configuration
+  /v1/configurations/personalise/avatar:
+    get:
+      description: get avatar
+      operationId: getAvatar
+      responses:
+        "200":
+          description: get avatar
+          schema:
+            type: file
+      summary: 获取头像
+      tags:
+      - configuration
+    post:
+      description: upload avatar
+      operationId: uploadAvatar
+      parameters:
+      - description: avatar file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.UploadAvatarResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 上传头像
       tags:
       - configuration
   /v1/configurations/smtp:
