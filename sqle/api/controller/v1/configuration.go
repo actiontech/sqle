@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/actiontech/sqle/sqle/config"
+
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
@@ -919,7 +920,13 @@ func GetDrivers(c echo.Context) error {
 
 type GetSQLEInfoResV1 struct {
 	controller.BaseRes
+	Data GetSQLEInfoResDataV1 `json:"data"`
+}
+
+type GetSQLEInfoResDataV1 struct {
 	Version string `json:"version"`
+	LogoUrl string `json:"logo_url"`
+	Title   string `json:"title"`
 }
 
 // GetSQLEInfo get sqle basic info
@@ -932,7 +939,9 @@ type GetSQLEInfoResV1 struct {
 func GetSQLEInfo(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Version: config.Version,
+		Data: GetSQLEInfoResDataV1{
+			Version: config.Version,
+		},
 	})
 }
 
@@ -1110,31 +1119,36 @@ func GetSQLQueryConfiguration(c echo.Context) error {
 	})
 }
 
-type UploadAvatarResV1 struct {
+type UploadLogoResV1 struct {
 	controller.BaseRes
+	Data UploadLogoResDataV1 `json:"data"`
 }
 
-// UploadAvatar
-// @Summary 上传头像
-// @Description upload avatar
-// @Id uploadAvatar
+type UploadLogoResDataV1 struct {
+	LogoUrl string `json:"logo_url"`
+}
+
+// UploadLogo
+// @Summary 上传Logo
+// @Description upload logo
+// @Id uploadLogo
 // @Tags configuration
 // @Security ApiKeyAuth
-// @Param avatar formData file true "avatar file"
-// @Success 200 {object} v1.UploadAvatarResV1
-// @router /v1/configurations/personalise/avatar [post]
-func UploadAvatar(c echo.Context) error {
+// @Param logo formData file true "logo file"
+// @Success 200 {object} v1.UploadLogoResV1
+// @router /v1/configurations/personalise/logo [post]
+func UploadLogo(c echo.Context) error {
 	return nil
 }
 
-// GetAvatar
-// @Summary 获取头像
-// @Description get avatar
-// @Id getAvatar
+// GetLogo
+// @Summary 获取logo
+// @Description get logo
+// @Id getLogo
 // @Tags configuration
-// @Success 200 {file} file "get avatar"
-// @router /v1/configurations/personalise/avatar [get]
-func GetAvatar(c echo.Context) error {
+// @Success 200 {file} file "get logo"
+// @router /v1/static/logo [get]
+func GetLogo(c echo.Context) error {
 	return nil
 }
 
@@ -1142,35 +1156,15 @@ type PersonaliseReqV1 struct {
 	Title string `json:"title"`
 }
 
-// CreatePersonaliseConfig
-// @Summary 添加个性化设置
-// @Description add personalise config
+// UpdatePersonaliseConfig
+// @Summary 更新个性化设置
+// @Description update personalise config
 // @Id personalise
 // @Tags configuration
 // @Security ApiKeyAuth
 // @Param conf body v1.PersonaliseReqV1 true "personalise req"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/configurations/personalise [post]
-func CreatePersonaliseConfig(c echo.Context) error {
-	return nil
-}
-
-type PersonaliseRespV1 struct {
-	controller.BaseRes
-	Data PersonaliseRespDataV1 `json:"data"`
-}
-
-type PersonaliseRespDataV1 struct {
-	Title string `json:"title"`
-}
-
-// GetPersonaliseConfig
-// @Summary 获取个性化设置
-// @Description get personalise config
-// @Id getPersonalise
-// @Tags configuration
-// @Success 200 {object} v1.PersonaliseRespV1
-// @router /v1/configurations/personalise [get]
-func GetPersonaliseConfig(c echo.Context) error {
+// @router /v1/configurations/personalise [patch]
+func UpdatePersonaliseConfig(c echo.Context) error {
 	return nil
 }

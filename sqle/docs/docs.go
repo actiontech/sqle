@@ -548,33 +548,17 @@ var doc = `{
             }
         },
         "/v1/configurations/personalise": {
-            "get": {
-                "description": "get personalise config",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "获取个性化设置",
-                "operationId": "getPersonalise",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.PersonaliseRespV1"
-                        }
-                    }
-                }
-            },
-            "post": {
+            "patch": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "add personalise config",
+                "description": "update personalise config",
                 "tags": [
                     "configuration"
                 ],
-                "summary": "添加个性化设置",
+                "summary": "更新个性化设置",
                 "operationId": "personalise",
                 "parameters": [
                     {
@@ -597,40 +581,24 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/personalise/avatar": {
-            "get": {
-                "description": "get avatar",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "获取头像",
-                "operationId": "getAvatar",
-                "responses": {
-                    "200": {
-                        "description": "get avatar",
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                }
-            },
+        "/v1/configurations/personalise/logo": {
             "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "upload avatar",
+                "description": "upload logo",
                 "tags": [
                     "configuration"
                 ],
-                "summary": "上传头像",
-                "operationId": "uploadAvatar",
+                "summary": "上传Logo",
+                "operationId": "uploadLogo",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "avatar file",
-                        "name": "avatar",
+                        "description": "logo file",
+                        "name": "logo",
                         "in": "formData",
                         "required": true
                     }
@@ -639,7 +607,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.UploadAvatarResV1"
+                            "$ref": "#/definitions/v1.UploadLogoResV1"
                         }
                     }
                 }
@@ -5536,6 +5504,24 @@ var doc = `{
                 }
             }
         },
+        "/v1/static/logo": {
+            "get": {
+                "description": "get logo",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取logo",
+                "operationId": "getLogo",
+                "responses": {
+                    "200": {
+                        "description": "get logo",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -10189,6 +10175,20 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLEInfoResDataV1": {
+            "type": "object",
+            "properties": {
+                "logo_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.GetSQLEInfoResV1": {
             "type": "object",
             "properties": {
@@ -10196,12 +10196,13 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLEInfoResDataV1"
+                },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "version": {
-                    "type": "string"
                 }
             }
         },
@@ -11519,31 +11520,6 @@ var doc = `{
                 }
             }
         },
-        "v1.PersonaliseRespDataV1": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.PersonaliseRespV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.PersonaliseRespDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
@@ -12744,12 +12720,24 @@ var doc = `{
                 }
             }
         },
-        "v1.UploadAvatarResV1": {
+        "v1.UploadLogoResDataV1": {
+            "type": "object",
+            "properties": {
+                "logo_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UploadLogoResV1": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer",
                     "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.UploadLogoResDataV1"
                 },
                 "message": {
                     "type": "string",
