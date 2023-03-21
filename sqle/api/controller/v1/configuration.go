@@ -1153,7 +1153,7 @@ func GetLogo(c echo.Context) error {
 }
 
 type PersonaliseReqV1 struct {
-	Title string `json:"title"`
+	Title *string `json:"title"`
 }
 
 // UpdatePersonaliseConfig
