@@ -547,6 +547,72 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/personalise": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update personalise config",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "更新个性化设置",
+                "operationId": "personalise",
+                "parameters": [
+                    {
+                        "description": "personalise req",
+                        "name": "conf",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.PersonaliseReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/personalise/logo": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "upload logo",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "上传Logo",
+                "operationId": "uploadLogo",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "logo file",
+                        "name": "logo",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.UploadLogoResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/smtp": {
             "get": {
                 "security": [
@@ -5438,6 +5504,24 @@ var doc = `{
                 }
             }
         },
+        "/v1/static/logo": {
+            "get": {
+                "description": "get logo",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取logo",
+                "operationId": "getLogo",
+                "responses": {
+                    "200": {
+                        "description": "get logo",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -10091,6 +10175,20 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLEInfoResDataV1": {
+            "type": "object",
+            "properties": {
+                "logo_url": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.GetSQLEInfoResV1": {
             "type": "object",
             "properties": {
@@ -10098,12 +10196,13 @@ var doc = `{
                     "type": "integer",
                     "example": 0
                 },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetSQLEInfoResDataV1"
+                },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "version": {
-                    "type": "string"
                 }
             }
         },
@@ -11413,6 +11512,14 @@ var doc = `{
                 }
             }
         },
+        "v1.PersonaliseReqV1": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
@@ -12610,6 +12717,31 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkFlowStepTemplateReqV1"
                     }
+                }
+            }
+        },
+        "v1.UploadLogoResDataV1": {
+            "type": "object",
+            "properties": {
+                "logo_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UploadLogoResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.UploadLogoResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
