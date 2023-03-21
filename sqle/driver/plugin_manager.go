@@ -91,14 +91,14 @@ func (pm *pluginManager) register(pp PluginProcessor) error {
 	return nil
 }
 
-func getClientConfig(cmd *exec.Cmd) *goPlugin.ClientConfig {
+func getClientConfig(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
 		HandshakeConfig: driverV2.HandshakeConfig,
 		VersionedPlugins: map[int]goPlugin.PluginSet{
 			driverV1.ProtocolVersion: driverV1.PluginSet,
 			driverV2.ProtocolVersion: driverV2.PluginSet,
 		},
-		Cmd:              cmd,
+		Cmd:              exec.Command(cmdBase, cmdArgs...),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		GRPCDialOptions:  common.GRPCDialOptions,
 	}
@@ -135,15 +135,18 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 
 	// register plugin
 	for _, p := range plugins {
-		cmd := exec.Command(filepath.Join(pluginDir, p.Name()))
+		cmdBase := filepath.Join(pluginDir, p.Name())
+		cmdArgs := make([]string, 0)
+
 		for _, pluginConfig := range pluginConfigList {
 			if p.Name() == pluginConfig.PluginName {
-				cmd = exec.Command("sh", "-c", pluginConfig.CMD)
+				cmdBase = "sh"
+				cmdArgs = append(cmdArgs, "-c", pluginConfig.CMD)
 				break
 			}
 		}
 
-		client := goPlugin.NewClient(getClientConfig(cmd))
+		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
 		_, err := client.Client()
 		if err != nil {
 			return err
@@ -152,9 +155,9 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
 		case driverV1.ProtocolVersion:
-			pp = &PluginProcessorV1{cfg: getClientConfig, cmd: cmd, client: client}
+			pp = &PluginProcessorV1{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		case driverV2.ProtocolVersion:
-			pp = &PluginProcessorV2{cfg: getClientConfig, cmd: cmd, client: client}
+			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		}
 		if err := pm.register(pp); err != nil {
 			stopErr := pp.Stop()

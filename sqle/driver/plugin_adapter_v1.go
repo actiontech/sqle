@@ -3,7 +3,6 @@ package driver
 import (
 	"context"
 	sqlDriver "database/sql/driver"
-	"os/exec"
 
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -13,10 +12,11 @@ import (
 )
 
 type PluginProcessorV1 struct {
-	cfg    func(cmd *exec.Cmd) *goPlugin.ClientConfig
-	cmd    *exec.Cmd
-	client *goPlugin.Client // this client will be killed after Register.
-	metas  *driverV2.DriverMetas
+	cfg     func(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig
+	cmdBase string
+	cmdArgs []string
+	client  *goPlugin.Client // this client will be killed after Register.
+	metas   *driverV2.DriverMetas
 }
 
 func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
@@ -41,7 +41,7 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 
 func (d *PluginProcessorV1) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	defer d.client.Kill()
-	name, rules, params, enableQuery, enableSQLAnalysis, err := driverV1.RegisterDrivers(d.client, d.cfg, d.cmd)
+	name, rules, params, enableQuery, enableSQLAnalysis, err := driverV1.RegisterDrivers(d.client, d.cfg, d.cmdBase, d.cmdArgs)
 	if err != nil {
 		return nil, err
 	}
