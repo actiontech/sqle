@@ -1554,15 +1554,25 @@ definitions:
           $ref: '#/definitions/v1.TableMeta'
         type: array
     type: object
+  v1.GetSQLEInfoResDataV1:
+    properties:
+      logo_url:
+        type: string
+      title:
+        type: string
+      version:
+        type: string
+    type: object
   v1.GetSQLEInfoResV1:
     properties:
       code:
         example: 0
         type: integer
+      data:
+        $ref: '#/definitions/v1.GetSQLEInfoResDataV1'
+        type: object
       message:
         example: ok
-        type: string
-      version:
         type: string
     type: object
   v1.GetSQLQueryConfigurationResDataV1:
@@ -2459,23 +2469,6 @@ definitions:
       title:
         type: string
     type: object
-  v1.PersonaliseRespDataV1:
-    properties:
-      title:
-        type: string
-    type: object
-  v1.PersonaliseRespV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.PersonaliseRespDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.ProjectDetailItem:
     properties:
       archived:
@@ -3281,11 +3274,19 @@ definitions:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
         type: array
     type: object
-  v1.UploadAvatarResV1:
+  v1.UploadLogoResDataV1:
+    properties:
+      logo_url:
+        type: string
+    type: object
+  v1.UploadLogoResV1:
     properties:
       code:
         example: 0
         type: integer
+      data:
+        $ref: '#/definitions/v1.UploadLogoResDataV1'
+        type: object
       message:
         example: ok
         type: string
@@ -4345,19 +4346,8 @@ paths:
       tags:
       - configuration
   /v1/configurations/personalise:
-    get:
-      description: get personalise config
-      operationId: getPersonalise
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.PersonaliseRespV1'
-      summary: 获取个性化设置
-      tags:
-      - configuration
-    post:
-      description: add personalise config
+    patch:
+      description: update personalise config
       operationId: personalise
       parameters:
       - description: personalise req
@@ -4373,38 +4363,27 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 添加个性化设置
+      summary: 更新个性化设置
       tags:
       - configuration
-  /v1/configurations/personalise/avatar:
-    get:
-      description: get avatar
-      operationId: getAvatar
-      responses:
-        "200":
-          description: get avatar
-          schema:
-            type: file
-      summary: 获取头像
-      tags:
-      - configuration
+  /v1/configurations/personalise/logo:
     post:
-      description: upload avatar
-      operationId: uploadAvatar
+      description: upload logo
+      operationId: uploadLogo
       parameters:
-      - description: avatar file
+      - description: logo file
         in: formData
-        name: avatar
+        name: logo
         required: true
         type: file
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.UploadAvatarResV1'
+            $ref: '#/definitions/v1.UploadLogoResV1'
       security:
       - ApiKeyAuth: []
-      summary: 上传头像
+      summary: 上传Logo
       tags:
       - configuration
   /v1/configurations/smtp:
@@ -7564,6 +7543,18 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/static/logo:
+    get:
+      description: get logo
+      operationId: getLogo
+      responses:
+        "200":
+          description: get logo
+          schema:
+            type: file
+      summary: 获取logo
+      tags:
+      - configuration
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
