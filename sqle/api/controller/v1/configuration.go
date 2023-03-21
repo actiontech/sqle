@@ -1109,3 +1109,68 @@ func GetSQLQueryConfiguration(c echo.Context) error {
 		},
 	})
 }
+
+type UploadAvatarResV1 struct {
+	controller.BaseRes
+}
+
+// UploadAvatar
+// @Summary 上传头像
+// @Description upload avatar
+// @Id uploadAvatar
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param avatar formData file true "avatar file"
+// @Success 200 {object} v1.UploadAvatarResV1
+// @router /v1/configurations/personalise/avatar [post]
+func UploadAvatar(c echo.Context) error {
+	return nil
+}
+
+// GetAvatar
+// @Summary 获取头像
+// @Description get avatar
+// @Id getAvatar
+// @Tags configuration
+// @Success 200 {file} file "get avatar"
+// @router /v1/configurations/personalise/avatar [get]
+func GetAvatar(c echo.Context) error {
+	return nil
+}
+
+type PersonaliseReqV1 struct {
+	Title string `json:"title"`
+}
+
+// CreatePersonaliseConfig
+// @Summary 添加个性化设置
+// @Description add personalise config
+// @Id personalise
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param conf body v1.PersonaliseReqV1 true "personalise req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/personalise [post]
+func CreatePersonaliseConfig(c echo.Context) error {
+	return nil
+}
+
+type PersonaliseRespV1 struct {
+	controller.BaseRes
+	Data PersonaliseRespDataV1 `json:"data"`
+}
+
+type PersonaliseRespDataV1 struct {
+	Title string `json:"title"`
+}
+
+// GetPersonaliseConfig
+// @Summary 获取个性化设置
+// @Description get personalise config
+// @Id getPersonalise
+// @Tags configuration
+// @Success 200 {object} v1.PersonaliseRespV1
+// @router /v1/configurations/personalise [get]
+func GetPersonaliseConfig(c echo.Context) error {
+	return nil
+}
