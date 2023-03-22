@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -458,4 +459,15 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 		return nil, err
 	}
 	return dingTalkInstances, nil
+}
+
+type PersonaliseConfig struct {
+	Model
+	Title          string     `json:"title" gorm:"column:title"`
+	Logo           []byte     `json:"logo" gorm:"type:blob"`
+	LogoUpdateTime *time.Time `json:"logo_update_time" gorm:"column:logo_update_time"`
+}
+
+func (i *PersonaliseConfig) TableName() string {
+	return fmt.Sprintf("%v_personalise", globalConfigurationTablePrefix)
 }
