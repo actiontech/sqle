@@ -1138,7 +1138,7 @@ type UploadLogoResDataV1 struct {
 // @Success 200 {object} v1.UploadLogoResV1
 // @router /v1/configurations/personalise/logo [post]
 func UploadLogo(c echo.Context) error {
-	return nil
+	return uploadLogo(c)
 }
 
 // GetLogo
@@ -1149,7 +1149,7 @@ func UploadLogo(c echo.Context) error {
 // @Success 200 {file} file "get logo"
 // @router /v1/static/logo [get]
 func GetLogo(c echo.Context) error {
-	return nil
+	return getLogo(c)
 }
 
 type PersonaliseReqV1 struct {
@@ -1166,5 +1166,5 @@ type PersonaliseReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/personalise [patch]
 func UpdatePersonaliseConfig(c echo.Context) error {
-	return nil
+	return updatePersonaliseConfig(c)
 }
