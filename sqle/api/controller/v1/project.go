@@ -16,6 +16,7 @@ var (
 	ErrProjectNotExist = func(projectName string) error {
 		return errors.New(errors.DataNotExist, fmt.Errorf("project [%v] is not exist", projectName))
 	}
+	ErrProjectArchived = errors.New(errors.ErrAccessDeniedError, fmt.Errorf("project is archived"))
 )
 
 type GetProjectReqV1 struct {

@@ -13,10 +13,17 @@ import (
 
 const ProjectIdForGlobalRuleTemplate = 0
 
+const (
+	ProjectStatusArchived = "archived"
+	ProjectStatusActive   = "active"
+)
+
 type Project struct {
 	Model
 	Name string
 	Desc string
+
+	Status string `gorm:"default:'active'"`
 
 	CreateUserId uint  `gorm:"not null"`
 	CreateUser   *User `gorm:"foreignkey:CreateUserId"`
@@ -541,6 +548,18 @@ func (s *Storage) GetManagedProjects(userID uint) ([]*Project, error) {
 		Where("project_manager.user_id = ?", userID).
 		Find(&p).Error
 	return p, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) IsProjectArchived(projectName string) (bool, error) {
+	proj := &Project{}
+	err := s.db.Select("status").Where("name = ?", projectName).First(&proj).Error
+	if err == gorm.ErrRecordNotFound {
+		return false, fmt.Errorf("project dosen't exist")
+	}
+	if err != nil {
+		return false, err
+	}
+	return proj.Status == ProjectStatusArchived, nil
 }
 
 func (s *Storage) IsProjectExist(projectName string) (bool, error) {

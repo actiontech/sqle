@@ -10,6 +10,11 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const (
+	AuditPlanStatusSuspended = "suspended"
+	AuditPlanStatusActive    = "active"
+)
+
 type AuditPlan struct {
 	Model
 	ProjectId        uint   `gorm:"index; not null"`
@@ -34,6 +39,8 @@ type AuditPlan struct {
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
+
+	Status string `gorm:"default:'active'"`
 }
 
 type AuditPlanSQLV2 struct {
@@ -161,7 +168,6 @@ func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) err
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-
 func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, error) {
 	var count uint64
 	err := s.db.
@@ -190,4 +196,12 @@ func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, erro
 	}
 
 	return resp, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) SuspendAuditPlans(ids []uint) error {
+	return s.db.Model(AuditPlan{}).Where("id IN (?)", ids).Updates(AuditPlan{Status: AuditPlanStatusSuspended}).Error
+}
+
+func (s *Storage) ActiveAuditPlans(ids []uint) error {
+	return s.db.Model(AuditPlan{}).Where("id IN (?)", ids).Updates(AuditPlan{Status: AuditPlanStatusActive}).Error
 }

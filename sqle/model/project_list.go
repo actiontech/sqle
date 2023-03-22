@@ -12,10 +12,11 @@ type ProjectDetail struct {
 	Desc           string    `json:"desc"`
 	CreateUserName string    `json:"create_user_name"`
 	CreateTime     time.Time `json:"create_time"`
+	Status         string    `json:"status"`
 }
 
 var projectsQueryTpl = `SELECT
-DISTINCT projects.name , projects.` + "`desc`" + `, cu.login_name as create_user_name, projects.created_at as create_time
+DISTINCT projects.name , projects.` + "`desc`" + `, cu.login_name as create_user_name, projects.created_at as create_time, projects.status as status
 
 {{- template "body" . -}}
 
