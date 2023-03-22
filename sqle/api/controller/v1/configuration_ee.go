@@ -33,7 +33,7 @@ func updatePersonaliseConfig(c echo.Context) error {
 	s := model.GetStorage()
 	personaliseConfig, _, err := s.GetPersonaliseConfig()
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, e.New("failed to get personalise config"))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if req.Title != nil {
