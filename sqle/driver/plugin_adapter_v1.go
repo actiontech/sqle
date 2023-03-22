@@ -80,15 +80,16 @@ func (d *PluginProcessorV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 		"plugin":         d.metas.PluginName,
 		"plugin_version": driverV1.ProtocolVersion,
 	})
-	cfg := &driverV1.Config{
-		DSN: &driverV1.DSN{
+	var cfg = &driverV1.Config{}
+	if cfgV2.DSN != nil {
+		cfg.DSN = &driverV1.DSN{
 			Host:             cfgV2.DSN.Host,
 			Port:             cfgV2.DSN.Port,
 			User:             cfgV2.DSN.User,
 			Password:         cfgV2.DSN.Password,
 			DatabaseName:     cfgV2.DSN.DatabaseName,
 			AdditionalParams: cfgV2.DSN.AdditionalParams,
-		},
+		}
 	}
 	for _, rule := range cfgV2.Rules {
 		cfg.Rules = append(cfg.Rules, &driverV1.Rule{
