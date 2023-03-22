@@ -35,8 +35,8 @@ type Project struct {
 	WorkflowTemplate   *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
-// IsProjectExist 用于判断当前是否存在项目, 而非某个项目是否存在
-func (s *Storage) IsProjectExist() (bool, error) {
+// IsAnyProjectExist 用于判断当前是否存在项目, 而非某个项目是否存在
+func (s *Storage) IsAnyProjectExist() (bool, error) {
 	var count uint
 	err := s.db.Model(&Project{}).Count(&count).Error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
@@ -541,4 +541,10 @@ func (s *Storage) GetManagedProjects(userID uint) ([]*Project, error) {
 		Where("project_manager.user_id = ?", userID).
 		Find(&p).Error
 	return p, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) IsProjectExist(projectName string) (bool, error) {
+	var count uint
+	err := s.db.Model(&Project{}).Where("name = ?", projectName).Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
