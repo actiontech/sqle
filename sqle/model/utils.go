@@ -146,6 +146,7 @@ var autoMigrateList = []interface{}{
 	&SyncInstanceTask{},
 	&OperationRecord{},
 	&PersonaliseConfig{},
+	&LogoConfig{},
 }
 
 func (s *Storage) AutoMigrate() error {
