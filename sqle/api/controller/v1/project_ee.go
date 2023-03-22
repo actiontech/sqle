@@ -105,3 +105,73 @@ func checkProjectCanDelete(projectName string) error {
 	}
 	return nil
 }
+
+func archiveProjectV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	if archived, err := s.IsProjectArchived(projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	} else if archived {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
+
+	has, err := s.HasNotEndWorkflowByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if has {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("there are unfinished work orders, and the current project cannot be archived")))
+	}
+
+	apIDs, err := s.GetAuditPlanIDsByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.SuspendAuditPlans(apIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.ArchiveProject(projectName)
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func unarchiveProjectV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
+	err := CheckIsProjectManager(userName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	if archived, err := s.IsProjectArchived(projectName); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	} else if !archived {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
+
+	err = s.UnarchiveProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	apIDs, err := s.GetAuditPlanIDsByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = s.ActiveAuditPlans(apIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+}

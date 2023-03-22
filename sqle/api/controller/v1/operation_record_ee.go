@@ -53,6 +53,27 @@ func init() {
 			},
 		},
 		{
+			RouterPath:      "/v1/projects/:project_name/archive",
+			Method:          http.MethodPost,
+			OperationType:   model.OperationRecordTypeProject,
+			OperationAction: model.OperationRecordActionArchiveProject,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				projectName := c.Param("project_name")
+				return projectName, fmt.Sprintf("冻结项目，项目名：%v", projectName), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/projects/:project_name/unarchive",
+			Method:          http.MethodPost,
+			OperationType:   model.OperationRecordTypeProject,
+			OperationAction: model.OperationRecordActionUnarchiveProject,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				projectName := c.Param("project_name")
+				return projectName, fmt.Sprintf("取消冻结项目，项目名：%v", projectName), nil
+			},
+		},
+		// 数据源
+		{
 			RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeInstance,

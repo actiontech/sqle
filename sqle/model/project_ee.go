@@ -109,3 +109,11 @@ func (s *Storage) GetProjectListBySyncTaskId(syncTaskID uint) ([]*Project, error
 
 	return result, nil
 }
+
+func (s *Storage) ArchiveProject(projectName string) error {
+	return s.db.Model(&Project{}).Where("name = ?", projectName).Update(Project{Status: ProjectStatusArchived}).Error
+}
+
+func (s *Storage) UnarchiveProject(projectName string) error {
+	return s.db.Model(&Project{}).Where("name = ?", projectName).Update(Project{Status: ProjectStatusActive}).Error
+}
