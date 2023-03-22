@@ -77,6 +77,7 @@ func GetProjectListV1(c echo.Context) error {
 			Desc:           project.Desc,
 			CreateUserName: project.CreateUserName,
 			CreateTime:     &project.CreateTime,
+			Archived:       project.Status == model.ProjectStatusArchived,
 		})
 	}
 
@@ -133,6 +134,7 @@ func GetProjectDetailV1(c echo.Context) error {
 			Desc:           project.Desc,
 			CreateUserName: project.CreateUser.Name,
 			CreateTime:     &project.CreatedAt,
+			Archived:       project.Status == model.ProjectStatusArchived,
 		},
 	})
 }
