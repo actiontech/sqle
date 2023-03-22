@@ -18,7 +18,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var errCommunityEditionNotSupportCostumeLogo = e.New("costume logo is enterprise version feature")
+var (
+	errCommunityEditionNotSupportCostumeLogo             = errors.New(errors.EnterpriseEditionFeatures, e.New("costume logo is enterprise version feature"))
+	errCommunityEditionNotSupportUpdatePersonaliseConfig = errors.New(errors.EnterpriseEditionFeatures, e.New("update personalise config is enterprise version feature"))
+)
 
 const (
 	// LogoUrlBase sqle static 服务接口的url前缀
@@ -38,7 +41,7 @@ func getLogo(c echo.Context) error {
 }
 
 func updatePersonaliseConfig(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportCostumeLogo)
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportUpdatePersonaliseConfig)
 }
 
 func getSQLEInfo(c echo.Context) error {
