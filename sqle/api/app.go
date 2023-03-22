@@ -66,6 +66,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
+	e.GET("/v1/static/logo", v1.GetLogo)
 
 	// oauth2 interface does not require login authentication
 	e.GET("/v1/configurations/oauth2/tips", v1.GetOauth2Tips)
@@ -130,6 +131,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.POST("/configurations/license/check", v1.CheckLicense, AdminUserAllowed())
 		v1Router.GET("/configurations/oauth2", v1.GetOauth2Configuration, AdminUserAllowed())
 		v1Router.PATCH("/configurations/oauth2", v1.UpdateOauth2Configuration, AdminUserAllowed())
+		v1Router.POST("/configurations/personalise/logo", v1.UploadLogo, AdminUserAllowed())
+		v1Router.PATCH("/configurations/personalise", v1.UpdatePersonaliseConfig, AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, AdminUserAllowed())

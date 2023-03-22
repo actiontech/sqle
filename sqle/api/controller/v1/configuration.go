@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/actiontech/sqle/sqle/config"
-
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -937,12 +935,7 @@ type GetSQLEInfoResDataV1 struct {
 // @Success 200 {object} v1.GetSQLEInfoResV1
 // @router /v1/basic_info [get]
 func GetSQLEInfo(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: GetSQLEInfoResDataV1{
-			Version: config.Version,
-		},
-	})
+	return getSQLEInfo(c)
 }
 
 type GetOauth2ConfigurationResV1 struct {
@@ -1138,7 +1131,7 @@ type UploadLogoResDataV1 struct {
 // @Success 200 {object} v1.UploadLogoResV1
 // @router /v1/configurations/personalise/logo [post]
 func UploadLogo(c echo.Context) error {
-	return nil
+	return uploadLogo(c)
 }
 
 // GetLogo
@@ -1149,7 +1142,7 @@ func UploadLogo(c echo.Context) error {
 // @Success 200 {file} file "get logo"
 // @router /v1/static/logo [get]
 func GetLogo(c echo.Context) error {
-	return nil
+	return getLogo(c)
 }
 
 type PersonaliseReqV1 struct {
@@ -1166,5 +1159,5 @@ type PersonaliseReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/personalise [patch]
 func UpdatePersonaliseConfig(c echo.Context) error {
-	return nil
+	return updatePersonaliseConfig(c)
 }
