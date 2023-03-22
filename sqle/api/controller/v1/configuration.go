@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/actiontech/sqle/sqle/config"
-
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -937,12 +935,7 @@ type GetSQLEInfoResDataV1 struct {
 // @Success 200 {object} v1.GetSQLEInfoResV1
 // @router /v1/basic_info [get]
 func GetSQLEInfo(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: GetSQLEInfoResDataV1{
-			Version: config.Version,
-		},
-	})
+	return getSQLEInfo(c)
 }
 
 type GetOauth2ConfigurationResV1 struct {
