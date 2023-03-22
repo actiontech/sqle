@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/errors"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/labstack/echo/v4"
@@ -42,7 +44,7 @@ func updatePersonaliseConfig(c echo.Context) error {
 func getSQLEInfo(c echo.Context) error {
 	fileInfo, err := getLogoFileInfo()
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("get logo file info failed: %w", err))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("no logo file")))
 	}
 
 	modifyTime := fileInfo.ModTime().Unix()
