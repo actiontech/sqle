@@ -6,10 +6,7 @@ package v1
 import (
 	e "errors"
 	"fmt"
-	"io/fs"
-	"io/ioutil"
 	"net/http"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/errors"
 
@@ -24,12 +21,7 @@ var (
 )
 
 const (
-	// LogoUrlBase sqle static 服务接口的url前缀
-	LogoUrlBase = "/static/media"
-	Title       = "SQLE"
-
-	// LogoDir sqle logo 的本地目录
-	LogoDir = "./ui/static/media"
+	Title = "SQLE"
 )
 
 func uploadLogo(c echo.Context) error {
@@ -61,26 +53,4 @@ func getSQLEInfo(c echo.Context) error {
 			Title:   Title,
 		},
 	})
-}
-
-func getLogoFileInfo() (fs.FileInfo, error) {
-	fileInfos, err := ioutil.ReadDir(LogoDir)
-	if err != nil {
-		return nil, e.New("read logo dir failed")
-	}
-
-	var hasLogoFile bool
-	var logoFileInfo fs.FileInfo
-	for _, fileInfo := range fileInfos {
-		if strings.HasPrefix(fileInfo.Name(), "logo.") {
-			hasLogoFile = true
-			logoFileInfo = fileInfo
-			break
-		}
-	}
-	if !hasLogoFile {
-		return nil, e.New("no logo file")
-	}
-
-	return logoFileInfo, nil
 }
