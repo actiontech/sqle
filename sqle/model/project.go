@@ -118,7 +118,7 @@ func (s *Storage) GetProjectByName(projectName string) (*Project, bool, error) {
 	return p, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s Storage) GetProjectTips(userName string) ([]*Project, error) {
+func (s *Storage) GetProjectTips(userName string) ([]*Project, error) {
 	p := []*Project{}
 	query := s.db.Table("projects").Select("DISTINCT projects.name,projects.id")
 
