@@ -145,6 +145,7 @@ var autoMigrateList = []interface{}{
 	&DingTalkInstance{},
 	&SyncInstanceTask{},
 	&OperationRecord{},
+	&PersonaliseConfig{},
 }
 
 func (s *Storage) AutoMigrate() error {
