@@ -52,25 +52,24 @@ func getLogo(c echo.Context) error {
 }
 
 func getSQLEInfo(c echo.Context) error {
+	s := model.GetStorage()
+	personaliseConfig, _, err := s.GetPersonaliseConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get personalise config: %w", err)))
+	}
+
+	logo, _, err := s.GetLogoConfigWithoutLogo()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get logo config: %w", err)))
+	}
+
 	baseInfo, err := getDefaultBaseInfo()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("failed to get default base info: %w", err)))
 	}
 
-	s := model.GetStorage()
-	personaliseConfig, exist, err := s.GetPersonaliseConfig()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get personalise config: %w", err)))
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data:    baseInfo,
-		})
-	}
-
-	if personaliseConfig.Logo != nil && personaliseConfig.LogoUpdateTime != nil {
-		baseInfo.LogoUrl = getLogoUrl(personaliseConfig.LogoUpdateTime)
+	if !logo.UpdatedAt.Equal(time.Time{}) {
+		baseInfo.LogoUrl = fmt.Sprintf("%s?timestamp=%d", LogoUrl, logo.UpdatedAt.Unix())
 	}
 
 	if personaliseConfig.Title != "" {
@@ -81,10 +80,6 @@ func getSQLEInfo(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    baseInfo,
 	})
-}
-
-func getLogoUrl(updateTime *time.Time) string {
-	return fmt.Sprintf("%s?timestamp=%d", LogoUrl, updateTime.Unix())
 }
 
 func getDefaultBaseInfo() (GetSQLEInfoResDataV1, error) {
