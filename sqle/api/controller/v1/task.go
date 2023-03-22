@@ -670,16 +670,10 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
 	}
 
-	l := log.NewEntry()
 	for _, instance := range instances {
-		plugin, err := common.NewDriverManagerWithoutAudit(l, instance, "")
-		if err != nil {
+		if err := common.CheckInstanceIsConnectable(instance); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		if err := plugin.Ping(context.TODO()); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		plugin.Close(context.TODO())
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -791,6 +785,8 @@ func AuditTaskGroupV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	defer plugin.Close(context.TODO())
+
 	nodes, err := plugin.Parse(context.TODO(), sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
