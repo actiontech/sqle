@@ -34,12 +34,16 @@ func SyncUserBindInstance(cbUserID string) error {
 	}
 
 	sqleInstMap := map[uint] /*sqle inst id*/ *sqleModel.Instance{}
-	for _, instance := range sqleInstSlice {
-		inst, _, err := s.GetInstanceById(fmt.Sprintf("%v", instance.ID))
-		if err != nil {
-			return err
-		}
-		sqleInstMap[instance.ID] = inst
+	instIds := make([]uint, len(sqleInstSlice))
+	for i, instance := range sqleInstSlice {
+		instIds[i] = instance.ID
+	}
+	insts, err := s.GetInstancesFromActiveProjectByIds(instIds)
+	if err != nil {
+		return err
+	}
+	for _, inst := range insts {
+		sqleInstMap[inst.ID] = inst
 	}
 
 	// 同步实例信息
@@ -47,7 +51,7 @@ func SyncUserBindInstance(cbUserID string) error {
 		return err
 	}
 
-	// 同步权限信息
+	// 同步cloudbeaver上用户对实例的权限信息
 	if err := SyncVisibleInstance(sqleUserCache, sqleUser, sqleInstMap); err != nil {
 		return err
 	}
