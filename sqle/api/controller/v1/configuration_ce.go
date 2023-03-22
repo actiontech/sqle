@@ -5,7 +5,6 @@ package v1
 
 import (
 	e "errors"
-	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -37,13 +36,10 @@ func updatePersonaliseConfig(c echo.Context) error {
 }
 
 func getSQLEInfo(c echo.Context) error {
-	fileInfo, err := getLogoFileInfo()
+	logoUrl, err := GetDefaultLogoUrl()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("no logo file")))
 	}
-
-	modifyTime := fileInfo.ModTime().Unix()
-	logoUrl := fmt.Sprintf("%s/%s?timestamp=%d", LogoUrlBase, fileInfo.Name(), modifyTime)
 
 	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
 		BaseRes: controller.NewBaseReq(nil),
