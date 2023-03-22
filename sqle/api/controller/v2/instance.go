@@ -184,8 +184,17 @@ func CreateInstance(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
+
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectArchived)
+	}
+
 	userName := controller.GetUserName(c)
-	err := v1.CheckIsProjectManager(userName, projectName)
+	err = v1.CheckIsProjectManager(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

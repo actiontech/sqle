@@ -191,9 +191,17 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		return err
 	}
 
-	s := model.GetStorage()
-
 	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

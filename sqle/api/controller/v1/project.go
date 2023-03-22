@@ -193,6 +193,14 @@ func UpdateProjectV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	sure, err := s.CheckUserCanUpdateProject(projectName, user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

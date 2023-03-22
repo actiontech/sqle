@@ -593,6 +593,14 @@ func CreateWorkflowV2(c echo.Context) error {
 	projectName := c.Param("project_name")
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectArchived)
+	}
+
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
