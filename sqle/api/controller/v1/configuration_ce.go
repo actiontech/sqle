@@ -6,8 +6,10 @@ package v1
 import (
 	e "errors"
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
@@ -17,12 +19,12 @@ import (
 var errCommunityEditionNotSupportCostumeLogo = e.New("costume logo is enterprise version feature")
 
 const (
-	// LogoUrl sqle static 服务接口的url
-	LogoUrl = "/static/media/logo.410ecb70.png"
-	Title   = "SQLE"
+	// LogoUrlBase sqle static 服务接口的url前缀
+	LogoUrlBase = "/static/media"
+	Title       = "SQLE"
 
-	// LogoPath sqle logo 的本地路径
-	LogoPath = "./ui/static/media/logo.410ecb70.png"
+	// LogoDir sqle logo 的本地目录
+	LogoDir = "./ui/static/media"
 )
 
 func uploadLogo(c echo.Context) error {
@@ -38,13 +40,13 @@ func updatePersonaliseConfig(c echo.Context) error {
 }
 
 func getSQLEInfo(c echo.Context) error {
-	fileInfo, err := os.Stat(LogoPath)
+	fileInfo, err := getLogoFileInfo()
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, e.New("logo file not found"))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("get logo file info failed: %w", err))
 	}
 
-	modifyTime := fileInfo.ModTime().Format("2006-01-02 15:04:05")
-	logoUrl := fmt.Sprintf("%s?timestamp=%s", LogoUrl, modifyTime)
+	modifyTime := fileInfo.ModTime().Unix()
+	logoUrl := fmt.Sprintf("%s/%s?timestamp=%d", LogoUrlBase, fileInfo.Name(), modifyTime)
 
 	return c.JSON(http.StatusOK, &GetSQLEInfoResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -54,4 +56,26 @@ func getSQLEInfo(c echo.Context) error {
 			Title:   Title,
 		},
 	})
+}
+
+func getLogoFileInfo() (fs.FileInfo, error) {
+	fileInfos, err := ioutil.ReadDir(LogoDir)
+	if err != nil {
+		return nil, e.New("read logo dir failed")
+	}
+
+	var hasLogoFile bool
+	var logoFileInfo fs.FileInfo
+	for _, fileInfo := range fileInfos {
+		if strings.HasPrefix(fileInfo.Name(), "logo.") {
+			hasLogoFile = true
+			logoFileInfo = fileInfo
+			break
+		}
+	}
+	if !hasLogoFile {
+		return nil, e.New("no logo file")
+	}
+
+	return logoFileInfo, nil
 }
