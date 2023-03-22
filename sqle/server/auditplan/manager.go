@@ -77,6 +77,9 @@ func (mgr *Manager) start() error {
 		return err
 	}
 	for _, v := range aps {
+		if v.Status == model.AuditPlanStatusSuspended {
+			continue
+		}
 		ap := v
 		err := mgr.startAuditPlan(ap)
 		if err != nil {
