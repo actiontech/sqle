@@ -285,6 +285,14 @@ func DeleteInstance(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return err
@@ -349,6 +357,14 @@ func UpdateInstance(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

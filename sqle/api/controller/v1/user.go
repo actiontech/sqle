@@ -636,6 +636,13 @@ func AddMember(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
 	// 检查用户是否已添加过
 	isMember, err := s.CheckUserIsMember(req.UserName, projectName)
 	if err != nil {
@@ -706,12 +713,20 @@ func UpdateMember(c echo.Context) error {
 	userName := c.Param("user_name")
 	currentUser := controller.GetUserName(c)
 
-	err := CheckIsProjectManager(currentUser, projectName)
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
+	err = CheckIsProjectManager(currentUser, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
 	isMember, err := s.CheckUserIsMember(userName, projectName)
 	if err != nil {
 		return err
@@ -782,12 +797,20 @@ func DeleteMember(c echo.Context) error {
 	userName := c.Param("user_name")
 	currentUser := controller.GetUserName(c)
 
-	err := CheckIsProjectManager(currentUser, projectName)
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
+	err = CheckIsProjectManager(currentUser, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
 	err = checkMemberCanDelete(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
