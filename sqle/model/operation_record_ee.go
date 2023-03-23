@@ -22,6 +22,8 @@ const (
 	OperationRecordActionCreateProject               = "create_project"
 	OperationRecordActionDeleteProject               = "delete_project"
 	OperationRecordActionUpdateProject               = "update_project"
+	OperationRecordActionArchiveProject              = "archive_project"
+	OperationRecordActionUnarchiveProject            = "unarchive_project"
 	OperationRecordActionCreateInstance              = "create_instance"
 	OperationRecordActionUpdateInstance              = "update_instance"
 	OperationRecordActionDeleteInstance              = "delete_instance"

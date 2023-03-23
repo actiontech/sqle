@@ -191,6 +191,9 @@ func (d *DmpSync) startSyncDmpData(ctx context.Context) {
 			d.L.Errorf("project %s not exist", projectName)
 			return
 		}
+		if project.Status == model.ProjectStatusArchived {
+			continue
+		}
 
 		password, err := DecryptPassword(dmpInstance.DataSrcPassword)
 		if err != nil {
