@@ -42,20 +42,15 @@ func CreateAuditWhitelist(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	archived, err := s.IsProjectArchived(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+	if project.IsArchived() {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
 	}
 
 	sqlWhitelist := &model.SqlWhitelist{

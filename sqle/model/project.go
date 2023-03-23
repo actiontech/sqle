@@ -42,6 +42,10 @@ type Project struct {
 	WorkflowTemplate   *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
+func (p *Project) IsArchived() bool {
+	return p.Status == ProjectStatusArchived
+}
+
 // IsProjectExist 用于判断当前是否存在项目, 而非某个项目是否存在
 func (s *Storage) IsProjectExist() (bool, error) {
 	var count uint
