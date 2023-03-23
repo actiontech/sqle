@@ -217,12 +217,15 @@ func classifySQL(sql string) (sqlType string) {
 func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	results := make([]*driverV2.AuditResults, 0, len(sqls))
 	for i, sql := range sqls {
-		result, err := p.Ah.Audit(ctx, p.Config.Rules, sql, sqls[i:])
-		// result, err := p.audit(ctx, sql, sqls[i:])
-		if err != nil {
-			return nil, err
+		ruleResults := driverV2.NewAuditResults()
+		for j, rule := range p.Config.Rules {
+			result, err := p.Ah.Audit(ctx, rule, sql, sqls[i:])
+			if err != nil {
+				return nil, err
+			}
+			ruleResults.Results[j] = result
 		}
-		results = append(results, result)
+		results = append(results, ruleResults)
 	}
 	return results, nil
 }
