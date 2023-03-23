@@ -1,9 +1,14 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
+)
 
 func init() {
 	autoMigrateList = append(autoMigrateList, &Leader{})
+	autoMigrateList = append(autoMigrateList, &Node{})
 }
 
 /*
@@ -42,4 +47,29 @@ last_seen_active = IF(server_id = VALUES(server_id), VALUES(last_seen_active), l
 
 func (s *Storage) AttemptClusterLeadership(serverId string) error {
 	return s.db.Exec(AttemptLeadership, leaderTableAnchor, serverId).Error
+}
+
+type Node struct {
+	Model
+	ServerId     string `json:"server_id" gorm:"unique"`
+	HardwareSign string `json:"hardware_sign" gorm:"type:varchar(3000)"`
+}
+
+func (l *Node) TableName() string {
+	return "cluster_node_info"
+}
+
+var RegisterNode = `
+INSERT INTO cluster_node_info (server_id, hardware_sign) VALUES (?,?) 
+ON DUPLICATE KEY UPDATE hardware_sign = VALUES(hardware_sign)
+`
+
+func (s *Storage) RegisterClusterNode(serverId, HardwareSign string) error {
+	return errors.New(errors.ConnectStorageError, s.db.Exec(RegisterNode, serverId, HardwareSign).Error)
+}
+
+func (s *Storage) GetClusterNodes() ([]*Node, error) {
+	var nodes []*Node
+	err := s.db.Model(Node{}).Find(&nodes).Error
+	return nodes, errors.New(errors.ConnectStorageError, err)
 }
