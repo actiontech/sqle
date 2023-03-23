@@ -49,6 +49,9 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
+	if project.IsArchived() {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
 
 	sqlWhitelist := &model.SqlWhitelist{
 		ProjectId: project.ID,
@@ -95,6 +98,14 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	whitelistId := c.Param("audit_whitelist_id")
 	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectName(whitelistId, projectName)
 	if err != nil {
@@ -141,8 +152,16 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 	s := model.GetStorage()
 	whitelistId := c.Param("audit_whitelist_id")
 	projectName := c.Param("project_name")
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	userName := controller.GetUserName(c)
-	err := CheckIsProjectManager(userName, projectName)
+	err = CheckIsProjectManager(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -5512,6 +5512,14 @@ var doc = `{
                 ],
                 "summary": "获取logo",
                 "operationId": "getLogo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "timestamp",
+                        "name": "timestamp",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "get logo",

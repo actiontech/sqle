@@ -71,6 +71,15 @@ func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
+	var aps []*AuditPlan
+	err := s.db.Model(AuditPlan{}).
+		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
+		Find(&aps).Error
+	return aps, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Find(ap).Error
@@ -83,6 +92,18 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).
+		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
+		Where("audit_plans.id = ?", id).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -160,7 +181,6 @@ func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) err
 	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
-
 
 func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, error) {
 	var count uint64

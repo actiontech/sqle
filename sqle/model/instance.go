@@ -106,6 +106,15 @@ func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetInstancesFromActiveProjectByIds(ids []uint) ([]*Instance, error) {
+	instances := []*Instance{}
+	err := s.db.Joins("LEFT JOIN projects ON projects.id = instances.project_id").
+		Where("instances.id IN (?)", ids).
+		Where("projects.status = ?", ProjectStatusActive).
+		Find(&instances).Error
+	return instances, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetInstancesByIds(ids []uint) (instances []*Instance, err error) {
 	distinctIds := utils.RemoveDuplicateUint(ids)
 	return instances, s.db.Model(&Instance{}).Where("id in (?)", distinctIds).Scan(&instances).Error

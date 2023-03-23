@@ -223,6 +223,9 @@ func CreateAuditPlan(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
+	if project.IsArchived() {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
 
 	// check user
 	currentUserName := controller.GetUserName(c)
@@ -379,6 +382,14 @@ func DeleteAuditPlan(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -420,6 +431,15 @@ func UpdateAuditPlan(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
+	storage := model.GetStorage()
+	archived, err := storage.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -439,7 +459,6 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["instance_database"] = *req.InstanceDatabase
 	}
 
-	storage := model.GetStorage()
 	if req.RuleTemplateName != nil {
 		exist, err = storage.IsRuleTemplateExist(*req.RuleTemplateName, []uint{ap.ProjectId, model.ProjectIdForGlobalRuleTemplate})
 		if err != nil {
@@ -801,6 +820,14 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -841,6 +868,14 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -935,6 +970,15 @@ func TriggerAuditPlan(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1026,6 +1070,15 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 	projectName := c.Param("project_name")
 	apName := c.Param("audit_plan_name")
 
+	storage := model.GetStorage()
+	archived, err := storage.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1054,7 +1107,6 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		updateAttr["web_hook_template"] = *req.WebHookTemplate
 	}
 
-	storage := model.GetStorage()
 	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
 	return controller.JSONBaseErrorReq(c, err)
 }
