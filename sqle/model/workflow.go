@@ -664,34 +664,6 @@ func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 	})
 }
 
-// todo: delete it after rebase main. v1接口用到，接口已移除在main分支
-func (s *Storage) BatchCompletionWorkflow(ws []*Workflow) error {
-	return s.Tx(func(tx *gorm.DB) error {
-		for _, w := range ws {
-			tasks, err := s.GetTasksByWorkFlowRecordID(w.Record.ID)
-			if err != nil {
-				return err
-			}
-			for _, task := range tasks {
-				err = updateExecuteSQLStatusByTaskId(tx, task.ID, SQLExecuteStatusManuallyExecuted)
-				if err != nil {
-					return err
-				}
-				err = updateTaskStatusById(tx, task.ID, TaskStatusManuallyExecuted)
-				if err != nil {
-					return err
-				}
-			}
-
-			// err = updateWorkflowStatus(tx, w, w.Record.Steps[len(w.Record.Steps)-1], w.Record.InstanceRecords)
-			// if err != nil {
-			// 	return err
-			// }
-		}
-		return nil
-	})
-}
-
 func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, needExecInstanceRecords []*WorkflowInstanceRecord) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		for _, inst := range needExecInstanceRecords {
