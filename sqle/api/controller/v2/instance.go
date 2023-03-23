@@ -185,21 +185,24 @@ func CreateInstance(c echo.Context) error {
 
 	projectName := c.Param("project_name")
 
-	archived, err := s.IsProjectArchived(projectName)
+	userName := controller.GetUserName(c)
+	err := v1.CheckIsProjectManager(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if archived {
+
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+	if project.IsArchived() {
 		return controller.JSONBaseErrorReq(c, v1.ErrProjectArchived)
 	}
 
-	userName := controller.GetUserName(c)
-	err = v1.CheckIsProjectManager(userName, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	_, exist, err := s.GetInstanceByNameAndProjectName(req.Name, projectName)
+	_, exist, err = s.GetInstanceByNameAndProjectName(req.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -244,15 +247,6 @@ func CreateInstance(c echo.Context) error {
 
 	if sqlQueryConfig.AuditEnabled && sqlQueryConfig.AllowQueryWhenLessThanAuditLevel == "" {
 		sqlQueryConfig.AllowQueryWhenLessThanAuditLevel = string(driverV2.RuleLevelError)
-	}
-
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
 	}
 
 	instance := &model.Instance{

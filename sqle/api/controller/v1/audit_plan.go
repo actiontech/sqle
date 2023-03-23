@@ -216,20 +216,15 @@ func CreateAuditPlan(c echo.Context) error {
 
 	// check project
 	projectName := c.Param("project_name")
-	archived, err := s.IsProjectArchived(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
 	project, exist, err := s.GetProjectByName(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+	if project.IsArchived() {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
 	}
 
 	// check user
