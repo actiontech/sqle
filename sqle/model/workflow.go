@@ -615,8 +615,6 @@ func updateWorkflowStep(tx *gorm.DB, operateStep *WorkflowStep) error {
 		return db.Error
 	}
 	if db.RowsAffected == 0 {
-		fmt.Printf("UPDATE workflow_steps SET operation_user_id = %v, operate_at = %v, state = %v, reason = %v WHERE id = %d AND operation_user_id = 0\n",
-			operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
 		return fmt.Errorf("update workflow step %d failed, it appears to have been modified by another process", operateStep.ID)
 	}
 	return nil
