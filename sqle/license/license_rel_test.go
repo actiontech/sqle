@@ -1,30 +1,13 @@
+//go:build release
+// +build release
+
 package license
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestStorage_GetAuditPlansByReq(t *testing.T) {
-	sss, err := EncodeLicense(&LicensePermission{
-		WorkDurationDay: 10,
-		Version:         "999",
-		UserCount:       20,
-		NumberOfInstanceOfEachType: map[string]LimitOfType{
-			"MySQL": {
-				DBType: "MySQL",
-				Count:  10,
-			},
-		},
-	}, "EODbn3MOmOPYDsmsmdffo3Dbl8PcmsmYDeEOns5MEOqbo39uK4MCDB6PHN0bmOTbm3Tbq8U2q8Te68TcmSciAs5PEhiLm3iwn3iwn3Lwm84wm8Hw68jy75IMEg6di30doOqdoP4toOmuoP4eoPqeK4MCDB6PHN0rq8TrmeTbneUgn3Tv6OTsmSciAs5PEhiL6OiwnPDwq9iwo30wqOmwo4i=")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(sss)
-}
 
 func TestCheckHardware(t *testing.T) {
 	l := &License{
