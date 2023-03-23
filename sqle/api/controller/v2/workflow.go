@@ -404,7 +404,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 
 		needExecInstanceRecords := []*model.WorkflowInstanceRecord{}
 		for _, inst := range workflow.Record.InstanceRecords {
-			if inst.IsSQLExecuted == false {
+			if !inst.IsSQLExecuted {
 				inst.ExecutionUserId = user.ID
 				inst.IsSQLExecuted = true
 				needExecInstanceRecords = append(needExecInstanceRecords, inst)
