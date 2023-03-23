@@ -1126,6 +1126,7 @@ type UploadLogoResDataV1 struct {
 // @Description upload logo
 // @Id uploadLogo
 // @Tags configuration
+// @Accept mpfd
 // @Security ApiKeyAuth
 // @Param logo formData file true "logo file"
 // @Success 200 {object} v1.UploadLogoResV1
