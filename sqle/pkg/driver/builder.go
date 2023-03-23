@@ -19,33 +19,33 @@ type AuditHandler struct {
 	RuleToASTHandler map[string] /*rule name*/ AstSQLRuleHandler
 }
 
-func (a *AuditHandler) Audit(ctx context.Context, rules []*driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResults, error) {
-	result := driverV2.NewAuditResults()
-	for _, rule := range rules {
-		handler, ok := a.RuleToRawHandler[rule.Name]
+func (a *AuditHandler) Audit(ctx context.Context, rule *driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResult, error) {
+	result := &driverV2.AuditResult{}
+	handler, ok := a.RuleToRawHandler[rule.Name]
+	if ok {
+		msg, err := handler(ctx, rule, sql, nextSQL)
+		if err != nil {
+			return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
+		}
+		result.Level = rule.Level
+		result.Message = msg
+	} else {
+		handler, ok := a.RuleToASTHandler[rule.Name]
 		if ok {
-			msg, err := handler(ctx, rule, sql, nextSQL)
+			var err error
+			var ast interface{}
+			if a.SqlParserFn != nil {
+				ast, err = a.SqlParserFn(sql)
+				if err != nil {
+					return nil, errors.Wrap(err, "parse sql")
+				}
+			}
+			msg, err := handler(ctx, rule, ast, nextSQL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
 			}
-			result.Add(rule.Level, msg)
-		} else {
-			handler, ok := a.RuleToASTHandler[rule.Name]
-			if ok {
-				var err error
-				var ast interface{}
-				if a.SqlParserFn != nil {
-					ast, err = a.SqlParserFn(sql)
-					if err != nil {
-						return nil, errors.Wrap(err, "parse sql")
-					}
-				}
-				msg, err := handler(ctx, rule, ast, nextSQL)
-				if err != nil {
-					return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
-				}
-				result.Add(rule.Level, msg)
-			}
+			result.Level = rule.Level
+			result.Message = msg
 		}
 	}
 	return result, nil
