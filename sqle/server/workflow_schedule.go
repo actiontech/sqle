@@ -65,7 +65,6 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 		if len(needExecuteTaskIds) == 0 {
 			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
 		}
-		time.Sleep(10 * time.Second)
 		err = ExecuteWorkflow(w, needExecuteTaskIds)
 		if err != nil {
 			entry.Errorf("execute scheduled workflow %s error: %v", w.Subject, err)
