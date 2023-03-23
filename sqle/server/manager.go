@@ -15,7 +15,6 @@ type ServerJob interface {
 
 var OnlyRunOnLeaderJobs = []func(entry *logrus.Entry) ServerJob{
 	NewCleanJob,
-	// NewSyncInstanceJob, // todo: 稍后改造，改动较大
 	NewDingTalkJob,
 }
 
