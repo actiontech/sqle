@@ -58,7 +58,7 @@ func getSQLEInfo(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get personalise config: %w", err)))
 	}
 
-	logo, _, err := s.GetLogoConfigWithoutLogo()
+	logo, _, err := s.GetLogoConfigWithoutLogoImage()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get logo config: %w", err)))
 	}

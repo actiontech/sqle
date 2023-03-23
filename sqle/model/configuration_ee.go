@@ -17,7 +17,7 @@ func (s *Storage) GetPersonaliseConfig() (*PersonaliseConfig, bool, error) {
 	return pc, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetLogoConfigWithoutLogo() (*LogoConfig, bool, error) {
+func (s *Storage) GetLogoConfigWithoutLogoImage() (*LogoConfig, bool, error) {
 	lc := new(LogoConfig)
 	err := s.db.Select("id, created_at, updated_at, deleted_at").Last(&lc).Error
 	if err == gorm.ErrRecordNotFound {
