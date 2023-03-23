@@ -105,7 +105,7 @@ func (mgr *Manager) SyncTask(auditPlanId uint) error {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
 
-	ap, exist, err := mgr.persist.GetAuditPlanById(auditPlanId)
+	ap, exist, err := mgr.persist.GetActiveAuditPlanById(auditPlanId)
 	if err != nil {
 		return err
 	}
