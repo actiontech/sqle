@@ -22,6 +22,21 @@ const (
 
 	// LogoUrl 用户配置的 logo url 接口
 	LogoUrl = "/v1/static/logo"
+
+	// LogoFileKey logo 文件key
+	LogoFileKey = "logo"
+
+	// MaxByteSizeOfLogo logo 最大字节数, 100KB
+	MaxByteSizeOfLogo = 1024 * 100
+)
+
+var (
+	logoUrl = func(time time.Time) string {
+		return fmt.Sprintf("%s?timestamp=%d", LogoUrl, time.Unix())
+	}
+
+	// logoCache logo 缓存
+	logoCache = map[string] /*logo update unix time*/ []byte{} /*logo*/
 )
 
 func updatePersonaliseConfig(c echo.Context) error {
@@ -44,11 +59,67 @@ func updatePersonaliseConfig(c echo.Context) error {
 }
 
 func uploadLogo(c echo.Context) error {
-	return nil
+	logo, exist, err := controller.ReadFileContent(c, LogoFileKey)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("failed to read logo file: %w", err)))
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("logo file not exist")))
+	}
+
+	if isLogoMoreThanMaxSize([]byte(logo)) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("logo file size is too large, large than max byte %d", MaxByteSizeOfLogo)))
+	}
+
+	s := model.GetStorage()
+	logoConfig, _, err := s.GetLogoConfigWithoutLogoImage()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("failed to get logo config: %w", err)))
+	}
+
+	logoConfig.Logo = []byte(logo)
+
+	if err := s.Save(&logoConfig); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, UploadLogoResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: UploadLogoResDataV1{
+			LogoUrl: logoUrl(logoConfig.UpdatedAt),
+		},
+	})
+}
+
+func isLogoMoreThanMaxSize(logo []byte) bool {
+	if len(logo) > MaxByteSizeOfLogo {
+		return true
+	}
+	return false
 }
 
 func getLogo(c echo.Context) error {
-	return nil
+	req := new(GetLogoReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if logo, ok := logoCache[req.Timestamp]; ok {
+		return c.Blob(http.StatusOK, "image/png", logo)
+	}
+
+	s := model.GetStorage()
+	logoConfig, exist, err := s.GetLogoConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("logoConfig not exist")))
+	}
+
+	logoCache[req.Timestamp] = logoConfig.Logo
+
+	return c.Blob(http.StatusOK, "image/png", logoConfig.Logo)
 }
 
 func getSQLEInfo(c echo.Context) error {
@@ -69,7 +140,7 @@ func getSQLEInfo(c echo.Context) error {
 	}
 
 	if !logo.UpdatedAt.Equal(time.Time{}) {
-		baseInfo.LogoUrl = fmt.Sprintf("%s?timestamp=%d", LogoUrl, logo.UpdatedAt.Unix())
+		baseInfo.LogoUrl = logoUrl(logo.UpdatedAt)
 	}
 
 	if personaliseConfig.Title != "" {

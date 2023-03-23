@@ -25,3 +25,12 @@ func (s *Storage) GetLogoConfigWithoutLogoImage() (*LogoConfig, bool, error) {
 	}
 	return lc, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetLogoConfig() (*LogoConfig, bool, error) {
+	lc := new(LogoConfig)
+	err := s.db.Last(&lc).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return lc, true, errors.New(errors.ConnectStorageError, err)
+}
