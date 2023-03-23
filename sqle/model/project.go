@@ -13,10 +13,17 @@ import (
 
 const ProjectIdForGlobalRuleTemplate = 0
 
+const (
+	ProjectStatusArchived = "archived"
+	ProjectStatusActive   = "active"
+)
+
 type Project struct {
 	Model
 	Name string
 	Desc string
+
+	Status string `gorm:"default:'active'"`
 
 	CreateUserId uint  `gorm:"not null"`
 	CreateUser   *User `gorm:"foreignkey:CreateUserId"`
@@ -33,6 +40,10 @@ type Project struct {
 
 	WorkflowTemplateId uint              `gorm:"not null"`
 	WorkflowTemplate   *WorkflowTemplate `gorm:"foreignkey:WorkflowTemplateId"`
+}
+
+func (p *Project) IsArchived() bool {
+	return p.Status == ProjectStatusArchived
 }
 
 // IsProjectExist 用于判断当前是否存在项目, 而非某个项目是否存在
@@ -541,4 +552,16 @@ func (s *Storage) GetManagedProjects(userID uint) ([]*Project, error) {
 		Where("project_manager.user_id = ?", userID).
 		Find(&p).Error
 	return p, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) IsProjectArchived(projectName string) (bool, error) {
+	proj := &Project{}
+	err := s.db.Select("status").Where("name = ?", projectName).First(&proj).Error
+	if err == gorm.ErrRecordNotFound {
+		return false, fmt.Errorf("project dosen't exist")
+	}
+	if err != nil {
+		return false, err
+	}
+	return proj.Status == ProjectStatusArchived, nil
 }

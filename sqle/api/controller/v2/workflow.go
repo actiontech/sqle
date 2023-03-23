@@ -600,6 +600,9 @@ func CreateWorkflowV2(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
 	}
+	if project.IsArchived() {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectArchived)
+	}
 
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {

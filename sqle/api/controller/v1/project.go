@@ -16,6 +16,7 @@ var (
 	ErrProjectNotExist = func(projectName string) error {
 		return errors.New(errors.DataNotExist, fmt.Errorf("project [%v] is not exist", projectName))
 	}
+	ErrProjectArchived = errors.New(errors.ErrAccessDeniedError, fmt.Errorf("project is archived"))
 )
 
 type GetProjectReqV1 struct {
@@ -76,6 +77,7 @@ func GetProjectListV1(c echo.Context) error {
 			Desc:           project.Desc,
 			CreateUserName: project.CreateUserName,
 			CreateTime:     &project.CreateTime,
+			Archived:       project.Status == model.ProjectStatusArchived,
 		})
 	}
 
@@ -132,6 +134,7 @@ func GetProjectDetailV1(c echo.Context) error {
 			Desc:           project.Desc,
 			CreateUserName: project.CreateUser.Name,
 			CreateTime:     &project.CreatedAt,
+			Archived:       project.Status == model.ProjectStatusArchived,
 		},
 	})
 }
@@ -190,6 +193,14 @@ func UpdateProjectV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
 	sure, err := s.CheckUserCanUpdateProject(projectName, user.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
