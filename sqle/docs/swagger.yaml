@@ -7547,6 +7547,11 @@ paths:
     get:
       description: get logo
       operationId: getLogo
+      parameters:
+      - description: timestamp
+        in: query
+        name: timestamp
+        type: string
       responses:
         "200":
           description: get logo
