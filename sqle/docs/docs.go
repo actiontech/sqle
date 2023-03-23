@@ -589,6 +589,9 @@ var doc = `{
                     }
                 ],
                 "description": "upload logo",
+                "consumes": [
+                    "multipart/form-data"
+                ],
                 "tags": [
                     "configuration"
                 ],
