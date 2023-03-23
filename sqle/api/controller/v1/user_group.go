@@ -336,12 +336,20 @@ func AddMemberGroup(c echo.Context) error {
 	projectName := c.Param("project_name")
 	userName := controller.GetUserName(c)
 
-	err := CheckIsProjectManager(userName, projectName)
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
+	err = CheckIsProjectManager(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
 	// 检查用户组是否已添加过
 	isMember, err := s.CheckUserGroupIsMember(req.UserGroupName, projectName)
 	if err != nil {
@@ -411,12 +419,20 @@ func UpdateMemberGroup(c echo.Context) error {
 	groupName := c.Param("user_group_name")
 	currentUser := controller.GetUserName(c)
 
-	err := CheckIsProjectManager(currentUser, projectName)
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
+
+	err = CheckIsProjectManager(currentUser, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
 	isMember, err := s.CheckUserGroupIsMember(groupName, projectName)
 	if err != nil {
 		return err
@@ -458,12 +474,19 @@ func DeleteMemberGroup(c echo.Context) error {
 	groupName := c.Param("user_group_name")
 	currentUser := controller.GetUserName(c)
 
-	err := CheckIsProjectManager(currentUser, projectName)
+	s := model.GetStorage()
+	archived, err := s.IsProjectArchived(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if archived {
+		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
+	}
 
-	s := model.GetStorage()
+	err = CheckIsProjectManager(currentUser, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	return controller.JSONBaseErrorReq(c, s.RemoveMemberGroup(groupName, projectName))
 
