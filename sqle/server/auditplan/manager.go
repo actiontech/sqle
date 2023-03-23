@@ -72,14 +72,11 @@ func (mgr *Manager) start() error {
 	mgr.scheduler.start()
 	mgr.logger.Infoln("audit plan manager started")
 
-	aps, err := mgr.persist.GetAuditPlans()
+	aps, err := mgr.persist.GetActiveAuditPlans()
 	if err != nil {
 		return err
 	}
 	for _, v := range aps {
-		if v.Status == model.AuditPlanStatusSuspended {
-			continue
-		}
 		ap := v
 		err := mgr.startAuditPlan(ap)
 		if err != nil {

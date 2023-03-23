@@ -10,11 +10,6 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-const (
-	AuditPlanStatusSuspended = "suspended"
-	AuditPlanStatusActive    = "active"
-)
-
 type AuditPlan struct {
 	Model
 	ProjectId        uint   `gorm:"index; not null"`
@@ -39,8 +34,6 @@ type AuditPlan struct {
 	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
 	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
-
-	Status string `gorm:"default:'active'"`
 }
 
 type AuditPlanSQLV2 struct {
@@ -75,6 +68,15 @@ func (a *AuditPlanSQLV2) BeforeSave() error {
 func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 	var aps []*AuditPlan
 	err := s.db.Model(AuditPlan{}).Find(&aps).Error
+	return aps, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
+	var aps []*AuditPlan
+	err := s.db.Model(AuditPlan{}).
+		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where("projects.status = ?", ProjectStatusActive).
+		Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -196,12 +198,4 @@ func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, erro
 	}
 
 	return resp, errors.ConnectStorageErrWrapper(err)
-}
-
-func (s *Storage) SuspendAuditPlans(ids []uint) error {
-	return s.db.Model(AuditPlan{}).Where("id IN (?)", ids).Updates(AuditPlan{Status: AuditPlanStatusSuspended}).Error
-}
-
-func (s *Storage) ActiveAuditPlans(ids []uint) error {
-	return s.db.Model(AuditPlan{}).Where("id IN (?)", ids).Updates(AuditPlan{Status: AuditPlanStatusActive}).Error
 }
