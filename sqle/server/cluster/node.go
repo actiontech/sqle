@@ -1,5 +1,7 @@
 package cluster
 
+var IsClusterMode bool = false
+
 var DefaultNode Node = &NoClusterNode{}
 
 type Node interface {
