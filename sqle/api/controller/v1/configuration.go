@@ -1134,11 +1134,16 @@ func UploadLogo(c echo.Context) error {
 	return uploadLogo(c)
 }
 
+type GetLogoReqV1 struct {
+	Timestamp string `query:"timestamp"`
+}
+
 // GetLogo
 // @Summary 获取logo
 // @Description get logo
 // @Id getLogo
 // @Tags configuration
+// @Param timestamp query string false "timestamp"
 // @Success 200 {file} file "get logo"
 // @router /v1/static/logo [get]
 func GetLogo(c echo.Context) error {
