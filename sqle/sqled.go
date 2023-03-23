@@ -13,7 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/server/cluster"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
@@ -26,6 +26,11 @@ func Run(config *config.Config) error {
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")
+	defer log.Logger().Info("stop sqled server")
+
+	if sqleCnf.EnableClusterMode && sqleCnf.ServerId == "" {
+		return fmt.Errorf("server id is required on cluster mode")
+	}
 
 	secretKey := sqleCnf.SecretKey
 	if secretKey != "" {
@@ -84,7 +89,21 @@ func Run(config *config.Config) error {
 	}
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
-	auditPlanMgrQuitCh := auditplan.InitManager(model.GetStorage())
+
+	var node cluster.Node
+	if sqleCnf.EnableClusterMode {
+		cluster.IsClusterMode = true
+		log.Logger().Infoln("running sqled server on cluster mode")
+		node = cluster.DefaultNode
+		node.Join(sqleCnf.ServerId)
+		defer node.Leave()
+	} else {
+		node = &cluster.NoClusterNode{}
+	}
+
+	jm := server.NewServerJobManger(node)
+	jm.Start()
+	defer jm.Stop()
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)
@@ -94,7 +113,6 @@ func Run(config *config.Config) error {
 	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
 	select {
 	case <-exitChan:
-		auditPlanMgrQuitCh <- struct{}{}
 		log.Logger().Infoln("sqled server will exit")
 	case sig := <-killChan:
 		switch sig {
@@ -110,6 +128,5 @@ func Run(config *config.Config) error {
 			log.Logger().Infof("Exit by signal %v", sig)
 		}
 	}
-	log.Logger().Info("stop sqled server")
 	return nil
 }
