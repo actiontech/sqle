@@ -98,6 +98,18 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
+	ap := &AuditPlan{}
+	err := s.db.Model(AuditPlan{}).
+		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+		Where("projects.status = ?", ProjectStatusActive).
+		Where("audit_plans.id = ?", id).Find(ap).Error
+	if err == gorm.ErrRecordNotFound {
+		return ap, false, nil
+	}
+	return ap, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetAuditPlanFromProjectByName(projectName, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
