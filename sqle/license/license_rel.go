@@ -203,29 +203,6 @@ func decode(str string) (string, error) {
 	return string(decrypted), nil
 }
 
-func EncodeLicense(permission *LicensePermission, collectedInfosContent string) (string, error) {
-	permissionStr, err := json.Marshal(permission)
-	if nil != err {
-		return "", err
-	}
-	encodedPermissionStr, err := encode(string(permissionStr))
-	if nil != err {
-		return "", err
-	}
-
-	encodedCollectedInfos, err := encode(collectedInfosContent)
-	if nil != err {
-		return "", err
-	}
-
-	ret := make([]string, 0)
-	licenseInfo := fmt.Sprintf("This license is for: %+v", permission)
-	ret = append(ret, licenseInfo)
-	ret = append(ret, encodedPermissionStr)
-	ret = append(ret, encodedCollectedInfos)
-	return strings.Join(ret, DELIMITER), nil
-}
-
 func (l *License) CheckHardwareSignIsMatch(hardwareSign string) error {
 	for _, s := range l.ClusterHardwareSign {
 		if hardwareSign == s {
