@@ -2,6 +2,7 @@ package v1
 
 import (
 	e "errors"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"strings"
@@ -14,6 +15,17 @@ const (
 	// LogoDir sqle logo 的本地目录
 	LogoDir = "./ui/static/media"
 )
+
+// GetDefaultLogoUrl 获取默认logo的静态资源url
+func GetDefaultLogoUrl() (string, error) {
+	fileInfo, err := getLogoFileInfo()
+	if err != nil {
+		return "", e.New("failed to get logo file info")
+	}
+
+	modifyTime := fileInfo.ModTime().Unix()
+	return fmt.Sprintf("%s/%s?timestamp=%d", LogoUrlBase, fileInfo.Name(), modifyTime), nil
+}
 
 func getLogoFileInfo() (fs.FileInfo, error) {
 	fileInfos, err := ioutil.ReadDir(LogoDir)

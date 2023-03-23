@@ -459,3 +459,21 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 	}
 	return dingTalkInstances, nil
 }
+
+type PersonaliseConfig struct {
+	Model
+	Title string `json:"title" gorm:"column:title"`
+}
+
+func (i *PersonaliseConfig) TableName() string {
+	return fmt.Sprintf("%v_personalise", globalConfigurationTablePrefix)
+}
+
+type LogoConfig struct {
+	Model
+	Logo []byte `json:"logo" gorm:"type:blob"`
+}
+
+func (i *LogoConfig) TableName() string {
+	return fmt.Sprintf("%v_logo", globalConfigurationTablePrefix)
+}
