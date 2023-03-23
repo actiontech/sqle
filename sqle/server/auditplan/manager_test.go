@@ -3,7 +3,7 @@ package auditplan
 import (
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ func TestManager(t *testing.T) {
 	storage := model.GetStorage()
 
 	// test init
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL").
+	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active'))").
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(1, "test_ap_1", "default", "*/1 * * * *"))
 
@@ -31,7 +31,7 @@ func TestManager(t *testing.T) {
 	assert.Equal(t, dt.ap.CronExpression, "*/1 * * * *")
 
 	// test add task
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL AND ((id = ?))").
+	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(2, "test_ap_2", "default", "*/1 * * * *"))
 
@@ -45,7 +45,7 @@ func TestManager(t *testing.T) {
 	assert.Equal(t, dt.ap.CronExpression, "*/1 * * * *")
 
 	// test delete task
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL AND ((id = ?))").
+	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}))
 
@@ -56,7 +56,7 @@ func TestManager(t *testing.T) {
 	assert.NoError(t, err)
 
 	// test update task
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans`  WHERE `audit_plans`.`deleted_at` IS NULL AND ((id = ?))").
+	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(1, "test_ap_1", "default", "*/2 * * * *"))
 
