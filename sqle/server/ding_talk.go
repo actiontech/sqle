@@ -128,8 +128,6 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 			}
 		}
 	}
-
-	return
 }
 
 func getUserByUserId(d *dingding.DingTalk, userId string, assignees []*model.User) (*model.User, error) {

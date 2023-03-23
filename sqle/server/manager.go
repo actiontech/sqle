@@ -71,7 +71,6 @@ func (s *ServerJobManager) Start() {
 			}
 		}
 	}()
-	return
 }
 
 func (s *ServerJobManager) Stop() {

@@ -108,7 +108,6 @@ func TestManager(t *testing.T) {
 	m.sync()
 	assert.Len(t, m.scheduler.cron.Entries(), 2)
 	assert.Len(t, m.tasks, 2)
-	task, err = m.getTask(1)
 
 	assert.Equal(t, &nextTimeMore2, m.lastSyncTime) // next time do not change.
 }

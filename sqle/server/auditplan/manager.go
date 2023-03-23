@@ -92,14 +92,16 @@ func (mgr *Manager) Start() {
 		for {
 			select {
 			case <-tick.C:
-				mgr.sync()
+				err := mgr.sync()
+				if err != nil {
+					mgr.logger.Errorf("sync audit plan task failed, error: %v", err)
+				}
 			case <-mgr.exitCh:
 				mgr.doneCh <- struct{}{}
 				return
 			}
 		}
 	}()
-	return
 }
 
 func (mgr *Manager) sync() error {
