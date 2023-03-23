@@ -129,16 +129,6 @@ func archiveProjectV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("there are unfinished work orders, and the current project cannot be archived")))
 	}
 
-	apIDs, err := s.GetAuditPlanIDsByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.SuspendAuditPlans(apIDs)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	err = s.ArchiveProject(projectName)
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -159,16 +149,6 @@ func unarchiveProjectV1(c echo.Context) error {
 	}
 
 	err = s.UnarchiveProject(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	apIDs, err := s.GetAuditPlanIDsByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = s.ActiveAuditPlans(apIDs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
