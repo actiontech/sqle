@@ -471,7 +471,7 @@ func (i *PersonaliseConfig) TableName() string {
 
 type LogoConfig struct {
 	Model
-	Logo []byte `json:"logo" gorm:"type:blob"`
+	Logo []byte `json:"logo" gorm:"type:mediumblob"`
 }
 
 func (i *LogoConfig) TableName() string {
