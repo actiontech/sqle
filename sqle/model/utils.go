@@ -307,7 +307,7 @@ func (s *Storage) CreateAdminUser() error {
 const DefaultProject = "default"
 
 func (s *Storage) CreateDefaultProject() error {
-	exist, err := s.IsAnyProjectExist()
+	exist, err := s.IsProjectExist()
 	if err != nil {
 		return err
 	}
