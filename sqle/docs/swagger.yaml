@@ -4368,6 +4368,8 @@ paths:
       - configuration
   /v1/configurations/personalise/logo:
     post:
+      consumes:
+      - multipart/form-data
       description: upload logo
       operationId: uploadLogo
       parameters:
