@@ -267,7 +267,7 @@ func CancelWorkflowV2(c echo.Context) error {
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
-	err = s.UpdateWorkflowStatus(workflow, nil, nil)
+	err = s.UpdateWorkflowStatus(workflow)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -334,7 +334,7 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows, nil, nil); err != nil {
+	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -397,17 +397,22 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 		}
 
 		lastStep.State = model.WorkflowStepStateApprove
+		lastStep.OperationUserId = user.ID
 		workflows[i] = workflow
 		workflow.Record.Status = model.WorkflowStatusFinish
 		workflow.Record.CurrentWorkflowStepId = 0
-		for j := range workflow.Record.InstanceRecords {
-			workflow.Record.InstanceRecords[j].ExecutionUserId = user.ID
-			workflow.Record.InstanceRecords[j].IsSQLExecuted = true
-		}
-	}
 
-	if err := model.GetStorage().BatchCompletionWorkflow(workflows); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		needExecInstanceRecords := []*model.WorkflowInstanceRecord{}
+		for _, inst := range workflow.Record.InstanceRecords {
+			if !inst.IsSQLExecuted {
+				inst.ExecutionUserId = user.ID
+				inst.IsSQLExecuted = true
+				needExecInstanceRecords = append(needExecInstanceRecords, inst)
+			}
+		}
+		if err := model.GetStorage().CompletionWorkflow(workflow, lastStep, needExecInstanceRecords); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)

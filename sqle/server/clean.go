@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
@@ -16,27 +15,24 @@ const (
 	OperationLogExpiredTime = 90 * 24 // 90 days
 )
 
-func (s *Sqled) cleanLoop() {
-	tick := time.NewTicker(1 * time.Hour)
-	defer tick.Stop()
-	entry := log.NewEntry().WithField("type", "cron")
-	s.CleanExpiredWorkflows(entry)
-	s.CleanExpiredTasks(entry)
-	s.CleanExpiredOperationLog(entry)
-
-	for {
-		select {
-		case <-s.exit:
-			return
-		case <-tick.C:
-			s.CleanExpiredWorkflows(entry)
-			s.CleanExpiredTasks(entry)
-			s.CleanExpiredOperationLog(entry)
-		}
-	}
+type CleanJob struct {
+	BaseJob
 }
 
-func (s *Sqled) CleanExpiredWorkflows(entry *logrus.Entry) {
+func NewCleanJob(entry *logrus.Entry) ServerJob {
+	entry = entry.WithField("job", "clean")
+	j := &CleanJob{}
+	j.BaseJob = *NewBaseJob(entry, 1*time.Hour, j.job)
+	return j
+}
+
+func (j *CleanJob) job(entry *logrus.Entry) {
+	j.CleanExpiredWorkflows(entry)
+	j.CleanExpiredTasks(entry)
+	j.CleanExpiredOperationLog(entry)
+}
+
+func (j *CleanJob) CleanExpiredWorkflows(entry *logrus.Entry) {
 	st := model.GetStorage()
 
 	expiredHours, err := st.GetWorkflowExpiredHoursOrDefault()
@@ -65,7 +61,7 @@ func (s *Sqled) CleanExpiredWorkflows(entry *logrus.Entry) {
 	}
 }
 
-func (s *Sqled) CleanExpiredTasks(entry *logrus.Entry) {
+func (j *CleanJob) CleanExpiredTasks(entry *logrus.Entry) {
 	st := model.GetStorage()
 	start := time.Now().Add(-SqlAuditTaskExpiredTime * time.Hour)
 	tasks, err := st.GetExpiredTasks(start)
@@ -84,5 +80,25 @@ func (s *Sqled) CleanExpiredTasks(entry *logrus.Entry) {
 	}
 	if len(hasDeletedTaskIds) > 0 {
 		entry.Infof("clean task [%s] success", strings.Join(hasDeletedTaskIds, ", "))
+	}
+}
+
+func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
+	start := time.Now().Add(-OperationLogExpiredTime * time.Hour)
+
+	st := model.GetStorage()
+	idList, err := st.GetExpiredOperationRecordIDListByStartTime(start)
+	if err != nil {
+		entry.Errorf("get expired operation record id list error: %v", err)
+		return
+	}
+
+	if len(idList) > 0 {
+		if err := st.DeleteExpiredOperationRecordByIDList(idList); err != nil {
+			entry.Errorf("delete expired operation record error: %v", err)
+			return
+		}
+
+		entry.Infof("delete expired operation record succeeded, count: %d id: %s", len(idList), strings.Join(idList, ","))
 	}
 }

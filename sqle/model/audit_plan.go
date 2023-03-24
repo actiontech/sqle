@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -210,4 +211,11 @@ func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, erro
 	}
 
 	return resp, errors.ConnectStorageErrWrapper(err)
+}
+
+// GetLatestAuditPlanIds 获取所有变更过的记录，包括删除
+func (s *Storage) GetLatestAuditPlanRecords(after time.Time) ([]*AuditPlan, error) {
+	var aps []*AuditPlan
+	err := s.db.Unscoped().Debug().Model(AuditPlan{}).Select("id, updated_at").Where("updated_at > ?", after).Order("updated_at").Find(&aps).Error
+	return aps, errors.New(errors.ConnectStorageError, err)
 }
