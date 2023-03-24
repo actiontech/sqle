@@ -55,10 +55,15 @@ type LicensePermission struct {
 	NumberOfInstanceOfEachType LimitOfEachType // Instance limit
 }
 
+type ClusterHardwareSign struct {
+	Id   string `json:"id"`        // cluster 标识
+	Sign string `json:"signature"` // license 服务签名
+}
+
 type LicenseContent struct {
-	Permission          LicensePermission
-	HardwareSign        string
-	ClusterHardwareSign map[string]string // v2.2303.0 版本引入
+	Permission           LicensePermission
+	HardwareSign         string
+	ClusterHardwareSigns []ClusterHardwareSign // v2.2303.0 版本引入
 }
 type LicenseStatus struct {
 	WorkDurationHour int // 实际的运行时间，加密存在许可证内容里
@@ -122,7 +127,7 @@ func (l *LicenseContent) Encode() (text string, err error) {
 	if nil != err {
 		return "", err
 	}
-	clusterHardwareSignStr, err := json.Marshal(l.ClusterHardwareSign)
+	clusterHardwareSignStr, err := json.Marshal(l.ClusterHardwareSigns)
 	if nil != err {
 		return "", err
 	}
@@ -160,16 +165,16 @@ func (l *LicenseContent) Decode(license string) error {
 		return err
 	}
 	if len(options) >= 4 {
-		clusterHardwareSign := map[string]string{}
+		clusterHardwareSigns := []ClusterHardwareSign{}
 		clusterHardwareSignStr, err := decode(options[3])
 		if nil != err {
 			return err
 		}
-		err = json.Unmarshal([]byte(clusterHardwareSignStr), &clusterHardwareSign)
+		err = json.Unmarshal([]byte(clusterHardwareSignStr), &clusterHardwareSigns)
 		if err != nil {
 			return err
 		}
-		l.ClusterHardwareSign = clusterHardwareSign
+		l.ClusterHardwareSigns = clusterHardwareSigns
 	}
 
 	l.Permission = *permission
@@ -204,8 +209,8 @@ func decode(str string) (string, error) {
 }
 
 func (l *License) CheckHardwareSignIsMatch(hardwareSign string) error {
-	for _, s := range l.ClusterHardwareSign {
-		if hardwareSign == s {
+	for _, s := range l.ClusterHardwareSigns {
+		if hardwareSign == s.Sign {
 			return nil
 		}
 	}

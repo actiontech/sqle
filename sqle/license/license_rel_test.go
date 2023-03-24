@@ -22,9 +22,15 @@ func TestCheckHardware(t *testing.T) {
 	l = &License{
 		LicenseContent: LicenseContent{
 			HardwareSign: "test1",
-			ClusterHardwareSign: map[string]string{
-				"node3": "test3",
-				"node4": "test4",
+			ClusterHardwareSigns: []ClusterHardwareSign{
+				{
+					Id:   "node3",
+					Sign: "test3",
+				},
+				{
+					Id:   "node4",
+					Sign: "test4",
+				},
 			},
 		},
 	}
