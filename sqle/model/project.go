@@ -558,7 +558,7 @@ func (s *Storage) IsProjectArchived(projectName string) (bool, error) {
 	proj := &Project{}
 	err := s.db.Select("status").Where("name = ?", projectName).First(&proj).Error
 	if err == gorm.ErrRecordNotFound {
-		return false, fmt.Errorf("project dosen't exist")
+		return false, fmt.Errorf("project doesn't exist")
 	}
 	if err != nil {
 		return false, err
