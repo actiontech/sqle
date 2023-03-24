@@ -39,6 +39,7 @@ func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartial
 }
 
 func GetSQLs(entry *logrus.Entry, ap *model.AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	args["audit_plan_id"] = ap.ID
 	task := NewTask(entry, ap)
 	return task.GetSQLs(args)
 }
