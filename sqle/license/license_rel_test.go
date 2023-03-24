@@ -9,6 +9,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestLicenseEncodeAndDecode(t *testing.T) {
+	l := &LicenseContent{}
+	l.Permission = LicensePermission{
+		WorkDurationDay: 10,
+		Version:         "999",
+		UserCount:       10,
+		NumberOfInstanceOfEachType: LimitOfEachType{
+			"MySQL": LimitOfType{DBType: "MySQL", Count: 10},
+		},
+	}
+	l.HardwareSign = "test1" // 仅测试是否能加解密，不关注内容
+
+	d, err := l.Encode()
+	assert.NoError(t, err)
+
+	newL := &LicenseContent{}
+	err = newL.Decode(d)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "test1", newL.HardwareSign)
+	assert.Equal(t, 10, l.Permission.UserCount) // 无需判断全部相等
+	assert.Nil(t, newL.ClusterHardwareSigns)
+
+	l = &LicenseContent{}
+	l.Permission = LicensePermission{
+		WorkDurationDay: 10,
+		Version:         "999",
+		UserCount:       11,
+		NumberOfInstanceOfEachType: LimitOfEachType{
+			"MySQL": LimitOfType{DBType: "MySQL", Count: 10},
+		},
+	}
+	l.ClusterHardwareSigns = []ClusterHardwareSign{
+		{
+			Id:   "node1",
+			Sign: "test2",
+		},
+	}
+
+	d, err = l.Encode()
+	assert.NoError(t, err)
+
+	newL = &LicenseContent{}
+	err = newL.Decode(d)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "", newL.HardwareSign)
+	assert.Equal(t, 11, l.Permission.UserCount) // 无需判断全部相等
+	assert.NotNil(t, newL.ClusterHardwareSigns)
+	assert.Equal(t, 1, len(newL.ClusterHardwareSigns))
+	assert.Equal(t, "test2", newL.ClusterHardwareSigns[0].Sign)
+}
+
 func TestCheckHardware(t *testing.T) {
 	l := &License{
 		LicenseContent: LicenseContent{

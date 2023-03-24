@@ -114,16 +114,22 @@ func (l License) Value() (driver.Value, error) {
 }
 
 func (l *LicenseContent) Encode() (text string, err error) {
+	block, err := aes.NewCipher([]byte(cipherKey))
+	if nil != err {
+		return "", err
+	}
+	encrypter := cipher.NewCFBEncrypter(block, []byte(cipherText))
+
 	permissionStr, err := json.Marshal(l.Permission)
 	if nil != err {
 		return "", err
 	}
-	encodedPermissionStr, err := encode(string(permissionStr))
+	encodedPermissionStr, err := encode(string(permissionStr), encrypter)
 	if nil != err {
 		return "", err
 	}
 
-	encodedHardwareSignStr, err := encode(l.HardwareSign)
+	encodedHardwareSignStr, err := encode(l.HardwareSign, encrypter)
 	if nil != err {
 		return "", err
 	}
@@ -132,7 +138,7 @@ func (l *LicenseContent) Encode() (text string, err error) {
 		return "", err
 	}
 
-	encodedClusterHardwareSignStr, err := encode(string(clusterHardwareSignStr))
+	encodedClusterHardwareSignStr, err := encode(string(clusterHardwareSignStr), encrypter)
 	if nil != err {
 		return "", err
 	}
@@ -147,11 +153,17 @@ func (l *LicenseContent) Encode() (text string, err error) {
 }
 
 func (l *LicenseContent) Decode(license string) error {
+	block, err := aes.NewCipher([]byte(cipherKey))
+	if nil != err {
+		return err
+	}
+	decrypter := cipher.NewCFBDecrypter(block, []byte(cipherText))
+
 	options := strings.Split(license, DELIMITER)
 	if len(options) < 3 {
 		return ErrInvalidLicense
 	}
-	permissionStr, err := decode(options[1])
+	permissionStr, err := decode(options[1], decrypter)
 	if nil != err {
 		return err
 	}
@@ -160,13 +172,13 @@ func (l *LicenseContent) Decode(license string) error {
 	if nil != err {
 		return err
 	}
-	hardwareSign, err := decode(options[2])
+	hardwareSign, err := decode(options[2], decrypter)
 	if nil != err {
 		return err
 	}
 	if len(options) >= 4 {
 		clusterHardwareSigns := []ClusterHardwareSign{}
-		clusterHardwareSignStr, err := decode(options[3])
+		clusterHardwareSignStr, err := decode(options[3], decrypter)
 		if nil != err {
 			return err
 		}
@@ -182,23 +194,13 @@ func (l *LicenseContent) Decode(license string) error {
 	return nil
 }
 
-func encode(str string) (string, error) {
-	block, err := aes.NewCipher([]byte(cipherKey))
-	if nil != err {
-		return "", err
-	}
-	encrypter := cipher.NewCFBEncrypter(block, []byte(cipherText))
+func encode(str string, encrypter cipher.Stream) (string, error) {
 	encrypted := make([]byte, len(str))
 	encrypter.XORKeyStream(encrypted, []byte(str))
 	return genEncoding.EncodeToString(encrypted), nil
 }
 
-func decode(str string) (string, error) {
-	block, err := aes.NewCipher([]byte(cipherKey))
-	if nil != err {
-		return "", err
-	}
-	decrypter := cipher.NewCFBDecrypter(block, []byte(cipherText))
+func decode(str string, decrypter cipher.Stream) (string, error) {
 	a, err := genEncoding.DecodeString(str)
 	if nil != err {
 		return "", err
