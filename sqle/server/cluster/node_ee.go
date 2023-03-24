@@ -13,25 +13,25 @@ import (
 )
 
 func init() {
-	DefaultNode = NewBaseOnModelCluster()
+	DefaultNode = NewBaseModelCluster()
 }
 
-type BaseOnModelClusterNode struct {
+type BaseModelClusterNode struct {
 	entry    *logrus.Entry
 	ServerId string
 	exitCh   chan struct{}
 	doneCh   chan struct{}
 }
 
-func NewBaseOnModelCluster() Node {
-	return &BaseOnModelClusterNode{
+func NewBaseModelCluster() Node {
+	return &BaseModelClusterNode{
 		entry:  log.NewEntry().WithField("type", "cluster"),
 		exitCh: make(chan struct{}),
 		doneCh: make(chan struct{}),
 	}
 }
 
-func (c *BaseOnModelClusterNode) IsLeader() bool {
+func (c *BaseModelClusterNode) IsLeader() bool {
 	s := model.GetStorage()
 	id, err := s.GetClusterLeader()
 	if err != nil {
@@ -40,7 +40,7 @@ func (c *BaseOnModelClusterNode) IsLeader() bool {
 	return c.ServerId == id
 }
 
-func (c *BaseOnModelClusterNode) Join(serverId string) {
+func (c *BaseModelClusterNode) Join(serverId string) {
 	c.ServerId = serverId
 	s := model.GetStorage()
 	h, err := license.CollectHardwareInfo()
@@ -52,9 +52,9 @@ func (c *BaseOnModelClusterNode) Join(serverId string) {
 		c.entry.Errorf("register cluster node info failed, error: %v", err)
 	}
 
-	err = s.AttemptClusterLeadership(c.ServerId)
+	err = s.MaintainClusterLeader(c.ServerId)
 	if err != nil {
-		c.entry.Error("attempt cluster leader ship failed, error: %v", err)
+		c.entry.Error("maintain cluster leader failed, error: %v", err)
 	}
 	go func() {
 		tick := time.NewTicker(time.Second * 5)
@@ -62,9 +62,9 @@ func (c *BaseOnModelClusterNode) Join(serverId string) {
 		for {
 			select {
 			case <-tick.C:
-				err := s.AttemptClusterLeadership(c.ServerId)
+				err := s.MaintainClusterLeader(c.ServerId)
 				if err != nil {
-					c.entry.Error("attempt cluster leader ship failed, error: %v", err)
+					c.entry.Error("maintain cluster leader failed, error: %v", err)
 				}
 			case <-c.exitCh:
 				c.doneCh <- struct{}{}
@@ -74,7 +74,7 @@ func (c *BaseOnModelClusterNode) Join(serverId string) {
 	}()
 }
 
-func (c *BaseOnModelClusterNode) Leave() {
+func (c *BaseModelClusterNode) Leave() {
 	c.exitCh <- struct{}{}
 	<-c.doneCh
 }
