@@ -73,13 +73,16 @@ func getSQLELicenseInfo(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		var clusterHardwareSign = map[string]string{}
+		var clusterHardwareSigns = []license.ClusterHardwareSign{}
 		for _, node := range nodes {
 			if node.ServerId != "" && node.HardwareSign != "" {
-				clusterHardwareSign[node.ServerId] = node.HardwareSign
+				clusterHardwareSigns = append(clusterHardwareSigns, license.ClusterHardwareSign{
+					Id:   node.ServerId,
+					Sign: node.HardwareSign,
+				})
 			}
 		}
-		data, err = json.Marshal(clusterHardwareSign)
+		data, err = json.Marshal(clusterHardwareSigns)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
@@ -192,12 +195,12 @@ func generateLicenseItems(l *license.LicenseContent) []LicenseItem {
 			Limit:       l.HardwareSign,
 		})
 	}
-	if len(l.ClusterHardwareSign) > 0 {
-		for k, v := range l.ClusterHardwareSign {
+	if len(l.ClusterHardwareSigns) > 0 {
+		for _, s := range l.ClusterHardwareSigns {
 			items = append(items, LicenseItem{
-				Description: fmt.Sprintf("节点[%s]机器信息", k),
-				Name:        fmt.Sprintf("node_%s_info", k),
-				Limit:       v,
+				Description: fmt.Sprintf("节点[%s]机器信息", s.Id),
+				Name:        fmt.Sprintf("node_%s_info", s.Id),
+				Limit:       s.Sign,
 			})
 		}
 	}
