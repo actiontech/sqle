@@ -3,12 +3,12 @@ package auditplan
 import (
 	"context"
 	"fmt"
-	"sync"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
@@ -16,45 +16,56 @@ import (
 var ErrAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit plan not exist"))
 var ErrAuditPlanExisted = errors.New(errors.DataExist, fmt.Errorf("audit plan existed"))
 
-var manager *Manager
+func audit(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
+	report, err := task.Audit()
+	if err != nil {
+		return nil, err
+	}
+	return report, notification.NotifyAuditPlan(auditPlanId, report)
+}
 
-func InitManager(s *model.Storage) chan struct{} {
-	manager = &Manager{
+func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, error) {
+	task := NewTask(entry, ap)
+	return audit(ap.ID, task)
+}
+
+func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartialSync bool) error {
+	task := NewTask(entry, ap)
+	if isPartialSync {
+		return task.PartialSyncSQLs(sqls)
+	} else {
+		return task.FullSyncSQLs(sqls)
+	}
+}
+
+func GetSQLs(entry *logrus.Entry, ap *model.AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	task := NewTask(entry, ap)
+	return task.GetSQLs(args)
+}
+
+func init() {
+	server.OnlyRunOnLeaderJobs = append(server.OnlyRunOnLeaderJobs, NewManager)
+}
+
+func NewManager(entry *logrus.Entry) server.ServerJob {
+	now := time.Now()
+	manager := &Manager{
 		scheduler: &scheduler{
 			cron:     cron.New(),
 			entryIDs: make(map[uint]cron.EntryID),
 		},
-		persist: s,
-		logger:  log.NewEntry().WithField("type", "audit_plan"),
-		tasks:   map[uint]Task{},
+		persist:      model.GetStorage(),
+		logger:       entry.WithField("job", "audit_plan"),
+		tasks:        map[uint]Task{},
+		lastSyncTime: &now,
+		exitCh:       make(chan struct{}),
+		doneCh:       make(chan struct{}),
 	}
-
-	err := manager.start()
-	if err != nil {
-		panic(err)
-	}
-
-	exitCh := make(chan struct{})
-
-	go func() {
-		<-exitCh
-		manager.stop()
-	}()
-
-	return exitCh
-}
-
-func GetManager() *Manager {
 	return manager
 }
 
-// Manager is the struct managing the persistent AuditPlans. It
-// is *goroutine-safe*, since all exported methods are protected by a lock.
-//
-// All audit plan operations except select should go through Manager.
+// Manager is the struct managing the persistent AuditPlans.
 type Manager struct {
-	mu sync.Mutex
-
 	scheduler *scheduler
 
 	// persist is a database handle which store AuditPlan.
@@ -63,32 +74,73 @@ type Manager struct {
 	logger *logrus.Entry
 
 	tasks map[uint] /* audit plan id*/ Task
+
+	lastSyncTime   *time.Time
+	isFullSyncDone bool
+
+	exitCh chan struct{}
+	doneCh chan struct{}
 }
 
-func (mgr *Manager) start() error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
+func (mgr *Manager) Start() {
 	mgr.scheduler.start()
 	mgr.logger.Infoln("audit plan manager started")
 
-	aps, err := mgr.persist.GetActiveAuditPlans()
+	go func() {
+		tick := time.NewTicker(5 * time.Second)
+		defer tick.Stop()
+		for {
+			select {
+			case <-tick.C:
+				err := mgr.sync()
+				if err != nil {
+					mgr.logger.Errorf("sync audit plan task failed, error: %v", err)
+				}
+			case <-mgr.exitCh:
+				mgr.doneCh <- struct{}{}
+				return
+			}
+		}
+	}()
+}
+
+func (mgr *Manager) sync() error {
+	// 全量同步智能扫描任务，仅需成功做一次
+	if !mgr.isFullSyncDone {
+		aps, err := mgr.persist.GetActiveAuditPlans()
+		if err != nil {
+			return err
+		}
+		mgr.isFullSyncDone = true
+		for _, v := range aps {
+			ap := v
+
+			err := mgr.startAuditPlan(ap)
+			if err != nil {
+				mgr.logger.WithField("name", ap.Name).Errorf("start audit task failed, error: %v", err)
+			}
+		}
+	}
+	// 增量同步智能扫描任务，根据数据库记录的更新时间筛选，更新后将下次筛选的时间为上一次记录的最晚的更新时间。
+	aps, err := mgr.persist.GetLatestAuditPlanRecords(*mgr.lastSyncTime)
 	if err != nil {
 		return err
 	}
+
 	for _, v := range aps {
 		ap := v
-		err := mgr.startAuditPlan(ap)
+		err := mgr.syncTask(ap.ID)
 		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("start audit task failed, error: %v", err)
+			mgr.logger.WithField("name", ap.Name).Errorf("sync audit task failed, error: %v", err)
 		}
+		mgr.lastSyncTime = &ap.UpdatedAt
 	}
 	return nil
 }
 
-func (mgr *Manager) stop() {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
+func (mgr *Manager) Stop() {
+	mgr.exitCh <- struct{}{}
+	<-mgr.doneCh
 
 	for name := range mgr.tasks {
 		err := mgr.deleteAuditPlan(name)
@@ -101,10 +153,7 @@ func (mgr *Manager) stop() {
 	mgr.logger.Infoln("audit plan manager stopped")
 }
 
-func (mgr *Manager) SyncTask(auditPlanId uint) error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
+func (mgr *Manager) syncTask(auditPlanId uint) error {
 	ap, exist, err := mgr.persist.GetActiveAuditPlanById(auditPlanId)
 	if err != nil {
 		return err
@@ -138,7 +187,7 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 	mgr.tasks[ap.ID] = task
 
 	return mgr.scheduler.addJob(mgr.logger, ap, func() {
-		_, err := mgr.Audit(ap.ID)
+		_, err := audit(ap.ID, task)
 		if err != nil {
 			mgr.logger.WithField("name", ap.Name).Errorf("schedule to audit task failed, error: %v", err)
 		}
@@ -169,49 +218,6 @@ func (mgr *Manager) getTask(auditPlanId uint) (Task, error) {
 		return nil, errors.New(errors.DataNotExist, fmt.Errorf("task not found"))
 	}
 	return task, nil
-}
-
-func (mgr *Manager) Audit(auditPlanId uint) (*model.AuditPlanReportV2, error) {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	task, err := mgr.getTask(auditPlanId)
-	if err != nil {
-		return nil, err
-	}
-	report, err := task.Audit()
-	if err != nil {
-		return nil, err
-	}
-	return report, notification.NotifyAuditPlan(auditPlanId, report)
-}
-
-func (mgr *Manager) UploadSQLs(auditPlanId uint, sqls []*SQL, isPartialSync bool) error {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	task, err := mgr.getTask(auditPlanId)
-	if err != nil {
-		return err
-	}
-	if isPartialSync {
-		return task.PartialSyncSQLs(sqls)
-	} else {
-		return task.FullSyncSQLs(sqls)
-	}
-}
-
-func (mgr *Manager) GetSQLs(auditPlanId uint, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	mgr.mu.Lock()
-	defer mgr.mu.Unlock()
-
-	args["audit_plan_id"] = auditPlanId
-
-	task, err := mgr.getTask(auditPlanId)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	return task.GetSQLs(args)
 }
 
 // scheduler is not goroutine safe.

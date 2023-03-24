@@ -579,49 +579,81 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task, stepTemplates
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func (s *Storage) UpdateWorkflowStatus(w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
+// UpdateWorkflowStatus, 仅改变工单状态，用于关闭工单
+func (s *Storage) UpdateWorkflowStatus(w *Workflow) error {
 	return s.Tx(func(tx *gorm.DB) error {
-		return updateWorkflowStatus(tx, w, operateStep, instanceRecords)
+		return updateWorkflowStatus(tx, w)
 	})
 }
 
-func updateWorkflowStatus(tx *gorm.DB, w *Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
-	err := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
-		w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID).Error
-	if err != nil {
-		return err
-	}
-	if operateStep == nil {
-		return nil
-	}
-	err = tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ?",
-		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID).Error
-	if err != nil {
-		return err
-	}
-
-	if len(instanceRecords) <= 0 {
-		return nil
-	}
-	for _, inst := range instanceRecords {
-		err = tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ? WHERE id = ?",
-			inst.IsSQLExecuted, inst.ID).Error
-		if err != nil {
+// UpdateWorkflowStep, 改变工单步骤状态，并且会更新工单状态，用于审批通过和驳回工单
+func (s *Storage) UpdateWorkflowStep(w *Workflow, operateStep *WorkflowStep) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if err := updateWorkflowStatus(tx, w); err != nil {
 			return err
 		}
-		err = tx.Exec("UPDATE workflow_instance_records SET execution_user_id = ? WHERE id = ?",
-			inst.ExecutionUserId, inst.ID).Error
-		if err != nil {
+		return updateWorkflowStep(tx, operateStep)
+	})
+}
+
+// UpdateWorkflowExecInstanceRecord， 用于更新SQL上线状态
+func (s *Storage) UpdateWorkflowExecInstanceRecord(w *Workflow, operateStep *WorkflowStep, needExecInstanceRecords []*WorkflowInstanceRecord) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if err := updateWorkflowStatus(tx, w); err != nil {
 			return err
+		}
+		// 当所有实例都执行上线，会变更SQL上线步骤的状态
+		if operateStep != nil {
+			err := updateWorkflowStep(tx, operateStep)
+			if err != nil {
+				return err
+			}
+		}
+		return updateWorkflowInstanceRecord(tx, needExecInstanceRecords)
+	})
+}
+
+func updateWorkflowStatus(tx *gorm.DB, w *Workflow) error {
+	db := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
+		w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
+	if db.Error != nil {
+		return db.Error
+	}
+	return nil
+}
+
+func updateWorkflowStep(tx *gorm.DB, operateStep *WorkflowStep) error {
+	// 必须保证更新前的操作用户未填写，通过数据库的特性保证数据不会重复写
+	db := tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ? AND operation_user_id = 0",
+		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
+	if db.Error != nil {
+		return db.Error
+	}
+	if db.RowsAffected == 0 {
+		return fmt.Errorf("update workflow step %d failed, it appears to have been modified by another process", operateStep.ID)
+	}
+	return nil
+}
+
+func updateWorkflowInstanceRecord(tx *gorm.DB, needExecInstanceRecords []*WorkflowInstanceRecord) error {
+	// 必须保证更新前的上线状态为未执行，操作用户未填写，通过数据库的特性保证数据不会重复写
+	for _, inst := range needExecInstanceRecords {
+		db := tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ?, execution_user_id = ? WHERE id = ? AND is_sql_executed = 0 AND execution_user_id = 0",
+			inst.IsSQLExecuted, inst.ExecutionUserId, inst.ID)
+		if db.Error != nil {
+			return db.Error
+		}
+		if db.RowsAffected == 0 {
+			return fmt.Errorf("update workflow instance record %d failed, it appears to have been modified by another process", inst.ID)
 		}
 	}
 	return nil
 }
 
-func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow, operateStep *WorkflowStep, instanceRecords []*WorkflowInstanceRecord) error {
+func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		for _, w := range ws {
-			err := updateWorkflowStatus(tx, w, operateStep, instanceRecords)
+			err := updateWorkflowStatus(tx, w)
 			if err != nil {
 				return err
 			}
@@ -630,30 +662,25 @@ func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow, operateStep *Workflo
 	})
 }
 
-func (s *Storage) BatchCompletionWorkflow(ws []*Workflow) error {
+func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, needExecInstanceRecords []*WorkflowInstanceRecord) error {
 	return s.Tx(func(tx *gorm.DB) error {
-		for _, w := range ws {
-			tasks, err := s.GetTasksByWorkFlowRecordID(w.Record.ID)
+		for _, inst := range needExecInstanceRecords {
+			err := updateExecuteSQLStatusByTaskId(tx, inst.TaskId, SQLExecuteStatusManuallyExecuted)
 			if err != nil {
 				return err
 			}
-			for _, task := range tasks {
-				err = updateExecuteSQLStatusByTaskId(tx, task, SQLExecuteStatusManuallyExecuted)
-				if err != nil {
-					return err
-				}
-				err = updateTaskStatusById(tx, task.ID, TaskStatusManuallyExecuted)
-				if err != nil {
-					return err
-				}
-			}
-
-			err = updateWorkflowStatus(tx, w, w.Record.Steps[len(w.Record.Steps)-1], w.Record.InstanceRecords)
+			err = updateTaskStatusById(tx, inst.TaskId, TaskStatusManuallyExecuted)
 			if err != nil {
 				return err
 			}
 		}
-		return nil
+		if err := updateWorkflowStatus(tx, w); err != nil {
+			return err
+		}
+		if err := updateWorkflowStep(tx, operateStep); err != nil {
+			return err
+		}
+		return updateWorkflowInstanceRecord(tx, needExecInstanceRecords)
 	})
 }
 
@@ -1162,20 +1189,6 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return counts, nil
-}
-
-func (s *Storage) GetWaitExecInstancesCountByWorkflowId(workflowId uint) (int, error) {
-	count := 0
-	err := s.db.Table("workflows").
-		Joins("LEFT JOIN workflow_records ON workflow_records.id = workflows.workflow_record_id").
-		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
-		Where("workflows.id = ?", workflowId).
-		Where("workflow_instance_records.is_sql_executed = false").
-		Count(&count).Error
-	if err != nil {
-		return 0, errors.New(errors.ConnectStorageError, err)
-	}
-	return count, nil
 }
 
 type WorkflowTasksSummaryDetail struct {

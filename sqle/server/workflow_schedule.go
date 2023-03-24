@@ -15,21 +15,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (s *Sqled) workflowScheduleLoop() {
-	tick := time.NewTicker(5 * time.Second)
-	defer tick.Stop()
-	entry := log.NewEntry().WithField("type", "schedule_workflow")
-	for {
-		select {
-		case <-s.exit:
-			return
-		case <-tick.C:
-			s.WorkflowSchedule(entry)
-		}
-	}
+type WorkflowScheduleJob struct {
+	BaseJob
 }
 
-func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
+func NewWorkflowScheduleJob(entry *logrus.Entry) ServerJob {
+	entry = entry.WithField("job", "schedule_workflow")
+	j := &WorkflowScheduleJob{}
+	j.BaseJob = *NewBaseJob(entry, 5*time.Second, j.WorkflowSchedule)
+	return j
+}
+
+func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	st := model.GetStorage()
 	workflows, err := st.GetNeedScheduledWorkflows()
 	if err != nil {
@@ -68,7 +65,6 @@ func (s *Sqled) WorkflowSchedule(entry *logrus.Entry) {
 		if len(needExecuteTaskIds) == 0 {
 			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
 		}
-
 		err = ExecuteWorkflow(w, needExecuteTaskIds)
 		if err != nil {
 			entry.Errorf("execute scheduled workflow %s error: %v", w.Subject, err)
@@ -108,25 +104,33 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 	}
 
 	// update workflow
-	waitForExecTasksCount, err := s.GetWaitExecInstancesCountByWorkflowId(workflow.ID)
-	if err != nil {
-		return fmt.Errorf("get count of tasks failed: %v", err)
-	}
-	for i, inst := range workflow.Record.InstanceRecords {
+	needExecTaskRecords := make([]*model.WorkflowInstanceRecord, 0, len(needExecTaskIdToUserId))
+	for _, inst := range workflow.Record.InstanceRecords {
 		if userId, ok := needExecTaskIdToUserId[inst.TaskId]; ok {
-			workflow.Record.InstanceRecords[i].IsSQLExecuted = true
-			workflow.Record.InstanceRecords[i].ExecutionUserId = userId
+			inst.IsSQLExecuted = true
+			inst.ExecutionUserId = userId
+			needExecTaskRecords = append(needExecTaskRecords, inst)
 		}
 	}
 
+	var operateStep *model.WorkflowStep
 	// 只有当所有数据源都执行上线操作时，current step状态才改为"approved"
-	if waitForExecTasksCount == len(needExecTaskIdToUserId) {
+	allTaskHasExecuted := true
+	for _, inst := range workflow.Record.InstanceRecords {
+		if !inst.IsSQLExecuted {
+			allTaskHasExecuted = false
+		}
+	}
+	if allTaskHasExecuted {
 		currentStep.State = model.WorkflowStepStateApprove
 		workflow.Record.Status = model.WorkflowStatusExecuting
 		workflow.Record.CurrentWorkflowStepId = 0
+		operateStep = currentStep
+	} else {
+		operateStep = nil
 	}
 
-	err = s.UpdateWorkflowStatus(workflow, currentStep, workflow.Record.InstanceRecords)
+	err := s.UpdateWorkflowExecInstanceRecord(workflow, operateStep, needExecTaskRecords)
 	if err != nil {
 		return err
 	}
@@ -195,4 +199,52 @@ func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry) {
 			l.Errorf("update workflow record status failed: %v", err)
 		}
 	}
+}
+
+func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+
+	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow has been approved, you should to execute it"))
+	}
+
+	currentStep.State = model.WorkflowStepStateApprove
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+	nextStep := workflow.NextStep()
+	workflow.Record.CurrentWorkflowStepId = nextStep.ID
+	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
+		workflow.Record.Status = model.WorkflowStatusWaitForExecution
+	}
+
+	err := s.UpdateWorkflowStep(workflow, currentStep)
+	if err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
+
+	return nil
+}
+
+func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.User, s *model.Storage) error {
+	currentStep := workflow.CurrentStep()
+	currentStep.State = model.WorkflowStepStateReject
+	currentStep.Reason = reason
+	now := time.Now()
+	currentStep.OperateAt = &now
+	currentStep.OperationUserId = user.ID
+
+	workflow.Record.Status = model.WorkflowStatusReject
+	workflow.Record.CurrentWorkflowStepId = 0
+
+	if err := s.UpdateWorkflowStep(workflow, currentStep); err != nil {
+		return fmt.Errorf("update workflow status failed, %v", err)
+	}
+
+	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+
+	return nil
 }
