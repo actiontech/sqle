@@ -37,10 +37,9 @@ func TestCheckHardware(t *testing.T) {
 	assert.Error(t, l.CheckHardwareSignIsMatch(""))
 }
 
-func TestCheckLicenseExol(t *testing.T) {
+func TestCheckLicenseExpired(t *testing.T) {
 	l := &License{
 		LicenseContent: LicenseContent{
-			HardwareSign: "xxxxx1",
 			Permission: LicensePermission{
 				WorkDurationDay: 10,
 			},
