@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"encoding/json"
 	e "errors"
 	"fmt"
 	"mime"
@@ -15,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/cluster"
 
 	"github.com/labstack/echo/v4"
 )
@@ -32,17 +34,17 @@ func getLicense(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
+	if !exist || l.Content == nil {
 		return c.JSON(http.StatusOK, GetLicenseResV1{
 			BaseRes: controller.NewBaseReq(nil),
 		})
 	}
-	permission, collectedInfosContent, err := license.DecodeLicense(l.Content)
+	content, err := l.Content.LicenseContent.Encode()
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	items := generateLicenseItems(permission, collectedInfosContent)
+	items := generateLicenseItems(&l.Content.LicenseContent)
 
 	items = append(items, LicenseItem{
 		Description: "已运行时长(天)",
@@ -52,27 +54,47 @@ func getLicense(c echo.Context) error {
 		Description: "预计到期时间",
 		Name:        "estimated maturity",
 		// 这个时间要展示给人看, 展示成RFC3339不够友好, 也不需要展示精确的时间, 所以展示成自定义时间格式
-		Limit: time.Now().Add(time.Hour * time.Duration(permission.WorkDurationDay*24-l.WorkDurationHour)).Format("2006-01-02"),
+		Limit: time.Now().Add(time.Hour * time.Duration(l.Content.Permission.WorkDurationDay*24-l.WorkDurationHour)).Format("2006-01-02"),
 	})
 
 	return c.JSON(http.StatusOK, GetLicenseResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Content: l.Content,
+		Content: content,
 		License: items,
 	})
 
 }
 
 func getSQLELicenseInfo(c echo.Context) error {
-	info, err := license.CollectHardwareInfo()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, license.ErrCollectLicenseInfo)
+	var data []byte
+	if cluster.IsClusterMode {
+		s := model.GetStorage()
+		nodes, err := s.GetClusterNodes()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		var clusterHardwareSign = map[string]string{}
+		for _, node := range nodes {
+			if node.ServerId != "" && node.HardwareSign != "" {
+				clusterHardwareSign[node.ServerId] = node.HardwareSign
+			}
+		}
+		data, err = json.Marshal(clusterHardwareSign)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+	} else {
+		hardwareSign, err := license.CollectHardwareInfo()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, license.ErrCollectLicenseInfo)
+		}
+		data = []byte(hardwareSign)
 	}
 
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": HardwareInfoFileName}))
 
-	return c.Blob(http.StatusOK, echo.MIMETextPlain, []byte(info))
+	return c.Blob(http.StatusOK, echo.MIMETextPlain, []byte(data))
 }
 
 func setLicense(c echo.Context) error {
@@ -84,19 +106,20 @@ func setLicense(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, license.ErrLicenseEmpty))
 	}
 
-	{ // check license info
-		_, collectedInfosContent, err := license.DecodeLicense(file)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, license.ErrInvalidLicense)
-		}
-		collected, err := license.CollectHardwareInfo()
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, license.ErrCollectLicenseInfo))
-		}
+	l := &license.License{}
+	l.WorkDurationHour = 0
+	err = l.Decode(file)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, license.ErrInvalidLicense)
+	}
 
-		if collected != collectedInfosContent {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
-		}
+	collected, err := license.CollectHardwareInfo()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, license.ErrCollectLicenseInfo))
+	}
+	err = l.CheckHardwareSignIsMatch(collected)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, err))
 	}
 
 	s := model.GetStorage()
@@ -104,16 +127,10 @@ func setLicense(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.Save(&model.License{Content: file, WorkDurationHour: 0})
+	err = s.Save(&model.License{Content: l, WorkDurationHour: 0})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	err = license.UpdateLicense(file)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	license.ResetWorkedDuration()
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -126,20 +143,22 @@ func checkLicense(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, license.ErrLicenseEmpty))
 	}
 
-	permission, collectedInfosContent, err := license.DecodeLicense(file)
+	l := &license.License{}
+	err = l.Decode(file)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+		return controller.JSONBaseErrorReq(c, license.ErrInvalidLicense)
 	}
+
 	collected, err := license.CollectHardwareInfo()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, license.ErrCollectLicenseInfo))
 	}
-
-	if collected != collectedInfosContent {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, license.ErrInvalidLicense))
+	err = l.CheckHardwareSignIsMatch(collected)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, err))
 	}
 
-	items := generateLicenseItems(permission, collectedInfosContent)
+	items := generateLicenseItems(&l.LicenseContent)
 
 	return c.JSON(http.StatusOK, GetLicenseResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -149,10 +168,10 @@ func checkLicense(c echo.Context) error {
 
 }
 
-func generateLicenseItems(permission *license.LicensePermission, collectedInfosContent string) []LicenseItem {
+func generateLicenseItems(l *license.LicenseContent) []LicenseItem {
 	items := []LicenseItem{}
 
-	for n, i := range permission.NumberOfInstanceOfEachType {
+	for n, i := range l.Permission.NumberOfInstanceOfEachType {
 		items = append(items, LicenseItem{
 			Description: fmt.Sprintf("[%v]类型实例数", n),
 			Name:        n,
@@ -160,23 +179,37 @@ func generateLicenseItems(permission *license.LicensePermission, collectedInfosC
 		})
 	}
 
-	items = append(items, []LicenseItem{
-		{
-			Description: "用户数",
-			Name:        "user",
-			Limit:       strconv.Itoa(permission.UserCount),
-		}, {
+	items = append(items, LicenseItem{
+		Description: "用户数",
+		Name:        "user",
+		Limit:       strconv.Itoa(l.Permission.UserCount),
+	})
+
+	if l.HardwareSign != "" {
+		items = append(items, LicenseItem{
 			Description: "机器信息",
 			Name:        "info",
-			Limit:       collectedInfosContent,
-		}, {
+			Limit:       l.HardwareSign,
+		})
+	}
+	if len(l.ClusterHardwareSign) > 0 {
+		for k, v := range l.ClusterHardwareSign {
+			items = append(items, LicenseItem{
+				Description: fmt.Sprintf("节点[%s]机器信息", k),
+				Name:        fmt.Sprintf("node_%s_info", k),
+				Limit:       v,
+			})
+		}
+	}
+	items = append(items, []LicenseItem{
+		{
 			Description: "SQLE版本",
 			Name:        "version",
-			Limit:       permission.Version,
+			Limit:       l.Permission.Version,
 		}, {
 			Description: "授权运行时长(天)",
 			Name:        "work duration day",
-			Limit:       strconv.Itoa(permission.WorkDurationDay),
+			Limit:       strconv.Itoa(l.Permission.WorkDurationDay),
 		},
 	}...)
 

@@ -4,6 +4,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/jinzhu/gorm"
 )
@@ -39,4 +41,13 @@ func (s *Storage) UpdateSyncInstanceTaskById(id uint, syncTask map[string]interf
 		return errors.ConnectStorageErrWrapper(err)
 	}
 	return nil
+}
+
+func (s *Storage) GetLatestSyncInstanceTask(after time.Time) (*SyncInstanceTask, bool, error) {
+	task := new(SyncInstanceTask)
+	err := s.db.Unscoped().Model(&SyncInstanceTask{}).Select("id, updated_at").Where("updated_at > ?", after).Order("updated_at DESC").Limit(1).Find(&task).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return task, true, errors.New(errors.ConnectStorageError, err)
 }

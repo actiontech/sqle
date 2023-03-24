@@ -1,5 +1,5 @@
-//go:build release
-// +build release
+//go:build enterprise
+// +build enterprise
 
 package license
 
@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/moby/sys/mountinfo"
 	"golang.org/x/sys/unix"
@@ -21,9 +22,28 @@ var (
 	encoding = base64.NewEncoding("012345ghijklmnopq6789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefrstuvwxyz_~")
 	// Location to perform UUID lookup
 	uuidDirectory = "/dev/disk/by-uuid"
+
+	localHardware = ""
+	mutex         sync.Mutex
 )
 
+// CollectHardwareInfo, 使用缓存，仅去服务器采集一次，后续使用同一个。
 func CollectHardwareInfo() (string, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if localHardware != "" {
+		return localHardware, nil
+	}
+	h, err := collectHardwareInfo()
+	if err != nil {
+		return "", err
+	}
+	localHardware = h
+	return h, nil
+}
+
+func collectHardwareInfo() (string, error) {
 	keys := make([]string, 0)
 
 	bootDevUuid, err := getBootDevUuid()
