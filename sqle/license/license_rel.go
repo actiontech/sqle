@@ -55,10 +55,15 @@ type LicensePermission struct {
 	NumberOfInstanceOfEachType LimitOfEachType // Instance limit
 }
 
+type ClusterHardwareSign struct {
+	Id   string `json:"id"`        // cluster 标识
+	Sign string `json:"signature"` // license 服务签名
+}
+
 type LicenseContent struct {
-	Permission          LicensePermission
-	HardwareSign        string
-	ClusterHardwareSign map[string]string // v2.2303.0 版本引入
+	Permission           LicensePermission
+	HardwareSign         string
+	ClusterHardwareSigns []ClusterHardwareSign // v2.2303.0 版本引入
 }
 type LicenseStatus struct {
 	WorkDurationHour int // 实际的运行时间，加密存在许可证内容里
@@ -109,25 +114,31 @@ func (l License) Value() (driver.Value, error) {
 }
 
 func (l *LicenseContent) Encode() (text string, err error) {
+	block, err := aes.NewCipher([]byte(cipherKey))
+	if nil != err {
+		return "", err
+	}
+	encrypter := cipher.NewCFBEncrypter(block, []byte(cipherText))
+
 	permissionStr, err := json.Marshal(l.Permission)
 	if nil != err {
 		return "", err
 	}
-	encodedPermissionStr, err := encode(string(permissionStr))
+	encodedPermissionStr, err := encode(string(permissionStr), encrypter)
 	if nil != err {
 		return "", err
 	}
 
-	encodedHardwareSignStr, err := encode(l.HardwareSign)
+	encodedHardwareSignStr, err := encode(l.HardwareSign, encrypter)
 	if nil != err {
 		return "", err
 	}
-	clusterHardwareSignStr, err := json.Marshal(l.ClusterHardwareSign)
+	clusterHardwareSignStr, err := json.Marshal(l.ClusterHardwareSigns)
 	if nil != err {
 		return "", err
 	}
 
-	encodedClusterHardwareSignStr, err := encode(string(clusterHardwareSignStr))
+	encodedClusterHardwareSignStr, err := encode(string(clusterHardwareSignStr), encrypter)
 	if nil != err {
 		return "", err
 	}
@@ -142,11 +153,17 @@ func (l *LicenseContent) Encode() (text string, err error) {
 }
 
 func (l *LicenseContent) Decode(license string) error {
+	block, err := aes.NewCipher([]byte(cipherKey))
+	if nil != err {
+		return err
+	}
+	decrypter := cipher.NewCFBDecrypter(block, []byte(cipherText))
+
 	options := strings.Split(license, DELIMITER)
 	if len(options) < 3 {
 		return ErrInvalidLicense
 	}
-	permissionStr, err := decode(options[1])
+	permissionStr, err := decode(options[1], decrypter)
 	if nil != err {
 		return err
 	}
@@ -155,21 +172,21 @@ func (l *LicenseContent) Decode(license string) error {
 	if nil != err {
 		return err
 	}
-	hardwareSign, err := decode(options[2])
+	hardwareSign, err := decode(options[2], decrypter)
 	if nil != err {
 		return err
 	}
 	if len(options) >= 4 {
-		clusterHardwareSign := map[string]string{}
-		clusterHardwareSignStr, err := decode(options[3])
+		clusterHardwareSigns := []ClusterHardwareSign{}
+		clusterHardwareSignStr, err := decode(options[3], decrypter)
 		if nil != err {
 			return err
 		}
-		err = json.Unmarshal([]byte(clusterHardwareSignStr), &clusterHardwareSign)
+		err = json.Unmarshal([]byte(clusterHardwareSignStr), &clusterHardwareSigns)
 		if err != nil {
 			return err
 		}
-		l.ClusterHardwareSign = clusterHardwareSign
+		l.ClusterHardwareSigns = clusterHardwareSigns
 	}
 
 	l.Permission = *permission
@@ -177,23 +194,13 @@ func (l *LicenseContent) Decode(license string) error {
 	return nil
 }
 
-func encode(str string) (string, error) {
-	block, err := aes.NewCipher([]byte(cipherKey))
-	if nil != err {
-		return "", err
-	}
-	encrypter := cipher.NewCFBEncrypter(block, []byte(cipherText))
+func encode(str string, encrypter cipher.Stream) (string, error) {
 	encrypted := make([]byte, len(str))
 	encrypter.XORKeyStream(encrypted, []byte(str))
 	return genEncoding.EncodeToString(encrypted), nil
 }
 
-func decode(str string) (string, error) {
-	block, err := aes.NewCipher([]byte(cipherKey))
-	if nil != err {
-		return "", err
-	}
-	decrypter := cipher.NewCFBDecrypter(block, []byte(cipherText))
+func decode(str string, decrypter cipher.Stream) (string, error) {
 	a, err := genEncoding.DecodeString(str)
 	if nil != err {
 		return "", err
@@ -204,8 +211,8 @@ func decode(str string) (string, error) {
 }
 
 func (l *License) CheckHardwareSignIsMatch(hardwareSign string) error {
-	for _, s := range l.ClusterHardwareSign {
-		if hardwareSign == s {
+	for _, s := range l.ClusterHardwareSigns {
+		if hardwareSign == s.Sign {
 			return nil
 		}
 	}
@@ -231,28 +238,34 @@ func (c *License) CheckCanCreateUser(userCount int64) error {
 
 const CustomTypeKey = "custom"
 
+/*
+	CheckCanCreateInstance 验证可添加的数据库实例上限。
+	支持对每个类型的数据库实例单独限制上限，也支持配置custom的类型上限。
+	custom 指的是通用数据库类型，代表该许可不限制数据库种类。
+	例如配置了custom 10, MySQL 10，则可以支持添加 20 个MySQL，或 10 个 MySQL 和其他任意10个数据库类型的实例。
+*/
 func (l *License) CheckCanCreateInstance(dbType string, usage LimitOfEachType) error {
-	// 指定的数据库类型没有超出限制
+	// 优先验证指定的数据库类型是否超出限制
 	max := l.Permission.NumberOfInstanceOfEachType[dbType]
 	cur := usage[dbType]
 	if cur.Count+1 <= max.Count {
 		return nil
 	}
 
-	// 指定的数据库类型超出限制，判断是否需要custom 类型的是否超出
+	// 当指定的数据库类型超出限制，则使用 custom 数据库类型的容量。判断添加的数据库实例是否超过 custom 类型的限制
 	var customUsage int
 	for _, count := range usage {
-		total, ok := l.Permission.NumberOfInstanceOfEachType[count.DBType]
+		limitation, ok := l.Permission.NumberOfInstanceOfEachType[count.DBType]
 		if !ok {
 			// 如果许可证里没有这个类型的数据库，则全部算custom数量
 			customUsage += count.Count
 			continue
 		}
 		// 该数据库类型使用量未超出
-		if count.Count <= total.Count {
+		if count.Count <= limitation.Count {
 			continue
 		}
-		customUsage += count.Count - total.Count
+		customUsage += count.Count - limitation.Count
 	}
 
 	maxCustom := l.Permission.NumberOfInstanceOfEachType[CustomTypeKey]
