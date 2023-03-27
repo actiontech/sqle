@@ -10,12 +10,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func init() {
+	OnlyRunOnLeaderJobs = append(OnlyRunOnLeaderJobs, NewLicenseJob)
+}
+
 type LicenseJob struct {
 	BaseJob
 }
 
 func NewLicenseJob(entry *logrus.Entry) ServerJob {
-	entry = entry.WithField("job", "ding_talk")
+	entry = entry.WithField("job", "license")
 	j := &LicenseJob{}
 	j.BaseJob = *NewBaseJob(entry, 1*time.Hour, j.UpdateLicense)
 	return j
