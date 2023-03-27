@@ -238,28 +238,34 @@ func (c *License) CheckCanCreateUser(userCount int64) error {
 
 const CustomTypeKey = "custom"
 
+/*
+	CheckCanCreateInstance 验证可添加的数据库实例上限。
+	支持对每个类型的数据库实例单独限制上限，也支持配置custom的类型上限。
+	custom 指的是通用数据库类型，代表该许可不限制数据库种类。
+	例如配置了custom 10, MySQL 10，则可以支持添加 20 个MySQL，或 10 个 MySQL 和其他任意10个数据库类型的实例。
+*/
 func (l *License) CheckCanCreateInstance(dbType string, usage LimitOfEachType) error {
-	// 指定的数据库类型没有超出限制
+	// 优先验证指定的数据库类型是否超出限制
 	max := l.Permission.NumberOfInstanceOfEachType[dbType]
 	cur := usage[dbType]
 	if cur.Count+1 <= max.Count {
 		return nil
 	}
 
-	// 指定的数据库类型超出限制，判断是否需要custom 类型的是否超出
+	// 当指定的数据库类型超出限制，则使用 custom 数据库类型的容量。判断添加的数据库实例是否超过 custom 类型的限制
 	var customUsage int
 	for _, count := range usage {
-		total, ok := l.Permission.NumberOfInstanceOfEachType[count.DBType]
+		limitation, ok := l.Permission.NumberOfInstanceOfEachType[count.DBType]
 		if !ok {
 			// 如果许可证里没有这个类型的数据库，则全部算custom数量
 			customUsage += count.Count
 			continue
 		}
 		// 该数据库类型使用量未超出
-		if count.Count <= total.Count {
+		if count.Count <= limitation.Count {
 			continue
 		}
-		customUsage += count.Count - total.Count
+		customUsage += count.Count - limitation.Count
 	}
 
 	maxCustom := l.Permission.NumberOfInstanceOfEachType[CustomTypeKey]
