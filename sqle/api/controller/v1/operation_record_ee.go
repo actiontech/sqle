@@ -447,6 +447,8 @@ var actionNameDescMap = map[string]string{
 	model.OperationRecordActionCreateProject:               "创建项目",
 	model.OperationRecordActionDeleteProject:               "删除项目",
 	model.OperationRecordActionUpdateProject:               "编辑项目",
+	model.OperationRecordActionArchiveProject:              "冻结项目",
+	model.OperationRecordActionUnarchiveProject:            "取消冻结项目",
 	model.OperationRecordActionCreateInstance:              "创建数据源",
 	model.OperationRecordActionUpdateInstance:              "编辑数据源",
 	model.OperationRecordActionDeleteInstance:              "删除数据源",
