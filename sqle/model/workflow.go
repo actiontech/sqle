@@ -154,7 +154,7 @@ type Workflow struct {
 	Model
 	Subject          string
 	WorkflowId       string `gorm:"unique"`
-	Desc             string
+	Desc             string `gorm:"type:varchar(3000)"`
 	CreateUserId     uint
 	WorkflowRecordId uint
 	ProjectId        uint `gorm:"index; not null"`
@@ -784,7 +784,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 
 	instanceRecordList := make([]*WorkflowInstanceRecord, 0)
 	err = s.db.Preload("Instance").Preload("Task").Preload("User").
-		Where("workflow_record_id = ?", id).
+		Where("workflow_record_id = ?", w.Record.ID).
 		Find(&instanceRecordList).Error
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
