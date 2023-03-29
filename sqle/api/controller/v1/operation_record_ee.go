@@ -44,7 +44,7 @@ func init() {
 		},
 		{
 			RouterPath:      "/v1/projects/:project_name/",
-			Method:          http.MethodPost,
+			Method:          http.MethodDelete,
 			OperationType:   model.OperationRecordTypeProject,
 			OperationAction: model.OperationRecordActionDeleteProject,
 			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
