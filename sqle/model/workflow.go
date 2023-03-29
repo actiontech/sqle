@@ -154,7 +154,7 @@ type Workflow struct {
 	Model
 	Subject          string
 	WorkflowId       string `gorm:"unique"`
-	Desc             string
+	Desc             string `gorm:"type:varchar(3000)"`
 	CreateUserId     uint
 	WorkflowRecordId uint
 	ProjectId        uint `gorm:"index; not null"`
