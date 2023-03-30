@@ -219,7 +219,7 @@ func (p *DriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 	for i, sql := range sqls {
 		ruleResults := driverV2.NewAuditResults()
 		for j, rule := range p.Config.Rules {
-			result, err := p.Ah.Audit(ctx, rule, sql, sqls[i:])
+			result, err := p.Ah.Audit(ctx, rule, sql, sqls[i+1:])
 			if err != nil {
 				return nil, err
 			}
