@@ -302,7 +302,7 @@ func DeleteInstance(c echo.Context) error {
 	}
 
 	if err = common.CheckDeleteInstance(instance.ID); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("%v can't be deleted. Cause: %v", instance.Name, err))
 	}
 
 	if err := s.DeleteInstance(instance); err != nil {
