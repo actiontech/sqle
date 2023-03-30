@@ -21,18 +21,18 @@ type AuditHandler struct {
 
 func (a *AuditHandler) Audit(ctx context.Context, rule *driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResult, error) {
 	result := &driverV2.AuditResult{}
+	message := ""
+	var err error
+
 	handler, ok := a.RuleToRawHandler[rule.Name]
 	if ok {
-		msg, err := handler(ctx, rule, sql, nextSQL)
+		message, err = handler(ctx, rule, sql, nextSQL)
 		if err != nil {
 			return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
 		}
-		result.Level = rule.Level
-		result.Message = msg
 	} else {
 		handler, ok := a.RuleToASTHandler[rule.Name]
 		if ok {
-			var err error
 			var ast interface{}
 			if a.SqlParserFn != nil {
 				ast, err = a.SqlParserFn(sql)
@@ -40,13 +40,15 @@ func (a *AuditHandler) Audit(ctx context.Context, rule *driverV2.Rule, sql strin
 					return nil, errors.Wrap(err, "parse sql")
 				}
 			}
-			msg, err := handler(ctx, rule, ast, nextSQL)
+			message, err = handler(ctx, rule, ast, nextSQL)
 			if err != nil {
 				return nil, errors.Wrapf(err, "audit SQL %s in driver adaptor", sql)
 			}
-			result.Level = rule.Level
-			result.Message = msg
 		}
+	}
+	if message != "" {
+		result.Level = rule.Level
+		result.Message = message
 	}
 	return result, nil
 }
