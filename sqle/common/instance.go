@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -27,10 +28,10 @@ func CheckDeleteInstance(instanceId uint) error {
 
 	isUnFinished, err := s.IsWorkflowUnFinishedByInstanceId(instanceId)
 	if err != nil {
-		return fmt.Errorf("check instance %d is finished failed: %v", instanceId, err)
+		return fmt.Errorf("check if all workflows are finished failed: %v", err)
 	}
 	if isUnFinished {
-		return fmt.Errorf("instance %d is running,cannot be deleted", instanceId)
+		return errors.New("has unfinished workflows")
 	}
 
 	return nil
