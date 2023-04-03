@@ -34,6 +34,9 @@ type Plugin interface {
 
 	// in v2, this is a virtual api, it is a combination of [ExtractTableFromSQL, GetTableMeta]
 	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
+
+	// Introduced from v2.2304.0
+	GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error)
 }
 
 type PluginProcessor interface {

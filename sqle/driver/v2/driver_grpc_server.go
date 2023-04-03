@@ -414,3 +414,21 @@ func (d *DriverGrpcServer) ExtractTableFromSQL(ctx context.Context, req *protoV2
 		Tables: protoTables,
 	}, nil
 }
+
+func (d *DriverGrpcServer) GetSQLPreAffectRows(ctx context.Context, req *protoV2.SQLPreAffectRowsRequest) (*protoV2.SQLPreAffectRowsResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.SQLPreAffectRowsResponse{}, err
+	}
+	if req.Sql == nil {
+		return &protoV2.SQLPreAffectRowsResponse{}, ErrSQLisEmpty
+	}
+	ar, err := driver.GetSQLPreAffectRows(ctx, req.Sql.Query)
+	if err != nil {
+		return &protoV2.SQLPreAffectRowsResponse{}, err
+	}
+	return &protoV2.SQLPreAffectRowsResponse{
+		Count:   ar.Count,
+		Message: ar.Message,
+	}, nil
+}
