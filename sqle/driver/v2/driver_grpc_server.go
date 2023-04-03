@@ -415,20 +415,20 @@ func (d *DriverGrpcServer) ExtractTableFromSQL(ctx context.Context, req *protoV2
 	}, nil
 }
 
-func (d *DriverGrpcServer) GetSQLPreAffectRows(ctx context.Context, req *protoV2.SQLPreAffectRowsRequest) (*protoV2.SQLPreAffectRowsResponse, error) {
+func (d *DriverGrpcServer) EstimateSQLAffectRows(ctx context.Context, req *protoV2.EstimateSQLAffectRowsRequest) (*protoV2.EstimateSQLAffectRowsResponse, error) {
 	driver, err := d.getDriverBySession(req.Session)
 	if err != nil {
-		return &protoV2.SQLPreAffectRowsResponse{}, err
+		return &protoV2.EstimateSQLAffectRowsResponse{}, err
 	}
 	if req.Sql == nil {
-		return &protoV2.SQLPreAffectRowsResponse{}, ErrSQLisEmpty
+		return &protoV2.EstimateSQLAffectRowsResponse{}, ErrSQLisEmpty
 	}
-	ar, err := driver.GetSQLPreAffectRows(ctx, req.Sql.Query)
+	ar, err := driver.EstimateSQLAffectRows(ctx, req.Sql.Query)
 	if err != nil {
-		return &protoV2.SQLPreAffectRowsResponse{}, err
+		return &protoV2.EstimateSQLAffectRowsResponse{}, err
 	}
-	return &protoV2.SQLPreAffectRowsResponse{
-		Count:   ar.Count,
-		Message: ar.Message,
+	return &protoV2.EstimateSQLAffectRowsResponse{
+		Count:      ar.Count,
+		ErrMessage: ar.ErrMessage,
 	}, nil
 }

@@ -446,12 +446,12 @@ func (s *PluginImplV2) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 	return &GetTableMetaBySQLResult{TableMetas: tableMetas}, nil
 }
 
-func (s *PluginImplV2) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
-	api := "GetSQLPreAffectRows"
+func (s *PluginImplV2) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	api := "EstimateSQLAffectRows"
 	s.preLog(api)
-	ar, err := s.client.GetSQLPreAffectRows(ctx, &protoV2.SQLPreAffectRowsRequest{
+	ar, err := s.client.EstimateSQLAffectRows(ctx, &protoV2.EstimateSQLAffectRowsRequest{
 		Session: s.Session,
-		Sql: &protoV2.PreAffectRowsSQL{
+		Sql: &protoV2.AffectRowsSQL{
 			Query: sql,
 		},
 	})
@@ -459,9 +459,9 @@ func (s *PluginImplV2) GetSQLPreAffectRows(ctx context.Context, sql string) (*dr
 	if err != nil {
 		return nil, err
 	}
-	return &driverV2.SQLPreAffectRows{
-		Count:   ar.Count,
-		Message: ar.Message,
+	return &driverV2.EstimatedAffectRows{
+		Count:      ar.Count,
+		ErrMessage: ar.ErrMessage,
 	}, nil
 }
 

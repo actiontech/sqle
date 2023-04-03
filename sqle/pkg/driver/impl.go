@@ -273,6 +273,6 @@ func (p *DriverImpl) ExtractTableFromSQL(ctx context.Context, sql string) ([]*dr
 	return []*driverV2.Table{}, nil
 }
 
-func (p *DriverImpl) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
-	return &driverV2.SQLPreAffectRows{}, nil
+func (p *DriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	return &driverV2.EstimatedAffectRows{}, nil
 }

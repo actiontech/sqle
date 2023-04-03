@@ -92,7 +92,7 @@ func (d *mockDriver) Query(ctx context.Context, sql string, conf *driverV2.Query
 	return nil, nil
 }
 
-func (d *mockDriver) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
+func (d *mockDriver) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
 	return nil, nil
 }
 

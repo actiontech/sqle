@@ -434,8 +434,8 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	return conn.ShowDatabases(true)
 }
 
-func (i *MysqlDriverImpl) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
-	return &driverV2.SQLPreAffectRows{}, nil // todo: impl it.
+func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	return &driverV2.EstimatedAffectRows{}, nil // todo: impl it.
 }
 
 type Config struct {
