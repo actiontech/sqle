@@ -36,7 +36,7 @@ type Plugin interface {
 	GetTableMetaBySQL(ctx context.Context, conf *GetTableMetaBySQLConf) (*GetTableMetaBySQLResult, error)
 
 	// Introduced from v2.2304.0
-	GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error)
+	EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error)
 }
 
 type PluginProcessor interface {
