@@ -92,6 +92,10 @@ func (d *mockDriver) Query(ctx context.Context, sql string, conf *driverV2.Query
 	return nil, nil
 }
 
+func (d *mockDriver) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
+	return nil, nil
+}
+
 func TestAction_validation(t *testing.T) {
 	actions := map[int]*action{
 		ActionTypeAudit:    {typ: ActionTypeAudit},
