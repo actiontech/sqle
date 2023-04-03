@@ -304,3 +304,7 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 	}
 	return resultV2, nil
 }
+
+func (p *PluginImplV1) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	return nil, NewErrPluginAPINotImplement(driverV2.OptionalModuleEstimateSQLAffectRows)
+}

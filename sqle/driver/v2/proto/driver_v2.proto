@@ -29,6 +29,7 @@ service Driver {
   rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesResponse);
   rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
   rpc ExtractTableFromSQL(ExtractTableFromSQLRequest) returns (ExtractTableFromSQLResponse);
+  rpc EstimateSQLAffectRows(EstimateSQLAffectRowsRequest) returns (EstimateSQLAffectRowsResponse); // Introduced from SQLE v2.2304.0
 }
 
 message Empty {}
@@ -43,6 +44,7 @@ enum OptionalModule {
     Explain = 2;
     GetTableMeta = 3;
     ExtractTableFromSQL = 4;
+    EstimateSQLAffectRows = 5;
 }
 
 message Param {
@@ -309,3 +311,17 @@ message ExtractTableFromSQLResponse {
   repeated Table tables = 1;
 }
 
+// EstimateSQLAffectRows
+message AffectRowsSQL {
+  string query = 1;
+}
+
+message EstimateSQLAffectRowsRequest {
+  Session session = 1;
+  AffectRowsSQL sql = 2;
+}
+
+message EstimateSQLAffectRowsResponse {
+  int64 count = 1;
+  string errMessage = 2; // 记录执行失败原因
+}

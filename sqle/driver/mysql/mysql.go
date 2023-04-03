@@ -434,6 +434,10 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	return conn.ShowDatabases(true)
 }
 
+func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	return &driverV2.EstimatedAffectRows{}, nil // todo: impl it.
+}
+
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64

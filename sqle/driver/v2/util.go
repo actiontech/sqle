@@ -45,6 +45,7 @@ const (
 	OptionalModuleExplain
 	OptionalModuleGetTableMeta
 	OptionalModuleExtractTableFromSQL
+	OptionalModuleEstimateSQLAffectRows
 )
 
 func (m OptionalModule) String() string {
@@ -59,6 +60,8 @@ func (m OptionalModule) String() string {
 		return "GetTableMeta"
 	case OptionalModuleExtractTableFromSQL:
 		return "ExtractTableFromSQL"
+	case OptionalModuleEstimateSQLAffectRows:
+		return "EstimateSQLAffectRows"
 	default:
 		return "Unknown"
 	}

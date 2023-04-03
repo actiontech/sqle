@@ -414,3 +414,21 @@ func (d *DriverGrpcServer) ExtractTableFromSQL(ctx context.Context, req *protoV2
 		Tables: protoTables,
 	}, nil
 }
+
+func (d *DriverGrpcServer) EstimateSQLAffectRows(ctx context.Context, req *protoV2.EstimateSQLAffectRowsRequest) (*protoV2.EstimateSQLAffectRowsResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.EstimateSQLAffectRowsResponse{}, err
+	}
+	if req.Sql == nil {
+		return &protoV2.EstimateSQLAffectRowsResponse{}, ErrSQLisEmpty
+	}
+	ar, err := driver.EstimateSQLAffectRows(ctx, req.Sql.Query)
+	if err != nil {
+		return &protoV2.EstimateSQLAffectRowsResponse{}, err
+	}
+	return &protoV2.EstimateSQLAffectRowsResponse{
+		Count:      ar.Count,
+		ErrMessage: ar.ErrMessage,
+	}, nil
+}

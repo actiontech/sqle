@@ -86,6 +86,7 @@ type Driver interface {
 	GetDatabases(context.Context) ([]string, error)
 	GetTableMeta(ctx context.Context, table *Table) (*TableMeta, error)
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
+	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
 }
 
 type Node struct {
@@ -277,4 +278,9 @@ type TableMeta struct {
 type Table struct {
 	Name   string
 	Schema string
+}
+
+type EstimatedAffectRows struct {
+	Count      int64
+	ErrMessage string
 }
