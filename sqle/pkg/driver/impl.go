@@ -272,3 +272,7 @@ func (p *DriverImpl) GetTableMeta(ctx context.Context, table *driverV2.Table) (*
 func (p *DriverImpl) ExtractTableFromSQL(ctx context.Context, sql string) ([]*driverV2.Table, error) {
 	return []*driverV2.Table{}, nil
 }
+
+func (p *DriverImpl) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
+	return &driverV2.SQLPreAffectRows{}, nil
+}

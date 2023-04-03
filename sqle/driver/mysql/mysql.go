@@ -434,6 +434,10 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 	return conn.ShowDatabases(true)
 }
 
+func (i *MysqlDriverImpl) GetSQLPreAffectRows(ctx context.Context, sql string) (*driverV2.SQLPreAffectRows, error) {
+	return &driverV2.SQLPreAffectRows{}, nil // todo: impl it.
+}
+
 type Config struct {
 	DMLRollbackMaxRows int64
 	DDLOSCMinSize      int64
