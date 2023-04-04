@@ -5461,6 +5461,12 @@ var doc = `{
                         "description": "filter global rule template name",
                         "name": "filter_global_rule_template_name",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "description": "filter global rule template name",
+                        "name": "filter_rule_names",
+                        "in": "query"
                     }
                 ],
                 "responses": {
