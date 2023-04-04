@@ -1272,7 +1272,7 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 		ruleNames = append(ruleNames, rule.RuleName)
 	}
 
-	rules, err := model.GetStorage().GetRulesByNames(ruleNames, template.DBType)
+	rules, err := model.GetStorage().GetRulesByNamesAndDBType(ruleNames, template.DBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
