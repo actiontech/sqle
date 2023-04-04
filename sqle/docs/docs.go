@@ -5464,7 +5464,7 @@ var doc = `{
                     },
                     {
                         "type": "array",
-                        "description": "filter global rule template name",
+                        "description": "filter rule name list",
                         "name": "filter_rule_names",
                         "in": "query"
                     }
