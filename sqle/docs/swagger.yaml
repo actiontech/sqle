@@ -3759,15 +3759,15 @@ definitions:
       audit_level:
         type: string
       audit_result:
-        type: string
+        items:
+          $ref: '#/definitions/v2.AuditResult'
+        type: array
       audit_status:
         type: string
       description:
         type: string
       exec_result:
-        items:
-          $ref: '#/definitions/v2.AuditResult'
-        type: array
+        type: string
       exec_sql:
         type: string
       exec_status:
@@ -7637,6 +7637,10 @@ paths:
         in: query
         name: filter_global_rule_template_name
         type: string
+      - description: filter rule name list
+        in: query
+        name: filter_rule_names
+        type: array
       responses:
         "200":
           description: OK

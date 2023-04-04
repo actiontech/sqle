@@ -5461,6 +5461,12 @@ var doc = `{
                         "description": "filter global rule template name",
                         "name": "filter_global_rule_template_name",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "description": "filter rule name list",
+                        "name": "filter_rule_names",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -13636,7 +13642,10 @@ var doc = `{
                     "type": "string"
                 },
                 "audit_result": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
                 },
                 "audit_status": {
                     "type": "string"
@@ -13645,10 +13654,7 @@ var doc = `{
                     "type": "string"
                 },
                 "exec_result": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditResult"
-                    }
+                    "type": "string"
                 },
                 "exec_sql": {
                     "type": "string"

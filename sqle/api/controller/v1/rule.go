@@ -403,8 +403,9 @@ func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
 }
 
 type GetRulesReqV1 struct {
-	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
-	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
+	FilterDBType                 string   `json:"filter_db_type" query:"filter_db_type"`
+	FilterGlobalRuleTemplateName string   `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
+	FilterRuleNames              []string `json:"filter_rule_names" query:"filter_rule_names"`
 }
 
 type GetRulesResV1 struct {
@@ -469,6 +470,7 @@ func convertRulesToRes(rules []*model.Rule) []RuleResV1 {
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
+// @Param filter_rule_names query array false "filter rule name list"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
 func GetRules(c echo.Context) error {
@@ -483,6 +485,8 @@ func GetRules(c echo.Context) error {
 		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
 	} else if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
+	} else if len(req.FilterRuleNames) != 0 {
+		rules, err = s.GetRulesByNames(req.FilterRuleNames)
 	} else {
 		rules, err = s.GetAllRule()
 	}
@@ -1270,7 +1274,7 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 		ruleNames = append(ruleNames, rule.RuleName)
 	}
 
-	rules, err := model.GetStorage().GetRulesByNames(ruleNames, template.DBType)
+	rules, err := model.GetStorage().GetRulesByNamesAndDBType(ruleNames, template.DBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
