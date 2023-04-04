@@ -485,6 +485,8 @@ func GetRules(c echo.Context) error {
 		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
 	} else if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
+	} else if len(req.FilterRuleNames) != 0 {
+		rules, err = s.GetRulesByNames(req.FilterRuleNames)
 	} else {
 		rules, err = s.GetAllRule()
 	}

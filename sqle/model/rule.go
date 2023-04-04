@@ -285,6 +285,12 @@ func (s *Storage) GetAllRuleByGlobalRuleTemplateName(name string) ([]*Rule, erro
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetRulesByNames(names []string) ([]*Rule, error) {
+	rules := []*Rule{}
+	err := s.db.Where("name in (?)", names).Find(&rules).Error
+	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRulesByNamesAndDBType(names []string, dbType string) ([]Rule, error) {
 	rules := []Rule{}
 	err := s.db.Where("db_type = ?", dbType).Where("name in (?)", names).Find(&rules).Error
