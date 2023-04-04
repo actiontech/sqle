@@ -446,6 +446,25 @@ func (s *PluginImplV2) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 	return &GetTableMetaBySQLResult{TableMetas: tableMetas}, nil
 }
 
+func (s *PluginImplV2) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	api := "EstimateSQLAffectRows"
+	s.preLog(api)
+	ar, err := s.client.EstimateSQLAffectRows(ctx, &protoV2.EstimateSQLAffectRowsRequest{
+		Session: s.Session,
+		Sql: &protoV2.AffectRowsSQL{
+			Query: sql,
+		},
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	return &driverV2.EstimatedAffectRows{
+		Count:      ar.Count,
+		ErrMessage: ar.ErrMessage,
+	}, nil
+}
+
 type dbDriverResult struct {
 	lastInsertId    int64
 	lastInsertIdErr string
