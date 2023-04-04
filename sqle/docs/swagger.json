@@ -13620,7 +13620,10 @@
                     "type": "string"
                 },
                 "audit_result": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
                 },
                 "audit_status": {
                     "type": "string"
@@ -13629,10 +13632,7 @@
                     "type": "string"
                 },
                 "exec_result": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditResult"
-                    }
+                    "type": "string"
                 },
                 "exec_sql": {
                     "type": "string"
