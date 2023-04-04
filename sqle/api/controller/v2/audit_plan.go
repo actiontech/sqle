@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/labstack/echo/v4"
 )
 
 type GetAuditPlansReqV2 struct {
@@ -147,4 +148,37 @@ func GetAuditPlans(c echo.Context) error {
 		Data:      auditPlansResV1,
 		TotalNums: count,
 	})
+}
+
+type GetAuditPlanReportSQLsReqV2 struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
+type GetAuditPlanReportSQLsResV2 struct {
+	controller.BaseRes
+	Data      []*AuditPlanReportSQLResV2 `json:"data"`
+	TotalNums uint64                     `json:"total_nums"`
+}
+
+type AuditPlanReportSQLResV2 struct {
+	SQL         string         `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
+	AuditResult []*AuditResult `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+	Number      uint           `json:"number" example:"1"`
+}
+
+// @Summary 获取指定扫描任务的SQL扫描详情
+// @Description get audit plan report SQLs
+// @Id getAuditPlanReportsSQLs
+// @Tags audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
+// @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
+// @router /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
+func GetAuditPlanReportSQLs(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
 }
