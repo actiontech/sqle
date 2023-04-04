@@ -24,10 +24,10 @@ type GetAuditTaskSQLsResV2 struct {
 type AuditTaskSQLResV2 struct {
 	Number      uint           `json:"number"`
 	ExecSQL     string         `json:"exec_sql"`
-	AuditResult string         `json:"audit_result"`
+	AuditResult []*AuditResult `json:"audit_result"`
 	AuditLevel  string         `json:"audit_level"`
 	AuditStatus string         `json:"audit_status"`
-	ExecResult  []*AuditResult `json:"exec_result"`
+	ExecResult  string         `json:"exec_result"`
 	ExecStatus  string         `json:"exec_status"`
 	RollbackSQL string         `json:"rollback_sql,omitempty"`
 	Description string         `json:"description"`
