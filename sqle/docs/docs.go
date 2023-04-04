@@ -7250,6 +7250,66 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan report SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL扫描详情",
+                "operationId": "getAuditPlanReportsSQLs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanReportSQLsResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances": {
             "get": {
                 "security": [
@@ -7914,6 +7974,128 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/sql_audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接审核SQL",
+                "operationId": "directAuditV2",
+                "parameters": [
+                    {
+                        "description": "sqls that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/tasks/audits/{task_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get information of all SQLs belong to the specified audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取指定扫描任务的SQLs信息",
+                "operationId": "getAuditTaskSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "initialized",
+                            "doing",
+                            "succeeded",
+                            "failed",
+                            "manually_executed"
+                        ],
+                        "type": "string",
+                        "description": "filter: exec status of task sql",
+                        "name": "filter_exec_status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "initialized",
+                            "doing",
+                            "finished"
+                        ],
+                        "type": "string",
+                        "description": "filter: audit status of task sql",
+                        "name": "filter_audit_status",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "filter: audit level of task sql",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "select unique (fingerprint and audit result) for task sql",
+                        "name": "no_duplicate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditTaskSQLsResV2"
                         }
                     }
                 }
@@ -13386,6 +13568,102 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditResDataV2": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error",
+                        ""
+                    ]
+                },
+                "pass_rate": {
+                    "type": "number"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "sql_results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditSQLResV2"
+                    }
+                }
+            }
+        },
+        "v2.AuditResult": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.AuditSQLResV2": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
+                },
+                "exec_sql": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.AuditTaskSQLResV2": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "audit_status": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "exec_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
+                },
+                "exec_sql": {
+                    "type": "string"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "rollback_sql": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.BatchCancelWorkflowsReqV2": {
             "type": "object",
             "properties": {
@@ -13477,6 +13755,68 @@ var doc = `{
                 }
             }
         },
+        "v2.DirectAuditReqV2": {
+            "type": "object",
+            "properties": {
+                "instance_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "sql_content": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
+                    "type": "string",
+                    "example": "select * from t1; select * from t2;"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
+                }
+            }
+        },
+        "v2.DirectAuditResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditResDataV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.GetAuditPlanReportSQLsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanReportSQLResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v2.GetAuditPlansResV2": {
             "type": "object",
             "properties": {
@@ -13488,6 +13828,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.GetAuditTaskSQLsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditTaskSQLResV2"
                     }
                 },
                 "message": {
