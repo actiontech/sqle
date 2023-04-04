@@ -3,14 +3,16 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
-
-	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -125,10 +127,28 @@ func (s *BaseSQL) GetExecStatusDesc() string {
 	}
 }
 
+type AuditResult struct {
+	Level    string `json:"lvl"`
+	Message  string `json:"msg"`
+	RuleName string `json:"rule_name"`
+}
+
+type AuditResults []AuditResult
+
+func (a AuditResults) Value() (driver.Value, error) {
+	b, err := json.Marshal(a)
+	return string(b), err
+}
+
+func (c *AuditResults) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), c)
+}
+
 type ExecuteSQL struct {
 	BaseSQL
-	AuditStatus string `json:"audit_status" gorm:"default:\"initialized\""`
-	AuditResult string `json:"audit_result" gorm:"type:text"`
+	AuditStatus  string       `json:"audit_status" gorm:"default:\"initialized\""`
+	AuditResult  string       `json:"audit_result" gorm:"type:text"`
+	AuditResults AuditResults `json:"audit_results" gorm:"type:json"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
