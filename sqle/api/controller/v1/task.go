@@ -330,7 +330,7 @@ func GetTaskSQLs(c echo.Context) error {
 			Number:      taskSQL.Number,
 			Description: taskSQL.Description,
 			ExecSQL:     taskSQL.ExecSQL,
-			AuditResult: taskSQL.AuditResult,
+			AuditResult: taskSQL.GetAuditResults(),
 			AuditLevel:  taskSQL.AuditLevel,
 			AuditStatus: taskSQL.AuditStatus,
 			ExecResult:  taskSQL.ExecResult,
@@ -397,8 +397,8 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
-			AuditResult: td.AuditResult,
-			AuditStatus: td.AuditStatus,
+			AuditResults: td.AuditResults,
+			AuditStatus:  td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
 		err := cw.Write([]string{
