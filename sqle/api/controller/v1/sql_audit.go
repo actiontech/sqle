@@ -90,7 +90,7 @@ func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
 		results[i] = AuditSQLResV1{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: sql.AuditResult,
+			AuditResult: sql.GetAuditResults(),
 			AuditLevel:  sql.AuditLevel,
 		}
 	}
