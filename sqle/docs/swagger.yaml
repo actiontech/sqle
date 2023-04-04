@@ -7637,7 +7637,7 @@ paths:
         in: query
         name: filter_global_rule_template_name
         type: string
-      - description: filter global rule template name
+      - description: filter rule name list
         in: query
         name: filter_rule_names
         type: array

@@ -485,6 +485,8 @@ func GetRules(c echo.Context) error {
 		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
 	} else if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
+	} else if len(req.FilterRuleNames) != 0 {
+		rules, err = s.GetRulesByNames(req.FilterRuleNames)
 	} else {
 		rules, err = s.GetAllRule()
 	}
@@ -1272,7 +1274,7 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 		ruleNames = append(ruleNames, rule.RuleName)
 	}
 
-	rules, err := model.GetStorage().GetRulesByNames(ruleNames, template.DBType)
+	rules, err := model.GetStorage().GetRulesByNamesAndDBType(ruleNames, template.DBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
