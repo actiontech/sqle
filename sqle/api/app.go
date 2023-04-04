@@ -290,7 +290,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
-	v1Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
+	v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
@@ -330,7 +330,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
-	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+	v2Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 
 	// sql query
 	if err := cloudbeaver_wrapper.StartApp(e); err != nil {
@@ -341,7 +341,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
-	v1Router.POST("/sql_audit", v2.DirectAudit)
+	v2Router.POST("/sql_audit", v2.DirectAudit)
 
 	// UI
 	e.File("/", "ui/index.html")
