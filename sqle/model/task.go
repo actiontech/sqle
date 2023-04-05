@@ -144,7 +144,7 @@ func (a *AuditResults) Scan(input interface{}) error {
 	return json.Unmarshal(input.([]byte), a)
 }
 
-func (a *AuditResults) string() string {
+func (a *AuditResults) String() string {
 	msgs := make([]string, len(*a))
 	for i := range *a {
 		res := (*a)[i]
@@ -187,7 +187,7 @@ func (s *ExecuteSQL) GetAuditResults() string {
 		return ""
 	}
 
-	return s.AuditResults.string()
+	return s.AuditResults.String()
 }
 
 func (s *ExecuteSQL) GetAuditResultDesc() string {
@@ -195,7 +195,7 @@ func (s *ExecuteSQL) GetAuditResultDesc() string {
 		return "审核通过"
 	}
 
-	return s.AuditResults.string()
+	return s.AuditResults.String()
 }
 
 type RollbackSQL struct {
@@ -420,7 +420,7 @@ func (t *TaskSQLDetail) GetAuditResults() string {
 		return ""
 	}
 
-	return t.AuditResults.string()
+	return t.AuditResults.String()
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
