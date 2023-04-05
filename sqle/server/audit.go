@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"regexp"
 	"runtime/debug"
 	"strings"
 
@@ -137,8 +136,15 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			result.Add(driverV2.RuleLevelNormal, "白名单")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
-			executeSQL.AuditResults = parseAuditResults(result.Message())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
+			for i := range result.Results {
+				executeSQL.AuditResults = append(executeSQL.AuditResults, model.AuditResult{
+					Level:    string(result.Results[i].Level),
+					Message:  result.Results[i].Message,
+					RuleName: result.Results[i].RuleName,
+				})
+			}
+
 		} else {
 			auditSqls = append(auditSqls, executeSQL)
 			sqls = append(sqls, executeSQL.Content)
@@ -160,8 +166,14 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		hook.AfterAudit(sql)
 		sql.AuditStatus = model.SQLAuditStatusFinished
 		sql.AuditLevel = string(results[i].Level())
-		sql.AuditResults = parseAuditResults(results[i].Message())
 		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
+		for j := range results {
+			sql.AuditResults = append(sql.AuditResults, model.AuditResult{
+				Level:    string(results[i].Results[j].Level),
+				Message:  results[i].Results[j].Message,
+				RuleName: results[i].Results[j].RuleName,
+			})
+		}
 	}
 
 	replenishTaskStatistics(task)
@@ -287,7 +299,13 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.GetAuditResults())
 		result.Add(driverV2.RuleLevelNotice, reason)
 		executeSQL.AuditLevel = string(result.Level())
-		executeSQL.AuditResults = parseAuditResults(result.Message())
+		for i := range result.Results {
+			executeSQL.AuditResults = append(executeSQL.AuditResults, model.AuditResult{
+				Level:    string(result.Results[i].Level),
+				Message:  result.Results[i].Message,
+				RuleName: result.Results[i].RuleName,
+			})
+		}
 
 		rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
 			BaseSQL: model.BaseSQL{
@@ -298,29 +316,4 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 		})
 	}
 	return rollbackSQLs, nil
-}
-
-var auditResultReg = regexp.MustCompile(`\[(.*)\](.*)`)
-
-// TEMPORARY SOLUTION: parse `result.Message()`
-// into multiple model.AuditResult objects.
-func parseAuditResults(resultMsgs string) (res model.AuditResults) {
-	if resultMsgs == "" {
-		return res
-	}
-
-	msgs := strings.Split(resultMsgs, "\n")
-	for i := range msgs {
-		msg := msgs[i]
-		matches := auditResultReg.FindStringSubmatch(msg)
-		if len(matches) == 3 {
-			res = append(res, model.AuditResult{
-				Level:   matches[1],
-				Message: matches[2],
-			})
-		}
-
-	}
-
-	return
 }

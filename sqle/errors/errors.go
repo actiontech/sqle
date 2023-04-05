@@ -114,3 +114,7 @@ func NewAccessDeniedErr(format string, a ...interface{}) error {
 func NewUserNotPermissionError(op string) error {
 	return New(UserNotPermission, fmt.Errorf("当前用户没有 %v 的权限, 无法执行此操作", op))
 }
+
+func NewAuditPlanNotExistErr() error {
+	return New(DataNotExist, fmt.Errorf("audit plan is not exist"))
+}

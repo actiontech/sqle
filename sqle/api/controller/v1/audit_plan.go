@@ -28,7 +28,7 @@ import (
 var tokenExpire = 365 * 24 * time.Hour
 
 var (
-	errAuditPlanNotExist         = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist"))
+	errAuditPlanNotExist         = errors.New(errors.DataNotExist, fmt.Errorf("audit plan is not exist")) // Deprecated: errors.NewAuditPlanNotExistErr() instead
 	errAuditPlanExisted          = errors.New(errors.DataNotExist, fmt.Errorf("audit plan existed"))
 	errAuditPlanInstanceConflict = errors.New(errors.DataConflict, fmt.Errorf("instance_name can not be empty while instance_database is not empty"))
 )
@@ -1404,7 +1404,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	for i, auditPlanReportSQL := range auditPlanReportSQLs {
 		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
 			SQL:         auditPlanReportSQL.SQL,
-			AuditResult: auditPlanReportSQL.AuditResult,
+			AuditResult: auditPlanReportSQL.AuditResults.String(),
 			Number:      auditPlanReportSQL.Number,
 		}
 	}

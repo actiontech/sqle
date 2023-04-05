@@ -131,9 +131,9 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 	}
 	for i, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
-			SQL:         executeSQL.Content,
-			Number:      uint(i + 1),
-			AuditResult: executeSQL.GetAuditResults(),
+			SQL:          executeSQL.Content,
+			Number:       uint(i + 1),
+			AuditResults: executeSQL.AuditResults,
 		})
 	}
 	err = at.persist.Save(auditPlanReport)
@@ -685,9 +685,9 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 	}
 	for i, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
-			SQL:         executeSQL.Content,
-			Number:      uint(i + 1),
-			AuditResult: executeSQL.GetAuditResults(),
+			SQL:          executeSQL.Content,
+			Number:       uint(i + 1),
+			AuditResults: executeSQL.AuditResults,
 		})
 	}
 	err = at.persist.Save(auditPlanReport)
