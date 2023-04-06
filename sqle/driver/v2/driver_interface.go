@@ -140,8 +140,9 @@ type AuditResults struct {
 }
 
 type AuditResult struct {
-	Level   RuleLevel
-	Message string
+	Level    RuleLevel
+	Message  string
+	RuleName string
 }
 
 func NewAuditResults() *AuditResults {
