@@ -13628,7 +13628,8 @@ var doc = `{
                     "example": "warn"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "避免使用不必要的内置函数md5()"
                 },
                 "rule_name": {
                     "type": "string"
