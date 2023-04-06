@@ -13521,6 +13521,25 @@
                 }
             }
         },
+        "v2.AuditPlanReportSQLResV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_sql": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_report_sql_audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
+                },
+                "number": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "v2.AuditPlanResV2": {
             "type": "object",
             "properties": {
@@ -13589,7 +13608,8 @@
             "type": "object",
             "properties": {
                 "level": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "warn"
                 },
                 "message": {
                     "type": "string"

@@ -34,8 +34,8 @@ type AuditTaskSQLResV2 struct {
 }
 
 type AuditResult struct {
-	Level    string `json:"level"`
-	Message  string `json:"message"`
+	Level    string `json:"level" example:"warn"`
+	Message  string `json:"message" example:"避免使用不必要的内置函数md5()"`
 	RuleName string `json:"rule_name"`
 }
 

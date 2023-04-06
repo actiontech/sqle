@@ -163,7 +163,7 @@ type GetAuditPlanReportSQLsResV2 struct {
 
 type AuditPlanReportSQLResV2 struct {
 	SQL         string         `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
-	AuditResult []*AuditResult `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+	AuditResult []*AuditResult `json:"audit_plan_report_sql_audit_result"`
 	Number      uint           `json:"number" example:"1"`
 }
 
