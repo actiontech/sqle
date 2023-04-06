@@ -7654,6 +7654,8 @@ paths:
         type: string
       - description: filter rule name list
         in: query
+        items:
+          type: string
         name: filter_rule_names
         type: array
       responses:
