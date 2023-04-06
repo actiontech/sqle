@@ -980,7 +980,8 @@ select id from exist_db.exist_tb_1 where id =1 limit 1001;
 		`
 select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).add(driverV2.RuleLevelNotice, "使用LIMIT分页时,避免使用LIMIT M,N"),
+		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).
+			add(driverV2.RuleLevelNotice, "", "使用LIMIT分页时,避免使用LIMIT M,N"),
 	)
 
 	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspectOffline(),
@@ -2149,7 +2150,7 @@ SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
 `, newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
-		newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"),
+		newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"),
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 }
 
@@ -2180,7 +2181,8 @@ CREATE
 	BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');
 `,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -2190,7 +2192,8 @@ CREATE
 		`CREATE TRIGGER BEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 
@@ -2207,7 +2210,8 @@ CREATE
 	RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');
 `,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
@@ -2216,7 +2220,8 @@ CREATE
 		`CREATE hello_function (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 
@@ -2263,7 +2268,7 @@ select * from t1;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性").
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").
 				addResult(rulepkg.DDLCheckCreateProcedure))
 	}
 
@@ -2298,7 +2303,7 @@ end;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
 	}
 }
 

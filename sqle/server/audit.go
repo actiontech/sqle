@@ -133,7 +133,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		}
 		if whitelistMatch {
 			result := driverV2.NewAuditResults()
-			result.Add(driverV2.RuleLevelNormal, "白名单")
+			result.Add(driverV2.RuleLevelNormal, "", "白名单")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
@@ -283,8 +283,12 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 			return nil, err
 		}
 		result := driverV2.NewAuditResults()
-		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.GetAuditResults())
-		result.Add(driverV2.RuleLevelNotice, reason)
+		for i := range executeSQL.AuditResults {
+			ar := executeSQL.AuditResults[i]
+			result.Add(driverV2.RuleLevel(ar.Level), ar.RuleName, ar.Message)
+		}
+		result.Add(driverV2.RuleLevelNotice, "", reason)
+
 		executeSQL.AuditLevel = string(result.Level())
 		appendExecuteSqlResults(executeSQL, result)
 
