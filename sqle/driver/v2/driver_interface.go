@@ -186,7 +186,7 @@ func (rs *AuditResults) Message() string {
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResults) Add(level RuleLevel, messagePattern string, args ...interface{}) {
+func (rs *AuditResults) Add(level RuleLevel, ruleName string, messagePattern string, args ...interface{}) {
 	if level == "" || messagePattern == "" {
 		return
 	}
@@ -195,8 +195,9 @@ func (rs *AuditResults) Add(level RuleLevel, messagePattern string, args ...inte
 		message = fmt.Sprintf(message, args...)
 	}
 	rs.Results = append(rs.Results, &AuditResult{
-		Level:   level,
-		Message: message,
+		Level:    level,
+		Message:  message,
+		RuleName: ruleName,
 	})
 	rs.SortByLevel()
 }

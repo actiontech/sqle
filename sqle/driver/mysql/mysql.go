@@ -352,7 +352,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 				buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
 			}
 		}
-		i.result.Add(driverV2.RuleLevelNotice, buf.String())
+		i.result.Add(driverV2.RuleLevelNotice, "", buf.String())
 	}
 
 	// dry run gh-ost
@@ -362,9 +362,9 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 	if useGhost {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
-			i.result.Add(driverV2.RuleLevelError, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
+			i.result.Add(driverV2.RuleLevelError, "", fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
 		} else {
-			i.result.Add(ghostRule.Level, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
+			i.result.Add(ghostRule.Level, "", fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
 		}
 	}
 
@@ -374,7 +374,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		return nil, err
 	}
 	if oscCommandLine != "" {
-		i.result.Add(driverV2.RuleLevelNotice, fmt.Sprintf("[osc]%s", oscCommandLine))
+		i.result.Add(driverV2.RuleLevelNotice, "", fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 
 	if !i.IsExecutedSQL() {
