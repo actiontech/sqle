@@ -3751,6 +3751,7 @@ definitions:
         example: warn
         type: string
       message:
+        example: 避免使用不必要的内置函数md5()
         type: string
       rule_name:
         type: string
@@ -7653,6 +7654,8 @@ paths:
         type: string
       - description: filter rule name list
         in: query
+        items:
+          type: string
         name: filter_rule_names
         type: array
       responses:

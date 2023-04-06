@@ -5464,6 +5464,9 @@ var doc = `{
                     },
                     {
                         "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "filter rule name list",
                         "name": "filter_rule_names",
                         "in": "query"
@@ -13628,7 +13631,8 @@ var doc = `{
                     "example": "warn"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "避免使用不必要的内置函数md5()"
                 },
                 "rule_name": {
                     "type": "string"
