@@ -160,13 +160,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		sql.AuditStatus = model.SQLAuditStatusFinished
 		sql.AuditLevel = string(results[i].Level())
 		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
-		for j := range results {
-			sql.AuditResults = append(sql.AuditResults, model.AuditResult{
-				Level:    string(results[i].Results[j].Level),
-				Message:  results[i].Results[j].Message,
-				RuleName: results[i].Results[j].RuleName,
-			})
-		}
+		appendExecuteSqlResults(sql, results[i])
 	}
 
 	replenishTaskStatistics(task)
@@ -292,13 +286,7 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.GetAuditResults())
 		result.Add(driverV2.RuleLevelNotice, reason)
 		executeSQL.AuditLevel = string(result.Level())
-		for i := range result.Results {
-			executeSQL.AuditResults = append(executeSQL.AuditResults, model.AuditResult{
-				Level:    string(result.Results[i].Level),
-				Message:  result.Results[i].Message,
-				RuleName: result.Results[i].RuleName,
-			})
-		}
+		appendExecuteSqlResults(executeSQL, result)
 
 		rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
 			BaseSQL: model.BaseSQL{
