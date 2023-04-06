@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
+	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 
-	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/labstack/echo/v4"
 )
 

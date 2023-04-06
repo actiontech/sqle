@@ -3,14 +3,14 @@ package v2
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
+
+	"github.com/labstack/echo/v4"
 )
 
 type DirectAuditReqV2 struct {
