@@ -3,6 +3,8 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -125,10 +127,37 @@ func (s *BaseSQL) GetExecStatusDesc() string {
 	}
 }
 
+type AuditResult struct {
+	Level    string `json:"level"`
+	Message  string `json:"message"`
+	RuleName string `json:"rule_name"`
+}
+
+type AuditResults []AuditResult
+
+func (a AuditResults) Value() (driver.Value, error) {
+	b, err := json.Marshal(a)
+	return string(b), err
+}
+
+func (a *AuditResults) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), a)
+}
+
+func (a *AuditResults) String() string {
+	msgs := make([]string, len(*a))
+	for i := range *a {
+		res := (*a)[i]
+		msg := fmt.Sprintf("[%s]%s", res.Level, res.Message)
+		msgs[i] = msg
+	}
+	return strings.Join(msgs, "\n")
+}
+
 type ExecuteSQL struct {
 	BaseSQL
-	AuditStatus string `json:"audit_status" gorm:"default:\"initialized\""`
-	AuditResult string `json:"audit_result" gorm:"type:text"`
+	AuditStatus  string       `json:"audit_status" gorm:"default:\"initialized\""`
+	AuditResults AuditResults `json:"audit_results" gorm:"type:json"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
@@ -153,11 +182,20 @@ func (s *ExecuteSQL) GetAuditStatusDesc() string {
 	}
 }
 
+func (s *ExecuteSQL) GetAuditResults() string {
+	if len(s.AuditResults) == 0 {
+		return ""
+	}
+
+	return s.AuditResults.String()
+}
+
 func (s *ExecuteSQL) GetAuditResultDesc() string {
-	if s.AuditResult == "" {
+	if len(s.AuditResults) == 0 {
 		return "审核通过"
 	}
-	return s.AuditResult
+
+	return s.AuditResults.String()
 }
 
 type RollbackSQL struct {
@@ -366,19 +404,27 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
-	Number      uint           `json:"number"`
-	Description string         `json:"description"`
-	ExecSQL     string         `json:"exec_sql"`
-	AuditResult string         `json:"audit_result"`
-	AuditLevel  string         `json:"audit_level"`
-	AuditStatus string         `json:"audit_status"`
-	ExecResult  string         `json:"exec_result"`
-	ExecStatus  string         `json:"exec_status"`
-	RollbackSQL sql.NullString `json:"rollback_sql"`
+	Number       uint           `json:"number"`
+	Description  string         `json:"description"`
+	ExecSQL      string         `json:"exec_sql"`
+	AuditResults AuditResults   `json:"audit_results"`
+	AuditLevel   string         `json:"audit_level"`
+	AuditStatus  string         `json:"audit_status"`
+	ExecResult   string         `json:"exec_result"`
+	ExecStatus   string         `json:"exec_status"`
+	RollbackSQL  sql.NullString `json:"rollback_sql"`
+}
+
+func (t *TaskSQLDetail) GetAuditResults() string {
+	if len(t.AuditResults) == 0 {
+		return ""
+	}
+
+	return t.AuditResults.String()
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
-e_sql.audit_result, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
+e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
 

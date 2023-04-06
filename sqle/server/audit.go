@@ -11,8 +11,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/pkg/errors"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -136,8 +136,8 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			result.Add(driverV2.RuleLevelNormal, "白名单")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
-			executeSQL.AuditResult = result.Message()
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
+			appendExecuteSqlResults(executeSQL, result)
 		} else {
 			auditSqls = append(auditSqls, executeSQL)
 			sqls = append(sqls, executeSQL.Content)
@@ -159,8 +159,8 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		hook.AfterAudit(sql)
 		sql.AuditStatus = model.SQLAuditStatusFinished
 		sql.AuditLevel = string(results[i].Level())
-		sql.AuditResult = results[i].Message()
 		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
+		appendExecuteSqlResults(sql, results[i])
 	}
 
 	replenishTaskStatistics(task)
@@ -283,10 +283,10 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 			return nil, err
 		}
 		result := driverV2.NewAuditResults()
-		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.AuditResult)
+		result.Add(driverV2.RuleLevel(executeSQL.AuditLevel), executeSQL.GetAuditResults())
 		result.Add(driverV2.RuleLevelNotice, reason)
 		executeSQL.AuditLevel = string(result.Level())
-		executeSQL.AuditResult = result.Message()
+		appendExecuteSqlResults(executeSQL, result)
 
 		rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
 			BaseSQL: model.BaseSQL{
@@ -297,4 +297,16 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 		})
 	}
 	return rollbackSQLs, nil
+}
+
+func appendExecuteSqlResults(executeSQL *model.ExecuteSQL, result *driverV2.AuditResults) {
+	for i := range result.Results {
+		ar := result.Results[i]
+		executeSQL.AuditResults = append(executeSQL.AuditResults, model.AuditResult{
+			Level:    string(ar.Level),
+			Message:  ar.Message,
+			RuleName: ar.RuleName,
+		})
+	}
+
 }

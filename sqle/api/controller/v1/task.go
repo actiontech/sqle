@@ -10,16 +10,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/utils"
-
+	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/utils"
 
-	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/labstack/echo/v4"
 )
 
@@ -330,7 +329,7 @@ func GetTaskSQLs(c echo.Context) error {
 			Number:      taskSQL.Number,
 			Description: taskSQL.Description,
 			ExecSQL:     taskSQL.ExecSQL,
-			AuditResult: taskSQL.AuditResult,
+			AuditResult: taskSQL.GetAuditResults(),
 			AuditLevel:  taskSQL.AuditLevel,
 			AuditStatus: taskSQL.AuditStatus,
 			ExecResult:  taskSQL.ExecResult,
@@ -397,8 +396,8 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
-			AuditResult: td.AuditResult,
-			AuditStatus: td.AuditStatus,
+			AuditResults: td.AuditResults,
+			AuditStatus:  td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
 		err := cw.Write([]string{
