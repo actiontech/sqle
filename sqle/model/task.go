@@ -128,8 +128,8 @@ func (s *BaseSQL) GetExecStatusDesc() string {
 }
 
 type AuditResult struct {
-	Level    string `json:"lvl"`
-	Message  string `json:"msg"`
+	Level    string `json:"level"`
+	Message  string `json:"message"`
 	RuleName string `json:"rule_name"`
 }
 
