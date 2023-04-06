@@ -11,8 +11,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/pkg/errors"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
