@@ -5463,10 +5463,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
+                        "type": "string",
                         "description": "filter rule name list",
                         "name": "filter_rule_names",
                         "in": "query"
