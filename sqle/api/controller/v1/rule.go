@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -403,9 +404,9 @@ func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
 }
 
 type GetRulesReqV1 struct {
-	FilterDBType                 string   `json:"filter_db_type" query:"filter_db_type"`
-	FilterGlobalRuleTemplateName string   `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
-	FilterRuleNames              []string `json:"filter_rule_names" query:"filter_rule_names"`
+	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
+	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
+	FilterRuleNames              string `json:"filter_rule_names" query:"filter_rule_names"`
 }
 
 type GetRulesResV1 struct {
@@ -470,7 +471,7 @@ func convertRulesToRes(rules []*model.Rule) []RuleResV1 {
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
-// @Param filter_rule_names query []string false "filter rule name list"
+// @Param filter_rule_names query string false "filter rule name list"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
 func GetRules(c echo.Context) error {
@@ -486,7 +487,8 @@ func GetRules(c echo.Context) error {
 	} else if req.FilterDBType != "" {
 		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
 	} else if len(req.FilterRuleNames) != 0 {
-		rules, err = s.GetRulesByNames(req.FilterRuleNames)
+		ruleNames := strings.Split(req.FilterRuleNames, ",")
+		rules, err = s.GetRulesByNames(ruleNames)
 	} else {
 		rules, err = s.GetAllRule()
 	}
