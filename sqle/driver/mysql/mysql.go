@@ -374,7 +374,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		return nil, err
 	}
 	if oscCommandLine != "" {
-		i.result.Add(driverV2.RuleLevelNotice, "", fmt.Sprintf("[osc]%s", oscCommandLine))
+		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigDDLOSCMinSize, fmt.Sprintf("[osc]%s", oscCommandLine))
 	}
 
 	if !i.IsExecutedSQL() {
