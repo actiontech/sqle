@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -81,7 +82,7 @@ func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 		_, err = i.Ctx.GetExecutionPlan(node.Text())
 	}
 	if err != nil {
-		i.result.Add(driverV2.RuleLevelWarn, "", fmt.Sprintf(CheckInvalidErrorFormat, err))
+		i.result.Add(driverV2.RuleLevelWarn, rulepkg.ConfigDMLExplainPreCheckEnable, fmt.Sprintf(CheckInvalidErrorFormat, err))
 	}
 	return nil
 
