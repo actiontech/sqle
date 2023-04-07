@@ -352,7 +352,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 				buf.WriteString(fmt.Sprintf(", 原因(%s)", advice.Reason))
 			}
 		}
-		i.result.Add(driverV2.RuleLevelNotice, "", buf.String())
+		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigOptimizeIndexEnabled, buf.String())
 	}
 
 	// dry run gh-ost
