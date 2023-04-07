@@ -129,6 +129,7 @@ message AuditRequest {
 message AuditResult {
   string message = 1;
   string level = 2;
+  string rule_name = 3;
 }
 
 message AuditResults {
