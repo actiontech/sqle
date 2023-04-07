@@ -49,6 +49,7 @@ func (a *AuditHandler) Audit(ctx context.Context, rule *driverV2.Rule, sql strin
 	if message != "" {
 		result.Level = rule.Level
 		result.Message = message
+		result.RuleName = rule.Name
 	}
 	return result, nil
 }
