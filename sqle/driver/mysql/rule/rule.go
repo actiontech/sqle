@@ -204,7 +204,7 @@ func addResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 	}
 	level := currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	result.Add(level, message, args...)
+	result.Add(level, ruleName, message, args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
@@ -4352,12 +4352,13 @@ var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+be
 var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`)
 
 // CREATE
-//    [DEFINER = user]
-//    TRIGGER trigger_name
-//    trigger_time trigger_event
-//    ON tbl_name FOR EACH ROW
-//    [trigger_order]
-//    trigger_body
+//
+//	[DEFINER = user]
+//	TRIGGER trigger_name
+//	trigger_time trigger_event
+//	ON tbl_name FOR EACH ROW
+//	[trigger_order]
+//	trigger_body
 //
 // ref:https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html
 //
@@ -4378,10 +4379,11 @@ var createFunctionReg1 = regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+
 var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`)
 
 // CREATE
-//    [DEFINER = user]
-//    FUNCTION sp_name ([func_parameter[,...]])
-//    RETURNS type
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	FUNCTION sp_name ([func_parameter[,...]])
+//	RETURNS type
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
@@ -4401,9 +4403,10 @@ var createProcedureReg1 = regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s
 var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 // CREATE
-//    [DEFINER = user]
-//    PROCEDURE sp_name ([proc_parameter[,...]])
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	PROCEDURE sp_name ([proc_parameter[,...]])
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need

@@ -76,7 +76,7 @@ func generateAuditResult(task *sqleModel.Task) string {
 	for _, executeSQL := range task.ExecuteSQLs {
 		builder.WriteString(strings.TrimSpace(executeSQL.Content))
 		builder.WriteString("\n------------------------------------------------------------------------------------------------\n")
-		builder.WriteString(executeSQL.AuditResult)
+		builder.WriteString(executeSQL.GetAuditResults())
 		builder.WriteString("\n------------------------------------------------------------------------------------------------\n\n")
 	}
 	return builder.String()

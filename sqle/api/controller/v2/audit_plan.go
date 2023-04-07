@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -163,7 +164,7 @@ type GetAuditPlanReportSQLsResV2 struct {
 
 type AuditPlanReportSQLResV2 struct {
 	SQL         string         `json:"audit_plan_report_sql" example:"select * from t1 where id = 1"`
-	AuditResult []*AuditResult `json:"audit_plan_report_sql_audit_result" example:"same format as task audit result"`
+	AuditResult []*AuditResult `json:"audit_plan_report_sql_audit_result"`
 	Number      uint           `json:"number" example:"1"`
 }
 
@@ -180,5 +181,57 @@ type AuditPlanReportSQLResV2 struct {
 // @Success 200 {object} v2.GetAuditPlanReportSQLsResV2
 // @router /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls [get]
 func GetAuditPlanReportSQLs(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	s := model.GetStorage()
+
+	req := new(GetAuditPlanReportSQLsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectName := c.Param("project_name")
+	apName := c.Param("audit_plan_name")
+
+	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
+	}
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+
+	data := map[string]interface{}{
+		"audit_plan_report_id": c.Param("audit_plan_report_id"),
+		"audit_plan_id":        ap.ID,
+		"limit":                req.PageSize,
+		"offset":               offset,
+	}
+	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	auditPlanReportSQLsRes := make([]*AuditPlanReportSQLResV2, len(auditPlanReportSQLs))
+	for i, auditPlanReportSQL := range auditPlanReportSQLs {
+		auditPlanReportSQLsRes[i] = &AuditPlanReportSQLResV2{
+			SQL:    auditPlanReportSQL.SQL,
+			Number: auditPlanReportSQL.Number,
+		}
+		for j := range auditPlanReportSQL.AuditResults {
+			ar := auditPlanReportSQL.AuditResults[j]
+			auditPlanReportSQLsRes[i].AuditResult = append(auditPlanReportSQLsRes[i].AuditResult, &AuditResult{
+				Level:    ar.Level,
+				Message:  ar.Message,
+				RuleName: ar.RuleName,
+			})
+		}
+	}
+	return c.JSON(http.StatusOK, &GetAuditPlanReportSQLsResV2{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      auditPlanReportSQLsRes,
+		TotalNums: count,
+	})
 }

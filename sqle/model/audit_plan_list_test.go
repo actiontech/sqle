@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -157,10 +158,13 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
-	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_result, report_sqls.number %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
+	mockResult := []AuditResult{{Level: "error", Message: "FAKE AUDIT RESULT"}}
+	mockResultBytes, _ := json.Marshal(mockResult)
+
+	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_results, report_sqls.number %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs(1, 1, 100, 10).WillReturnRows(sqlmock.NewRows([]string{
-		"sql", "audit_result", "number",
-	}).AddRow("select * from t1 where id = 1", "FAKE AUDIT RESULT", "1"))
+		"sql", "audit_results", "number",
+	}).AddRow("select * from t1 where id = 1", mockResultBytes, "1"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
 		ExpectQuery().WithArgs(1, 1).WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))

@@ -5463,7 +5463,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
+                        "type": "string",
                         "description": "filter rule name list",
                         "name": "filter_rule_names",
                         "in": "query"
@@ -13537,6 +13537,25 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditPlanReportSQLResV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_report_sql": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_report_sql_audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
+                },
+                "number": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "v2.AuditPlanResV2": {
             "type": "object",
             "properties": {
@@ -13605,10 +13624,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "level": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "warn"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "避免使用不必要的内置函数md5()"
                 },
                 "rule_name": {
                     "type": "string"

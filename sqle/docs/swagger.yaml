@@ -3686,6 +3686,19 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v2.AuditPlanReportSQLResV2:
+    properties:
+      audit_plan_report_sql:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_report_sql_audit_result:
+        items:
+          $ref: '#/definitions/v2.AuditResult'
+        type: array
+      number:
+        example: 1
+        type: integer
+    type: object
   v2.AuditPlanResV2:
     properties:
       audit_plan_cron:
@@ -3735,8 +3748,10 @@ definitions:
   v2.AuditResult:
     properties:
       level:
+        example: warn
         type: string
       message:
+        example: 避免使用不必要的内置函数md5()
         type: string
       rule_name:
         type: string
@@ -7640,7 +7655,7 @@ paths:
       - description: filter rule name list
         in: query
         name: filter_rule_names
-        type: array
+        type: string
       responses:
         "200":
           description: OK

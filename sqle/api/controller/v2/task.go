@@ -1,9 +1,13 @@
 package v2
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/model"
 )
 
 type GetAuditTaskSQLsReqV2 struct {
@@ -34,8 +38,8 @@ type AuditTaskSQLResV2 struct {
 }
 
 type AuditResult struct {
-	Level    string `json:"level"`
-	Message  string `json:"message"`
+	Level    string `json:"level" example:"warn"`
+	Message  string `json:"message" example:"避免使用不必要的内置函数md5()"`
 	RuleName string `json:"rule_name"`
 }
 
@@ -54,5 +58,70 @@ type AuditResult struct {
 // @Success 200 {object} v2.GetAuditTaskSQLsResV2
 // @router /v2/tasks/audits/{task_id}/sqls [get]
 func GetTaskSQLs(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(GetAuditTaskSQLsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	taskId := c.Param("task_id")
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
+	}
+	err = v1.CheckCurrentUserCanViewTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+	data := map[string]interface{}{
+		"task_id":             taskId,
+		"filter_exec_status":  req.FilterExecStatus,
+		"filter_audit_status": req.FilterAuditStatus,
+		"filter_audit_level":  req.FilterAuditLevel,
+		"no_duplicate":        req.NoDuplicate,
+		"limit":               req.PageSize,
+		"offset":              offset,
+	}
+
+	taskSQLs, count, err := s.GetTaskSQLsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
+	for _, taskSQL := range taskSQLs {
+		taskSQLRes := &AuditTaskSQLResV2{
+			Number:      taskSQL.Number,
+			Description: taskSQL.Description,
+			ExecSQL:     taskSQL.ExecSQL,
+			AuditLevel:  taskSQL.AuditLevel,
+			AuditStatus: taskSQL.AuditStatus,
+			ExecResult:  taskSQL.ExecResult,
+			ExecStatus:  taskSQL.ExecStatus,
+			RollbackSQL: taskSQL.RollbackSQL.String,
+		}
+		for i := range taskSQL.AuditResults {
+			ar := taskSQL.AuditResults[i]
+			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
+				Level:    ar.Level,
+				Message:  ar.Message,
+				RuleName: ar.RuleName,
+			})
+		}
+
+		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditTaskSQLsResV2{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      taskSQLsRes,
+		TotalNums: count,
+	})
 }

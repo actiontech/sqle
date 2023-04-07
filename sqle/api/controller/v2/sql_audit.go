@@ -1,9 +1,16 @@
 package v2
 
 import (
-	"github.com/labstack/echo/v4"
+	"net/http"
 
+	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
+
+	"github.com/labstack/echo/v4"
 )
 
 type DirectAuditReqV2 struct {
@@ -41,5 +48,59 @@ type DirectAuditResV2 struct {
 // @Success 200 {object} v2.DirectAuditResV2
 // @router /v2/sql_audit [post]
 func DirectAudit(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(DirectAuditReqV2)
+	err := controller.BindAndValidateReq(c, req)
+	if err != nil {
+		return err
+	}
+
+	sql := req.SQLContent
+	if req.SQLType == v1.SQLTypeMyBatis {
+		sql, err = parser.ParseXML(req.SQLContent)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	l := log.NewEntry().WithField(c.Path(), "direct audit failed")
+
+	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	if err != nil {
+		l.Errorf("audit sqls failed: %v", err)
+		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
+	}
+
+	return c.JSON(http.StatusOK, DirectAuditResV2{
+		BaseRes: controller.BaseRes{},
+		Data:    convertTaskResultToAuditResV2(task),
+	})
+}
+
+func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
+	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
+	for i, sql := range task.ExecuteSQLs {
+
+		ar := make([]*AuditResult, len(sql.AuditResults))
+		for j := range sql.AuditResults {
+			ar[j] = &AuditResult{
+				Level:    sql.AuditResults[j].Level,
+				Message:  sql.AuditResults[j].Message,
+				RuleName: sql.AuditResults[j].RuleName,
+			}
+		}
+
+		results[i] = AuditSQLResV2{
+			Number:      sql.Number,
+			ExecSQL:     sql.Content,
+			AuditResult: ar,
+			AuditLevel:  sql.AuditLevel,
+		}
+
+	}
+	return &AuditResDataV2{
+		AuditLevel: task.AuditLevel,
+		Score:      task.Score,
+		PassRate:   task.PassRate,
+		SQLResults: results,
+	}
 }
