@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AffectRows:
+    properties:
+      count:
+        type: integer
+      err_message:
+        type: string
+    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -1546,6 +1553,9 @@ definitions:
     type: object
   v1.GetSQLAnalysisDataResItemV1:
     properties:
+      performance_statistics:
+        $ref: '#/definitions/v1.PerformanceStatistics'
+        type: object
       sql_explain:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
@@ -1684,6 +1694,9 @@ definitions:
     type: object
   v1.GetTaskAnalysisDataResItemV1:
     properties:
+      performance_statistics:
+        $ref: '#/definitions/v1.PerformanceStatistics'
+        type: object
       sql_explain:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
@@ -2463,6 +2476,12 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.PerformanceStatistics:
+    properties:
+      affect_rows:
+        $ref: '#/definitions/v1.AffectRows'
+        type: object
     type: object
   v1.PersonaliseReqV1:
     properties:
