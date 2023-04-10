@@ -306,11 +306,6 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 func appendExecuteSqlResults(executeSQL *model.ExecuteSQL, result *driverV2.AuditResults) {
 	for i := range result.Results {
 		ar := result.Results[i]
-		executeSQL.AuditResults = append(executeSQL.AuditResults, model.AuditResult{
-			Level:    string(ar.Level),
-			Message:  ar.Message,
-			RuleName: ar.RuleName,
-		})
+		executeSQL.AuditResults.Append(string(ar.Level), ar.RuleName, ar.Message)
 	}
-
 }

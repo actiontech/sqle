@@ -154,6 +154,16 @@ func (a *AuditResults) String() string {
 	return strings.Join(msgs, "\n")
 }
 
+func (a *AuditResults) Append(level, ruleName, message string) {
+	for i := range *a {
+		ar := (*a)[i]
+		if ar.Level == level && ar.RuleName == ruleName && ar.Message == message {
+			return
+		}
+	}
+	*a = append(*a, AuditResult{Level: level, RuleName: ruleName, Message: message})
+}
+
 type ExecuteSQL struct {
 	BaseSQL
 	AuditStatus  string       `json:"audit_status" gorm:"default:\"initialized\""`
