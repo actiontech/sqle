@@ -22,7 +22,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ErrTaskNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
 var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
 
 type CreateAuditTaskReqV1 struct {
@@ -231,7 +230,7 @@ func GetTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
@@ -297,7 +296,7 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
@@ -371,7 +370,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
@@ -437,7 +436,7 @@ func DownloadTaskSQLFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
@@ -480,7 +479,7 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
@@ -528,7 +527,7 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
