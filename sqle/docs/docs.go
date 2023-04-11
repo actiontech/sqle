@@ -7328,7 +7328,7 @@ var doc = `{
                     "audit_plan"
                 ],
                 "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
+                "operationId": "getAuditPlantAnalysisDataV2",
                 "parameters": [
                     {
                         "type": "string",
@@ -8172,7 +8172,7 @@ var doc = `{
                     "task"
                 ],
                 "summary": "获取task相关的SQL执行计划和表元数据",
-                "operationId": "getTaskAnalysisData",
+                "operationId": "getTaskAnalysisDataV2",
                 "parameters": [
                     {
                         "type": "string",
