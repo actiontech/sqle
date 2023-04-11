@@ -119,7 +119,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint)
 		return err
 	}
 	if !exist {
-		return ErrTaskNoAccess
+		return errors.NewTaskNoExistOrNoAccessErr()
 	}
 	access, err := s.UserCanAccessWorkflow(user, workflow)
 	if err != nil {
@@ -138,7 +138,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []uint)
 		}
 	}
 
-	return ErrTaskNoAccess
+	return errors.NewTaskNoExistOrNoAccessErr()
 }
 
 func CheckCurrentUserCanViewWorkflow(c echo.Context, workflowName, projectName string) error {
