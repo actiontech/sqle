@@ -2,7 +2,6 @@ package rule
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -167,6 +166,7 @@ const (
 	DMLCheckExplainFullIndexScan              = "dml_check_explain_full_index_scan"
 	DMLCheckExplainExtraUsingIndexForSkipScan = "dml_check_explain_extra_using_index_for_skip_scan"
 	DMLCheckAffectedRows                      = "dml_check_affected_rows"
+	DMLCheckLimitOffsetNum                	  = "dml_check_limit_offset_num"
 )
 
 // inspector config code
@@ -1899,6 +1899,25 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
 		Func:         checkExplain,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckLimitOffsetNum,
+			Desc:       "LIMIT的偏移offset过大",
+			Annotation: "LIMIT的偏移offset过大", // todo 需要详细描述规则建议
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "100",
+					Desc:  "offset 大小",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "LIMIT的偏移offset过大，offset=%v（阈值为%v）",
+		AllowOffline: true,
+		Func:         checkLimitOffsetNum,
 	}, {
 		Rule: driverV2.Rule{
 			Name:       AllCheckPrepareStatementPlaceholders,
@@ -5182,6 +5201,22 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 	return nil
 }
 
+func checkLimitOffsetNum(input *RuleHandlerInput) error {
+	maxOffset := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Limit != nil && stmt.Limit.Offset != nil {
+			offset := stmt.Limit.Offset.(*parserdriver.ValueExpr).Datum.GetInt64()
+			if offset > int64(maxOffset) {
+				addResult(input.Res, input.Rule, DMLCheckLimitOffsetNum, offset, maxOffset)
+			}
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
 func checkAffectedRows(input *RuleHandlerInput) error {
 
 	switch input.Node.(type) {
@@ -5214,5 +5249,4 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 	}
 
 	return nil
-
 }
