@@ -8122,17 +8122,6 @@ var doc = `{
                 }
             }
         },
-        "v1.AffectRows": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "err_message": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.AuditPlanMetaV1": {
             "type": "object",
             "properties": {
@@ -10373,10 +10362,6 @@ var doc = `{
         "v1.GetSQLAnalysisDataResItemV1": {
             "type": "object",
             "properties": {
-                "performance_statistics": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.PerformanceStatistics"
-                },
                 "sql_explain": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
@@ -10578,10 +10563,6 @@ var doc = `{
         "v1.GetTaskAnalysisDataResItemV1": {
             "type": "object",
             "properties": {
-                "performance_statistics": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.PerformanceStatistics"
-                },
                 "sql_explain": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
@@ -11727,15 +11708,6 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "v1.PerformanceStatistics": {
-            "type": "object",
-            "properties": {
-                "affect_rows": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.AffectRows"
                 }
             }
         },
