@@ -2340,3 +2340,70 @@ func TestDMLCheckLimitOffsetNum(t *testing.T) {
 		newTestResult().addResult(rulepkg.DMLCheckLimitOffsetNum, 5, 4))
 
 }
+
+func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckUpdateOrDeleteHasWhere].Rule
+	t.Run(`(1)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(1)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(2)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1, col2 = col1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(3)update without where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1;`,
+			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+	})
+	t.Run(`(1)delete with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE FROM t1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(2)delete with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t2.id IS NULL`,
+			newTestResult())
+	})
+	t.Run(`(3)delete without where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			`(3)delete without where`,
+			DefaultMysqlInspectOffline(),
+			`DELETE FROM t1`,
+			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+	})
+}
