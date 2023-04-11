@@ -235,3 +235,24 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		TotalNums: count,
 	})
 }
+
+type GetAuditPlanAnalysisDataResV2 struct {
+	controller.BaseRes
+	Data *TaskAnalysisDataV2 `json:"data"`
+}
+
+// GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取task相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getTaskAnalysisData
+// @Tags audit_plan
+// @Param project_name path string true "project name"
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Param number path string true "sql number"
+// @Security ApiKeyAuth
+// @Success 200 {object} v2.GetAuditPlanAnalysisDataResV2
+// @router /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
+func GetAuditPlanAnalysisData(c echo.Context) error {
+	return getAuditPlanAnalysisData(c)
+}

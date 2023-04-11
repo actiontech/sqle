@@ -296,6 +296,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
 	v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
 	v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
+	v2Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v2.GetTaskAnalysisData)
 	v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
 	v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 
@@ -329,6 +330,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config", v1.GetAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
+	v2Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 	v2Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 
