@@ -564,18 +564,8 @@ type ExplainClassicResult struct {
 }
 
 type GetTaskAnalysisDataResItemV1 struct {
-	SQLExplain            SQLExplain            `json:"sql_explain"`
-	TableMetas            []TableMeta           `json:"table_metas"`
-	PerformanceStatistics PerformanceStatistics `json:"performance_statistics"`
-}
-
-type PerformanceStatistics struct {
-	AffectRows AffectRows `json:"affect_rows"`
-}
-
-type AffectRows struct {
-	Count      int    `json:"count"`
-	ErrMessage string `json:"err_message"`
+	SQLExplain SQLExplain  `json:"sql_explain"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 type GetTaskAnalysisDataResV1 struct {
