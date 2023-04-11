@@ -640,7 +640,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !foundAllTasks {
-		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 
 	insIdtMap := make(map[uint] /* project instance id */ struct{}, len(project.Instances))
@@ -782,7 +782,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(tasks) <= 0 {
-		return controller.JSONBaseErrorReq(c, v1.ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 
 	user, err := controller.GetCurrentUser(c)

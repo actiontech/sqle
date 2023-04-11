@@ -126,3 +126,7 @@ func NewNotSupportGetAuditPlanAnalysisDataErr() error {
 func NewNotSupportGetTaskAnalysisDataErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("get task analysis data is enterprise version function"))
 }
+
+func NewTaskNoExistOrNoAccessErr() error {
+	return New(DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
+}
