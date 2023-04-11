@@ -8106,6 +8106,45 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/v2/tasks/audits/{task_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetTaskAnalysisDataResV2"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -13537,6 +13576,17 @@ var doc = `{
                 }
             }
         },
+        "v2.AffectRows": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "err_message": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.AuditPlanReportSQLResV2": {
             "type": "object",
             "properties": {
@@ -13910,6 +13960,40 @@ var doc = `{
                 }
             }
         },
+        "v2.GetTaskAnalysisDataResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.GetTaskAnalysisDataV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.GetTaskAnalysisDataV2": {
+            "type": "object",
+            "properties": {
+                "performance_statistics": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.PerformanceStatistics"
+                },
+                "sql_explain": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.SQLExplain"
+                },
+                "table_metas": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.TableMetas"
+                }
+            }
+        },
         "v2.GetWorkflowResV2": {
             "type": "object",
             "properties": {
@@ -14051,6 +14135,15 @@ var doc = `{
                 }
             }
         },
+        "v2.PerformanceStatistics": {
+            "type": "object",
+            "properties": {
+                "affect_rows": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AffectRows"
+                }
+            }
+        },
         "v2.RejectWorkflowReqV2": {
             "type": "object",
             "properties": {
@@ -14066,6 +14159,29 @@ var doc = `{
                     "type": "boolean"
                 },
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.SQLExplain": {
+            "type": "object",
+            "properties": {
+                "classic_result": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ExplainClassicResult"
+                },
+                "err_message": {
+                    "type": "string"
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.TableMetas": {
+            "type": "object",
+            "properties": {
+                "err_message": {
                     "type": "string"
                 }
             }

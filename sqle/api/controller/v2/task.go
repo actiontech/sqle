@@ -3,11 +3,12 @@ package v2
 import (
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+
+	"github.com/labstack/echo/v4"
 )
 
 type GetAuditTaskSQLsReqV2 struct {
@@ -124,4 +125,49 @@ func GetTaskSQLs(c echo.Context) error {
 		Data:      taskSQLsRes,
 		TotalNums: count,
 	})
+}
+
+type AffectRows struct {
+	Count      int    `json:"count"`
+	ErrMessage string `json:"err_message"`
+}
+
+type SQLExplain struct {
+	SQL           string                   `json:"sql"`
+	ErrMessage    string                   `json:"err_message"`
+	ClassicResult *v1.ExplainClassicResult `json:"classic_result"`
+}
+
+type PerformanceStatistics struct {
+	AffectRows *AffectRows `json:"affect_rows"`
+}
+
+type TableMetas struct {
+	ErrMessage string          `json:"err_message"`
+	items      []*v1.TableMeta `json:"table_meta_items"`
+}
+
+type GetTaskAnalysisDataV2 struct {
+	SQLExplain            *SQLExplain            `json:"sql_explain"`
+	TableMetas            *TableMetas            `json:"table_metas"`
+	PerformanceStatistics *PerformanceStatistics `json:"performance_statistics"`
+}
+
+type GetTaskAnalysisDataResV2 struct {
+	controller.BaseRes
+	Data GetTaskAnalysisDataV2 `json:"data"`
+}
+
+// GetTaskAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取task相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getTaskAnalysisData
+// @Tags task
+// @Param task_id path string true "task id"
+// @Param number path uint true "sql number"
+// @Security ApiKeyAuth
+// @Success 200 {object} v2.GetTaskAnalysisDataResV2
+// @router /v2/tasks/audits/{task_id}/sqls/{number}/analysis [get]
+func GetTaskAnalysisData(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
 }
