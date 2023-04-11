@@ -14236,6 +14236,12 @@ var doc = `{
             "properties": {
                 "err_message": {
                     "type": "string"
+                },
+                "table_meta_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },

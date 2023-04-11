@@ -4105,6 +4105,10 @@ definitions:
     properties:
       err_message:
         type: string
+      table_meta_items:
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v2.TaskAnalysisDataV2:
     properties:

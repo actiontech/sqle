@@ -143,7 +143,7 @@ type PerformanceStatistics struct {
 
 type TableMetas struct {
 	ErrMessage string          `json:"err_message"`
-	items      []*v1.TableMeta `json:"table_meta_items"`
+	Items      []*v1.TableMeta `json:"table_meta_items"`
 }
 
 type TaskAnalysisDataV2 struct {
