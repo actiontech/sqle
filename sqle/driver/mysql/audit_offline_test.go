@@ -2319,3 +2319,24 @@ func TestDDLNotAllowRenamingOffline(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
 }
+
+func TestDMLCheckLimitOffsetNum(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckLimitOffsetNum].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		`(1)select with limit offset`,
+		DefaultMysqlInspectOffline(),
+		`SELECT * FROM tbl LIMIT 5,10`,
+		newTestResult().addResult(rulepkg.DMLCheckLimitOffsetNum, 5, 4))
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		`(2)select with limit explicit offset`,
+		DefaultMysqlInspectOffline(),
+		`SELECT * FROM tbl LIMIT 10 OFFSET 5`,
+		newTestResult().addResult(rulepkg.DMLCheckLimitOffsetNum, 5, 4))
+
+}
