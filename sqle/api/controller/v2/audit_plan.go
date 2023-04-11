@@ -244,7 +244,7 @@ type GetAuditPlanAnalysisDataResV2 struct {
 // GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
 // @Summary 获取task相关的SQL执行计划和表元数据
 // @Description get SQL explain and related table metadata for analysis
-// @Id getTaskAnalysisData
+// @Id getAuditPlantAnalysisDataV2
 // @Tags audit_plan
 // @Param project_name path string true "project name"
 // @Param audit_plan_name path string true "audit plan name"
