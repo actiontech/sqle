@@ -2352,7 +2352,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
 			newTestResult())
 	})
-	t.Run(`(1)update with where`, func(t *testing.T) {
+	t.Run(`(2)update with where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2361,7 +2361,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
 			newTestResult())
 	})
-	t.Run(`(2)update with where`, func(t *testing.T) {
+	t.Run(`(3)update with where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2370,7 +2370,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`UPDATE t1 SET col1 = col1 + 1, col2 = col1 WHERE a = 2`,
 			newTestResult())
 	})
-	t.Run(`(3)update without where`, func(t *testing.T) {
+	t.Run(`(4)update without where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2379,7 +2379,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`UPDATE t1 SET col1 = col1 + 1;`,
 			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
 	})
-	t.Run(`(1)delete with where`, func(t *testing.T) {
+	t.Run(`(5)delete with where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2388,7 +2388,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`DELETE FROM t1 WHERE a = 2`,
 			newTestResult())
 	})
-	t.Run(`(2)delete with where`, func(t *testing.T) {
+	t.Run(`(6)delete with where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2397,13 +2397,64 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 			`DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t2.id IS NULL`,
 			newTestResult())
 	})
-	t.Run(`(3)delete without where`, func(t *testing.T) {
+	t.Run(`(7)delete without where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
-			`(3)delete without where`,
+			``,
 			DefaultMysqlInspectOffline(),
 			`DELETE FROM t1`,
 			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+	})
+}
+
+func TestDMLCheckJoinHasOn(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinHasOn].Rule
+	t.Run(`select join with on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM t1 JOIN (t2, t3, t4)
+                 ON (t2.a = t1.a AND t3.b = t1.b AND t4.c = t1.c)`,
+			newTestResult())
+	})
+	t.Run(`select join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM t1 JOIN t2`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+	})
+	t.Run(`update join with on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+UPDATE employees
+        JOIN
+    merits ON employees.performance = merits.performance 
+SET 
+    salary = salary + salary * 0.015`,
+			newTestResult())
+	})
+	t.Run(`update join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+UPDATE employees
+        JOIN
+    merits 
+SET 
+    salary = salary + salary * 0.015`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
 	})
 }

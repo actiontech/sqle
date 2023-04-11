@@ -138,6 +138,7 @@ const (
 	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                         = "dml_check_table_size"
 	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
+	DMLCheckJoinHasOn                    	  = "dml_check_join_has_on"
 	DMLCheckAlias                             = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
@@ -522,6 +523,18 @@ var RuleHandlers = []RuleHandler{
 		Message:      "存在JOIN字段类型不一致, 会导致隐式转换",
 		AllowOffline: false,
 		Func:         checkJoinFieldType,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckJoinHasOn,
+			Desc:       "连接操作未指定连接条件",
+			Annotation: "SQL中连接操作未指定条件，join字段后缺失on条件", // todo 需要描述详细的规则背景
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "SQL中连接操作未指定条件，join字段后缺失on条件",
+		AllowOffline: true,
+		Func:         checkJoinHasOn,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -2101,6 +2114,35 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 		if leftType != rightType {
 			addResult(input.Res, input.Rule, DMLCheckJoinFieldType)
 		}
+	}
+
+	return nil
+}
+
+func checkJoinHasOn(input *RuleHandlerInput) error {
+	tableRefs := &ast.Join{}
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		tableRefs = stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableRefs = stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableRefs = stmt.TableRefs.TableRefs
+	default:
+		return nil
+	}
+
+	if tableRefs.On == nil {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 
 	return nil
