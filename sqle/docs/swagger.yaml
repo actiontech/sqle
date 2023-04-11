@@ -8916,7 +8916,7 @@ paths:
   /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis:
     get:
       description: get SQL explain and related table metadata for analysis
-      operationId: getTaskAnalysisData
+      operationId: getAuditPlantAnalysisDataV2
       parameters:
       - description: project name
         in: path
@@ -9467,7 +9467,7 @@ paths:
   /v2/tasks/audits/{task_id}/sqls/{number}/analysis:
     get:
       description: get SQL explain and related table metadata for analysis
-      operationId: getTaskAnalysisData
+      operationId: getTaskAnalysisDataV2
       parameters:
       - description: task id
         in: path
