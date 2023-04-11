@@ -159,6 +159,7 @@ const (
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
+	DMLCheckLimitOffsetNum                = "dml_check_limit_offset_num"
 )
 
 // inspector config code
@@ -1880,6 +1881,25 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckLimitOffsetNum,
+			Desc:       "LIMIT的偏移offset过大",
+			Annotation: "LIMIT的偏移offset过大", // todo 需要详细描述规则建议
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "100",
+					Desc:  "offset 大小",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "LIMIT的偏移offset过大，offset=%v（阈值为%v）",
+		AllowOffline: true,
+		Func:         checkLimitOffsetNum,
 	},
 }
 
@@ -5097,6 +5117,22 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 				return nil
 			}
 		}
+	}
+	return nil
+}
+
+func checkLimitOffsetNum(input *RuleHandlerInput) error {
+	maxOffset := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Limit != nil && stmt.Limit.Offset != nil {
+			offset := stmt.Limit.Offset.(*parserdriver.ValueExpr).Datum.GetInt64()
+			if offset > int64(maxOffset) {
+				addResult(input.Res, input.Rule, DMLCheckLimitOffsetNum, offset, maxOffset)
+			}
+		}
+	default:
+		return nil
 	}
 	return nil
 }
