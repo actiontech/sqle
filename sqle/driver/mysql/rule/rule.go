@@ -160,6 +160,7 @@ const (
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
 	DMLCheckLimitOffsetNum                = "dml_check_limit_offset_num"
+	DMLCheckUpdateOrDeleteHasWhere        = "dml_check_update_or_delete_has_where"
 )
 
 // inspector config code
@@ -1900,6 +1901,17 @@ var RuleHandlers = []RuleHandler{
 		Message:      "LIMIT的偏移offset过大，offset=%v（阈值为%v）",
 		AllowOffline: true,
 		Func:         checkLimitOffsetNum,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckUpdateOrDeleteHasWhere,
+			Desc:       "UPDATE/DELETE操作缺失where条件",
+			Annotation: "UPDATE/DELETE操作缺失where条件", // todo 需要详细描述规则建议
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "UPDATE/DELETE操作缺失where条件",
+		AllowOffline: true,
+		Func:         checkUpdateOrDeleteHasWhere,
 	},
 }
 
@@ -5130,6 +5142,22 @@ func checkLimitOffsetNum(input *RuleHandlerInput) error {
 			if offset > int64(maxOffset) {
 				addResult(input.Res, input.Rule, DMLCheckLimitOffsetNum, offset, maxOffset)
 			}
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkUpdateOrDeleteHasWhere(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Where == nil {
+			addResult(input.Res, input.Rule, DMLCheckUpdateOrDeleteHasWhere)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Where == nil {
+			addResult(input.Res, input.Rule, DMLCheckUpdateOrDeleteHasWhere)
 		}
 	default:
 		return nil
