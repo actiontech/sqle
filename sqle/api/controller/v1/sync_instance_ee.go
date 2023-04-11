@@ -24,7 +24,7 @@ import (
 
 var (
 	ErrSyncInstanceTaskNotExist = func(taskId int) error {
-		return errors.New(errors.DataNotExist, fmt.Errorf("sync instance task [%s] not exist", taskId))
+		return errors.New(errors.DataNotExist, fmt.Errorf("sync instance task [%d] not exist", taskId))
 	}
 )
 
