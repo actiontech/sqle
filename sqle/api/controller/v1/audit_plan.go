@@ -1228,9 +1228,8 @@ type TableMeta struct {
 }
 
 type GetSQLAnalysisDataResItemV1 struct {
-	SQLExplain            SQLExplain            `json:"sql_explain"`
-	TableMetas            []TableMeta           `json:"table_metas"`
-	PerformanceStatistics PerformanceStatistics `json:"performance_statistics"`
+	SQLExplain SQLExplain  `json:"sql_explain"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 type GetAuditPlanAnalysisDataResV1 struct {
