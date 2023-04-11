@@ -3890,6 +3890,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v2.GetAuditPlanAnalysisDataResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.TaskAnalysisDataV2'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v2.GetAuditPlanReportSQLsResV2:
     properties:
       code:
@@ -3956,23 +3968,11 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v2.GetTaskAnalysisDataV2'
+        $ref: '#/definitions/v2.TaskAnalysisDataV2'
         type: object
       message:
         example: ok
         type: string
-    type: object
-  v2.GetTaskAnalysisDataV2:
-    properties:
-      performance_statistics:
-        $ref: '#/definitions/v2.PerformanceStatistics'
-        type: object
-      sql_explain:
-        $ref: '#/definitions/v2.SQLExplain'
-        type: object
-      table_metas:
-        $ref: '#/definitions/v2.TableMetas'
-        type: object
     type: object
   v2.GetWorkflowResV2:
     properties:
@@ -4105,6 +4105,18 @@ definitions:
     properties:
       err_message:
         type: string
+    type: object
+  v2.TaskAnalysisDataV2:
+    properties:
+      performance_statistics:
+        $ref: '#/definitions/v2.PerformanceStatistics'
+        type: object
+      sql_explain:
+        $ref: '#/definitions/v2.SQLExplain'
+        type: object
+      table_metas:
+        $ref: '#/definitions/v2.TableMetas'
+        type: object
     type: object
   v2.UpdateWorkflowReqV2:
     properties:
@@ -8895,6 +8907,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定扫描任务的SQL扫描详情
+      tags:
+      - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlanAnalysisDataResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
   /v2/projects/{project_name}/instances:

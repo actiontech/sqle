@@ -7316,6 +7316,59 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "获取task相关的SQL执行计划和表元数据",
+                "operationId": "getTaskAnalysisData",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanAnalysisDataResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances": {
             "get": {
                 "security": [
@@ -13872,6 +13925,23 @@ var doc = `{
                 }
             }
         },
+        "v2.GetAuditPlanAnalysisDataResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.TaskAnalysisDataV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v2.GetAuditPlanReportSQLsResV2": {
             "type": "object",
             "properties": {
@@ -13969,28 +14039,11 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v2.GetTaskAnalysisDataV2"
+                    "$ref": "#/definitions/v2.TaskAnalysisDataV2"
                 },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                }
-            }
-        },
-        "v2.GetTaskAnalysisDataV2": {
-            "type": "object",
-            "properties": {
-                "performance_statistics": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.PerformanceStatistics"
-                },
-                "sql_explain": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.SQLExplain"
-                },
-                "table_metas": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.TableMetas"
                 }
             }
         },
@@ -14183,6 +14236,23 @@ var doc = `{
             "properties": {
                 "err_message": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.TaskAnalysisDataV2": {
+            "type": "object",
+            "properties": {
+                "performance_statistics": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.PerformanceStatistics"
+                },
+                "sql_explain": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.SQLExplain"
+                },
+                "table_metas": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.TableMetas"
                 }
             }
         },

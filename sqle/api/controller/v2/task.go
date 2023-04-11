@@ -147,7 +147,7 @@ type TableMetas struct {
 	items      []*v1.TableMeta `json:"table_meta_items"`
 }
 
-type GetTaskAnalysisDataV2 struct {
+type TaskAnalysisDataV2 struct {
 	SQLExplain            *SQLExplain            `json:"sql_explain"`
 	TableMetas            *TableMetas            `json:"table_metas"`
 	PerformanceStatistics *PerformanceStatistics `json:"performance_statistics"`
@@ -155,7 +155,7 @@ type GetTaskAnalysisDataV2 struct {
 
 type GetTaskAnalysisDataResV2 struct {
 	controller.BaseRes
-	Data GetTaskAnalysisDataV2 `json:"data"`
+	Data TaskAnalysisDataV2 `json:"data"`
 }
 
 // GetTaskAnalysisData get SQL explain and related table metadata for analysis
