@@ -160,7 +160,7 @@ type GetTaskAnalysisDataResV2 struct {
 // GetTaskAnalysisData get SQL explain and related table metadata for analysis
 // @Summary 获取task相关的SQL执行计划和表元数据
 // @Description get SQL explain and related table metadata for analysis
-// @Id getTaskAnalysisData
+// @Id getTaskAnalysisDataV2
 // @Tags task
 // @Param task_id path string true "task id"
 // @Param number path uint true "sql number"
