@@ -238,7 +238,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 
 type GetAuditPlanAnalysisDataResV2 struct {
 	controller.BaseRes
-	Data TaskAnalysisDataV2 `json:"data"`
+	Data *TaskAnalysisDataV2 `json:"data"`
 }
 
 // GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
@@ -254,5 +254,5 @@ type GetAuditPlanAnalysisDataResV2 struct {
 // @Success 200 {object} v2.GetAuditPlanAnalysisDataResV2
 // @router /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	return getAuditPlanAnalysisData(c)
 }

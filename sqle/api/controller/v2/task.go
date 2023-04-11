@@ -5,7 +5,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -155,7 +154,7 @@ type TaskAnalysisDataV2 struct {
 
 type GetTaskAnalysisDataResV2 struct {
 	controller.BaseRes
-	Data TaskAnalysisDataV2 `json:"data"`
+	Data *TaskAnalysisDataV2 `json:"data"`
 }
 
 // GetTaskAnalysisData get SQL explain and related table metadata for analysis
@@ -169,5 +168,5 @@ type GetTaskAnalysisDataResV2 struct {
 // @Success 200 {object} v2.GetTaskAnalysisDataResV2
 // @router /v2/tasks/audits/{task_id}/sqls/{number}/analysis [get]
 func GetTaskAnalysisData(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	return getTaskAnalysisData(c)
 }
