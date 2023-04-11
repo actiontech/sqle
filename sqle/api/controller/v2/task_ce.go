@@ -1,7 +1,7 @@
 //go:build !enterprise
 // +build !enterprise
 
-package v1
+package v2
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -10,6 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getAuditPlanAnalysisData(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
+func getTaskAnalysisData(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetTaskAnalysisDataErr())
 }

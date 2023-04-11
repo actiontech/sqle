@@ -1,7 +1,7 @@
 //go:build !enterprise
 // +build !enterprise
 
-package v1
+package v2
 
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
