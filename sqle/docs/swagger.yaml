@@ -3686,6 +3686,13 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v2.AffectRows:
+    properties:
+      count:
+        type: integer
+      err_message:
+        type: string
+    type: object
   v2.AuditPlanReportSQLResV2:
     properties:
       audit_plan_report_sql:
@@ -3943,6 +3950,30 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v2.GetTaskAnalysisDataResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.GetTaskAnalysisDataV2'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.GetTaskAnalysisDataV2:
+    properties:
+      performance_statistics:
+        $ref: '#/definitions/v2.PerformanceStatistics'
+        type: object
+      sql_explain:
+        $ref: '#/definitions/v2.SQLExplain'
+        type: object
+      table_metas:
+        $ref: '#/definitions/v2.TableMetas'
+        type: object
+    type: object
   v2.GetWorkflowResV2:
     properties:
       code:
@@ -4042,6 +4073,12 @@ definitions:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
     type: object
+  v2.PerformanceStatistics:
+    properties:
+      affect_rows:
+        $ref: '#/definitions/v2.AffectRows'
+        type: object
+    type: object
   v2.RejectWorkflowReqV2:
     properties:
       reason:
@@ -4052,6 +4089,21 @@ definitions:
       is_global_rule_template:
         type: boolean
       name:
+        type: string
+    type: object
+  v2.SQLExplain:
+    properties:
+      classic_result:
+        $ref: '#/definitions/v1.ExplainClassicResult'
+        type: object
+      err_message:
+        type: string
+      sql:
+        type: string
+    type: object
+  v2.TableMetas:
+    properties:
+      err_message:
         type: string
     type: object
   v2.UpdateWorkflowReqV2:
@@ -9359,6 +9411,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定扫描任务的SQLs信息
+      tags:
+      - task
+  /v2/tasks/audits/{task_id}/sqls/{number}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getTaskAnalysisData
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetTaskAnalysisDataResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
 securityDefinitions:
