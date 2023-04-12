@@ -54,7 +54,7 @@ func (c *BaseModelClusterNode) Join(serverId string) {
 
 	err = s.MaintainClusterLeader(c.ServerId)
 	if err != nil {
-		c.entry.Error("maintain cluster leader failed, error: %v", err)
+		c.entry.Errorf("maintain cluster leader failed, error: %v", err)
 	}
 	go func() {
 		tick := time.NewTicker(time.Second * 5)
@@ -64,7 +64,7 @@ func (c *BaseModelClusterNode) Join(serverId string) {
 			case <-tick.C:
 				err := s.MaintainClusterLeader(c.ServerId)
 				if err != nil {
-					c.entry.Error("maintain cluster leader failed, error: %v", err)
+					c.entry.Errorf("maintain cluster leader failed, error: %v", err)
 				}
 			case <-c.exitCh:
 				c.doneCh <- struct{}{}
