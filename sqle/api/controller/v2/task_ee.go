@@ -23,7 +23,7 @@ import (
 func getTaskAnalysisData(c echo.Context) error {
 
 	taskID := c.Param("task_id")
-	number := c.Param("number")
+	sqlNumber := c.Param("number")
 
 	s := model.GetStorage()
 	task, exist, err := s.GetTaskById(taskID)
@@ -37,7 +37,8 @@ func getTaskAnalysisData(c echo.Context) error {
 	if err := v1.CheckCurrentUserCanViewTask(c, task); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	taskSql, exist, err := s.GetTaskSQLByNumber(taskID, number)
+
+	taskSql, exist, err := s.GetTaskSQLByNumber(taskID, sqlNumber)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

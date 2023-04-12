@@ -19,7 +19,7 @@ import (
 
 func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
-	number := c.Param("number")
+	sqlNumber := c.Param("number")
 	apName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
 
@@ -40,7 +40,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
 	}
 
-	numberInt, err := strconv.Atoi(number)
+	sqlNumberInt, err := strconv.Atoi(sqlNumber)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
 	}
@@ -54,7 +54,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report not exist")))
 	}
 
-	auditPlanReportSQLV2, exist, err := s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportIdInt), uint(numberInt))
+	auditPlanReportSQLV2, exist, err := s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportIdInt), uint(sqlNumberInt))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
