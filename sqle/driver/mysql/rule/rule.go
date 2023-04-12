@@ -55,6 +55,7 @@ const (
 	DDLCheckColumnCharLength                           = "ddl_check_column_char_length"
 	DDLDisableFK                                       = "ddl_disable_fk"
 	DDLCheckIndexCount                                 = "ddl_check_index_count"
+	DDLCheckIndexNotNullConstraint                     = "ddl_check_index_not_null_constraint"
 	DDLCheckCompositeIndexMax                          = "ddl_check_composite_index_max"
 	DDLCheckTableDBEngine                              = "ddl_check_table_db_engine"
 	DDLCheckTableCharacterSet                          = "ddl_check_table_character_set"
@@ -670,6 +671,19 @@ var RuleHandlers = []RuleHandler{
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckIndexNotNullConstraint,
+			Desc:       "索引字段需要有非空约束",
+			Annotation: "索引字段上没有非空约束，则表记录与索引记录不会完全映射",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeIndexingConvention,
+		},
+		Message:              "这些索引字段(%v)需要有非空约束",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                 checkIndexNotNullConstraint,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -3293,6 +3307,100 @@ func (i index) ColumnString() string {
 
 func (i index) String() string {
 	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
+}
+
+func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols := []string{}
+	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
+
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			for _, option := range col.Options {
+				switch option.Tp {
+				case ast.ColumnOptionNotNull:
+					colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+				case ast.ColumnOptionPrimaryKey, ast.ColumnOptionUniqKey:
+					indexCols = append(indexCols, col.Name.Name.L)
+				}
+			}
+		}
+
+		// check index
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintUniq, ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintPrimaryKey:
+				for _, k := range constraint.Keys {
+					indexCols = append(indexCols, k.Column.Name.L)
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint == nil {
+				continue
+			}
+			switch spec.Constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+				for _, key := range spec.Constraint.Keys {
+					indexCols = append(indexCols, key.Column.Name.L)
+				}
+			}
+			switch spec.Tp {
+			case ast.AlterTableAddConstraint:
+				for _, key := range spec.Constraint.Keys {
+					indexCols = append(indexCols, key.Column.Name.L)
+				}
+			}
+		}
+		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, col := range createTableStmt.Cols {
+				for _, option := range col.Options {
+					switch option.Tp {
+					case ast.ColumnOptionNotNull:
+						colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+					}
+				}
+			}
+		}
+
+	case *ast.CreateIndexStmt:
+		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, col := range createTableStmt.Cols {
+				for _, option := range col.Options {
+					switch option.Tp {
+					case ast.ColumnOptionNotNull:
+						colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+					}
+				}
+			}
+		}
+		for _, specification := range stmt.IndexPartSpecifications {
+			indexCols = append(indexCols, specification.Column.Name.L)
+		}
+	default:
+		return nil
+	}
+
+	idxColsWithoutNotNull := []string{}
+	indexCols = utils.RemoveDuplicate(indexCols)
+	for _, k := range indexCols {
+		if _, ok := colsWithNotNullConstraint[k]; !ok {
+			idxColsWithoutNotNull = append(idxColsWithoutNotNull, k)
+		}
+	}
+	if len(idxColsWithoutNotNull) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(idxColsWithoutNotNull, ","))
+	}
+	return nil
 }
 
 func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {

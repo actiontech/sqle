@@ -114,9 +114,10 @@ ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "un
 `,
 					newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).
 						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "这些索引字段(b1)需要有非空约束"),
 					newTestResult(),
-					newTestResult(),
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
 					newTestResult(),
 					newTestResult(),
 				)
@@ -278,6 +279,196 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 				)
 			})
 
+			// DDLCheckIndexNotNullConstraint
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table index with not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE exist_db.not_exist_tb_1 (
+			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+			v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			PRIMARY KEY (id),
+			INDEX idx_1 (v1,id),
+			INDEX idx_2 (id)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table index without not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE exist_db.not_exist_tb_1 (
+			id bigint unsigned AUTO_INCREMENT COMMENT "unit test",
+			v1 varchar(255) DEFAULT "unit test" COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			PRIMARY KEY (id),
+			INDEX idx_1 (v1),
+			INDEX idx_2 (id)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id,v1"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table unique with not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  username VARCHAR(50) NOT NULL,  
+  email VARCHAR(100) NOT NULL,  
+  UNIQUE KEY uq_username_email (username, email)  
+); `,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table unique without not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  username VARCHAR(50) NOT NULL,  
+  email VARCHAR(100),  
+  phone VARCHAR(100),  
+  UNIQUE KEY uq_username_email (username, email, phone)  
+); `,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "email,phone"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table unique key without not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  id INT UNIQUE KEY,  
+  username VARCHAR(50),  
+  email VARCHAR(100)  
+); `,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table unique key with not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  id INT NOT NULL UNIQUE KEY,  
+  username VARCHAR(50),  
+  email VARCHAR(100)  
+); `,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table primary key without not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  username VARCHAR(50) NOT NULL,  
+  email VARCHAR(100),  
+  phone VARCHAR(100),  
+  PRIMARY KEY uq_username_email (username, email, phone)  
+); `,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "email,phone"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table primary key with not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  username VARCHAR(50) NOT NULL,  
+  email VARCHAR(100) NOT NULL,  
+  phone VARCHAR(100) NOT NULL,  
+  PRIMARY KEY uq_username_email (username, email, phone)  
+); `,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table primary key without not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  id INT PRIMARY KEY,  
+  username VARCHAR(50),  
+  email VARCHAR(100)  
+); `,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create table primary key with not null",
+					NewSQLExecutedInspect(nil), `
+CREATE TABLE users (  
+  id INT NOT NULL PRIMARY KEY,  
+  username VARCHAR(50),  
+  email VARCHAR(100)  
+); `,
+					newTestResult(),
+				)
+			})
+
+			// todo 添加alter table的单测，目前暂时手工测试
+			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+			//					t,
+			//					"alter table index with not null",
+			//					NewSQLExecutedInspect(nil), `
+			//alter table customers add index customer_id_index (customer_id);`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+			//					t,
+			//					"alter table index without not null",
+			//					NewSQLExecutedInspect(nil), `
+			//alter table customers add index customer_id_index (customer_id);`,
+			//					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "customer_id"),
+			//				)
+			//			})
+			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+			//					t,
+			//					"alter table unique with not null",
+			//					NewSQLExecutedInspect(nil), `
+			//ALTER TABLE table_name ADD UNIQUE KEY (column1, column2); `,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+			//					t,
+			//					"alter table unique without not null",
+			//					NewSQLExecutedInspect(nil), `
+			//ALTER TABLE table_name ADD UNIQUE KEY (column1, column2); `,
+			//					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "column1", "column2"),
+			//				)
+			//			})
+			// case: alter table add constraint constraint_name (col_name)
+
+			// todo 添加create index的单测，目前暂时手工测试
+			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+			//					t,
+			//					"create index with not null",
+			//					NewSQLExecutedInspect(nil), `
+			//CREATE INDEX part_of_name ON customer (name(10));`,
+			//					newTestResult(),
+			//				)
+			//			})
 		}
 	}
 }
