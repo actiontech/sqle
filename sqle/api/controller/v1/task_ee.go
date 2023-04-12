@@ -27,7 +27,7 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrTaskNoAccess)
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 
 	if err := CheckCurrentUserCanViewTask(c, task); err != nil {

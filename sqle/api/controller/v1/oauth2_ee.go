@@ -140,6 +140,10 @@ func oauth2Callback(c echo.Context) error {
 func getOauth2UserID(conf *model.Oauth2Configuration, token string) (userID string, err error) {
 	uri := fmt.Sprintf("%v?%v=%v", conf.ServerUserIdUrl, conf.AccessTokenTag, token)
 	resp, err := (&http.Client{}).Get(uri)
+	if err != nil {
+		return "", err
+	}
+
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
