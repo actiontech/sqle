@@ -2458,3 +2458,34 @@ SET
 			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
 	})
 }
+
+func TestDMLHintCountFuncWithCol(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLHintCountFuncWithCol].Rule
+	t.Run(`select count(col)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(c) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult().addResult(rulepkg.DMLHintCountFuncWithCol))
+	})
+	t.Run(`select count(*)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(*) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
+	t.Run(`select count(1)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(1) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
+}
