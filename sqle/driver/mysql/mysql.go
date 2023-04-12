@@ -550,7 +550,7 @@ func checkSql(affectRowSql string) error {
 	fieldExtractor := new(util.SelectFieldExtractor)
 	node.Accept(fieldExtractor)
 
-	if fieldExtractor.IsOnlyIncludeCountFunc == false {
+	if !fieldExtractor.IsOnlyIncludeCountFunc {
 		return errors.New("affectRowSql error")
 	}
 
