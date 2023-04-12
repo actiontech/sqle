@@ -29,51 +29,19 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
 
-	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
-	}
-
 	reportIdInt, err := strconv.Atoi(reportId)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
+		return errors.NewDataInvalidErr("parse audit plan report id failed: %v", err)
 	}
 
 	numberInt, err := strconv.Atoi(number)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
+		return errors.NewDataInvalidErr("parse number failed: %v", err)
 	}
 
-	s := model.GetStorage()
-	auditPlanReport, exist, err := s.GetAuditPlanReportByID(ap.ID, uint(reportIdInt))
+	auditPlanReport, auditPlanReportSQLV2, instance, err := GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, numberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report not exist")))
-	}
-
-	auditPlanReportSQLV2, exist, err := s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportIdInt), uint(numberInt))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("audit plan report sql v2 not exist")))
-	}
-
-	instance, exist, err := s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, auditPlanReport.AuditPlan.ProjectId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance not exist")))
 	}
 
 	explainResult, explainMessage, tableMetaResult, err := getSQLAnalysisResultFromDriver(log.NewEntry(), auditPlanReport.AuditPlan.InstanceDatabase, auditPlanReportSQLV2.SQL, instance)
@@ -217,4 +185,47 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 	}
 
 	return analysisDataResItemV1
+}
+
+func GetAuditPlantReportAndInstance(c echo.Context, projectName, auditPlanName string, reportID, sqlNumber int) (
+	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
+	err error) {
+
+	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
+		return nil, nil, nil, err
+	}
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, auditPlanName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewAuditPlanNotExistErr()
+	}
+
+	s := model.GetStorage()
+	auditPlanReport, exist, err = s.GetAuditPlanReportByID(ap.ID, uint(reportID))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report not exist")
+	}
+
+	auditPlanReportSQLV2, exist, err = s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportID), uint(sqlNumber))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report sql v2 not exist")
+	}
+	instance, exist, err = s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, auditPlanReport.AuditPlan.ProjectId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("instance not exist")
+	}
+
+	return auditPlanReport, auditPlanReportSQLV2, instance, nil
 }
