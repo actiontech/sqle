@@ -152,6 +152,7 @@ const (
 	DMLNotRecommendFuncInWhere            = "dml_not_recommend_func_in_where"
 	DMLNotRecommendSysdate                = "dml_not_recommend_sysdate"
 	DMLHintSumFuncTips                    = "dml_hint_sum_func_tips"
+	DMLHintCountFuncWithCol               = "dml_hint_count_func_with_col"
 	DMLHintLimitMustBeCombinedWithOrderBy = "dml_hint_limit_must_be_combined_with_order_by"
 	DMLHintTruncateTips                   = "dml_hint_truncate_tips"
 	DMLHintDeleteTips                     = "dml_hint_delete_tips"
@@ -1785,6 +1786,17 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLHintCountFuncWithCol,
+			Desc:       "避免使用 COUNT(COL)",
+			Annotation: "SQL中使用了COUNT(col)来替代COUNT(*)", // todo 需要补充详细的规则背景
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "避免使用 COUNT(COL)",
+		Func:         hintCountFuncWithCol,
+		AllowOffline: true,
 	}, {
 		Rule: driverV2.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
 			Name:       DDLCheckColumnQuantityInPK,
@@ -5009,6 +5021,26 @@ func hintSumFuncTips(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 	}
+	return nil
+}
+
+func hintCountFuncWithCol(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		for _, f := range stmt.Fields.Fields {
+			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
+				for _, arg := range fu.Args {
+					if _, ok := arg.(*ast.ColumnNameExpr); ok {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+					}
+				}
+				return nil
+			}
+		}
+	default:
+		return nil
+	}
+
 	return nil
 }
 
