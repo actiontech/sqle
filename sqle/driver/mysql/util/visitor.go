@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pingcap/tidb/types"
+
 	"github.com/pingcap/parser/ast"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
@@ -169,5 +171,145 @@ func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren 
 }
 
 func (ts *TableSourceExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
+
+// SelectCountNodeExtractor
+// 将DML语句转换为select count(*) from ...语句 ;
+type SelectCountNodeExtractor struct{}
+
+func (se *SelectCountNodeExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	newSelect := new(ast.SelectStmt)
+	a := new(ast.SelectStmtOpts)
+	a.SQLCache = true
+	newSelect.SelectStmtOpts = a
+
+	newSelect.Fields = getCountFieldList()
+
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		// todo: hint
+		// todo: union
+		if stmt.From != nil {
+			newSelect.From = stmt.From
+		}
+
+		if stmt.Where != nil {
+			newSelect.Where = stmt.Where
+		}
+
+		if stmt.OrderBy != nil {
+			newSelect.OrderBy = stmt.OrderBy
+		}
+
+		if stmt.Limit != nil {
+			newSelect.Limit = stmt.Limit
+		}
+
+		return newSelect, true
+	case *ast.UpdateStmt:
+		if stmt.TableRefs != nil {
+			newSelect.From = stmt.TableRefs
+		}
+
+		if stmt.Where != nil {
+			newSelect.Where = stmt.Where
+		}
+
+		if stmt.Order != nil {
+			newSelect.OrderBy = stmt.Order
+		}
+
+		if stmt.Limit != nil {
+			newSelect.Limit = stmt.Limit
+		}
+
+		return newSelect, true
+	case *ast.DeleteStmt:
+		if stmt.TableRefs != nil {
+			newSelect.From = stmt.TableRefs
+		}
+
+		if stmt.Where != nil {
+			newSelect.Where = stmt.Where
+		}
+
+		if stmt.Order != nil {
+			newSelect.OrderBy = stmt.Order
+		}
+
+		if stmt.Limit != nil {
+			newSelect.Limit = stmt.Limit
+		}
+
+		return newSelect, true
+	}
+
+	return in, false
+}
+
+// getCountFieldList
+// 获取count(*)函数的字段列表
+func getCountFieldList() *ast.FieldList {
+	datum := new(types.Datum)
+	datum.SetInt64(1)
+
+	return &ast.FieldList{
+		Fields: []*ast.SelectField{
+			{
+				Expr: &ast.AggregateFuncExpr{
+					F: ast.AggFuncCount,
+					Args: []ast.ExprNode{
+						&driver.ValueExpr{
+							Datum: *datum,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func (se *SelectCountNodeExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
+
+// SelectFieldExtractor
+// 检测select的字段是否只包含count(*)函数
+type SelectFieldExtractor struct {
+	IsOnlyIncludeCountFunc bool
+}
+
+func (se *SelectFieldExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		isOneFiled := len(stmt.Fields.Fields) == 1
+		if !isOneFiled {
+			return in, true
+		}
+
+		if aggregateFuncExpr, ok := stmt.Fields.Fields[0].Expr.(*ast.AggregateFuncExpr); ok {
+			isOneArg := len(aggregateFuncExpr.Args) == 1
+			if !isOneArg {
+				return in, true
+			}
+
+			var arg interface{}
+			if expr, ok := aggregateFuncExpr.Args[0].(ast.ValueExpr); ok {
+				arg = expr.GetValue()
+			}
+
+			isDigitOne := arg.(int64) == 1
+			isCountFunc := strings.ToLower(aggregateFuncExpr.F) == ast.AggFuncCount
+			if isCountFunc && isDigitOne {
+				se.IsOnlyIncludeCountFunc = true
+				return in, true
+			}
+		}
+	}
+	return in, true
+}
+
+func (se *SelectFieldExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
