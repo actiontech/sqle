@@ -82,6 +82,7 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 			// rows
 			for i := range res.explainResult.ClassicResult.Rows {
 				row := res.explainResult.ClassicResult.Rows[i]
+				classicResult.Rows[i] = make(map[string]string, len(row))
 				for k := range row {
 					colName := res.explainResult.ClassicResult.Columns[k].Name
 					classicResult.Rows[i][colName] = row[k]
@@ -102,6 +103,7 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 				tableMeta := res.tableMetaResult.TableMetas[i]
 				tableMetaColumnsInfo := tableMeta.ColumnsInfo
 				tableMetaIndexInfo := tableMeta.IndexesInfo
+				tableMetaItemsData[i] = &v1.TableMeta{}
 				tableMetaItemsData[i].Columns = v1.TableColumns{
 					Rows: make([]map[string]string, len(tableMetaColumnsInfo.Rows)),
 					Head: make([]v1.TableMetaItemHeadResV1, len(tableMetaColumnsInfo.Columns)),
@@ -120,6 +122,7 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 				}
 
 				for j := range tableMetaColumnsInfo.Rows {
+					tableMetaColumnData.Rows[j] = make(map[string]string, len(tableMetaColumnsInfo.Rows[j]))
 					for k := range tableMetaColumnsInfo.Rows[j] {
 						colName := tableMetaColumnsInfo.Columns[k].Name
 						tableMetaColumnData.Rows[j][colName] = tableMetaColumnsInfo.Rows[j][k]
@@ -133,6 +136,7 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 				}
 
 				for j := range tableMetaIndexInfo.Rows {
+					tableMetaIndexData.Rows[j] = make(map[string]string, len(tableMetaIndexInfo.Rows[j]))
 					for k := range tableMetaIndexInfo.Rows[j] {
 						colName := tableMetaIndexInfo.Columns[k].Name
 						tableMetaIndexData.Rows[j][colName] = tableMetaIndexInfo.Rows[j][k]
