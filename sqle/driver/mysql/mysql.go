@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	_driver "database/sql/driver"
 	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/pingcap/parser/format"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -21,6 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+var ErrUnsupportedSqlType = errors.New("unsupported sql type")
 
 // MysqlDriverImpl implements driver.Driver interface
 type MysqlDriverImpl struct {
@@ -435,7 +440,121 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 }
 
 func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
-	return &driverV2.EstimatedAffectRows{}, nil // todo: impl it.
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+
+	num, err := getAffectedRowNum(ctx, sql, conn)
+	if err != nil && errors.Is(err, ErrUnsupportedSqlType) {
+		return &driverV2.EstimatedAffectRows{ErrMessage: err.Error()}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get affected row num failed: %w", err)
+	}
+
+	return &driverV2.EstimatedAffectRows{
+		Count: num,
+	}, nil
+}
+
+func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Executor) (int64, error) {
+	node, err := util.ParseOneSql(originSql)
+	if err != nil {
+		return 0, err
+	}
+
+	var newNode ast.Node
+	var affectRowSql string
+	var hasGroupByOrGroupByAndHavingBoth bool
+
+	nodeExtractor := new(util.SelectCountNodeExtractor)
+
+	// 语法规则文档
+	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
+	// insert: https://dev.mysql.com/doc/refman/8.0/en/insert.html
+	// update: https://dev.mysql.com/doc/refman/8.0/en/update.html
+	// delete: https://dev.mysql.com/doc/refman/8.0/en/delete.html
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		isGroupByAndHavingBothExist := stmt.GroupBy != nil && stmt.Having != nil
+		// 包含group by或者group by和having都存在的select语句
+		if stmt.GroupBy != nil || isGroupByAndHavingBothExist {
+			hasGroupByOrGroupByAndHavingBoth = true
+		}
+
+		newNode, _ = stmt.Accept(nodeExtractor)
+	case *ast.InsertStmt:
+		// 普通的insert语句，insert into t1 (name) values ('name1'), ('name2')
+		isCommonInsert := stmt.Lists != nil && stmt.Select == nil
+		// 包含子查询的insert语句，insert into t1 (name) select name from t2
+		isSelectInsert := stmt.Select != nil && stmt.Lists == nil
+		if isSelectInsert {
+			newNode, _ = stmt.Select.Accept(nodeExtractor)
+		} else if isCommonInsert {
+			return int64(len(stmt.Lists)), nil
+		} else {
+			return 0, ErrUnsupportedSqlType
+		}
+	case *ast.UpdateStmt:
+		newNode, _ = stmt.Accept(nodeExtractor)
+	case *ast.DeleteStmt:
+		newNode, _ = stmt.Accept(nodeExtractor)
+	default:
+		return 0, ErrUnsupportedSqlType
+	}
+
+	// 存在group by或者group by和having都存在的select语句，无法转换为select count语句
+	// 使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
+	if hasGroupByOrGroupByAndHavingBoth {
+		// 移除后缀分号，避免sql语法错误
+		trimSuffix := strings.TrimRight(originSql, ";")
+		affectRowSql = fmt.Sprintf("select (*) from (%s) as t", trimSuffix)
+	} else {
+		sqlBuilder := new(strings.Builder)
+		err = newNode.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, sqlBuilder))
+		if err != nil {
+			return 0, err
+		}
+
+		affectRowSql = sqlBuilder.String()
+	}
+
+	// 验证sql语法是否正确，select 字段是否有且仅有 count(*)
+	err = checkSql(affectRowSql)
+	if err != nil {
+		return 0, err
+	}
+
+	_, row, err := conn.Db.QueryWithContext(ctx, affectRowSql)
+	if err != nil {
+		return 0, err
+	}
+
+	sqlResp := row[0][0]
+
+	affectCount, err := strconv.ParseInt(sqlResp.String, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return affectCount, nil
+}
+
+func checkSql(affectRowSql string) error {
+	node, err := util.ParseOneSql(affectRowSql)
+	if err != nil {
+		return err
+	}
+
+	fieldExtractor := new(util.SelectFieldExtractor)
+	node.Accept(fieldExtractor)
+
+	if fieldExtractor.IsOnlyIncludeCountFunc == false {
+		return errors.New("affectRowSql error")
+	}
+
+	return nil
 }
 
 type Config struct {
