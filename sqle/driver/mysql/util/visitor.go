@@ -171,3 +171,43 @@ func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren 
 func (ts *TableSourceExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
+
+// SelectFieldExtractor
+// 检测select的字段是否只包含count(*)函数
+type SelectFieldExtractor struct {
+	IsSelectOnlyIncludeCountFunc bool
+}
+
+func (se *SelectFieldExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		isOneFiled := len(stmt.Fields.Fields) == 1
+		if !isOneFiled {
+			return in, true
+		}
+
+		if aggregateFuncExpr, ok := stmt.Fields.Fields[0].Expr.(*ast.AggregateFuncExpr); ok {
+			isOneArg := len(aggregateFuncExpr.Args) == 1
+			if !isOneArg {
+				return in, true
+			}
+
+			var arg interface{}
+			if expr, ok := aggregateFuncExpr.Args[0].(ast.ValueExpr); ok {
+				arg = expr.GetValue()
+			}
+
+			isDigitOne := arg.(int64) == 1
+			isCountFunc := strings.ToLower(aggregateFuncExpr.F) == ast.AggFuncCount
+			if isCountFunc && isDigitOne {
+				se.IsSelectOnlyIncludeCountFunc = true
+				return in, true
+			}
+		}
+	}
+	return in, true
+}
+
+func (se *SelectFieldExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}

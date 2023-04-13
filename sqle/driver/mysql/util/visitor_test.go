@@ -77,3 +77,31 @@ where (select count(*) from exist_db.exist_tb_2) > 1
 		})
 	}
 }
+
+func TestSelectFieldExtractor(t *testing.T) {
+	tests := []struct {
+		input              string
+		isOnlyIncludeCount bool
+	}{
+		{"SELECT * FROM t1", false},
+		{"SELECT COUNT(1) FROM `test`.`test`", true},
+		{"SELECT count(*) FROM (SELECT * FROM t1) as t2", true},
+		{"SELECT count(*),count(id) FROM (SELECT * FROM t1) as t2", false},
+		{"SELECT count(1) FROM (SELECT * FROM t1) as t2", true},
+		{"SELECT count(1),id FROM (SELECT * FROM t1) as t2", false},
+		{"(SELECT count(1),id FROM (SELECT * FROM t1) as t2)", false},
+		{"(SELECT count(1) FROM (SELECT * FROM t1) as t2)", true},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+
+			visitor := &SelectFieldExtractor{}
+			stmt.Accept(visitor)
+
+			assert.Equal(t, tt.isOnlyIncludeCount, visitor.IsSelectOnlyIncludeCountFunc)
+		})
+	}
+}
