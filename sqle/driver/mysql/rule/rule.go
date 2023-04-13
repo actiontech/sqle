@@ -2,6 +2,7 @@ package rule
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -113,7 +114,7 @@ const (
 	DMLCheckSelectLimit                       = "dml_check_select_limit"
 	DMLCheckWithOrderBy                       = "dml_check_with_order_by"
 	DMLCheckSelectWithOrderBy                 = "dml_check_select_with_order_by"
-	DMLCheckWhereIsInvalid                    = "all_check_where_is_invalid" // TODO: fix rule name to "dml_check_where_is_invalid". related DB table `rules`/`rule_template_rule`
+	DMLCheckWhereIsInvalid                    = "all_check_where_is_invalid"
 	DMLDisableSelectAllColumn                 = "dml_disable_select_all_column"
 	DMLCheckInsertColumnsExist                = "dml_check_insert_columns_exist"
 	DMLCheckBatchInsertListsMax               = "dml_check_batch_insert_lists_max"
@@ -161,6 +162,7 @@ const (
 	DMLCheckSubQueryNestNum                   = "dml_check_sub_query_depth"
 	DMLCheckExplainFullIndexScan              = "dml_check_explain_full_index_scan"
 	DMLCheckExplainExtraUsingIndexForSkipScan = "dml_check_explain_extra_using_index_for_skip_scan"
+	DMLCheckAffectedRows                      = "dml_check_affected_rows"
 )
 
 // inspector config code
@@ -1905,6 +1907,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "索引扫描是跳跃扫描，未遵循最左匹配原则",
 		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAffectedRows,
+			Desc:       "检查 UPDATE/DELETE 操作影响指定行数",
+			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10000",
+					Desc:  "最大影响行数",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "影响行数为 %v，超过设定阈值 %v",
+		Func:         checkAffectedRows,
 	},
 }
 
@@ -5134,5 +5156,27 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 			}
 		}
 	}
+	return nil
+}
+
+func checkAffectedRows(input *RuleHandlerInput) error {
+
+	switch input.Node.(type) {
+	case *ast.UpdateStmt, *ast.DeleteStmt:
+	default:
+		return nil
+	}
+
+	affectCount, err := util.GetAffectedRowNum(
+		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+
+	affectCountLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(affectCountLimit) {
+		addResult(input.Res, input.Rule, input.Rule.Name, affectCount, affectCountLimit)
+	}
+
 	return nil
 }
