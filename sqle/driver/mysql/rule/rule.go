@@ -4349,8 +4349,9 @@ func checkExplain(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, DMLCheckExplainAccessTypeAll, record.Rows)
 		}
 
-		if record.Type == executor.ExplainRecordAccessTypeIndex {
-			addResult(input.Res, input.Rule, DMLCheckExplainFullIndexScan)
+		if input.Rule.Name == DMLCheckExplainFullIndexScan &&
+			record.Type == executor.ExplainRecordAccessTypeIndex {
+			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 
 	}
