@@ -159,6 +159,7 @@ const (
 	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
+	DMLCheckExplainFullIndexScan          = "dml_check_explain_full_index_scan"
 )
 
 // inspector config code
@@ -1880,6 +1881,17 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainFullIndexScan,
+			Desc:       "检查是否存在全索引扫描",
+			Annotation: "在数据量大的情况下索引全扫描严重影响SQL性能",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
+		Func:         checkExplain,
 	},
 }
 
@@ -4336,6 +4348,11 @@ func checkExplain(input *RuleHandlerInput) error {
 		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > int64(max) {
 			addResult(input.Res, input.Rule, DMLCheckExplainAccessTypeAll, record.Rows)
 		}
+
+		if record.Type == executor.ExplainRecordAccessTypeIndex {
+			addResult(input.Res, input.Rule, DMLCheckExplainFullIndexScan)
+		}
+
 	}
 	return nil
 }
