@@ -515,7 +515,7 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	if hasGroupByOrGroupByAndHavingBoth {
 		// 移除后缀分号，避免sql语法错误
 		trimSuffix := strings.TrimRight(originSql, ";")
-		affectRowSql = fmt.Sprintf("select (*) from (%s) as t", trimSuffix)
+		affectRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
 	} else {
 		sqlBuilder := new(strings.Builder)
 		err = newNode.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, sqlBuilder))
