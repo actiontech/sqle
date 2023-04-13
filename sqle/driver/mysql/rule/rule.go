@@ -2,6 +2,7 @@ package rule
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -160,6 +161,7 @@ const (
 	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
 	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
 	DMLCheckExplainFullIndexScan          = "dml_check_explain_full_index_scan"
+	DMLCheckAffectedRows                  = "dml_check_affected_rows"
 )
 
 // inspector config code
@@ -1892,6 +1894,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
 		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAffectedRows,
+			Desc:       "检查 UPDATE/DELETE 操作影响指定行数",
+			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10000",
+					Desc:  "最大影响行数",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "影响行数为 %v，超过设定阈值 %v",
+		Func:         checkAffectedRows,
 	},
 }
 
@@ -5116,5 +5138,27 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 			}
 		}
 	}
+	return nil
+}
+
+func checkAffectedRows(input *RuleHandlerInput) error {
+
+	switch input.Node.(type) {
+	case *ast.UpdateStmt, *ast.DeleteStmt:
+	default:
+		return nil
+	}
+
+	affectCount, err := util.GetAffectedRowNum(
+		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+
+	affectCountLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(affectCountLimit) {
+		addResult(input.Res, input.Rule, input.Rule.Name, affectCount, affectCountLimit)
+	}
+
 	return nil
 }
