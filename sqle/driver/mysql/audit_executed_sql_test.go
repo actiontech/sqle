@@ -469,6 +469,105 @@ CREATE TABLE users (
 			//					newTestResult(),
 			//				)
 			//			})
+
+			// DMLCheckSortColumnLength
+			// todo 待支持线上单测，先手工测试
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"select order by",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT * FROM t1
+			//  ORDER BY key_part1 DESC, key_part2 ASC;
+			// `,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"select group by",
+			//					NewSQLExecutedInspect(nil), `
+			//				SELECT a, b, COUNT(c) AS t FROM test_table GROUP BY a,b
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"select distinct",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT DISTINCT c1, c2, c3 FROM t1
+			//WHERE c1 > const;
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"UNION",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT 1, 2 UNION SELECT 'a', 'b';
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"UNION DISTINCT",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT 1, 2 UNION DISTINCT SELECT 'a', 'b';
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"UNION order by",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT name, age FROM table1 WHERE age > 20
+			//UNION ALL
+			//SELECT name, age FROM table2 WHERE age > 30
+			//ORDER BY age DESC;
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"UNION ALL",
+			//					NewSQLExecutedInspect(nil), `
+			//SELECT 1, 2 UNION ALL SELECT 'a', 'b';
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"delete order by",
+			//					NewSQLExecutedInspect(nil), `
+			//DELETE FROM somelog WHERE user = 'jcole'
+			//ORDER BY timestamp_column LIMIT 1;
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
+			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+			//					t,
+			//					"update order by",
+			//					NewSQLExecutedInspect(nil), `
+			//UPDATE t SET id = id + 1 ORDER BY id DESC;
+			//				`,
+			//					newTestResult(),
+			//				)
+			//			})
 		}
 	}
 }
