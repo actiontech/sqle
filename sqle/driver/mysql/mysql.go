@@ -495,14 +495,12 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		isSelectInsert := stmt.Select != nil && stmt.Lists == nil
 		if isSelectInsert {
 			newNode = getSelectNodeFromSelect(stmt.Select.(*ast.SelectStmt))
-			//newNode, _ = stmt.Select.Accept(nodeExtractor)
 		} else if isCommonInsert {
 			return int64(len(stmt.Lists)), nil
 		} else {
 			return 0, ErrUnsupportedSqlType
 		}
 	case *ast.UpdateStmt:
-		//newNode, _ = stmt.Accept(nodeExtractor)
 		newNode = getSelectNodeFromUpdate(stmt)
 	case *ast.DeleteStmt:
 		newNode = getSelectNodeFromDelete(stmt)
