@@ -862,3 +862,7 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 
 	return *ti.columns[columnName].cardinality, nil
 }
+
+func (c *Context) GetExecutor() *executor.Executor {
+	return c.e
+}
