@@ -19,8 +19,10 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	driverAst "github.com/pingcap/tidb/types/parser_driver"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/tidb/types"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -440,6 +442,10 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 }
 
 func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	if i.IsOfflineAudit() {
+		return nil, nil
+	}
+
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
@@ -468,8 +474,6 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	var affectRowSql string
 	var hasGroupByOrGroupByAndHavingBoth bool
 
-	nodeExtractor := new(util.SelectCountNodeExtractor)
-
 	// 语法规则文档
 	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
 	// insert: https://dev.mysql.com/doc/refman/8.0/en/insert.html
@@ -483,23 +487,25 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 			hasGroupByOrGroupByAndHavingBoth = true
 		}
 
-		newNode, _ = stmt.Accept(nodeExtractor)
+		newNode = getSelectNodeFromSelect(stmt)
 	case *ast.InsertStmt:
 		// 普通的insert语句，insert into t1 (name) values ('name1'), ('name2')
 		isCommonInsert := stmt.Lists != nil && stmt.Select == nil
 		// 包含子查询的insert语句，insert into t1 (name) select name from t2
 		isSelectInsert := stmt.Select != nil && stmt.Lists == nil
 		if isSelectInsert {
-			newNode, _ = stmt.Select.Accept(nodeExtractor)
+			newNode = getSelectNodeFromSelect(stmt.Select.(*ast.SelectStmt))
+			//newNode, _ = stmt.Select.Accept(nodeExtractor)
 		} else if isCommonInsert {
 			return int64(len(stmt.Lists)), nil
 		} else {
 			return 0, ErrUnsupportedSqlType
 		}
 	case *ast.UpdateStmt:
-		newNode, _ = stmt.Accept(nodeExtractor)
+		//newNode, _ = stmt.Accept(nodeExtractor)
+		newNode = getSelectNodeFromUpdate(stmt)
 	case *ast.DeleteStmt:
-		newNode, _ = stmt.Accept(nodeExtractor)
+		newNode = getSelectNodeFromDelete(stmt)
 	default:
 		return 0, ErrUnsupportedSqlType
 	}
@@ -521,6 +527,7 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	}
 
 	// 验证sql语法是否正确，select 字段是否有且仅有 count(*)
+	// 避免在客户机器上执行不符合预期的sql语句
 	err = checkSql(affectRowSql)
 	if err != nil {
 		return 0, err
@@ -531,14 +538,116 @@ func getAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, err
 	}
 
-	sqlResp := row[0][0]
+	if len(row) != 1 {
+		return 0, errors.New("affectRowSql error")
+	}
 
-	affectCount, err := strconv.ParseInt(sqlResp.String, 10, 64)
+	affectCount, err := strconv.ParseInt(row[0][0].String, 10, 64)
 	if err != nil {
 		return 0, err
 	}
 
 	return affectCount, nil
+}
+
+func getSelectNodeFromDelete(stmt *ast.DeleteStmt) *ast.SelectStmt {
+	newSelect := newSelectWithCount()
+
+	if stmt.TableRefs != nil {
+		newSelect.From = stmt.TableRefs
+	}
+
+	if stmt.Where != nil {
+		newSelect.Where = stmt.Where
+	}
+
+	if stmt.Order != nil {
+		newSelect.OrderBy = stmt.Order
+	}
+
+	if stmt.Limit != nil {
+		newSelect.Limit = stmt.Limit
+	}
+
+	return newSelect
+}
+
+func getSelectNodeFromUpdate(stmt *ast.UpdateStmt) *ast.SelectStmt {
+	newSelect := newSelectWithCount()
+
+	if stmt.TableRefs != nil {
+		newSelect.From = stmt.TableRefs
+	}
+
+	if stmt.Where != nil {
+		newSelect.Where = stmt.Where
+	}
+
+	if stmt.Order != nil {
+		newSelect.OrderBy = stmt.Order
+	}
+
+	if stmt.Limit != nil {
+		newSelect.Limit = stmt.Limit
+	}
+
+	return newSelect
+}
+
+func getSelectNodeFromSelect(stmt *ast.SelectStmt) *ast.SelectStmt {
+	newSelect := newSelectWithCount()
+
+	// todo: hint
+	// todo: union
+	if stmt.From != nil {
+		newSelect.From = stmt.From
+	}
+
+	if stmt.Where != nil {
+		newSelect.Where = stmt.Where
+	}
+
+	if stmt.OrderBy != nil {
+		newSelect.OrderBy = stmt.OrderBy
+	}
+
+	if stmt.Limit != nil {
+		newSelect.Limit = stmt.Limit
+	}
+
+	return newSelect
+}
+
+func newSelectWithCount() *ast.SelectStmt {
+	newSelect := new(ast.SelectStmt)
+	a := new(ast.SelectStmtOpts)
+	a.SQLCache = true
+	newSelect.SelectStmtOpts = a
+
+	newSelect.Fields = getCountFieldList()
+	return newSelect
+}
+
+// getCountFieldList
+// 获取count(*)函数的字段列表
+func getCountFieldList() *ast.FieldList {
+	datum := new(types.Datum)
+	datum.SetInt64(1)
+
+	return &ast.FieldList{
+		Fields: []*ast.SelectField{
+			{
+				Expr: &ast.AggregateFuncExpr{
+					F: ast.AggFuncCount,
+					Args: []ast.ExprNode{
+						&driverAst.ValueExpr{
+							Datum: *datum,
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func checkSql(affectRowSql string) error {
@@ -550,7 +659,7 @@ func checkSql(affectRowSql string) error {
 	fieldExtractor := new(util.SelectFieldExtractor)
 	node.Accept(fieldExtractor)
 
-	if !fieldExtractor.IsOnlyIncludeCountFunc {
+	if !fieldExtractor.IsSelectOnlyIncludeCountFunc {
 		return errors.New("affectRowSql error")
 	}
 
