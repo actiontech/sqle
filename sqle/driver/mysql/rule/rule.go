@@ -171,6 +171,7 @@ const (
 	DMLCheckAffectedRows                      = "dml_check_affected_rows"
 	DMLCheckLimitOffsetNum                	  = "dml_check_limit_offset_num"
 	DMLCheckUpdateOrDeleteHasWhere        	  = "dml_check_update_or_delete_has_where"
+	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 )
 
 // inspector config code
@@ -1969,6 +1970,25 @@ var RuleHandlers = []RuleHandler{
 		Message:      "UPDATE/DELETE操作缺失where条件",
 		AllowOffline: true,
 		Func:         checkUpdateOrDeleteHasWhere,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSortColumnLength,
+			Desc:       "禁止对长字段排序",
+			Annotation: "长字段值进行ORDER BY、DISTINCT、GROUP BY、UNION之类的操作，会引发排序，有性能隐患",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2000",
+					Desc:  "可排序字段的最大长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "被用于排序但长度超过阈值的字段(%v); 由于没有指定表名而没有校验长度的字段(%v)",
+		Func:         checkSortColumnLength,
 	}, {
 		Rule: driverV2.Rule{
 			Name:       AllCheckPrepareStatementPlaceholders,
@@ -5424,6 +5444,149 @@ func checkUpdateOrDeleteHasWhere(input *RuleHandlerInput) error {
 	default:
 		return nil
 	}
+	return nil
+}
+
+func checkSortColumnLength(input *RuleHandlerInput) error {
+	maxLength := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+	type col struct {
+		Table   *ast.TableName
+		ColName string
+	}
+	checkColumns := []col{}
+	notCheckCols := []string{}
+
+	buildCheckColumns := func(colName *ast.ColumnNameExpr, singleTableSource *ast.TableName) {
+		var table *ast.TableName
+		if singleTableSource == nil { // 这种情况是查询多表
+			if colName.Name.Table.O == "" { // 查询多表的情况下order by的字段没有指定表名，简单处理，暂不对这个字段做校验。但会通过审核结果给出提示
+				table = &ast.TableName{}
+				notCheckCols = append(notCheckCols, colName.Name.Name.O)
+				return
+			}
+			table = &ast.TableName{
+				Schema: colName.Name.Schema,
+				Name:   colName.Name.Table,
+			}
+		} else {
+			table = &ast.TableName{
+				Schema: singleTableSource.Schema,
+				Name:   singleTableSource.Name,
+			}
+		}
+		checkColumns = append(checkColumns, col{
+			Table:   table,
+			ColName: colName.Name.Name.L,
+		})
+	}
+
+	gatherColFromOrderByClause := func(orderBy *ast.OrderByClause, singleTableSource *ast.TableName) {
+		if orderBy != nil {
+			for _, item := range orderBy.Items {
+				colName, ok := item.Expr.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				buildCheckColumns(colName, singleTableSource)
+			}
+		}
+	}
+
+	gatherColFromSelectStmt := func(stmt *ast.SelectStmt, singleTableSource *ast.TableName) {
+		gatherColFromOrderByClause(stmt.OrderBy, singleTableSource)
+		if stmt.GroupBy != nil {
+			for _, item := range stmt.GroupBy.Items {
+				colName, ok := item.Expr.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				buildCheckColumns(colName, singleTableSource)
+			}
+		}
+		if stmt.Distinct {
+			if stmt.Fields != nil {
+				for _, field := range stmt.Fields.Fields {
+					colName, ok := field.Expr.(*ast.ColumnNameExpr)
+					if !ok {
+						continue
+					}
+					buildCheckColumns(colName, singleTableSource)
+				}
+			}
+		}
+	}
+
+	invalidCols := []string{}
+	checkColLen := func(column col) error {
+		table, exist, err := input.Ctx.GetCreateTableStmt(column.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		for _, def := range table.Cols {
+			if def.Name.Name.L != column.ColName || def.Tp.Flen <= maxLength {
+				continue
+			}
+			invalidCols = append(invalidCols, fmt.Sprintf("%v.%v", column.Table.Name.L, column.ColName))
+		}
+		return nil
+	}
+
+	var singleTable *ast.TableName
+	// 简单处理表名：
+	// 只在单表查询时通过from获取表名；
+	// 多表查询时如果order by某个列没有指定表名，则不会检查这个列（这种情况应该不常见，暂时这样处理）
+	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		// join子查询里的order by不做处理
+		t, ok := stmt.From.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.From.TableRefs.Right == nil {
+			singleTable = t.Source.(*ast.TableName)
+		}
+		gatherColFromSelectStmt(stmt, singleTable)
+	case *ast.UnionStmt:
+		// join子查询里的order by不做处理
+		if stmt.SelectList == nil {
+			return nil
+		}
+		for _, s := range stmt.SelectList.Selects {
+			t, ok := s.From.TableRefs.Left.(*ast.TableSource)
+			if ok && t != nil && s.From.TableRefs.Right == nil {
+				singleTable = t.Source.(*ast.TableName)
+			}
+			gatherColFromSelectStmt(s, singleTable)
+		}
+		gatherColFromOrderByClause(stmt.OrderBy, singleTable)
+	case *ast.DeleteStmt:
+		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
+			singleTable = t.Source.(*ast.TableName)
+		}
+		gatherColFromOrderByClause(stmt.Order, singleTable)
+	case *ast.UpdateStmt:
+		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
+			singleTable = t.Source.(*ast.TableName)
+		}
+		gatherColFromOrderByClause(stmt.Order, singleTable)
+	default:
+		return nil
+	}
+
+	for _, column := range checkColumns {
+		if err := checkColLen(column); err != nil {
+			return err
+		}
+	}
+
+	if len(invalidCols) > 0 || len(notCheckCols) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(invalidCols, ","), strings.Join(notCheckCols, ","))
+	}
+
 	return nil
 }
 
