@@ -40,6 +40,10 @@ const (
 	RuleTypeIndexOptimization  = "索引优化"
 )
 
+const (
+	AllCheckPrepareStatementPlaceholders = "all_check_prepare_statement_placeholders"
+)
+
 // inspector DDL rules
 const (
 	DDLCheckPKWithoutIfNotExists                       = "ddl_check_table_without_if_not_exists"
@@ -1895,6 +1899,25 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
 		Func:         checkExplain,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       AllCheckPrepareStatementPlaceholders,
+			Desc:       "检查绑定变量数量",
+			Annotation: "过度使用绑定变量，默认阈值:100",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "100",
+					Desc:  "最大绑定变量数量",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "使用绑定变量数量为 %v，超过设定阈值 %v",
+		Func:         checkPrepareStatementPlaceholders,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -5179,4 +5202,16 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	}
 
 	return nil
+}
+
+func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
+
+	placeholdersCount := strings.Count(input.Node.Text(), "?")
+	placeholdersLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if placeholdersCount > placeholdersLimit {
+		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+	}
+
+	return nil
+
 }
