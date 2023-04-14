@@ -2,6 +2,7 @@ package rule
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -37,6 +38,10 @@ const (
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
 	RuleTypeIndexOptimization  = "索引优化"
+)
+
+const (
+	AllCheckPrepareStatementPlaceholders = "all_check_prepare_statement_placeholders"
 )
 
 // inspector DDL rules
@@ -109,56 +114,59 @@ const (
 
 // inspector DML rules
 const (
-	DMLCheckWithLimit                     = "dml_check_with_limit"
-	DMLCheckSelectLimit                   = "dml_check_select_limit"
-	DMLCheckWithOrderBy                   = "dml_check_with_order_by"
-	DMLCheckSelectWithOrderBy             = "dml_check_select_with_order_by"
-	DMLCheckWhereIsInvalid                = "all_check_where_is_invalid"
-	DMLDisableSelectAllColumn             = "dml_disable_select_all_column"
-	DMLCheckInsertColumnsExist            = "dml_check_insert_columns_exist"
-	DMLCheckBatchInsertListsMax           = "dml_check_batch_insert_lists_max"
-	DMLCheckInQueryNumber                 = "dml_check_in_query_limit"
-	DMLCheckWhereExistFunc                = "dml_check_where_exist_func"
-	DMLCheckWhereExistNot                 = "dml_check_where_exist_not"
-	DMLCheckWhereExistImplicitConversion  = "dml_check_where_exist_implicit_conversion"
-	DMLCheckLimitMustExist                = "dml_check_limit_must_exist"
-	DMLCheckWhereExistScalarSubquery      = "dml_check_where_exist_scalar_sub_queries"
-	DMLWhereExistNull                     = "dml_check_where_exist_null"
-	DMLCheckSelectForUpdate               = "dml_check_select_for_update"
-	DMLCheckNeedlessFunc                  = "dml_check_needless_func"
-	DMLCheckFuzzySearch                   = "dml_check_fuzzy_search"
-	DMLCheckNumberOfJoinTables            = "dml_check_number_of_join_tables"
-	DMLCheckIfAfterUnionDistinct          = "dml_check_is_after_union_distinct"
-	DMLCheckExplainAccessTypeAll          = "dml_check_explain_access_type_all"
-	DMLCheckExplainExtraUsingFilesort     = "dml_check_explain_extra_using_filesort"
-	DMLCheckExplainExtraUsingTemporary    = "dml_check_explain_extra_using_temporary"
-	DMLCheckTableSize                     = "dml_check_table_size"
-	DMLCheckJoinFieldType                 = "dml_check_join_field_type"
-	DMLCheckAlias                         = "dml_check_alias"
-	DMLNotRecommendNotWildcardLike        = "dml_not_recommend_not_wildcard_like"
-	DMLHintInNullOnlyFalse                = "dml_hint_in_null_only_false"
-	DMLNotRecommendIn                     = "dml_not_recommend_in"
-	DMLCheckSpacesAroundTheString         = "dml_check_spaces_around_the_string"
-	DMLNotRecommendOrderByRand            = "dml_not_recommend_order_by_rand"
-	DMLNotRecommendGroupByConstant        = "dml_not_recommend_group_by_constant"
-	DMLCheckSortDirection                 = "dml_check_sort_direction"
-	DMLHintGroupByRequiresConditions      = "dml_hint_group_by_requires_conditions"
-	DMLNotRecommendGroupByExpression      = "dml_not_recommend_group_by_expression"
-	DMLCheckSQLLength                     = "dml_check_sql_length"
-	DMLNotRecommendHaving                 = "dml_not_recommend_having"
-	DMLHintUseTruncateInsteadOfDelete     = "dml_hint_use_truncate_instead_of_delete"
-	DMLNotRecommendUpdatePK               = "dml_not_recommend_update_pk"
-	DMLNotRecommendFuncInWhere            = "dml_not_recommend_func_in_where"
-	DMLNotRecommendSysdate                = "dml_not_recommend_sysdate"
-	DMLHintSumFuncTips                    = "dml_hint_sum_func_tips"
-	DMLHintLimitMustBeCombinedWithOrderBy = "dml_hint_limit_must_be_combined_with_order_by"
-	DMLHintTruncateTips                   = "dml_hint_truncate_tips"
-	DMLHintDeleteTips                     = "dml_hint_delete_tips"
-	DMLCheckSQLInjectionFunc              = "dml_check_sql_injection_func"
-	DMLCheckNotEqualSymbol                = "dml_check_not_equal_symbol"
-	DMLNotRecommendSubquery               = "dml_not_recommend_subquery"
-	DMLCheckSubqueryLimit                 = "dml_check_subquery_limit"
-	DMLCheckSubQueryNestNum               = "dml_check_sub_query_depth"
+	DMLCheckWithLimit                         = "dml_check_with_limit"
+	DMLCheckSelectLimit                       = "dml_check_select_limit"
+	DMLCheckWithOrderBy                       = "dml_check_with_order_by"
+	DMLCheckSelectWithOrderBy                 = "dml_check_select_with_order_by"
+	DMLCheckWhereIsInvalid                    = "all_check_where_is_invalid"
+	DMLDisableSelectAllColumn                 = "dml_disable_select_all_column"
+	DMLCheckInsertColumnsExist                = "dml_check_insert_columns_exist"
+	DMLCheckBatchInsertListsMax               = "dml_check_batch_insert_lists_max"
+	DMLCheckInQueryNumber                     = "dml_check_in_query_limit"
+	DMLCheckWhereExistFunc                    = "dml_check_where_exist_func"
+	DMLCheckWhereExistNot                     = "dml_check_where_exist_not"
+	DMLCheckWhereExistImplicitConversion      = "dml_check_where_exist_implicit_conversion"
+	DMLCheckLimitMustExist                    = "dml_check_limit_must_exist"
+	DMLCheckWhereExistScalarSubquery          = "dml_check_where_exist_scalar_sub_queries"
+	DMLWhereExistNull                         = "dml_check_where_exist_null"
+	DMLCheckSelectForUpdate                   = "dml_check_select_for_update"
+	DMLCheckNeedlessFunc                      = "dml_check_needless_func"
+	DMLCheckFuzzySearch                       = "dml_check_fuzzy_search"
+	DMLCheckNumberOfJoinTables                = "dml_check_number_of_join_tables"
+	DMLCheckIfAfterUnionDistinct              = "dml_check_is_after_union_distinct"
+	DMLCheckExplainAccessTypeAll              = "dml_check_explain_access_type_all"
+	DMLCheckExplainExtraUsingFilesort         = "dml_check_explain_extra_using_filesort"
+	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
+	DMLCheckTableSize                         = "dml_check_table_size"
+	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
+	DMLCheckAlias                             = "dml_check_alias"
+	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
+	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
+	DMLNotRecommendIn                         = "dml_not_recommend_in"
+	DMLCheckSpacesAroundTheString             = "dml_check_spaces_around_the_string"
+	DMLNotRecommendOrderByRand                = "dml_not_recommend_order_by_rand"
+	DMLNotRecommendGroupByConstant            = "dml_not_recommend_group_by_constant"
+	DMLCheckSortDirection                     = "dml_check_sort_direction"
+	DMLHintGroupByRequiresConditions          = "dml_hint_group_by_requires_conditions"
+	DMLNotRecommendGroupByExpression          = "dml_not_recommend_group_by_expression"
+	DMLCheckSQLLength                         = "dml_check_sql_length"
+	DMLNotRecommendHaving                     = "dml_not_recommend_having"
+	DMLHintUseTruncateInsteadOfDelete         = "dml_hint_use_truncate_instead_of_delete"
+	DMLNotRecommendUpdatePK                   = "dml_not_recommend_update_pk"
+	DMLNotRecommendFuncInWhere                = "dml_not_recommend_func_in_where"
+	DMLNotRecommendSysdate                    = "dml_not_recommend_sysdate"
+	DMLHintSumFuncTips                        = "dml_hint_sum_func_tips"
+	DMLHintLimitMustBeCombinedWithOrderBy     = "dml_hint_limit_must_be_combined_with_order_by"
+	DMLHintTruncateTips                       = "dml_hint_truncate_tips"
+	DMLHintDeleteTips                         = "dml_hint_delete_tips"
+	DMLCheckSQLInjectionFunc                  = "dml_check_sql_injection_func"
+	DMLCheckNotEqualSymbol                    = "dml_check_not_equal_symbol"
+	DMLNotRecommendSubquery                   = "dml_not_recommend_subquery"
+	DMLCheckSubqueryLimit                     = "dml_check_subquery_limit"
+	DMLCheckSubQueryNestNum                   = "dml_check_sub_query_depth"
+	DMLCheckExplainFullIndexScan              = "dml_check_explain_full_index_scan"
+	DMLCheckExplainExtraUsingIndexForSkipScan = "dml_check_explain_extra_using_index_for_skip_scan"
+	DMLCheckAffectedRows                      = "dml_check_affected_rows"
 )
 
 // inspector config code
@@ -1880,6 +1888,68 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainFullIndexScan,
+			Desc:       "检查是否存在全索引扫描",
+			Annotation: "在数据量大的情况下索引全扫描严重影响SQL性能",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
+		Func:         checkExplain,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       AllCheckPrepareStatementPlaceholders,
+			Desc:       "检查绑定变量数量",
+			Annotation: "过度使用绑定变量，默认阈值:100", // TODO: 待补充完善规则背景信息
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "100",
+					Desc:  "最大绑定变量数量",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "使用绑定变量数量为 %v，超过设定阈值 %v",
+		Func:         checkPrepareStatementPlaceholders,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainExtraUsingIndexForSkipScan,
+			Desc:       "检查是否存在索引跳跃扫描",
+			Annotation: "索引扫描是跳跃扫描，未遵循最左匹配原则",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "索引扫描是跳跃扫描，未遵循最左匹配原则",
+		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAffectedRows,
+			Desc:       "检查 UPDATE/DELETE 操作影响指定行数",
+			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000", // TODO: 待补充完善规则背景信息
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10000",
+					Desc:  "最大影响行数",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "影响行数为 %v，超过设定阈值 %v",
+		Func:         checkAffectedRows,
 	},
 }
 
@@ -4336,6 +4406,17 @@ func checkExplain(input *RuleHandlerInput) error {
 		if record.Type == executor.ExplainRecordAccessTypeAll && record.Rows > int64(max) {
 			addResult(input.Res, input.Rule, DMLCheckExplainAccessTypeAll, record.Rows)
 		}
+
+		if input.Rule.Name == DMLCheckExplainFullIndexScan &&
+			record.Type == executor.ExplainRecordAccessTypeIndex {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+
+		if input.Rule.Name == DMLCheckExplainExtraUsingIndexForSkipScan &&
+			strings.Contains(record.Extra, executor.ExplainRecordExtraUsingIndexForSkipScan) {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+
 	}
 	return nil
 }
@@ -5099,4 +5180,39 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 		}
 	}
 	return nil
+}
+
+func checkAffectedRows(input *RuleHandlerInput) error {
+
+	switch input.Node.(type) {
+	case *ast.UpdateStmt, *ast.DeleteStmt:
+	default:
+		return nil
+	}
+
+	affectCount, err := util.GetAffectedRowNum(
+		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+
+	affectCountLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(affectCountLimit) {
+		addResult(input.Res, input.Rule, input.Rule.Name, affectCount, affectCountLimit)
+	}
+
+	return nil
+}
+
+// TODO: needs to be processed separately according to the sql content
+func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
+
+	placeholdersCount := strings.Count(input.Node.Text(), "?")
+	placeholdersLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if placeholdersCount > placeholdersLimit {
+		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+	}
+
+	return nil
+
 }

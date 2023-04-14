@@ -16,7 +16,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -435,7 +434,26 @@ func (i *MysqlDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 }
 
 func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
-	return &driverV2.EstimatedAffectRows{}, nil // todo: impl it.
+	if i.IsOfflineAudit() {
+		return nil, nil
+	}
+
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+
+	num, err := util.GetAffectedRowNum(ctx, sql, conn)
+	if err != nil && errors.Is(err, util.ErrUnsupportedSqlType) {
+		return &driverV2.EstimatedAffectRows{ErrMessage: err.Error()}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get affected row num failed: %w", err)
+	}
+
+	return &driverV2.EstimatedAffectRows{
+		Count: num,
+	}, nil
 }
 
 type Config struct {
