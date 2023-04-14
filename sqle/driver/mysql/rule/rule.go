@@ -1912,7 +1912,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckAffectedRows,
 			Desc:       "检查 UPDATE/DELETE 操作影响指定行数",
-			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000",
+			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000", // TODO: 待补充完善规则背景信息
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
