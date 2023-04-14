@@ -113,7 +113,7 @@ const (
 	DMLCheckSelectLimit                       = "dml_check_select_limit"
 	DMLCheckWithOrderBy                       = "dml_check_with_order_by"
 	DMLCheckSelectWithOrderBy                 = "dml_check_select_with_order_by"
-	DMLCheckWhereIsInvalid                    = "all_check_where_is_invalid"
+	DMLCheckWhereIsInvalid                    = "all_check_where_is_invalid" // TODO: fix rule name to "dml_check_where_is_invalid". related DB table `rules`/`rule_template_rule`
 	DMLDisableSelectAllColumn                 = "dml_disable_select_all_column"
 	DMLCheckInsertColumnsExist                = "dml_check_insert_columns_exist"
 	DMLCheckBatchInsertListsMax               = "dml_check_batch_insert_lists_max"
