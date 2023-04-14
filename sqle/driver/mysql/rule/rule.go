@@ -2097,7 +2097,7 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 }
 
 func checkJoinHasOn(input *RuleHandlerInput) error {
-	tableRefs := &ast.Join{}
+	var tableRefs *ast.Join
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
@@ -5381,7 +5381,6 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		var table *ast.TableName
 		if singleTableSource == nil { // 这种情况是查询多表
 			if colName.Name.Table.O == "" { // 查询多表的情况下order by的字段没有指定表名，简单处理，暂不对这个字段做校验。但会通过审核结果给出提示
-				table = &ast.TableName{}
 				notCheckCols = append(notCheckCols, colName.Name.Name.O)
 				return
 			}
@@ -5465,7 +5464,10 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		// join子查询里的order by不做处理
 		t, ok := stmt.From.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.From.TableRefs.Right == nil {
-			singleTable = t.Source.(*ast.TableName)
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
 		}
 		gatherColFromSelectStmt(stmt, singleTable)
 	case *ast.UnionStmt:
@@ -5476,7 +5478,10 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		for _, s := range stmt.SelectList.Selects {
 			t, ok := s.From.TableRefs.Left.(*ast.TableSource)
 			if ok && t != nil && s.From.TableRefs.Right == nil {
-				singleTable = t.Source.(*ast.TableName)
+				temp, ok := t.Source.(*ast.TableName)
+				if ok {
+					singleTable = temp
+				}
 			}
 			gatherColFromSelectStmt(s, singleTable)
 		}
@@ -5484,13 +5489,19 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	case *ast.DeleteStmt:
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
-			singleTable = t.Source.(*ast.TableName)
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
 		}
 		gatherColFromOrderByClause(stmt.Order, singleTable)
 	case *ast.UpdateStmt:
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
-			singleTable = t.Source.(*ast.TableName)
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
 		}
 		gatherColFromOrderByClause(stmt.Order, singleTable)
 	default:
