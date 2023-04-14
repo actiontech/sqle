@@ -39,6 +39,7 @@ const (
 	RuleTypeIndexOptimization  = "索引优化"
 )
 
+// inspector rules for all statement
 const (
 	AllCheckPrepareStatementPlaceholders = "all_check_prepare_statement_placeholders"
 )
