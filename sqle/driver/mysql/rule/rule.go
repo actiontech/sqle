@@ -3350,6 +3350,23 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 	indexCols := []string{}
 	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
 
+	checkNewColumns := func(newColumns []*ast.ColumnDef) {
+		for _, column := range newColumns {
+			hasNotNull, hasIndex := false, false
+			for _, option := range column.Options {
+				switch option.Tp {
+				case ast.ColumnOptionUniqKey, ast.ColumnOptionPrimaryKey:
+					hasIndex = true
+				case ast.ColumnOptionNotNull:
+					hasNotNull = true
+				}
+			}
+			if hasIndex && !hasNotNull {
+				indexCols = append(indexCols, column.Name.Name.L)
+			}
+		}
+	}
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -3374,20 +3391,25 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
-			if spec.Constraint == nil {
-				continue
-			}
-			switch spec.Constraint.Tp {
-			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
-				for _, key := range spec.Constraint.Keys {
-					indexCols = append(indexCols, key.Column.Name.L)
+			if spec.Constraint != nil {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+					for _, key := range spec.Constraint.Keys {
+						indexCols = append(indexCols, key.Column.Name.L)
+					}
 				}
 			}
+
 			switch spec.Tp {
 			case ast.AlterTableAddConstraint:
+				if spec.Constraint == nil {
+					continue
+				}
 				for _, key := range spec.Constraint.Keys {
 					indexCols = append(indexCols, key.Column.Name.L)
 				}
+			case ast.AlterTableAddColumns, ast.AlterTableModifyColumn:
+				checkNewColumns(spec.NewColumns)
 			}
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
