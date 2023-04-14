@@ -14,7 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -404,7 +404,7 @@ INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
-			"v3,v4,v5"))
+			"v3,v4,v5").add(driverV2.RuleLevelWarn,rulepkg.DDLCheckIndexNotNullConstraint,"这些索引字段(v3,v4,v5)需要有非空约束"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
 		`
@@ -418,7 +418,7 @@ PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
-			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id"))
+			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
 		`
@@ -1942,7 +1942,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
@@ -1957,7 +1957,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -1983,8 +1983,8 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 		newTestResult(),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
 	)
