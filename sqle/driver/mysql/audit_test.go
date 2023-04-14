@@ -14,7 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 
-	"github.com/DATA-DOG/go-sqlmock"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -404,7 +404,7 @@ INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
-			"v3,v4,v5"))
+			"v3,v4,v5").add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(v3,v4,v5)需要有非空约束"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
 		`
@@ -418,7 +418,7 @@ PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
-			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id"))
+			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
 		`
@@ -576,7 +576,7 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id11);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "id11"),
+		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "id11").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but key column is duplicate", DefaultMysqlInspect(),
@@ -605,7 +605,7 @@ ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (v3);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index but key column is duplicate", DefaultMysqlInspect(),
@@ -646,14 +646,14 @@ func TestCheckInvalidCreateIndex(t *testing.T) {
 		`
 CREATE INDEX idx_1 ON not_exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", SchemaNotExistMessage, "not_exist_db").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: table not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
@@ -667,7 +667,7 @@ CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
@@ -894,7 +894,7 @@ update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -915,63 +915,63 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
 	)
 }
 
@@ -1076,7 +1076,7 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1';",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
@@ -1096,7 +1096,7 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(2)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where 1=1 and 2=2;",
@@ -1148,7 +1148,7 @@ func TestCheckWhereInvalid_FP(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=?;",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
 
 	runDefaultRulesInspectCase(t, "[pf]update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1=? where 1=1 and 2=2;",
@@ -1942,7 +1942,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
@@ -1957,7 +1957,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -1983,10 +1983,10 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 		newTestResult(),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b2"),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
 	)
 }
 

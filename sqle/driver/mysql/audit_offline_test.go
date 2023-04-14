@@ -558,7 +558,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspectOffline(),
@@ -573,7 +573,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -2318,4 +2318,190 @@ func TestDDLNotAllowRenamingOffline(t *testing.T) {
 
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspectOffline(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
+}
+
+func TestDMLCheckLimitOffsetNum(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckLimitOffsetNum].Rule
+	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "4")
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		`(1)select with limit offset`,
+		DefaultMysqlInspectOffline(),
+		`SELECT * FROM tbl LIMIT 5,10`,
+		newTestResult().addResult(rulepkg.DMLCheckLimitOffsetNum, 5, 4))
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		`(2)select with limit explicit offset`,
+		DefaultMysqlInspectOffline(),
+		`SELECT * FROM tbl LIMIT 10 OFFSET 5`,
+		newTestResult().addResult(rulepkg.DMLCheckLimitOffsetNum, 5, 4))
+
+}
+
+func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckUpdateOrDeleteHasWhere].Rule
+	t.Run(`(1)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(2)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(3)update with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1, col2 = col1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(4)update without where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE t1 SET col1 = col1 + 1;`,
+			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+	})
+	t.Run(`(5)delete with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE FROM t1 WHERE a = 2`,
+			newTestResult())
+	})
+	t.Run(`(6)delete with where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t2.id IS NULL`,
+			newTestResult())
+	})
+	t.Run(`(7)delete without where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE FROM t1`,
+			newTestResult().addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+	})
+}
+
+func TestDMLCheckJoinHasOn(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinHasOn].Rule
+	t.Run(`select join with on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+SELECT * FROM t1 
+JOIN t2 ON t2.a = t1.a 
+JOIN t3 ON t3.b = t2.b
+JOIN t4 ON t4.a = t1.a`,
+			newTestResult())
+	})
+	t.Run(`select join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+SELECT * FROM t1 
+JOIN t2 ON t2.a = t1.a 
+JOIN t3 
+JOIN t4 ON t4.a = t1.a`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+	})
+	t.Run(`select join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM t1 JOIN t2`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+	})
+	t.Run(`update join with on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+UPDATE employees
+        JOIN
+    merits ON employees.performance = merits.performance 
+SET 
+    salary = salary + salary * 0.015`,
+			newTestResult())
+	})
+	t.Run(`update join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+UPDATE employees
+        JOIN
+    merits 
+SET 
+    salary = salary + salary * 0.015`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+	})
+}
+
+func TestDMLHintCountFuncWithCol(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLHintCountFuncWithCol].Rule
+	t.Run(`select count(col)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(c) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult().addResult(rulepkg.DMLHintCountFuncWithCol))
+	})
+	t.Run(`select count(*)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(*) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
+	t.Run(`select count(1)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(1) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
 }
