@@ -2200,9 +2200,11 @@ func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, conti
 	}
 	switch t := resultSetNode.(type) {
 	case *ast.Join:
-		if t.On == nil && t.Right != nil {
+		_, rightIsTableSource := t.Right.(*ast.TableSource)
+		if t.On == nil && rightIsTableSource {
 			return false, false
 		}
+
 		if hasOnCondition, c := checkOnCondition(t.Left); !c {
 			return hasOnCondition, c
 		}
