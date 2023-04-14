@@ -106,16 +106,16 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 	ptrRules := []*driverV2.Rule{}
 	// this rule will be test in single rule
 	filterRule := map[string]struct{}{
-		rulepkg.DDLCheckObjectNameUseCN:                     struct{}{},
-		rulepkg.DDLCheckRedundantIndex:                      struct{}{},
-		rulepkg.DDLCheckPKProhibitAutoIncrement:             struct{}{},
-		rulepkg.DDLCheckColumnBlobNotice:                    struct{}{},
-		rulepkg.DDLCheckDatabaseCollation:                   struct{}{},
-		rulepkg.DDLCheckIndexTooMany:                        struct{}{},
-		rulepkg.DDLCheckIndexesExistBeforeCreateConstraints: struct{}{},
-		rulepkg.DMLCheckInsertColumnsExist:                  struct{}{},
-		rulepkg.DMLCheckLimitMustExist:                      struct{}{},
-		rulepkg.DMLCheckWhereExistImplicitConversion:        struct{}{},
+		rulepkg.DDLCheckObjectNameUseCN:                     {},
+		rulepkg.DDLCheckRedundantIndex:                      {},
+		rulepkg.DDLCheckPKProhibitAutoIncrement:             {},
+		rulepkg.DDLCheckColumnBlobNotice:                    {},
+		rulepkg.DDLCheckDatabaseCollation:                   {},
+		rulepkg.DDLCheckIndexTooMany:                        {},
+		rulepkg.DDLCheckIndexesExistBeforeCreateConstraints: {},
+		rulepkg.DMLCheckInsertColumnsExist:                  {},
+		rulepkg.DMLCheckLimitMustExist:                      {},
+		rulepkg.DMLCheckWhereExistImplicitConversion:        {},
 		rulepkg.DMLCheckSQLLength:                           {},
 		rulepkg.DDLRecommendTableColumnCharsetSame:          {},
 		rulepkg.DDLCheckAutoIncrement:                       {},
@@ -127,6 +127,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLHintInNullOnlyFalse:                      {},
 		rulepkg.DMLNotRecommendIn:                           {},
 		rulepkg.DMLCheckAlias:                               {},
+		rulepkg.DMLCheckAffectedRows:                        {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
