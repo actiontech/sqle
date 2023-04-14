@@ -2,6 +2,7 @@ package rule
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -139,7 +140,7 @@ const (
 	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                         = "dml_check_table_size"
 	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
-	DMLCheckJoinHasOn                    	  = "dml_check_join_has_on"
+	DMLCheckJoinHasOn                         = "dml_check_join_has_on"
 	DMLCheckAlias                             = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
@@ -157,7 +158,7 @@ const (
 	DMLNotRecommendFuncInWhere                = "dml_not_recommend_func_in_where"
 	DMLNotRecommendSysdate                    = "dml_not_recommend_sysdate"
 	DMLHintSumFuncTips                        = "dml_hint_sum_func_tips"
-	DMLHintCountFuncWithCol              	  = "dml_hint_count_func_with_col"
+	DMLHintCountFuncWithCol                   = "dml_hint_count_func_with_col"
 	DMLHintLimitMustBeCombinedWithOrderBy     = "dml_hint_limit_must_be_combined_with_order_by"
 	DMLHintTruncateTips                       = "dml_hint_truncate_tips"
 	DMLHintDeleteTips                         = "dml_hint_delete_tips"
@@ -169,8 +170,8 @@ const (
 	DMLCheckExplainFullIndexScan              = "dml_check_explain_full_index_scan"
 	DMLCheckExplainExtraUsingIndexForSkipScan = "dml_check_explain_extra_using_index_for_skip_scan"
 	DMLCheckAffectedRows                      = "dml_check_affected_rows"
-	DMLCheckLimitOffsetNum                	  = "dml_check_limit_offset_num"
-	DMLCheckUpdateOrDeleteHasWhere        	  = "dml_check_update_or_delete_has_where"
+	DMLCheckLimitOffsetNum                    = "dml_check_limit_offset_num"
+	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 )
 
