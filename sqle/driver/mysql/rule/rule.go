@@ -1914,7 +1914,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       AllCheckPrepareStatementPlaceholders,
 			Desc:       "检查绑定变量数量",
-			Annotation: "过度使用绑定变量，默认阈值:100",
+			Annotation: "过度使用绑定变量，默认阈值:100", // TODO: 待补充完善规则背景信息
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 			Params: params.Params{
