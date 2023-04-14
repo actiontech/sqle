@@ -558,6 +558,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleExplain,
 			driverV2.OptionalModuleGetTableMeta,
 			driverV2.OptionalModuleExtractTableFromSQL,
+			driverV2.OptionalModuleEstimateSQLAffectRows,
 		},
 	}, nil
 }
