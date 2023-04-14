@@ -2186,12 +2186,29 @@ func checkJoinHasOn(input *RuleHandlerInput) error {
 	default:
 		return nil
 	}
-
-	if tableRefs.On == nil {
+	checkSuccessfully, _ := checkOnCondition(tableRefs)
+	if !checkSuccessfully {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 
 	return nil
+}
+
+func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, continueCheck bool) {
+	if resultSetNode == nil {
+		return true, false
+	}
+	switch t := resultSetNode.(type) {
+	case *ast.Join:
+		if t.On == nil && t.Right != nil {
+			return false, false
+		}
+		if hasOnCondition, c := checkOnCondition(t.Left); !c {
+			return hasOnCondition, c
+		}
+		return checkOnCondition(t.Right)
+	}
+	return true, true
 }
 
 func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
@@ -3387,7 +3404,6 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 				}
 			}
 		}
-
 	case *ast.CreateIndexStmt:
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {

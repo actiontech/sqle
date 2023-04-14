@@ -558,7 +558,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspectOffline(),
@@ -573,7 +573,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob),
+		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -2416,9 +2416,25 @@ func TestDMLCheckJoinHasOn(t *testing.T) {
 			t,
 			``,
 			DefaultMysqlInspectOffline(),
-			`SELECT * FROM t1 JOIN (t2, t3, t4)
-                 ON (t2.a = t1.a AND t3.b = t1.b AND t4.c = t1.c)`,
+			`
+SELECT * FROM t1 
+JOIN t2 ON t2.a = t1.a 
+JOIN t3 ON t3.b = t2.b
+JOIN t4 ON t4.a = t1.a`,
 			newTestResult())
+	})
+	t.Run(`select join without on`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+SELECT * FROM t1 
+JOIN t2 ON t2.a = t1.a 
+JOIN t3 
+JOIN t4 ON t4.a = t1.a`,
+			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
 	})
 	t.Run(`select join without on`, func(t *testing.T) {
 		runSingleRuleInspectCase(
