@@ -56,6 +56,7 @@ const (
 	DDLCheckColumnCharLength                           = "ddl_check_column_char_length"
 	DDLDisableFK                                       = "ddl_disable_fk"
 	DDLCheckIndexCount                                 = "ddl_check_index_count"
+	DDLCheckIndexNotNullConstraint                     = "ddl_check_index_not_null_constraint"
 	DDLCheckCompositeIndexMax                          = "ddl_check_composite_index_max"
 	DDLCheckTableDBEngine                              = "ddl_check_table_db_engine"
 	DDLCheckTableCharacterSet                          = "ddl_check_table_character_set"
@@ -139,6 +140,7 @@ const (
 	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                         = "dml_check_table_size"
 	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
+	DMLCheckJoinHasOn                         = "dml_check_join_has_on"
 	DMLCheckAlias                             = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
@@ -156,6 +158,7 @@ const (
 	DMLNotRecommendFuncInWhere                = "dml_not_recommend_func_in_where"
 	DMLNotRecommendSysdate                    = "dml_not_recommend_sysdate"
 	DMLHintSumFuncTips                        = "dml_hint_sum_func_tips"
+	DMLHintCountFuncWithCol                   = "dml_hint_count_func_with_col"
 	DMLHintLimitMustBeCombinedWithOrderBy     = "dml_hint_limit_must_be_combined_with_order_by"
 	DMLHintTruncateTips                       = "dml_hint_truncate_tips"
 	DMLHintDeleteTips                         = "dml_hint_delete_tips"
@@ -167,6 +170,9 @@ const (
 	DMLCheckExplainFullIndexScan              = "dml_check_explain_full_index_scan"
 	DMLCheckExplainExtraUsingIndexForSkipScan = "dml_check_explain_extra_using_index_for_skip_scan"
 	DMLCheckAffectedRows                      = "dml_check_affected_rows"
+	DMLCheckLimitOffsetNum                    = "dml_check_limit_offset_num"
+	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
+	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 )
 
 // inspector config code
@@ -524,6 +530,18 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
+			Name:       DMLCheckJoinHasOn,
+			Desc:       "连接操作未指定连接条件",
+			Annotation: "SQL中连接操作未指定条件，join字段后缺失on条件", // todo 需要描述详细的规则背景
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "SQL中连接操作未指定条件，join字段后缺失on条件",
+		AllowOffline: true,
+		Func:         checkJoinHasOn,
+	},
+	{
+		Rule: driverV2.Rule{
 			Name:       DDLCheckColumnCharLength,
 			Desc:       "char长度大于20时，必须使用varchar类型",
 			Annotation: "varchar是变长字段，存储空间小，可节省存储空间，同时相对较小的字段检索效率显然也要高些",
@@ -655,6 +673,19 @@ var RuleHandlers = []RuleHandler{
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckIndexNotNullConstraint,
+			Desc:       "索引字段需要有非空约束",
+			Annotation: "索引字段上没有非空约束，则表记录与索引记录不会完全映射",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeIndexingConvention,
+		},
+		Message:              "这些索引字段(%v)需要有非空约束",
+		AllowOffline:         true,
+		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
+		Func:                 checkIndexNotNullConstraint,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -1779,6 +1810,17 @@ var RuleHandlers = []RuleHandler{
 		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
 		Func:    hintSumFuncTips,
 	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLHintCountFuncWithCol,
+			Desc:       "避免使用 COUNT(COL)",
+			Annotation: "SQL中使用了COUNT(col)来替代COUNT(*)", // todo 需要补充详细的规则背景
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "避免使用 COUNT(COL)",
+		Func:         hintCountFuncWithCol,
+		AllowOffline: true,
+	}, {
 		Rule: driverV2.Rule{ //CREATE TABLE tbl ( a int, b int, c int, PRIMARY KEY(`a`,`b`,`c`));
 			Name:       DDLCheckColumnQuantityInPK,
 			Desc:       "主键中的列过多",
@@ -1899,6 +1941,55 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "在数据量大的情况下索引全扫描严重影响SQL性能",
 		Func:         checkExplain,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckLimitOffsetNum,
+			Desc:       "LIMIT的偏移offset过大",
+			Annotation: "LIMIT的偏移offset过大", // todo 需要详细描述规则建议
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "100",
+					Desc:  "offset 大小",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message:      "LIMIT的偏移offset过大，offset=%v（阈值为%v）",
+		AllowOffline: true,
+		Func:         checkLimitOffsetNum,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckUpdateOrDeleteHasWhere,
+			Desc:       "UPDATE/DELETE操作缺失where条件",
+			Annotation: "UPDATE/DELETE操作缺失where条件", // todo 需要详细描述规则建议
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "UPDATE/DELETE操作缺失where条件",
+		AllowOffline: true,
+		Func:         checkUpdateOrDeleteHasWhere,
+	}, {
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSortColumnLength,
+			Desc:       "禁止对长字段排序",
+			Annotation: "长字段值进行ORDER BY、DISTINCT、GROUP BY、UNION之类的操作，会引发排序，有性能隐患",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2000",
+					Desc:  "可排序字段的最大长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "被用于排序但长度超过阈值的字段(%v); 由于没有指定表名而没有校验长度的字段(%v)",
+		Func:         checkSortColumnLength,
 	}, {
 		Rule: driverV2.Rule{
 			Name:       AllCheckPrepareStatementPlaceholders,
@@ -2073,6 +2164,54 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 	}
 
 	return nil
+}
+
+func checkJoinHasOn(input *RuleHandlerInput) error {
+	var tableRefs *ast.Join
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		tableRefs = stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableRefs = stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableRefs = stmt.TableRefs.TableRefs
+	default:
+		return nil
+	}
+	checkSuccessfully, _ := checkOnCondition(tableRefs)
+	if !checkSuccessfully {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+
+	return nil
+}
+
+func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, continueCheck bool) {
+	if resultSetNode == nil {
+		return true, false
+	}
+	switch t := resultSetNode.(type) {
+	case *ast.Join:
+		_, rightIsTableSource := t.Right.(*ast.TableSource)
+		if t.On == nil && rightIsTableSource {
+			return false, false
+		}
+
+		if hasOnCondition, c := checkOnCondition(t.Left); !c {
+			return hasOnCondition, c
+		}
+		return checkOnCondition(t.Right)
+	}
+	return true, true
 }
 
 func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
@@ -3208,6 +3347,121 @@ func (i index) ColumnString() string {
 
 func (i index) String() string {
 	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
+}
+
+func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols := []string{}
+	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
+
+	checkNewColumns := func(newColumns []*ast.ColumnDef) {
+		for _, column := range newColumns {
+			hasNotNull, hasIndex := false, false
+			for _, option := range column.Options {
+				switch option.Tp {
+				case ast.ColumnOptionUniqKey, ast.ColumnOptionPrimaryKey:
+					hasIndex = true
+				case ast.ColumnOptionNotNull:
+					hasNotNull = true
+				}
+			}
+			if hasIndex && !hasNotNull {
+				indexCols = append(indexCols, column.Name.Name.L)
+			}
+		}
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			for _, option := range col.Options {
+				switch option.Tp {
+				case ast.ColumnOptionNotNull:
+					colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+				case ast.ColumnOptionPrimaryKey, ast.ColumnOptionUniqKey:
+					indexCols = append(indexCols, col.Name.Name.L)
+				}
+			}
+		}
+
+		// check index
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintUniq, ast.ConstraintKey, ast.ConstraintUniqKey, ast.ConstraintPrimaryKey:
+				for _, k := range constraint.Keys {
+					indexCols = append(indexCols, k.Column.Name.L)
+				}
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint != nil {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+					for _, key := range spec.Constraint.Keys {
+						indexCols = append(indexCols, key.Column.Name.L)
+					}
+				}
+			}
+
+			switch spec.Tp {
+			case ast.AlterTableAddConstraint:
+				if spec.Constraint == nil {
+					continue
+				}
+				for _, key := range spec.Constraint.Keys {
+					indexCols = append(indexCols, key.Column.Name.L)
+				}
+			case ast.AlterTableAddColumns, ast.AlterTableModifyColumn:
+				checkNewColumns(spec.NewColumns)
+			}
+		}
+		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, col := range createTableStmt.Cols {
+				for _, option := range col.Options {
+					switch option.Tp {
+					case ast.ColumnOptionNotNull:
+						colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+					}
+				}
+			}
+		}
+	case *ast.CreateIndexStmt:
+		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if exist {
+			for _, col := range createTableStmt.Cols {
+				for _, option := range col.Options {
+					switch option.Tp {
+					case ast.ColumnOptionNotNull:
+						colsWithNotNullConstraint[col.Name.Name.L] = struct{}{}
+					}
+				}
+			}
+		}
+		for _, specification := range stmt.IndexPartSpecifications {
+			indexCols = append(indexCols, specification.Column.Name.L)
+		}
+	default:
+		return nil
+	}
+
+	idxColsWithoutNotNull := []string{}
+	indexCols = utils.RemoveDuplicate(indexCols)
+	for _, k := range indexCols {
+		if _, ok := colsWithNotNullConstraint[k]; !ok {
+			idxColsWithoutNotNull = append(idxColsWithoutNotNull, k)
+		}
+	}
+	if len(idxColsWithoutNotNull) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(idxColsWithoutNotNull, ","))
+	}
+	return nil
 }
 
 func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
@@ -5019,6 +5273,26 @@ func hintSumFuncTips(input *RuleHandlerInput) error {
 	return nil
 }
 
+func hintCountFuncWithCol(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		for _, f := range stmt.Fields.Fields {
+			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
+				for _, arg := range fu.Args {
+					if _, ok := arg.(*ast.ColumnNameExpr); ok {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+					}
+				}
+				return nil
+			}
+		}
+	default:
+		return nil
+	}
+
+	return nil
+}
+
 func checkColumnQuantityInPK(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
@@ -5182,6 +5456,192 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 	return nil
 }
 
+func checkLimitOffsetNum(input *RuleHandlerInput) error {
+	maxOffset := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Limit != nil && stmt.Limit.Offset != nil {
+			offset := stmt.Limit.Offset.(*parserdriver.ValueExpr).Datum.GetInt64()
+			if offset > int64(maxOffset) {
+				addResult(input.Res, input.Rule, DMLCheckLimitOffsetNum, offset, maxOffset)
+			}
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkUpdateOrDeleteHasWhere(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.UpdateStmt:
+		if stmt.Where == nil {
+			addResult(input.Res, input.Rule, DMLCheckUpdateOrDeleteHasWhere)
+		}
+	case *ast.DeleteStmt:
+		if stmt.Where == nil {
+			addResult(input.Res, input.Rule, DMLCheckUpdateOrDeleteHasWhere)
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkSortColumnLength(input *RuleHandlerInput) error {
+	maxLength := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+	type col struct {
+		Table   *ast.TableName
+		ColName string
+	}
+	checkColumns := []col{}
+	notCheckCols := []string{}
+
+	buildCheckColumns := func(colName *ast.ColumnNameExpr, singleTableSource *ast.TableName) {
+		var table *ast.TableName
+		if singleTableSource == nil { // 这种情况是查询多表
+			if colName.Name.Table.O == "" { // 查询多表的情况下order by的字段没有指定表名，简单处理，暂不对这个字段做校验。但会通过审核结果给出提示
+				notCheckCols = append(notCheckCols, colName.Name.Name.O)
+				return
+			}
+			table = &ast.TableName{
+				Schema: colName.Name.Schema,
+				Name:   colName.Name.Table,
+			}
+		} else {
+			table = &ast.TableName{
+				Schema: singleTableSource.Schema,
+				Name:   singleTableSource.Name,
+			}
+		}
+		checkColumns = append(checkColumns, col{
+			Table:   table,
+			ColName: colName.Name.Name.L,
+		})
+	}
+
+	gatherColFromOrderByClause := func(orderBy *ast.OrderByClause, singleTableSource *ast.TableName) {
+		if orderBy != nil {
+			for _, item := range orderBy.Items {
+				colName, ok := item.Expr.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				buildCheckColumns(colName, singleTableSource)
+			}
+		}
+	}
+
+	gatherColFromSelectStmt := func(stmt *ast.SelectStmt, singleTableSource *ast.TableName) {
+		gatherColFromOrderByClause(stmt.OrderBy, singleTableSource)
+		if stmt.GroupBy != nil {
+			for _, item := range stmt.GroupBy.Items {
+				colName, ok := item.Expr.(*ast.ColumnNameExpr)
+				if !ok {
+					continue
+				}
+				buildCheckColumns(colName, singleTableSource)
+			}
+		}
+		if stmt.Distinct {
+			if stmt.Fields != nil {
+				for _, field := range stmt.Fields.Fields {
+					colName, ok := field.Expr.(*ast.ColumnNameExpr)
+					if !ok {
+						continue
+					}
+					buildCheckColumns(colName, singleTableSource)
+				}
+			}
+		}
+	}
+
+	invalidCols := []string{}
+	checkColLen := func(column col) error {
+		table, exist, err := input.Ctx.GetCreateTableStmt(column.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		for _, def := range table.Cols {
+			if def.Name.Name.L != column.ColName || def.Tp.Flen <= maxLength {
+				continue
+			}
+			invalidCols = append(invalidCols, fmt.Sprintf("%v.%v", column.Table.Name.L, column.ColName))
+		}
+		return nil
+	}
+
+	var singleTable *ast.TableName
+	// 简单处理表名：
+	// 只在单表查询时通过from获取表名；
+	// 多表查询时如果order by某个列没有指定表名，则不会检查这个列（这种情况应该不常见，暂时这样处理）
+	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		// join子查询里的order by不做处理
+		t, ok := stmt.From.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.From.TableRefs.Right == nil {
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
+		}
+		gatherColFromSelectStmt(stmt, singleTable)
+	case *ast.UnionStmt:
+		// join子查询里的order by不做处理
+		if stmt.SelectList == nil {
+			return nil
+		}
+		for _, s := range stmt.SelectList.Selects {
+			t, ok := s.From.TableRefs.Left.(*ast.TableSource)
+			if ok && t != nil && s.From.TableRefs.Right == nil {
+				temp, ok := t.Source.(*ast.TableName)
+				if ok {
+					singleTable = temp
+				}
+			}
+			gatherColFromSelectStmt(s, singleTable)
+		}
+		gatherColFromOrderByClause(stmt.OrderBy, singleTable)
+	case *ast.DeleteStmt:
+		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
+		}
+		gatherColFromOrderByClause(stmt.Order, singleTable)
+	case *ast.UpdateStmt:
+		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
+			temp, ok := t.Source.(*ast.TableName)
+			if ok {
+				singleTable = temp
+			}
+		}
+		gatherColFromOrderByClause(stmt.Order, singleTable)
+	default:
+		return nil
+	}
+
+	for _, column := range checkColumns {
+		if err := checkColLen(column); err != nil {
+			return err
+		}
+	}
+
+	if len(invalidCols) > 0 || len(notCheckCols) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(invalidCols, ","), strings.Join(notCheckCols, ","))
+	}
+
+	return nil
+}
+
 func checkAffectedRows(input *RuleHandlerInput) error {
 
 	switch input.Node.(type) {
@@ -5214,5 +5674,4 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 	}
 
 	return nil
-
 }
