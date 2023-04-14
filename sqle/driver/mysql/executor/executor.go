@@ -397,8 +397,9 @@ type ExplainRecord struct {
 
 // https://dev.mysql.com/doc/refman/5.7/en/explain-output.html#explain_rows
 const (
-	ExplainRecordExtraUsingFilesort  = "Using filesort"
-	ExplainRecordExtraUsingTemporary = "Using temporary"
+	ExplainRecordExtraUsingFilesort         = "Using filesort"
+	ExplainRecordExtraUsingTemporary        = "Using temporary"
+	ExplainRecordExtraUsingIndexForSkipScan = "Using index for skip scan"
 
 	ExplainRecordAccessTypeAll   = "ALL"
 	ExplainRecordAccessTypeIndex = "index"
