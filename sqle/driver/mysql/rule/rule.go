@@ -5204,6 +5204,7 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	return nil
 }
 
+// TODO: needs to be processed separately according to the sql content
 func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
 	placeholdersCount := strings.Count(input.Node.Text(), "?")
