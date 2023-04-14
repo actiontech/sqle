@@ -116,7 +116,7 @@ ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "un
 						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
 						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
 						add(driverV2.RuleLevelWarn, "", "这些索引字段(b1)需要有非空约束"),
-					newTestResult(),
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint,"b1"),
 					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
 					newTestResult(),
 					newTestResult(),
@@ -552,7 +552,7 @@ CREATE TABLE users (
 			//					t,
 			//					"delete order by",
 			//					NewSQLExecutedInspect(nil), `
-			//DELETE FROM somelog WHERE user = 'jcole'
+			//DELETE FROM some WHERE user = 'f'
 			//ORDER BY timestamp_column LIMIT 1;
 			//				`,
 			//					newTestResult(),
