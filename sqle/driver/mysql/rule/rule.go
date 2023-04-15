@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ungerik/go-dry"
+	dry "github.com/ungerik/go-dry"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
@@ -1988,7 +1988,7 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		AllowOffline: false,
-		Message:      "被用于排序但长度超过阈值的字段(%v); 由于没有指定表名而没有校验长度的字段(%v)",
+		Message:      "长度超过阈值的字段不建议用于ORDER BY、DISTINCT、GROUP BY、UNION，这些字段有：%v",
 		Func:         checkSortColumnLength,
 	}, {
 		Rule: driverV2.Rule{
@@ -5496,13 +5496,11 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		ColName string
 	}
 	checkColumns := []col{}
-	notCheckCols := []string{}
 
 	buildCheckColumns := func(colName *ast.ColumnNameExpr, singleTableSource *ast.TableName) {
 		var table *ast.TableName
 		if singleTableSource == nil { // 这种情况是查询多表
-			if colName.Name.Table.O == "" { // 查询多表的情况下order by的字段没有指定表名，简单处理，暂不对这个字段做校验。但会通过审核结果给出提示
-				notCheckCols = append(notCheckCols, colName.Name.Name.O)
+			if colName.Name.Table.O == "" { // 查询多表的情况下order by的字段没有指定表名，简单处理，暂不对这个字段做校验。  todo 需要校验这种情况
 				return
 			}
 			table = &ast.TableName{
@@ -5579,7 +5577,7 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	// 简单处理表名：
 	// 只在单表查询时通过from获取表名；
 	// 多表查询时如果order by某个列没有指定表名，则不会检查这个列（这种情况应该不常见，暂时这样处理）
-	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验
+	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验   todo 需要校验这种情况
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		// join子查询里的order by不做处理
@@ -5635,8 +5633,8 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		}
 	}
 
-	if len(invalidCols) > 0 || len(notCheckCols) > 0 {
-		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(invalidCols, ","), strings.Join(notCheckCols, ","))
+	if len(invalidCols) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(invalidCols, ","))
 	}
 
 	return nil
@@ -5653,7 +5651,8 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	affectCount, err := util.GetAffectedRowNum(
 		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
 	if err != nil {
-		return err
+		log.NewEntry().Errorf("rule: %v; SQL: %v; get affected row number failed: %v", input.Rule.Name, input.Node.Text(), err)
+		return nil
 	}
 
 	affectCountLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
