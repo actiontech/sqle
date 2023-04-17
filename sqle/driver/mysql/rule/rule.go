@@ -532,7 +532,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckJoinHasOn,
 			Desc:       "连接操作未指定连接条件",
-			Annotation: "SQL中连接操作未指定条件，join字段后缺失on条件", // todo 需要描述详细的规则背景
+			Annotation: "指定连接条件可以确保连接操作的正确性和可靠性，如果没有指定连接条件，可能会导致连接失败或连接不正确的情况。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -678,7 +678,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckIndexNotNullConstraint,
 			Desc:       "索引字段需要有非空约束",
-			Annotation: "索引字段上没有非空约束，则表记录与索引记录不会完全映射",
+			Annotation: "索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeIndexingConvention,
 		},
@@ -1813,7 +1813,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLHintCountFuncWithCol,
 			Desc:       "避免使用 COUNT(COL)",
-			Annotation: "SQL中使用了COUNT(col)来替代COUNT(*)", // todo 需要补充详细的规则背景
+			Annotation: "建议使用COUNT(*)，因为使用 COUNT(col) 需要对表进行全表扫描，这可能会导致性能下降。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -1934,7 +1934,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckExplainFullIndexScan,
 			Desc:       "检查是否存在全索引扫描",
-			Annotation: "在数据量大的情况下索引全扫描严重影响SQL性能",
+			Annotation: "在数据量大的情况下索引全扫描严重影响SQL性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -1945,7 +1945,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckLimitOffsetNum,
 			Desc:       "LIMIT的偏移offset过大",
-			Annotation: "LIMIT的偏移offset过大", // todo 需要详细描述规则建议
+			Annotation: "因为offset指定了结果集的起始位置，如果起始位置过大，那么 MySQL 需要处理更多的数据才能返回结果集，这可能会导致查询性能下降。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
@@ -1964,7 +1964,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckUpdateOrDeleteHasWhere,
 			Desc:       "UPDATE/DELETE操作缺失where条件",
-			Annotation: "UPDATE/DELETE操作缺失where条件", // todo 需要详细描述规则建议
+			Annotation: "因为这些语句的目的是修改数据库中的数据，需要使用 WHERE 条件来过滤需要更新或删除的记录，以确保数据的正确性。另外，使用 WHERE 条件还可以提高查询性能。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -1975,7 +1975,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckSortColumnLength,
 			Desc:       "禁止对长字段排序",
-			Annotation: "长字段值进行ORDER BY、DISTINCT、GROUP BY、UNION之类的操作，会引发排序，有性能隐患",
+			Annotation: "对例如VARCHAR(2000)这样的长字段进行ORDER BY、DISTINCT、GROUP BY、UNION之类的操作，会引发排序，有性能隐患",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 			Params: params.Params{
@@ -1994,7 +1994,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       AllCheckPrepareStatementPlaceholders,
 			Desc:       "检查绑定变量数量",
-			Annotation: "过度使用绑定变量，默认阈值:100", // TODO: 待补充完善规则背景信息
+			Annotation: "因为过度使用绑定变量会增加查询的复杂度，从而降低查询性能。过度使用绑定变量还会增加维护成本。默认阈值:100",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 			Params: params.Params{
@@ -2026,7 +2026,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckAffectedRows,
 			Desc:       "检查 UPDATE/DELETE 操作影响指定行数",
-			Annotation: "开启该规则后，当UPDATE/DELETE影响行数超过设定阈值时，需要进行再次确认或人工干预。默认阈值为：10000", // TODO: 待补充完善规则背景信息
+			Annotation: "如果 DML 操作影响行数过多，会导致查询性能下降，因为需要扫描更多的数据。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
@@ -5522,6 +5522,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	gatherColFromOrderByClause := func(orderBy *ast.OrderByClause, singleTableSource *ast.TableName) {
 		if orderBy != nil {
 			for _, item := range orderBy.Items {
+				if item == nil {
+					continue
+				}
 				colName, ok := item.Expr.(*ast.ColumnNameExpr)
 				if !ok {
 					continue
@@ -5535,6 +5538,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		gatherColFromOrderByClause(stmt.OrderBy, singleTableSource)
 		if stmt.GroupBy != nil {
 			for _, item := range stmt.GroupBy.Items {
+				if item == nil {
+					continue
+				}
 				colName, ok := item.Expr.(*ast.ColumnNameExpr)
 				if !ok {
 					continue
@@ -5545,6 +5551,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		if stmt.Distinct {
 			if stmt.Fields != nil {
 				for _, field := range stmt.Fields.Fields {
+					if field == nil {
+						continue
+					}
 					colName, ok := field.Expr.(*ast.ColumnNameExpr)
 					if !ok {
 						continue
@@ -5580,6 +5589,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验   todo 需要校验这种情况
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+		if stmt.From == nil || stmt.From.TableRefs == nil {
+			return nil
+		}
 		// join子查询里的order by不做处理
 		t, ok := stmt.From.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.From.TableRefs.Right == nil {
@@ -5595,6 +5607,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 			return nil
 		}
 		for _, s := range stmt.SelectList.Selects {
+			if s.From == nil || s.From.TableRefs == nil {
+				continue
+			}
 			t, ok := s.From.TableRefs.Left.(*ast.TableSource)
 			if ok && t != nil && s.From.TableRefs.Right == nil {
 				temp, ok := t.Source.(*ast.TableName)
@@ -5606,6 +5621,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		}
 		gatherColFromOrderByClause(stmt.OrderBy, singleTable)
 	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil || stmt.TableRefs.TableRefs == nil {
+			return nil
+		}
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
 			temp, ok := t.Source.(*ast.TableName)
@@ -5615,6 +5633,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		}
 		gatherColFromOrderByClause(stmt.Order, singleTable)
 	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil || stmt.TableRefs.TableRefs == nil {
+			return nil
+		}
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
 			temp, ok := t.Source.(*ast.TableName)
