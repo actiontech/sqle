@@ -5522,6 +5522,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	gatherColFromOrderByClause := func(orderBy *ast.OrderByClause, singleTableSource *ast.TableName) {
 		if orderBy != nil {
 			for _, item := range orderBy.Items {
+				if item == nil {
+					continue
+				}
 				colName, ok := item.Expr.(*ast.ColumnNameExpr)
 				if !ok {
 					continue
@@ -5535,6 +5538,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		gatherColFromOrderByClause(stmt.OrderBy, singleTableSource)
 		if stmt.GroupBy != nil {
 			for _, item := range stmt.GroupBy.Items {
+				if item == nil {
+					continue
+				}
 				colName, ok := item.Expr.(*ast.ColumnNameExpr)
 				if !ok {
 					continue
@@ -5545,6 +5551,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		if stmt.Distinct {
 			if stmt.Fields != nil {
 				for _, field := range stmt.Fields.Fields {
+					if field == nil {
+						continue
+					}
 					colName, ok := field.Expr.(*ast.ColumnNameExpr)
 					if !ok {
 						continue
@@ -5580,6 +5589,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	// e.g. SELECT tb1.a,tb6.b FROM tb1,tb6 ORDER BY tb1.a,b  ->  字段b将不会被校验   todo 需要校验这种情况
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+		if stmt.From == nil || stmt.From.TableRefs == nil {
+			return nil
+		}
 		// join子查询里的order by不做处理
 		t, ok := stmt.From.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.From.TableRefs.Right == nil {
@@ -5595,6 +5607,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 			return nil
 		}
 		for _, s := range stmt.SelectList.Selects {
+			if s.From == nil || s.From.TableRefs == nil {
+				continue
+			}
 			t, ok := s.From.TableRefs.Left.(*ast.TableSource)
 			if ok && t != nil && s.From.TableRefs.Right == nil {
 				temp, ok := t.Source.(*ast.TableName)
@@ -5606,6 +5621,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		}
 		gatherColFromOrderByClause(stmt.OrderBy, singleTable)
 	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil || stmt.TableRefs.TableRefs == nil {
+			return nil
+		}
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
 			temp, ok := t.Source.(*ast.TableName)
@@ -5615,6 +5633,9 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		}
 		gatherColFromOrderByClause(stmt.Order, singleTable)
 	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil || stmt.TableRefs.TableRefs == nil {
+			return nil
+		}
 		t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
 		if ok && t != nil && stmt.TableRefs.TableRefs.Right == nil {
 			temp, ok := t.Source.(*ast.TableName)
