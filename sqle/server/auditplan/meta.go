@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"fmt"
+
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -22,6 +23,7 @@ const (
 	TypeMySQLSlowLog        = "mysql_slow_log"
 	TypeMySQLMybatis        = "mysql_mybatis"
 	TypeMySQLSchemaMeta     = "mysql_schema_meta"
+	TypeMySQLProcesslist    = "mysql_processlist"
 	TypeAliRdsMySQLSlowLog  = "ali_rds_mysql_slow_log"
 	TypeAliRdsMySQLAuditLog = "ali_rds_mysql_audit_log"
 	TypeOracleTopSQL        = "oracle_top_sql"
@@ -79,19 +81,24 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeMySQL,
 		CreateTask:   NewSchemaMetaTask,
 		Params: []*params.Param{
-			&params.Param{
+			{
 				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
 			},
-			&params.Param{
+			{
 				Key:   "collect_view",
 				Desc:  "是否采集视图信息",
 				Value: "0",
 				Type:  params.ParamTypeBool,
 			},
 		},
+	},
+	{ // TODO: implementation
+		Type:         TypeMySQLProcesslist,
+		Desc:         "MySQL processlist 列表",
+		InstanceType: InstanceTypeMySQL,
 	},
 	{
 		Type:         TypeAliRdsMySQLSlowLog,
