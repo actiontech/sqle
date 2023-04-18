@@ -1104,3 +1104,100 @@ func (at *AliRdsMySQLAuditLogTask) pullAuditLogs(client *rds20140815.Client, DBI
 	}
 	return sqls, nil
 }
+
+type MySQLProcesslistTask struct {
+	*sqlCollector
+}
+
+func (at *MySQLProcesslistTask) processlistSQL() string {
+	sql := `
+SELECT DISTINCT time,info
+FROM information_schema.processlist
+WHERE ID != connection_id() AND info != ''
+%v
+`
+	whereSqlMinSecond := ""
+	{
+		sqlMinSecond := at.ap.Params.GetParam(paramKeySQLMinSecond).Int()
+		if sqlMinSecond > 0 {
+			whereSqlMinSecond = fmt.Sprintf("AND TIME > %d", sqlMinSecond)
+		}
+	}
+	sql = fmt.Sprintf(sql, whereSqlMinSecond)
+	return sql
+}
+
+func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func NewMySQLProcesslistTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	task := &MySQLProcesslistTask{
+		sqlCollector,
+	}
+	sqlCollector.do = task.collectorDo
+	sqlCollector.loopInterval = func() time.Duration {
+		interval := ap.Params.GetParam(paramKeyCollectIntervalSecond).Int()
+		if interval == 0 {
+			interval = 1
+		}
+		return time.Second * time.Duration(interval)
+	}
+
+	return task
+}
+
+func (at *MySQLProcesslistTask) collectorDo() {
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		return
+	}
+	db, err := executor.NewExecutor(at.logger, &driverV2.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     at.ap.InstanceDatabase,
+	},
+		at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Db.Close()
+
+	res, err := db.Db.Query(at.processlistSQL())
+	if err != nil {
+		at.logger.Errorf("show processlist failed, error: %v", err)
+		return
+	}
+
+	if len(res) == 0 {
+		return
+	}
+
+	sqls := make([]SqlFromAliCloud, len(res))
+	for i := range res {
+		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String}
+	}
+
+	sqlInfos := mergeSQLsByFingerprint(sqls)
+
+	if len(sqlInfos) > 0 {
+		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
+			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now()))
+		if err != nil {
+			at.logger.Errorf("save processlist to storage fail, error: %v", err)
+			return
+		}
+	}
+}

@@ -39,8 +39,10 @@ const (
 )
 
 const (
+	paramKeyCollectIntervalSecond               = "collect_interval_second"
 	paramKeyCollectIntervalMinute               = "collect_interval_minute"
 	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
+	paramKeySQLMinSecond                        = "sql_min_second"
 	paramKeyDBInstanceId                        = "db_instance_id"
 	paramKeyAccessKeyId                         = "access_key_id"
 	paramKeyAccessKeySecret                     = "access_key_secret"
@@ -95,10 +97,31 @@ var Metas = []Meta{
 			},
 		},
 	},
-	{ // TODO: implementation
+	{
 		Type:         TypeMySQLProcesslist,
-		Desc:         "MySQL processlist 列表",
+		Desc:         "processlist 列表",
 		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewMySQLProcesslistTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalSecond,
+				Desc:  "采集周期（秒）",
+				Value: "1",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeySQLMinSecond,
+				Desc:  "SQL 最小执行时间（秒）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
 	},
 	{
 		Type:         TypeAliRdsMySQLSlowLog,
