@@ -23,6 +23,7 @@ const (
 	TypeMySQLSlowLog        = "mysql_slow_log"
 	TypeMySQLMybatis        = "mysql_mybatis"
 	TypeMySQLSchemaMeta     = "mysql_schema_meta"
+	TypeMySQLProcesslist    = "mysql_processlist"
 	TypeAliRdsMySQLSlowLog  = "ali_rds_mysql_slow_log"
 	TypeAliRdsMySQLAuditLog = "ali_rds_mysql_audit_log"
 	TypeOracleTopSQL        = "oracle_top_sql"
@@ -93,6 +94,11 @@ var Metas = []Meta{
 				Type:  params.ParamTypeBool,
 			},
 		},
+	},
+	{ // TODO: implementation
+		Type:         TypeMySQLProcesslist,
+		Desc:         "MySQL processlist 列表",
+		InstanceType: InstanceTypeMySQL,
 	},
 	{
 		Type:         TypeAliRdsMySQLSlowLog,
