@@ -80,13 +80,13 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeMySQL,
 		CreateTask:   NewSchemaMetaTask,
 		Params: []*params.Param{
-			&params.Param{
+			{
 				Key:   paramKeyCollectIntervalMinute,
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
 			},
-			&params.Param{
+			{
 				Key:   "collect_view",
 				Desc:  "是否采集视图信息",
 				Value: "0",
