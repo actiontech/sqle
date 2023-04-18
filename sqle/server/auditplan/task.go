@@ -176,6 +176,8 @@ type sqlCollector struct {
 	isStarted bool
 	cancel    chan struct{}
 	do        func()
+
+	loopInterval func() time.Duration
 }
 
 func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
@@ -187,6 +189,13 @@ func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
 		func() { // default
 			entry.Warn("sql collector do nothing")
 		},
+		func() time.Duration {
+			interval := ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
+			if interval == 0 {
+				interval = 60
+			}
+			return time.Minute * time.Duration(interval)
+		},
 	}
 }
 
@@ -194,11 +203,13 @@ func (at *sqlCollector) Start() error {
 	if at.isStarted {
 		return nil
 	}
+	interval := at.loopInterval()
+
 	at.WaitGroup.Add(1)
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.loop(at.cancel)
+		at.loop(at.cancel, interval)
 		at.WaitGroup.Done()
 	}()
 	return nil
@@ -225,14 +236,14 @@ func (at *sqlCollector) PartialSyncSQLs(sqls []*SQL) error {
 	return nil
 }
 
-func (at *sqlCollector) loop(cancel chan struct{}) {
-	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
-	if interval == 0 {
-		interval = 60
-	}
+func (at *sqlCollector) loop(cancel chan struct{}, interval time.Duration) {
 	at.do()
+	if interval == 0 {
+		at.logger.Warnf("task(%v) loop interval can not be zero", at.ap.Name)
+		return
+	}
 
-	tk := time.NewTicker(time.Duration(interval) * time.Minute)
+	tk := time.NewTicker(interval)
 	for {
 		select {
 		case <-cancel:
