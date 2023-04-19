@@ -1143,7 +1143,7 @@ func NewMySQLProcesslistTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	sqlCollector.loopInterval = func() time.Duration {
 		interval := ap.Params.GetParam(paramKeyCollectIntervalSecond).Int()
 		if interval == 0 {
-			interval = 1
+			interval = 60
 		}
 		return time.Second * time.Duration(interval)
 	}
