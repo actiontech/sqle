@@ -19,7 +19,7 @@ import (
 )
 
 var ErrInstanceNotExist = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
-var errInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
+var ErrInstanceNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist or you can't access it"))
 var errInstanceBind = errors.New(errors.DataExist, fmt.Errorf("an instance can only bind one rule template"))
 var ErrWrongTimePeriod = errors.New(errors.DataInvalid, fmt.Errorf("wrong time period"))
 
@@ -255,7 +255,7 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	return c.JSON(http.StatusOK, &GetInstanceResV1{
@@ -630,14 +630,14 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 	l := log.NewEntry()
 
@@ -708,7 +708,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 	}
 
 	if len(distinctInstNames) != len(instances) {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	can, err := checkCurrentUserCanAccessInstances(c, instances)
@@ -716,7 +716,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 	l := log.NewEntry()
 
@@ -832,14 +832,14 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
@@ -975,7 +975,7 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))

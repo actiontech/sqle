@@ -291,3 +291,85 @@ func CreateInstance(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
+
+type GetInstanceResV2 struct {
+	controller.BaseRes
+	Data InstanceResV2 `json:"data"`
+}
+
+// GetInstance get instance
+// @Summary 获取实例信息
+// @Description get instance db
+// @Id getInstanceV2
+// @Tags instance
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_name path string true "instance name"
+// @Success 200 {object} v2.GetInstanceResV2
+// @router /v2/projects/{project_name}/instances/{instance_name}/ [get]
+func GetInstance(c echo.Context) error {
+	s := model.GetStorage()
+	instanceName := c.Param("instance_name")
+	projectName := c.Param("project_name")
+	username := controller.GetUserName(c)
+	err := v1.CheckIsProjectMember(username, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instance, exist, err := s.GetInstanceDetailByNameAndProjectName(instanceName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrInstanceNoAccess)
+	}
+
+	var ruleTemplate *RuleTemplateV2
+	if len(instance.RuleTemplates) > 0 {
+		isProjectRuleTpl, err := s.IsRuleTemplateExistsInProject(instance.RuleTemplates[0].Name, projectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		ruleTemplate = &RuleTemplateV2{
+			Name:                 instance.RuleTemplates[0].Name,
+			IsGlobalRuleTemplate: !isProjectRuleTpl,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetInstanceResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertInstanceToRes(ruleTemplate, instance),
+	})
+}
+
+func convertInstanceToRes(ruleTemplate *RuleTemplateV2, instance *model.Instance) InstanceResV2 {
+	instanceResV2 := InstanceResV2{
+		Name:             instance.Name,
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Desc:             instance.Desc,
+		DBType:           instance.DbType,
+		MaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(instance.MaintenancePeriod),
+		AdditionalParams: []*v1.InstanceAdditionalParamResV1{},
+		SQLQueryConfig: &v1.SQLQueryConfigResV1{
+			MaxPreQueryRows:                  instance.SqlQueryConfig.MaxPreQueryRows,
+			QueryTimeoutSecond:               instance.SqlQueryConfig.QueryTimeoutSecond,
+			AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
+			AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
+		},
+		Source: instance.Source,
+	}
+
+	instanceResV2.RuleTemplate = ruleTemplate
+	for _, param := range instance.AdditionalParams {
+		instanceResV2.AdditionalParams = append(instanceResV2.AdditionalParams, &v1.InstanceAdditionalParamResV1{
+			Name:        param.Key,
+			Description: param.Desc,
+			Type:        string(param.Type),
+			Value:       fmt.Sprintf("%v", param.Value),
+		})
+	}
+	return instanceResV2
+}
