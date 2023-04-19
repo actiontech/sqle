@@ -3947,6 +3947,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v2.GetInstanceResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.InstanceResV2'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v2.GetInstancesResV2:
     properties:
       code:
@@ -9027,6 +9039,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加实例
+      tags:
+      - instance
+  /v2/projects/{project_name}/instances/{instance_name}/:
+    get:
+      description: get instance db
+      operationId: getInstanceV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: path
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetInstanceResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例信息
       tags:
       - instance
   /v2/projects/{project_name}/workflows:

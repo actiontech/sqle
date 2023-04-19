@@ -119,6 +119,22 @@ func (s *Storage) GetRuleTemplateNamesByProjectName(projectName string) ([]strin
 	return templateNames, nil
 }
 
+func (s *Storage) IsRuleTemplateExistsInProject(templateName, projectName string) (bool, error) {
+	count := 0
+	err := s.db.Model(&RuleTemplate{}).
+		Joins("LEFT JOIN projects ON projects.id = rule_templates.project_id").
+		Where("projects.deleted_at is null").
+		Where("projects.name = ?", projectName).
+		Where("rule_templates.name = ?", templateName).
+		Count(&count).
+		Error
+	if err != nil {
+		return false, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return count > 0, nil
+}
+
 func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projectId uint) (*RuleTemplate, bool, error) {
 	t := &RuleTemplate{}
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
