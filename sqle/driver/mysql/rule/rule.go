@@ -5461,7 +5461,11 @@ func checkLimitOffsetNum(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Limit != nil && stmt.Limit.Offset != nil {
-			offset := stmt.Limit.Offset.(*parserdriver.ValueExpr).Datum.GetInt64()
+			offsetVal, ok := stmt.Limit.Offset.(*parserdriver.ValueExpr)
+			if !ok {
+				return nil
+			}
+			offset := offsetVal.Datum.GetInt64()
 			if offset > int64(maxOffset) {
 				addResult(input.Res, input.Rule, DMLCheckLimitOffsetNum, offset, maxOffset)
 			}
