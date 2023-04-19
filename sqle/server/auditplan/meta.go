@@ -106,7 +106,7 @@ var Metas = []Meta{
 			{
 				Key:   paramKeyCollectIntervalSecond,
 				Desc:  "采集周期（秒）",
-				Value: "1",
+				Value: "60",
 				Type:  params.ParamTypeInt,
 			},
 			{
