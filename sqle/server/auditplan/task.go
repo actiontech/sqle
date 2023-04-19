@@ -1111,9 +1111,9 @@ type MySQLProcesslistTask struct {
 
 func (at *MySQLProcesslistTask) processlistSQL() string {
 	sql := `
-SELECT DISTINCT time,info
+SELECT DISTINCT db,time,info
 FROM information_schema.processlist
-WHERE ID != connection_id() AND info != ''
+WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','performance_schema','mysql','sys')
 %v
 `
 	whereSqlMinSecond := ""
