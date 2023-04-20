@@ -325,25 +325,13 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrInstanceNoAccess)
 	}
 
-	var ruleTemplate *RuleTemplateV2
-	if len(instance.RuleTemplates) > 0 {
-		isProjectRuleTpl, err := s.IsRuleTemplateExistsInProject(instance.RuleTemplates[0].Name, projectName)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		ruleTemplate = &RuleTemplateV2{
-			Name:                 instance.RuleTemplates[0].Name,
-			IsGlobalRuleTemplate: !isProjectRuleTpl,
-		}
-	}
-
 	return c.JSON(http.StatusOK, &GetInstanceResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertInstanceToRes(ruleTemplate, instance),
+		Data:    convertInstanceToRes(instance),
 	})
 }
 
-func convertInstanceToRes(ruleTemplate *RuleTemplateV2, instance *model.Instance) InstanceResV2 {
+func convertInstanceToRes(instance *model.Instance) InstanceResV2 {
 	instanceResV2 := InstanceResV2{
 		Name:             instance.Name,
 		Host:             instance.Host,
@@ -362,7 +350,14 @@ func convertInstanceToRes(ruleTemplate *RuleTemplateV2, instance *model.Instance
 		Source: instance.Source,
 	}
 
-	instanceResV2.RuleTemplate = ruleTemplate
+	if len(instance.RuleTemplates) > 0 {
+		instanceResV2.RuleTemplate = &RuleTemplateV2{
+			Name: instance.RuleTemplates[0].Name,
+		}
+		if instance.RuleTemplates[0].ProjectId == model.ProjectIdForGlobalRuleTemplate {
+			instanceResV2.RuleTemplate.IsGlobalRuleTemplate = true
+		}
+	}
 	for _, param := range instance.AdditionalParams {
 		instanceResV2.AdditionalParams = append(instanceResV2.AdditionalParams, &v1.InstanceAdditionalParamResV1{
 			Name:        param.Key,
