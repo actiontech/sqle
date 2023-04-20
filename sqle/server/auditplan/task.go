@@ -1163,9 +1163,6 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 				Content: sql.SQLContent,
 			},
 		}
-		task.ExecuteSQLs = append(task.ExecuteSQLs, sqlItem)
-		vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, sqlItem) // vTask is a copy of task for schema switch
-
 		{
 			info := struct {
 				Schema string `json:"schema"`
@@ -1182,6 +1179,9 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 				})
 			}
 		}
+		task.ExecuteSQLs = append(task.ExecuteSQLs, sqlItem)
+		vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, sqlItem) // vTask is a copy of task for schema switch
+
 	}
 
 	err = server.Audit(at.logger, vTask, &at.ap.ProjectId, at.ap.RuleTemplateName)
