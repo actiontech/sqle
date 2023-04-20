@@ -7493,6 +7493,45 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/instances/{instance_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance db",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例信息",
+                "operationId": "getInstanceV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetInstanceResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/workflows": {
             "post": {
                 "security": [
@@ -14005,6 +14044,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v2.GetInstanceResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.InstanceResV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

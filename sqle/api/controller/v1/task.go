@@ -146,14 +146,14 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
@@ -657,7 +657,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	// check instances
 	if len(instances) != len(distinctInstNames) {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	can, err := checkCurrentUserCanAccessInstances(c, instances)
@@ -665,7 +665,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	for _, instance := range instances {
@@ -772,7 +772,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !can {
-		return controller.JSONBaseErrorReq(c, errInstanceNoAccess)
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
 	l := log.NewEntry()
