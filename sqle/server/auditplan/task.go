@@ -176,6 +176,8 @@ type sqlCollector struct {
 	isStarted bool
 	cancel    chan struct{}
 	do        func()
+
+	loopInterval func() time.Duration
 }
 
 func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
@@ -187,6 +189,13 @@ func newSQLCollector(entry *logrus.Entry, ap *model.AuditPlan) *sqlCollector {
 		func() { // default
 			entry.Warn("sql collector do nothing")
 		},
+		func() time.Duration {
+			interval := ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
+			if interval == 0 {
+				interval = 60
+			}
+			return time.Minute * time.Duration(interval)
+		},
 	}
 }
 
@@ -194,11 +203,13 @@ func (at *sqlCollector) Start() error {
 	if at.isStarted {
 		return nil
 	}
+	interval := at.loopInterval()
+
 	at.WaitGroup.Add(1)
 	go func() {
 		at.isStarted = true
 		at.logger.Infof("start task")
-		at.loop(at.cancel)
+		at.loop(at.cancel, interval)
 		at.WaitGroup.Done()
 	}()
 	return nil
@@ -225,14 +236,14 @@ func (at *sqlCollector) PartialSyncSQLs(sqls []*SQL) error {
 	return nil
 }
 
-func (at *sqlCollector) loop(cancel chan struct{}) {
-	interval := at.ap.Params.GetParam(paramKeyCollectIntervalMinute).Int()
-	if interval == 0 {
-		interval = 60
-	}
+func (at *sqlCollector) loop(cancel chan struct{}, interval time.Duration) {
 	at.do()
+	if interval == 0 {
+		at.logger.Warnf("task(%v) loop interval can not be zero", at.ap.Name)
+		return
+	}
 
-	tk := time.NewTicker(time.Duration(interval) * time.Minute)
+	tk := time.NewTicker(interval)
 	for {
 		select {
 		case <-cancel:
@@ -1092,4 +1103,101 @@ func (at *AliRdsMySQLAuditLogTask) pullAuditLogs(client *rds20140815.Client, DBI
 		}
 	}
 	return sqls, nil
+}
+
+type MySQLProcesslistTask struct {
+	*sqlCollector
+}
+
+func (at *MySQLProcesslistTask) processlistSQL() string {
+	sql := `
+SELECT DISTINCT db,time,info
+FROM information_schema.processlist
+WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','performance_schema','mysql','sys')
+%v
+`
+	whereSqlMinSecond := ""
+	{
+		sqlMinSecond := at.ap.Params.GetParam(paramKeySQLMinSecond).Int()
+		if sqlMinSecond > 0 {
+			whereSqlMinSecond = fmt.Sprintf("AND TIME > %d", sqlMinSecond)
+		}
+	}
+	sql = fmt.Sprintf(sql, whereSqlMinSecond)
+	return sql
+}
+
+func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func NewMySQLProcesslistTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	task := &MySQLProcesslistTask{
+		sqlCollector,
+	}
+	sqlCollector.do = task.collectorDo
+	sqlCollector.loopInterval = func() time.Duration {
+		interval := ap.Params.GetParam(paramKeyCollectIntervalSecond).Int()
+		if interval == 0 {
+			interval = 60
+		}
+		return time.Second * time.Duration(interval)
+	}
+
+	return task
+}
+
+func (at *MySQLProcesslistTask) collectorDo() {
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		return
+	}
+	db, err := executor.NewExecutor(at.logger, &driverV2.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     at.ap.InstanceDatabase,
+	},
+		at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Db.Close()
+
+	res, err := db.Db.Query(at.processlistSQL())
+	if err != nil {
+		at.logger.Errorf("show processlist failed, error: %v", err)
+		return
+	}
+
+	if len(res) == 0 {
+		return
+	}
+
+	sqls := make([]SqlFromAliCloud, len(res))
+	for i := range res {
+		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String}
+	}
+
+	sqlInfos := mergeSQLsByFingerprint(sqls)
+
+	if len(sqlInfos) > 0 {
+		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
+			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now()))
+		if err != nil {
+			at.logger.Errorf("save processlist to storage fail, error: %v", err)
+			return
+		}
+	}
 }
