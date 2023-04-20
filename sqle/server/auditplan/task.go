@@ -1193,9 +1193,9 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 
 	auditPlanReport := &model.AuditPlanReportV2{
 		AuditPlanID: at.ap.ID,
-		PassRate:    vTask.PassRate,
-		Score:       vTask.Score,
-		AuditLevel:  vTask.AuditLevel,
+		PassRate:    task.PassRate,
+		Score:       task.Score,
+		AuditLevel:  task.AuditLevel,
 	}
 
 	for i, executeSQL := range task.ExecuteSQLs {
