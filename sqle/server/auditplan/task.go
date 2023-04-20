@@ -1133,7 +1133,8 @@ WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','
 
 // HACK: processlist SQLs may be executed in different Schemas.
 // Before auditing sql, we need to insert a Schema switching statement.
-// And need to manually execute server.ReplenishTaskStatistics()
+// And need to manually execute server.ReplenishTaskStatistics() to recalculate
+// real task object score
 func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
 	if err != nil {
