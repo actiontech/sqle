@@ -181,7 +181,7 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 			t.Errorf("%s test failed, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, stmt.Text(), results[idx].level(), results[idx].message(), actualResults[idx].Level(), actualResults[idx].Message())
 		} else {
-			t.Log(fmt.Sprintf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message()))
+			t.Logf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message())
 		}
 	}
 }
