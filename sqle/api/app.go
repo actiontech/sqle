@@ -222,6 +222,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/instances", v1.GetInstances)
 	v2Router.GET("/projects/:project_name/instances", v2.GetInstances)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/", v1.GetInstance)
+	v2Router.GET("/projects/:project_name/instances/:instance_name/", v2.GetInstance)
 	v1Router.GET("/projects/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable)
 	v1Router.POST("/projects/:project_name/instances/connections", v1.BatchCheckInstanceConnections)
