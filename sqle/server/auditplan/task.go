@@ -895,6 +895,7 @@ type sqlInfo struct {
 	counter     int
 	fingerprint string
 	sql         string
+	schema      string
 }
 
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
@@ -907,11 +908,13 @@ func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
 			sqlInfos[index].counter += 1
 			sqlInfos[index].fingerprint = fp
 			sqlInfos[index].sql = sql.sql
+			sqlInfos[index].schema = sql.schema
 		} else {
 			sqlInfos = append(sqlInfos, sqlInfo{
 				counter:     1,
 				fingerprint: fp,
 				sql:         sql.sql,
+				schema:      sql.schema,
 			})
 			counter[fp] = len(sqlInfos) - 1
 		}
@@ -947,6 +950,7 @@ func (at *aliRdsMySQLTask) CreateClient(rdsPath string, accessKeyId *string, acc
 type SqlFromAliCloud struct {
 	sql                string
 	executionStartTime time.Time
+	schema             string
 }
 
 func (at *aliRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
@@ -956,7 +960,7 @@ func (at *aliRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.T
 func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
 	as := make([]*model.AuditPlanSQLV2, len(sqls))
 	for i, sql := range sqls {
-		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v"}`, sql.counter, now.Format(time.RFC3339))
+		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v"}`, sql.counter, now.Format(time.RFC3339), sql.schema)
 		as[i] = &model.AuditPlanSQLV2{
 			Fingerprint: sql.fingerprint,
 			SQLContent:  sql.sql,
@@ -1127,11 +1131,85 @@ WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','
 	return sql
 }
 
+// NOTE: processlist SQLs may be executed in different Schemas.
+// Before auditing sql, we need to insert a Schema switching statement.
+// And need to manually execute server.ReplenishTaskStatistics()
 func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
+	if err != nil {
+		return nil, err
 	}
-	return at.baseTask.audit(task)
+
+	if len(auditPlanSQLs) == 0 {
+		return nil, errNoSQLInAuditPlan
+	}
+
+	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filteredSqls) == 0 {
+		return nil, errNoSQLNeedToBeAudited
+	}
+
+	task := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
+	vTask := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
+
+	for i, sql := range filteredSqls {
+		sqlItem := &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(i),
+				Content: sql.SQLContent,
+			},
+		}
+		task.ExecuteSQLs = append(task.ExecuteSQLs, sqlItem)
+		vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, sqlItem) // vTask is a copy of task for schema switch
+
+		{
+			info := struct {
+				Schema string `json:"schema"`
+			}{}
+			err := json.Unmarshal(sql.Info, &info)
+			if err != nil {
+				return nil, fmt.Errorf("parse schema failed: %v", err)
+			}
+			if info.Schema != "" {
+				vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, &model.ExecuteSQL{
+					BaseSQL: model.BaseSQL{
+						Content: fmt.Sprintf("USE %s;", info.Schema),
+					},
+				})
+			}
+		}
+	}
+
+	err = server.Audit(at.logger, vTask, &at.ap.ProjectId, at.ap.RuleTemplateName)
+	if err != nil {
+		return nil, err
+	}
+	// replenish task statistics manually for real task
+	server.ReplenishTaskStatistics(task)
+
+	auditPlanReport := &model.AuditPlanReportV2{
+		AuditPlanID: at.ap.ID,
+		PassRate:    vTask.PassRate,
+		Score:       vTask.Score,
+		AuditLevel:  vTask.AuditLevel,
+	}
+
+	for i, executeSQL := range task.ExecuteSQLs {
+		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
+			SQL:          executeSQL.Content,
+			Number:       uint(i + 1),
+			AuditResults: executeSQL.AuditResults,
+		})
+	}
+	err = at.persist.Save(auditPlanReport)
+	if err != nil {
+		return nil, err
+	}
+	return auditPlanReport, nil
 }
 
 func NewMySQLProcesslistTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -1187,7 +1265,7 @@ func (at *MySQLProcesslistTask) collectorDo() {
 
 	sqls := make([]SqlFromAliCloud, len(res))
 	for i := range res {
-		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String}
+		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String, schema: res[i]["db"].String}
 	}
 
 	sqlInfos := mergeSQLsByFingerprint(sqls)
