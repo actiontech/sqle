@@ -163,11 +163,11 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		appendExecuteSqlResults(sql, results[i])
 	}
 
-	replenishTaskStatistics(task)
+	ReplenishTaskStatistics(task)
 	return nil
 }
 
-func replenishTaskStatistics(task *model.Task) {
+func ReplenishTaskStatistics(task *model.Task) {
 	var normalCount float64
 	maxAuditLevel := driverV2.RuleLevelNull
 	for _, executeSQL := range task.ExecuteSQLs {
