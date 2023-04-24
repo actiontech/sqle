@@ -71,7 +71,7 @@ var Metas = []Meta{
 			},
 			{
 				Key:   paramKeySlowLogCollectInput,
-				Desc:  "采集来源。0：文件；1：表",
+				Desc:  "采集来源。0：mysql-slow.log 文件；1：mysql.slow_log 表",
 				Value: "0",
 				Type:  params.ParamTypeInt,
 			},
