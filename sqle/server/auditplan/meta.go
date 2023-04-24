@@ -41,6 +41,7 @@ const (
 const (
 	paramKeyCollectIntervalSecond               = "collect_interval_second"
 	paramKeyCollectIntervalMinute               = "collect_interval_minute"
+	paramKeySlowLogCollectInput                 = "slow_log_collect_input"
 	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
 	paramKeySQLMinSecond                        = "sql_min_second"
 	paramKeyDBInstanceId                        = "db_instance_id"
@@ -68,8 +69,14 @@ var Metas = []Meta{
 				Value: "0",
 				Type:  params.ParamTypeInt,
 			},
+			{
+				Key:   paramKeySlowLogCollectInput,
+				Desc:  "采集来源。0：文件；1：表",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
 		},
-		CreateTask: NewDefaultTask,
+		CreateTask: NewSlowLogTask,
 	},
 	{
 		Type:         TypeMySQLMybatis,
