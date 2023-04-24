@@ -6,8 +6,10 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -349,4 +351,85 @@ func (at *OBMySQLTopSQLTask) getHead() []Head {
 		}
 	}
 	return []Head{}
+}
+
+type SlowLogTask struct {
+	*sqlCollector
+}
+
+func NewSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	t := &SlowLogTask{newSQLCollector(entry, ap)}
+	t.do = t.collectorDo
+
+	return t
+}
+
+func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *SlowLogTask) collectorDo() {
+
+	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() != 1 {
+		return
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		return
+	}
+
+	db, err := executor.NewExecutor(at.logger, &driverV2.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     at.ap.InstanceDatabase,
+	},
+		at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Db.Close()
+
+	res, err := db.Db.Query(`
+SELECT sql_text
+FROM mysql.slow_log
+WHERE sql_text != ''
+    AND db NOT IN ('information_schema','performance_schema','mysql','sys')
+`)
+
+	if err != nil {
+		at.logger.Errorf("query slow log failed, error: %v", err)
+		return
+	}
+
+	if len(res) == 0 {
+		return
+	}
+
+	sqls := make([]SqlFromAliCloud, len(res))
+	for i := range res {
+		sqls[i] = SqlFromAliCloud{sql: res[i]["sql_text"].String}
+	}
+
+	sqlInfos := mergeSQLsByFingerprint(sqls)
+
+	if len(sqlInfos) > 0 {
+		if err = at.persist.OverrideAuditPlanSQLs(at.ap.ID,
+			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now())); err != nil {
+			at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
+			return
+		}
+	}
 }
