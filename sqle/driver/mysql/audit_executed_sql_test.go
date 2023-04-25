@@ -420,154 +420,182 @@ CREATE TABLE users (
 				)
 			})
 
-			// todo 添加alter table的单测，目前暂时手工测试
-			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
-			//					t,
-			//					"alter table index with not null",
-			//					NewSQLExecutedInspect(nil), `
-			//alter table customers add index customer_id_index (customer_id);`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
-			//					t,
-			//					"alter table index without not null",
-			//					NewSQLExecutedInspect(nil), `
-			//alter table customers add index customer_id_index (customer_id);`,
-			//					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "customer_id"),
-			//				)
-			//			})
-			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
-			//					t,
-			//					"alter table unique with not null",
-			//					NewSQLExecutedInspect(nil), `
-			//ALTER TABLE table_name ADD UNIQUE KEY (column1, column2); `,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
-			//					t,
-			//					"alter table unique without not null",
-			//					NewSQLExecutedInspect(nil), `
-			//ALTER TABLE table_name ADD UNIQUE KEY (column1, column2); `,
-			//					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "column1", "column2"),
-			//				)
-			//			})
-			// case: alter table add constraint constraint_name (col_name)
-
-			// todo 添加create index的单测，目前暂时手工测试
-			//			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
-			//					t,
-			//					"create index with not null",
-			//					NewSQLExecutedInspect(nil), `
-			//CREATE INDEX part_of_name ON customer (name(10));`,
-			//					newTestResult(),
-			//				)
-			//			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"alter table index with not null",
+					NewSQLExecutedInspect(nil), `
+			alter table exist_tb_1 add index v1_index (v1);`,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"alter table index without not null",
+					NewSQLExecutedInspect(nil), `
+			alter table exist_tb_1 add index v2_index (v2);`,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v2"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"alter table unique with not null",
+					NewSQLExecutedInspect(nil), `
+			ALTER TABLE exist_tb_1 ADD UNIQUE KEY (id, v1); `,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"alter table unique without not null",
+					NewSQLExecutedInspect(nil), `
+			ALTER TABLE exist_tb_1 ADD UNIQUE KEY (v1, v2); `,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v2"),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create index with not null",
+					NewSQLExecutedInspect(nil), `
+			CREATE INDEX part_of_name ON exist_tb_1 (v1);`,
+					newTestResult(),
+				)
+			})
+			t.Run("DDLCheckIndexNotNullConstraint", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNotNullConstraint].Rule,
+					t,
+					"create index without not null",
+					NewSQLExecutedInspect(nil), `
+			CREATE INDEX part_of_name ON exist_tb_1 (v2);`,
+					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v2"),
+				)
+			})
 
 			// DMLCheckSortColumnLength
-			// todo 待支持线上单测，先手工测试
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"select order by",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT * FROM t1
-			//  ORDER BY key_part1 DESC, key_part2 ASC;
-			// `,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"select group by",
-			//					NewSQLExecutedInspect(nil), `
-			//				SELECT a, b, COUNT(c) AS t FROM test_table GROUP BY a,b
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"select distinct",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT DISTINCT c1, c2, c3 FROM t1
-			//WHERE c1 > const;
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"UNION",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT 1, 2 UNION SELECT 'a', 'b';
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"UNION DISTINCT",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT 1, 2 UNION DISTINCT SELECT 'a', 'b';
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"UNION order by",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT name, age FROM table1 WHERE age > 20
-			//UNION ALL
-			//SELECT name, age FROM table2 WHERE age > 30
-			//ORDER BY age DESC;
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"UNION ALL",
-			//					NewSQLExecutedInspect(nil), `
-			//SELECT 1, 2 UNION ALL SELECT 'a', 'b';
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"delete order by",
-			//					NewSQLExecutedInspect(nil), `
-			//DELETE FROM some WHERE user = 'f'
-			//ORDER BY timestamp_column LIMIT 1;
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
-			//			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
-			//				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
-			//					t,
-			//					"update order by",
-			//					NewSQLExecutedInspect(nil), `
-			//UPDATE t SET id = id + 1 ORDER BY id DESC;
-			//				`,
-			//					newTestResult(),
-			//				)
-			//			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule,
+					t,
+					"select order by",
+					NewSQLExecutedInspect(nil), `
+			SELECT * FROM exist_tb_1
+			 ORDER BY v1 DESC, v2 ASC;
+			`,
+					newTestResult(),
+				)
+			})
+
+			checkSortLenRule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSortColumnLength].Rule
+			checkSortLenRule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, "20")
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"select order by",
+					NewSQLExecutedInspect(nil), `
+			SELECT * FROM exist_tb_1
+			 ORDER BY v1 DESC, v2 ASC;
+			`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1,exist_tb_1.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"select group by",
+					NewSQLExecutedInspect(nil), `
+							SELECT v1, v2, COUNT(v1) AS t FROM exist_tb_1 GROUP BY v1,v2
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1,exist_tb_1.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"select distinct",
+					NewSQLExecutedInspect(nil), `
+			SELECT DISTINCT v1, v2 FROM exist_tb_1
+			WHERE v1 > const;
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1,exist_tb_1.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"UNION",
+					NewSQLExecutedInspect(nil), `
+			SELECT 1, 2 UNION SELECT 'a', 'b';
+							`,
+					newTestResult(),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"UNION",
+					NewSQLExecutedInspect(nil), `
+			SELECT v1, v2 FROM exist_tb_1 UNION SELECT v1, v2 FROM exist_tb_2;
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1,exist_tb_1.v2,exist_tb_2.v1,exist_tb_2.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"UNION DISTINCT",
+					NewSQLExecutedInspect(nil), `
+			SELECT 1, 2 UNION DISTINCT SELECT 'a', 'b';
+							`,
+					newTestResult(),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"UNION order by",
+					NewSQLExecutedInspect(nil), `
+			SELECT v1, v2 FROM exist_tb_1 WHERE v1 > 20
+			UNION ALL
+			SELECT v1, v2 FROM exist_tb_2 WHERE v2 > 30
+			ORDER BY age DESC;
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1,exist_tb_1.v2,exist_tb_2.v1,exist_tb_2.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"UNION ALL",
+					NewSQLExecutedInspect(nil), `
+			SELECT 1, 2 UNION ALL SELECT 'a', 'b';
+							`,
+					newTestResult(),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"delete order by",
+					NewSQLExecutedInspect(nil), `
+			DELETE FROM exist_tb_1 WHERE v1 = 'f'
+			ORDER BY v2 LIMIT 1;
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v2"),
+				)
+			})
+			t.Run("DMLCheckSortColumnLength", func(t *testing.T) {
+				runSingleRuleInspectCase(checkSortLenRule,
+					t,
+					"update order by",
+					NewSQLExecutedInspect(nil), `
+			UPDATE exist_tb_1 SET v1 = v1 + 1 ORDER BY v1 DESC;
+							`,
+					newTestResult().addResult(checkSortLenRule.Name, "exist_tb_1.v1"),
+				)
+			})
 		}
 	}
 }
