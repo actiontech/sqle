@@ -372,7 +372,8 @@ func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
 }
 
 const (
-	slowlogCollectInputTable = 1 // mysql.slow_log
+	slowlogCollectInputLogFile = 0 // FILE: mysql-slow.log
+	slowlogCollectInputTable   = 1 // TABLE: mysql.slow_log
 )
 
 func (at *SlowLogTask) collectorDo() {
