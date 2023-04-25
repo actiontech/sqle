@@ -371,9 +371,13 @@ func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
 	return at.baseTask.audit(task)
 }
 
+const (
+	slowlogCollectInputTable = 1 // mysql.slow_log
+)
+
 func (at *SlowLogTask) collectorDo() {
 
-	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() != 1 {
+	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() != slowlogCollectInputTable {
 		return
 	}
 
