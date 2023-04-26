@@ -5,6 +5,7 @@ package auditplan
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -519,4 +520,57 @@ func (s sqlFromSlowLogs) mergeByFingerprint() []sqlInfo {
 	}
 
 	return sqlInfos
+}
+
+func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
+	[]Head, []map[string] /* head name */ string, uint64, error) {
+
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	head := []Head{
+		{
+			Name: "fingerprint",
+			Desc: "SQL指纹",
+			Type: "sql",
+		},
+		{
+			Name: "sql",
+			Desc: "最后一次匹配到该指纹的语句",
+			Type: "sql",
+		},
+		{
+			Name: "counter",
+			Desc: "匹配到该指纹的语句数量",
+		},
+		{
+			Name: "last_receive_timestamp",
+			Desc: "最后一次匹配到该指纹的时间",
+		},
+		{
+			Name: "average_query_time",
+			Desc: "平均执行时间（秒）",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		var info = struct {
+			Counter              uint64 `json:"counter"`
+			LastReceiveTimestamp string `json:"last_receive_timestamp"`
+			AverageQueryTime     string `json:"average_query_time"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql":                    sql.SQLContent,
+			"fingerprint":            sql.Fingerprint,
+			"counter":                strconv.FormatUint(info.Counter, 10),
+			"last_receive_timestamp": info.LastReceiveTimestamp,
+			"average_query_time":     info.AverageQueryTime,
+		})
+	}
+	return head, rows, count, nil
 }
