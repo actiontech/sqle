@@ -5607,6 +5607,7 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 		gatherColFromSelectStmt(stmt, singleTable)
 	case *ast.UnionStmt:
 		// join子查询里的order by不做处理
+		// 因为union会对字段进行隐式排序，而order by的字段一定是union的字段，所以不需要额外对union语句的order by等函数的字段进行检查
 		if stmt.SelectList == nil {
 			return nil
 		}
@@ -5619,11 +5620,23 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 				temp, ok := t.Source.(*ast.TableName)
 				if ok {
 					singleTable = temp
+
+					// 收集select的普通目标列
+					if s.Fields != nil {
+						for _, field := range s.Fields.Fields {
+							if c, ok := field.Expr.(*ast.ColumnNameExpr); ok && c.Name != nil {
+								checkColumns = append(checkColumns, col{
+									Table:   temp,
+									ColName: c.Name.Name.L,
+								})
+							}
+						}
+					}
 				}
 			}
-			gatherColFromSelectStmt(s, singleTable)
+			gatherColFromSelectStmt(s, singleTable) // 收集group by、distinct里的列
+			gatherColFromOrderByClause(s.OrderBy, singleTable)
 		}
-		gatherColFromOrderByClause(stmt.OrderBy, singleTable)
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil || stmt.TableRefs.TableRefs == nil {
 			return nil
