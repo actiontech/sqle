@@ -6,6 +6,7 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -13,6 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 
+	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
 )
 
@@ -408,7 +410,7 @@ func (at *SlowLogTask) collectorDo() {
 	defer db.Db.Close()
 
 	res, err := db.Db.Query(`
-SELECT sql_text
+SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time
 FROM mysql.slow_log
 WHERE sql_text != ''
     AND db NOT IN ('information_schema','performance_schema','mysql','sys')
@@ -423,18 +425,98 @@ WHERE sql_text != ''
 		return
 	}
 
-	sqls := make([]SqlFromAliCloud, len(res))
+	sqls := make([]*sqlFromSlowLog, len(res))
+
 	for i := range res {
-		sqls[i] = SqlFromAliCloud{sql: res[i]["sql_text"].String}
+		sqls[i] = &sqlFromSlowLog{
+			sql:    res[i]["sql_text"].String,
+			schema: res[i]["db"].String,
+		}
+		queryTime, err := strconv.Atoi(res[i]["query_time"].String)
+		if err != nil {
+			at.logger.Warnf("unexpected data format: %v, ", res[i]["query_time"].String)
+			continue
+		}
+		sqls[i].queryTimeSeconds = queryTime
 	}
 
-	sqlInfos := mergeSQLsByFingerprint(sqls)
+	sqlFingerprintInfos := sqlFromSlowLogs(sqls).mergeByFingerprint()
 
-	if len(sqlInfos) > 0 {
-		if err = at.persist.OverrideAuditPlanSQLs(at.ap.ID,
-			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now())); err != nil {
-			at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
-			return
+	auditPlanSQLs := make([]*model.AuditPlanSQLV2, len(sqlFingerprintInfos))
+	{
+		now := time.Now()
+		for i := range sqlFingerprintInfos {
+			fp := sqlFingerprintInfos[i]
+			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":"%d"}`,
+				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds)
+			auditPlanSQLs[i] = &model.AuditPlanSQLV2{
+				Fingerprint: fp.fingerprint,
+				SQLContent:  fp.sql,
+				Info:        []byte(fpInfo),
+			}
 		}
 	}
+
+	if err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, auditPlanSQLs); err != nil {
+		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
+		return
+	}
+}
+
+type sqlFromSlowLog struct {
+	sql              string
+	schema           string
+	queryTimeSeconds int
+}
+
+type sqlFromSlowLogs []*sqlFromSlowLog
+
+type sqlFingerprintInfo struct {
+	lastSql               string
+	lastSqlSchema         string
+	sqlCount              int
+	totalQueryTimeSeconds int
+}
+
+func (s *sqlFingerprintInfo) queryTime() int {
+	return s.totalQueryTimeSeconds / s.sqlCount
+}
+
+func (s sqlFromSlowLogs) mergeByFingerprint() []sqlInfo {
+
+	sqlInfos := []sqlInfo{}
+	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
+
+	for i := range s {
+		sqlItem := s[i]
+		fp := query.Fingerprint(sqlItem.sql)
+		if sqlInfosMap[fp] != nil {
+			sqlInfosMap[fp].lastSql = sqlItem.sql
+			sqlInfosMap[fp].lastSqlSchema = sqlItem.schema
+			sqlInfosMap[fp].sqlCount++
+			sqlInfosMap[fp].totalQueryTimeSeconds += sqlItem.queryTimeSeconds
+		} else {
+			sqlInfosMap[fp] = &sqlFingerprintInfo{
+				sqlCount:              1,
+				lastSql:               sqlItem.sql,
+				lastSqlSchema:         sqlItem.schema,
+				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
+			}
+			sqlInfos = append(sqlInfos, sqlInfo{fingerprint: fp})
+		}
+	}
+
+	for i := range sqlInfos {
+		fp := sqlInfos[i].fingerprint
+		sqlInfo := sqlInfosMap[fp]
+		if sqlInfo != nil {
+			sqlInfos[i].counter = sqlInfo.sqlCount
+			sqlInfos[i].sql = sqlInfo.lastSql
+			sqlInfos[i].schema = sqlInfo.lastSqlSchema
+			sqlInfos[i].queryTimeSeconds = sqlInfo.queryTime()
+		}
+
+	}
+
+	return sqlInfos
 }
