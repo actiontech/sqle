@@ -54,7 +54,7 @@ func (s *Storage) UpdateManagementPermission(userID uint, permissionCode []uint)
 }
 
 func updateManagementPermission(txDB *gorm.DB, userID uint, permissionCode []uint) error {
-	if err := txDB.Where("user_id").Delete(&ManagementPermission{}).Error; err != nil {
+	if err := txDB.Where("user_id = ?", userID).Delete(&ManagementPermission{}).Error; err != nil {
 		return err
 	}
 	for _, code := range permissionCode {
