@@ -14,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
@@ -367,13 +368,6 @@ func NewSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return t
 }
 
-func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
-	}
-	return at.baseTask.audit(task)
-}
-
 const (
 	slowlogCollectInputLogFile = 0 // FILE: mysql-slow.log
 	slowlogCollectInputTable   = 1 // TABLE: mysql.slow_log
@@ -573,4 +567,86 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 		})
 	}
 	return head, rows, count, nil
+}
+
+// HACK: slow SQLs may be executed in different Schemas.
+// Before auditing sql, we need to insert a Schema switching statement.
+// And need to manually execute server.ReplenishTaskStatistics() to recalculate
+// real task object score
+func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(auditPlanSQLs) == 0 {
+		return nil, errNoSQLInAuditPlan
+	}
+
+	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(filteredSqls) == 0 {
+		return nil, errNoSQLNeedToBeAudited
+	}
+
+	task := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
+	vTask := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
+
+	for i, sql := range filteredSqls {
+		sqlItem := &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(i),
+				Content: sql.SQLContent,
+			},
+		}
+		{
+			info := struct {
+				Schema string `json:"schema"`
+			}{}
+			err := json.Unmarshal(sql.Info, &info)
+			if err != nil {
+				return nil, fmt.Errorf("parse schema failed: %v", err)
+			}
+			if info.Schema != "" {
+				vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, &model.ExecuteSQL{
+					BaseSQL: model.BaseSQL{
+						Content: fmt.Sprintf("USE %s;", info.Schema),
+					},
+				})
+			}
+		}
+		task.ExecuteSQLs = append(task.ExecuteSQLs, sqlItem)
+		vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, sqlItem) // vTask is a copy of task for schema switch
+
+	}
+
+	err = server.Audit(at.logger, vTask, &at.ap.ProjectId, at.ap.RuleTemplateName)
+	if err != nil {
+		return nil, err
+	}
+	// replenish task statistics manually for real task
+	server.ReplenishTaskStatistics(task)
+
+	auditPlanReport := &model.AuditPlanReportV2{
+		AuditPlanID: at.ap.ID,
+		PassRate:    task.PassRate,
+		Score:       task.Score,
+		AuditLevel:  task.AuditLevel,
+	}
+
+	for i, executeSQL := range task.ExecuteSQLs {
+		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
+			SQL:          executeSQL.Content,
+			Number:       uint(i + 1),
+			AuditResults: executeSQL.AuditResults,
+		})
+	}
+	err = at.persist.Save(auditPlanReport)
+	if err != nil {
+		return nil, err
+	}
+	return auditPlanReport, nil
 }
