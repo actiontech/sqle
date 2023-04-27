@@ -1131,12 +1131,18 @@ WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','
 	return sql
 }
 
-// HACK: processlist SQLs may be executed in different Schemas.
-// Before auditing sql, we need to insert a Schema switching statement.
+func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
+	return auditWithSchema(at.logger, at.persist, at.ap)
+}
+
+// HACK:  SQLs may be executed in different Schemas.
+// Before auditing sql, we need to insert a SCHEMA SWITCHING statement.
 // And need to manually execute server.ReplenishTaskStatistics() to recalculate
 // real task object score
-func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
-	auditPlanSQLs, err := at.persist.GetAuditPlanSQLs(at.ap.ID)
+func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPlan) (
+	*model.AuditPlanReportV2, error) {
+
+	auditPlanSQLs, err := persist.GetAuditPlanSQLs(ap.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -1145,7 +1151,7 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 		return nil, errNoSQLInAuditPlan
 	}
 
-	filteredSqls, err := filterSQLsByPeriod(at.ap.Params, auditPlanSQLs)
+	filteredSqls, err := filterSQLsByPeriod(ap.Params, auditPlanSQLs)
 	if err != nil {
 		return nil, err
 	}
@@ -1154,8 +1160,8 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 		return nil, errNoSQLNeedToBeAudited
 	}
 
-	task := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
-	vTask := &model.Task{Instance: at.ap.Instance, DBType: at.ap.DBType}
+	task := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
+	vTask := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
 
 	for i, sql := range filteredSqls {
 		sqlItem := &model.ExecuteSQL{
@@ -1185,7 +1191,7 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 
 	}
 
-	err = server.Audit(at.logger, vTask, &at.ap.ProjectId, at.ap.RuleTemplateName)
+	err = server.Audit(l, vTask, &ap.ProjectId, ap.RuleTemplateName)
 	if err != nil {
 		return nil, err
 	}
@@ -1193,7 +1199,7 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 	server.ReplenishTaskStatistics(task)
 
 	auditPlanReport := &model.AuditPlanReportV2{
-		AuditPlanID: at.ap.ID,
+		AuditPlanID: ap.ID,
 		PassRate:    task.PassRate,
 		Score:       task.Score,
 		AuditLevel:  task.AuditLevel,
@@ -1206,7 +1212,8 @@ func (at *MySQLProcesslistTask) Audit() (*model.AuditPlanReportV2, error) {
 			AuditResults: executeSQL.AuditResults,
 		})
 	}
-	err = at.persist.Save(auditPlanReport)
+
+	err = persist.Save(auditPlanReport)
 	if err != nil {
 		return nil, err
 	}
