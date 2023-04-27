@@ -727,6 +727,9 @@ func (t *TableChecker) CheckColumnByName(colNameStmt *ast.ColumnName) (bool, boo
 }
 
 func TableExistCol(table *ast.CreateTableStmt, colName string) bool {
+	if table == nil {
+		return false
+	}
 	colName = strings.ToLower(colName)
 	for _, col := range table.Cols {
 		if col.Name.Name.L == colName {
