@@ -14,7 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
