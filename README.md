@@ -47,8 +47,8 @@ These [SQL audit plugins](https://actiontech.github.io/sqle-docs-cn/3.modules/3.
 ## 官方技术支持
 - 代码库: [github.com/actiontech/sqle](https://github.com/actiontech/sqle)
 - UI库: [github.com/actiontech/sqle-ui](https://github.com/actiontech/sqle-ui)
-- 文档库: [github.com/actiontech/sqle-docs-cn](https://github.com/actiontech/sqle-docs)
-- 文档主页: [actiontech.github.io/sqle-docs-cn](https://actiontech.github.io/sqle-docs/)
+- 文档库: [github.com/actiontech/sqle-docs](https://github.com/actiontech/sqle-docs)
+- 文档主页: [actiontech.github.io/sqle-docs](https://actiontech.github.io/sqle-docs/)
 - QQ group: 637150065
 - 网站：[爱可生开源社区](https://opensource.actionsky.com)
 - 开源社区微信公众号
