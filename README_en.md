@@ -12,13 +12,13 @@ English | [简体中文](./README.md)
 This is an open source SQL audit software, brought to you by the SQLE team at Shanghai Action Information Technology Co., Ltd.(ActionTech). This software is released under Mozilla Public License Version 2.0.
 Copyright (c)  ActionTech and/or its affiliates. SQLE is a SQL audit platform, which is extendable for most popular databases, with a native audition plugin for MySQL.
 
-[Docs](https://actiontech.github.io/sqle-docs-cn/) | [Deploy](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [Official website](https://opensource.actionsky.com/sqle/)
+[Docs](https://actiontech.github.io/sqle-docs/docs/intro/) | [Deploy](https://actiontech.github.io/sqle-docs/docs/deploy-manual/intro) | [Official website](https://opensource.actionsky.com/sqle/)
 
 ## Product show
 ![product_show](./SQLE_product_show.gif)
 ## Online demo
-* [SQLE Community Edition](http://124.70.158.246/)
-* [SQLE Enterprise Edition](http://124.70.158.246:8889/)
+* [SQLE Community Edition](http://demo.sqle.actionsky.com/)
+* [SQLE Enterprise Edition](http://demo.sqle.actionsky.com:8889/)
 #### Login user
 * user: admin
 * pass： admin
