@@ -11,7 +11,7 @@
 
 SQLE由上海爱可生信息技术股份有限公司（以下简称爱可生公司）出品和维护，是爱可生公司“云树SQL审核软件”（简称：CTREE SQLE）软件产品的开源版本。SQLE 是一个支持多场景，原生支持 MySQL 审核且数据库类型可扩展的 SQL 审核工具。
 
-[官方网站](https://opensource.actionsky.com/sqle/) | [文档](https://actiontech.github.io/sqle-docs-cn/) | [安装](https://actiontech.github.io/sqle-docs-cn/2.deploy/overview.html) | [在线体验](https://actiontech.github.io/sqle-docs-cn/0.overview/1_online_demo.html)
+[官方网站](https://opensource.actionsky.com/sqle/) | [文档](https://actiontech.github.io/sqle-docs/docs/intro/) | [安装](https://actiontech.github.io/sqle-docs/docs/deploy-manual/intro) | [在线体验](https://actiontech.github.io/sqle-docs/docs/online-demo)
 
 ## 产品展示[[更多]](https://actiontech.github.io/sqle-docs-cn/0.overview/2_product_show.html)
 ![product_show](./SQLE_product_show.gif)
@@ -47,8 +47,8 @@ These [SQL audit plugins](https://actiontech.github.io/sqle-docs-cn/3.modules/3.
 ## 官方技术支持
 - 代码库: [github.com/actiontech/sqle](https://github.com/actiontech/sqle)
 - UI库: [github.com/actiontech/sqle-ui](https://github.com/actiontech/sqle-ui)
-- 文档库: [github.com/actiontech/sqle-docs-cn](https://github.com/actiontech/sqle-docs-cn)
-- 文档主页: [actiontech.github.io/sqle-docs-cn](https://actiontech.github.io/sqle-docs-cn/)
+- 文档库: [github.com/actiontech/sqle-docs-cn](https://github.com/actiontech/sqle-docs)
+- 文档主页: [actiontech.github.io/sqle-docs-cn](https://actiontech.github.io/sqle-docs/)
 - QQ group: 637150065
 - 网站：[爱可生开源社区](https://opensource.actionsky.com)
 - 开源社区微信公众号
