@@ -917,9 +917,11 @@ type DriverMeta struct {
 // @router /v1/configurations/drivers [get]
 func GetDrivers(c echo.Context) error {
 
+	drivers := driver.GetPluginManager().AllDrivers()
+
 	return c.JSON(http.StatusOK, &GetDriversResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    DriversResV1{Drivers: driver.GetPluginManager().AllDrivers()},
+		Data:    DriversResV1{Drivers: drivers},
 	})
 }
 
