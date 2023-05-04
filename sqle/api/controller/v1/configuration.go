@@ -898,7 +898,13 @@ type GetDriversResV1 struct {
 }
 
 type DriversResV1 struct {
-	Drivers []string `json:"driver_name_list"`
+	Drivers []string      `json:"driver_name_list"`
+	Metas   []*DriverMeta `json:"driver_metas"`
+}
+
+type DriverMeta struct {
+	DriverName  string `json:"driver_name"`
+	DefaultPort uint16 `json:"default_port"`
 }
 
 // GetDrivers get support Driver list.
@@ -910,6 +916,7 @@ type DriversResV1 struct {
 // @Success 200 {object} v1.GetDriversResV1
 // @router /v1/configurations/drivers [get]
 func GetDrivers(c echo.Context) error {
+
 	return c.JSON(http.StatusOK, &GetDriversResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    DriversResV1{Drivers: driver.GetPluginManager().AllDrivers()},

@@ -696,8 +696,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.DriverMeta:
+    properties:
+      default_port:
+        type: integer
+      driver_name:
+        type: string
+    type: object
   v1.DriversResV1:
     properties:
+      driver_metas:
+        items:
+          $ref: '#/definitions/v1.DriverMeta'
+        type: array
       driver_name_list:
         items:
           type: string

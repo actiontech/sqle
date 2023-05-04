@@ -9255,9 +9255,26 @@ var doc = `{
                 }
             }
         },
+        "v1.DriverMeta": {
+            "type": "object",
+            "properties": {
+                "default_port": {
+                    "type": "integer"
+                },
+                "driver_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.DriversResV1": {
             "type": "object",
             "properties": {
+                "driver_metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DriverMeta"
+                    }
+                },
                 "driver_name_list": {
                     "type": "array",
                     "items": {
