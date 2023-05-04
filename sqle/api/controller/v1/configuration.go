@@ -918,10 +918,18 @@ type DriverMeta struct {
 func GetDrivers(c echo.Context) error {
 
 	drivers := driver.GetPluginManager().AllDrivers()
+	metas := driver.GetPluginManager().AllDriverMetas()
+	resMetas := make([]*DriverMeta, len(metas))
+	for i := range metas {
+		resMetas[i] = &DriverMeta{
+			DriverName:  metas[i].PluginName,
+			DefaultPort: uint16(metas[i].DatabaseDefaultPort),
+		}
+	}
 
 	return c.JSON(http.StatusOK, &GetDriversResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    DriversResV1{Drivers: drivers},
+		Data:    DriversResV1{Drivers: drivers, Metas: resMetas},
 	})
 }
 
