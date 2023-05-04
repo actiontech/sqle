@@ -512,7 +512,7 @@ func getOverlapOfUsers(users1, users2 []*User) []*User {
 	return res
 }
 
-func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task, stepTemplates []*WorkflowStepTemplate) error {
+func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	for i, task := range tasks {
 		instanceRecords[i] = &WorkflowInstanceRecord{
@@ -525,11 +525,10 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task, stepTemplates
 		InstanceRecords: instanceRecords,
 	}
 
-	if len(stepTemplates) == 1 {
+	steps := w.cloneWorkflowStep()
+	if len(steps) == 1 {
 		record.Status = WorkflowStatusWaitForExecution
 	}
-
-	steps := w.cloneWorkflowStep()
 
 	tx := s.db.Begin()
 	err := tx.Save(record).Error
