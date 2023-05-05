@@ -5023,8 +5023,8 @@ func TestDMLNotRecommendFuncInWhere(t *testing.T) {
 	for _, sql := range []string{
 		`select id from exist_tb_1 where substring(v1,1,3)='abc';`,
 		`SELECT * FROM exist_tb_1 WHERE UNIX_TIMESTAMP(v1) BETWEEN UNIX_TIMESTAMP('2018-11-16 09:46:00 +0800 CST') AND UNIX_TIMESTAMP('2018-11-22 00:00:00 +0800 CST')`,
-		//TODO　`select id from exist_tb_1 where id/2 = 100`,
-		//TODO　`select id from exist_tb_1 where id/2 < 100`,
+		`select id from exist_tb_1 where id/2 = 100`,
+		`select id from exist_tb_1 where id/2 < 100`,
 		`SELECT * FROM exist_tb_1 WHERE DATE '2020-01-01'`,
 		`DELETE FROM exist_tb_1 WHERE DATE '2020-01-01'`,
 		`UPDATE exist_tb_1 SET id = 1 WHERE DATE '2020-01-01'`,
