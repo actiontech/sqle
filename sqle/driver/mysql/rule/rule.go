@@ -11,8 +11,6 @@ import (
 	"strings"
 	"unicode"
 
-	dry "github.com/ungerik/go-dry"
-
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -24,9 +22,11 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/parser/types"
 	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
+	dry "github.com/ungerik/go-dry"
 )
 
 // rule type
@@ -5197,14 +5197,33 @@ func checkVarcharSize(input *RuleHandlerInput) error {
 	return nil
 }
 
+func containsOp(ops []opcode.Op, op opcode.Op) bool {
+	for i := range ops {
+		if op == ops[i] {
+			return true
+		}
+	}
+	return false
+}
+
 func notRecommendFuncInWhere(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-			switch expr.(type) {
+			switch stmt := expr.(type) {
 			case *ast.FuncCallExpr:
 				trigger = true
 				return true
+			case *ast.BinaryOperationExpr:
+				ops := []opcode.Op{
+					opcode.LeftShift, opcode.RightShift, opcode.And, opcode.Or, opcode.BitNeg, opcode.Xor, // 位运算符
+					opcode.Plus, opcode.Minus, opcode.Mul, opcode.Div, opcode.Mod, // 算术运算符
+				}
+				if containsOp(ops, stmt.Op) {
+					trigger = true
+					return true
+				}
+				return false
 			}
 			return false
 		}, where)
