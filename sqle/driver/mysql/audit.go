@@ -362,9 +362,8 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 	}
 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
-		indexName := strings.ToLower(spec.Name)
-		if _, ok := indexNameMap[indexName]; !ok {
-			needExistsIndexesName = append(needExistsIndexesName, indexName)
+		if _, ok := indexNameMap[spec.Name]; !ok {
+			needExistsIndexesName = append(needExistsIndexesName, spec.Name)
 		}
 	}
 
