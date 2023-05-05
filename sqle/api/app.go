@@ -307,6 +307,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// configurations
 	v1Router.GET("/configurations/drivers", v1.GetDrivers)
+	v2Router.GET("/configurations/drivers", v2.GetDrivers)
 	v1Router.GET("/configurations/sql_query", v1.GetSQLQueryConfiguration)
 
 	// audit plan

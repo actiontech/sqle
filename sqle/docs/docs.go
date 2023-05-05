@@ -7157,6 +7157,29 @@ var doc = `{
                 }
             }
         },
+        "/v2/configurations/drivers": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get drivers",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取当前 server 支持的审核类型",
+                "operationId": "getDriversV2",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetDriversRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/login": {
             "post": {
                 "description": "user login",
@@ -13964,6 +13987,17 @@ var doc = `{
                 }
             }
         },
+        "v2.DriverMeta": {
+            "type": "object",
+            "properties": {
+                "default_port": {
+                    "type": "integer"
+                },
+                "driver_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.GetAuditPlanAnalysisDataResV2": {
             "type": "object",
             "properties": {
@@ -14044,6 +14078,25 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v2.GetDriversRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.DriverMeta"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
