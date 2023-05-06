@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/percona/go-mysql/query"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -574,4 +575,118 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 // real task object score
 func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
 	return auditWithSchema(at.logger, at.persist, at.ap)
+}
+
+type DB2TopSQLTask struct {
+	*sqlCollector
+}
+
+func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &DB2TopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.do = task.collectorDo
+	task.loopInterval = func() time.Duration {
+		return time.Second
+	}
+	return task
+}
+
+// TODO: impl
+func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+	return nil, errors.New("no impl")
+}
+
+// ref: https://www.ibm.com/docs/en/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
+func (at *DB2TopSQLTask) collectSQL() string {
+
+	topN := at.ap.Params.GetParam(paramKeyTopN).Int()
+
+	sql := fmt.Sprintf(`
+SELECT stmt_text, total_exec_time
+FROM sysibmadm.snapdyn_sql 
+ORDER BY total_exec_time DESC 
+FETCH FIRST %v ROWS ONLY
+`, topN)
+
+	return sql
+}
+
+const (
+	// DB2 sysibmadm.snapdyn_sql 列
+	DB2SnapDynSqlColumnStmtText      = "stmt_text"       // SQL文本内容
+	DB2SnapDynSqlColumnTotalExecTime = "total_exec_time" // 执行总时间（单位：秒）
+)
+
+func (at *DB2TopSQLTask) collectorDo() {
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warn("instance is not configured")
+		return
+	}
+
+	inst, _, err := at.persist.
+		GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		at.logger.Warnf("get instance fail, error: %v", err)
+		return
+	}
+
+	// TODO: sqle-db2-plugin-j not support yet
+	// if !driver.GetPluginManager().
+	// 	IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+	// 	at.logger.Warnf("can not do this task, %v",
+	// 		driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+	// 	return
+	// }
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(
+		at.logger, inst.DbType, &driverV2.Config{
+			DSN: &driverV2.DSN{
+				Host:             inst.Host,
+				Port:             inst.Port,
+				User:             inst.User,
+				Password:         inst.Password,
+				AdditionalParams: inst.AdditionalParams,
+			},
+		})
+	if err != nil {
+		at.logger.Warnf("get plugin failed, error: %v", err)
+		return
+	}
+	defer plugin.Close(context.Background())
+
+	result, err := plugin.Query(context.Background(), at.collectSQL(),
+		&driverV2.QueryConf{TimeOutSecond: 10})
+	if err != nil {
+		at.logger.Warnf("collect failed, error: %v", err)
+		return
+	}
+
+	if len(result.Column) == 0 {
+		return
+	}
+
+	sqls := []*SQL{}
+	for i := range result.Rows {
+		row := result.Rows[i]
+		s := &SQL{
+			Info: make(map[string]interface{}, 0),
+		}
+		for j := range row.Values {
+			if result.Column[j].String() == DB2SnapDynSqlColumnStmtText {
+				s.SQLContent = row.Values[j].Value
+				s.Fingerprint = row.Values[j].Value
+			} else {
+				s.Info[result.Column[j].String()] = row.Values[j].Value
+			}
+		}
+		sqls = append(sqls, s)
+	}
+
+	if err := at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls)); err != nil {
+		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
+		return
+	}
+	return
 }
