@@ -72,6 +72,12 @@ var EEMetas = []Meta{
 				Value: "3",
 				Type:  params.ParamTypeInt,
 			},
+			{
+				Key:   paramKeyIndicator,
+				Desc:  "关注指标",
+				Value: DB2IndicatorAverageElapsedTime,
+				Type:  params.ParamTypeString,
+			},
 		},
 	},
 }

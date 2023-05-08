@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -607,25 +608,43 @@ func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	return at.baseTask.audit(task)
 }
 
-// ref: https://www.ibm.com/docs/en/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
+// ref: https://www.ibm.com/docs/zh/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
 func (at *DB2TopSQLTask) collectSQL() string {
+	sql := `
+SELECT 
+    stmt_text,   
+	num_executions,   
+    real(total_exec_time)*1000+DECIMAL(real(total_exec_time_ms)/1000,18,3) AS total_elapsed_time,   
+	DECIMAL((real(total_exec_time)*1000+real(total_exec_time_ms)/1000)/real(num_executions),18,3) AS avg_elapsed_time_ms,   
+    DECIMAL((real(total_sys_cpu_time)*1000+real(total_sys_cpu_time_ms)/1000+real(total_usr_cpu_time)*1000+real(total_usr_cpu_time_ms)/1000)/real(num_executions),18,3) as avg_cpu_time_ms    
+FROM sysibmadm.snapdyn_sql     
+WHERE stmt_text !='' AND num_executions > 0    
+ORDER BY %s DESC   
+`
+	indicator := at.ap.Params.GetParam(paramKeyIndicator).String()
+	if indicator == "" {
+		indicator = DB2IndicatorAverageElapsedTime
+	}
+	sql = fmt.Sprintf(sql, indicator)
 
-	topN := at.ap.Params.GetParam(paramKeyTopN).Int()
-
-	sql := fmt.Sprintf(`
-SELECT stmt_text, total_exec_time
-FROM sysibmadm.snapdyn_sql 
-ORDER BY total_exec_time DESC 
-FETCH FIRST %v ROWS ONLY
-`, topN)
+	// limit top N
+	{
+		topN := at.ap.Params.GetParam(paramKeyTopN).Int()
+		if topN == 0 {
+			topN = 10
+		}
+		sql = fmt.Sprintf(`%v FETCH FIRST %d ROWS ONLY `, sql, topN)
+	}
 
 	return sql
 }
 
 const (
-	// DB2 sysibmadm.snapdyn_sql 列
-	DB2SnapDynSqlColumnStmtText      = "stmt_text"       // SQL文本内容
-	DB2SnapDynSqlColumnTotalExecTime = "total_exec_time" // 执行总时间（单位：秒）
+	DB2IndicatorNumExecutions      = "num_executions"      // 执行次数
+	DB2IndicatorTotalElapsedTime   = "total_elapsed_time"  // 总执行时间
+	DB2IndicatorAverageElapsedTime = "avg_elapsed_time_ms" // 平均执行时间
+	DB2IndicatorAverageCPUTime     = "avg_cpu_time_ms"     // 平均 CPU 时间
+
 )
 
 func (at *DB2TopSQLTask) collectorDo() {
@@ -680,23 +699,70 @@ func (at *DB2TopSQLTask) collectorDo() {
 	sqls := []*SQL{}
 	for i := range result.Rows {
 		row := result.Rows[i]
-		s := &SQL{
-			Info: make(map[string]interface{}, 0),
-		}
+		s := &SQL{Info: make(map[string]interface{}, 0)}
 		for j := range row.Values {
-			if result.Column[j].String() == DB2SnapDynSqlColumnStmtText {
+			if strings.ToLower(result.Column[j].Key) == "stmt_text" {
 				s.SQLContent = row.Values[j].Value
 				s.Fingerprint = row.Values[j].Value
 			} else {
-				s.Info[result.Column[j].String()] = row.Values[j].Value
+				s.Info[strings.ToLower(result.Column[j].Key)] = row.Values[j].Value
+				s.Info["last_receive_timestamp"] = time.Now().Format(time.RFC3339)
 			}
 		}
 		sqls = append(sqls, s)
 	}
 
 	if err := at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls)); err != nil {
-		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
+		at.logger.Errorf("save db2 top sql to storage failed, error: %v", err)
 		return
 	}
 	return
+}
+
+func (at *DB2TopSQLTask) getSQLHead() []Head {
+	return []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: DB2IndicatorTotalElapsedTime,
+			Desc: "总执行时间(ms)",
+		},
+		{
+			Name: DB2IndicatorAverageElapsedTime,
+			Desc: "平均执行时间(ms)",
+		},
+		{
+			Name: DB2IndicatorNumExecutions,
+			Desc: "执行次数",
+		},
+		{
+			Name: DB2IndicatorAverageCPUTime,
+			Desc: "平均 CPU 时间(ms)",
+		},
+	}
+}
+
+func (at *DB2TopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	result := []map[string]string{}
+
+	for i := range auditPlanSQLs {
+		mp := map[string]string{"sql": auditPlanSQLs[i].SQLContent}
+
+		origin, err := auditPlanSQLs[i].Info.OriginValue()
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		for k := range origin {
+			mp[k] = fmt.Sprintf("%v", origin[k])
+		}
+		result = append(result, mp)
+	}
+	return at.getSQLHead(), result, count, nil
 }
