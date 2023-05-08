@@ -16,7 +16,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/percona/go-mysql/query"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -592,9 +591,20 @@ func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return task
 }
 
-// TODO: impl
 func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
-	return nil, errors.New("no impl")
+
+	task := &model.Task{DBType: at.ap.DBType}
+
+	if at.ap.InstanceName != "" {
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		task.Instance = instance
+		task.Schema = at.ap.InstanceDatabase
+	}
+
+	return at.baseTask.audit(task)
 }
 
 // ref: https://www.ibm.com/docs/en/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
