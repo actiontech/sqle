@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/ungerik/go-dry"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
@@ -608,8 +609,25 @@ func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	return at.baseTask.audit(task)
 }
 
+func (at *DB2TopSQLTask) indicator() (string, error) {
+	indicator := at.ap.Params.GetParam(paramKeyIndicator).String()
+	if indicator == "" {
+		return DB2IndicatorAverageElapsedTime, nil
+	}
+
+	if !dry.StringInSlice(indicator, []string{
+		DB2IndicatorNumExecutions,
+		DB2IndicatorTotalElapsedTime,
+		DB2IndicatorAverageElapsedTime,
+		DB2IndicatorAverageCPUTime,
+	}) {
+		return "", fmt.Errorf("invalid indicator: %v", indicator)
+	}
+	return indicator, nil
+}
+
 // ref: https://www.ibm.com/docs/zh/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
-func (at *DB2TopSQLTask) collectSQL() string {
+func (at *DB2TopSQLTask) collectSQL() (string, error) {
 	sql := `
 SELECT 
     stmt_text,   
@@ -621,10 +639,11 @@ FROM sysibmadm.snapdyn_sql
 WHERE stmt_text !='' AND num_executions > 0    
 ORDER BY %s DESC   
 `
-	indicator := at.ap.Params.GetParam(paramKeyIndicator).String()
-	if indicator == "" {
-		indicator = DB2IndicatorAverageElapsedTime
+	indicator, err := at.indicator()
+	if err != nil {
+		return "", err
 	}
+
 	sql = fmt.Sprintf(sql, indicator)
 
 	// limit top N
@@ -636,7 +655,7 @@ ORDER BY %s DESC
 		sql = fmt.Sprintf(`%v FETCH FIRST %d ROWS ONLY `, sql, topN)
 	}
 
-	return sql
+	return sql, nil
 }
 
 const (
@@ -644,7 +663,6 @@ const (
 	DB2IndicatorTotalElapsedTime   = "total_elapsed_time"  // 总执行时间
 	DB2IndicatorAverageElapsedTime = "avg_elapsed_time_ms" // 平均执行时间
 	DB2IndicatorAverageCPUTime     = "avg_cpu_time_ms"     // 平均 CPU 时间
-
 )
 
 func (at *DB2TopSQLTask) collectorDo() {
@@ -686,7 +704,13 @@ func (at *DB2TopSQLTask) collectorDo() {
 	}
 	defer plugin.Close(context.Background())
 
-	result, err := plugin.Query(context.Background(), at.collectSQL(),
+	sql, err := at.collectSQL()
+	if err != nil {
+		at.logger.Warnf("generate collect sql failed, error: %v", err)
+		return
+	}
+
+	result, err := plugin.Query(context.Background(), sql,
 		&driverV2.QueryConf{TimeOutSecond: 10})
 	if err != nil {
 		at.logger.Warnf("collect failed, error: %v", err)
