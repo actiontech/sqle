@@ -677,6 +677,7 @@ func (at *DB2TopSQLTask) collectorDo() {
 				User:             inst.User,
 				Password:         inst.Password,
 				AdditionalParams: inst.AdditionalParams,
+				DatabaseName:     at.ap.InstanceName,
 			},
 		})
 	if err != nil {
