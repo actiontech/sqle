@@ -679,13 +679,12 @@ func (at *DB2TopSQLTask) collectorDo() {
 		return
 	}
 
-	// TODO: sqle-db2-plugin-j not support yet
-	// if !driver.GetPluginManager().
-	// 	IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
-	// 	at.logger.Warnf("can not do this task, %v",
-	// 		driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
-	// 	return
-	// }
+	if !driver.GetPluginManager().
+		IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+		at.logger.Warnf("can not do this task, %v",
+			driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+		return
+	}
 
 	plugin, err := driver.GetPluginManager().OpenPlugin(
 		at.logger, inst.DbType, &driverV2.Config{
