@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/ungerik/go-dry"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
@@ -574,4 +576,217 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 // real task object score
 func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
 	return auditWithSchema(at.logger, at.persist, at.ap)
+}
+
+type DB2TopSQLTask struct {
+	*sqlCollector
+}
+
+func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &DB2TopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.do = task.collectorDo
+	task.loopInterval = func() time.Duration {
+		return time.Second
+	}
+	return task
+}
+
+func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+
+	task := &model.Task{DBType: at.ap.DBType}
+
+	if at.ap.InstanceName != "" {
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		task.Instance = instance
+		task.Schema = at.ap.InstanceDatabase
+	}
+
+	return at.baseTask.audit(task)
+}
+
+func (at *DB2TopSQLTask) indicator() (string, error) {
+	indicator := at.ap.Params.GetParam(paramKeyIndicator).String()
+	if indicator == "" {
+		return DB2IndicatorAverageElapsedTime, nil
+	}
+
+	if !dry.StringInSlice(indicator, []string{
+		DB2IndicatorNumExecutions,
+		DB2IndicatorTotalElapsedTime,
+		DB2IndicatorAverageElapsedTime,
+		DB2IndicatorAverageCPUTime,
+	}) {
+		return "", fmt.Errorf("invalid indicator: %v", indicator)
+	}
+	return indicator, nil
+}
+
+// ref: https://www.ibm.com/docs/zh/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
+func (at *DB2TopSQLTask) collectSQL() (string, error) {
+	sql := `
+SELECT 
+    stmt_text,   
+	num_executions,   
+    real(total_exec_time)*1000+DECIMAL(real(total_exec_time_ms)/1000,18,3) AS total_elapsed_time,   
+	DECIMAL((real(total_exec_time)*1000+real(total_exec_time_ms)/1000)/real(num_executions),18,3) AS avg_elapsed_time_ms,   
+    DECIMAL((real(total_sys_cpu_time)*1000+real(total_sys_cpu_time_ms)/1000+real(total_usr_cpu_time)*1000+real(total_usr_cpu_time_ms)/1000)/real(num_executions),18,3) as avg_cpu_time_ms    
+FROM sysibmadm.snapdyn_sql     
+WHERE stmt_text !='' AND num_executions > 0    
+ORDER BY %s DESC   
+`
+	indicator, err := at.indicator()
+	if err != nil {
+		return "", err
+	}
+
+	sql = fmt.Sprintf(sql, indicator)
+
+	// limit top N
+	{
+		topN := at.ap.Params.GetParam(paramKeyTopN).Int()
+		if topN == 0 {
+			topN = 10
+		}
+		sql = fmt.Sprintf(`%v FETCH FIRST %d ROWS ONLY `, sql, topN)
+	}
+
+	return sql, nil
+}
+
+const (
+	DB2IndicatorNumExecutions      = "num_executions"      // 执行次数
+	DB2IndicatorTotalElapsedTime   = "total_elapsed_time"  // 总执行时间
+	DB2IndicatorAverageElapsedTime = "avg_elapsed_time_ms" // 平均执行时间
+	DB2IndicatorAverageCPUTime     = "avg_cpu_time_ms"     // 平均 CPU 时间
+)
+
+func (at *DB2TopSQLTask) collectorDo() {
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warn("instance is not configured")
+		return
+	}
+
+	inst, _, err := at.persist.
+		GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		at.logger.Warnf("get instance fail, error: %v", err)
+		return
+	}
+
+	if !driver.GetPluginManager().
+		IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+		at.logger.Warnf("can not do this task, %v",
+			driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+		return
+	}
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(
+		at.logger, inst.DbType, &driverV2.Config{
+			DSN: &driverV2.DSN{
+				Host:             inst.Host,
+				Port:             inst.Port,
+				User:             inst.User,
+				Password:         inst.Password,
+				AdditionalParams: inst.AdditionalParams,
+				DatabaseName:     at.ap.InstanceName,
+			},
+		})
+	if err != nil {
+		at.logger.Warnf("get plugin failed, error: %v", err)
+		return
+	}
+	defer plugin.Close(context.Background())
+
+	sql, err := at.collectSQL()
+	if err != nil {
+		at.logger.Warnf("generate collect sql failed, error: %v", err)
+		return
+	}
+
+	result, err := plugin.Query(context.Background(), sql,
+		&driverV2.QueryConf{TimeOutSecond: 10})
+	if err != nil {
+		at.logger.Warnf("collect failed, error: %v", err)
+		return
+	}
+
+	if len(result.Column) == 0 {
+		return
+	}
+
+	sqls := []*SQL{}
+	for i := range result.Rows {
+		row := result.Rows[i]
+		s := &SQL{Info: make(map[string]interface{}, 0)}
+		for j := range row.Values {
+			if strings.ToLower(result.Column[j].Key) == "stmt_text" {
+				s.SQLContent = row.Values[j].Value
+				s.Fingerprint = row.Values[j].Value
+			} else {
+				s.Info[strings.ToLower(result.Column[j].Key)] = row.Values[j].Value
+				s.Info["last_receive_timestamp"] = time.Now().Format(time.RFC3339)
+			}
+		}
+		sqls = append(sqls, s)
+	}
+
+	if err := at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls)); err != nil {
+		at.logger.Errorf("save db2 top sql to storage failed, error: %v", err)
+		return
+	}
+	return
+}
+
+func (at *DB2TopSQLTask) getSQLHead() []Head {
+	return []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: DB2IndicatorTotalElapsedTime,
+			Desc: "总执行时间(ms)",
+		},
+		{
+			Name: DB2IndicatorAverageElapsedTime,
+			Desc: "平均执行时间(ms)",
+		},
+		{
+			Name: DB2IndicatorNumExecutions,
+			Desc: "执行次数",
+		},
+		{
+			Name: DB2IndicatorAverageCPUTime,
+			Desc: "平均 CPU 时间(ms)",
+		},
+	}
+}
+
+func (at *DB2TopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	result := []map[string]string{}
+
+	for i := range auditPlanSQLs {
+		mp := map[string]string{"sql": auditPlanSQLs[i].SQLContent}
+
+		origin, err := auditPlanSQLs[i].Info.OriginValue()
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		for k := range origin {
+			mp[k] = fmt.Sprintf("%v", origin[k])
+		}
+		result = append(result, mp)
+	}
+	return at.getSQLHead(), result, count, nil
 }
