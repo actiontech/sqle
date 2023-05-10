@@ -410,3 +410,6 @@ feishu
 larksuite
 personalise
 processlist
+dynsql
+sysibmadm
+snapdyn
