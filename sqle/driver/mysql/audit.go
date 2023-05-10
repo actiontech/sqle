@@ -251,6 +251,15 @@ alter table ...
 ------------------------------------------------------------------
 */
 func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error {
+	isLowerCaseTableName := i.Ctx.IsLowerCaseTableName()
+
+	lowerCaseWrapper := func(s string) string {
+		if isLowerCaseTableName {
+			return strings.ToLower(s)
+		}
+		return s
+	}
+
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -362,7 +371,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 	}
 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
-		indexName := strings.ToLower(spec.Name)
+		indexName := lowerCaseWrapper(spec.Name)
 		if _, ok := indexNameMap[indexName]; !ok {
 			needExistsIndexesName = append(needExistsIndexesName, indexName)
 		}
@@ -408,7 +417,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
+			indexName := lowerCaseWrapper(spec.Constraint.Name)
 			if indexName != "" {
 				if _, ok := indexNameMap[indexName]; ok {
 					needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
