@@ -816,19 +816,7 @@ func (at *DB2SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map
 	if err != nil {
 		return nil, nil, count, err
 	}
-	head := []Head{
-		{
-			Name: "sql",
-			Desc: "SQL语句",
-			Type: "sql",
-		},
-	}
-	rows := make([]map[string]string, 0, len(auditPlanSQLs))
-	for _, sql := range auditPlanSQLs {
-		rows = append(rows, map[string]string{
-			"sql": sql.SQLContent,
-		})
-	}
+	head, rows := buildSchemaMetaSQLsResult(auditPlanSQLs)
 	return head, rows, count, nil
 }
 
