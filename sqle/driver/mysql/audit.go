@@ -272,7 +272,8 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 
 	hasPk := false
 	colNameMap := map[string]struct{}{}
-	indexNameMap := map[string]struct{}{}
+	// all indexes will be converted to lowercase. ref: https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
+	indexLowerCaseNameMap := utils.LowerCaseMap{}
 	for _, col := range createTableStmt.Cols {
 		colNameMap[col.Name.Name.L] = struct{}{}
 		if util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
@@ -285,7 +286,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			hasPk = true
 		default:
 			if constraint.Name != "" {
-				indexNameMap[constraint.Name] = struct{}{}
+				indexLowerCaseNameMap.Add(constraint.Name)
 			}
 		}
 	}
@@ -362,8 +363,8 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 	}
 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
-		indexName := strings.ToLower(spec.Name)
-		if _, ok := indexNameMap[indexName]; !ok {
+		indexName := spec.Name
+		if !indexLowerCaseNameMap.Exist(indexName) {
 			needExistsIndexesName = append(needExistsIndexesName, indexName)
 		}
 	}
@@ -371,17 +372,20 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameIndex) {
 		oldIndexName := spec.FromKey.String()
 		newIndexName := spec.ToKey.String()
-		_, oldIndexExist := indexNameMap[oldIndexName]
+
+		oldIndexExist := indexLowerCaseNameMap.Exist(oldIndexName)
 		if !oldIndexExist {
 			needExistsIndexesName = append(needExistsIndexesName, oldIndexName)
 		}
-		_, newIndexExist := indexNameMap[newIndexName]
+
+		newIndexExist := indexLowerCaseNameMap.Exist(newIndexName)
 		if newIndexExist {
 			needNotExistsIndexesName = append(needNotExistsIndexesName, newIndexName)
 		}
+
 		if oldIndexExist && !newIndexExist {
-			delete(indexNameMap, oldIndexName)
-			indexNameMap[newIndexName] = struct{}{}
+			indexLowerCaseNameMap.Delete(oldIndexName)
+			indexLowerCaseNameMap.Add(newIndexName)
 		}
 	}
 
@@ -408,12 +412,12 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
+			indexName := spec.Constraint.Name
 			if indexName != "" {
-				if _, ok := indexNameMap[indexName]; ok {
+				if indexLowerCaseNameMap.Exist(indexName) {
 					needNotExistsIndexesName = append(needNotExistsIndexesName, indexName)
 				} else {
-					indexNameMap[indexName] = struct{}{}
+					indexLowerCaseNameMap.Add(indexName)
 				}
 			} else {
 				indexName = "(匿名)"
@@ -500,7 +504,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
-			indexName := strings.ToLower(spec.Constraint.Name)
+			indexName := spec.Constraint.Name
 			if indexName == "" {
 				indexName = "(匿名)"
 			}
