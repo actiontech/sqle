@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,31 +97,79 @@ func TestSupplementalQuotationMarks(t *testing.T) {
 	assert.Equal(t, "`s`", SupplementalQuotationMarks("s"))
 }
 
-func TestIsUpperAndLowerLetterMixed(t *testing.T) {
-	type args struct {
-		s    string
-		want bool
-	}
-	tests := []args{
-		{"isUPPER", true},
-		{"ISupper", true},
-		{"isUpper", true},
-		{"___isUPPER", true},
-		{"isUPPER__@@", true},
-		{"isUPPER@!$and", true},
-		{"process", false},
-		{"___process", false},
-		{"process!@#", false},
-		{"process__@@cc", false},
-		{"a", false},
-		{"$", false},
+func TestLowerCaseMapAdd(t *testing.T) {
+
+	cases := []struct {
+		rawKey       string
+		lowerCaseKey string
+		expected     bool
+	}{
+		{"idx_1", "idx_1", true},
+		{"idx_1", "IDX_1", false},
+		{"IDX_1", "IDX_1", false},
+		{"IDX_1", "idx_1", true},
+		{"IDX_1", "idx_2", false},
 	}
 
-	for _, tt := range tests {
+	for i := range cases {
+		c := cases[i]
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			m := LowerCaseMap{}
+			m.Add(c.rawKey)
+			_, exist := m[c.lowerCaseKey]
+			assert.Equal(t, exist, c.expected)
+		})
+	}
+
+}
+
+func TestLowerCaseMapExist(t *testing.T) {
+	cases := []struct {
+		rawKey   string
+		paramKey string
+		expected bool
+	}{
+		{"IDX_1", "idx_1", true},
+		{"idx_1", "idx_1", true},
+		{"idx_1", "IDX_1", true},
+		{"IDX_1", "IDX_1", true},
+		{"IDX_1", "idx_2", false},
+		{"idx_1", "idx_2", false},
+		{"idx_1", "IDX_2", false},
+		{"IDX_1", "IDX_2", false},
+	}
+
+	for i := range cases {
+		c := cases[i]
 		t.Run("", func(t *testing.T) {
-			if got := IsUpperAndLowerLetterMixed(tt.s); got != tt.want {
-				t.Errorf("IsUpperAndLowerLetterMixed() = %v, want %v", got, tt.want)
-			}
+			m := LowerCaseMap{}
+			m.Add(c.rawKey)
+			assert.Equal(t, m.Exist(c.paramKey), c.expected)
+		})
+	}
+
+}
+
+func TestLowerCaseMapDelete(t *testing.T) {
+	cases := []struct {
+		rawKey              string
+		paramKey            string
+		deletedSuccessfully bool
+	}{
+		{"idx_1", "idx_1", true},
+		{"IDX_1", "idx_1", true},
+		{"IDX_1", "IDX_1", true},
+		{"idx_1", "IDX_1", true},
+	}
+
+	for i := range cases {
+		c := cases[i]
+		t.Run("", func(t *testing.T) {
+			m := LowerCaseMap{}
+			m.Add(c.rawKey)
+			m.Delete(c.paramKey)
+			_, exist := m[c.rawKey]
+			assert.Equal(t, !exist, c.deletedSuccessfully)
 		})
 	}
 }
