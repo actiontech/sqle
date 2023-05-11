@@ -99,6 +99,10 @@ func JSONNewDataNotExistErr(c echo.Context, format string, a ...interface{}) err
 		NewBaseReq(errors.New(errors.DataNotExist, fmt.Errorf(format, a...))))
 }
 
+func JSONOnlySupportForEnterpriseVersionErr(c echo.Context) error {
+	return c.JSON(http.StatusOK, NewBaseReq(errors.NewOnlySupportForEnterpriseVersion()))
+}
+
 // ReadFileContent read content from http body by name if file exist,
 // the name is a http form data key, not file name.
 func ReadFileContent(c echo.Context, name string) (content string, fileExist bool, err error) {

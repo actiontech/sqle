@@ -123,6 +123,10 @@ func NewNotSupportGetAuditPlanAnalysisDataErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("get audit plan analysis data is enterprise version function"))
 }
 
+func NewOnlySupportForEnterpriseVersion() error {
+	return New(EnterpriseEditionFeatures, fmt.Errorf("this api or function is only supported in enterprise version"))
+}
+
 func NewNotSupportGetTaskAnalysisDataErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("get task analysis data is enterprise version function"))
 }
