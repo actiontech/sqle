@@ -846,7 +846,13 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Errorf("connect to instance fail, error: %v", err)
 		return
 	}
-	defer plugin.Close(context.Background())
+	defer func() {
+		_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token integer`)
+		if err != nil {
+			at.logger.Errorf("drop variable failed, error: %v", err)
+		}
+		plugin.Close(context.Background())
+	}()
 
 	tables, err := at.getTablesFromSchema(context.Background(), plugin, at.ap.InstanceDatabase)
 	if err != nil {
