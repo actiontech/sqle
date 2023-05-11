@@ -9,6 +9,7 @@ const (
 	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
 	TypeDB2TopSQL                = "db2_top_sql"
+	TypeDB2SchemaMeta            = "db2_schema_meta"
 )
 
 const (
@@ -77,6 +78,26 @@ var EEMetas = []Meta{
 				Desc:  "关注指标",
 				Value: DB2IndicatorAverageElapsedTime,
 				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeDB2SchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypeDB2,
+		CreateTask:   NewDB2SchemaMetaTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "collect_view",
+				Desc:  "是否采集视图信息",
+				Value: "0",
+				Type:  params.ParamTypeBool,
 			},
 		},
 	},

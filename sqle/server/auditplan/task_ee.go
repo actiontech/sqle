@@ -790,3 +790,193 @@ func (at *DB2TopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[str
 	}
 	return at.getSQLHead(), result, count, nil
 }
+
+type DB2SchemaMetaTask struct {
+	*sqlCollector
+}
+
+func NewDB2SchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	task := &DB2SchemaMetaTask{
+		sqlCollector,
+	}
+	sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *DB2SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *DB2SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	head := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+		})
+	}
+	return head, rows, count, nil
+}
+
+func (at *DB2SchemaMetaTask) collectorDo() {
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+	if at.ap.InstanceDatabase == "" {
+		at.logger.Warnf("instance schema is not configured")
+		return
+	}
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		return
+	}
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(at.logger, instance.DbType, &driverV2.Config{DSN: &driverV2.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     at.ap.InstanceDatabase,
+	}})
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer plugin.Close(context.Background())
+
+	tables, err := at.getTablesFromSchema(context.Background(), plugin, at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("get tables from schema [%v] failed, error: %v", at.ap.InstanceDatabase, err)
+		return
+	}
+
+	var views []string
+	if at.ap.Params.GetParam("collect_view").Bool() {
+		views, err = at.getViewsFromSchema(context.Background(), plugin, at.ap.InstanceDatabase)
+		if err != nil {
+			at.logger.Errorf("get views from schema [%v] failed, error: %v", at.ap.InstanceDatabase, err)
+			return
+		}
+	}
+
+	var sqls []string
+	_, err = plugin.Exec(context.Background(), `CREATE OR REPLACE VARIABLE sqle_get_ddl_token integer`)
+	if err != nil {
+		at.logger.Errorf("create variable failed, error: %v", err)
+		return
+	}
+
+	for _, table := range tables {
+		_, err = plugin.Exec(context.Background(), fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, table))
+		if err != nil {
+			at.logger.Errorf("generate ddl failed, error: %v", err)
+			continue
+		}
+		result, err := plugin.Query(context.Background(), `
+SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = sqle_get_ddl_token AND OBJ_TYPE = 'TABLE' ORDER BY OP_SEQUENCE ASC
+`, &driverV2.QueryConf{TimeOutSecond: 10})
+		if err != nil {
+			at.logger.Errorf("get create table ddl for table [%v] failed, error: %v", table, err)
+			continue
+		}
+
+		if len(result.Column) != 1 || result.Column[0].Key != "CREATE_TABLE_DDL" || len(result.Rows) != 1 {
+			at.logger.Errorf("parse create table ddl records  for table [%v] failed", table)
+			continue
+		}
+		createTableDDL := ""
+		for _, value := range result.Rows[0].Values {
+			createTableDDL = value.Value
+		}
+		if createTableDDL == "" {
+			at.logger.Errorf("get empty create table ddl for table %v.%v", at.ap.InstanceDatabase, table)
+			continue
+		}
+		sqls = append(sqls, createTableDDL)
+	}
+
+	for _, view := range views {
+		_, err = plugin.Exec(context.Background(), fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, view))
+		if err != nil {
+			at.logger.Errorf("generate ddl failed, error: %v", err)
+			continue
+		}
+		result, err := plugin.Query(context.Background(), `
+SELECT VARCHAR(SQL_STMT,2000) AS CREATE_VIEW_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = sqle_get_ddl_token AND OBJ_TYPE = 'VIEW' ORDER BY OP_SEQUENCE ASC
+`, &driverV2.QueryConf{TimeOutSecond: 10})
+		if err != nil {
+			at.logger.Errorf("get create view ddl for view [%v] failed, error: %v", view, err)
+			continue
+		}
+
+		if len(result.Column) != 1 || result.Column[0].Key != "CREATE_VIEW_DDL" || len(result.Rows) != 1 {
+			at.logger.Errorf("parse create view ddl records  for view [%v] failed", view)
+			continue
+		}
+		createViewDDL := ""
+		for _, value := range result.Rows[0].Values {
+			createViewDDL = value.Value
+		}
+		if createViewDDL == "" {
+			at.logger.Errorf("get empty create view ddl for view %v.%v", at.ap.InstanceDatabase, view)
+			continue
+		}
+		sqls = append(sqls, createViewDDL)
+	}
+	if len(sqls) > 0 {
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
+		if err != nil {
+			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
+		}
+	}
+}
+
+func (at *DB2SchemaMetaTask) getTablesFromSchema(ctx context.Context, plugin driver.Plugin, schema string) (tables []string, err error) {
+	res, err := plugin.Query(ctx, fmt.Sprintf(`SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = '%v' AND TYPE = 'T'`, schema), &driverV2.QueryConf{TimeOutSecond: 10})
+	if err != nil {
+		return nil, fmt.Errorf("query sql failed: %v", err)
+	}
+	if len(res.Column) != 1 || res.Column[0].Key != "TABNAME" {
+		return nil, fmt.Errorf("parse query results failed")
+	}
+	for _, row := range res.Rows {
+		for _, value := range row.Values {
+			tables = append(tables, value.Value)
+			continue
+		}
+	}
+	return tables, nil
+}
+
+func (at *DB2SchemaMetaTask) getViewsFromSchema(ctx context.Context, plugin driver.Plugin, schema string) (views []string, err error) {
+	res, err := plugin.Query(ctx, fmt.Sprintf(`SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = '%v'`, schema), &driverV2.QueryConf{TimeOutSecond: 10})
+	if err != nil {
+		return nil, fmt.Errorf("query sql failed: %v", err)
+	}
+	if len(res.Column) != 1 || res.Column[0].Key != "VIEWNAME" {
+		return nil, fmt.Errorf("parse query results failed")
+	}
+	for _, row := range res.Rows {
+		for _, value := range row.Values {
+			views = append(views, value.Value)
+			continue
+		}
+	}
+	return views, nil
+}
