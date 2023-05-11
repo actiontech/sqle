@@ -1167,3 +1167,64 @@ type PersonaliseReqV1 struct {
 func UpdatePersonaliseConfig(c echo.Context) error {
 	return updatePersonaliseConfig(c)
 }
+
+type WebHookConfigV1 struct {
+	Enable               bool   `json:"enable"`
+	MaxRetryTimes        int    `json:"max_retry_times"`
+	RetryIntervalSeconds int    `json:"retry_interval_seconds"`
+	AppID                string `json:"app_id"`
+	AppSecret            string `json:"app_secret"`
+	URL                  string `json:"url"`
+}
+
+// UpdateWorkflowWebHookConfig
+// @Summary 更新工单 WebHook 配置
+// @Description update webhook config
+// @Id updateGlobalWebHookConfig
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param request body v1.WebHookConfigV1 true "update webhook config"
+// @Success 200 {object} controller.BaseRes
+// @Router /v1/configurations/webhook [patch]
+func UpdateWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
+
+type GetWorkflowWebHookConfigResV1 struct {
+	controller.BaseRes
+	Data WebHookConfigV1 `json:"data"`
+}
+
+// GetWorkflowWebHookConfig
+// @Summary 获取全局工单 WebHook 配置
+// @Description get workflow webhook config
+// @Id getGlobalWorkflowWebHookConfig
+// @Tags configurations
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
+// @Router /v1/configurations/webhook [get]
+func GetWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
+
+type TestWorkflowWebHookConfigResDataV1 struct {
+	IsWebHookSendNormal bool   `json:"is_webhook_send_normal"`
+	SendErrorMessage    string `json:"send_error_message,omitempty"`
+}
+
+type TestWorkflowWebHookConfigResV1 struct {
+	controller.BaseRes
+	Data TestWorkflowWebHookConfigResDataV1 `json:"data"`
+}
+
+// TestWorkflowWebHookConfig
+// @Summary 测试全局工单 WebHook 配置
+// @Description test workflow webhook config
+// @Id testGlobalWorkflowWebHookConfig
+// @Tags configurations
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
+// @Router /v1/configurations/webhook/test [post]
+func TestWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
