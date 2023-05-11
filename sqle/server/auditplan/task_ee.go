@@ -836,7 +836,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 
 	pluginMgr := driver.GetPluginManager()
 	if !pluginMgr.IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleQuery) {
-		at.logger.Error("collect DB2 schema meta failed: plugin dosen't implemente Query interface")
+		at.logger.Errorf("collect DB2 schema meta failed: %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
 		return
 	}
 	plugin, err := pluginMgr.OpenPlugin(at.logger, instance.DbType, &driverV2.Config{DSN: &driverV2.DSN{
