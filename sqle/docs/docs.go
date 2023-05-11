@@ -792,6 +792,84 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/webhook": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow webhook config",
+                "tags": [
+                    "configurations"
+                ],
+                "summary": "获取全局工单 WebHook 配置",
+                "operationId": "getGlobalWorkflowWebHookConfig",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetGlobalWorkflowWebHookConfigResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update global webhook config",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "更新全局工单 WebHook 配置",
+                "operationId": "updateGlobalWebHookConfig",
+                "parameters": [
+                    {
+                        "description": "update webhook config",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.WebHookConfigV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/webhook/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test global workflow webhook config",
+                "tags": [
+                    "configurations"
+                ],
+                "summary": "测试全局工单 WebHook 配置",
+                "operationId": "testGlobalWorkflowWebHookConfig",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestGlobalWorkflowWebHookConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/wechat": {
             "get": {
                 "security": [
@@ -9711,6 +9789,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetGlobalWorkflowWebHookConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WebHookConfigV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetInstanceAdditionalMetasResV1": {
             "type": "object",
             "properties": {
@@ -12497,6 +12592,34 @@ var doc = `{
                 }
             }
         },
+        "v1.TestGlobalWorkflowWebHookConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "is_webhook_send_normal": {
+                    "type": "boolean"
+                },
+                "send_error_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestGlobalWorkflowWebHookConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestGlobalWorkflowWebHookConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.TestSMTPConfigurationReqV1": {
             "type": "object",
             "properties": {
@@ -13269,6 +13392,29 @@ var doc = `{
                 },
                 "safe_enabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "v1.WebHookConfigV1": {
+            "type": "object",
+            "properties": {
+                "app_id": {
+                    "type": "string"
+                },
+                "app_secret": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "max_retry_times": {
+                    "type": "integer"
+                },
+                "retry_interval_seconds": {
+                    "type": "integer"
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },

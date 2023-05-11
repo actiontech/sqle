@@ -993,6 +993,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetGlobalWorkflowWebHookConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WebHookConfigV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetInstanceAdditionalMetasResV1:
     properties:
       code:
@@ -2885,6 +2897,25 @@ definitions:
         - phone
         type: string
     type: object
+  v1.TestGlobalWorkflowWebHookConfigResDataV1:
+    properties:
+      is_webhook_send_normal:
+        type: boolean
+      send_error_message:
+        type: string
+    type: object
+  v1.TestGlobalWorkflowWebHookConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestGlobalWorkflowWebHookConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TestSMTPConfigurationReqV1:
     properties:
       recipient_addr:
@@ -3404,6 +3435,21 @@ definitions:
         type: string
       safe_enabled:
         type: boolean
+    type: object
+  v1.WebHookConfigV1:
+    properties:
+      app_id:
+        type: string
+      app_secret:
+        type: string
+      enable:
+        type: boolean
+      max_retry_times:
+        type: integer
+      retry_interval_seconds:
+        type: integer
+      url:
+        type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
@@ -4735,6 +4781,54 @@ paths:
       summary: 修改系统变量
       tags:
       - configuration
+  /v1/configurations/webhook:
+    get:
+      description: get global workflow webhook config
+      operationId: getGlobalWorkflowWebHookConfig
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetGlobalWorkflowWebHookConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单 WebHook 配置
+      tags:
+      - configurations
+    patch:
+      description: update global webhook config
+      operationId: updateGlobalWebHookConfig
+      parameters:
+      - description: update webhook config
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.WebHookConfigV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新全局工单 WebHook 配置
+      tags:
+      - configuration
+  /v1/configurations/webhook/test:
+    post:
+      description: test global workflow webhook config
+      operationId: testGlobalWorkflowWebHookConfig
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestGlobalWorkflowWebHookConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试全局工单 WebHook 配置
+      tags:
+      - configurations
   /v1/configurations/wechat:
     get:
       description: get WeChat configuration
