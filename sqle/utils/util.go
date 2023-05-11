@@ -206,3 +206,27 @@ func GenUid() (string, error) {
 	}
 	return node.Generate().String(), nil
 }
+
+type LowerCaseMap map[string] /*lower case string*/ struct{}
+
+func (l LowerCaseMap) Add(key string) {
+	if key == "" {
+		return
+	}
+	l[strings.ToLower(key)] = struct{}{}
+}
+
+func (l LowerCaseMap) Exist(key string) bool {
+	if key == "" {
+		return false
+	}
+	_, ok := l[strings.ToLower(key)]
+	return ok
+}
+
+func (l LowerCaseMap) Delete(key string) {
+	if key == "" {
+		return
+	}
+	delete(l, strings.ToLower(key))
+}
