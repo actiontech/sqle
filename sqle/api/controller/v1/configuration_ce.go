@@ -50,3 +50,15 @@ func getSQLEInfo(c echo.Context) error {
 		},
 	})
 }
+
+func getWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONOnlySupportForEnterpriseVersionErr(c)
+}
+
+func updateWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONOnlySupportForEnterpriseVersionErr(c)
+}
+
+func testWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONOnlySupportForEnterpriseVersionErr(c)
+}
