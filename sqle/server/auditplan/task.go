@@ -456,11 +456,6 @@ func (at *SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[st
 	if err != nil {
 		return nil, nil, count, err
 	}
-	head, rows := buildSchemaMetaSQLsResult(auditPlanSQLs)
-	return head, rows, count, nil
-}
-
-func buildSchemaMetaSQLsResult(auditPlanSQLs []*model.AuditPlanSQLListDetail) ([]Head, []map[string] /* head name */ string) {
 	head := []Head{
 		{
 			Name: "sql",
@@ -474,7 +469,7 @@ func buildSchemaMetaSQLsResult(auditPlanSQLs []*model.AuditPlanSQLListDetail) ([
 			"sql": sql.SQLContent,
 		})
 	}
-	return head, rows
+	return head, rows, count, nil
 }
 
 // OracleTopSQLTask implement the Task interface.
