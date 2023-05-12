@@ -12648,27 +12648,12 @@
                 }
             }
         },
-        "v1.TestWorkflowWebHookConfigResDataV1": {
-            "type": "object",
-            "properties": {
-                "is_webhook_send_normal": {
-                    "type": "boolean"
-                },
-                "send_error_message": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.TestWorkflowWebHookConfigResV1": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer",
                     "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TestWorkflowWebHookConfigResDataV1"
                 },
                 "message": {
                     "type": "string",
