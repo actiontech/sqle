@@ -4895,11 +4895,10 @@ func hintInNullOnlyFalse(input *RuleHandlerInput) error {
 				for _, exprNode := range x.List {
 					switch pattern := exprNode.(type) {
 					case *parserdriver.ValueExpr:
-						if pattern.Datum.GetString() == "" {
+						if pattern.Datum.Kind() == tidbTypes.KindNull {
 							trigger = true
 							return true
 						}
-
 					}
 				}
 			}
