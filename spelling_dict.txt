@@ -413,3 +413,10 @@ processlist
 dynsql
 sysibmadm
 snapdyn
+sysproc
+systools
+tabname
+syscat
+tabschema
+viewname
+viewschema
