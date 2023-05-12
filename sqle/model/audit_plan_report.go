@@ -26,7 +26,7 @@ type AuditPlanReportSQLV2 struct {
 	AuditPlanReportID uint         `json:"audit_plan_report_id" gorm:"index"`
 	SQL               string       `json:"sql" gorm:"type:text;not null"`
 	Number            uint         `json:"number"`
-	AuditResults      AuditResults `json:"audit_results" gorm:"type:json"`
+	AuditResults      AuditResults `json:"audit_results" gorm:"type:json;not null"`
 
 	AuditPlanReport *AuditPlanReportV2 `gorm:"foreignkey:AuditPlanReportID"`
 }

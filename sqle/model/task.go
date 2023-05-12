@@ -178,7 +178,7 @@ func (a *AuditResults) Append(level, ruleName, message string) {
 type ExecuteSQL struct {
 	BaseSQL
 	AuditStatus  string       `json:"audit_status" gorm:"default:\"initialized\""`
-	AuditResults AuditResults `json:"audit_results" gorm:"type:json"`
+	AuditResults AuditResults `json:"audit_results" gorm:"type:json;not null"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
