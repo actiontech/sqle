@@ -4754,7 +4754,10 @@ func TestDMLHintInNullOnlyFalse(t *testing.T) {
 	}
 	for _, sql := range []string{
 		`SELECT * FROM exist_tb_1 WHERE v1 IN ("1","2")`,
-		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN ("1","2")`,
+		`SELECT * FROM exist_tb_1 WHERE v1 NOT IN ("1","2")`,             // value type of IN() is string
+		`UPDATE exist_tb_1 set id=1234, v1="3334" WHERE id IN (123,456)`, // value type of IN() is int
+		`UPDATE exist_tb_1 set id=1234, v1="3334" WHERE id IN (1.2,2.3)`, // value type of IN() is float
+		`UPDATE exist_tb_1 set id=1234, v1="3334" WHERE id NOT IN (1.2,2.3)`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLHintInNullOnlyFalse].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
