@@ -133,6 +133,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/configurations/oauth2", v1.UpdateOauth2Configuration, AdminUserAllowed())
 		v1Router.POST("/configurations/personalise/logo", v1.UploadLogo, AdminUserAllowed())
 		v1Router.PATCH("/configurations/personalise", v1.UpdatePersonaliseConfig, AdminUserAllowed())
+		v1Router.PATCH("/configurations/webhook", v1.UpdateWorkflowWebHookConfig, AdminUserAllowed())
+		v1Router.GET("/configurations/webhook", v1.GetWorkflowWebHookConfig, AdminUserAllowed())
+		v1Router.POST("/configurations/webhook/test", v1.TestWorkflowWebHookConfig, AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, AdminUserAllowed())
