@@ -165,3 +165,15 @@ func getDefaultBaseInfo() (GetSQLEInfoResDataV1, error) {
 		Title:   Title,
 	}, nil
 }
+
+func getWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
+
+func updateWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
+
+func testWorkflowWebHookConfig(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
