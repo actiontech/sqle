@@ -1169,12 +1169,12 @@ func UpdatePersonaliseConfig(c echo.Context) error {
 }
 
 type WebHookConfigV1 struct {
-	Enable               bool   `json:"enable"`
-	MaxRetryTimes        int    `json:"max_retry_times"`
-	RetryIntervalSeconds int    `json:"retry_interval_seconds"`
-	AppID                string `json:"app_id"`
-	AppSecret            string `json:"app_secret"`
-	URL                  string `json:"url"`
+	Enable               *bool   `json:"enable" description:"是否启用"`
+	MaxRetryTimes        *int    `json:"max_retry_times" description:"最大重试次数"`
+	RetryIntervalSeconds *int    `json:"retry_interval_seconds" description:"请求重试间隔"`
+	AppID                *string `json:"app_id" description:"推送方标识"`
+	AppSecret            *string `json:"app_secret" description:"推送方标识"`
+	URL                  *string `json:"url" description:"回调API URL"`
 }
 
 // UpdateWorkflowWebHookConfig
