@@ -1207,8 +1207,13 @@ func GetWorkflowWebHookConfig(c echo.Context) error {
 	return getWorkflowWebHookConfig(c)
 }
 
+type TestWorkflowWebHookConfigResDataV1 struct {
+	SendErrorMessage string `json:"send_error_message,omitempty"`
+}
+
 type TestWorkflowWebHookConfigResV1 struct {
 	controller.BaseRes
+	Data TestWorkflowWebHookConfigResDataV1 `json:"data"`
 }
 
 // TestWorkflowWebHookConfig
