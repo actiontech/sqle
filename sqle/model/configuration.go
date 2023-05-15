@@ -506,7 +506,7 @@ func (i *WebHookConfig) AfterFind() error {
 }
 
 func (i *WebHookConfig) encryptPassword() error {
-	if i == nil || len(i.AppSecret) == 0 || len(i.EncryptedAppSecret) != 0 {
+	if i == nil || len(i.AppSecret) == 0 {
 		return nil
 	}
 	data, err := utils.AesEncrypt(i.AppSecret)
@@ -518,7 +518,7 @@ func (i *WebHookConfig) encryptPassword() error {
 }
 
 func (i *WebHookConfig) decryptPassword() error {
-	if i == nil || len(i.EncryptedAppSecret) == 0 || len(i.AppSecret) != 0 {
+	if i == nil || len(i.EncryptedAppSecret) == 0 {
 		return nil
 	}
 	data, err := utils.AesDecrypt(i.EncryptedAppSecret)
