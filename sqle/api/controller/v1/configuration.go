@@ -1204,7 +1204,22 @@ type GetWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook [get]
 func GetWorkflowWebHookConfig(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	s := model.GetStorage()
+	cfg, _, err := s.GetWorkflowWebHookConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetWorkflowWebHookConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: WebHookConfigV1{
+			Enable:               &cfg.Enable,
+			MaxRetryTimes:        &cfg.MaxRetryTimes,
+			RetryIntervalSeconds: &cfg.RetryIntervalSeconds,
+			AppID:                &cfg.AppID,
+			AppSecret:            &cfg.AppSecret,
+			URL:                  &cfg.URL,
+		},
+	})
 }
 
 type TestWorkflowWebHookConfigResDataV1 struct {
