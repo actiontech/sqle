@@ -1236,7 +1236,7 @@ type GetWorkflowWebHookConfigResV1 struct {
 // @Summary 获取全局工单 WebHook 配置
 // @Description get workflow webhook config
 // @Id getGlobalWorkflowWebHookConfig
-// @Tags configurations
+// @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook [get]
@@ -1272,7 +1272,7 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Summary 测试全局工单 WebHook 配置
 // @Description test workflow webhook config
 // @Id testGlobalWorkflowWebHookConfig
-// @Tags configurations
+// @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook/test [post]

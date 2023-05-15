@@ -4792,7 +4792,7 @@ paths:
       - ApiKeyAuth: []
       summary: 获取全局工单 WebHook 配置
       tags:
-      - configurations
+      - configuration
     patch:
       description: update webhook config
       operationId: updateGlobalWebHookConfig
@@ -4826,7 +4826,7 @@ paths:
       - ApiKeyAuth: []
       summary: 测试全局工单 WebHook 配置
       tags:
-      - configurations
+      - configuration
   /v1/configurations/wechat:
     get:
       description: get WeChat configuration
