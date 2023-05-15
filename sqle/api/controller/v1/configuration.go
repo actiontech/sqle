@@ -1187,7 +1187,44 @@ type WebHookConfigV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/configurations/webhook [patch]
 func UpdateWorkflowWebHookConfig(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	req := new(WebHookConfigV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	cfg, _, err := s.GetWorkflowWebHookConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.Enable != nil {
+		cfg.Enable = *req.Enable
+	}
+	if req.MaxRetryTimes != nil {
+		if *req.MaxRetryTimes < 0 || *req.MaxRetryTimes > 5 {
+			err = errors.NewDataInvalidErr(
+				"ouf of range[0-5] for max_retry_times[%v]", *req.MaxRetryTimes)
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		cfg.MaxRetryTimes = *req.MaxRetryTimes
+	}
+	if req.RetryIntervalSeconds != nil {
+		if *req.RetryIntervalSeconds < 1 || *req.RetryIntervalSeconds > 5 {
+			err = errors.NewDataInvalidErr(
+				"out of range[1-5] for retry_interval_seconds[%v]", *req.RetryIntervalSeconds)
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		cfg.RetryIntervalSeconds = *req.RetryIntervalSeconds
+	}
+	if req.AppID != nil {
+		cfg.AppID = *req.AppID
+	}
+	if req.AppSecret != nil {
+		cfg.AppSecret = *req.AppSecret
+	}
+	if req.URL != nil {
+		cfg.URL = *req.URL
+	}
+	return controller.JSONBaseErrorReq(c, s.Save(cfg))
 }
 
 type GetWorkflowWebHookConfigResV1 struct {
