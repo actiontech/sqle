@@ -147,6 +147,7 @@ var autoMigrateList = []interface{}{
 	&OperationRecord{},
 	&PersonaliseConfig{},
 	&LogoConfig{},
+	&WebHookConfig{},
 }
 
 func (s *Storage) AutoMigrate() error {
