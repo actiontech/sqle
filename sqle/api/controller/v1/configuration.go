@@ -1187,7 +1187,7 @@ type WebHookConfigV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/configurations/webhook [patch]
 func UpdateWorkflowWebHookConfig(c echo.Context) error {
-	return updateWorkflowWebHookConfig(c)
+	return controller.JSONNewNotImplementedErr(c)
 }
 
 type GetWorkflowWebHookConfigResV1 struct {
@@ -1204,7 +1204,7 @@ type GetWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook [get]
 func GetWorkflowWebHookConfig(c echo.Context) error {
-	return getWorkflowWebHookConfig(c)
+	return controller.JSONNewNotImplementedErr(c)
 }
 
 type TestWorkflowWebHookConfigResDataV1 struct {
@@ -1225,5 +1225,5 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook/test [post]
 func TestWorkflowWebHookConfig(c echo.Context) error {
-	return testWorkflowWebHookConfig(c)
+	return controller.JSONNewNotImplementedErr(c)
 }
