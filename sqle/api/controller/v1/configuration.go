@@ -1172,8 +1172,7 @@ type WebHookConfigV1 struct {
 	Enable               *bool   `json:"enable" description:"是否启用"`
 	MaxRetryTimes        *int    `json:"max_retry_times" description:"最大重试次数"`
 	RetryIntervalSeconds *int    `json:"retry_interval_seconds" description:"请求重试间隔"`
-	AppID                *string `json:"app_id" description:"推送方标识"`
-	AppSecret            *string `json:"app_secret" description:"推送方标识"`
+	Token                *string `json:"token" description:"token 令牌"`
 	URL                  *string `json:"url" description:"回调API URL"`
 }
 
@@ -1215,11 +1214,8 @@ func UpdateWorkflowWebHookConfig(c echo.Context) error {
 		}
 		cfg.RetryIntervalSeconds = *req.RetryIntervalSeconds
 	}
-	if req.AppID != nil {
-		cfg.AppID = *req.AppID
-	}
-	if req.AppSecret != nil {
-		cfg.AppSecret = *req.AppSecret
+	if req.Token != nil {
+		cfg.Token = *req.Token
 	}
 	if req.URL != nil {
 		cfg.URL = *req.URL
@@ -1252,8 +1248,7 @@ func GetWorkflowWebHookConfig(c echo.Context) error {
 			Enable:               &cfg.Enable,
 			MaxRetryTimes:        &cfg.MaxRetryTimes,
 			RetryIntervalSeconds: &cfg.RetryIntervalSeconds,
-			AppID:                &cfg.AppID,
-			AppSecret:            &cfg.AppSecret,
+			Token:                &cfg.Token,
 			URL:                  &cfg.URL,
 		},
 	})
