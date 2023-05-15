@@ -1187,7 +1187,44 @@ type WebHookConfigV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/configurations/webhook [patch]
 func UpdateWorkflowWebHookConfig(c echo.Context) error {
-	return updateWorkflowWebHookConfig(c)
+	req := new(WebHookConfigV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	cfg, _, err := s.GetWorkflowWebHookConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.Enable != nil {
+		cfg.Enable = *req.Enable
+	}
+	if req.MaxRetryTimes != nil {
+		if *req.MaxRetryTimes < 0 || *req.MaxRetryTimes > 5 {
+			err = errors.NewDataInvalidErr(
+				"ouf of range[0-5] for max_retry_times[%v]", *req.MaxRetryTimes)
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		cfg.MaxRetryTimes = *req.MaxRetryTimes
+	}
+	if req.RetryIntervalSeconds != nil {
+		if *req.RetryIntervalSeconds < 1 || *req.RetryIntervalSeconds > 5 {
+			err = errors.NewDataInvalidErr(
+				"out of range[1-5] for retry_interval_seconds[%v]", *req.RetryIntervalSeconds)
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		cfg.RetryIntervalSeconds = *req.RetryIntervalSeconds
+	}
+	if req.AppID != nil {
+		cfg.AppID = *req.AppID
+	}
+	if req.AppSecret != nil {
+		cfg.AppSecret = *req.AppSecret
+	}
+	if req.URL != nil {
+		cfg.URL = *req.URL
+	}
+	return controller.JSONBaseErrorReq(c, s.Save(cfg))
 }
 
 type GetWorkflowWebHookConfigResV1 struct {
@@ -1204,7 +1241,22 @@ type GetWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook [get]
 func GetWorkflowWebHookConfig(c echo.Context) error {
-	return getWorkflowWebHookConfig(c)
+	s := model.GetStorage()
+	cfg, _, err := s.GetWorkflowWebHookConfig()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetWorkflowWebHookConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: WebHookConfigV1{
+			Enable:               &cfg.Enable,
+			MaxRetryTimes:        &cfg.MaxRetryTimes,
+			RetryIntervalSeconds: &cfg.RetryIntervalSeconds,
+			AppID:                &cfg.AppID,
+			AppSecret:            &cfg.AppSecret,
+			URL:                  &cfg.URL,
+		},
+	})
 }
 
 type TestWorkflowWebHookConfigResDataV1 struct {
@@ -1225,5 +1277,5 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook/test [post]
 func TestWorkflowWebHookConfig(c echo.Context) error {
-	return testWorkflowWebHookConfig(c)
+	return controller.JSONNewNotImplementedErr(c)
 }
