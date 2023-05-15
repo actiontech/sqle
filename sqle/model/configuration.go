@@ -477,3 +477,63 @@ type LogoConfig struct {
 func (i *LogoConfig) TableName() string {
 	return fmt.Sprintf("%v_logo", globalConfigurationTablePrefix)
 }
+
+type WebHookConfig struct {
+	Model
+	Enable               bool   `json:"enable" gorm:"default:true;not null"`
+	MaxRetryTimes        int    `json:"max_retry_times" gorm:"not null"`
+	RetryIntervalSeconds int    `json:"retry_interval_seconds" gorm:"not null"`
+	AppID                string `json:"app_id" gorm:"not null"`
+	AppSecret            string `json:"-" gorm:"-"`
+	EncryptedAppSecret   string `json:"encrypted_app_secret" gorm:"not null"`
+	URL                  string `json:"url" gorm:"not null"`
+}
+
+func (i *WebHookConfig) TableName() string {
+	return fmt.Sprintf("%v_webhook", globalConfigurationTablePrefix)
+}
+
+func (i *WebHookConfig) BeforeSave() error {
+	return i.encryptPassword()
+}
+
+func (i *WebHookConfig) AfterFind() error {
+	err := i.decryptPassword()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt app secret for web configuration failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *WebHookConfig) encryptPassword() error {
+	if i == nil || len(i.AppSecret) == 0 || len(i.EncryptedAppSecret) != 0 {
+		return nil
+	}
+	data, err := utils.AesEncrypt(i.AppSecret)
+	if err != nil {
+		return err
+	}
+	i.EncryptedAppSecret = data
+	return nil
+}
+
+func (i *WebHookConfig) decryptPassword() error {
+	if i == nil || len(i.EncryptedAppSecret) == 0 || len(i.AppSecret) != 0 {
+		return nil
+	}
+	data, err := utils.AesDecrypt(i.EncryptedAppSecret)
+	if err != nil {
+		return err
+	}
+	i.AppSecret = data
+	return nil
+}
+
+func (s *Storage) GetWorkflowWebHookConfig() (*WebHookConfig, bool, error) {
+	cfg := &WebHookConfig{}
+	err := s.db.Last(&cfg).Error
+	if err == gorm.ErrRecordNotFound {
+		return cfg, false, nil
+	}
+	return cfg, true, errors.ConnectStorageErrWrapper(err)
+}
