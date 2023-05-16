@@ -13395,12 +13395,6 @@ var doc = `{
         "v1.WebHookConfigV1": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_secret": {
-                    "type": "string"
-                },
                 "enable": {
                     "type": "boolean"
                 },
@@ -13409,6 +13403,9 @@ var doc = `{
                 },
                 "retry_interval_seconds": {
                     "type": "integer"
+                },
+                "token": {
+                    "type": "string"
                 },
                 "url": {
                     "type": "string"
