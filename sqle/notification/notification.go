@@ -10,6 +10,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 )
 
 type Notification interface {
@@ -46,6 +47,22 @@ const (
 	WorkflowNotifyTypeExecuteSuccess
 	WorkflowNotifyTypeExecuteFail
 )
+
+func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
+	switch wt {
+	case WorkflowNotifyTypeCreate:
+		return "create"
+	case WorkflowNotifyTypeApprove:
+		return "approve"
+	case WorkflowNotifyTypeReject:
+		return "reject"
+	case WorkflowNotifyTypeExecuteSuccess:
+		return "exec_success"
+	case WorkflowNotifyTypeExecuteFail:
+		return "exec_failed"
+	}
+	return "unknown"
+}
 
 type WorkflowNotification struct {
 	notifyType WorkflowNotifyType
@@ -208,9 +225,19 @@ func (w *WorkflowNotification) notifyUser() []*model.User {
 	}
 }
 
-// TODO: impl
 func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
-	// do something
+	cfg := webhook.WorkflowCfg
+	if cfg == nil {
+		log.NewEntry().Error("workflow webhook failed: config missing")
+	}
+	if !cfg.Enable {
+		return
+	}
+	err := workflowSendRequest("workflow", getWorkflowNotifyTypeAction(wt), workflow.Project.Name, workflow.
+		WorkflowId, workflow.Subject, workflow.Record.Status)
+	if err != nil {
+		log.NewEntry().Error("workflow webhook failed: %v", err)
+	}
 }
 
 func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyType) {
