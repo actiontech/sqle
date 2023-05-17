@@ -12,10 +12,10 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/actiontech/sqle/sqle/webhook"
 
 	"github.com/facebookgo/grace/gracenet"
 )
