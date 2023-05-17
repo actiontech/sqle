@@ -83,7 +83,6 @@ func RetryDo(t *testing.T, expectedRetryCount int, isFuncResErr bool) (doneErr e
 				return nil
 			case <-tick:
 				return errNotDone
-			default:
 			}
 		}
 	}
