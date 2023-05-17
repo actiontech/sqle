@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -69,7 +70,19 @@ func TestWorkflowConfig() (err error) {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", workflowCfg.token))
 	}
 
-	_, err = http.DefaultClient.Do(req) // test request no need response
+	resp, err := http.DefaultClient.Do(req) // test request no need response
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-	return err
+	if resp.StatusCode == http.StatusOK {
+		return nil
+	}
+
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+	return fmt.Errorf("test request response: %s", respBytes)
 }
