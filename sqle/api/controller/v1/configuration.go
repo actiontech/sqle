@@ -15,7 +15,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
-	"github.com/actiontech/sqle/sqle/webhook"
 
 	"github.com/labstack/echo/v4"
 )
@@ -1279,7 +1278,7 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Router /v1/configurations/webhook/test [post]
 func TestWorkflowWebHookConfig(c echo.Context) error {
 	data := &TestWorkflowWebHookConfigResDataV1{}
-	err := webhook.TestWorkflowConfig()
+	err := notification.TestWorkflowConfig()
 	if err != nil {
 		data.SendErrorMessage = err.Error()
 	}

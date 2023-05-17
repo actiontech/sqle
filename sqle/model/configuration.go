@@ -8,8 +8,8 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/actiontech/sqle/sqle/webhook"
 
 	"github.com/jinzhu/gorm"
 )

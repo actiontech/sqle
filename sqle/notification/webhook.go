@@ -1,4 +1,4 @@
-package webhook
+package notification
 
 import (
 	"bytes"
@@ -7,25 +7,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 )
 
-const (
-	workflow EventType = "workflow"
-
-	create ActionType = "create" // 创建工单
-)
-
-var workflowCfg *WebHookConfig = &WebHookConfig{}
-
-func UpdateWorkflowConfig(enable bool,
-	maxRetryTimes, retryIntervalSeconds int, url string, token string) {
-
-	workflowCfg.enable = enable
-	workflowCfg.maxRetryTimes = maxRetryTimes
-	workflowCfg.retryIntervalSeconds = retryIntervalSeconds
-	workflowCfg.url = url
-	workflowCfg.token = token
-
+type httpRequestBody struct {
+	Event     string           `json:"event"`
+	Action    string           `json:"action"`
+	Timestamp string           `json:"timestamp"` // time.RFC3339
+	Payload   *httpBodyPayload `json:"payload"`
 }
 
 type workflowPayload struct {
@@ -35,18 +25,25 @@ type workflowPayload struct {
 	WorkflowStatus  string `json:"workflow_status"`
 }
 
+type httpBodyPayload struct {
+	Workflow *workflowPayload `json:"workflow"`
+}
+
 func TestWorkflowConfig() (err error) {
-	if workflowCfg == nil {
+
+	cfg := webhook.WorkflowCfg
+
+	if cfg == nil {
 		return fmt.Errorf("workflow webhook config missing")
 	}
 
-	if workflowCfg.url == "" {
+	if cfg.URL == "" {
 		return fmt.Errorf("url is missing, please check webhook config")
 	}
 
 	testReqBody := &httpRequestBody{
-		Event:     workflow,
-		Action:    create,
+		Event:     "workflow",
+		Action:    "create",
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &httpBodyPayload{
 			Workflow: &workflowPayload{
@@ -62,12 +59,12 @@ func TestWorkflowConfig() (err error) {
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, workflowCfg.url, bytes.NewBuffer(b))
+	req, err := http.NewRequest(http.MethodPost, cfg.URL, bytes.NewBuffer(b))
 	if err != nil {
 		return
 	}
-	if workflowCfg.token != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", workflowCfg.token))
+	if cfg.Token != "" {
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
 	}
 
 	resp, err := http.DefaultClient.Do(req) // test request no need response
