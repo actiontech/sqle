@@ -23,7 +23,7 @@ func newCounter(expectedRetryCount int) *counter {
 }
 
 var (
-	notDoneErr = errors.New("NOT DONE!")
+	errNotDone = errors.New("NOT DONE!")
 )
 
 func TestRetryMultipleCases(t *testing.T) {
@@ -36,9 +36,9 @@ func TestRetryMultipleCases(t *testing.T) {
 		{1, false, nil},
 		{2, false, nil},
 		{3, false, nil},
-		{4, true, notDoneErr},
-		{5, true, notDoneErr},
-		{6, true, notDoneErr},
+		{4, true, errNotDone},
+		{5, true, errNotDone},
+		{6, true, errNotDone},
 	}
 
 	for idx := range testCases {
@@ -82,7 +82,7 @@ func RetryDo(t *testing.T, expectedRetryCount int, isFuncResErr bool) (doneErr e
 			case <-doneChan:
 				return nil
 			case <-tick:
-				return notDoneErr
+				return errNotDone
 			default:
 			}
 		}
