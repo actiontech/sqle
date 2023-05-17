@@ -26,7 +26,7 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 			if err := retryableFunc(); err != nil {
 				return err
 			}
-			utils.TryCloseChan(doneChan)
+			utils.TryClose(doneChan)
 			return nil
 		}
 	}
@@ -38,7 +38,7 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 	for idx < cfg.attempts {
 		err := retryableFunc()
 		if err == nil {
-			utils.TryCloseChan(doneChan)
+			utils.TryClose(doneChan)
 			return nil
 		}
 
@@ -48,7 +48,7 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 	}
 
 	if len(errList) == 0 {
-		utils.TryCloseChan(doneChan)
+		utils.TryClose(doneChan)
 		return nil
 	}
 

@@ -231,7 +231,7 @@ func (l LowerCaseMap) Delete(key string) {
 	delete(l, strings.ToLower(key))
 }
 
-func TryCloseChan(ch chan<- struct{}) {
+func TryClose(ch chan<- struct{}) {
 	if ch != nil {
 		close(ch)
 	}
