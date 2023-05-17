@@ -14,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	"github.com/actiontech/sqle/sqle/webhook"
 
 	"github.com/labstack/echo/v4"
 )
@@ -1272,5 +1273,13 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook/test [post]
 func TestWorkflowWebHookConfig(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	data := &TestWorkflowWebHookConfigResDataV1{}
+	err := webhook.TestWorkflowConfig()
+	if err != nil {
+		data.SendErrorMessage = err.Error()
+	}
+	return c.JSON(http.StatusOK, &TestWorkflowWebHookConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    *data,
+	})
 }
