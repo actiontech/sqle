@@ -42,10 +42,6 @@ func workflowSendRequest(event, action,
 		return fmt.Errorf("workflow webhook config missing")
 	}
 
-	if !cfg.Enable {
-		return nil
-	}
-
 	if cfg.URL == "" {
 		return fmt.Errorf("url is missing, please check webhook config")
 	}
