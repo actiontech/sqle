@@ -208,19 +208,12 @@ func (w *WorkflowNotification) notifyUser() []*model.User {
 	}
 }
 
-func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		log.NewEntry().Errorf("notify workflow error, %v", err)
-	}
-	if !exist {
-		log.NewEntry().Error("notify workflow error, workflow not exits")
-	}
-	sqleUrl, err := s.GetSqleUrl()
-	if err != nil {
-		log.NewEntry().Errorf("get sqle url error, %v", err)
-	}
+// TODO: impl
+func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
+	// do something
+}
+
+func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyType) {
 	config := WorkflowNotifyConfig{}
 	if len(sqleUrl) > 0 {
 		config.SQLEUrl = &sqleUrl
@@ -231,10 +224,31 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if len(users) == 0 {
 		return
 	}
-	err = Notify(wn, users)
+	err := Notify(wn, users)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
+}
+
+func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		log.NewEntry().Errorf("notify workflow error, %v", err)
+		return
+	}
+	if !exist {
+		log.NewEntry().Error("notify workflow error, workflow not exits")
+		return
+	}
+	go func() { notifyWorkflowWebhook(workflow, wt) }()
+
+	sqleUrl, err := s.GetSqleUrl()
+	if err != nil {
+		log.NewEntry().Errorf("get sqle url error, %v", err)
+		return
+	}
+	notifyWorkflow(sqleUrl, workflow, wt)
 }
 
 type AuditPlanNotification struct {

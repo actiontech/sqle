@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -99,6 +100,16 @@ func Run(config *config.Config) error {
 		defer node.Leave()
 	} else {
 		node = &cluster.NoClusterNode{}
+	}
+
+	// webhook
+	{
+		cfg, _, err := s.GetWorkflowWebHookConfig()
+		if err != nil {
+			return fmt.Errorf("get workflow webhook config failed: %v", err)
+		}
+		webhook.UpdateWorkflowConfig(cfg.Enable,
+			cfg.MaxRetryTimes, cfg.RetryIntervalSeconds, cfg.URL, cfg.Token)
 	}
 
 	jm := server.NewServerJobManger(node)
