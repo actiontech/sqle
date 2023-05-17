@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -1219,6 +1220,10 @@ func UpdateWorkflowWebHookConfig(c echo.Context) error {
 		cfg.Token = *req.Token
 	}
 	if req.URL != nil {
+		if !strings.HasPrefix(*req.URL, "http://") {
+			err = errors.NewDataInvalidErr("url must start with 'http://'")
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		cfg.URL = *req.URL
 	}
 	return controller.JSONBaseErrorReq(c, s.Save(cfg))
