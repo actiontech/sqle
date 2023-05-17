@@ -236,7 +236,7 @@ func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
 	err := workflowSendRequest("workflow", getWorkflowNotifyTypeAction(wt), workflow.Project.Name, workflow.
 		WorkflowId, workflow.Subject, workflow.Record.Status)
 	if err != nil {
-		log.NewEntry().Error("workflow webhook failed: %v", err)
+		log.NewEntry().Errorf("workflow webhook failed: %v", err)
 	}
 }
 
