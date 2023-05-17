@@ -229,6 +229,7 @@ func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
 	cfg := webhook.WorkflowCfg
 	if cfg == nil {
 		log.NewEntry().Error("workflow webhook failed: config missing")
+		return
 	}
 	if !cfg.Enable {
 		return
