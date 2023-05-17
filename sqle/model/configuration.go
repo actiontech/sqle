@@ -9,6 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/webhook"
 
 	"github.com/jinzhu/gorm"
 )
@@ -496,6 +497,12 @@ func (i *WebHookConfig) BeforeSave() error {
 	return i.encryptPassword()
 }
 
+func (i *WebHookConfig) AfterSave() error {
+	webhook.UpdateWorkflowConfig(i.Enable, i.MaxRetryTimes,
+		i.RetryIntervalSeconds, i.URL, i.Token)
+	return nil
+}
+
 func (i *WebHookConfig) AfterFind() error {
 	err := i.decryptPassword()
 	if err != nil {
@@ -531,6 +538,7 @@ func (i *WebHookConfig) decryptPassword() error {
 func (s *Storage) GetWorkflowWebHookConfig() (*WebHookConfig, bool, error) {
 	cfg := &WebHookConfig{}
 	err := s.db.Last(&cfg).Error
+
 	if err == gorm.ErrRecordNotFound {
 		return cfg, false, nil
 	}
