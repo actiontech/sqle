@@ -12,8 +12,6 @@ const (
 	workflow EventType = "workflow"
 
 	create ActionType = "create" // 创建工单
-	audit  ActionType = "audit"  // 审核工单
-	exec   ActionType = "exec"   // 上线工单
 )
 
 var workflowCfg *WebHookConfig = &WebHookConfig{}
