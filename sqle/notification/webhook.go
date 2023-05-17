@@ -73,7 +73,7 @@ func workflowSendRequest(event, action,
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
 	}
 
-	doneChan := make(chan struct{}, 0)
+	doneChan := make(chan struct{})
 	return retry.Do(func() error {
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
