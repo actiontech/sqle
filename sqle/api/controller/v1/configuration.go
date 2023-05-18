@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -1172,8 +1173,7 @@ type WebHookConfigV1 struct {
 	Enable               *bool   `json:"enable" description:"是否启用"`
 	MaxRetryTimes        *int    `json:"max_retry_times" description:"最大重试次数"`
 	RetryIntervalSeconds *int    `json:"retry_interval_seconds" description:"请求重试间隔"`
-	AppID                *string `json:"app_id" description:"推送方标识"`
-	AppSecret            *string `json:"app_secret" description:"推送方标识"`
+	Token                *string `json:"token" description:"token 令牌"`
 	URL                  *string `json:"url" description:"回调API URL"`
 }
 
@@ -1215,13 +1215,14 @@ func UpdateWorkflowWebHookConfig(c echo.Context) error {
 		}
 		cfg.RetryIntervalSeconds = *req.RetryIntervalSeconds
 	}
-	if req.AppID != nil {
-		cfg.AppID = *req.AppID
-	}
-	if req.AppSecret != nil {
-		cfg.AppSecret = *req.AppSecret
+	if req.Token != nil {
+		cfg.Token = *req.Token
 	}
 	if req.URL != nil {
+		if !strings.HasPrefix(*req.URL, "http://") {
+			err = errors.NewDataInvalidErr("url must start with 'http://'")
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		cfg.URL = *req.URL
 	}
 	return controller.JSONBaseErrorReq(c, s.Save(cfg))
@@ -1236,7 +1237,7 @@ type GetWorkflowWebHookConfigResV1 struct {
 // @Summary 获取全局工单 WebHook 配置
 // @Description get workflow webhook config
 // @Id getGlobalWorkflowWebHookConfig
-// @Tags configurations
+// @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook [get]
@@ -1252,8 +1253,7 @@ func GetWorkflowWebHookConfig(c echo.Context) error {
 			Enable:               &cfg.Enable,
 			MaxRetryTimes:        &cfg.MaxRetryTimes,
 			RetryIntervalSeconds: &cfg.RetryIntervalSeconds,
-			AppID:                &cfg.AppID,
-			AppSecret:            &cfg.AppSecret,
+			Token:                &cfg.Token,
 			URL:                  &cfg.URL,
 		},
 	})
@@ -1272,10 +1272,18 @@ type TestWorkflowWebHookConfigResV1 struct {
 // @Summary 测试全局工单 WebHook 配置
 // @Description test workflow webhook config
 // @Id testGlobalWorkflowWebHookConfig
-// @Tags configurations
+// @Tags configuration
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.TestWorkflowWebHookConfigResV1
 // @Router /v1/configurations/webhook/test [post]
 func TestWorkflowWebHookConfig(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	data := &TestWorkflowWebHookConfigResDataV1{}
+	err := notification.TestWorkflowConfig()
+	if err != nil {
+		data.SendErrorMessage = err.Error()
+	}
+	return c.JSON(http.StatusOK, &TestWorkflowWebHookConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    *data,
+	})
 }

@@ -10,6 +10,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 )
 
 type Notification interface {
@@ -46,6 +47,22 @@ const (
 	WorkflowNotifyTypeExecuteSuccess
 	WorkflowNotifyTypeExecuteFail
 )
+
+func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
+	switch wt {
+	case WorkflowNotifyTypeCreate:
+		return "create"
+	case WorkflowNotifyTypeApprove:
+		return "approve"
+	case WorkflowNotifyTypeReject:
+		return "reject"
+	case WorkflowNotifyTypeExecuteSuccess:
+		return "exec_success"
+	case WorkflowNotifyTypeExecuteFail:
+		return "exec_failed"
+	}
+	return "unknown"
+}
 
 type WorkflowNotification struct {
 	notifyType WorkflowNotifyType
@@ -208,19 +225,23 @@ func (w *WorkflowNotification) notifyUser() []*model.User {
 	}
 }
 
-func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
-	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
+	cfg := webhook.WorkflowCfg
+	if cfg == nil {
+		log.NewEntry().Error("workflow webhook failed: config missing")
+		return
+	}
+	if !cfg.Enable {
+		return
+	}
+	err := workflowSendRequest("workflow", getWorkflowNotifyTypeAction(wt), workflow.Project.Name, workflow.
+		WorkflowId, workflow.Subject, workflow.Record.Status)
 	if err != nil {
-		log.NewEntry().Errorf("notify workflow error, %v", err)
+		log.NewEntry().Errorf("workflow webhook failed: %v", err)
 	}
-	if !exist {
-		log.NewEntry().Error("notify workflow error, workflow not exits")
-	}
-	sqleUrl, err := s.GetSqleUrl()
-	if err != nil {
-		log.NewEntry().Errorf("get sqle url error, %v", err)
-	}
+}
+
+func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyType) {
 	config := WorkflowNotifyConfig{}
 	if len(sqleUrl) > 0 {
 		config.SQLEUrl = &sqleUrl
@@ -231,10 +252,31 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 	if len(users) == 0 {
 		return
 	}
-	err = Notify(wn, users)
+	err := Notify(wn, users)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
+}
+
+func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		log.NewEntry().Errorf("notify workflow error, %v", err)
+		return
+	}
+	if !exist {
+		log.NewEntry().Error("notify workflow error, workflow not exits")
+		return
+	}
+	go func() { notifyWorkflowWebhook(workflow, wt) }()
+
+	sqleUrl, err := s.GetSqleUrl()
+	if err != nil {
+		log.NewEntry().Errorf("get sqle url error, %v", err)
+		return
+	}
+	notifyWorkflow(sqleUrl, workflow, wt)
 }
 
 type AuditPlanNotification struct {

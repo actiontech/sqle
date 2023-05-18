@@ -801,7 +801,7 @@ var doc = `{
                 ],
                 "description": "get workflow webhook config",
                 "tags": [
-                    "configurations"
+                    "configuration"
                 ],
                 "summary": "获取全局工单 WebHook 配置",
                 "operationId": "getGlobalWorkflowWebHookConfig",
@@ -856,7 +856,7 @@ var doc = `{
                 ],
                 "description": "test workflow webhook config",
                 "tags": [
-                    "configurations"
+                    "configuration"
                 ],
                 "summary": "测试全局工单 WebHook 配置",
                 "operationId": "testGlobalWorkflowWebHookConfig",
@@ -13395,12 +13395,6 @@ var doc = `{
         "v1.WebHookConfigV1": {
             "type": "object",
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "app_secret": {
-                    "type": "string"
-                },
                 "enable": {
                     "type": "boolean"
                 },
@@ -13409,6 +13403,9 @@ var doc = `{
                 },
                 "retry_interval_seconds": {
                     "type": "integer"
+                },
+                "token": {
+                    "type": "string"
                 },
                 "url": {
                     "type": "string"

@@ -8,6 +8,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/jinzhu/gorm"
@@ -483,9 +484,8 @@ type WebHookConfig struct {
 	Enable               bool   `json:"enable" gorm:"default:true;not null"`
 	MaxRetryTimes        int    `json:"max_retry_times" gorm:"not null"`
 	RetryIntervalSeconds int    `json:"retry_interval_seconds" gorm:"not null"`
-	AppID                string `json:"app_id" gorm:"not null"`
-	AppSecret            string `json:"-" gorm:"-"`
-	EncryptedAppSecret   string `json:"encrypted_app_secret" gorm:"not null"`
+	Token                string `json:"-" gorm:"-"`
+	EncryptedToken       string `json:"encrypted_token" gorm:"not null"`
 	URL                  string `json:"url" gorm:"not null"`
 }
 
@@ -497,6 +497,12 @@ func (i *WebHookConfig) BeforeSave() error {
 	return i.encryptPassword()
 }
 
+func (i *WebHookConfig) AfterSave() error {
+	webhook.UpdateWorkflowConfig(i.Enable, i.MaxRetryTimes,
+		i.RetryIntervalSeconds, i.URL, i.Token)
+	return nil
+}
+
 func (i *WebHookConfig) AfterFind() error {
 	err := i.decryptPassword()
 	if err != nil {
@@ -506,32 +512,37 @@ func (i *WebHookConfig) AfterFind() error {
 }
 
 func (i *WebHookConfig) encryptPassword() error {
-	if i == nil || len(i.AppSecret) == 0 || len(i.EncryptedAppSecret) != 0 {
+	if i == nil {
 		return nil
 	}
-	data, err := utils.AesEncrypt(i.AppSecret)
+	if i.Token == "" {
+		i.EncryptedToken = ""
+		return nil
+	}
+	data, err := utils.AesEncrypt(i.Token)
 	if err != nil {
 		return err
 	}
-	i.EncryptedAppSecret = data
+	i.EncryptedToken = data
 	return nil
 }
 
 func (i *WebHookConfig) decryptPassword() error {
-	if i == nil || len(i.EncryptedAppSecret) == 0 || len(i.AppSecret) != 0 {
+	if i == nil || len(i.EncryptedToken) == 0 {
 		return nil
 	}
-	data, err := utils.AesDecrypt(i.EncryptedAppSecret)
+	data, err := utils.AesDecrypt(i.EncryptedToken)
 	if err != nil {
 		return err
 	}
-	i.AppSecret = data
+	i.Token = data
 	return nil
 }
 
 func (s *Storage) GetWorkflowWebHookConfig() (*WebHookConfig, bool, error) {
 	cfg := &WebHookConfig{}
 	err := s.db.Last(&cfg).Error
+
 	if err == gorm.ErrRecordNotFound {
 		return cfg, false, nil
 	}
