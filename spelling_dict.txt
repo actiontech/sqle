@@ -420,3 +420,4 @@ syscat
 tabschema
 viewname
 viewschema
+retryable
