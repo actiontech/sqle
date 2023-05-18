@@ -512,7 +512,11 @@ func (i *WebHookConfig) AfterFind() error {
 }
 
 func (i *WebHookConfig) encryptPassword() error {
-	if i == nil || len(i.Token) == 0 {
+	if i == nil {
+		return nil
+	}
+	if i.Token == "" {
+		i.EncryptedToken = ""
 		return nil
 	}
 	data, err := utils.AesEncrypt(i.Token)
