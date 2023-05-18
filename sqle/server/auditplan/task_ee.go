@@ -374,6 +374,20 @@ const (
 	slowlogCollectInputTable   = 1 // TABLE: mysql.slow_log
 )
 
+func (at *SlowLogTask) FullSyncSQLs(sqls []*SQL) error {
+	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() == slowlogCollectInputTable {
+		return at.sqlCollector.FullSyncSQLs(sqls)
+	}
+	return at.baseTask.FullSyncSQLs(sqls)
+}
+
+func (at *SlowLogTask) PartialSyncSQLs(sqls []*SQL) error {
+	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() == slowlogCollectInputTable {
+		return at.sqlCollector.PartialSyncSQLs(sqls)
+	}
+	return at.baseTask.PartialSyncSQLs(sqls)
+}
+
 func (at *SlowLogTask) collectorDo() {
 
 	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() != slowlogCollectInputTable {
