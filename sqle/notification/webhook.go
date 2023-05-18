@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/notification/webhook"
+	"github.com/actiontech/sqle/sqle/utils/retry"
 )
 
-type httpRequestBody struct {
+type webHookRequestBody struct {
 	Event     string           `json:"event"`
 	Action    string           `json:"action"`
 	Timestamp string           `json:"timestamp"` // time.RFC3339
@@ -30,9 +31,13 @@ type httpBodyPayload struct {
 }
 
 func TestWorkflowConfig() (err error) {
+	return workflowSendRequest("workflow", "create",
+		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
+}
 
+func workflowSendRequest(event, action,
+	projectName, workflowID, workflowSubject, workflowStatus string) (err error) {
 	cfg := webhook.WorkflowCfg
-
 	if cfg == nil {
 		return fmt.Errorf("workflow webhook config missing")
 	}
@@ -41,20 +46,21 @@ func TestWorkflowConfig() (err error) {
 		return fmt.Errorf("url is missing, please check webhook config")
 	}
 
-	testReqBody := &httpRequestBody{
-		Event:     "workflow",
-		Action:    "create",
+	reqBody := &webHookRequestBody{
+		Event:     event,
+		Action:    action,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &httpBodyPayload{
 			Workflow: &workflowPayload{
-				ProjectName:     "test_project",
-				WorkflowID:      "1658637666259832832",
-				WorkflowSubject: "test_workflow",
-				WorkflowStatus:  "wait_for_audit",
+				ProjectName:     projectName,
+				WorkflowID:      workflowID,
+				WorkflowSubject: workflowSubject,
+				WorkflowStatus:  workflowStatus,
 			},
 		},
 	}
-	b, err := json.Marshal(testReqBody)
+
+	b, err := json.Marshal(reqBody)
 	if err != nil {
 		return err
 	}
@@ -67,19 +73,24 @@ func TestWorkflowConfig() (err error) {
 		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
 	}
 
-	resp, err := http.DefaultClient.Do(req) // test request no need response
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	doneChan := make(chan struct{})
+	return retry.Do(func() error {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	}
+		if resp.StatusCode == http.StatusOK {
+			return nil
+		}
+		respBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("response status_code(%v) body(%s)", resp.StatusCode, respBytes)
+	}, doneChan,
+		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)),
+		retry.Attempts(uint(cfg.MaxRetryTimes)))
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil
-	}
-	return fmt.Errorf("test request response: %s", respBytes)
 }
