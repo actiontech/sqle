@@ -20,7 +20,6 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 		op(cfg)
 	}
 
-	// attempts is 0
 	{
 		if cfg.attempts == 0 {
 			if err := retryableFunc(); err != nil {
@@ -32,7 +31,7 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 	}
 
 	var idx uint = 0
-	var errList errListType
+	errList := errListType{}
 
 	// cfg.attempts can not be 0.
 	for idx < cfg.attempts {
@@ -43,7 +42,7 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 		}
 
 		idx++
-		errList.AppendError(err.Error())
+		errList = errList.AppendError(err.Error())
 		time.Sleep(cfg.delay)
 	}
 
@@ -57,9 +56,9 @@ func Do(retryableFunc RetryableFunc, doneChan chan struct{}, ops ...Option) erro
 
 type errListType []string
 
-func (e *errListType) AppendError(errMsg string) {
-	if dry.StringInSlice(errMsg, *e) {
-		return
+func (e errListType) AppendError(errMsg string) errListType {
+	if dry.StringInSlice(errMsg, e) {
+		return e
 	}
-	*e = append(*e, errMsg)
+	return append(e, errMsg)
 }
