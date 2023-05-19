@@ -114,6 +114,7 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
 				Content: sql.SQLContent,
+				Schema:  sql.Schema,
 			},
 		})
 	}
@@ -132,6 +133,7 @@ func (at *baseTask) audit(task *model.Task) (*model.AuditPlanReportV2, error) {
 	for i, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
 			SQL:          executeSQL.Content,
+			Schema:       executeSQL.Schema,
 			Number:       uint(i + 1),
 			AuditResults: executeSQL.AuditResults,
 		})

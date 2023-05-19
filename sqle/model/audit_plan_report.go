@@ -25,6 +25,7 @@ type AuditPlanReportSQLV2 struct {
 	Model
 	AuditPlanReportID uint         `json:"audit_plan_report_id" gorm:"index"`
 	SQL               string       `json:"sql" gorm:"type:text;not null"`
+	Schema            string       `json:"schema" gorm:"type:varchar(512);not null;default=''"`
 	Number            uint         `json:"number"`
 	AuditResults      AuditResults `json:"audit_results" gorm:"type:json"`
 
