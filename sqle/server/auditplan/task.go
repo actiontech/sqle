@@ -1176,23 +1176,8 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
 				Content: sql.SQLContent,
+				Schema:  sql.Schema,
 			},
-		}
-		{
-			info := struct {
-				Schema string `json:"schema"`
-			}{}
-			err := json.Unmarshal(sql.Info, &info)
-			if err != nil {
-				return nil, fmt.Errorf("parse schema failed: %v", err)
-			}
-			if info.Schema != "" {
-				vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, &model.ExecuteSQL{
-					BaseSQL: model.BaseSQL{
-						Content: fmt.Sprintf("USE %s;", info.Schema),
-					},
-				})
-			}
 		}
 		task.ExecuteSQLs = append(task.ExecuteSQLs, sqlItem)
 		vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, sqlItem) // vTask is a copy of task for schema switch
@@ -1216,6 +1201,7 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 	for i, executeSQL := range task.ExecuteSQLs {
 		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
 			SQL:          executeSQL.Content,
+			Schema:       executeSQL.Schema,
 			Number:       uint(i + 1),
 			AuditResults: executeSQL.AuditResults,
 		})
@@ -1279,19 +1265,17 @@ func (at *MySQLProcesslistTask) collectorDo() {
 		return
 	}
 
-	sqls := make([]SqlFromAliCloud, len(res))
+	sqls := make([]*RawSQL, len(res))
+
 	for i := range res {
-		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String, schema: res[i]["db"].String}
+		sqls[i] = &RawSQL{
+			rawSQL: res[i]["info"].String,
+			schema: res[i]["db"].String,
+		}
 	}
 
-	sqlInfos := mergeSQLsByFingerprint(sqls)
-
-	if len(sqlInfos) > 0 {
-		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
-			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now()))
-		if err != nil {
-			at.logger.Errorf("save processlist to storage fail, error: %v", err)
-			return
-		}
+	err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, rawSQLsToModel(sqls))
+	if err != nil {
+		at.logger.Errorf("save processlist to storage failed, error: %v", err)
 	}
 }
