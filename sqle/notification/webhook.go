@@ -90,7 +90,7 @@ func workflowSendRequest(event, action,
 		}
 		return fmt.Errorf("response status_code(%v) body(%s)", resp.StatusCode, respBytes)
 	}, doneChan,
-		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)),
+		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)*time.Second),
 		retry.Attempts(uint(cfg.MaxRetryTimes)))
 
 }
