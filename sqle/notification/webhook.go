@@ -31,11 +31,11 @@ type httpBodyPayload struct {
 }
 
 func TestWorkflowConfig() (err error) {
-	return workflowSendRequest("workflow", "create",
+	return workflowSendRequest("create",
 		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
 }
 
-func workflowSendRequest(event, action,
+func workflowSendRequest(action,
 	projectName, workflowID, workflowSubject, workflowStatus string) (err error) {
 	cfg := webhook.WorkflowCfg
 	if cfg == nil {
@@ -47,7 +47,7 @@ func workflowSendRequest(event, action,
 	}
 
 	reqBody := &webHookRequestBody{
-		Event:     event,
+		Event:     "workflow",
 		Action:    action,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &httpBodyPayload{
@@ -90,7 +90,7 @@ func workflowSendRequest(event, action,
 		}
 		return fmt.Errorf("response status_code(%v) body(%s)", resp.StatusCode, respBytes)
 	}, doneChan,
-		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)),
+		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)*time.Second),
 		retry.Attempts(uint(cfg.MaxRetryTimes)))
 
 }
