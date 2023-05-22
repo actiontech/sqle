@@ -906,6 +906,7 @@ type sqlInfo struct {
 	queryTimeSeconds int
 }
 
+// NOTE: please use mergeSQLsBasedOnFingerprints fist.
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
 	sqlInfos := []sqlInfo{}
 
@@ -955,6 +956,7 @@ func (at *aliRdsMySQLTask) CreateClient(rdsPath string, accessKeyId *string, acc
 	return _result, _err
 }
 
+// NOTE: please use struct RawSQL first
 type SqlFromAliCloud struct {
 	sql                string
 	executionStartTime time.Time
