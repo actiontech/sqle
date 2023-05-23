@@ -985,3 +985,32 @@ type ExportWorkflowReqV1 struct {
 func ExportWorkflowV1(c echo.Context) error {
 	return exportWorkflowV1(c)
 }
+
+// TerminateMultipleTaskByWorkflowV1
+// @Summary 终止工单下多个上线任务
+// @Description terminate multiple task by project and workflow
+// @Tags workflow
+// @Id terminateMultipleTaskByWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param project_name path string true "project name"
+// @Success 200 {object} controller.BaseRes
+// @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
+func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}
+
+// TerminateSingleTaskByWorkflowV1
+// @Summary 终止单个上线任务
+// @Description execute one task on workflow
+// @Tags workflow
+// @Id terminateSingleTaskByWorkflowV1
+// @Security ApiKeyAuth
+// @Param workflow_id path string true "workflow id"
+// @Param project_name path string true "project name"
+// @Param task_id path string true "task id"
+// @Success 200 {object} controller.BaseRes
+// @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
+func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
+	return controller.JSONNewNotImplementedErr(c)
+}

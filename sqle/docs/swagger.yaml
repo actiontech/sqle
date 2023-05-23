@@ -9465,6 +9465,36 @@ paths:
       summary: 设置工单数据源定时上线时间（设置为空则代表取消定时时间，需要SQL审核流程都通过后才可以设置）
       tags:
       - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate:
+    post:
+      description: execute one task on workflow
+      operationId: terminateSingleTaskByWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 终止单个上线任务
+      tags:
+      - workflow
   /v2/projects/{project_name}/workflows/{workflow_id}/tasks/execute:
     post:
       description: execute tasks on workflow
@@ -9488,6 +9518,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 多数据源批量上线
+      tags:
+      - workflow
+  /v2/projects/{project_name}/workflows/{workflow_id}/tasks/terminate:
+    post:
+      description: terminate multiple task by project and workflow
+      operationId: terminateMultipleTaskByWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 终止工单下多个上线任务
       tags:
       - workflow
   /v2/projects/{project_name}/workflows/cancel:
