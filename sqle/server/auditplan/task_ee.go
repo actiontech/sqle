@@ -15,7 +15,8 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/ungerik/go-dry"
+	"github.com/actiontech/sqle/sqle/utils"
+	dry "github.com/ungerik/go-dry"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
@@ -834,6 +835,14 @@ func (at *DB2SchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map
 	return head, rows, count, nil
 }
 
+func (at *DB2SchemaMetaTask) isSchemaValid(plugin driver.Plugin) (bool, error) {
+	schemasFromInst, err := plugin.Schemas(context.Background())
+	if err != nil {
+		return false, fmt.Errorf("get schemas from db2 failed, error: %v", err)
+	}
+	return utils.StringsContains(schemasFromInst, at.ap.InstanceDatabase), nil
+}
+
 func (at *DB2SchemaMetaTask) collectorDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
@@ -865,13 +874,25 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Errorf("connect to instance fail, error: %v", err)
 		return
 	}
+	valIsCreated := false
 	defer func() {
-		_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token integer`)
-		if err != nil {
-			at.logger.Errorf("drop variable failed, error: %v", err)
+		if valIsCreated {
+			_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token`)
+			if err != nil {
+				at.logger.Errorf("drop variable failed, error: %v", err)
+			}
 		}
+
 		plugin.Close(context.Background())
 	}()
+
+	if valid, err := at.isSchemaValid(plugin); err != nil {
+		at.logger.Errorf("check schema failed: %v", err)
+		return
+	} else if !valid {
+		at.logger.Errorf("schema [%v] dosen't exist in db2 instance", at.ap.InstanceDatabase)
+		return
+	}
 
 	tables, err := at.getTablesFromSchema(context.Background(), plugin, at.ap.InstanceDatabase)
 	if err != nil {
@@ -894,11 +915,12 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Errorf("create variable failed, error: %v", err)
 		return
 	}
-
+	valIsCreated = true
 	for _, table := range tables {
-		_, err = plugin.Exec(context.Background(), fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, table))
+		sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, table)
+		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
-			at.logger.Errorf("generate ddl failed, error: %v", err)
+			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
 		result, err := plugin.Query(context.Background(), `
@@ -925,9 +947,11 @@ SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHE
 	}
 
 	for _, view := range views {
-		_, err = plugin.Exec(context.Background(), fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, view))
+		sql := fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, view)
+		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
-			at.logger.Errorf("generate ddl failed, error: %v", err)
+
+			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
 		result, err := plugin.Query(context.Background(), `
