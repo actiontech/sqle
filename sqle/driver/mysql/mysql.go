@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
@@ -212,8 +213,27 @@ func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) ([]_driver.
 	return conn.Db.Transact(queries...)
 }
 
-// TODO
-func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
+func (i *MysqlDriverImpl) KillProcess(ctx context.Context, timeoutSeconds uint) error {
+	connID := i.dbConn.Db.GetConnectionID()
+	if connID == "" {
+		return fmt.Errorf("cannot find mysql conn_id, check logs")
+	}
+
+	logEntry := log.NewEntry().WithField("mysql_driver", "kill_process")
+
+	killConn, err := executor.NewExecutor(log.NewEntry(), i.inst, i.inst.DatabaseName)
+	if err != nil {
+		return err
+	}
+
+	killSQL := fmt.Sprintf("KILL %v", connID)
+	_, err = killConn.Db.Exec(killSQL)
+	if err != nil {
+		logEntry.Errorf("exec sql[%v] to kill conn failed, error: %v", killSQL, err)
+		return err
+	}
+	logEntry.Infof("exec sqle[%v] to kill conn successfully", connID)
+
 	return nil
 }
 
