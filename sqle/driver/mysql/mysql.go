@@ -212,6 +212,11 @@ func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) ([]_driver.
 	return conn.Db.Transact(queries...)
 }
 
+// TODO
+func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
+	return nil
+}
+
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {

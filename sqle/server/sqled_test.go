@@ -53,6 +53,10 @@ func (d *mockDriver) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (d *mockDriver) KillProcess(ctx context.Context) error {
+	return nil
+}
+
 func (d *mockDriver) Exec(ctx context.Context, query string) (_driver.Result, error) {
 	return nil, nil
 }

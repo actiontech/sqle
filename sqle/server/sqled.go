@@ -286,9 +286,9 @@ func (a *action) audit() (err error) {
 	return nil
 }
 
-func (a *action) terminateExecution() error {
-	// TODO: kill process and update status
-	return nil
+// TODO: update task status
+func (a *action) terminateExecution(ctx context.Context) error {
+	return a.plugin.KillProcess(ctx)
 }
 
 func (a *action) execute() (err error) {
@@ -315,7 +315,7 @@ func (a *action) execute() (err error) {
 
 		go func() { // wait for kill signal
 			<-a.killExecutionChan
-			err = a.terminateExecution()
+			err = a.terminateExecution(context.TODO())
 			if err != nil {
 				errChan <- err
 			}
