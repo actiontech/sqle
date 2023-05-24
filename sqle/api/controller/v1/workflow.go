@@ -1021,7 +1021,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err = CheckBeforeWorkflowTerminate(c, projectName, workflow, user)
+		err = checkBeforeWorkflowTerminate(c, projectName, workflow, user)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1074,7 +1074,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := CheckBeforeWorkflowTerminate(c, projectName, workflow, user)
+		err := checkBeforeWorkflowTerminate(c, projectName, workflow, user)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1082,7 +1082,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	// check task
 	{
-		ok, err := IsTaskCanBeTerminate(s, taskIDStr)
+		ok, err := isTaskCanBeTerminate(s, taskIDStr)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1099,7 +1099,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func CheckBeforeWorkflowTerminate(c echo.Context, projectName string,
+func checkBeforeWorkflowTerminate(c echo.Context, projectName string,
 	workflow *model.Workflow, user *model.User) error {
 
 	err := CheckCurrentUserCanOperateWorkflow(c,
@@ -1124,7 +1124,7 @@ func CheckBeforeWorkflowTerminate(c echo.Context, projectName string,
 	return nil
 }
 
-func IsTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
+func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 	task, exist, err := s.GetTaskById(taskID)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
