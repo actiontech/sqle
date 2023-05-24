@@ -213,7 +213,7 @@ func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) ([]_driver.
 	return conn.Db.Transact(queries...)
 }
 
-func (i *MysqlDriverImpl) KillProcess(ctx context.Context, timeoutSeconds uint) error {
+func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	connID := i.dbConn.Db.GetConnectionID()
 	if connID == "" {
 		return fmt.Errorf("cannot find mysql conn_id, check logs")
@@ -227,14 +227,30 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context, timeoutSeconds uint) 
 	}
 
 	killSQL := fmt.Sprintf("KILL %v", connID)
-	_, err = killConn.Db.Exec(killSQL)
-	if err != nil {
-		logEntry.Errorf("exec sql[%v] to kill conn failed, error: %v", killSQL, err)
+
+	errChan := make(chan error)
+
+	go func() {
+		_, err = killConn.Db.Exec(killSQL)
+		errChan <- err
+	}()
+
+	select {
+	case <-ctx.Done():
+		err := fmt.Errorf("exec sql[%v] failed, err: %v", killSQL, ctx.Err())
+		logEntry.Error(err.Error())
+		return err
+	case err, ok := <-errChan:
+		if ok {
+			close(errChan)
+		}
+		if err != nil {
+			logEntry.Errorf("exec sql[%v] failed, err: %v", killSQL, err)
+		} else {
+			logEntry.Errorf("exec sql[%v] successfully")
+		}
 		return err
 	}
-	logEntry.Infof("exec sqle[%v] to kill conn successfully", connID)
-
-	return nil
 }
 
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
