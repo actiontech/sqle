@@ -17,6 +17,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -218,39 +219,23 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	if connID == "" {
 		return fmt.Errorf("cannot find mysql conn_id, check logs")
 	}
-
 	logEntry := log.NewEntry().WithField("mysql_driver", "kill_process")
-
-	killConn, err := executor.NewExecutor(log.NewEntry(), i.inst, i.inst.DatabaseName)
+	killConn, err := executor.NewExecutor(logEntry, i.inst, i.inst.DatabaseName)
 	if err != nil {
 		return err
 	}
-
 	killSQL := fmt.Sprintf("KILL %v", connID)
-
-	errChan := make(chan error)
-
-	go func() {
-		_, err = killConn.Db.Exec(killSQL)
-		errChan <- err
-	}()
-
-	select {
-	case <-ctx.Done():
-		err := fmt.Errorf("exec sql[%v] failed, err: %v", killSQL, ctx.Err())
-		logEntry.Error(err.Error())
-		return err
-	case err, ok := <-errChan:
-		if ok {
-			close(errChan)
-		}
-		if err != nil {
-			logEntry.Errorf("exec sql[%v] failed, err: %v", killSQL, err)
-		} else {
-			logEntry.Errorf("exec sql[%v] successfully")
-		}
+	killFunc := func() error {
+		_, err := killConn.Db.Exec(killSQL)
 		return err
 	}
+	err = utils.AsyncCallTimeout(ctx, killFunc)
+	if err != nil {
+		logEntry.Errorf("exec sql(%v) failed, err: %v", killSQL, err)
+	} else {
+		logEntry.Infof("exec sql(%v) successfully", killSQL)
+	}
+	return err
 }
 
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
