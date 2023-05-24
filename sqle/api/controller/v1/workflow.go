@@ -12,6 +12,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -1012,5 +1013,100 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
 func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+	taskIDStr := c.Param("task_id")
+	taskID, err := strconv.Atoi(taskIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+
+	var workflow *model.Workflow
+	{
+		var exist bool
+		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+		}
+	}
+
+	// check workflow permission
+	{
+		err := CheckBeforeWorkflowTerminate(c, projectName, workflow, user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// check task
+	{
+		ok, err := IsTaskCanBeTerminate(s, taskIDStr)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !ok {
+			return controller.JSONBaseErrorReq(c,
+				fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskID, workflowID))
+		}
+	}
+
+	err = server.TerminateWorkflow(workflow, map[uint]uint{uint(taskID): user.ID})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func CheckBeforeWorkflowTerminate(c echo.Context, projectName string,
+	workflow *model.Workflow, user *model.User) error {
+
+	err := CheckCurrentUserCanOperateWorkflow(c,
+		&model.Project{Name: projectName}, workflow, []uint{})
+	if err != nil {
+		return err
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusExecuting {
+		return errors.NewDataInvalidErr(
+			"workflow status is %s, termination can not be performed")
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return errors.NewDataInvalidErr("workflow current step not found")
+	}
+
+	if !workflow.IsOperationUser(user) {
+		return errors.NewAccessDeniedErr("you are not allow to operate the workflow")
+	}
+	return nil
+}
+
+func IsTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
+	task, exist, err := s.GetTaskById(taskID)
+	if err != nil {
+		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
+	}
+	if !exist {
+		return false, fmt.Errorf("task not exist. taskID=%v", taskID)
+	}
+	if task.Instance == nil {
+		return false, fmt.Errorf("task instance is nil. taskID=%v", taskID)
+	}
+	instanceRecord, err := s.GetWorkInstanceRecordByTaskId(taskID)
+	if err != nil {
+		return false, fmt.Errorf("get work instance record by task id failed. taskID=%v err=%v", taskID, err)
+	}
+	if instanceRecord.ScheduledAt != nil || instanceRecord.IsSQLExecuted {
+		return false, nil
+	}
+	return true, nil
 }
