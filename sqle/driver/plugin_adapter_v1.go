@@ -123,6 +123,10 @@ func (p *PluginImplV1) Close(ctx context.Context) {
 	p.DriverManager.Close(ctx)
 }
 
+func (p *PluginImplV1) KillProcess(ctx context.Context) error {
+	return nil
+}
+
 func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
