@@ -890,7 +890,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Errorf("check schema failed: %v", err)
 		return
 	} else if !valid {
-		at.logger.Errorf("schema [%v] dosen't exist in db2 instance", at.ap.InstanceDatabase)
+		at.logger.Errorf("schema [%v] doesn't exist in db2 instance", at.ap.InstanceDatabase)
 		return
 	}
 
