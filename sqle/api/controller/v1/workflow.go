@@ -1110,7 +1110,8 @@ func checkBeforeWorkflowTerminate(c echo.Context, projectName string,
 
 	if workflow.Record.Status != model.WorkflowStatusExecuting {
 		return errors.NewDataInvalidErr(
-			"workflow status is %s, termination can not be performed")
+			"workflow status is %s, termination can not be performed",
+			workflow.Record.Status)
 	}
 
 	currentStep := workflow.CurrentStep()
