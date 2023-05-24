@@ -920,7 +920,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, table)
 		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
-			at.logger.Errorf("generate ddl failed, sql=%v error: %v", sql, err)
+			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
 		result, err := plugin.Query(context.Background(), `
@@ -951,7 +951,7 @@ SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHE
 		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
 
-			at.logger.Errorf("generate ddl failed,sql=%v error: %v", sql, err)
+			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
 		result, err := plugin.Query(context.Background(), `
