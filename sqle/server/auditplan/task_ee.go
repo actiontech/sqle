@@ -866,7 +866,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		return
 	}
 	defer func() {
-		_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token integer`)
+		_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token`)
 		if err != nil {
 			at.logger.Errorf("drop variable failed, error: %v", err)
 		}
