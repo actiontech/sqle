@@ -998,7 +998,41 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+
+	var workflow *model.Workflow
+	{
+		var exist bool
+		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+		}
+	}
+
+	// check workflow permission
+	{
+		err = CheckBeforeWorkflowTerminate(c, projectName, workflow, user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
+	err = server.TerminateWorkflow(workflow, terminatingTaskIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // TerminateSingleTaskByWorkflowV1
@@ -1109,4 +1143,17 @@ func IsTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+func getTerminatingTaskIDs(s *model.Storage, workflow *model.Workflow, userID uint) (
+	taskIDs map[uint] /*task id*/ uint /*user id*/) {
+
+	taskIDs = make(map[uint]uint, 0)
+	for i := range workflow.Record.InstanceRecords {
+		instRecord := workflow.Record.InstanceRecords[i]
+		if instRecord.ScheduledAt == nil && !instRecord.IsSQLExecuted {
+			taskIDs[instRecord.TaskId] = userID
+		}
+	}
+	return taskIDs
 }
