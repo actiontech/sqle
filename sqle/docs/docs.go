@@ -8324,7 +8324,10 @@ var doc = `{
                             "doing",
                             "succeeded",
                             "failed",
-                            "manually_executed"
+                            "manually_executed",
+                            "terminating",
+                            "terminate_succ",
+                            "terminate_fail"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",

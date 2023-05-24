@@ -9636,6 +9636,9 @@ paths:
         - succeeded
         - failed
         - manually_executed
+        - terminating
+        - terminate_succ
+        - terminate_fail
         in: query
         name: filter_exec_status
         type: string
