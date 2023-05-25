@@ -314,10 +314,17 @@ func (a *action) execute() (err error) {
 		}()
 
 		go func() { // wait for kill signal
-			<-a.killExecutionChan
-			err = a.terminateExecution(context.TODO())
-			if err != nil {
-				errChan <- err
+			select {
+			case <-a.done:
+				return
+			case <-a.killExecutionChan:
+				ctx, cancel := context.WithTimeout(
+					context.Background(), time.Minute*2)
+				defer cancel()
+				err = a.terminateExecution(ctx)
+				if err != nil {
+					errChan <- err
+				}
 			}
 		}()
 	}
