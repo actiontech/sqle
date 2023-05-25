@@ -12,7 +12,6 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -1028,8 +1027,11 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
-	server.TerminateWorkflowTasks(terminatingTaskIDs)
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+
+	err = s.UpdateTaskStatusByIDs(terminatingTaskIDs,
+		map[string]string{"status": model.TaskStatusTerminating})
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
 
 // TerminateSingleTaskByWorkflowV1
@@ -1089,8 +1091,10 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		}
 	}
 
-	server.TerminateWorkflowTasks([]uint{uint(taskID)})
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	err = s.UpdateTaskStatusByIDs([]uint{uint(taskID)},
+		map[string]string{"status": model.TaskStatusTerminating})
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
 
 func checkBeforeTasksTermination(c echo.Context, projectName string,
