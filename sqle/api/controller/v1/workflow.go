@@ -12,6 +12,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -997,7 +998,41 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+
+	var workflow *model.Workflow
+	{
+		var exist bool
+		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+		}
+	}
+
+	// check workflow permission
+	{
+		err = checkBeforeTasksTermination(c, projectName, workflow, user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
+	err = server.TerminateWorkflowTasks(workflow, terminatingTaskIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // TerminateSingleTaskByWorkflowV1
@@ -1012,5 +1047,114 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
 func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
-	return controller.JSONNewNotImplementedErr(c)
+	projectName := c.Param("project_name")
+	workflowID := c.Param("workflow_id")
+	taskIDStr := c.Param("task_id")
+	taskID, err := strconv.Atoi(taskIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+
+	var workflow *model.Workflow
+	{
+		var exist bool
+		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+		}
+	}
+
+	// check workflow permission
+	{
+		err := checkBeforeTasksTermination(c, projectName, workflow, user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	// check task
+	{
+		ok, err := isTaskCanBeTerminate(s, taskIDStr)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !ok {
+			return controller.JSONBaseErrorReq(c,
+				fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskID, workflowID))
+		}
+	}
+
+	err = server.TerminateWorkflowTasks(workflow, map[uint]uint{uint(taskID): user.ID})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func checkBeforeTasksTermination(c echo.Context, projectName string,
+	workflow *model.Workflow, user *model.User) error {
+
+	if workflow.Record.Status != model.WorkflowStatusExecuting {
+		return errors.NewDataInvalidErr(
+			"workflow status is %s, termination can not be performed",
+			workflow.Record.Status)
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return errors.NewDataInvalidErr("workflow current step not found")
+	}
+
+	err := CheckCurrentUserCanOperateWorkflow(c,
+		&model.Project{Name: projectName}, workflow, []uint{})
+	if err != nil {
+		return err
+	}
+
+	if !workflow.IsOperationUser(user) {
+		return errors.NewAccessDeniedErr("you are not allow to operate the workflow")
+	}
+	return nil
+}
+
+func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
+	task, exist, err := s.GetTaskById(taskID)
+	if err != nil {
+		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
+	}
+	if !exist {
+		return false, fmt.Errorf("task not exist. taskID=%v", taskID)
+	}
+	if task.Instance == nil {
+		return false, fmt.Errorf("task instance is nil. taskID=%v", taskID)
+	}
+	instanceRecord, err := s.GetWorkInstanceRecordByTaskId(taskID)
+	if err != nil {
+		return false, fmt.Errorf("get work instance record by task id failed. taskID=%v err=%v", taskID, err)
+	}
+	if instanceRecord.IsSQLExecuted {
+		return false, nil
+	}
+	return true, nil
+}
+
+func getTerminatingTaskIDs(s *model.Storage, workflow *model.Workflow, userID uint) (
+	taskIDs map[uint] /*task id*/ uint /*user id*/) {
+
+	taskIDs = make(map[uint]uint)
+	for i := range workflow.Record.InstanceRecords {
+		instRecord := workflow.Record.InstanceRecords[i]
+		if !instRecord.IsSQLExecuted {
+			taskIDs[instRecord.TaskId] = userID
+		}
+	}
+	return taskIDs
 }

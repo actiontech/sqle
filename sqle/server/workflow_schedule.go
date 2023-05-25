@@ -74,6 +74,11 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
+// TODO
+func TerminateWorkflowTasks(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
+	return errors.NewNotImplementedError("TerminateWorkflow has not been terminated yet")
+}
+
 func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
 	s := model.GetStorage()
 
