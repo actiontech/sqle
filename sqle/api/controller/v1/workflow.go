@@ -996,7 +996,7 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Param workflow_id path string true "workflow id"
 // @Param project_name path string true "project name"
 // @Success 200 {object} controller.BaseRes
-// @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
+// @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	projectName := c.Param("project_name")
@@ -1045,7 +1045,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 // @Param project_name path string true "project name"
 // @Param task_id path string true "task id"
 // @Success 200 {object} controller.BaseRes
-// @Router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
+// @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
 func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	projectName := c.Param("project_name")
 	workflowID := c.Param("workflow_id")
