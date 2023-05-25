@@ -335,7 +335,7 @@ func (a *action) execute() (err error) {
 				defer cancel()
 				err = a.terminateExecution(ctx)
 				if err != nil {
-					errChan <- err
+					errChan <- err // TODO: err handle
 				}
 			}
 		}()
