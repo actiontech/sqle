@@ -1028,10 +1028,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
-	err = server.TerminateWorkflowTasks(terminatingTaskIDs)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	server.TerminateWorkflowTasks(terminatingTaskIDs)
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -1092,10 +1089,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		}
 	}
 
-	err = server.TerminateWorkflowTasks([]uint{uint(taskID)})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	server.TerminateWorkflowTasks([]uint{uint(taskID)})
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 

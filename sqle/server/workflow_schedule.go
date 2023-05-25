@@ -74,9 +74,8 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func TerminateWorkflowTasks(taskIDs []uint) error {
+func TerminateWorkflowTasks(taskIDs []uint) {
 	GetSqled().TerminateTasks(taskIDs)
-	return nil
 }
 
 func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
