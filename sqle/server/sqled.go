@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -164,10 +165,8 @@ func (s *Sqled) do(action *action) error {
 	delete(s.currentTask, taskId)
 	s.Unlock()
 
-	select {
-	case action.done <- struct{}{}:
-	default:
-	}
+	utils.TryClose(action.done)
+
 	return err
 }
 
