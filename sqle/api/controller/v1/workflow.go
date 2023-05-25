@@ -1132,7 +1132,7 @@ func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("get work instance record by task id failed. taskID=%v err=%v", taskID, err)
 	}
-	if instanceRecord.IsSQLExecuted {
+	if !instanceRecord.IsSQLExecuted { // sql has not been executed
 		return false, nil
 	}
 	return true, nil
@@ -1144,7 +1144,7 @@ func getTerminatingTaskIDs(s *model.Storage, workflow *model.Workflow, userID ui
 	taskIDs = make([]uint, 0)
 	for i := range workflow.Record.InstanceRecords {
 		instRecord := workflow.Record.InstanceRecords[i]
-		if !instRecord.IsSQLExecuted {
+		if instRecord.IsSQLExecuted { // sql is executed or executing
 			taskIDs = append(taskIDs, instRecord.TaskId)
 		}
 	}
