@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -37,6 +38,8 @@ type Sqled struct {
 	currentTask map[string]struct{}
 	// queue is a chan used to receive tasks.
 	queue chan *action
+
+	actionMap map[uint] /*task id*/ *action
 }
 
 func InitSqled(exit chan struct{}) {
@@ -44,6 +47,7 @@ func InitSqled(exit chan struct{}) {
 		exit:        exit,
 		currentTask: map[string]struct{}{},
 		queue:       make(chan *action, 1024),
+		actionMap:   make(map[uint]*action),
 	}
 	sqled.Start()
 }
@@ -63,9 +67,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &action{
-		typ:   typ,
-		entry: entry,
-		done:  make(chan struct{}),
+		typ:               typ,
+		entry:             entry,
+		done:              make(chan struct{}),
+		killExecutionChan: make(chan struct{}),
 	}
 
 	s.Lock()
@@ -100,6 +105,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.plugin = p
 
 	s.queue <- action
+	s.Lock()
+	s.actionMap[action.task.ID] = action
+	s.Unlock()
+
 	return action, nil
 
 Error:
@@ -162,12 +171,11 @@ func (s *Sqled) do(action *action) error {
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)
 	delete(s.currentTask, taskId)
+	delete(s.actionMap, action.task.ID)
 	s.Unlock()
 
-	select {
-	case action.done <- struct{}{}:
-	default:
-	}
+	utils.TryClose(action.done)
+
 	return err
 }
 
@@ -191,6 +199,8 @@ type action struct {
 	typ  int
 	err  error
 	done chan struct{}
+
+	killExecutionChan chan struct{}
 }
 
 var (
@@ -276,6 +286,11 @@ func (a *action) audit() (err error) {
 	return nil
 }
 
+// TODO: update task status
+func (a *action) terminateExecution(ctx context.Context) error {
+	return a.plugin.KillProcess(ctx)
+}
+
 func (a *action) execute() (err error) {
 	st := model.GetStorage()
 	task := a.task
@@ -290,60 +305,108 @@ func (a *action) execute() (err error) {
 		return err
 	}
 
+	errChan := make(chan error)
+
+	{
+		go func() { // execute
+			err = a.execTask()
+			errChan <- err
+		}()
+
+		go func() { // wait for kill signal
+			select {
+			case <-a.done:
+				return
+			case <-a.killExecutionChan:
+				ctx, cancel := context.WithTimeout(
+					context.Background(), time.Minute*2)
+				defer cancel()
+				err = a.terminateExecution(ctx)
+				if err != nil {
+					errChan <- err
+				}
+			}
+		}()
+	}
+
+	err = <-errChan
+
+	a.entry.WithField("task_status", task.Status).
+		Infof("execution is completed, err:%v", err)
+
+	attrs = map[string]interface{}{
+		"status":      a.task.Status,
+		"exec_end_at": time.Now(),
+	}
+	return st.UpdateTask(task, attrs)
+}
+
+// NOTE : the return value is only valid after all SQL
+// statements have been executed
+func (a *action) updateTaskStatus(err error) {
+	a.Lock()
+	defer a.Unlock()
+
+	if err != nil {
+		a.task.Status = model.TaskStatusExecuteFailed
+		return
+	}
+	for i := range a.task.ExecuteSQLs {
+		sql := a.task.ExecuteSQLs[i]
+		if sql.ExecStatus == model.SQLExecuteStatusFailed {
+			a.task.Status = model.TaskStatusExecuteFailed
+			return
+		}
+	}
+	a.task.Status = model.TaskStatusExecuteSucceeded
+}
+
+func (a *action) execTask() (err error) {
+	defer func() {
+		a.updateTaskStatus(err)
+	}()
+
+	task := a.task
+
 	// txSQLs keep adjacent DMLs, execute in one transaction.
 	var txSQLs []*model.ExecuteSQL
 
-outerLoop:
-	for i, executeSQL := range task.ExecuteSQLs {
+	for i := range task.ExecuteSQLs {
+		executeSQL := task.ExecuteSQLs[i]
 		var nodes []driverV2.Node
 		if nodes, err = a.plugin.Parse(context.TODO(), executeSQL.Content); err != nil {
-			break outerLoop
+			return err
+		}
+
+		select {
+		case <-a.killExecutionChan:
+			return fmt.Errorf("task has been terminated")
+		default:
 		}
 
 		switch nodes[0].Type {
 		case driverV2.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
-
 			if i == len(task.ExecuteSQLs)-1 {
 				if err = a.execSQLs(txSQLs); err != nil {
-					break outerLoop
+					return err
 				}
 			}
 
 		default:
 			if len(txSQLs) > 0 {
 				if err = a.execSQLs(txSQLs); err != nil {
-					break outerLoop
+					return err
 				}
 				txSQLs = nil
 			}
 			if err = a.execSQL(executeSQL); err != nil {
-				break outerLoop
+				return err
 			}
 		}
 	}
 
-	taskStatus := model.TaskStatusExecuteSucceeded
-
-	if err != nil {
-		taskStatus = model.TaskStatusExecuteFailed
-	} else {
-		for _, sql := range task.ExecuteSQLs {
-			if sql.ExecStatus == model.SQLExecuteStatusFailed {
-				taskStatus = model.TaskStatusExecuteFailed
-				break
-			}
-		}
-	}
-	task.Status = taskStatus
-
-	a.entry.WithField("task_status", taskStatus).Infof("execution is completed, err:%v", err)
-
-	attrs = map[string]interface{}{
-		"status":      taskStatus,
-		"exec_end_at": time.Now(),
-	}
-	return st.UpdateTask(task, attrs)
+	return nil
 }
 
 // execSQL execute SQL and update SQL's executed status to storage.
