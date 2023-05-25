@@ -22,6 +22,7 @@ const (
 	TaskStatusManuallyExecuted = "manually_executed"
 	TaskStatusExecuteSucceeded = "exec_succeeded"
 	TaskStatusExecuteFailed    = "exec_failed"
+	TaskStatusTerminating      = "terminating"
 )
 
 const (
@@ -353,6 +354,11 @@ func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
 	return tx.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
 		"status": status,
 	}).Error
+}
+
+func (s *Storage) UpdateTaskStatusByIDs(taskIDs []uint, attrs ...interface{}) error {
+	err := s.db.Model(&Task{}).Where("id IN (?)", taskIDs).Update(attrs...).Error
+	return errors.ConnectStorageErrWrapper(err)
 }
 
 func updateExecuteSQLStatusByTaskId(tx *gorm.DB, taskId uint, status string) error {

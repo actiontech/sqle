@@ -4,6 +4,7 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -38,8 +39,6 @@ type Sqled struct {
 	currentTask map[string]struct{}
 	// queue is a chan used to receive tasks.
 	queue chan *action
-
-	actionMap map[uint] /*task id*/ *action
 }
 
 func InitSqled(exit chan struct{}) {
@@ -47,7 +46,6 @@ func InitSqled(exit chan struct{}) {
 		exit:        exit,
 		currentTask: map[string]struct{}{},
 		queue:       make(chan *action, 1024),
-		actionMap:   make(map[uint]*action),
 	}
 	sqled.Start()
 }
@@ -67,10 +65,9 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &action{
-		typ:               typ,
-		entry:             entry,
-		done:              make(chan struct{}),
-		killExecutionChan: make(chan struct{}),
+		typ:   typ,
+		entry: entry,
+		done:  make(chan struct{}),
 	}
 
 	s.Lock()
@@ -105,9 +102,6 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.plugin = p
 
 	s.queue <- action
-	s.Lock()
-	s.actionMap[action.task.ID] = action
-	s.Unlock()
 
 	return action, nil
 
@@ -121,18 +115,6 @@ Error:
 func (s *Sqled) AddTask(taskId string, typ int) error {
 	_, err := s.addTask(taskId, typ)
 	return err
-}
-
-func (s *Sqled) TerminateTasks(taskIDs []uint) {
-	s.Lock()
-	for i := range taskIDs {
-		taskID := taskIDs[i]
-		action := s.actionMap[taskID]
-		if action != nil {
-			utils.TryClose(action.killExecutionChan)
-		}
-	}
-	s.Unlock()
 }
 
 func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
@@ -183,7 +165,6 @@ func (s *Sqled) do(action *action) error {
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)
 	delete(s.currentTask, taskId)
-	delete(s.actionMap, action.task.ID)
 	s.Unlock()
 
 	utils.TryClose(action.done)
@@ -211,8 +192,6 @@ type action struct {
 	typ  int
 	err  error
 	done chan struct{}
-
-	killExecutionChan chan struct{}
 }
 
 var (
@@ -326,17 +305,26 @@ func (a *action) execute() (err error) {
 		}()
 
 		go func() { // wait for kill signal
-			select {
-			case <-a.done:
-				return
-			case <-a.killExecutionChan:
-				ctx, cancel := context.WithTimeout(
-					context.Background(), time.Minute*2)
-				defer cancel()
-				err = a.terminateExecution(ctx)
-				if err != nil {
-					errChan <- err // TODO: err handle
+			for {
+				select {
+				case <-a.done:
+					return
+				default:
+					a.GetTaskStatus(st)
+					if a.task.Status == model.TaskStatusTerminating {
+						ctx, cancel := context.WithTimeout(
+							context.Background(), time.Minute*2)
+						defer cancel()
+						err = a.terminateExecution(ctx)
+						if err != nil {
+							errChan <- err // TODO: err handle
+							return
+						}
+						return
+					}
+					time.Sleep(time.Millisecond * 500)
 				}
+
 			}
 		}()
 	}
@@ -373,6 +361,24 @@ func (a *action) updateTaskStatus(err error) {
 	a.task.Status = model.TaskStatusExecuteSucceeded
 }
 
+func (a *action) GetTaskStatus(st *model.Storage) {
+	if a.task == nil {
+		return
+	}
+	task, exit, err := st.GetTaskById(strconv.Itoa(int(a.task.ID)))
+	if err != nil {
+		a.entry.Errorf("get task status failed. err: %v", err)
+		return
+	}
+	if !exit {
+		a.entry.Errorf("task(%v) not found", a.task.ID)
+		return
+	}
+	a.Lock()
+	a.task = task
+	a.Unlock()
+}
+
 func (a *action) execTask() (err error) {
 	defer func() {
 		a.updateTaskStatus(err)
@@ -388,12 +394,6 @@ func (a *action) execTask() (err error) {
 		var nodes []driverV2.Node
 		if nodes, err = a.plugin.Parse(context.TODO(), executeSQL.Content); err != nil {
 			return err
-		}
-
-		select {
-		case <-a.killExecutionChan:
-			return fmt.Errorf("task has been terminated")
-		default:
 		}
 
 		switch nodes[0].Type {
