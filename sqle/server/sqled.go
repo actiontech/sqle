@@ -64,9 +64,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
 	action := &action{
-		typ:   typ,
-		entry: entry,
-		done:  make(chan struct{}),
+		typ:               typ,
+		entry:             entry,
+		done:              make(chan struct{}),
+		killExecutionChan: make(chan struct{}),
 	}
 
 	s.Lock()
@@ -190,6 +191,8 @@ type action struct {
 	typ  int
 	err  error
 	done chan struct{}
+
+	killExecutionChan chan struct{}
 }
 
 var (
@@ -275,6 +278,11 @@ func (a *action) audit() (err error) {
 	return nil
 }
 
+func (a *action) terminateExecution() error {
+	// TODO: kill process and update status
+	return nil
+}
+
 func (a *action) execute() (err error) {
 	st := model.GetStorage()
 	task := a.task
@@ -289,7 +297,22 @@ func (a *action) execute() (err error) {
 		return err
 	}
 
-	err = a.execTask(task)
+	errChan := make(chan error)
+
+	{
+		go func() {
+			err = a.execTask(task)
+			errChan <- err
+		}()
+
+		go func() {
+			<-a.killExecutionChan
+			err = a.terminateExecution()
+			errChan <- err
+		}()
+	}
+
+	err = <-errChan
 
 	a.entry.WithField("task_status", task.Status).
 		Infof("execution is completed, err:%v", err)
@@ -304,6 +327,9 @@ func (a *action) execute() (err error) {
 // NOTE : the return value is only valid after all SQL
 // statements have been executed
 func (a *action) updateTaskStatus(err error) {
+	a.Lock()
+	defer a.Unlock()
+
 	if err != nil {
 		a.task.Status = model.TaskStatusExecuteFailed
 		return
