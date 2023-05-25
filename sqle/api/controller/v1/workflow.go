@@ -1021,14 +1021,14 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err = checkBeforeWorkflowTerminate(c, projectName, workflow, user)
+		err = checkBeforeTasksTermination(c, projectName, workflow, user)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 
 	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
-	err = server.TerminateWorkflow(workflow, terminatingTaskIDs)
+	err = server.TerminateWorkflowTasks(workflow, terminatingTaskIDs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1074,7 +1074,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := checkBeforeWorkflowTerminate(c, projectName, workflow, user)
+		err := checkBeforeTasksTermination(c, projectName, workflow, user)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1092,21 +1092,15 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		}
 	}
 
-	err = server.TerminateWorkflow(workflow, map[uint]uint{uint(taskID): user.ID})
+	err = server.TerminateWorkflowTasks(workflow, map[uint]uint{uint(taskID): user.ID})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-func checkBeforeWorkflowTerminate(c echo.Context, projectName string,
+func checkBeforeTasksTermination(c echo.Context, projectName string,
 	workflow *model.Workflow, user *model.User) error {
-
-	err := CheckCurrentUserCanOperateWorkflow(c,
-		&model.Project{Name: projectName}, workflow, []uint{})
-	if err != nil {
-		return err
-	}
 
 	if workflow.Record.Status != model.WorkflowStatusExecuting {
 		return errors.NewDataInvalidErr(
@@ -1117,6 +1111,12 @@ func checkBeforeWorkflowTerminate(c echo.Context, projectName string,
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
 		return errors.NewDataInvalidErr("workflow current step not found")
+	}
+
+	err := CheckCurrentUserCanOperateWorkflow(c,
+		&model.Project{Name: projectName}, workflow, []uint{})
+	if err != nil {
+		return err
 	}
 
 	if !workflow.IsOperationUser(user) {
