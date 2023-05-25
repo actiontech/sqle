@@ -289,38 +289,7 @@ func (a *action) execute() (err error) {
 		return err
 	}
 
-	// txSQLs keep adjacent DMLs, execute in one transaction.
-	var txSQLs []*model.ExecuteSQL
-
-outerLoop:
-	for i, executeSQL := range task.ExecuteSQLs {
-		var nodes []driverV2.Node
-		if nodes, err = a.plugin.Parse(context.TODO(), executeSQL.Content); err != nil {
-			break outerLoop
-		}
-
-		switch nodes[0].Type {
-		case driverV2.SQLTypeDML:
-			txSQLs = append(txSQLs, executeSQL)
-
-			if i == len(task.ExecuteSQLs)-1 {
-				if err = a.execSQLs(txSQLs); err != nil {
-					break outerLoop
-				}
-			}
-
-		default:
-			if len(txSQLs) > 0 {
-				if err = a.execSQLs(txSQLs); err != nil {
-					break outerLoop
-				}
-				txSQLs = nil
-			}
-			if err = a.execSQL(executeSQL); err != nil {
-				break outerLoop
-			}
-		}
-	}
+	err = a.execTask(task)
 
 	taskStatus := model.TaskStatusExecuteSucceeded
 
@@ -343,6 +312,41 @@ outerLoop:
 		"exec_end_at": time.Now(),
 	}
 	return st.UpdateTask(task, attrs)
+}
+
+func (a *action) execTask(task *model.Task) (err error) {
+	// txSQLs keep adjacent DMLs, execute in one transaction.
+	var txSQLs []*model.ExecuteSQL
+
+	for i := range task.ExecuteSQLs {
+		executeSQL := task.ExecuteSQLs[i]
+		var nodes []driverV2.Node
+		if nodes, err = a.plugin.Parse(context.TODO(), executeSQL.Content); err != nil {
+			return err
+		}
+
+		switch nodes[0].Type {
+		case driverV2.SQLTypeDML:
+			txSQLs = append(txSQLs, executeSQL)
+			if i == len(task.ExecuteSQLs)-1 {
+				if err = a.execSQLs(txSQLs); err != nil {
+					return err
+				}
+			}
+
+		default:
+			if len(txSQLs) > 0 {
+				if err = a.execSQLs(txSQLs); err != nil {
+					return err
+				}
+				txSQLs = nil
+			}
+			if err = a.execSQL(executeSQL); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // execSQL execute SQL and update SQL's executed status to storage.
