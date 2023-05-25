@@ -300,15 +300,17 @@ func (a *action) execute() (err error) {
 	errChan := make(chan error)
 
 	{
-		go func() {
+		go func() { // execute
 			err = a.execTask(task)
 			errChan <- err
 		}()
 
-		go func() {
+		go func() { // wait for kill signal
 			<-a.killExecutionChan
 			err = a.terminateExecution()
-			errChan <- err
+			if err != nil {
+				errChan <- err
+			}
 		}()
 	}
 
