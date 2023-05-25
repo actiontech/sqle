@@ -1108,20 +1108,12 @@ func checkBeforeTasksTermination(c echo.Context, projectName string,
 			workflow.Record.Status)
 	}
 
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return errors.NewDataInvalidErr("workflow current step not found")
-	}
-
 	err := CheckCurrentUserCanOperateWorkflow(c,
 		&model.Project{Name: projectName}, workflow, []uint{})
 	if err != nil {
 		return err
 	}
 
-	if !workflow.IsOperationUser(user) {
-		return errors.NewAccessDeniedErr("you are not allow to operate the workflow")
-	}
 	return nil
 }
 
