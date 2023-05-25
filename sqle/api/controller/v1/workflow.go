@@ -1103,7 +1103,7 @@ func checkBeforeTasksTermination(c echo.Context, projectName string,
 	}
 
 	err := CheckCurrentUserCanOperateWorkflow(c,
-		&model.Project{Name: projectName}, workflow, []uint{})
+		&model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE})
 	if err != nil {
 		return err
 	}
