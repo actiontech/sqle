@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/go-sql-driver/mysql"
 
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -192,6 +193,27 @@ type action struct {
 	typ  int
 	err  error
 	done chan struct{}
+
+	terminateStatus int // 0:no terminate, 1: terminate_succ, 2:terminate_fail
+}
+
+func (a *action) hasTermination() bool {
+	a.Lock()
+	termination := a.terminateStatus != 0
+	a.Unlock()
+	return termination
+}
+
+func (a *action) terminatedSuccessfully() {
+	a.Lock()
+	a.terminateStatus = 1
+	a.Unlock()
+}
+
+func (a *action) terminatedFailed() {
+	a.Lock()
+	a.terminateStatus = 2
+	a.Unlock()
 }
 
 var (
@@ -277,7 +299,6 @@ func (a *action) audit() (err error) {
 	return nil
 }
 
-// TODO: update task status
 func (a *action) terminateExecution(ctx context.Context) error {
 	return a.plugin.KillProcess(ctx)
 }
@@ -296,12 +317,12 @@ func (a *action) execute() (err error) {
 		return err
 	}
 
-	errChan := make(chan error)
+	exeErrChan := make(chan error)
+	terminateErrChan := make(chan error)
 
 	{
 		go func() { // execute
-			err = a.execTask()
-			errChan <- err
+			exeErrChan <- a.execTask()
 		}()
 
 		go func() { // wait for kill signal
@@ -310,79 +331,89 @@ func (a *action) execute() (err error) {
 				case <-a.done:
 					return
 				default:
-					a.GetTaskStatus(st)
-					if a.task.Status == model.TaskStatusTerminating {
+					if a.GetTaskStatus(st) == model.TaskStatusTerminating {
 						ctx, cancel := context.WithTimeout(
 							context.Background(), time.Minute*2)
 						defer cancel()
-						err = a.terminateExecution(ctx)
-						if err != nil {
-							errChan <- err // TODO: err handle
-							return
-						}
+						terminateErrChan <- a.terminateExecution(ctx)
 						return
 					}
-					time.Sleep(time.Millisecond * 500)
 				}
-
+				time.Sleep(time.Millisecond * 500)
 			}
 		}()
 	}
 
-	err = <-errChan
+	// update task status
+	taskStatus := model.TaskStatusExecuting
 
-	a.entry.WithField("task_status", task.Status).
+	select {
+	case e := <-exeErrChan:
+		err = e
+		if e != nil { // exec successfully, no termination
+			taskStatus = model.TaskStatusExecuteFailed
+		}
+		// update task status by sql
+		for _, sql := range task.ExecuteSQLs {
+			if sql.ExecStatus == model.SQLExecuteStatusFailed ||
+				sql.ExecStatus == model.SQLExecuteStatusTerminateSucc {
+				taskStatus = model.TaskStatusExecuteFailed
+				break
+			}
+		}
+
+	case e := <-terminateErrChan:
+		if e != nil {
+			a.entry.Errorf("task(%v) termination failed, err: %v", task.ID, e)
+			a.terminatedFailed()
+			err = e
+
+			{ //NOTE: 由于上线中止失败，需要更新 SQLs 状态
+				for i := range task.ExecuteSQLs {
+					sql := task.ExecuteSQLs[i]
+					if sql.ExecStatus == model.SQLExecuteStatusDoing {
+						sql.ExecStatus = model.SQLExecuteStatusTerminateFailed
+						sql.ExecResult = fmt.Sprintf("%v", e)
+					}
+				}
+				if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
+					return err
+				}
+			}
+
+		} else {
+			a.terminatedSuccessfully() // NOTE: 如果中止成功，SQLs 状态已经被更新
+		}
+		taskStatus = model.TaskStatusExecuteFailed
+	}
+
+	a.entry.WithField("task_status", taskStatus).
 		Infof("execution is completed, err:%v", err)
 
 	attrs = map[string]interface{}{
-		"status":      a.task.Status,
+		"status":      taskStatus,
 		"exec_end_at": time.Now(),
 	}
 	return st.UpdateTask(task, attrs)
 }
 
-// NOTE : the return value is only valid after all SQL
-// statements have been executed
-func (a *action) updateTaskStatus(err error) {
-	a.Lock()
-	defer a.Unlock()
-
-	if err != nil {
-		a.task.Status = model.TaskStatusExecuteFailed
-		return
-	}
-	for i := range a.task.ExecuteSQLs {
-		sql := a.task.ExecuteSQLs[i]
-		if sql.ExecStatus == model.SQLExecuteStatusFailed {
-			a.task.Status = model.TaskStatusExecuteFailed
-			return
-		}
-	}
-	a.task.Status = model.TaskStatusExecuteSucceeded
-}
-
-func (a *action) GetTaskStatus(st *model.Storage) {
+func (a *action) GetTaskStatus(st *model.Storage) string {
 	if a.task == nil {
-		return
+		return ""
 	}
 	task, exit, err := st.GetTaskById(strconv.Itoa(int(a.task.ID)))
 	if err != nil {
 		a.entry.Errorf("get task status failed. err: %v", err)
-		return
+		return ""
 	}
 	if !exit {
 		a.entry.Errorf("task(%v) not found", a.task.ID)
-		return
+		return ""
 	}
-	a.Lock()
-	a.task = task
-	a.Unlock()
+	return task.Status
 }
 
 func (a *action) execTask() (err error) {
-	defer func() {
-		a.updateTaskStatus(err)
-	}()
 
 	task := a.task
 
@@ -433,6 +464,9 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 		executeSQL.ExecResult = execErr.Error()
+		if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
+			executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+		}
 	} else {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 		executeSQL.ExecResult = model.TaskExecResultOK
@@ -467,6 +501,13 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = txErr.Error()
+			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, txErr) {
+				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				if len(results) != 0 && results[idx] != nil {
+					rowAffects, _ := results[idx].RowsAffected()
+					executeSQL.RowAffects = rowAffects
+				}
+			}
 			continue
 		}
 		rowAffects, _ := results[idx].RowsAffected()
