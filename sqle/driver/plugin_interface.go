@@ -27,6 +27,9 @@ type Plugin interface {
 	Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error)
 	Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error)
 
+	// KillProcess uses a new connection to send the "Kill process_id" command to terminate the thread that is currently running.
+	KillProcess(ctx context.Context) (err error)
+
 	// Schemas export all supported schemas.
 	//
 	// For example, performance_schema/performance_schema... which in MySQL is not allowed for auditing.

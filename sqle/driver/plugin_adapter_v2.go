@@ -171,6 +171,10 @@ func (s *PluginImplV2) Close(ctx context.Context) {
 	s.afterLog(api, err)
 }
 
+func (s *PluginImplV2) KillProcess(ctx context.Context) error {
+	return nil
+}
+
 // audit
 
 func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
