@@ -291,30 +291,38 @@ func (a *action) execute() (err error) {
 
 	err = a.execTask(task)
 
-	taskStatus := model.TaskStatusExecuteSucceeded
-
-	if err != nil {
-		taskStatus = model.TaskStatusExecuteFailed
-	} else {
-		for _, sql := range task.ExecuteSQLs {
-			if sql.ExecStatus == model.SQLExecuteStatusFailed {
-				taskStatus = model.TaskStatusExecuteFailed
-				break
-			}
-		}
-	}
-	task.Status = taskStatus
-
-	a.entry.WithField("task_status", taskStatus).Infof("execution is completed, err:%v", err)
+	a.entry.WithField("task_status", task.Status).
+		Infof("execution is completed, err:%v", err)
 
 	attrs = map[string]interface{}{
-		"status":      taskStatus,
+		"status":      a.task.Status,
 		"exec_end_at": time.Now(),
 	}
 	return st.UpdateTask(task, attrs)
 }
 
+// NOTE : the return value is only valid after all SQL
+// statements have been executed
+func (a *action) updateTaskStatus(err error) {
+	if err != nil {
+		a.task.Status = model.TaskStatusExecuteFailed
+		return
+	}
+	for i := range a.task.ExecuteSQLs {
+		sql := a.task.ExecuteSQLs[i]
+		if sql.ExecStatus == model.SQLExecuteStatusFailed {
+			a.task.Status = model.TaskStatusExecuteFailed
+			return
+		}
+	}
+	a.task.Status = model.TaskStatusExecuteSucceeded
+}
+
 func (a *action) execTask(task *model.Task) (err error) {
+	defer func() {
+		a.updateTaskStatus(err)
+	}()
+
 	// txSQLs keep adjacent DMLs, execute in one transaction.
 	var txSQLs []*model.ExecuteSQL
 
@@ -346,6 +354,7 @@ func (a *action) execTask(task *model.Task) (err error) {
 			}
 		}
 	}
+
 	return nil
 }
 
