@@ -504,7 +504,7 @@ type GetWorkflowTasksResV2 struct {
 type GetWorkflowTasksItemV2 struct {
 	TaskId                   uint                       `json:"task_id"`
 	InstanceName             string                     `json:"instance_name"`
-	Status                   string                     `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing,manually_executed"`
+	Status                   string                     `json:"status" enums:"wait_for_audit,wait_for_execution,exec_scheduled,exec_failed,exec_succeeded,executing,manually_executed,terminating,terminate_succ,terminate_fail"`
 	ExecStartTime            *time.Time                 `json:"exec_start_time,omitempty"`
 	ExecEndTime              *time.Time                 `json:"exec_end_time,omitempty"`
 	ScheduleTime             *time.Time                 `json:"schedule_time,omitempty"`
