@@ -309,7 +309,7 @@ func (a *action) execute() (err error) {
 
 	{
 		go func() { // execute
-			err = a.execTask(task)
+			err = a.execTask()
 			errChan <- err
 		}()
 
@@ -361,10 +361,12 @@ func (a *action) updateTaskStatus(err error) {
 	a.task.Status = model.TaskStatusExecuteSucceeded
 }
 
-func (a *action) execTask(task *model.Task) (err error) {
+func (a *action) execTask() (err error) {
 	defer func() {
 		a.updateTaskStatus(err)
 	}()
+
+	task := a.task
 
 	// txSQLs keep adjacent DMLs, execute in one transaction.
 	var txSQLs []*model.ExecuteSQL
