@@ -38,6 +38,8 @@ type Sqled struct {
 	currentTask map[string]struct{}
 	// queue is a chan used to receive tasks.
 	queue chan *action
+
+	actionMap map[uint] /*task id*/ *action
 }
 
 func InitSqled(exit chan struct{}) {
@@ -45,6 +47,7 @@ func InitSqled(exit chan struct{}) {
 		exit:        exit,
 		currentTask: map[string]struct{}{},
 		queue:       make(chan *action, 1024),
+		actionMap:   make(map[uint]*action),
 	}
 	sqled.Start()
 }
@@ -102,6 +105,10 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.plugin = p
 
 	s.queue <- action
+	s.Lock()
+	s.actionMap[action.task.ID] = action
+	s.Unlock()
+
 	return action, nil
 
 Error:
@@ -164,6 +171,7 @@ func (s *Sqled) do(action *action) error {
 	s.Lock()
 	taskId := fmt.Sprintf("%d", action.task.ID)
 	delete(s.currentTask, taskId)
+	delete(s.actionMap, action.task.ID)
 	s.Unlock()
 
 	utils.TryClose(action.done)
