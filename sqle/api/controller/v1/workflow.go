@@ -1028,7 +1028,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
-	err = server.TerminateWorkflowTasks(workflow, terminatingTaskIDs)
+	err = server.TerminateWorkflowTasks(terminatingTaskIDs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1092,7 +1092,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		}
 	}
 
-	err = server.TerminateWorkflowTasks(workflow, map[uint]uint{uint(taskID): user.ID})
+	err = server.TerminateWorkflowTasks([]uint{uint(taskID)})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1147,13 +1147,13 @@ func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 }
 
 func getTerminatingTaskIDs(s *model.Storage, workflow *model.Workflow, userID uint) (
-	taskIDs map[uint] /*task id*/ uint /*user id*/) {
+	taskIDs []uint) {
 
-	taskIDs = make(map[uint]uint)
+	taskIDs = make([]uint, 0)
 	for i := range workflow.Record.InstanceRecords {
 		instRecord := workflow.Record.InstanceRecords[i]
 		if !instRecord.IsSQLExecuted {
-			taskIDs[instRecord.TaskId] = userID
+			taskIDs = append(taskIDs, instRecord.TaskId)
 		}
 	}
 	return taskIDs
