@@ -378,6 +378,12 @@ func (a *action) execTask() (err error) {
 			return err
 		}
 
+		select {
+		case <-a.killExecutionChan:
+			return fmt.Errorf("task has been terminated")
+		default:
+		}
+
 		switch nodes[0].Type {
 		case driverV2.SQLTypeDML:
 			txSQLs = append(txSQLs, executeSQL)
