@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -730,6 +731,26 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return instanceRecords, nil
+}
+
+func (s *Storage) GetWorkflowDetailByTaskID(taskID uint) (*Workflow, error) {
+	workflow, exist, err := s.GetWorkflowByTaskId(taskID)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("workflow not exist by task_id(%v)", taskID)
+	}
+
+	workflow, exist, err = s.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("workflow not exist by workflow.id(%v)", workflow.ID)
+	}
+
+	return workflow, nil
 }
 
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
