@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -34,17 +35,17 @@ func TestAsyncCallTimeout(t *testing.T) {
 
 		expectedErr error
 	}{
-		{3, 2, nil, 4, nil},
-		{2, 3, nil, 4, context.DeadlineExceeded},
-		{4, 3, nil, 2, context.Canceled},
-		{4, 3, errTestMsg, 4, errTestMsg},
-		{4, 3, errTestMsg, 2, context.Canceled},
-		{2, 3, errTestMsg, 4, context.DeadlineExceeded},
+		{5, 1, nil, 10, nil},
+		{1, 5, nil, 10, context.DeadlineExceeded},
+		{10, 5, nil, 1, context.Canceled},
+		{10, 1, errTestMsg, 5, errTestMsg},
+		{10, 5, errTestMsg, 1, context.Canceled},
+		{1, 5, errTestMsg, 10, context.DeadlineExceeded},
 	}
 
 	for i := range cases {
 		c := cases[i]
-		t.Run("", func(t *testing.T) {
+		t.Run(fmt.Sprintf("case %v", i), func(t *testing.T) {
 			ctx, cancel := getTimeoutCtx(c.timeout)
 			go cancelFn(cancel, c.cancelSleep)
 			err := AsyncCallTimeout(ctx, func() error {
