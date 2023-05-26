@@ -231,11 +231,11 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	}
 	err = utils.AsyncCallTimeout(ctx, killFunc)
 	if err != nil {
-		logEntry.Errorf("exec sql(%v) failed, err: %v", killSQL, err)
-	} else {
-		logEntry.Infof("exec sql(%v) successfully", killSQL)
+		err = fmt.Errorf("exec sql(%v) failed, err: %v", killSQL, err)
+		return err
 	}
-	return err
+	logEntry.Infof("exec sql(%v) successfully", killSQL)
+	return nil
 }
 
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
