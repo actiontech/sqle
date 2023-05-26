@@ -4089,6 +4089,9 @@ definitions:
         - exec_succeeded
         - executing
         - manually_executed
+        - terminating
+        - terminate_succeeded
+        - terminate_failed
         type: string
       task_id:
         type: integer
@@ -7107,6 +7110,61 @@ paths:
       summary: 创建工单
       tags:
       - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate:
+    post:
+      description: execute one task on workflow
+      operationId: terminateSingleTaskByWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 终止单个上线任务
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate:
+    post:
+      description: terminate multiple task by project and workflow
+      operationId: terminateMultipleTaskByWorkflowV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 终止工单下多个上线任务
+      tags:
+      - workflow
   /v1/projects/{project_name}/workflows/{workflow_name}/:
     get:
       deprecated: true
@@ -9581,6 +9639,9 @@ paths:
         - succeeded
         - failed
         - manually_executed
+        - terminating
+        - terminate_succeeded
+        - terminate_failed
         in: query
         name: filter_exec_status
         type: string

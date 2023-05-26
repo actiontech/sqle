@@ -26,15 +26,17 @@ type Db interface {
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	QueryWithContext(ctx context.Context, query string, args ...interface{}) (column []string, row [][]sql.NullString, err error)
 	Logger() *logrus.Entry
+	GetConnectionID() string
 }
 
 type BaseConn struct {
-	log  *logrus.Entry
-	host string
-	port string
-	user string
-	db   *sql.DB
-	conn *sql.Conn
+	log    *logrus.Entry
+	host   string
+	port   string
+	user   string
+	db     *sql.DB
+	conn   *sql.Conn
+	connID string
 }
 
 func newConn(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*BaseConn, error) {
@@ -68,19 +70,45 @@ func newConn(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*BaseC
 		return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 	entry.Infof("connected to %s:%s", instance.Host, instance.Port)
-	return &BaseConn{
+
+	baseConn := &BaseConn{
 		log:  entry,
 		host: instance.Host,
 		port: instance.Port,
 		user: instance.User,
 		db:   db,
 		conn: conn,
-	}, nil
+	}
+	baseConn.connID, err = baseConn.getConnectionID()
+	if err != nil {
+		entry.Errorf("get conn id failed, err: %v", err)
+		// ignore the error to continue main process
+	}
+	return baseConn, nil
+}
+
+func (c *BaseConn) getConnectionID() (connID string, err error) {
+	res, err := c.Query("SELECT connection_id() AS conn_id")
+	if err != nil {
+		return "", err
+	}
+	for i := range res {
+		row := res[i]
+		if row["conn_id"].String != "" {
+			return row["conn_id"].String, nil
+		}
+	}
+
+	return "", nil
 }
 
 func (c *BaseConn) Close() {
 	c.conn.Close()
 	c.db.Close()
+}
+
+func (c *BaseConn) GetConnectionID() string {
+	return c.connID
 }
 
 func (c *BaseConn) Ping() error {

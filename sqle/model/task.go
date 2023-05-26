@@ -22,6 +22,9 @@ const (
 	TaskStatusManuallyExecuted = "manually_executed"
 	TaskStatusExecuteSucceeded = "exec_succeeded"
 	TaskStatusExecuteFailed    = "exec_failed"
+	TaskStatusTerminating      = "terminating"
+	TaskStatusTerminateFail    = "terminate_failed"
+	TaskStatusTerminateSucc    = "terminate_succeeded"
 )
 
 const (
@@ -87,6 +90,8 @@ const (
 	SQLExecuteStatusFailed           = "failed"
 	SQLExecuteStatusSucceeded        = "succeeded"
 	SQLExecuteStatusManuallyExecuted = "manually_executed"
+	SQLExecuteStatusTerminateSucc    = "terminate_succeeded"
+	SQLExecuteStatusTerminateFailed  = "terminate_failed"
 )
 
 type BaseSQL struct {
@@ -261,6 +266,15 @@ func (t *Task) HasDoingRollback() bool {
 	return false
 }
 
+func (s *Storage) GetTaskStatusByID(id string) (string, error) {
+	task := &Task{}
+	err := s.db.Select("status").Where("id = (?)", id).First(task).Error
+	if err != nil {
+		return "", err
+	}
+	return task.Status, nil
+}
+
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
 	err := s.db.Where("id = ?", taskId).Preload("Instance").First(task).Error
@@ -353,6 +367,11 @@ func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
 	return tx.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
 		"status": status,
 	}).Error
+}
+
+func (s *Storage) UpdateTaskStatusByIDs(taskIDs []uint, attrs ...interface{}) error {
+	err := s.db.Model(&Task{}).Where("id IN (?)", taskIDs).Update(attrs...).Error
+	return errors.ConnectStorageErrWrapper(err)
 }
 
 func updateExecuteSQLStatusByTaskId(tx *gorm.DB, taskId uint, status string) error {

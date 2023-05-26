@@ -173,3 +173,26 @@ func TestLowerCaseMapDelete(t *testing.T) {
 		})
 	}
 }
+
+func Test_IsClosed(t *testing.T) {
+	c1 := make(chan struct{})
+	if IsClosed(c1) {
+		t.Error("channel should not be closed")
+	}
+	close(c1)
+	if !IsClosed(c1) {
+		t.Error("channel should be closed")
+	}
+	if !IsClosed(nil) {
+		t.Error("nil channel should be deemed as closed")
+	}
+	c2 := make(chan struct{}, 1)
+	c2 <- struct{}{}
+	if IsClosed(c2) {
+		t.Error("c2 is not closed")
+	}
+	close(c2)
+	if !IsClosed(c2) {
+		t.Error("c2 is closed")
+	}
+}

@@ -4577,6 +4577,91 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "terminate multiple task by project and workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "终止工单下多个上线任务",
+                "operationId": "terminateMultipleTaskByWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "execute one task on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "终止单个上线任务",
+                "operationId": "terminateSingleTaskByWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_name}/": {
             "get": {
                 "security": [
@@ -8239,7 +8324,10 @@ var doc = `{
                             "doing",
                             "succeeded",
                             "failed",
-                            "manually_executed"
+                            "manually_executed",
+                            "terminating",
+                            "terminate_succeeded",
+                            "terminate_failed"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
@@ -14352,7 +14440,10 @@ var doc = `{
                         "exec_failed",
                         "exec_succeeded",
                         "executing",
-                        "manually_executed"
+                        "manually_executed",
+                        "terminating",
+                        "terminate_succeeded",
+                        "terminate_failed"
                     ]
                 },
                 "task_id": {
