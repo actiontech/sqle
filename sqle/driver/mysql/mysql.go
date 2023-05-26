@@ -224,6 +224,7 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer killConn.Db.Close()
 	killSQL := fmt.Sprintf("KILL %v", connID)
 	killFunc := func() error {
 		_, err := killConn.Db.Exec(killSQL)
