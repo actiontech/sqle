@@ -423,20 +423,12 @@ func (a *action) execute() (err error) {
 }
 
 func (a *action) GetTaskStatus(st *model.Storage) string {
-	if a.task == nil {
-		return ""
-	}
-	task, exist, err := st.GetTaskModelById(strconv.Itoa(int(a.task.ID)))
+	taskStatus, err := st.GetTaskStatusByID(strconv.Itoa(int(a.task.ID)))
 	if err != nil {
 		a.entry.Error(err.Error())
 		return ""
 	}
-	if !exist {
-		a.entry.Error(err.Error())
-		return ""
-	}
-
-	return task.Status
+	return taskStatus
 }
 
 func (a *action) execTask() (err error) {
