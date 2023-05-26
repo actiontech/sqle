@@ -23,8 +23,8 @@ const (
 	TaskStatusExecuteSucceeded = "exec_succeeded"
 	TaskStatusExecuteFailed    = "exec_failed"
 	TaskStatusTerminating      = "terminating"
-	TaskStatusTerminateFail    = "terminate_fail"
-	TaskStatusTerminateSucc    = "terminate_succ"
+	TaskStatusTerminateFail    = "terminate_failed"
+	TaskStatusTerminateSucc    = "terminate_succeeded"
 )
 
 const (
@@ -90,8 +90,8 @@ const (
 	SQLExecuteStatusFailed           = "failed"
 	SQLExecuteStatusSucceeded        = "succeeded"
 	SQLExecuteStatusManuallyExecuted = "manually_executed"
-	SQLExecuteStatusTerminateSucc    = "terminate_succ"
-	SQLExecuteStatusTerminateFailed  = "terminate_fail"
+	SQLExecuteStatusTerminateSucc    = "terminate_succeeded"
+	SQLExecuteStatusTerminateFailed  = "terminate_failed"
 )
 
 type BaseSQL struct {
