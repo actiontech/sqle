@@ -363,7 +363,7 @@ func (a *action) execute() (err error) {
 	select {
 	case e := <-exeErrChan:
 		err = e
-		if e != nil { // exec successfully, no termination
+		if e != nil {
 			taskStatus = model.TaskStatusExecuteFailed
 		}
 		// update task status by sql
