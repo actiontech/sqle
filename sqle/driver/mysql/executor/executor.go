@@ -12,7 +12,6 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
 )
@@ -91,7 +90,6 @@ func newConn(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*BaseC
 func (c *BaseConn) getConnectionID() (connID string, err error) {
 	res, err := c.Query("SELECT connection_id() AS conn_id")
 	if err != nil {
-		log.Logger().Debug(err.Error())
 		return "", err
 	}
 	for i := range res {
