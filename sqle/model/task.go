@@ -266,13 +266,13 @@ func (t *Task) HasDoingRollback() bool {
 	return false
 }
 
-func (s *Storage) GetTaskModelById(id string) (*Task, bool, error) {
+func (s *Storage) GetTaskStatusByID(id string) (string, error) {
 	task := &Task{}
-	err := s.db.Where("id = ?", id).First(task).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
+	err := s.db.Select("status").Where("id = (?)", id).First(task).Error
+	if err != nil {
+		return "", err
 	}
-	return task, true, errors.New(errors.ConnectStorageError, err)
+	return task.Status, nil
 }
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
