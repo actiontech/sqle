@@ -194,14 +194,14 @@ type action struct {
 	err  error
 	done chan struct{}
 
-	terminateStatus int // 0:no terminate, 1,terminating, 2: terminate_succ, 3:terminate_fail
+	terminateStatus int // 0:no terminate, 1,terminating, 2: terminate_succeeded, 3:terminate_failed
 }
 
 const (
 	statusNoTermination = iota
 	statusTerminating
-	statusTerminateSucc
-	statusTerminateFail
+	statusTerminateSucceeded
+	statusTerminateFailed
 )
 
 func (a *action) hasTermination() bool {
@@ -218,13 +218,13 @@ func (a *action) terminate() {
 
 func (a *action) terminatedSuccessfully() {
 	a.Lock()
-	a.terminateStatus = statusTerminateSucc
+	a.terminateStatus = statusTerminateSucceeded
 	a.Unlock()
 }
 
 func (a *action) terminatedFailed() {
 	a.Lock()
-	a.terminateStatus = statusTerminateFail
+	a.terminateStatus = statusTerminateFailed
 	a.Unlock()
 }
 
