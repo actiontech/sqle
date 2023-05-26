@@ -572,13 +572,16 @@ func GetSummaryOfWorkflowTasksV1(c echo.Context) error {
 }
 
 const (
-	taskDisplayStatusWaitForAudit     = "wait_for_audit"
-	taskDisplayStatusWaitForExecution = "wait_for_execution"
-	taskDisplayStatusExecFailed       = "exec_failed"
-	taskDisplayStatusExecSucceeded    = "exec_succeeded"
-	taskStatusManuallyExecuted        = "manually_executed"
-	taskDisplayStatusExecuting        = "executing"
-	taskDisplayStatusScheduled        = "exec_scheduled"
+	taskDisplayStatusWaitForAudit       = "wait_for_audit"
+	taskDisplayStatusWaitForExecution   = "wait_for_execution"
+	taskDisplayStatusExecFailed         = "exec_failed"
+	taskDisplayStatusExecSucceeded      = "exec_succeeded"
+	taskStatusManuallyExecuted          = "manually_executed"
+	taskDisplayStatusExecuting          = "executing"
+	taskDisplayStatusScheduled          = "exec_scheduled"
+	taskDisplayStatusTerminating        = "terminating"
+	taskDisplayStatusTerminateSucceeded = "terminate_succeeded"
+	taskDisplayStatusTerminateFailed    = "terminate_failed"
 )
 
 func GetTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time.Time) (status string) {
@@ -601,6 +604,12 @@ func GetTaskStatusRes(workflowStatus string, taskStatus string, scheduleAt *time
 		return taskDisplayStatusExecuting
 	case model.TaskStatusManuallyExecuted:
 		return taskStatusManuallyExecuted
+	case model.TaskStatusTerminating:
+		return taskDisplayStatusTerminating
+	case model.TaskStatusTerminateSucc:
+		return taskDisplayStatusTerminateSucceeded
+	case model.TaskStatusTerminateFail:
+		return taskDisplayStatusTerminateFailed
 	}
 	return ""
 }
