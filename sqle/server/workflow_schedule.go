@@ -179,6 +179,13 @@ func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry) {
 		if task.Status == model.TaskStatusAudited {
 			hasWaitExecute = true
 		}
+
+		// termination by user
+		if task.Status == model.TaskStatusTerminating ||
+			task.Status == model.TaskStatusTerminateSucc ||
+			task.Status == model.TaskStatusTerminateFail {
+			hasExecuteFailed = true
+		}
 	}
 
 	if hasWaitExecute {
