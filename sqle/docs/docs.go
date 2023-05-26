@@ -14440,7 +14440,10 @@ var doc = `{
                         "exec_failed",
                         "exec_succeeded",
                         "executing",
-                        "manually_executed"
+                        "manually_executed",
+                        "terminating",
+                        "terminate_succ",
+                        "terminate_fail"
                     ]
                 },
                 "task_id": {
