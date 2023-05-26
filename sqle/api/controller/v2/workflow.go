@@ -539,6 +539,7 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return err
 	}
 
+	// TODO: Code logic optimization
 	instances, err := s.GetUserCanOpInstancesFromProject(user, projectName, []uint{model.OP_WORKFLOW_EXECUTE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
