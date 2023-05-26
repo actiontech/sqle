@@ -538,6 +538,7 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	instances, err := s.GetUserCanOpInstancesFromProject(user, projectName, []uint{model.OP_WORKFLOW_EXECUTE})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -582,6 +583,8 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 			InstanceMaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
 			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
+
+		// NOTE: 当 SQL 处于上线中时，CurrentStepAssigneeUser 可能为空。此处需要「拥有上线权限的用户」
 		if taskDetail.TaskStatus == model.TaskStatusExecuting {
 			res[i].CurrentStepAssigneeUser = []string{instanceMap[taskDetail.InstanceName]}
 		}
