@@ -385,6 +385,18 @@ func (a *action) execute() (err error) {
 			a.terminatedSuccessfully() // NOTE: 如果中止成功，SQLs 状态已经被更新
 		}
 		taskStatus = model.TaskStatusExecuteFailed
+
+		// update workflow status
+		{
+			workflow, err := st.GetWorkflowDetailByTaskID(a.task.ID)
+			if err != nil {
+				return err
+			}
+			workflow.Record.Status = model.WorkflowStatusExecFailed
+			if err := st.UpdateWorkflowStatus(workflow); err != nil {
+				return err
+			}
+		}
 	}
 
 	a.entry.WithField("task_status", taskStatus).
