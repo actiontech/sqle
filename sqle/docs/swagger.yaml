@@ -4089,6 +4089,9 @@ definitions:
         - exec_succeeded
         - executing
         - manually_executed
+        - terminating
+        - terminate_succ
+        - terminate_fail
         type: string
       task_id:
         type: integer
