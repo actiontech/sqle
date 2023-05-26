@@ -365,6 +365,8 @@ func (a *action) execute() (err error) {
 		err = e
 		if e != nil {
 			taskStatus = model.TaskStatusExecuteFailed
+		} else {
+			taskStatus = model.TaskStatusExecuteSucceeded
 		}
 		// update task status by sql
 		for _, sql := range task.ExecuteSQLs {
