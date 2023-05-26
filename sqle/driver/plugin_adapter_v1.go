@@ -6,7 +6,9 @@ import (
 
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 )
@@ -124,7 +126,7 @@ func (p *PluginImplV1) Close(ctx context.Context) {
 }
 
 func (p *PluginImplV1) KillProcess(ctx context.Context) error {
-	return nil
+	return errors.NewNotImplementedError("KillProcess not support yet")
 }
 
 func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error) {

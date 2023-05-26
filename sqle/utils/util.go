@@ -231,8 +231,23 @@ func (l LowerCaseMap) Delete(key string) {
 	delete(l, strings.ToLower(key))
 }
 
-func TryClose(ch chan<- struct{}) {
-	if ch != nil {
+func IsClosed(ch <-chan struct{}) bool {
+	if ch == nil {
+		return true
+	}
+	select {
+	case _, ok := <-ch:
+		if !ok {
+			return true
+		}
+	default:
+	}
+
+	return false
+}
+
+func TryClose(ch chan struct{}) {
+	if !IsClosed(ch) {
 		close(ch)
 	}
 }
