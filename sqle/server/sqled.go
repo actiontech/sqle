@@ -365,6 +365,8 @@ func (a *action) execute() (err error) {
 		err = e
 		if e != nil {
 			taskStatus = model.TaskStatusExecuteFailed
+		} else {
+			taskStatus = model.TaskStatusExecuteSucceeded
 		}
 		// update task status by sql
 		for _, sql := range task.ExecuteSQLs {
@@ -399,17 +401,6 @@ func (a *action) execute() (err error) {
 		}
 		taskStatus = model.TaskStatusExecuteFailed
 
-		// update workflow status
-		{
-			workflow, err := st.GetWorkflowDetailByTaskID(a.task.ID)
-			if err != nil {
-				return err
-			}
-			workflow.Record.Status = model.WorkflowStatusExecFailed
-			if err := st.UpdateWorkflowStatus(workflow); err != nil {
-				return err
-			}
-		}
 	}
 
 	a.entry.WithField("task_status", taskStatus).
