@@ -194,25 +194,37 @@ type action struct {
 	err  error
 	done chan struct{}
 
-	terminateStatus int // 0:no terminate, 1: terminate_succ, 2:terminate_fail
+	terminateStatus int // 0:no terminate, 1,terminating, 2: terminate_succ, 3:terminate_fail
 }
+
+const (
+	statusNoTermination = iota
+	statusTerminating
+	statusTerminateSucc
+	statusTerminateFail
+)
 
 func (a *action) hasTermination() bool {
 	a.Lock()
-	termination := a.terminateStatus != 0
+	defer a.Unlock()
+	return a.terminateStatus != statusNoTermination
+}
+
+func (a *action) terminate() {
+	a.Lock()
+	a.terminateStatus = statusTerminating
 	a.Unlock()
-	return termination
 }
 
 func (a *action) terminatedSuccessfully() {
 	a.Lock()
-	a.terminateStatus = 1
+	a.terminateStatus = statusTerminateSucc
 	a.Unlock()
 }
 
 func (a *action) terminatedFailed() {
 	a.Lock()
-	a.terminateStatus = 2
+	a.terminateStatus = statusTerminateFail
 	a.Unlock()
 }
 
@@ -332,6 +344,7 @@ func (a *action) execute() (err error) {
 					return
 				default:
 					if a.GetTaskStatus(st) == model.TaskStatusTerminating {
+						a.terminate()
 						ctx, cancel := context.WithTimeout(
 							context.Background(), time.Minute*2)
 						defer cancel()
@@ -362,18 +375,18 @@ func (a *action) execute() (err error) {
 			}
 		}
 
-	case e := <-terminateErrChan:
-		if e != nil {
-			a.entry.Errorf("task(%v) termination failed, err: %v", task.ID, e)
+	case terminationErr := <-terminateErrChan:
+		if terminationErr != nil {
+			a.entry.Errorf("task(%v) termination failed, err: %v", task.ID, terminationErr)
 			a.terminatedFailed()
-			err = e
+			err = terminationErr
 
 			{ //NOTE: 由于上线中止失败，需要更新 SQLs 状态
 				for i := range task.ExecuteSQLs {
 					sql := task.ExecuteSQLs[i]
 					if sql.ExecStatus == model.SQLExecuteStatusDoing {
 						sql.ExecStatus = model.SQLExecuteStatusTerminateFailed
-						sql.ExecResult = fmt.Sprintf("%v", e)
+						sql.ExecResult = fmt.Sprintf("%v", terminationErr)
 					}
 				}
 				if err := st.UpdateExecuteSQLs(task.ExecuteSQLs); err != nil {
