@@ -74,9 +74,8 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-// TODO: send terminate signal to sqled action
-func TerminateWorkflowTasks(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
-	return errors.NewNotImplementedError("TerminateWorkflow has not been terminated yet")
+func TerminateWorkflowTasks(taskIDs []uint) {
+	GetSqled().TerminateTasks(taskIDs)
 }
 
 func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {

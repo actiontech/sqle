@@ -123,6 +123,18 @@ func (s *Sqled) AddTask(taskId string, typ int) error {
 	return err
 }
 
+func (s *Sqled) TerminateTasks(taskIDs []uint) {
+	s.Lock()
+	for i := range taskIDs {
+		taskID := taskIDs[i]
+		action := s.actionMap[taskID]
+		if action != nil {
+			utils.TryClose(action.killExecutionChan)
+		}
+	}
+	s.Unlock()
+}
+
 func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
 	action, err := s.addTask(taskId, typ)
 	if err != nil {
@@ -323,7 +335,7 @@ func (a *action) execute() (err error) {
 				defer cancel()
 				err = a.terminateExecution(ctx)
 				if err != nil {
-					errChan <- err
+					errChan <- err // TODO: err handle
 				}
 			}
 		}()
