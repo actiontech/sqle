@@ -426,15 +426,16 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 	if a.task == nil {
 		return ""
 	}
-	task, exit, err := st.GetTaskById(strconv.Itoa(int(a.task.ID)))
+	task, exist, err := st.GetTaskModelById(strconv.Itoa(int(a.task.ID)))
 	if err != nil {
-		a.entry.Errorf("get task status failed. err: %v", err)
+		a.entry.Error(err.Error())
 		return ""
 	}
-	if !exit {
-		a.entry.Errorf("task(%v) not found", a.task.ID)
+	if !exist {
+		a.entry.Error(err.Error())
 		return ""
 	}
+
 	return task.Status
 }
 
