@@ -25,6 +25,7 @@ type SMTPConfiguration struct {
 	Username         string       `json:"smtp_username" gorm:"column:smtp_username; not null"`
 	Password         string       `json:"-" gorm:"-"`
 	SecretPassword   string       `json:"secret_smtp_password" gorm:"column:secret_smtp_password; not null"`
+	IsSkipVerify     bool         `json:"is_skip_verify" gorm:"default:false; not null"`
 }
 
 func (i *SMTPConfiguration) TableName() string {
