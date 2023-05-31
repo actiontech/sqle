@@ -12338,6 +12338,9 @@
                 "enable_smtp_notify": {
                     "type": "boolean"
                 },
+                "is_skip_verify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string"
                 },
@@ -13110,6 +13113,9 @@
             "type": "object",
             "properties": {
                 "enable_smtp_notify": {
+                    "type": "boolean"
+                },
+                "is_skip_verify": {
                     "type": "boolean"
                 },
                 "smtp_host": {
