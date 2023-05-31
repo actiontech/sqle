@@ -512,10 +512,14 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			executeSQL.ExecResult = txErr.Error()
 			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, txErr) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
-				if len(results) != 0 && results[idx] != nil {
-					rowAffects, _ := results[idx].RowsAffected()
-					executeSQL.RowAffects = rowAffects
+				if idx >= len(results) {
+					continue
 				}
+				if results[idx] == nil {
+					continue
+				}
+				rowAffects, _ := results[idx].RowsAffected()
+				executeSQL.RowAffects = rowAffects
 			}
 			continue
 		}
