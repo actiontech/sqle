@@ -142,15 +142,19 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		go func() {
 			sqledServer := GetSqled()
 			task, err := sqledServer.AddTaskWaitResult(strconv.Itoa(int(id)), ActionTypeExecute)
+
+			{ // NOTE: Update the workflow status before sending notifications to ensure that the notification content reflects the latest information.
+				lock.Lock()
+				updateStatus(s, workflow, l)
+				lock.Unlock()
+			}
+
 			if err != nil || task.Status == model.TaskStatusExecuteFailed {
 				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteFail)
 			} else {
 				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
 			}
 
-			lock.Lock()
-			updateStatus(s, workflow, l)
-			lock.Unlock()
 		}()
 	}
 
