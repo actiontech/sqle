@@ -406,6 +406,8 @@ func (a *action) execute() (err error) {
 	a.entry.WithField("task_status", taskStatus).
 		Infof("execution is completed, err:%v", err)
 
+	a.task.Status = taskStatus
+
 	attrs = map[string]interface{}{
 		"status":      taskStatus,
 		"exec_end_at": time.Now(),
