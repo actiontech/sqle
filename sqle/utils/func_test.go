@@ -11,19 +11,19 @@ import (
 )
 
 func elapsedFunc(s int, e error) error {
-	time.Sleep(time.Second * time.Duration(s))
+	time.Sleep(time.Millisecond * time.Duration(s))
 	return e
 }
 
 var errTestMsg = errors.New("test err message")
 
 func cancelFn(cancel context.CancelFunc, timeout int) {
-	time.Sleep(time.Second * time.Duration(timeout))
+	time.Sleep(time.Millisecond * time.Duration(timeout))
 	cancel()
 }
 
 func getTimeoutCtx(timeout int) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(context.Background(), time.Second*time.Duration(timeout))
+	return context.WithTimeout(context.Background(), time.Millisecond*time.Duration(timeout))
 }
 
 func TestAsyncCallTimeout(t *testing.T) {
