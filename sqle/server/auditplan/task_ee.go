@@ -602,9 +602,6 @@ func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 		sqlCollector: newSQLCollector(entry, ap),
 	}
 	task.do = task.collectorDo
-	task.loopInterval = func() time.Duration {
-		return time.Second
-	}
 	return task
 }
 
