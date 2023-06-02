@@ -728,9 +728,12 @@ func (at *DB2TopSQLTask) collectorDo() {
 		return
 	}
 
-	if len(result.Column) == 0 {
+	if len(result.Rows) == 0 {
+		at.logger.Infof("db2 top sql audit_plan(%v) collected no statement", at.ap.ID)
 		return
 	}
+
+	at.logger.Infof("db2 top sql audit_plan(%v) collected %v statements", at.ap.ID, len(result.Rows))
 
 	sqls := []*SQL{}
 	for i := range result.Rows {
