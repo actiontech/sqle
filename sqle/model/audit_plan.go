@@ -56,7 +56,7 @@ func (a AuditPlanSQLV2) TableName() string {
 
 func (a *AuditPlanSQLV2) GetFingerprintMD5() string {
 	if a.FingerprintMD5 != "" {
-		return a.GetFingerprintMD5()
+		return a.GetFingerprintMD5() // FIX: Fix the code for the issue when the error occurs.
 	}
 	return utils.Md5String(a.Fingerprint)
 }
