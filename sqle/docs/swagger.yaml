@@ -2678,6 +2678,8 @@ definitions:
     properties:
       enable_smtp_notify:
         type: boolean
+      is_skip_verify:
+        type: boolean
       smtp_host:
         type: string
       smtp_port:
@@ -3198,6 +3200,8 @@ definitions:
   v1.UpdateSMTPConfigurationReqV1:
     properties:
       enable_smtp_notify:
+        type: boolean
+      is_skip_verify:
         type: boolean
       smtp_host:
         example: smtp.email.qq.com
