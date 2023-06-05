@@ -1,6 +1,7 @@
 package notification
 
 import (
+	"crypto/tls"
 	"fmt"
 	"strconv"
 	"strings"
@@ -56,6 +57,9 @@ func (n *EmailNotifier) Notify(notification Notification, users []*model.User) e
 
 	port, _ := strconv.Atoi(smtpC.Port)
 	dialer := gomail.NewDialer(smtpC.Host, port, smtpC.Username, smtpC.Password)
+	if smtpC.IsSkipVerify {
+		dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 	if err := dialer.DialAndSend(message); err != nil {
 		return fmt.Errorf("send email to %v error: %v", emails, err)
 	}

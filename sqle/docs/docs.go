@@ -12354,6 +12354,9 @@ var doc = `{
                 "enable_smtp_notify": {
                     "type": "boolean"
                 },
+                "is_skip_verify": {
+                    "type": "boolean"
+                },
                 "smtp_host": {
                     "type": "string"
                 },
@@ -13126,6 +13129,9 @@ var doc = `{
             "type": "object",
             "properties": {
                 "enable_smtp_notify": {
+                    "type": "boolean"
+                },
+                "is_skip_verify": {
                     "type": "boolean"
                 },
                 "smtp_host": {
