@@ -425,7 +425,7 @@ func (i *IM) encryptAppSecret() error {
 func (i *IM) AfterFind() error {
 	err := i.decryptAppSecret()
 	if err != nil {
-		log.NewEntry().Errorf("decrypt appscrect for IM server configuration failed, error: %v", err)
+		log.NewEntry().Errorf("decrypt appsecret for IM server configuration failed, error: %v", err)
 	}
 	return nil
 }
