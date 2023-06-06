@@ -958,6 +958,19 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 		}
 	}
 
+	// check instance
+	{
+		instanceNames, err := s.GetInstancesNamesByRuleTemplate(templateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if len(instanceNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related instances[%v]",
+				templateName, strings.Join(instanceNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
 	err = s.Delete(template)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
