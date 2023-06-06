@@ -451,3 +451,25 @@ func (s *Storage) GetInstancesNamesByRuleTemplateAndProject(
 
 	return instanceNames, nil
 }
+
+func (s *Storage) GetInstancesNamesByRuleTemplate(
+	ruleTemplateName string) (instanceNames []string, err error) {
+
+	var instances []*Instance
+
+	err = s.db.Model(&Instance{}).
+		Select("instances.name").
+		Joins("LEFT JOIN instance_rule_template AS irt ON irt.instance_id=instances.id").
+		Joins("LEFT JOIN rule_templates ON rule_templates.id=irt.rule_template_id").
+		Where("rule_templates.name=?", ruleTemplateName).Find(&instances).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	instanceNames = make([]string, len(instances))
+	for i := range instances {
+		instanceNames[i] = instances[i].Name
+	}
+
+	return instanceNames, nil
+}
