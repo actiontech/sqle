@@ -946,7 +946,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 
 	// check audit plans
 	{
-		auditPlanNames, err := s.GetAuditPlanNamesByRuleTemplate(templateName, project.ID)
+		auditPlanNames, err := s.GetAuditPlanNamesByRuleTemplateAndProject(templateName, project.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -960,7 +960,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 
 	// check instance
 	{
-		instanceNames, err := s.GetInstancesNamesByRuleTemplate(templateName, project.ID)
+		instanceNames, err := s.GetInstancesNamesByRuleTemplateAndProject(templateName, project.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
