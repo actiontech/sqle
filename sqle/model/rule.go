@@ -332,13 +332,25 @@ func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []uint
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateBeingUsedFromAnyProject(ruleTemplateName string) (bool, error) {
-	var count int
-	err := s.db.Table("audit_plans").
-		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
-		Where("audit_plans.deleted_at is null").
-		Count(&count).Error
-	return count > 0, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetAuditPlanNamesByRuleTemplate(
+	ruleTemplateName string) (auditPlanNames []string, err error) {
+
+	var auditPlans []*AuditPlan
+
+	err = s.db.Model(&AuditPlan{}).
+		Select("name").
+		Where("rule_template_name=?", ruleTemplateName).
+		Find(&auditPlans).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	auditPlanNames = make([]string, len(auditPlans))
+	for i := range auditPlans {
+		auditPlanNames[i] = auditPlans[i].Name
+	}
+
+	return
 }
 
 func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
