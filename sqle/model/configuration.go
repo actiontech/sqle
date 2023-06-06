@@ -25,6 +25,7 @@ type SMTPConfiguration struct {
 	Username         string       `json:"smtp_username" gorm:"column:smtp_username; not null"`
 	Password         string       `json:"-" gorm:"-"`
 	SecretPassword   string       `json:"secret_smtp_password" gorm:"column:secret_smtp_password; not null"`
+	IsSkipVerify     bool         `json:"is_skip_verify" gorm:"default:false; not null"`
 }
 
 func (i *SMTPConfiguration) TableName() string {
@@ -390,16 +391,57 @@ const (
 
 type IM struct {
 	Model
-	AppKey      string `json:"app_key" gorm:"column:app_key"`
-	AppSecret   string `json:"app_secret" gorm:"column:app_secret"`
-	IsEnable    bool   `json:"is_enable" gorm:"column:is_enable"`
-	ProcessCode string `json:"process_code" gorm:"column:process_code"`
+	AppKey           string `json:"app_key" gorm:"column:app_key"`
+	AppSecret        string `json:"-" gorm:"-"`
+	IsEnable         bool   `json:"is_enable" gorm:"column:is_enable"`
+	ProcessCode      string `json:"process_code" gorm:"column:process_code"`
+	EncryptAppSecret string `json:"encrypt_app_secret" gorm:"column:encrypt_app_secret"`
 	// 类型唯一
 	Type string `json:"type" gorm:"unique"`
 }
 
 func (i *IM) TableName() string {
 	return fmt.Sprintf("%v_im", globalConfigurationTablePrefix)
+}
+
+// BeforeSave is a hook implement gorm model before exec create.
+func (i *IM) BeforeSave() error {
+	return i.encryptAppSecret()
+}
+
+func (i *IM) encryptAppSecret() error {
+	if i == nil {
+		return nil
+	}
+	data, err := utils.AesEncrypt(i.AppSecret)
+	if err != nil {
+		return err
+	}
+	i.EncryptAppSecret = data
+	return nil
+}
+
+// AfterFind is a hook implement gorm model after query, ignore err if query from db.
+func (i *IM) AfterFind() error {
+	err := i.decryptAppSecret()
+	if err != nil {
+		log.NewEntry().Errorf("decrypt app secret for IM server configuration failed, error: %v", err)
+	}
+	return nil
+}
+
+func (i *IM) decryptAppSecret() error {
+	if i == nil {
+		return nil
+	}
+	if i.AppSecret == "" {
+		data, err := utils.AesDecrypt(i.EncryptAppSecret)
+		if err != nil {
+			return err
+		}
+		i.AppSecret = data
+	}
+	return nil
 }
 
 func (s *Storage) GetImConfigByType(imType string) (*IM, bool, error) {

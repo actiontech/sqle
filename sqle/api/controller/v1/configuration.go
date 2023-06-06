@@ -25,6 +25,7 @@ type UpdateSMTPConfigurationReqV1 struct {
 	Port             *string `json:"smtp_port" form:"smtp_port" example:"465" valid:"omitempty,port"`
 	Username         *string `json:"smtp_username" form:"smtp_username" example:"test@qq.com" valid:"omitempty,email"`
 	Password         *string `json:"smtp_password" form:"smtp_password" example:"123"`
+	IsSkipVerify     *bool   `json:"is_skip_verify" form:"is_skip_verify" description:"是否跳过安全认证"`
 }
 
 // @Summary 添加 SMTP 配置
@@ -62,6 +63,9 @@ func UpdateSMTPConfiguration(c echo.Context) error {
 		// It is never possible to trigger an error here
 		_ = smtpC.EnableSMTPNotify.Scan(*req.EnableSMTPNotify)
 	}
+	if req.IsSkipVerify != nil {
+		smtpC.IsSkipVerify = *req.IsSkipVerify
+	}
 
 	if err := s.Save(smtpC); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -79,6 +83,7 @@ type SMTPConfigurationResV1 struct {
 	Host             string `json:"smtp_host"`
 	Port             string `json:"smtp_port"`
 	Username         string `json:"smtp_username"`
+	IsSkipVerify     bool   `json:"is_skip_verify"`
 }
 
 // @Summary 获取 SMTP 配置
@@ -101,6 +106,7 @@ func GetSMTPConfiguration(c echo.Context) error {
 			Host:             smtpC.Host,
 			Port:             smtpC.Port,
 			Username:         smtpC.Username,
+			IsSkipVerify:     smtpC.IsSkipVerify,
 		},
 	})
 }
