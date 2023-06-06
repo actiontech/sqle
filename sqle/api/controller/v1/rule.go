@@ -944,12 +944,18 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot delete a global template from this api")))
 	}
 
-	used, err := s.IsRuleTemplateBeingUsed(templateName, project.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if used {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+	// check audit plans
+	{
+		auditPlanNames, err := s.GetAuditPlanNamesByRuleTemplate(templateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		if len(auditPlanNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related audit_plan[%v]",
+				templateName, strings.Join(auditPlanNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	err = s.Delete(template)
