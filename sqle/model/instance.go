@@ -429,7 +429,7 @@ func (s *Storage) BatchUpdateSyncTask(instTemplate *SyncTaskInstance) error {
 	return nil
 }
 
-func (s *Storage) GetInstancesNamesByRuleTemplate(
+func (s *Storage) GetInstancesNamesByRuleTemplateAndProject(
 	ruleTemplateName string, projectID uint) (instanceNames []string, err error) {
 
 	var instances []*Instance

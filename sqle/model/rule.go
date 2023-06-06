@@ -341,7 +341,7 @@ func (s *Storage) IsRuleTemplateBeingUsedFromAnyProject(ruleTemplateName string)
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanNamesByRuleTemplate(
+func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 	ruleTemplateName string, projectID uint) (auditPlanNames []string, err error) {
 
 	var auditPlans []*AuditPlan
