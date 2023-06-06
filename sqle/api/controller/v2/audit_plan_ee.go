@@ -32,12 +32,12 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
 	}
 
-	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, sqlNumberInt)
+	_, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, sqlNumberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	res, err := getSQLAnalysisResult(log.NewEntry(), instance, auditPlanReport.AuditPlan.InstanceDatabase, auditPlanReportSQLV2.SQL)
+	res, err := getSQLAnalysisResult(log.NewEntry(), instance, auditPlanReportSQLV2.Schema, auditPlanReportSQLV2.SQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
