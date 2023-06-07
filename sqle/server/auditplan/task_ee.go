@@ -464,6 +464,7 @@ WHERE sql_text != ''
 				Fingerprint: fp.fingerprint,
 				SQLContent:  fp.sql,
 				Info:        []byte(fpInfo),
+				Schema:		 fp.schema,
 			}
 		}
 	}
