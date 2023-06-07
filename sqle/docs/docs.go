@@ -7759,7 +7759,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v2.CreateWorkflowResV2"
                         }
                     }
                 }
@@ -14177,6 +14177,31 @@ var doc = `{
                     }
                 },
                 "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.CreateWorkflowResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.CreateWorkflowResV2Data"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.CreateWorkflowResV2Data": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
                     "type": "string"
                 }
             }
