@@ -971,6 +971,7 @@ func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time
 			Fingerprint: sql.fingerprint,
 			SQLContent:  sql.sql,
 			Info:        []byte(modelInfo),
+			Schema:      sql.schema,
 		}
 	}
 	return as
@@ -1174,6 +1175,7 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
 				Content: sql.SQLContent,
+				Schema:  sql.Schema,
 			},
 		}
 		{
@@ -1216,6 +1218,7 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 			SQL:          executeSQL.Content,
 			Number:       uint(i + 1),
 			AuditResults: executeSQL.AuditResults,
+			Schema:       executeSQL.Schema,
 		})
 	}
 
