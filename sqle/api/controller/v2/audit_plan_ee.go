@@ -22,6 +22,8 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
 
+	var schema string
+
 	reportIdInt, err := strconv.Atoi(reportId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
@@ -32,12 +34,18 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
 	}
 
-	_, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, sqlNumberInt)
+	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, sqlNumberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	res, err := getSQLAnalysisResult(log.NewEntry(), instance, auditPlanReportSQLV2.Schema, auditPlanReportSQLV2.SQL)
+	if auditPlanReport.AuditPlan.InstanceDatabase != "" {
+		schema = auditPlanReport.AuditPlan.InstanceDatabase
+	} else {
+		schema = auditPlanReportSQLV2.Schema
+	}
+
+	res, err := getSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
