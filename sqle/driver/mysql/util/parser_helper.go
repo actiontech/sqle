@@ -382,6 +382,11 @@ func WhereStmtExistNot(where ast.ExprNode) bool {
 				existNOT = true
 				return true
 			}
+		case *ast.ExistsSubqueryExpr:
+			if v, ok := x.Sel.(*ast.SubqueryExpr); ok && x.Not && v.Exists {
+				existNOT = true
+				return true
+			}
 		}
 		return false
 	}, where)
