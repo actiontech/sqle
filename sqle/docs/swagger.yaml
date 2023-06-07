@@ -3907,6 +3907,23 @@ definitions:
       workflow_subject:
         type: string
     type: object
+  v2.CreateWorkflowResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.CreateWorkflowResV2Data'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.CreateWorkflowResV2Data:
+    properties:
+      workflow_id:
+        type: string
+    type: object
   v2.DirectAuditReqV2:
     properties:
       instance_type:
@@ -9276,7 +9293,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v2.CreateWorkflowResV2'
       security:
       - ApiKeyAuth: []
       summary: 创建工单
