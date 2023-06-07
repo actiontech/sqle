@@ -765,7 +765,12 @@ func CreateWorkflowV2(c echo.Context) error {
 
 	go im.CreateApprove(workFlowId)
 
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return c.JSON(http.StatusOK, &CreateWorkflowResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &CreateWorkflowResV2Data{
+			WorkflowID: workflow.WorkflowId,
+		},
+	})
 }
 
 type UpdateWorkflowReqV2 struct {
