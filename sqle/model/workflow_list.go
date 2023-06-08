@@ -133,6 +133,10 @@ AND tasks.status = :filter_task_status
 AND inst.name = :filter_task_instance_name
 {{- end }}
 
+{{- if .filter_workflow_id }}
+AND w.workflow_id = :filter_workflow_id
+{{- end }}
+
 {{- if .filter_project_name }}
 AND p.name = :filter_project_name
 {{- end }}
