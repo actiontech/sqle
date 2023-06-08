@@ -109,12 +109,14 @@ func (w *WorkflowNotification) NotificationBody() string {
 	if err != nil || len(tasks) <= 0 {
 		return fmt.Sprintf(`
 - 工单主题: %v
+- 工单ID: %v
 - 工单描述: %v
 - 申请人: %v
 - 创建时间: %v
 - 读取工单任务内容失败，请通过SQLE界面确认工单状态
 `,
 			w.workflow.Subject,
+			w.workflow.WorkflowId,
 			w.workflow.Desc,
 			w.workflow.CreateUserName(),
 			w.workflow.CreatedAt)
@@ -123,10 +125,12 @@ func (w *WorkflowNotification) NotificationBody() string {
 	buf := bytes.Buffer{}
 	head := fmt.Sprintf(`
 - 工单主题: %v
+- 工单ID: %v
 - 工单描述: %v
 - 申请人: %v
 - 创建时间: %v`,
 		w.workflow.Subject,
+		w.workflow.WorkflowId,
 		w.workflow.Desc,
 		w.workflow.CreateUserName(),
 		w.workflow.CreatedAt)
