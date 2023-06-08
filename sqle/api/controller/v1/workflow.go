@@ -818,6 +818,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
+		"filter_workflow_id":                     req.FilterWorkflowID,
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
