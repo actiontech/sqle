@@ -2796,6 +2796,12 @@ select v1 from exist_db.exist_tb_1 where v2 is not null;
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
 	)
+	runSingleRuleInspectCase(rule, t, "select: check subquery where exist not null ", DefaultMysqlInspect(),
+		`
+select v1 from exist_db.exist_tb_1 where NOT EXISTS (select v1 from exist_db.exist_tb_1 where v2 = "3")
+`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
+	)
 }
 
 func TestCheckWhereExistImplicitConversion(t *testing.T) {

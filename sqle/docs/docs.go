@@ -4265,6 +4265,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter by workflow_id",
+                        "name": "filter_workflow_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter create time from",
                         "name": "filter_create_time_from",
                         "in": "query"
@@ -7759,7 +7765,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v2.CreateWorkflowResV2"
                         }
                     }
                 }
@@ -14177,6 +14183,31 @@ var doc = `{
                     }
                 },
                 "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.CreateWorkflowResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.CreateWorkflowResV2Data"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.CreateWorkflowResV2Data": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
                     "type": "string"
                 }
             }

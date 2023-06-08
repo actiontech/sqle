@@ -276,12 +276,32 @@ func DeleteRuleTemplate(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is not exist")))
 	}
-	used, err := s.IsRuleTemplateBeingUsedFromAnyProject(templateName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+
+	// check audit plans
+	{
+		auditPlanNames, err := s.GetAuditPlanNamesByRuleTemplate(templateName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		if len(auditPlanNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related audit_plan[%v]",
+				templateName, strings.Join(auditPlanNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
-	if used {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+
+	// check instance
+	{
+		instanceNames, err := s.GetInstancesNamesByRuleTemplate(templateName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if len(instanceNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related instances[%v]",
+				templateName, strings.Join(instanceNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	err = s.Delete(template)
@@ -944,12 +964,31 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you cannot delete a global template from this api")))
 	}
 
-	used, err := s.IsRuleTemplateBeingUsed(templateName, project.ID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	// check audit plans
+	{
+		auditPlanNames, err := s.GetAuditPlanNamesByRuleTemplateAndProject(templateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		if len(auditPlanNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related audit_plan[%v]",
+				templateName, strings.Join(auditPlanNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
-	if used {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template is being used")))
+
+	// check instance
+	{
+		instanceNames, err := s.GetInstancesNamesByRuleTemplateAndProject(templateName, project.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if len(instanceNames) > 0 {
+			err = errors.NewDataInvalidErr("rule_templates[%v] is still in use, related instances[%v]",
+				templateName, strings.Join(instanceNames, ", "))
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	err = s.Delete(template)

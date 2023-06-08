@@ -599,6 +599,15 @@ type CreateWorkflowReqV2 struct {
 	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
+type CreateWorkflowResV2 struct {
+	controller.BaseRes
+	Data *CreateWorkflowResV2Data `json:"data"`
+}
+
+type CreateWorkflowResV2Data struct {
+	WorkflowID string `json:"workflow_id"`
+}
+
 // CreateWorkflowV2
 // @Summary 创建工单
 // @Description create workflow
@@ -609,7 +618,7 @@ type CreateWorkflowReqV2 struct {
 // @Security ApiKeyAuth
 // @Param instance body v2.CreateWorkflowReqV2 true "create workflow request"
 // @Param project_name path string true "project name"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} CreateWorkflowResV2
 // @router /v2/projects/{project_name}/workflows [post]
 func CreateWorkflowV2(c echo.Context) error {
 	req := new(CreateWorkflowReqV2)
@@ -756,7 +765,12 @@ func CreateWorkflowV2(c echo.Context) error {
 
 	go im.CreateApprove(workFlowId)
 
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return c.JSON(http.StatusOK, &CreateWorkflowResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &CreateWorkflowResV2Data{
+			WorkflowID: workflow.WorkflowId,
+		},
+	})
 }
 
 type UpdateWorkflowReqV2 struct {
