@@ -332,22 +332,45 @@ func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []uint
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateBeingUsed(ruleTemplateName string, projectId uint) (bool, error) {
-	var count int
-	err := s.db.Table("rule_templates").
-		Joins("join audit_plans on audit_plans.project_id = rule_templates.project_id").
-		Where("audit_plans.deleted_at is null").
-		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
-		Where("rule_templates.project_id = ?", projectId).
-		Count(&count).Error
-	return count > 0, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetAuditPlanNamesByRuleTemplate(
+	ruleTemplateName string) (auditPlanNames []string, err error) {
+
+	var auditPlans []*AuditPlan
+
+	err = s.db.Model(&AuditPlan{}).
+		Select("name").
+		Where("rule_template_name=?", ruleTemplateName).
+		Find(&auditPlans).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	auditPlanNames = make([]string, len(auditPlans))
+	for i := range auditPlans {
+		auditPlanNames[i] = auditPlans[i].Name
+	}
+
+	return
 }
 
-func (s *Storage) IsRuleTemplateBeingUsedFromAnyProject(ruleTemplateName string) (bool, error) {
-	var count int
-	err := s.db.Table("audit_plans").
-		Where("audit_plans.rule_template_name = ?", ruleTemplateName).
-		Where("audit_plans.deleted_at is null").
-		Count(&count).Error
-	return count > 0, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
+	ruleTemplateName string, projectID uint) (auditPlanNames []string, err error) {
+
+	var auditPlans []*AuditPlan
+
+	err = s.db.Model(&AuditPlan{}).
+		Select("name").
+		Where("rule_template_name=?", ruleTemplateName).
+		Where("project_id=?", projectID).
+		Find(&auditPlans).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	auditPlanNames = make([]string, len(auditPlans))
+	for i := range auditPlans {
+		auditPlanNames[i] = auditPlans[i].Name
+	}
+
+	return auditPlanNames, nil
 }
