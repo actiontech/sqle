@@ -818,8 +818,9 @@ func UpdateLDAPConfiguration(c echo.Context) error {
 }
 
 type UpdateSystemVariablesReqV1 struct {
-	WorkflowExpiredHours *int    `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
-	Url                  *string `json:"url" form:"url" example:"http://10.186.61.32:8080" validate:"url"`
+	WorkflowExpiredHours        *int    `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
+	Url                         *string `json:"url" form:"url" example:"http://10.186.61.32:8080" validate:"url"`
+	OperationRecordExpiredHours *int    `json:"operation_record_expired_hours" form:"operation_record_expired_hours" example:"2160"`
 }
 
 // @Summary 修改系统变量

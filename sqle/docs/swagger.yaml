@@ -3233,6 +3233,9 @@ definitions:
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
+      operation_record_expired_hours:
+        example: 2160
+        type: integer
       url:
         example: http://10.186.61.32:8080
         type: string
