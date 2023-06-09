@@ -7036,6 +7036,10 @@ paths:
         in: query
         name: filter_subject
         type: string
+      - description: filter by workflow_id
+        in: query
+        name: filter_workflow_id
+        type: string
       - description: filter create time from
         in: query
         name: filter_create_time_from

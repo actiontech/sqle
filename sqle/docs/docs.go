@@ -4265,6 +4265,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter by workflow_id",
+                        "name": "filter_workflow_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter create time from",
                         "name": "filter_create_time_from",
                         "in": "query"
