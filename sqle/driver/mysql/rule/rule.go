@@ -1739,8 +1739,9 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "表中包含有太多的列",
-		Func:    checkColumnQuantity,
+		Message:      "表中包含有太多的列",
+		Func:         checkColumnQuantity,
+		AllowOffline: true,
 	}, {
 		Rule: driverV2.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
 			Name:       DDLRecommendTableColumnCharsetSame,
