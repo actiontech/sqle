@@ -5719,13 +5719,24 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	return nil
 }
 
-// TODO: needs to be processed separately according to the sql content
 func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
-	placeholdersCount := strings.Count(input.Node.Text(), "?")
+	placeholdersCount := 0
 	placeholdersLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-	if placeholdersCount > placeholdersLimit {
-		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if whereStmt, ok := stmt.Where.(*ast.PatternInExpr); ok && stmt.Where != nil {
+			for i := range whereStmt.List {
+				item := whereStmt.List[i]
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok { // ParamMarkerExpr is actually "?"
+					placeholdersCount++
+				}
+			}
+		}
+		if placeholdersCount > placeholdersLimit {
+			addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+		}
 	}
 
 	return nil
