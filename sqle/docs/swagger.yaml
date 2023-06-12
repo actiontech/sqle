@@ -2772,6 +2772,8 @@ definitions:
     type: object
   v1.SystemVariablesResV1:
     properties:
+      operation_record_expired_hours:
+        type: integer
       url:
         type: string
       workflow_expired_hours:

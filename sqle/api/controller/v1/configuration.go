@@ -868,8 +868,9 @@ type GetSystemVariablesResV1 struct {
 }
 
 type SystemVariablesResV1 struct {
-	WorkflowExpiredHours int    `json:"workflow_expired_hours"`
-	Url                  string `json:"url"`
+	WorkflowExpiredHours        int    `json:"workflow_expired_hours"`
+	Url                         string `json:"url"`
+	OperationRecordExpiredHours int    `json:"operation_record_expired_hours"`
 }
 
 // @Summary 获取系统变量
