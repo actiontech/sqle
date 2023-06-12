@@ -160,12 +160,37 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 				if err != nil {
 					return fmt.Errorf("second attempt create approval template error: %v", err)
 				}
+				goto End
+			} else if !tea.BoolValue(util.Empty(sdkErr.Code)) && *sdkErr.Code == "formName.error" {
+				getProcessCodeByNameHeaders := &dingTalkWorkflow.GetProcessCodeByNameHeaders{}
+				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
+
+				getProcessCodeByNameRequest := &dingTalkWorkflow.GetProcessCodeByNameRequest{
+					Name: tea.String("sqle审批"),
+				}
+
+				getProcessCodeResp, err := client.GetProcessCodeByNameWithOptions(getProcessCodeByNameRequest, getProcessCodeByNameHeaders, &util.RuntimeOptions{})
+				if err != nil {
+					return fmt.Errorf("get Process Code error: %v", err)
+				}
+				bodyResult := &dingTalkWorkflow.FormCreateResponseBodyResult{
+					ProcessCode: getProcessCodeResp.Body.Result.ProcessCode,
+				}
+				responseBody := &dingTalkWorkflow.FormCreateResponseBody{
+					Result: bodyResult,
+				}
+				resp = &dingTalkWorkflow.FormCreateResponse{
+					Headers: getProcessCodeResp.Headers,
+					Body:    responseBody,
+				}
+				goto End
 			}
 		}
 
 		return fmt.Errorf("create approval template error: %v", err)
 	}
 
+End:
 	if resp.Body.Result.ProcessCode == nil {
 		return fmt.Errorf("create approval template error: %v", resp.Body.Result)
 	}
