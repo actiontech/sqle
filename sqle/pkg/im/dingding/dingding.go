@@ -27,6 +27,7 @@ const (
 	workflowNameComp = "工单名称"
 	workDescComp     = "工单描述"
 	auditResultComp  = "审核结果"
+	formModleName    = "sqle审批"
 )
 
 type DingTalk struct {
@@ -61,6 +62,8 @@ func GetToken(key, secret string) (string, error) {
 // CreateApprovalTemplate
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-form-template
 func (d *DingTalk) CreateApprovalTemplate() error {
+	var processCode string
+
 	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -138,7 +141,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String("sqle审批"),
+		Name:           tea.String(formModleName),
 		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowDescComponent, workflowLinkComponent, tableComponent},
 	}
 
@@ -160,43 +163,44 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 				if err != nil {
 					return fmt.Errorf("second attempt create approval template error: %v", err)
 				}
+				if resp.Body.Result.ProcessCode != nil {
+					processCode = *resp.Body.Result.ProcessCode
+				}
 				goto End
+			// https://github.com/actiontech/sqle/issues/1487
 			} else if !tea.BoolValue(util.Empty(sdkErr.Code)) && *sdkErr.Code == "formName.error" {
 				getProcessCodeByNameHeaders := &dingTalkWorkflow.GetProcessCodeByNameHeaders{}
 				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
 				getProcessCodeByNameRequest := &dingTalkWorkflow.GetProcessCodeByNameRequest{
-					Name: tea.String("sqle审批"),
+					Name: tea.String(formModleName),
 				}
 
 				getProcessCodeResp, err := client.GetProcessCodeByNameWithOptions(getProcessCodeByNameRequest, getProcessCodeByNameHeaders, &util.RuntimeOptions{})
 				if err != nil {
 					return fmt.Errorf("get Process Code error: %v", err)
 				}
-				bodyResult := &dingTalkWorkflow.FormCreateResponseBodyResult{
-					ProcessCode: getProcessCodeResp.Body.Result.ProcessCode,
+				if getProcessCodeResp.Body.Result.ProcessCode != nil {
+					processCode = *getProcessCodeResp.Body.Result.ProcessCode
 				}
-				responseBody := &dingTalkWorkflow.FormCreateResponseBody{
-					Result: bodyResult,
-				}
-				resp = &dingTalkWorkflow.FormCreateResponse{
-					Headers: getProcessCodeResp.Headers,
-					Body:    responseBody,
-				}
+				
 				goto End
 			}
 		}
 
 		return fmt.Errorf("create approval template error: %v", err)
+	} else {
+		if resp.Body.Result.ProcessCode != nil {
+			processCode = *resp.Body.Result.ProcessCode
+		}
 	}
 
 End:
-	if resp.Body.Result.ProcessCode == nil {
+	if processCode == "" {
 		return fmt.Errorf("create approval template error: %v", resp.Body.Result)
 	}
 
 	s := model.GetStorage()
-	processCode := *resp.Body.Result.ProcessCode
 	if err := s.UpdateImConfigById(d.Id, map[string]interface{}{"process_code": processCode}); err != nil {
 		return fmt.Errorf("update process code error: %v", err)
 	}
