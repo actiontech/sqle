@@ -47,6 +47,15 @@ func UpdateSMTPConfiguration(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	{ // disable
+		if req.EnableSMTPNotify != nil && !(*req.EnableSMTPNotify) {
+			// It is never possible to trigger an error here
+			_ = smtpC.EnableSMTPNotify.Scan(false)
+			return controller.JSONBaseErrorReq(c, s.Save(smtpC))
+		}
+	}
+
 	if req.Host != nil {
 		smtpC.Host = *req.Host
 	}
@@ -314,6 +323,13 @@ func UpdateDingTalkConfigurationV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	{ // disable
+		if req.IsEnableDingTalkNotify != nil && !(*req.IsEnableDingTalkNotify) {
+			dingTalk.IsEnable = false
+			return controller.JSONBaseErrorReq(c, s.Save(dingTalk))
+		}
+	}
+
 	if req.AppKey != nil {
 		dingTalk.AppKey = *req.AppKey
 	}
@@ -454,6 +470,13 @@ func UpdateFeishuConfigurationV1(c echo.Context) error {
 	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishu)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // disable
+		if req.IsFeishuNotificationEnabled != nil && !(*req.IsFeishuNotificationEnabled) {
+			feishuCfg.IsEnable = false
+			return controller.JSONBaseErrorReq(c, s.Save(feishuCfg))
+		}
 	}
 
 	if req.AppID != nil {
@@ -628,6 +651,13 @@ func updateWeChatConfigurationV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	{ // disable
+		if req.EnableWeChatNotify != nil && !(*req.EnableWeChatNotify) {
+			wechatC.EnableWeChatNotify = false
+			return controller.JSONBaseErrorReq(c, s.Save(wechatC))
+		}
+	}
+
 	if req.CorpID != nil {
 		wechatC.CorpID = *req.CorpID
 	}
@@ -770,6 +800,13 @@ func UpdateLDAPConfiguration(c echo.Context) error {
 	ldapC, _, err := s.GetLDAPConfiguration()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // disable
+		if req.EnableLdap != nil && !(*req.EnableLdap) {
+			ldapC.Enable = false
+			return controller.JSONBaseErrorReq(c, s.Save(ldapC))
+		}
 	}
 
 	{ // patch ldap config
@@ -1026,6 +1063,13 @@ func UpdateOauth2Configuration(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	{ // disable
+		if req.EnableOauth2 != nil && !(*req.EnableOauth2) {
+			oauth2C.EnableOauth2 = false
+			return controller.JSONBaseErrorReq(c, s.Save(oauth2C))
+		}
+	}
+
 	{ // patch oauth2 config
 		if req.EnableOauth2 != nil {
 			oauth2C.EnableOauth2 = *req.EnableOauth2
@@ -1204,6 +1248,13 @@ func UpdateWorkflowWebHookConfig(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	{
+		if req.Enable != nil && !(*req.Enable) {
+			cfg.Enable = false
+			return controller.JSONBaseErrorReq(c, s.Save(cfg))
+		}
+	}
+
 	if req.Enable != nil {
 		cfg.Enable = *req.Enable
 	}
