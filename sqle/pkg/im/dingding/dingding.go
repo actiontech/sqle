@@ -22,12 +22,12 @@ const (
 	dingTalkOpenApi = "https://oapi.dingtalk.com/topapi"
 	timeout         = 30 * time.Second
 
-	projectNameComp  = "项目名称"
-	workflowLinkComp = "工单链接"
-	workflowNameComp = "工单名称"
-	workDescComp     = "工单描述"
-	auditResultComp  = "审核结果"
-	formModleName    = "sqle审批"
+	projectNameComp           = "项目名称"
+	workflowLinkComp          = "工单链接"
+	workflowNameComp          = "工单名称"
+	workDescComp              = "工单描述"
+	auditResultComp           = "审核结果"
+	approvalTemplateModleName = "sqle审批"
 )
 
 type DingTalk struct {
@@ -141,7 +141,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String(formModleName),
+		Name:           tea.String(approvalTemplateModleName),
 		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowDescComponent, workflowLinkComponent, tableComponent},
 	}
 
@@ -173,7 +173,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
 				getProcessCodeByNameRequest := &dingTalkWorkflow.GetProcessCodeByNameRequest{
-					Name: tea.String(formModleName),
+					Name: tea.String(approvalTemplateModleName),
 				}
 
 				getProcessCodeResp, err := client.GetProcessCodeByNameWithOptions(getProcessCodeByNameRequest, getProcessCodeByNameHeaders, &util.RuntimeOptions{})
@@ -183,7 +183,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 				if getProcessCodeResp.Body.Result.ProcessCode != nil {
 					processCode = *getProcessCodeResp.Body.Result.ProcessCode
 				}
-				
+
 				goto End
 			}
 		}
