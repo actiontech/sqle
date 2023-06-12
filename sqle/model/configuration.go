@@ -339,15 +339,6 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 
 	sysVariables := make(map[string] /*system variable key*/ SystemVariable, len(svs))
 	for _, sv := range svs {
-		if sv.Key == SystemVariableWorkflowExpiredHours {
-			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
-			if err != nil {
-				log.NewEntry().Errorf("parse workflow expired hours failed, error: %v", err)
-				continue
-			}
-			sv.Value = strconv.Itoa(int(wfExpiredHs))
-		}
-
 		sysVariables[sv.Key] = sv
 	}
 
