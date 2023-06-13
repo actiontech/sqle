@@ -167,8 +167,12 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 		//nolint:nilerr
 		return nil
 	}
+
 	// 更新实例
-	params["config"].(map[string]interface{})["connectionId"] = cbInstID
+	if res, ok := params["config"].(map[string]interface{}); ok {
+		res["connectionId"] = cbInstID
+	}
+
 	req := gqlClient.NewRequest(QueryGQL.UpdateConnectionQuery(), params)
 	resp := struct {
 		Connection struct {
