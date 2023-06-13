@@ -56,7 +56,11 @@ func GetUserName(c echo.Context) string {
 	if !ok {
 		return ""
 	}
-	return claims["name"].(string)
+
+	if name, ok := claims["name"].(string); ok {
+		return name
+	}
+	return ""
 }
 
 func GetCurrentUser(c echo.Context) (*model.User, error) {
