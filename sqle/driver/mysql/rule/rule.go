@@ -5428,7 +5428,7 @@ func checkSubqueryLimit(input *RuleHandlerInput) error {
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch pattern := expr.(type) {
 			case *ast.SubqueryExpr:
-				if pattern.Query.(*ast.SelectStmt).Limit != nil {
+				if stmt, ok := pattern.Query.(*ast.SelectStmt); ok && stmt.Limit != nil && pattern.Query != nil {
 					trigger = true
 					return true
 				}
