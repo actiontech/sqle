@@ -12498,6 +12498,9 @@ var doc = `{
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
+                "operation_record_expired_hours": {
+                    "type": "integer"
+                },
                 "url": {
                     "type": "string"
                 },
@@ -13182,6 +13185,10 @@ var doc = `{
         "v1.UpdateSystemVariablesReqV1": {
             "type": "object",
             "properties": {
+                "operation_record_expired_hours": {
+                    "type": "integer",
+                    "example": 2160
+                },
                 "url": {
                     "type": "string",
                     "example": "http://10.186.61.32:8080"
