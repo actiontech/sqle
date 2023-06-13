@@ -27,7 +27,7 @@ const (
 	workflowNameComp          = "工单名称"
 	workDescComp              = "工单描述"
 	auditResultComp           = "审核结果"
-	approvalTemplateModleName = "sqle审批"
+	approvalTemplateModelName = "sqle审批"
 )
 
 type DingTalk struct {
@@ -141,7 +141,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 	}
 
 	formCreateRequest := &dingTalkWorkflow.FormCreateRequest{
-		Name:           tea.String(approvalTemplateModleName),
+		Name:           tea.String(approvalTemplateModelName),
 		FormComponents: []*dingTalkWorkflow.FormComponent{projectNameComponent, workflowNameComponent, workflowDescComponent, workflowLinkComponent, tableComponent},
 	}
 
@@ -173,7 +173,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
 
 				getProcessCodeByNameRequest := &dingTalkWorkflow.GetProcessCodeByNameRequest{
-					Name: tea.String(approvalTemplateModleName),
+					Name: tea.String(approvalTemplateModelName),
 				}
 
 				getProcessCodeResp, err := client.GetProcessCodeByNameWithOptions(getProcessCodeByNameRequest, getProcessCodeByNameHeaders, &util.RuntimeOptions{})
