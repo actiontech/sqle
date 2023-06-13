@@ -46,7 +46,10 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		// 包含子查询的insert语句，insert into t1 (name) select name from t2
 		isSelectInsert := stmt.Select != nil && stmt.Lists == nil
 		if isSelectInsert {
-			newNode = getSelectNodeFromSelect(stmt.Select.(*ast.SelectStmt))
+			if ss, ok := stmt.Select.(*ast.SelectStmt); ok {
+				newNode = getSelectNodeFromSelect(ss)
+			}
+
 		} else if isCommonInsert {
 			return int64(len(stmt.Lists)), nil
 		} else {
