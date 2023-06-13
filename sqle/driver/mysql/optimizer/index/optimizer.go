@@ -616,7 +616,13 @@ func getTableNameFromSingleSelect(ss *ast.SelectStmt) string {
 	if ss.From.TableRefs.Left == nil {
 		return ""
 	}
-	return ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.O
+
+	if ts, ok := ss.From.TableRefs.Left.(*ast.TableSource); ok {
+		if tn, ok := ts.Source.(*ast.TableName); ok {
+			return tn.Name.O
+		}
+	}
+	return ""
 }
 
 // removeDrivingTable remove driving table from execution plan.
