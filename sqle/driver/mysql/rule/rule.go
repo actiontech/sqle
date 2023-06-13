@@ -5719,6 +5719,7 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	return nil
 }
 
+// NOTE: ParamMarkerExpr is actually "?"
 func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
 	placeholdersCount := 0
@@ -5730,7 +5731,7 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 		if whereStmt, ok := stmt.Where.(*ast.PatternInExpr); ok && stmt.Where != nil {
 			for i := range whereStmt.List {
 				item := whereStmt.List[i]
-				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok { // ParamMarkerExpr is actually "?"
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
 					placeholdersCount++
 				}
 			}
@@ -5774,7 +5775,7 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 		for i := range stmt.Lists {
 			for j := range stmt.Lists[i] {
 				item := stmt.Lists[i][j]
-				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok { // ParamMarkerExpr is actually "?"
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
 					placeholdersCount++
 				}
 			}
