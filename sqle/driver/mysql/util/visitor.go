@@ -163,7 +163,10 @@ type TableSourceExtractor struct {
 func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
 	case *ast.TableSource:
-		ts.TableSources[(stmt.Source).(*ast.TableName).Name.O] = stmt
+		if tn, ok := stmt.Source.(*ast.TableName); ok {
+			ts.TableSources[tn.Name.O] = stmt
+		}
+
 	}
 	return in, false
 }
