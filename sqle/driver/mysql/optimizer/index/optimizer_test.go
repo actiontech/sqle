@@ -409,7 +409,7 @@ func TestOptimizer_parseSelectStmt(t *testing.T) {
 			assert.NoError(t, err)
 
 			o := Optimizer{tables: map[string]*tableInSelect{}}
-			o.parseSelectStmt(stmt.(*ast.SelectStmt))
+			o.parseSelectStmt(stmt.(*ast.SelectStmt)) // nolint
 			for n, tbl := range o.tables {
 				if tbl.singleTableSel == nil {
 					c, ok := tt.join[n]
@@ -469,7 +469,7 @@ func TestOptimizer_needIndex(t *testing.T) {
 			mockSelect := fmt.Sprintf("select * from %s", tt.tableName)
 			stmt, err := parser.New().ParseOneStmt(mockSelect, "", "")
 			assert.NoError(t, err)
-			o.tables[tt.tableName] = &tableInSelect{singleTableSel: stmt.(*ast.SelectStmt)}
+			o.tables[tt.tableName] = &tableInSelect{singleTableSel: stmt.(*ast.SelectStmt)} // nolint
 			got, err := o.needIndex(tt.tableName, tt.indexColumn...)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
