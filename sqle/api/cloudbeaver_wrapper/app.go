@@ -327,9 +327,14 @@ func (w *responseProcessWriter) Write(b []byte) (int, error) {
 }
 
 func (w *responseProcessWriter) Flush() {
-	w.ResponseWriter.(http.Flusher).Flush()
+	if res, ok := w.ResponseWriter.(http.Flusher); ok {
+		res.Flush()
+	}
 }
 
 func (w *responseProcessWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	if res, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return res.Hijack()
+	}
+	return nil, nil, fmt.Errorf("unsupported response writer: %#v", w.ResponseWriter)
 }
