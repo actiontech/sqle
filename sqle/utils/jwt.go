@@ -79,7 +79,11 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 	if !ok {
 		return "", jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
 	}
-	return apn.(string), nil
+	if s, ok := apn.(string); ok {
+		return s, nil
+	}
+
+	return "", fmt.Errorf("unsupported apn: %#v", apn)
 }
 
 func GetUserNameFromJWTToken(token string) (string, error) {
