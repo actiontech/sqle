@@ -374,6 +374,10 @@ func fillOceanBaseParams(inst *sqleModel.Instance, config map[string]interface{}
 
 	config["driverId"] = "oceanbase:alipay_oceanbase"
 	config["authModelId"] = "oceanbase_native"
-	config["credentials"].(map[string]interface{})["userName"] = fmt.Sprintf("%v@%v", inst.User, tenant)
+
+	if res, ok := config["credentials"].(map[string]interface{}); ok {
+		res["userName"] = fmt.Sprintf("%v@%v", inst.User, tenant)
+	}
+
 	return nil
 }
