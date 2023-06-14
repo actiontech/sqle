@@ -78,6 +78,7 @@ require (
 )
 
 replace (
+	github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20230614092412-936a5cff4635
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
