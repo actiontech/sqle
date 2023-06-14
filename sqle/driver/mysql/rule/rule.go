@@ -5719,14 +5719,108 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	return nil
 }
 
-// TODO: needs to be processed separately according to the sql content
+// NOTE: ParamMarkerExpr is actually "?".
+// ref: https://docs.pingcap.com/zh/tidb/dev/expression-syntax#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95-expression-syntax
+// ref: https://github.com/pingcap/tidb/blob/master/types/parser_driver/value_expr.go#L247
 func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
-	placeholdersCount := strings.Count(input.Node.Text(), "?")
+	placeholdersCount := 0
 	placeholdersLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+
+		if whereStmt, ok := stmt.Where.(*ast.PatternInExpr); ok && stmt.Where != nil {
+			for i := range whereStmt.List {
+				item := whereStmt.List[i]
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
+					placeholdersCount++
+				}
+			}
+		}
+
+		if stmt.Fields != nil {
+			for i := range stmt.Fields.Fields {
+				item := stmt.Fields.Fields[i]
+				if _, ok := item.Expr.(*parserdriver.ParamMarkerExpr); ok && item.Expr != nil {
+					placeholdersCount++
+				}
+			}
+		}
+
+		if stmt.GroupBy != nil {
+			for i := range stmt.GroupBy.Items {
+				item := stmt.GroupBy.Items[i]
+				if _, ok := item.Expr.(*parserdriver.ParamMarkerExpr); ok && item.Expr != nil {
+					placeholdersCount++
+				}
+			}
+		}
+
+		if stmt.Having != nil && stmt.Having.Expr != nil {
+			item := stmt.Having.Expr
+			if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
+				placeholdersCount++
+			}
+		}
+
+		if stmt.OrderBy != nil {
+			for i := range stmt.OrderBy.Items {
+				item := stmt.OrderBy.Items[i]
+				if _, ok := item.Expr.(*parserdriver.ParamMarkerExpr); ok && item.Expr != nil {
+					placeholdersCount++
+				}
+			}
+		}
+
+	case *ast.InsertStmt:
+		for i := range stmt.Lists {
+			for j := range stmt.Lists[i] {
+				item := stmt.Lists[i][j]
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
+					placeholdersCount++
+				}
+			}
+		}
+		for i := range stmt.Setlist {
+			if _, ok := stmt.Setlist[i].Expr.(*parserdriver.ParamMarkerExpr); ok && stmt.Setlist[i].Expr != nil {
+				placeholdersCount++
+			}
+		}
+		for i := range stmt.OnDuplicate {
+			if _, ok := stmt.OnDuplicate[i].Expr.(*parserdriver.ParamMarkerExpr); ok && stmt.OnDuplicate[i].Expr != nil {
+				placeholdersCount++
+			}
+		}
+
+	case *ast.UpdateStmt:
+		for i := range stmt.List {
+			item := stmt.List[i]
+			if _, ok := item.Expr.(*parserdriver.ParamMarkerExpr); ok && item.Expr != nil {
+				placeholdersCount++
+			}
+		}
+		if whereStmt, ok := stmt.Where.(*ast.PatternInExpr); ok && stmt.Where != nil {
+			for i := range whereStmt.List {
+				item := whereStmt.List[i]
+				if _, ok := item.(*parserdriver.ParamMarkerExpr); ok {
+					placeholdersCount++
+				}
+			}
+		}
+		if stmt.Order != nil {
+			for i := range stmt.Order.Items {
+				item := stmt.Order.Items[i]
+				if _, ok := item.Expr.(*parserdriver.ParamMarkerExpr); ok && item.Expr != nil {
+					placeholdersCount++
+				}
+			}
+		}
+
+	}
+
 	if placeholdersCount > placeholdersLimit {
 		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
 	}
-
 	return nil
 }
