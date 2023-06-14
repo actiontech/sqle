@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	SqlAuditTaskExpiredTime = 3 * 24  // 3 days
-	OperationLogExpiredTime = 90 * 24 // 90 days
+	SqlAuditTaskExpiredTime = 3 * 24 // 3 days
 )
 
 type CleanJob struct {
@@ -84,10 +83,12 @@ func (j *CleanJob) CleanExpiredTasks(entry *logrus.Entry) {
 }
 
 func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
-	start := time.Now().Add(-OperationLogExpiredTime * time.Hour)
 
 	st := model.GetStorage()
+	operationRecordExpiredHours := getOperationRecordExpiredHours(st, j.entry)
+	start := time.Now().Add(-time.Duration(operationRecordExpiredHours) * time.Hour)
 	idList, err := st.GetExpiredOperationRecordIDListByStartTime(start)
+
 	if err != nil {
 		entry.Errorf("get expired operation record id list error: %v", err)
 		return
@@ -101,4 +102,26 @@ func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
 
 		entry.Infof("delete expired operation record succeeded, count: %d id: %s", len(idList), strings.Join(idList, ","))
 	}
+}
+
+func getOperationRecordExpiredHours(
+	s *model.Storage, entry *logrus.Entry) (operationRecordExpiredHours int) {
+
+	operationRecordExpiredHours = model.DefaultOperationRecordExpiredHours
+	systemVariables, err := s.GetAllSystemVariables()
+	if err != nil {
+		entry.Warnf("get system variables failed, err: %s", err.Error())
+		return operationRecordExpiredHours
+	}
+	strVal := systemVariables[model.SystemVariableOperationRecordExpiredHours].Value
+	intVal, err := strconv.Atoi(strVal)
+	if err != nil {
+		entry.Warnf(
+			"get system variables operation_record_expired_hours failed, err: %s",
+			err.Error())
+		return operationRecordExpiredHours
+	}
+	operationRecordExpiredHours = intVal
+
+	return operationRecordExpiredHours
 }
