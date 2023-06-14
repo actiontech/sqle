@@ -5719,7 +5719,9 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	return nil
 }
 
-// NOTE: ParamMarkerExpr is actually "?"
+// NOTE: ParamMarkerExpr is actually "?".
+// ref: https://docs.pingcap.com/zh/tidb/dev/expression-syntax#%E8%A1%A8%E8%BE%BE%E5%BC%8F%E8%AF%AD%E6%B3%95-expression-syntax
+// ref: https://github.com/pingcap/tidb/blob/master/types/parser_driver/value_expr.go#L247
 func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
 	placeholdersCount := 0
