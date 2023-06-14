@@ -305,8 +305,13 @@ func (s *Storage) GetOauth2Configuration() (*Oauth2Configuration, bool, error) {
 }
 
 const (
-	SystemVariableWorkflowExpiredHours = "system_variable_workflow_expired_hours"
-	SystemVariableSqleUrl              = "system_variable_sqle_url"
+	SystemVariableWorkflowExpiredHours        = "system_variable_workflow_expired_hours"
+	SystemVariableSqleUrl                     = "system_variable_sqle_url"
+	SystemVariableOperationRecordExpiredHours = "system_variable_operation_record_expired_hours"
+)
+
+const (
+	DefaultOperationRecordExpiredHours = 90 * 24
 )
 
 // SystemVariable store misc K-V.
@@ -334,15 +339,6 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 
 	sysVariables := make(map[string] /*system variable key*/ SystemVariable, len(svs))
 	for _, sv := range svs {
-		if sv.Key == SystemVariableWorkflowExpiredHours {
-			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
-			if err != nil {
-				log.NewEntry().Errorf("parse workflow expired hours failed, error: %v", err)
-				continue
-			}
-			sv.Value = strconv.Itoa(int(wfExpiredHs))
-		}
-
 		sysVariables[sv.Key] = sv
 	}
 
@@ -350,6 +346,13 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 		sysVariables[SystemVariableWorkflowExpiredHours] = SystemVariable{
 			Key:   SystemVariableWorkflowExpiredHours,
 			Value: strconv.Itoa(30 * 24),
+		}
+	}
+
+	if _, ok := sysVariables[SystemVariableOperationRecordExpiredHours]; !ok {
+		sysVariables[SystemVariableOperationRecordExpiredHours] = SystemVariable{
+			Key:   SystemVariableOperationRecordExpiredHours,
+			Value: strconv.Itoa(DefaultOperationRecordExpiredHours),
 		}
 	}
 
