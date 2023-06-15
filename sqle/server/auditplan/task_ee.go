@@ -205,6 +205,7 @@ SELECT
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
     OCEANBASE.GV$SQL
+WHERE %v != ''
 GROUP BY
     SQL_ID
 ORDER BY
@@ -217,6 +218,7 @@ LIMIT %v
 			OBMySQLSQLInfoKeyMaxElapsed,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
+			OBMySQLSQLKeySQLText,
 			OBMySQLSQLInfoKeyMaxElapsed,
 			topN)
 
@@ -231,6 +233,7 @@ SELECT
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
     OCEANBASE.GV$SQL
+WHERE %v != ''
 GROUP BY
     SQL_ID
 ORDER BY
@@ -243,6 +246,7 @@ LIMIT %v
 			OBMySQLSQLInfoKeyAverageCPU,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
+			OBMySQLSQLKeySQLText,
 			OBMySQLSQLInfoKeyAverageCPU,
 			topN,
 		)
@@ -259,6 +263,7 @@ SELECT
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
     OCEANBASE.GV$SQL
+WHERE %v != ''
 GROUP BY
     SQL_ID
 ORDER BY
@@ -272,6 +277,7 @@ LIMIT %v
 			OBMySQLSQLInfoKeyDiskRead,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
+			OBMySQLSQLKeySQLText,
 			OBMySQLSQLInfoKeyAverageIOWait,
 			topN,
 		)
@@ -464,7 +470,7 @@ WHERE sql_text != ''
 				Fingerprint: fp.fingerprint,
 				SQLContent:  fp.sql,
 				Info:        []byte(fpInfo),
-				Schema:		 fp.schema,
+				Schema:      fp.schema,
 			}
 		}
 	}
