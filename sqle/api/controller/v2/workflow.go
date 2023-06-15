@@ -654,12 +654,20 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	_, exist, err = s.GetWorkflowByProjectAndWorkflowName(project.Name, req.Subject)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow[%v] is exist", req.Subject)))
+	}
+
 	_, exist, err = s.GetWorkflowByProjectNameAndWorkflowId(project.Name, workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow is exist")))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow[%v] is exist", workflowId)))
 	}
 
 	taskIds := utils.RemoveDuplicateUint(req.TaskIds)
