@@ -958,6 +958,18 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
+			Name:       DDLCheckAutoIncrementFieldNum,
+			Desc:       "索引字段均未做非空约束",
+			Annotation: "索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "索引字段均未做非空约束",
+		Func:         checkAllIndexNotNullConstraint,
+	},
+	{
+		Rule: driverV2.Rule{
 			Name:       DMLCheckWithLimit,
 			Desc:       "delete/update 语句不能有limit条件",
 			Annotation: "delete/update 语句使用limit条件将随机选取数据进行删除或者更新，业务无法预期",
@@ -3375,7 +3387,8 @@ func (i index) String() string {
 	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
 }
 
-func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+
+func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struct{}, error) {
 	indexCols := []string{}
 	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
 
@@ -3443,7 +3456,7 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
-			return err
+			return indexCols, colsWithNotNullConstraint, err
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
@@ -3458,7 +3471,7 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 	case *ast.CreateIndexStmt:
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
-			return err
+			return indexCols, colsWithNotNullConstraint, err
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
@@ -3474,7 +3487,16 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 			indexCols = append(indexCols, specification.Column.Name.L)
 		}
 	default:
-		return nil
+		return indexCols, colsWithNotNullConstraint, nil
+	}
+	return indexCols, colsWithNotNullConstraint, nil
+}
+
+
+func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols, colsWithNotNullConstraint, err := getIndexAndNotNullCols(input)
+	if err != nil {
+		return err
 	}
 
 	idxColsWithoutNotNull := []string{}
@@ -5851,5 +5873,24 @@ func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name, tablesString)
 	}
 
+	return nil
+}
+
+func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols, colsWithNotNullConstraint, err := getIndexAndNotNullCols(input)
+	if err != nil {
+		return err
+	}
+
+	idxColsWithoutNotNull := []string{}
+	indexCols = utils.RemoveDuplicate(indexCols)
+	for _, k := range indexCols {
+		if _, ok := colsWithNotNullConstraint[k]; !ok {
+			idxColsWithoutNotNull = append(idxColsWithoutNotNull, k)
+		}
+	}
+	if len(idxColsWithoutNotNull) == len(indexCols) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
 	return nil
 }
