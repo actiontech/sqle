@@ -111,6 +111,7 @@ const (
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
+	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 )
 
 // inspector DML rules
@@ -173,6 +174,7 @@ const (
 	DMLCheckLimitOffsetNum                    = "dml_check_limit_offset_num"
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
+	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
 )
 
 // inspector config code
@@ -941,6 +943,18 @@ var RuleHandlers = []RuleHandler{
 		Message:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 		AllowOffline: true,
 		Func:         checkColumnBlobDefaultNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckAutoIncrementFieldNum,
+			Desc:       "建表时，自增字段不止一个",
+			Annotation: "设置多个自增字段可能导致数据不一致、冲突和维护复杂性的问题。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "建表时，自增字段不止一个",
+		Func:         checkAutoIncrementFieldNum,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -5726,6 +5740,29 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 	placeholdersLimit := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 	if placeholdersCount > placeholdersLimit {
 		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+	}
+
+	return nil
+}
+
+func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
+	autoIncrementFieldNums := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionAutoIncrement {
+					autoIncrementFieldNums += 1
+					break
+				}
+			}
+		}
+	default:
+		return nil
+	}
+
+	if autoIncrementFieldNums > 1 {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 
 	return nil
