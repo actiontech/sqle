@@ -112,6 +112,7 @@ const (
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
+	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 )
 
 // inspector DML rules
@@ -958,7 +959,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DDLCheckAutoIncrementFieldNum,
+			Name:       DDLCheckAllIndexNotNullConstraint,
 			Desc:       "索引字段均未做非空约束",
 			Annotation: "索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。",
 			Level:      driverV2.RuleLevelWarn,
@@ -3387,7 +3388,6 @@ func (i index) String() string {
 	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
 }
 
-
 func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struct{}, error) {
 	indexCols := []string{}
 	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
@@ -3491,7 +3491,6 @@ func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struc
 	}
 	return indexCols, colsWithNotNullConstraint, nil
 }
-
 
 func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 	indexCols, colsWithNotNullConstraint, err := getIndexAndNotNullCols(input)
@@ -5801,7 +5800,6 @@ func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
 
 	return nil
 }
-
 
 func checkTableJoinedNums(tableRefs *ast.Join) []string {
 	tableJoinedNums := make(map[string]int)
