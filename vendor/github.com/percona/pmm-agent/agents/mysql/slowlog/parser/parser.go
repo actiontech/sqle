@@ -147,8 +147,11 @@ func (p *SlowLogParser) Run() {
 			continue
 		}
 
-		// Remove \n.
-		line = line[0 : lineLen-1]
+		// https://github.com/actiontech/sqle-ee/issues/784
+		if strings.HasSuffix(line, "\n") {
+			// Remove \n.
+			line = line[0 : lineLen-1]
+		}
 
 		switch {
 		case p.inHeader:
