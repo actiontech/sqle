@@ -250,7 +250,8 @@ var Metas = []Meta{
 				Type:  params.ParamTypeString,
 			},
 			{
-				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
+				// todo: 确认百度云RDS MySQL慢日志拉取时间范围
 				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大31天)",
 				Value: "",
 				Type:  params.ParamTypeInt,
