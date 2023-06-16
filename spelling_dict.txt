@@ -421,3 +421,4 @@ tabschema
 viewname
 viewschema
 retryable
+baidubce
