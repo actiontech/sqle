@@ -1308,8 +1308,10 @@ type baiduRdsMySQLTask struct {
 }
 
 func (t baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
-	//todo implement me
-	panic("implement me")
+	task := &model.Task{
+		DBType: t.ap.DBType,
+	}
+	return t.baseTask.audit(task)
 }
 
 func (t baiduRdsMySQLTask) collectorDo() {
