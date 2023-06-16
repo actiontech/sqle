@@ -2505,3 +2505,109 @@ func TestDMLHintCountFuncWithCol(t *testing.T) {
 			newTestResult())
 	})
 }
+
+func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAutoIncrementFieldNum].Rule
+	t.Run(`create table with one AUTO_INCREMENT field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE IF NOT EXISTS runoob_tbl1(
+				runoob_id INT UNSIGNED AUTO_INCREMENT,
+				runoob_title VARCHAR(100) NOT NULL,
+				PRIMARY KEY ( runoob_id )
+			 );`,
+			newTestResult())
+	})
+	t.Run(`create table without AUTO_INCREMENT field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE IF NOT EXISTS runoob_tbl2(runoob_title VARCHAR(100) NOT NULL);`,
+			newTestResult())
+	})
+	t.Run(`create table with two AUTO_INCREMENT fields`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			` CREATE TABLE IF NOT EXISTS runoob_tbl1(runoob_id INT UNSIGNED AUTO_INCREMENT primary key,runoob_id2 BIGINT UNSIGNED AUTO_INCREMENT);`,
+			newTestResult().addResult(rulepkg.DDLCheckAutoIncrementFieldNum))
+	})
+}
+
+func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSameTableJoinedMultipleTimes].Rule
+	t.Run(`select: join the same table multiple times`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM student
+			LEFT JOIN teacher ON student.name=teacher.name
+			LEFT JOIN student s1 ON teacher.id=s1.id`,
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+	})
+	t.Run(`select: join the same table multiple times in subquery`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM student
+			LEFT JOIN teacher ON student.name=teacher.name
+			LEFT JOIN (
+				SELECT t1.name FROM teacher t1
+				JOIN teacher t2 ON t1.name=t2.name
+			) t3 ON teacher.name=t3.name;`,
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表teacher被连接多次"))
+	})
+	t.Run(`select: join table without the same table`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM student
+			LEFT JOIN teacher ON student.name=teacher.name
+			LEFT JOIN (
+				SELECT teacher.name FROM teacher
+				JOIN student on student.name=teacher.name
+			) t1 ON teacher.name=t1.name`,
+			newTestResult())
+	})
+	t.Run(`update: subquery in where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`UPDATE test set column1='a'
+			WHERE id IN(
+				SELECT s1.id FROM student
+				LEFT JOIN teacher ON student.name=teacher.name
+				LEFT JOIN student s1 ON teacher.id=s1.id
+			)`,
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+	})
+	t.Run(`delete: subquery in where`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`DELETE FROM test
+			WHERE id IN(
+				SELECT s1.id FROM student
+				LEFT JOIN teacher ON student.name=teacher.name
+				LEFT JOIN student s1 ON teacher.id=s1.id
+			)`,
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+	})
+}
