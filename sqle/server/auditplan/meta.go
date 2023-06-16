@@ -224,51 +224,6 @@ var Metas = []Meta{
 				Type:  params.ParamTypeString,
 			},
 		},
-	}, {
-		Type:         TypeOracleTopSQL,
-		Desc:         "Oracle TOP SQL",
-		InstanceType: InstanceTypeOracle,
-		CreateTask:   NewOracleTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "top_n",
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "order_by_column",
-				Desc:  "V$SQLAREA中的排序字段",
-				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
-	},
-	{
-		Type:         TypeAllAppExtract,
-		Desc:         "应用程序SQL抓取",
-		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
-	},
-	{
-		Type:         TypeTiDBAuditLog,
-		Desc:         "TiDB审计日志",
-		InstanceType: InstanceTypeTiDB,
-		CreateTask:   NewTiDBAuditLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
 	},
 	{
 		Type:         TypeBaiduRdsMySQLSlowLog,
@@ -311,6 +266,52 @@ var Metas = []Meta{
 				Desc:  "RDS Open API地址",
 				Value: "rds.bj.baidubce.com",
 				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeOracleTopSQL,
+		Desc:         "Oracle TOP SQL",
+		InstanceType: InstanceTypeOracle,
+		CreateTask:   NewOracleTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "V$SQLAREA中的排序字段",
+				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeAllAppExtract,
+		Desc:         "应用程序SQL抓取",
+		InstanceType: InstanceTypeAll,
+		CreateTask:   NewDefaultTask,
+	},
+	{
+		Type:         TypeTiDBAuditLog,
+		Desc:         "TiDB审计日志",
+		InstanceType: InstanceTypeTiDB,
+		CreateTask:   NewTiDBAuditLogTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
 			},
 		},
 	},
