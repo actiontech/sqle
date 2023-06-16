@@ -19,11 +19,11 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	rds20140815 "github.com/alibabacloud-go/rds-20140815/v2/client"
 	_util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/baidubce/bce-sdk-go/services/rds"
 	"github.com/percona/go-mysql/query"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -1295,4 +1295,42 @@ func (at *MySQLProcesslistTask) collectorDo() {
 			return
 		}
 	}
+}
+
+type BaiduRdsMySQLSlowLogTask struct {
+	*baiduRdsMySQLTask
+}
+
+type baiduRdsMySQLTask struct {
+	*sqlCollector
+	lastEndTime *time.Time
+	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromAliCloud, err error)
+}
+
+func (t baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
+	//todo implement me
+	panic("implement me")
+}
+
+func (t baiduRdsMySQLTask) collectorDo() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, Id string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromAliCloud, err error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	b := &BaiduRdsMySQLSlowLogTask{}
+	task := &baiduRdsMySQLTask{
+		sqlCollector: sqlCollector,
+		lastEndTime:  nil,
+		pullLogs:     b.pullSlowLogs,
+	}
+	sqlCollector.do = task.collectorDo
+	b.baiduRdsMySQLTask = task
+
+	return b
 }
