@@ -961,7 +961,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckAllIndexNotNullConstraint,
 			Desc:       "为至少一个索引添加非空约束",
-			Annotation: "所有索引字段均未做非空约束，至少一个索引添加非空约束，请确认下表索引规划的合理性。",
+			Annotation: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
