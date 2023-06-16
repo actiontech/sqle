@@ -801,3 +801,28 @@ func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*i
 	}
 	return result
 }
+
+func GetSubQueryFromWhere(exprs ...ast.ExprNode) []*ast.SubqueryExpr {
+	subQueries := []*ast.SubqueryExpr{}
+	for _, expr := range exprs {
+		if expr == nil {
+			continue
+		}
+		switch x := expr.(type) {
+		
+		case *ast.ColumnNameExpr:
+		case *ast.SubqueryExpr:
+			subQueries = append(subQueries, x)
+		case *ast.BinaryOperationExpr:
+			subQueries = append(subQueries, GetSubQueryFromWhere(x.L, x.R)...)
+		case *ast.PatternInExpr:
+			es := []ast.ExprNode{}
+			es = append(es, x.Expr)
+			es = append(es, x.Sel)
+			es = append(es, x.List...)
+			subQueries = append(subQueries, GetSubQueryFromWhere(es...)...)
+		}
+	}
+
+	return subQueries
+}

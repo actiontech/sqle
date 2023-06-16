@@ -111,6 +111,8 @@ const (
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
+	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
+	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 )
 
 // inspector DML rules
@@ -173,6 +175,7 @@ const (
 	DMLCheckLimitOffsetNum                    = "dml_check_limit_offset_num"
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
+	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
 )
 
 // inspector config code
@@ -941,6 +944,30 @@ var RuleHandlers = []RuleHandler{
 		Message:      "BLOB 和 TEXT 类型的字段不可指定非 NULL 的默认值",
 		AllowOffline: true,
 		Func:         checkColumnBlobDefaultNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckAutoIncrementFieldNum,
+			Desc:       "建表时，自增字段只能设置一个",
+			Annotation: "MySQL InnoDB，MyISAM 引擎不允许存在多个自增字段，设置多个自增字段会导致上线失败。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "建表时，自增字段只能设置一个",
+		Func:         checkAutoIncrementFieldNum,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckAllIndexNotNullConstraint,
+			Desc:       "为至少一个索引添加非空约束",
+			Annotation: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "为至少一个索引添加非空约束",
+		Func:         checkAllIndexNotNullConstraint,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -2042,6 +2069,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "影响行数为 %v，超过设定阈值 %v",
 		Func:         checkAffectedRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSameTableJoinedMultipleTimes,
+			Desc:       "不建议对同一张表连接多次",
+			Annotation: "如果对单表查询多次，会导致查询性能下降。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "表%v被连接多次",
+		Func:         checkSameTableJoinedMultipleTimes,
 	},
 }
 
@@ -3350,7 +3389,7 @@ func (i index) String() string {
 	return fmt.Sprintf("%v(%v)", i.Name, i.ColumnString())
 }
 
-func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struct{}, error) {
 	indexCols := []string{}
 	colsWithNotNullConstraint := make(map[string] /*column name*/ struct{})
 
@@ -3418,7 +3457,7 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
-			return err
+			return indexCols, colsWithNotNullConstraint, err
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
@@ -3433,7 +3472,7 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 	case *ast.CreateIndexStmt:
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil {
-			return err
+			return indexCols, colsWithNotNullConstraint, err
 		}
 		if exist {
 			for _, col := range createTableStmt.Cols {
@@ -3449,7 +3488,15 @@ func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
 			indexCols = append(indexCols, specification.Column.Name.L)
 		}
 	default:
-		return nil
+		return indexCols, colsWithNotNullConstraint, nil
+	}
+	return indexCols, colsWithNotNullConstraint, nil
+}
+
+func checkIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols, colsWithNotNullConstraint, err := getIndexAndNotNullCols(input)
+	if err != nil {
+		return err
 	}
 
 	idxColsWithoutNotNull := []string{}
@@ -5822,6 +5869,121 @@ func checkPrepareStatementPlaceholders(input *RuleHandlerInput) error {
 
 	if placeholdersCount > placeholdersLimit {
 		addResult(input.Res, input.Rule, input.Rule.Name, placeholdersCount, placeholdersLimit)
+	}
+	return nil
+}
+
+func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
+	autoIncrementFieldNums := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionAutoIncrement {
+					autoIncrementFieldNums += 1
+					break
+				}
+			}
+		}
+	default:
+		return nil
+	}
+
+	if autoIncrementFieldNums > 1 {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+
+	return nil
+}
+
+func checkTableJoinedNums(tableRefs *ast.Join) []string {
+	tableJoinedNums := make(map[string]int)
+	repeatTables := []string{}
+
+	tableSources := util.GetTableSources(tableRefs)
+	for _, tableSource := range tableSources {
+		switch source := tableSource.Source.(type) {
+		case *ast.TableName:
+			tableName := source.Name.L
+			tableJoinedNums[tableName] += 1
+		case *ast.SelectStmt:
+			subQueryRepeatTables := checkTableJoinedNums(source.From.TableRefs)
+			repeatTables = append(repeatTables, subQueryRepeatTables...)
+		}
+	}
+
+	for tableName, joinedNums := range tableJoinedNums {
+		if joinedNums > 1 {
+			repeatTables = append(repeatTables, tableName)
+		}
+	}
+
+	return repeatTables
+}
+
+func checkSameTableJoinedInSubQueries(where ast.ExprNode) []string {
+	var repeatTables []string
+
+	if where == nil && !util.WhereStmtHasSubQuery(where) {
+		return repeatTables
+	}
+	subQueries := util.GetSubQueryFromWhere(where)
+	for _, subQuery := range subQueries {
+		if selectStmt, ok := subQuery.Query.(*ast.SelectStmt); ok {
+			tableRefs := selectStmt.From.TableRefs
+			repeatTables = append(repeatTables, checkTableJoinedNums(tableRefs)...)
+		}
+	}
+	return repeatTables
+}
+
+func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
+	var tableRefs *ast.Join
+	var repeatTables []string
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		tableRefs = stmt.From.TableRefs
+		repeatTables = checkTableJoinedNums(tableRefs)
+
+		where := stmt.Where
+		repeatTables = append(repeatTables, checkSameTableJoinedInSubQueries(where)...)
+	case *ast.UpdateStmt:
+		where := stmt.Where
+		repeatTables = checkSameTableJoinedInSubQueries(where)
+	case *ast.DeleteStmt:
+		where := stmt.Where
+		repeatTables = checkSameTableJoinedInSubQueries(where)
+	default:
+		return nil
+	}
+	repeatTables = utils.RemoveDuplicate(repeatTables)
+	if len(repeatTables) > 0 {
+		tablesString := strings.Join(repeatTables, ",")
+		addResult(input.Res, input.Rule, input.Rule.Name, tablesString)
+	}
+
+	return nil
+}
+
+func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
+	indexCols, colsWithNotNullConstraint, err := getIndexAndNotNullCols(input)
+	if err != nil {
+		return err
+	}
+
+	idxColsWithoutNotNull := []string{}
+	indexCols = utils.RemoveDuplicate(indexCols)
+	for _, k := range indexCols {
+		if _, ok := colsWithNotNullConstraint[k]; !ok {
+			idxColsWithoutNotNull = append(idxColsWithoutNotNull, k)
+		}
+	}
+	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
