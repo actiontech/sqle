@@ -129,6 +129,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5251,4 +5252,80 @@ func TestDDLNotAllowRenaming(t *testing.T) {
 
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
+}
+
+func TestDDLCheckAllIndexNotNullConstraint(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAllIndexNotNullConstraint].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE  if not exists exist_db.not_exist_tb_222 (
+			v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+			update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			b1 blob COMMENT "unit test",
+			b2 blob COMMENT "unit test",
+			INDEX idx_b1 (b1),
+			INDEX idx_b2 (b2)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+		newTestResult().addResult(rulepkg.DDLCheckAllIndexNotNullConstraint),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+			v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+			update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			b1 blob COMMENT "unit test",
+			PRIMARY KEY (id),
+			INDEX idx_b1 (b1)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+			v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+			update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			b1 blob NOT NULL COMMENT "unit test",
+			PRIMARY KEY (id),
+			INDEX idx_b1 (b1)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+			v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT "unit test",
+			update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT "unit test",
+			v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+			b1 blob NOT NULL COMMENT "unit test",
+			PRIMARY KEY (id),
+			INDEX idx_b1 (b1)
+			)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`,
+		newTestResult(),
+	)
 }
