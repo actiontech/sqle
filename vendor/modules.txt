@@ -84,6 +84,16 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
+# github.com/baidubce/bce-sdk-go v0.9.151
+## explicit
+github.com/baidubce/bce-sdk-go/auth
+github.com/baidubce/bce-sdk-go/bce
+github.com/baidubce/bce-sdk-go/http
+github.com/baidubce/bce-sdk-go/model
+github.com/baidubce/bce-sdk-go/services/rds
+github.com/baidubce/bce-sdk-go/util
+github.com/baidubce/bce-sdk-go/util/crypto
+github.com/baidubce/bce-sdk-go/util/log
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
 github.com/bwmarrin/snowflake
