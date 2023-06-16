@@ -948,25 +948,25 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckAutoIncrementFieldNum,
-			Desc:       "建表时，自增字段不止一个",
-			Annotation: "设置多个自增字段可能导致数据不一致、冲突和维护复杂性的问题。",
+			Desc:       "建表时，自增字段只能设置一个",
+			Annotation: "MySQL InnoDB，MyISAM 引擎不允许存在多个自增字段。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "建表时，自增字段不止一个",
+		Message:      "建表时，自增字段只能设置一个",
 		Func:         checkAutoIncrementFieldNum,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckAllIndexNotNullConstraint,
-			Desc:       "索引字段均未做非空约束",
-			Annotation: "索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。",
+			Desc:       "所有索引字段均未做非空约束",
+			Annotation: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "索引字段均未做非空约束",
+		Message:      "所有索引字段均未做非空约束",
 		Func:         checkAllIndexNotNullConstraint,
 	},
 	{
