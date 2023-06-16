@@ -5809,8 +5809,8 @@ func checkTableJoinedNums(tableRefs *ast.Join) []string {
 	for _, tableSource := range tableSources {
 		switch source := tableSource.Source.(type) {
 		case *ast.TableName:
-			tableNmae := source.Name.L
-			tableJoinedNums[tableNmae] += 1
+			tableName := source.Name.L
+			tableJoinedNums[tableName] += 1
 		case *ast.SelectStmt:
 			subQueryRepeatTables := checkTableJoinedNums(source.From.TableRefs)
 			repeatTables = append(repeatTables, subQueryRepeatTables...)
