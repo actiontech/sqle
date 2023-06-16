@@ -2514,10 +2514,10 @@ func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
 			t,
 			``,
 			DefaultMysqlInspectOffline(),
-			`CREATE TABLE IF NOT EXISTS runoob_tbl1(
-				runoob_id INT UNSIGNED AUTO_INCREMENT,
-				runoob_title VARCHAR(100) NOT NULL,
-				PRIMARY KEY ( runoob_id )
+			`CREATE TABLE IF NOT EXISTS tbl1(
+				id INT UNSIGNED AUTO_INCREMENT,
+				title VARCHAR(100) NOT NULL,
+				PRIMARY KEY ( id )
 			 );`,
 			newTestResult())
 	})
@@ -2527,7 +2527,7 @@ func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
 			t,
 			``,
 			DefaultMysqlInspectOffline(),
-			`CREATE TABLE IF NOT EXISTS runoob_tbl2(runoob_title VARCHAR(100) NOT NULL);`,
+			`CREATE TABLE IF NOT EXISTS tbl2(title VARCHAR(100) NOT NULL);`,
 			newTestResult())
 	})
 	t.Run(`create table with two AUTO_INCREMENT fields`, func(t *testing.T) {
@@ -2536,7 +2536,7 @@ func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
 			t,
 			``,
 			DefaultMysqlInspectOffline(),
-			` CREATE TABLE IF NOT EXISTS runoob_tbl1(runoob_id INT UNSIGNED AUTO_INCREMENT primary key,runoob_id2 BIGINT UNSIGNED AUTO_INCREMENT);`,
+			` CREATE TABLE IF NOT EXISTS tbl1(id INT UNSIGNED AUTO_INCREMENT primary key,id2 BIGINT UNSIGNED AUTO_INCREMENT);`,
 			newTestResult().addResult(rulepkg.DDLCheckAutoIncrementFieldNum))
 	})
 }
