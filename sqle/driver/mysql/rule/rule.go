@@ -949,7 +949,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckAutoIncrementFieldNum,
 			Desc:       "建表时，自增字段只能设置一个",
-			Annotation: "MySQL InnoDB，MyISAM 引擎不允许存在多个自增字段。",
+			Annotation: "MySQL InnoDB，MyISAM 引擎不允许存在多个自增字段，设置多个自增字段会导致上线失败。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
@@ -960,7 +960,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckAllIndexNotNullConstraint,
-			Desc:       "所有索引字段均未做非空约束",
+			Desc:       "避免对所有索引字段均未做非空约束",
 			Annotation: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
@@ -2072,8 +2072,8 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckSameTableJoinedMultipleTimes,
-			Desc:       "同一张表被连接多次",
-			Annotation: "如果同一张表被连接多次，会导致查询性能下降。",
+			Desc:       "不建议对同一张表连接多次",
+			Annotation: "如果对单表查询多次，会导致查询性能下降。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
@@ -5887,7 +5887,7 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 			idxColsWithoutNotNull = append(idxColsWithoutNotNull, k)
 		}
 	}
-	if len(idxColsWithoutNotNull) == len(indexCols) {
+	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
