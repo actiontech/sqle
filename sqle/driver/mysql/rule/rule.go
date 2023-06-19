@@ -5896,70 +5896,35 @@ func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkTableJoinedNums(tableRefs *ast.Join) []string {
-	tableJoinedNums := make(map[string]int)
-	repeatTables := []string{}
-
-	tableSources := util.GetTableSources(tableRefs)
-	for _, tableSource := range tableSources {
-		switch source := tableSource.Source.(type) {
-		case *ast.TableName:
-			tableName := source.Name.L
-			tableJoinedNums[tableName] += 1
-		case *ast.SelectStmt:
-			subQueryRepeatTables := checkTableJoinedNums(source.From.TableRefs)
-			repeatTables = append(repeatTables, subQueryRepeatTables...)
-		}
-	}
-
-	for tableName, joinedNums := range tableJoinedNums {
-		if joinedNums > 1 {
-			repeatTables = append(repeatTables, tableName)
-		}
-	}
-
-	return repeatTables
-}
-
-func checkSameTableJoinedInSubQueries(where ast.ExprNode) []string {
-	var repeatTables []string
-
-	if where == nil && !util.WhereStmtHasSubQuery(where) {
-		return repeatTables
-	}
-	subQueries := util.GetSubQueryFromWhere(where)
-	for _, subQuery := range subQueries {
-		if selectStmt, ok := subQuery.Query.(*ast.SelectStmt); ok {
-			tableRefs := selectStmt.From.TableRefs
-			repeatTables = append(repeatTables, checkTableJoinedNums(tableRefs)...)
-		}
-	}
-	return repeatTables
-}
-
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
-	var tableRefs *ast.Join
 	var repeatTables []string
+	tableJoinedNums := make(map[string]int)
 
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			return nil
+	if _, ok := input.Node.(ast.DMLNode); ok {
+		selectVisitor := &util.SelectVisitor{}
+		input.Node.Accept(selectVisitor)
+	
+		for _, selectNode := range selectVisitor.SelectList {
+			tableSources := util.GetTableSources(selectNode.From.TableRefs)
+			for _, tableSource := range tableSources {
+				switch source := tableSource.Source.(type) {
+				case *ast.TableName:
+					tableName := source.Name.L
+					tableJoinedNums[tableName] += 1
+				}
+			}
+
+			for tableName, joinedNums := range tableJoinedNums {
+				if joinedNums > 1 {
+					repeatTables = append(repeatTables, tableName)
+				}
+			}
+
+			tableJoinedNums = make(map[string]int)
 		}
-		tableRefs = stmt.From.TableRefs
-		repeatTables = checkTableJoinedNums(tableRefs)
-
-		where := stmt.Where
-		repeatTables = append(repeatTables, checkSameTableJoinedInSubQueries(where)...)
-	case *ast.UpdateStmt:
-		where := stmt.Where
-		repeatTables = checkSameTableJoinedInSubQueries(where)
-	case *ast.DeleteStmt:
-		where := stmt.Where
-		repeatTables = checkSameTableJoinedInSubQueries(where)
-	default:
-		return nil
 	}
+
+
 	repeatTables = utils.RemoveDuplicate(repeatTables)
 	if len(repeatTables) > 0 {
 		tablesString := strings.Join(repeatTables, ",")
