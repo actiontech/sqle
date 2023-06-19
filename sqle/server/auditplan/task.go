@@ -1313,19 +1313,19 @@ type baiduRdsMySQLTask struct {
 	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromBaiduCloud, err error)
 }
 
-func (t baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (bt baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
-		DBType: t.ap.DBType,
+		DBType: bt.ap.DBType,
 	}
-	return t.baseTask.audit(task)
+	return bt.baseTask.audit(task)
 }
 
-func (t baiduRdsMySQLTask) collectorDo() {
+func (bt baiduRdsMySQLTask) collectorDo() {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
+func (bt BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
