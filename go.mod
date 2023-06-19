@@ -16,6 +16,7 @@ require (
 	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-utils v1.4.3
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+	github.com/baidubce/bce-sdk-go v0.9.151
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/chanxuehong/util v0.0.0-20200304121633-ca8141845b13 // indirect
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
