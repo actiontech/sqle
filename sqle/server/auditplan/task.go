@@ -1315,14 +1315,14 @@ type baiduRdsMySQLTask struct {
 	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromBaiduCloud, err error)
 }
 
-func (bt baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (bt *baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
 		DBType: bt.ap.DBType,
 	}
 	return bt.baseTask.audit(task)
 }
 
-func (bt baiduRdsMySQLTask) collectorDo() {
+func (bt *baiduRdsMySQLTask) collectorDo() {
 	if bt.ap.InstanceName == "" {
 		bt.logger.Warnf("instance is not configured")
 		return
@@ -1443,15 +1443,15 @@ func mergerSqlListByFingerprint(sqlList []SqlFromBaiduCloud) []sqlInfo {
 	return sqlInfoList
 }
 
-func (bt baiduRdsMySQLTask) isFirstScrap() bool {
+func (bt *baiduRdsMySQLTask) isFirstScrap() bool {
 	return bt.lastEndTime == nil
 }
 
-func (bt baiduRdsMySQLTask) convertSQLInfoListToModelSQLList(list []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+func (bt *baiduRdsMySQLTask) convertSQLInfoListToModelSQLList(list []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
 	return convertRawSlowSQLWitchFromSqlInfo(list, now)
 }
 
-func (bt baiduRdsMySQLTask) CreateClient(rdsPath string, accessKeyID string, accessKeySecret string) (*rds.Client, error) {
+func (bt *baiduRdsMySQLTask) CreateClient(rdsPath string, accessKeyID string, accessKeySecret string) (*rds.Client, error) {
 	client, err := rds.NewClient(accessKeyID, accessKeySecret, rdsPath)
 	if err != nil {
 		return nil, err
