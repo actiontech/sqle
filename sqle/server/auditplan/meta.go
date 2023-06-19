@@ -19,16 +19,17 @@ type Meta struct {
 }
 
 const (
-	TypeDefault             = "default"
-	TypeMySQLSlowLog        = "mysql_slow_log"
-	TypeMySQLMybatis        = "mysql_mybatis"
-	TypeMySQLSchemaMeta     = "mysql_schema_meta"
-	TypeMySQLProcesslist    = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog  = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog = "ali_rds_mysql_audit_log"
-	TypeOracleTopSQL        = "oracle_top_sql"
-	TypeTiDBAuditLog        = "tidb_audit_log"
-	TypeAllAppExtract       = "all_app_extract"
+	TypeDefault              = "default"
+	TypeMySQLSlowLog         = "mysql_slow_log"
+	TypeMySQLMybatis         = "mysql_mybatis"
+	TypeMySQLSchemaMeta      = "mysql_schema_meta"
+	TypeMySQLProcesslist     = "mysql_processlist"
+	TypeAliRdsMySQLSlowLog   = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog  = "ali_rds_mysql_audit_log"
+	TypeOracleTopSQL         = "oracle_top_sql"
+	TypeTiDBAuditLog         = "tidb_audit_log"
+	TypeAllAppExtract        = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
 )
 
 const (
@@ -223,7 +224,52 @@ var Metas = []Meta{
 				Type:  params.ParamTypeString,
 			},
 		},
-	}, {
+	},
+	{
+		Type:         TypeBaiduRdsMySQLSlowLog,
+		Desc:         "百度云RDS MySQL慢日志",
+		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewBaiduRdsMySQLSlowLogTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyDBInstanceId,
+				Desc:  "实例ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Desc:  "启动任务时拉取慢日志时间范围(单位:小时)",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyRdsPath,
+				Desc:  "RDS Open API地址",
+				Value: "rds.bj.baidubce.com",
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
 		Type:         TypeOracleTopSQL,
 		Desc:         "Oracle TOP SQL",
 		InstanceType: InstanceTypeOracle,
