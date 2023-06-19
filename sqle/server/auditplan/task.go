@@ -1301,10 +1301,16 @@ type BaiduRdsMySQLSlowLogTask struct {
 	*baiduRdsMySQLTask
 }
 
+type SqlFromBaiduCloud struct {
+	sql                string
+	executionStartTime time.Time
+	schema             string
+}
+
 type baiduRdsMySQLTask struct {
 	*sqlCollector
 	lastEndTime *time.Time
-	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromAliCloud, err error)
+	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromBaiduCloud, err error)
 }
 
 func (t baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
@@ -1319,7 +1325,7 @@ func (t baiduRdsMySQLTask) collectorDo() {
 	panic("implement me")
 }
 
-func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, Id string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromAliCloud, err error) {
+func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
