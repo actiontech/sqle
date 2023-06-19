@@ -960,10 +960,10 @@ type SqlFromAliCloud struct {
 }
 
 func (at *aliRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
-	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
+	return convertRawSlowSQLWitchFromSqlInfo(sqls, now)
 }
 
-func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+func convertRawSlowSQLWitchFromSqlInfo(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
 	as := make([]*model.AuditPlanSQLV2, len(sqls))
 	for i, sql := range sqls {
 		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v"}`, sql.counter, now.Format(time.RFC3339), sql.schema)
@@ -1289,7 +1289,7 @@ func (at *MySQLProcesslistTask) collectorDo() {
 
 	if len(sqlInfos) > 0 {
 		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
-			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now()))
+			convertRawSlowSQLWitchFromSqlInfo(sqlInfos, time.Now()))
 		if err != nil {
 			at.logger.Errorf("save processlist to storage fail, error: %v", err)
 			return
