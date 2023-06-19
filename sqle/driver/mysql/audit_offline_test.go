@@ -2593,8 +2593,12 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 				SELECT s1.id FROM student
 				LEFT JOIN teacher ON student.name=teacher.name
 				LEFT JOIN student s1 ON teacher.id=s1.id
+			) and name IN (
+				SELECT class.name FROM school
+				LEFT JOIN class ON school.name=class.name
+				LEFT JOIN school s1 ON class.id=s1.id
 			)`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student,school被连接多次"))
 	})
 	t.Run(`delete: subquery in where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
