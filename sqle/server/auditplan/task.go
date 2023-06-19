@@ -1390,7 +1390,6 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 			return
 		}
 
-		// todo 检测是否需要过滤掉已经存在的慢日志,像阿里云一样
 		if len(slowSqlList) < pageSize {
 			break
 		}
