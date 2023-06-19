@@ -1357,6 +1357,13 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 		firstScrapInLastHours = 24
 	}
 
+	theMaxSupportedDays := 7 // 支持往前查看慢日志的最大天数
+	hoursDuringADay := 24
+	if firstScrapInLastHours > theMaxSupportedDays*hoursDuringADay {
+		bt.logger.Warnf("Can not get slow logs from so early time. firstScrapInLastHours=%v", firstScrapInLastHours)
+		return
+	}
+
 	client, err := bt.CreateClient(rdsPath, accessKeyID, accessKeySecret)
 	if err != nil {
 		bt.logger.Warnf("create client failed, error: %v", err)
