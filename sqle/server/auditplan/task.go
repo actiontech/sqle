@@ -1321,8 +1321,131 @@ func (bt baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
 }
 
 func (bt baiduRdsMySQLTask) collectorDo() {
-	//TODO implement me
-	panic("implement me")
+	if bt.ap.InstanceName == "" {
+		bt.logger.Warnf("instance is not configured")
+		return
+	}
+
+	rdsDBInstanceId := bt.ap.Params.GetParam(paramKeyDBInstanceId).String()
+	if rdsDBInstanceId == "" {
+		bt.logger.Warnf("db instance id is not configured")
+		return
+	}
+
+	accessKeyID := bt.ap.Params.GetParam(paramKeyAccessKeyId).String()
+	if accessKeyID == "" {
+		bt.logger.Warnf("access key id is not configured")
+		return
+	}
+
+	accessKeySecret := bt.ap.Params.GetParam(paramKeyAccessKeySecret).String()
+	if accessKeySecret == "" {
+		bt.logger.Warnf("access key secret is not configured")
+		return
+	}
+
+	rdsPath := bt.ap.Params.GetParam(paramKeyRdsPath).String()
+	if rdsPath == "" {
+		bt.logger.Warnf("rds path is not configured")
+		return
+	}
+
+	firstScrapInLastHours := bt.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).Int()
+	if firstScrapInLastHours == 0 {
+		firstScrapInLastHours = 24
+	}
+	// todo 暂时设置为 31
+	theMaxSupportedDays := 31
+	hoursDuringADay := 24
+	if firstScrapInLastHours > theMaxSupportedDays*hoursDuringADay {
+		bt.logger.Warnf("first sqls scrapped in last period hours is too large")
+		return
+	}
+
+	client, err := bt.CreateClient(rdsPath, accessKeyID, accessKeySecret)
+	if err != nil {
+		bt.logger.Warnf("create client failed, error: %v", err)
+		return
+	}
+
+	now := time.Now()
+	var startTime time.Time
+	if bt.isFirstScrap() {
+		startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
+	} else {
+		startTime = *bt.lastEndTime
+	}
+
+	var pageNum int32 = 1
+	pageSize := 100
+	slowSqlList := make([]SqlFromBaiduCloud, 0)
+	for {
+		// 每次取100条
+		slowSqlList, err = bt.pullLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		if err != nil {
+			bt.logger.Warnf("pull slow logs failed, error: %v", err)
+			return
+		}
+
+		// todo 检测是否需要过滤掉已经存在的慢日志,像阿里云一样
+		if len(slowSqlList) < pageSize {
+			break
+		}
+		pageNum++
+	}
+
+	mergedSlowSqlList := mergerSqlListByFingerprint(slowSqlList)
+	if len(mergedSlowSqlList) > 0 {
+		if bt.isFirstScrap() {
+			err = bt.persist.OverrideAuditPlanSQLs(bt.ap.ID, bt.convertSQLInfoListToModelSQLList(mergedSlowSqlList, now))
+			if err != nil {
+				bt.logger.Warnf("save slow logs to storage failed, error: %v", err)
+				return
+			}
+		} else {
+			err = bt.persist.UpdateDefaultAuditPlanSQLs(bt.ap.ID, bt.convertSQLInfoListToModelSQLList(mergedSlowSqlList, now))
+			if err != nil {
+				bt.logger.Warnf("save slow logs to storage failed, error: %v", err)
+				return
+			}
+		}
+	}
+
+	if len(slowSqlList) > 0 {
+		lastSlowSql := slowSqlList[len(slowSqlList)-1]
+		bt.lastEndTime = &lastSlowSql.executionStartTime
+	}
+}
+
+func mergerSqlListByFingerprint(sqlList []SqlFromBaiduCloud) []sqlInfo {
+	sqlInfoList := make([]sqlInfo, 0)
+	counter := map[string] /*finger*/ int /*slice subscript*/ {}
+	for _, sql := range sqlList {
+		fp := query.Fingerprint(sql.sql)
+		if index, exist := counter[fp]; exist {
+			sqlInfoList[index].counter += 1
+			sqlInfoList[index].fingerprint = fp
+			sqlInfoList[index].sql = sql.sql
+			sqlInfoList[index].schema = sql.schema
+		} else {
+			sqlInfoList = append(sqlInfoList, sqlInfo{
+				counter:     1,
+				fingerprint: fp,
+				sql:         sql.sql,
+				schema:      sql.schema,
+			})
+			counter[fp] = len(sqlInfoList) - 1
+		}
+	}
+	return sqlInfoList
+}
+
+func (bt baiduRdsMySQLTask) isFirstScrap() bool {
+	return bt.lastEndTime == nil
+}
+
+func (bt baiduRdsMySQLTask) convertSQLInfoListToModelSQLList(list []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	return convertRawSlowSQLWitchFromSqlInfo(list, now)
 }
 
 func (bt BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
