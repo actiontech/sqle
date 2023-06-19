@@ -1380,6 +1380,7 @@ func (bt baiduRdsMySQLTask) collectorDo() {
 
 	var pageNum int32 = 1
 	pageSize := 100
+	//nolint:staticcheck
 	slowSqlList := make([]SqlFromBaiduCloud, 0)
 	for {
 		// 每次取100条
