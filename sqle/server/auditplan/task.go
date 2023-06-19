@@ -1356,13 +1356,6 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 	if firstScrapInLastHours == 0 {
 		firstScrapInLastHours = 24
 	}
-	// todo 暂时设置为 31
-	theMaxSupportedDays := 31
-	hoursDuringADay := 24
-	if firstScrapInLastHours > theMaxSupportedDays*hoursDuringADay {
-		bt.logger.Warnf("first sqls scrapped in last period hours is too large")
-		return
-	}
 
 	client, err := bt.CreateClient(rdsPath, accessKeyID, accessKeySecret)
 	if err != nil {
