@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ import (
 	rds20140815 "github.com/alibabacloud-go/rds-20140815/v2/client"
 	_util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/baidubce/bce-sdk-go/bce"
 	"github.com/baidubce/bce-sdk-go/services/rds"
 	"github.com/percona/go-mysql/query"
 	"github.com/pingcap/parser"
@@ -1448,8 +1450,80 @@ func (bt baiduRdsMySQLTask) convertSQLInfoListToModelSQLList(list []sqlInfo, now
 	return convertRawSlowSQLWitchFromSqlInfo(list, now)
 }
 
-func (bt BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
-	return nil, fmt.Errorf("not implemented")
+func (bt baiduRdsMySQLTask) CreateClient(rdsPath string, accessKeyID string, accessKeySecret string) (*rds.Client, error) {
+	client, err := rds.NewClient(accessKeyID, accessKeySecret, rdsPath)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+type slowLogReq struct {
+	StartTime string   `json:"startTime"`
+	EndTime   string   `json:"endTime"`
+	PageNo    int      `json:"pageNo"`
+	PageSize  int      `json:"pageSize"`
+	DbName    []string `json:"dbName"`
+}
+
+type slowLogDetail struct {
+	InstanceId   string  `json:"instanceId"`
+	UserName     string  `json:"userName"`
+	DbName       string  `json:"dbName"`
+	HostIp       string  `json:"hostIp"`
+	QueryTime    float64 `json:"queryTime"`
+	LockTime     float64 `json:"lockTime"`
+	RowsExamined int     `json:"rowsExamined"`
+	RowsSent     int     `json:"rowsSent"`
+	Sql          string  `json:"sql"`
+	ExecuteTime  string  `json:"executeTime"`
+}
+
+type slowLogDetailResp struct {
+	Count    int             `json:"count"`
+	SlowLogs []slowLogDetail `json:"slowLogs"`
+}
+
+func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
+	req := slowLogReq{
+		StartTime: startTime.Format("2006-01-02T15:04:05Z"),
+		EndTime:   endTime.Format("2006-01-02T15:04:05Z"),
+		PageNo:    int(num),
+		PageSize:  int(size),
+		DbName:    nil,
+	}
+
+	uri := getRdsUriWithInstanceId(instanceID)
+
+	resp := new(slowLogDetailResp)
+	err = bce.NewRequestBuilder(client).
+		WithMethod(http.MethodPost).
+		WithURL(uri).
+		WithBody(&req).
+		WithResult(&resp).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlList = make([]SqlFromBaiduCloud, len(resp.SlowLogs))
+	for i, slowLog := range resp.SlowLogs {
+		execStartTime, err := time.Parse("2006-01-02 15:04:05", slowLog.ExecuteTime)
+		if err != nil {
+			return nil, err
+		}
+
+		sqlList[i] = SqlFromBaiduCloud{
+			sql:                slowLog.Sql,
+			executionStartTime: execStartTime,
+		}
+	}
+
+	return sqlList, nil
+}
+
+func getRdsUriWithInstanceId(instanceId string) string {
+	return rds.URI_PREFIX + rds.REQUEST_RDS_URL + "/" + instanceId + "/slowlogs/details"
 }
 
 func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
