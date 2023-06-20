@@ -6,6 +6,7 @@ import (
 	sqlDriver "database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -203,16 +204,21 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 					return err
 				}
 			} else {
-				// 2. rule no params in db, and has params in code.
-				existedRuleHasParams := existedRule.Params != nil && len(existedRule.Params) > 0
-				ruleHasParams := len(rule.Params) > 0
-
 				isRuleDescSame := existedRule.Desc == rule.Desc
 				isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
 				isRuleLevelSame := existedRule.Level == string(rule.Level)
 				isRuleTypSame := existedRule.Typ == rule.Category
+				existRuleParam, err := existedRule.Params.Value()
+				if err != nil {
+					return err
+				}
+				pluginRuleParam, err := rule.Params.Value()
+				if err != nil {
+					return err
+				}
+				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
-				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || (!existedRuleHasParams && ruleHasParams) {
+				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame {
 					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
 					if err != nil {
 						return err
