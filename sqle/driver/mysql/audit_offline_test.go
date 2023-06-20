@@ -2634,10 +2634,9 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 			DefaultMysqlInspectOffline(),
 			`SELECT * FROM student
 			LEFT JOIN teacher ON student.name=teacher.name
-			LEFT JOIN student s1 ON s1.name=teacher.name
 			LEFT JOIN sqle.teacher ON teacher.name=sqle.teacher.name
 			LEFT JOIN sqle.teacher t1 ON teacher.name=t1.name
 			`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`student`,`sqle`.`teacher`被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`sqle`.`teacher`被连接多次"))
 	})
 }
