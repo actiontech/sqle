@@ -2552,7 +2552,7 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 			`SELECT * FROM student
 			LEFT JOIN teacher ON student.name=teacher.name
 			LEFT JOIN student s1 ON teacher.id=s1.id`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`student`被连接多次"))
 	})
 	t.Run(`select: join the same table multiple times in subquery`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -2566,7 +2566,7 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 				SELECT t1.name FROM teacher t1
 				JOIN teacher t2 ON t1.name=t2.name
 			) t3 ON teacher.name=t3.name;`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表teacher被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`teacher`被连接多次"))
 	})
 	t.Run(`select: join table without the same table`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -2598,7 +2598,7 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 				LEFT JOIN class ON school.name=class.name
 				LEFT JOIN school s1 ON class.id=s1.id
 			)`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student,school被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`student`,`school`被连接多次"))
 	})
 	t.Run(`delete: subquery in where`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -2612,6 +2612,32 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 				LEFT JOIN teacher ON student.name=teacher.name
 				LEFT JOIN student s1 ON teacher.id=s1.id
 			)`,
-			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表student被连接多次"))
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`student`被连接多次"))
+	})
+	t.Run(`select: join the table in different database`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM student
+			LEFT JOIN teacher ON student.name=teacher.name
+			LEFT JOIN sqle.teacher ON teacher.name=sqle.teacher.name
+			`,
+			newTestResult())
+	})
+	t.Run(`select: join the same table multiple times in different database`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT * FROM student
+			LEFT JOIN teacher ON student.name=teacher.name
+			LEFT JOIN student s1 ON s1.name=teacher.name
+			LEFT JOIN sqle.teacher ON teacher.name=sqle.teacher.name
+			LEFT JOIN sqle.teacher t1 ON teacher.name=t1.name
+			`,
+			newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`student`,`sqle`.`teacher`被连接多次"))
 	})
 }
