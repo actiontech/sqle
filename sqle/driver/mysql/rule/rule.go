@@ -2078,7 +2078,7 @@ var RuleHandlers = []RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
-		AllowOffline: true,
+		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
 	},
@@ -5896,6 +5896,27 @@ func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
 	return nil
 }
 
+func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
+	var tableWithSchema string
+
+	if stmt.Schema.String() == "" {
+		currentSchema := c.CurrentSchema()
+		if currentSchema != "" {
+			tableWithSchema = fmt.Sprintf("`%s`.`%s`", currentSchema, stmt.Name)
+		} else {
+			tableWithSchema = fmt.Sprintf("`%s`", stmt.Name)
+		}
+	} else {
+		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
+	}
+	
+	if c.IsLowerCaseTableName() {
+		tableWithSchema = strings.ToLower(tableWithSchema)
+	}
+
+	return tableWithSchema
+}
+
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
 	
@@ -5911,7 +5932,7 @@ func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 				for _, tableSource := range tableSources {
 					switch source := tableSource.Source.(type) {
 					case *ast.TableName:
-						tableName := util.GetTableNameWithQuote(source)
+						tableName := getTableNameWithSchema(source, input.Ctx)
 						tableJoinedNums[tableName] += 1
 					}
 				}
