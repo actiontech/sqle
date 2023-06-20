@@ -5898,19 +5898,20 @@ func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	tableJoinedNums := make(map[string]int)
-
+	
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
 
 		for _, selectNode := range selectVisitor.SelectList {
+			tableJoinedNums := make(map[string]int)
+
 			if selectNode.From != nil {
 				tableSources := util.GetTableSources(selectNode.From.TableRefs)
 				for _, tableSource := range tableSources {
 					switch source := tableSource.Source.(type) {
 					case *ast.TableName:
-						tableName := source.Name.L
+						tableName := util.GetTableNameWithQuote(source)
 						tableJoinedNums[tableName] += 1
 					}
 				}
@@ -5920,7 +5921,6 @@ func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 						repeatTables = append(repeatTables, tableName)
 					}
 				}
-				tableJoinedNums = make(map[string]int)
 			}
 		}
 	}
