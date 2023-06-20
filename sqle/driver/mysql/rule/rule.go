@@ -5903,27 +5903,27 @@ func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
-	
+
 		for _, selectNode := range selectVisitor.SelectList {
-			tableSources := util.GetTableSources(selectNode.From.TableRefs)
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tableName := source.Name.L
-					tableJoinedNums[tableName] += 1
+			if selectNode.From != nil {
+				tableSources := util.GetTableSources(selectNode.From.TableRefs)
+				for _, tableSource := range tableSources {
+					switch source := tableSource.Source.(type) {
+					case *ast.TableName:
+						tableName := source.Name.L
+						tableJoinedNums[tableName] += 1
+					}
 				}
-			}
 
-			for tableName, joinedNums := range tableJoinedNums {
-				if joinedNums > 1 {
-					repeatTables = append(repeatTables, tableName)
+				for tableName, joinedNums := range tableJoinedNums {
+					if joinedNums > 1 {
+						repeatTables = append(repeatTables, tableName)
+					}
 				}
+				tableJoinedNums = make(map[string]int)
 			}
-
-			tableJoinedNums = make(map[string]int)
 		}
 	}
-
 
 	repeatTables = utils.RemoveDuplicate(repeatTables)
 	if len(repeatTables) > 0 {
