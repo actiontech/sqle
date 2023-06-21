@@ -5329,3 +5329,130 @@ func TestDDLCheckAllIndexNotNullConstraint(t *testing.T) {
 		newTestResult(),
 	)
 }
+
+
+func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSameTableJoinedMultipleTimes].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN exist_tb_1 s1 ON exist_tb_2.id=s1.id`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_1`被连接多次"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"select: join the same table multiple times in subquery",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN (
+			SELECT exist_tb_2.name FROM exist_tb_2 t1
+			JOIN exist_tb_2 t2 ON t1.name=t2.name
+		) t3 ON exist_tb_2.name=t3.name;`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"select: join table without the same table",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN (
+			SELECT exist_tb_2.name FROM exist_tb_2
+			JOIN exist_tb_1 on exist_tb_1.name=exist_tb_2.name
+		) t1 ON exist_tb_2.name=t1.name`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"select: join table without the same table",
+		DefaultMysqlInspect(),
+		`UPDATE exist_tb_1 set v1='a'
+		WHERE id IN(
+			SELECT s1.id FROM exist_tb_1
+			LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+			LEFT JOIN exist_tb_1 s1 ON exist_tb_2.id=s1.id
+		) and v1 IN (
+			SELECT exist_tb_3.name FROM exist_tb_4
+			LEFT JOIN exist_tb_3 ON exist_tb_4.name=exist_tb_3.name
+			LEFT JOIN exist_tb_4 s1 ON exist_tb_3.id=s1.id
+		)`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_1`,`exist_db`.`exist_tb_4`被连接多次"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"delete: subquery in where",
+		DefaultMysqlInspect(),
+		`DELETE FROM exist_tb_1
+		WHERE id IN(
+			SELECT s1.id FROM exist_tb_1
+			LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+			LEFT JOIN exist_tb_1 s1 ON exist_tb_2.id=s1.id
+		)`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_1`被连接多次"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"select: join the table in different database",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN no_exist_db.exist_tb_2 ON exist_tb_2.v1=no_exist_db.exist_tb_2.v1
+		`,
+		newTestResult().add(driverV2.RuleLevelError, "", "schema no_exist_db 不存在"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"select: join the same table multiple times in same database",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN exist_db.exist_tb_2 ON exist_tb_2.name=exist_db.exist_tb_2.name
+		`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN EXIST_DB_2 ON exist_tb_2.name=EXIST_DB_2.name
+		`,
+		newTestResult().add(driverV2.RuleLevelError, "", "表 exist_db.EXIST_DB_2 不存在"),
+	)
+
+	inspect1 := DefaultMysqlInspect()
+	inspect1.Ctx.AddSystemVariable(session.SysVarLowerCaseTableNames, "1")
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		inspect1,
+		`SELECT * FROM exist_tb_1
+		LEFT JOIN exist_tb_2 ON exist_tb_1.name=exist_tb_2.name
+		LEFT JOIN EXIST_TB_2 ON exist_tb_2.name=EXIST_TB_2.name
+		`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
+	)
+}
