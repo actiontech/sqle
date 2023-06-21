@@ -102,33 +102,30 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	var sqlListReq []scanner.AuditPlanSQLReq
 	now := time.Now()
+	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
 	for _, sql := range sqls {
-		var hasExistedFinger bool
-		for i, sqlReq := range sqlListReq {
-			if sqlReq.Fingerprint == sql.Fingerprint {
-				atoi, err := strconv.Atoi(sqlReq.Counter)
-				if err != nil {
-					return err
-				}
-				sqlReq.Counter = strconv.Itoa(atoi + 1)
-				sqlReq.LastReceiveText = sql.RawText
-				sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
-
-				sqlListReq[i] = sqlReq
-
-				hasExistedFinger = true
-				break
+		if sqlReq, ok := auditPlanSqlMap[sql.Fingerprint]; ok {
+			atoi, err := strconv.Atoi(sqlReq.Counter)
+			if err != nil {
+				return err
 			}
-		}
 
-		if !hasExistedFinger {
-			sqlListReq = append(sqlListReq, scanner.AuditPlanSQLReq{
+			sqlReq.Counter = strconv.Itoa(atoi + 1)
+			sqlReq.LastReceiveText = sql.RawText
+			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
+		} else {
+			sqlReq := &scanner.AuditPlanSQLReq{
 				Fingerprint:          sql.Fingerprint,
 				LastReceiveText:      sql.RawText,
 				LastReceiveTimestamp: now.Format(time.RFC3339),
 				Counter:              "1",
-			})
+			}
+			auditPlanSqlMap[sql.Fingerprint] = sqlReq
 		}
+	}
+
+	for _, sqlReq := range auditPlanSqlMap {
+		sqlListReq = append(sqlListReq, *sqlReq)
 	}
 
 	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlListReq)
