@@ -6,6 +6,7 @@ package slowquery
 import (
 	"context"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
@@ -99,16 +100,36 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 }
 
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	var sqlsReq []scanner.AuditPlanSQLReq
+	var sqlListReq []scanner.AuditPlanSQLReq
 	now := time.Now()
 	for _, sql := range sqls {
-		sqlsReq = append(sqlsReq, scanner.AuditPlanSQLReq{
-			Fingerprint:          sql.Fingerprint,
-			LastReceiveText:      sql.RawText,
-			LastReceiveTimestamp: now.Format(time.RFC3339),
-			Counter:              "1",
-		})
-	}
-	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlsReq)
+		var hasExistedFinger bool
+		for i, sqlReq := range sqlListReq {
+			if sqlReq.Fingerprint == sql.Fingerprint {
+				atoi, err := strconv.Atoi(sqlReq.Counter)
+				if err != nil {
+					return err
+				}
+				sqlReq.Counter = strconv.Itoa(atoi + 1)
+				sqlReq.LastReceiveText = sql.RawText
+				sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
 
+				sqlListReq[i] = sqlReq
+
+				hasExistedFinger = true
+				break
+			}
+		}
+
+		if !hasExistedFinger {
+			sqlListReq = append(sqlListReq, scanner.AuditPlanSQLReq{
+				Fingerprint:          sql.Fingerprint,
+				LastReceiveText:      sql.RawText,
+				LastReceiveTimestamp: now.Format(time.RFC3339),
+				Counter:              "1",
+			})
+		}
+	}
+
+	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlListReq)
 }
