@@ -138,10 +138,21 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetAllAuditPlanSQLs() ([]*AuditPlanSQLV2, error) {
+	var sqls []*AuditPlanSQLV2
+	err := s.db.Model(AuditPlanSQLV2{}).Find(&sqls).Error
+	return sqls, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	// GetFingerprintMD5
+	fingerprintMD5s := []string{}
+	for _, sql := range sqls {
+		fingerprintMD5s = append(fingerprintMD5s, sql.GetFingerprintMD5())
+	}
 	err := s.db.Unscoped().
 		Model(AuditPlanSQLV2{}).
-		Where("audit_plan_id = ?", auditPlanId).
+		Where("fingerprint_md5 in (?)", fingerprintMD5s).
 		Delete(&AuditPlanSQLV2{}).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
@@ -220,4 +231,21 @@ func (s *Storage) GetLatestAuditPlanRecords(after time.Time) ([]*AuditPlan, erro
 	var aps []*AuditPlan
 	err := s.db.Unscoped().Model(AuditPlan{}).Select("id, updated_at").Where("updated_at > ?", after).Order("updated_at").Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
+}
+
+type AuditPlanSlowLogRecord struct {
+	Model
+	StartTime      string `json:"starttime" gorm:"type:varchar(512);not null"`
+}
+
+func (s *Storage) GetAuditPlanSlowLogRecord() (*AuditPlanSlowLogRecord, error) {
+	record := &AuditPlanSlowLogRecord{}
+	err := s.db.Model(AuditPlanSlowLogRecord{}).Last(record).Error
+	return record, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) SaveAuditPlanSlowLogRecord(startTime string) error {
+	record := &AuditPlanSlowLogRecord{StartTime: startTime}
+	err := s.Create(&record)
+	return err
 }
