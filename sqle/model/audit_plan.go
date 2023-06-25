@@ -151,7 +151,7 @@ func (s *Storage) GetNewStartTimeAuditPlanSQL() (string, error) {
 
 	sqls, err := s.GetAllAuditPlanSQLs()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	for _, sql := range sqls {
 		var info = struct {
