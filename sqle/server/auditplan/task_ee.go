@@ -26,6 +26,7 @@ const (
 	OBMySQLIndicatorCPUTime     = "cpu_time"
 	OBMySQLIndicatorIOWait      = "io_wait"
 	OBMySQLIndicatorElapsedTime = "elapsed_time"
+	SlowLogQueryNums            = 1000
 )
 
 type OBMySQLTopSQLTask struct {
@@ -426,38 +427,69 @@ func (at *SlowLogTask) collectorDo() {
 	}
 	defer db.Db.Close()
 
-	res, err := db.Db.Query(`
-SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time
-FROM mysql.slow_log
-WHERE sql_text != ''
-    AND db NOT IN ('information_schema','performance_schema','mysql','sys')
-`)
-
+	slowLogRecord, err := at.persist.GetAuditPlanSlowLogRecord()
 	if err != nil {
-		at.logger.Errorf("query slow log failed, error: %v", err)
-		return
+		at.logger.Errorf("get slow log record failed, error: %v", err)
+	}
+	querySQL := `
+	SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time, start_time
+	FROM mysql.slow_log
+	WHERE sql_text != ''
+		AND db NOT IN ('information_schema','performance_schema','mysql','sys')
+	`
+	if slowLogRecord != nil {
+		extraWhereCondition := fmt.Sprintf(" AND start_time>'%s'", slowLogRecord.StartTime)
+		querySQL = querySQL + extraWhereCondition
 	}
 
-	if len(res) == 0 {
-		return
-	}
+	orderByCondition := " ORDER BY start_time"
+	querySQL = querySQL + orderByCondition
 
-	sqls := make([]*sqlFromSlowLog, len(res))
+	offsetNum := 0
 
-	for i := range res {
-		sqls[i] = &sqlFromSlowLog{
-			sql:    res[i]["sql_text"].String,
-			schema: res[i]["db"].String,
-		}
-		queryTime, err := strconv.Atoi(res[i]["query_time"].String)
+	sqlInfos := []*sqlFromSlowLog{}
+
+	for {
+		limitOffsetCondition := fmt.Sprintf(" LIMIT %d OFFSET %d", SlowLogQueryNums, offsetNum)
+		execQuerySQL := querySQL + limitOffsetCondition
+
+		res, err := db.Db.Query(execQuerySQL)
+
 		if err != nil {
-			at.logger.Warnf("unexpected data format: %v, ", res[i]["query_time"].String)
-			continue
+			at.logger.Errorf("query slow log failed, error: %v", err)
+			break
 		}
-		sqls[i].queryTimeSeconds = queryTime
+
+		if len(res) == 0 {
+			break
+		}
+
+		for i := range res {
+			sqlInfo := &sqlFromSlowLog{
+				sql:        res[i]["sql_text"].String,
+				schema:     res[i]["db"].String,
+				startTime:  res[i]["start_time"].String,
+			}
+			queryTime, err := strconv.Atoi(res[i]["query_time"].String)
+			if err != nil {
+				at.logger.Warnf("unexpected data format: %v, ", res[i]["query_time"].String)
+				continue
+			}
+			sqlInfo.queryTimeSeconds = queryTime
+			sqlInfos = append(sqlInfos, sqlInfo)
+		}
+
+		offsetNum += SlowLogQueryNums
 	}
 
-	sqlFingerprintInfos := sqlFromSlowLogs(sqls).mergeByFingerprint()
+	if len(sqlInfos) == 0 {
+		return
+	}
+	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint(at.persist)
+	if err != nil {
+		at.logger.Errorf("merge finger sqls failed, error: %v", err)
+		return
+	}
 
 	auditPlanSQLs := make([]*model.AuditPlanSQLV2, len(sqlFingerprintInfos))
 	{
@@ -479,12 +511,20 @@ WHERE sql_text != ''
 		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
 		return
 	}
+
+	lastSqlStartTime := sqlInfos[len(sqlInfos)-1].startTime
+
+	if err = at.persist.SaveAuditPlanSlowLogRecord(lastSqlStartTime); err != nil {
+		at.logger.Errorf("save slow log record failed, error: %v", err)
+		return
+	}
 }
 
 type sqlFromSlowLog struct {
 	sql              string
 	schema           string
 	queryTimeSeconds int
+	startTime        string
 }
 
 type sqlFromSlowLogs []*sqlFromSlowLog
@@ -500,10 +540,38 @@ func (s *sqlFingerprintInfo) queryTime() int {
 	return s.totalQueryTimeSeconds / s.sqlCount
 }
 
-func (s sqlFromSlowLogs) mergeByFingerprint() []sqlInfo {
+func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, error) {
 
 	sqlInfos := []sqlInfo{}
 	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
+
+	auditPlanSQLs, err := persist.GetAllAuditPlanSQLs()
+	if err != nil {
+		return nil, err
+	}
+	for _, sql := range auditPlanSQLs {
+		var info = struct {
+			Counter              int    `json:"counter"`
+			LastReceiveTimestamp string `json:"last_receive_timestamp"`
+			AverageQueryTime     string `json:"average_query_time"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, err
+		}
+		averageQueryTime, err := strconv.Atoi(info.AverageQueryTime)
+		if err != nil {
+			return nil, err
+		}
+
+		fp := sql.Fingerprint
+		sqlInfosMap[fp] = &sqlFingerprintInfo{
+			sqlCount:              info.Counter,
+			lastSql:               sql.SQLContent,
+			lastSqlSchema:         sql.Schema,
+			totalQueryTimeSeconds: info.Counter * averageQueryTime,
+		}
+	}
 
 	for i := range s {
 		sqlItem := s[i]
@@ -520,23 +588,21 @@ func (s sqlFromSlowLogs) mergeByFingerprint() []sqlInfo {
 				lastSqlSchema:         sqlItem.schema,
 				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
 			}
-			sqlInfos = append(sqlInfos, sqlInfo{fingerprint: fp})
 		}
 	}
 
-	for i := range sqlInfos {
-		fp := sqlInfos[i].fingerprint
-		sqlInfo := sqlInfosMap[fp]
-		if sqlInfo != nil {
-			sqlInfos[i].counter = sqlInfo.sqlCount
-			sqlInfos[i].sql = sqlInfo.lastSql
-			sqlInfos[i].schema = sqlInfo.lastSqlSchema
-			sqlInfos[i].queryTimeSeconds = sqlInfo.queryTime()
-		}
+	for fingerprint, v := range sqlInfosMap {
+		info := sqlInfo{}
+		info.counter = v.sqlCount
+		info.sql = v.lastSql
+		info.schema = v.lastSqlSchema
+		info.queryTimeSeconds = v.queryTime()
+		info.fingerprint = fingerprint
 
+		sqlInfos = append(sqlInfos, info)
 	}
 
-	return sqlInfos
+	return sqlInfos, nil
 }
 
 func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
