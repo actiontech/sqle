@@ -100,7 +100,7 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 }
 
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	var sqlListReq []scanner.AuditPlanSQLReq
+	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
 	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
 	for _, sql := range sqls {
@@ -121,11 +121,8 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 				Counter:              "1",
 			}
 			auditPlanSqlMap[sql.Fingerprint] = sqlReq
+			sqlListReq = append(sqlListReq, sqlReq)
 		}
-	}
-
-	for _, sqlReq := range auditPlanSqlMap {
-		sqlListReq = append(sqlListReq, *sqlReq)
 	}
 
 	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlListReq)
