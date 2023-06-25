@@ -565,7 +565,9 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 	for i := range s {
 		sqlItem := s[i]
 		fp := query.Fingerprint(sqlItem.sql)
-		
+		if fp == "" {
+			continue
+		}
 		if sqlInfosMap[fp] != nil {
 			sqlInfosMap[fp].lastSql = sqlItem.sql
 			sqlInfosMap[fp].lastSqlSchema = sqlItem.schema

@@ -2078,7 +2078,7 @@ var RuleHandlers = []RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
-		AllowOffline: true,
+		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
 	},
@@ -5896,70 +5896,56 @@ func checkAutoIncrementFieldNum(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkTableJoinedNums(tableRefs *ast.Join) []string {
-	tableJoinedNums := make(map[string]int)
-	repeatTables := []string{}
+func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
+	var tableWithSchema string
 
-	tableSources := util.GetTableSources(tableRefs)
-	for _, tableSource := range tableSources {
-		switch source := tableSource.Source.(type) {
-		case *ast.TableName:
-			tableName := source.Name.L
-			tableJoinedNums[tableName] += 1
-		case *ast.SelectStmt:
-			subQueryRepeatTables := checkTableJoinedNums(source.From.TableRefs)
-			repeatTables = append(repeatTables, subQueryRepeatTables...)
+	if stmt.Schema.String() == "" {
+		currentSchema := c.CurrentSchema()
+		if currentSchema != "" {
+			tableWithSchema = fmt.Sprintf("`%s`.`%s`", currentSchema, stmt.Name)
+		} else {
+			tableWithSchema = fmt.Sprintf("`%s`", stmt.Name)
 		}
+	} else {
+		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
+	}
+	
+	if c.IsLowerCaseTableName() {
+		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
 
-	for tableName, joinedNums := range tableJoinedNums {
-		if joinedNums > 1 {
-			repeatTables = append(repeatTables, tableName)
-		}
-	}
-
-	return repeatTables
-}
-
-func checkSameTableJoinedInSubQueries(where ast.ExprNode) []string {
-	var repeatTables []string
-
-	if where == nil && !util.WhereStmtHasSubQuery(where) {
-		return repeatTables
-	}
-	subQueries := util.GetSubQueryFromWhere(where)
-	for _, subQuery := range subQueries {
-		if selectStmt, ok := subQuery.Query.(*ast.SelectStmt); ok {
-			tableRefs := selectStmt.From.TableRefs
-			repeatTables = append(repeatTables, checkTableJoinedNums(tableRefs)...)
-		}
-	}
-	return repeatTables
+	return tableWithSchema
 }
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
-	var tableRefs *ast.Join
 	var repeatTables []string
+	
+	if _, ok := input.Node.(ast.DMLNode); ok {
+		selectVisitor := &util.SelectVisitor{}
+		input.Node.Accept(selectVisitor)
 
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			return nil
+		for _, selectNode := range selectVisitor.SelectList {
+			tableJoinedNums := make(map[string]int)
+
+			if selectNode.From != nil {
+				tableSources := util.GetTableSources(selectNode.From.TableRefs)
+				for _, tableSource := range tableSources {
+					switch source := tableSource.Source.(type) {
+					case *ast.TableName:
+						tableName := getTableNameWithSchema(source, input.Ctx)
+						tableJoinedNums[tableName] += 1
+					}
+				}
+
+				for tableName, joinedNums := range tableJoinedNums {
+					if joinedNums > 1 {
+						repeatTables = append(repeatTables, tableName)
+					}
+				}
+			}
 		}
-		tableRefs = stmt.From.TableRefs
-		repeatTables = checkTableJoinedNums(tableRefs)
-
-		where := stmt.Where
-		repeatTables = append(repeatTables, checkSameTableJoinedInSubQueries(where)...)
-	case *ast.UpdateStmt:
-		where := stmt.Where
-		repeatTables = checkSameTableJoinedInSubQueries(where)
-	case *ast.DeleteStmt:
-		where := stmt.Where
-		repeatTables = checkSameTableJoinedInSubQueries(where)
-	default:
-		return nil
 	}
+
 	repeatTables = utils.RemoveDuplicate(repeatTables)
 	if len(repeatTables) > 0 {
 		tablesString := strings.Join(repeatTables, ",")

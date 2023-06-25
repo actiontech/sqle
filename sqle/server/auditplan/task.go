@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,11 +20,12 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	openapi "github.com/alibabacloud-go/darabonba-openapi/client"
 	rds20140815 "github.com/alibabacloud-go/rds-20140815/v2/client"
 	_util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/baidubce/bce-sdk-go/bce"
+	"github.com/baidubce/bce-sdk-go/services/rds"
 	"github.com/percona/go-mysql/query"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -960,10 +962,10 @@ type SqlFromAliCloud struct {
 }
 
 func (at *aliRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
-	return convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls, now)
+	return convertRawSlowSQLWitchFromSqlInfo(sqls, now)
 }
 
-func convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+func convertRawSlowSQLWitchFromSqlInfo(sqls []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
 	as := make([]*model.AuditPlanSQLV2, len(sqls))
 	for i, sql := range sqls {
 		modelInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v"}`, sql.counter, now.Format(time.RFC3339), sql.schema)
@@ -1289,10 +1291,251 @@ func (at *MySQLProcesslistTask) collectorDo() {
 
 	if len(sqlInfos) > 0 {
 		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
-			convertRawSlowSQLWitchFromAliCloudToModelSQLs(sqlInfos, time.Now()))
+			convertRawSlowSQLWitchFromSqlInfo(sqlInfos, time.Now()))
 		if err != nil {
 			at.logger.Errorf("save processlist to storage fail, error: %v", err)
 			return
 		}
 	}
+}
+
+type BaiduRdsMySQLSlowLogTask struct {
+	*baiduRdsMySQLTask
+}
+
+type SqlFromBaiduCloud struct {
+	sql                string
+	executionStartTime time.Time
+	schema             string
+}
+
+type baiduRdsMySQLTask struct {
+	*sqlCollector
+	lastEndTime *time.Time
+	pullLogs    func(client *rds.Client, DBInstanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqlList []SqlFromBaiduCloud, err error)
+}
+
+func (bt *baiduRdsMySQLTask) Audit() (*model.AuditPlanReportV2, error) {
+	task := &model.Task{
+		DBType: bt.ap.DBType,
+	}
+	return bt.baseTask.audit(task)
+}
+
+func (bt *baiduRdsMySQLTask) collectorDo() {
+	if bt.ap.InstanceName == "" {
+		bt.logger.Warnf("instance is not configured")
+		return
+	}
+
+	rdsDBInstanceId := bt.ap.Params.GetParam(paramKeyDBInstanceId).String()
+	if rdsDBInstanceId == "" {
+		bt.logger.Warnf("db instance id is not configured")
+		return
+	}
+
+	accessKeyID := bt.ap.Params.GetParam(paramKeyAccessKeyId).String()
+	if accessKeyID == "" {
+		bt.logger.Warnf("access key id is not configured")
+		return
+	}
+
+	accessKeySecret := bt.ap.Params.GetParam(paramKeyAccessKeySecret).String()
+	if accessKeySecret == "" {
+		bt.logger.Warnf("access key secret is not configured")
+		return
+	}
+
+	rdsPath := bt.ap.Params.GetParam(paramKeyRdsPath).String()
+	if rdsPath == "" {
+		bt.logger.Warnf("rds path is not configured")
+		return
+	}
+
+	firstScrapInLastHours := bt.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).Int()
+	if firstScrapInLastHours == 0 {
+		firstScrapInLastHours = 24
+	}
+
+	theMaxSupportedDays := 7 // 支持往前查看慢日志的最大天数
+	hoursDuringADay := 24
+	if firstScrapInLastHours > theMaxSupportedDays*hoursDuringADay {
+		bt.logger.Warnf("Can not get slow logs from so early time. firstScrapInLastHours=%v", firstScrapInLastHours)
+		return
+	}
+
+	client, err := bt.CreateClient(rdsPath, accessKeyID, accessKeySecret)
+	if err != nil {
+		bt.logger.Warnf("create client failed, error: %v", err)
+		return
+	}
+
+	now := time.Now()
+	var startTime time.Time
+	if bt.isFirstScrap() {
+		startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
+	} else {
+		startTime = *bt.lastEndTime
+	}
+
+	var pageNum int32 = 1
+	pageSize := 100
+	//nolint:staticcheck
+	slowSqlList := make([]SqlFromBaiduCloud, 0)
+	for {
+		// 每次取100条
+		slowSqlList, err = bt.pullLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		if err != nil {
+			bt.logger.Warnf("pull slow logs failed, error: %v", err)
+			return
+		}
+
+		if len(slowSqlList) < pageSize {
+			break
+		}
+		pageNum++
+	}
+
+	mergedSlowSqlList := mergerSqlListByFingerprint(slowSqlList)
+	if len(mergedSlowSqlList) > 0 {
+		if bt.isFirstScrap() {
+			err = bt.persist.OverrideAuditPlanSQLs(bt.ap.ID, bt.convertSQLInfoListToModelSQLList(mergedSlowSqlList, now))
+			if err != nil {
+				bt.logger.Warnf("save slow logs to storage failed, error: %v", err)
+				return
+			}
+		} else {
+			err = bt.persist.UpdateDefaultAuditPlanSQLs(bt.ap.ID, bt.convertSQLInfoListToModelSQLList(mergedSlowSqlList, now))
+			if err != nil {
+				bt.logger.Warnf("save slow logs to storage failed, error: %v", err)
+				return
+			}
+		}
+	}
+
+	if len(slowSqlList) > 0 {
+		lastSlowSql := slowSqlList[len(slowSqlList)-1]
+		bt.lastEndTime = &lastSlowSql.executionStartTime
+	}
+}
+
+func mergerSqlListByFingerprint(sqlList []SqlFromBaiduCloud) []sqlInfo {
+	sqlInfoList := make([]sqlInfo, 0)
+	counter := map[string] /*finger*/ int /*slice subscript*/ {}
+	for _, sql := range sqlList {
+		fp := query.Fingerprint(sql.sql)
+		if index, exist := counter[fp]; exist {
+			sqlInfoList[index].counter += 1
+			sqlInfoList[index].fingerprint = fp
+			sqlInfoList[index].sql = sql.sql
+			sqlInfoList[index].schema = sql.schema
+		} else {
+			sqlInfoList = append(sqlInfoList, sqlInfo{
+				counter:     1,
+				fingerprint: fp,
+				sql:         sql.sql,
+				schema:      sql.schema,
+			})
+			counter[fp] = len(sqlInfoList) - 1
+		}
+	}
+	return sqlInfoList
+}
+
+func (bt *baiduRdsMySQLTask) isFirstScrap() bool {
+	return bt.lastEndTime == nil
+}
+
+func (bt *baiduRdsMySQLTask) convertSQLInfoListToModelSQLList(list []sqlInfo, now time.Time) []*model.AuditPlanSQLV2 {
+	return convertRawSlowSQLWitchFromSqlInfo(list, now)
+}
+
+func (bt *baiduRdsMySQLTask) CreateClient(rdsPath string, accessKeyID string, accessKeySecret string) (*rds.Client, error) {
+	client, err := rds.NewClient(accessKeyID, accessKeySecret, rdsPath)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+type slowLogReq struct {
+	StartTime string   `json:"startTime"`
+	EndTime   string   `json:"endTime"`
+	PageNo    int      `json:"pageNo"`
+	PageSize  int      `json:"pageSize"`
+	DbName    []string `json:"dbName"`
+}
+
+type slowLogDetail struct {
+	InstanceId   string  `json:"instanceId"`
+	UserName     string  `json:"userName"`
+	DbName       string  `json:"dbName"`
+	HostIp       string  `json:"hostIp"`
+	QueryTime    float64 `json:"queryTime"`
+	LockTime     float64 `json:"lockTime"`
+	RowsExamined int     `json:"rowsExamined"`
+	RowsSent     int     `json:"rowsSent"`
+	Sql          string  `json:"sql"`
+	ExecuteTime  string  `json:"executeTime"`
+}
+
+type slowLogDetailResp struct {
+	Count    int             `json:"count"`
+	SlowLogs []slowLogDetail `json:"slowLogs"`
+}
+
+func (t BaiduRdsMySQLSlowLogTask) pullSlowLogs(client *rds.Client, instanceID string, startTime time.Time, endTime time.Time, size int32, num int32) (sqlList []SqlFromBaiduCloud, err error) {
+	req := slowLogReq{
+		StartTime: startTime.Format("2006-01-02T15:04:05Z"),
+		EndTime:   endTime.Format("2006-01-02T15:04:05Z"),
+		PageNo:    int(num),
+		PageSize:  int(size),
+		DbName:    nil,
+	}
+
+	uri := getRdsUriWithInstanceId(instanceID)
+
+	resp := new(slowLogDetailResp)
+	err = bce.NewRequestBuilder(client).
+		WithMethod(http.MethodPost).
+		WithURL(uri).
+		WithBody(&req).
+		WithResult(&resp).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+
+	sqlList = make([]SqlFromBaiduCloud, len(resp.SlowLogs))
+	for i, slowLog := range resp.SlowLogs {
+		execStartTime, err := time.Parse("2006-01-02 15:04:05", slowLog.ExecuteTime)
+		if err != nil {
+			return nil, err
+		}
+
+		sqlList[i] = SqlFromBaiduCloud{
+			sql:                slowLog.Sql,
+			executionStartTime: execStartTime,
+		}
+	}
+
+	return sqlList, nil
+}
+
+func getRdsUriWithInstanceId(instanceId string) string {
+	return rds.URI_PREFIX + rds.REQUEST_RDS_URL + "/" + instanceId + "/slowlogs/details"
+}
+
+func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	b := &BaiduRdsMySQLSlowLogTask{}
+	task := &baiduRdsMySQLTask{
+		sqlCollector: sqlCollector,
+		lastEndTime:  nil,
+		pullLogs:     b.pullSlowLogs,
+	}
+	sqlCollector.do = task.collectorDo
+	b.baiduRdsMySQLTask = task
+
+	return b
 }
