@@ -427,9 +427,10 @@ func (at *SlowLogTask) collectorDo() {
 	}
 	defer db.Db.Close()
 
-	slowLogRecord, err := at.persist.GetAuditPlanSlowLogRecord()
+	queryStartTime, err := at.persist.GetNewStartTimeAuditPlanSQL()
 	if err != nil {
-		at.logger.Errorf("get slow log record failed, error: %v", err)
+		at.logger.Errorf("get start time failed, error: %v", err)
+		return
 	}
 	querySQL := `
 	SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time, start_time
@@ -437,30 +438,17 @@ func (at *SlowLogTask) collectorDo() {
 	WHERE sql_text != ''
 		AND db NOT IN ('information_schema','performance_schema','mysql','sys')
 	`
-	if slowLogRecord != nil {
-		extraWhereCondition := fmt.Sprintf(" AND start_time>'%s'", slowLogRecord.StartTime)
-		querySQL = querySQL + extraWhereCondition
-	}
-
-	orderByCondition := " ORDER BY start_time"
-	querySQL = querySQL + orderByCondition
-
-	offsetNum := 0
 
 	sqlInfos := []*sqlFromSlowLog{}
 
 	for {
-		limitOffsetCondition := fmt.Sprintf(" LIMIT %d OFFSET %d", SlowLogQueryNums, offsetNum)
-		execQuerySQL := querySQL + limitOffsetCondition
+		extraCondition := fmt.Sprintf(" AND start_time>'%s' ORDER BY start_time LIMIT %d", queryStartTime, SlowLogQueryNums)
+		execQuerySQL := querySQL + extraCondition
 
 		res, err := db.Db.Query(execQuerySQL)
 
 		if err != nil {
 			at.logger.Errorf("query slow log failed, error: %v", err)
-			break
-		}
-
-		if len(res) == 0 {
 			break
 		}
 
@@ -479,7 +467,13 @@ func (at *SlowLogTask) collectorDo() {
 			sqlInfos = append(sqlInfos, sqlInfo)
 		}
 
-		offsetNum += SlowLogQueryNums
+		if len(res) < SlowLogQueryNums {
+			break
+		}
+
+		queryStartTime = res[len(res)-1]["start_time"].String
+
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	if len(sqlInfos) == 0 {
@@ -496,8 +490,8 @@ func (at *SlowLogTask) collectorDo() {
 		now := time.Now()
 		for i := range sqlFingerprintInfos {
 			fp := sqlFingerprintInfos[i]
-			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":"%d"}`,
-				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds)
+			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":"%d","start_time":"%v"}`,
+				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds, fp.startTime)
 			auditPlanSQLs[i] = &model.AuditPlanSQLV2{
 				Fingerprint: fp.fingerprint,
 				SQLContent:  fp.sql,
@@ -507,15 +501,8 @@ func (at *SlowLogTask) collectorDo() {
 		}
 	}
 
-	if err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, auditPlanSQLs); err != nil {
+	if err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, auditPlanSQLs); err != nil {
 		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
-		return
-	}
-
-	lastSqlStartTime := sqlInfos[len(sqlInfos)-1].startTime
-
-	if err = at.persist.SaveAuditPlanSlowLogRecord(lastSqlStartTime); err != nil {
-		at.logger.Errorf("save slow log record failed, error: %v", err)
 		return
 	}
 }
@@ -534,6 +521,7 @@ type sqlFingerprintInfo struct {
 	lastSqlSchema         string
 	sqlCount              int
 	totalQueryTimeSeconds int
+	startTime             string
 }
 
 func (s *sqlFingerprintInfo) queryTime() int {
@@ -544,6 +532,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 
 	sqlInfos := []sqlInfo{}
 	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
+	auditPlanSqlInfosMap:= map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
 
 	auditPlanSQLs, err := persist.GetAllAuditPlanSQLs()
 	if err != nil {
@@ -565,7 +554,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 		}
 
 		fp := sql.Fingerprint
-		sqlInfosMap[fp] = &sqlFingerprintInfo{
+		auditPlanSqlInfosMap[fp] = &sqlFingerprintInfo{
 			sqlCount:              info.Counter,
 			lastSql:               sql.SQLContent,
 			lastSqlSchema:         sql.Schema,
@@ -576,17 +565,30 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 	for i := range s {
 		sqlItem := s[i]
 		fp := query.Fingerprint(sqlItem.sql)
+		
 		if sqlInfosMap[fp] != nil {
 			sqlInfosMap[fp].lastSql = sqlItem.sql
 			sqlInfosMap[fp].lastSqlSchema = sqlItem.schema
 			sqlInfosMap[fp].sqlCount++
 			sqlInfosMap[fp].totalQueryTimeSeconds += sqlItem.queryTimeSeconds
 		} else {
-			sqlInfosMap[fp] = &sqlFingerprintInfo{
-				sqlCount:              1,
-				lastSql:               sqlItem.sql,
-				lastSqlSchema:         sqlItem.schema,
-				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
+			auditPlanSqlInfo, exist := auditPlanSqlInfosMap[fp]
+			if exist {
+				sqlInfosMap[fp] = &sqlFingerprintInfo{
+					sqlCount:              auditPlanSqlInfo.sqlCount+1,
+					lastSql:               sqlItem.sql,
+					lastSqlSchema:         sqlItem.schema,
+					totalQueryTimeSeconds: auditPlanSqlInfo.totalQueryTimeSeconds + sqlItem.queryTimeSeconds,
+					startTime:             sqlItem.startTime,
+				}
+			} else {
+				sqlInfosMap[fp] = &sqlFingerprintInfo{
+					sqlCount:              1,
+					lastSql:               sqlItem.sql,
+					lastSqlSchema:         sqlItem.schema,
+					totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
+					startTime:             sqlItem.startTime,
+				}
 			}
 		}
 	}
@@ -598,6 +600,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 		info.schema = v.lastSqlSchema
 		info.queryTimeSeconds = v.queryTime()
 		info.fingerprint = fingerprint
+		info.startTime = v.startTime
 
 		sqlInfos = append(sqlInfos, info)
 	}
