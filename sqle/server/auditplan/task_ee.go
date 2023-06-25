@@ -427,7 +427,7 @@ func (at *SlowLogTask) collectorDo() {
 	}
 	defer db.Db.Close()
 
-	queryStartTime, err := at.persist.GetNewStartTimeAuditPlanSQL()
+	queryStartTime, err := at.persist.GetNewStartTimeAuditPlanSQL(at.ap.ID)
 	if err != nil {
 		at.logger.Errorf("get start time failed, error: %v", err)
 		return
@@ -479,7 +479,7 @@ func (at *SlowLogTask) collectorDo() {
 	if len(sqlInfos) == 0 {
 		return
 	}
-	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint(at.persist)
+	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint(at.persist, at.ap.ID)
 	if err != nil {
 		at.logger.Errorf("merge finger sqls failed, error: %v", err)
 		return
@@ -501,7 +501,7 @@ func (at *SlowLogTask) collectorDo() {
 		}
 	}
 
-	if err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID, auditPlanSQLs); err != nil {
+	if err = at.persist.UpdateAuditPlanSQLsWithStartTime(at.ap.ID, auditPlanSQLs); err != nil {
 		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
 		return
 	}
@@ -528,13 +528,13 @@ func (s *sqlFingerprintInfo) queryTime() int {
 	return s.totalQueryTimeSeconds / s.sqlCount
 }
 
-func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, error) {
+func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage, auditPlanId uint) ([]sqlInfo, error) {
 
 	sqlInfos := []sqlInfo{}
 	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
 	auditPlanSqlInfosMap:= map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
 
-	auditPlanSQLs, err := persist.GetAllAuditPlanSQLs()
+	auditPlanSQLs, err := persist.GetAuditPlanSQLs(auditPlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -573,6 +573,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage) ([]sqlInfo, 
 			sqlInfosMap[fp].lastSqlSchema = sqlItem.schema
 			sqlInfosMap[fp].sqlCount++
 			sqlInfosMap[fp].totalQueryTimeSeconds += sqlItem.queryTimeSeconds
+			sqlInfosMap[fp].startTime = sqlItem.startTime
 		} else {
 			auditPlanSqlInfo, exist := auditPlanSqlInfosMap[fp]
 			if exist {
