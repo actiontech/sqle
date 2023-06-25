@@ -74,7 +74,7 @@ func (sc *Client) WithProject(project string) *Client {
 	return &sc2
 }
 
-func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []AuditPlanSQLReq) error {
+func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []*AuditPlanSQLReq) error {
 	bodyBuf := &bytes.Buffer{}
 	encoder := json.NewEncoder(bodyBuf)
 	encoder.SetEscapeHTML(false)

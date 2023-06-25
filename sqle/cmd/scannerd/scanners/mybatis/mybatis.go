@@ -99,10 +99,10 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	reqBody := make([]scanner.AuditPlanSQLReq, 0, len(nodeList))
+	reqBody := make([]*scanner.AuditPlanSQLReq, 0, len(nodeList))
 	now := time.Now().Format(time.RFC3339)
 	for _, sql := range nodeList {
-		reqBody = append(reqBody, scanner.AuditPlanSQLReq{
+		reqBody = append(reqBody, &scanner.AuditPlanSQLReq{
 			Fingerprint:          sql.Fingerprint,
 			Counter:              fmt.Sprintf("%v", counterMap[sql.Fingerprint]),
 			LastReceiveText:      sql.RawText,
