@@ -211,3 +211,19 @@ func (se *SelectFieldExtractor) Enter(in ast.Node) (node ast.Node, skipChildren 
 func (se *SelectFieldExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
+
+type SelectVisitor struct {
+	SelectList []*ast.SelectStmt
+}
+
+func (v *SelectVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		v.SelectList = append(v.SelectList, stmt)
+	}
+	return in, false
+}
+
+func (v *SelectVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
