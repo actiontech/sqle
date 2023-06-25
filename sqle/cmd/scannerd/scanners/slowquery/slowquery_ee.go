@@ -6,6 +6,7 @@ package slowquery
 import (
 	"context"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
@@ -99,16 +100,30 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 }
 
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	var sqlsReq []scanner.AuditPlanSQLReq
+	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
+	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
 	for _, sql := range sqls {
-		sqlsReq = append(sqlsReq, scanner.AuditPlanSQLReq{
-			Fingerprint:          sql.Fingerprint,
-			LastReceiveText:      sql.RawText,
-			LastReceiveTimestamp: now.Format(time.RFC3339),
-			Counter:              "1",
-		})
-	}
-	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlsReq)
+		if sqlReq, ok := auditPlanSqlMap[sql.Fingerprint]; ok {
+			atoi, err := strconv.Atoi(sqlReq.Counter)
+			if err != nil {
+				return err
+			}
 
+			sqlReq.Counter = strconv.Itoa(atoi + 1)
+			sqlReq.LastReceiveText = sql.RawText
+			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
+		} else {
+			sqlReq := &scanner.AuditPlanSQLReq{
+				Fingerprint:          sql.Fingerprint,
+				LastReceiveText:      sql.RawText,
+				LastReceiveTimestamp: now.Format(time.RFC3339),
+				Counter:              "1",
+			}
+			auditPlanSqlMap[sql.Fingerprint] = sqlReq
+			sqlListReq = append(sqlListReq, sqlReq)
+		}
+	}
+
+	return sq.c.UploadReq(scanner.PartialUpload, sq.apName, sqlListReq)
 }

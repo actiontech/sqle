@@ -6,11 +6,12 @@ package tidb_audit_log
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
@@ -137,7 +138,7 @@ func (sq *AuditLog) SQLs() <-chan scanners.SQL {
 }
 
 func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	sqlsReq := []scanner.AuditPlanSQLReq{}
+	sqlsReq := []*scanner.AuditPlanSQLReq{}
 	now := time.Now()
 
 	counter := map[string]int /*slice subscript*/ {}
@@ -147,7 +148,7 @@ func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			count, _ := strconv.Atoi(sqlsReq[subscript].Counter)
 			sqlsReq[subscript].Counter = strconv.Itoa(count + 1)
 		} else {
-			sqlsReq = append(sqlsReq, scanner.AuditPlanSQLReq{
+			sqlsReq = append(sqlsReq, &scanner.AuditPlanSQLReq{
 				Fingerprint:          sql.Fingerprint,
 				LastReceiveText:      sql.RawText,
 				LastReceiveTimestamp: now.Format(time.RFC3339),
