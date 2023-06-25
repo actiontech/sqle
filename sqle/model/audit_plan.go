@@ -139,17 +139,11 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAllAuditPlanSQLs() ([]*AuditPlanSQLV2, error) {
-	var sqls []*AuditPlanSQLV2
-	err := s.db.Model(AuditPlanSQLV2{}).Find(&sqls).Error
-	return sqls, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetNewStartTimeAuditPlanSQL() (string, error) {
+func (s *Storage) GetNewStartTimeAuditPlanSQL(auditPlanId uint) (string, error) {
 	lastStartTime := ""
 	var lastTimeStamp int64
 
-	sqls, err := s.GetAllAuditPlanSQLs()
+	sqls, err := s.GetAuditPlanSQLs(auditPlanId)
 	if err != nil {
 		return "", err
 	}
@@ -199,6 +193,24 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
                                                                 COALESCE(JSON_EXTRACT(info, '$.counter'), 0) AS SIGNED),
                                               '$.last_receive_timestamp',
                                               JSON_EXTRACT(values(info), '$.last_receive_timestamp'));`
+
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+}
+
+func (s *Storage) UpdateAuditPlanSQLsWithStartTime(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
+	// counter column is a accumulate value when update.
+	raw += `
+ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
+                        info        = JSON_SET(COALESCE(info, '{}'),
+                                              '$.counter', CAST(COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0) +
+                                                                COALESCE(JSON_EXTRACT(info, '$.counter'), 0) AS SIGNED),
+                                              '$.last_receive_timestamp',
+                                              JSON_EXTRACT(values(info), '$.last_receive_timestamp'),
+											  '$.average_query_time',
+											  JSON_EXTRACT(values(info), '$.average_query_time'),
+											  '$.start_time',
+											  JSON_EXTRACT(values(info), '$.start_time'));`
 
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
