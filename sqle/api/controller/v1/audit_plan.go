@@ -787,7 +787,7 @@ func GetAuditPlanReport(c echo.Context) error {
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
-	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
 type AuditPlanSQLReqV1 struct {
@@ -842,7 +842,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
-	SQLs []AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
 // @Summary 增量同步SQL到扫描任务
@@ -887,7 +887,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, true))
 }
 
-func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
+func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
 	var p driver.Plugin
 	var err error
 
