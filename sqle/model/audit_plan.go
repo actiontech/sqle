@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -136,6 +137,44 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	var sqls []*AuditPlanSQLV2
 	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetAllAuditPlanSQLs() ([]*AuditPlanSQLV2, error) {
+	var sqls []*AuditPlanSQLV2
+	err := s.db.Model(AuditPlanSQLV2{}).Find(&sqls).Error
+	return sqls, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetNewStartTimeAuditPlanSQL() (string, error) {
+	lastStartTime := ""
+	var lastTimeStamp int64
+
+	sqls, err := s.GetAllAuditPlanSQLs()
+	if err != nil {
+		return "", nil
+	}
+	for _, sql := range sqls {
+		var info = struct {
+			StartTime string `json:"start_time"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return "", fmt.Errorf("parse schema failed: %v", err)
+		}
+		
+		t, err := time.Parse(time.RFC3339Nano, info.StartTime)
+		if err != nil {
+			return "", fmt.Errorf("parse time stamp failed: %v", err)
+		}
+
+		timestamp := t.Unix()
+		
+		if timestamp > lastTimeStamp {
+			lastTimeStamp = timestamp
+			lastStartTime = info.StartTime
+		}
+	}
+	return lastStartTime, nil
 }
 
 func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
