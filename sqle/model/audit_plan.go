@@ -140,35 +140,12 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 }
 
 func (s *Storage) GetNewStartTimeAuditPlanSQL(auditPlanId uint) (string, error) {
-	lastStartTime := ""
-	var lastTimeStamp int64
-
-	sqls, err := s.GetAuditPlanSQLs(auditPlanId)
-	if err != nil {
-		return "", err
-	}
-	for _, sql := range sqls {
-		var info = struct {
-			StartTime string `json:"start_time"`
-		}{}
-		err := json.Unmarshal(sql.Info, &info)
-		if err != nil {
-			return "", fmt.Errorf("parse schema failed: %v", err)
-		}
-		
-		t, err := time.Parse(time.RFC3339Nano, info.StartTime)
-		if err != nil {
-			return "", fmt.Errorf("parse time stamp failed: %v", err)
-		}
-
-		timestamp := t.Unix()
-		
-		if timestamp > lastTimeStamp {
-			lastTimeStamp = timestamp
-			lastStartTime = info.StartTime
-		}
-	}
-	return lastStartTime, nil
+	var info = struct {
+		StartTime string `gorm:"column:max_start_time"`
+	}{}
+	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time')), '%Y-%m-%dT%H:%i:%s.%fZ')) 
+					AS max_start_time FROM audit_plan_sqls_v2 WHERE audit_plan_id = ?`, auditPlanId).Scan(&info).Error
+	return info.StartTime, err
 }
 
 func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
@@ -203,12 +180,17 @@ func (s *Storage) UpdateAuditPlanSQLsWithStartTime(auditPlanId uint, sqls []*Aud
 	raw += `
 ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
                         info        = JSON_SET(COALESCE(info, '{}'),
-                                              '$.counter', CAST(COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0) +
+											  '$.counter', CAST(COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0) +
                                                                 COALESCE(JSON_EXTRACT(info, '$.counter'), 0) AS SIGNED),
                                               '$.last_receive_timestamp',
                                               JSON_EXTRACT(values(info), '$.last_receive_timestamp'),
 											  '$.average_query_time',
-											  JSON_EXTRACT(values(info), '$.average_query_time'),
+											  CAST(
+												((JSON_EXTRACT(info, '$.average_query_time') + 0) * (JSON_EXTRACT(info, '$.counter'))
+												+ (JSON_EXTRACT(VALUES(info), '$.average_query_time') + 0) * (JSON_EXTRACT(VALUES(info), '$.counter')))
+												/ (JSON_EXTRACT(info, '$.counter') + JSON_EXTRACT(VALUES(info), '$.counter'))
+												AS UNSIGNED
+											  ),
 											  '$.start_time',
 											  JSON_EXTRACT(values(info), '$.start_time'));`
 
