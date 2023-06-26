@@ -427,7 +427,7 @@ func (at *SlowLogTask) collectorDo() {
 	}
 	defer db.Db.Close()
 
-	queryStartTime, err := at.persist.GetNewStartTimeAuditPlanSQL(at.ap.ID)
+	queryStartTime, err := at.persist.GetLatestStartTimeAuditPlanSQL(at.ap.ID)
 	if err != nil {
 		at.logger.Errorf("get start time failed, error: %v", err)
 		return
@@ -501,7 +501,7 @@ func (at *SlowLogTask) collectorDo() {
 		}
 	}
 
-	if err = at.persist.UpdateAuditPlanSQLsWithStartTime(at.ap.ID, auditPlanSQLs); err != nil {
+	if err = at.persist.UpdateSlowLogCollectAuditPlanSQLs(at.ap.ID, auditPlanSQLs); err != nil {
 		at.logger.Errorf("save mysql slow log to storage failed, error: %v", err)
 		return
 	}
