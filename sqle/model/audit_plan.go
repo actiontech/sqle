@@ -138,7 +138,7 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetNewStartTimeAuditPlanSQL(auditPlanId uint) (string, error) {
+func (s *Storage) GetLatestStartTimeAuditPlanSQL(auditPlanId uint) (string, error) {
 	var info = struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
@@ -173,7 +173,7 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func (s *Storage) UpdateAuditPlanSQLsWithStartTime(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
+func (s *Storage) UpdateSlowLogCollectAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
 	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
 	raw += `
