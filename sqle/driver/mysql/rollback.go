@@ -607,7 +607,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 					}
 				}
 			}
-			name := col.Name.String()
+			name := col.Name.Name.O
 			v := "NULL"
 			if record[name].Valid {
 				v = fmt.Sprintf("'%s'", record[name].String)
