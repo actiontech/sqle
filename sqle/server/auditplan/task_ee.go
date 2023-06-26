@@ -18,7 +18,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 	dry "github.com/ungerik/go-dry"
 
-	"github.com/percona/go-mysql/query"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/sirupsen/logrus"
 )
 
@@ -479,7 +479,7 @@ func (at *SlowLogTask) collectorDo() {
 	if len(sqlInfos) == 0 {
 		return
 	}
-	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint(at.persist, at.ap.ID)
+	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint()
 	if err != nil {
 		at.logger.Errorf("merge finger sqls failed, error: %v", err)
 		return
@@ -528,46 +528,21 @@ func (s *sqlFingerprintInfo) queryTime() int {
 	return s.totalQueryTimeSeconds / s.sqlCount
 }
 
-func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage, auditPlanId uint) ([]sqlInfo, error) {
+func (s sqlFromSlowLogs) mergeByFingerprint() ([]sqlInfo, error) {
 
 	sqlInfos := []sqlInfo{}
 	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
-	auditPlanSqlInfosMap:= map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
-
-	auditPlanSQLs, err := persist.GetAuditPlanSQLs(auditPlanId)
-	if err != nil {
-		return nil, err
-	}
-	for _, sql := range auditPlanSQLs {
-		var info = struct {
-			Counter              int    `json:"counter"`
-			LastReceiveTimestamp string `json:"last_receive_timestamp"`
-			AverageQueryTime     string `json:"average_query_time"`
-		}{}
-		err := json.Unmarshal(sql.Info, &info)
-		if err != nil {
-			return nil, err
-		}
-		averageQueryTime, err := strconv.Atoi(info.AverageQueryTime)
-		if err != nil {
-			return nil, err
-		}
-
-		fp := sql.Fingerprint
-		auditPlanSqlInfosMap[fp] = &sqlFingerprintInfo{
-			sqlCount:              info.Counter,
-			lastSql:               sql.SQLContent,
-			lastSqlSchema:         sql.Schema,
-			totalQueryTimeSeconds: info.Counter * averageQueryTime,
-		}
-	}
 
 	for i := range s {
 		sqlItem := s[i]
-		fp := query.Fingerprint(sqlItem.sql)
+		fp, err := util.Fingerprint(sqlItem.sql, true)
+		if err != nil {
+			return nil, err
+		}
 		if fp == "" {
 			continue
 		}
+
 		if sqlInfosMap[fp] != nil {
 			sqlInfosMap[fp].lastSql = sqlItem.sql
 			sqlInfosMap[fp].lastSqlSchema = sqlItem.schema
@@ -575,37 +550,27 @@ func (s sqlFromSlowLogs) mergeByFingerprint(persist *model.Storage, auditPlanId 
 			sqlInfosMap[fp].totalQueryTimeSeconds += sqlItem.queryTimeSeconds
 			sqlInfosMap[fp].startTime = sqlItem.startTime
 		} else {
-			auditPlanSqlInfo, exist := auditPlanSqlInfosMap[fp]
-			if exist {
-				sqlInfosMap[fp] = &sqlFingerprintInfo{
-					sqlCount:              auditPlanSqlInfo.sqlCount+1,
-					lastSql:               sqlItem.sql,
-					lastSqlSchema:         sqlItem.schema,
-					totalQueryTimeSeconds: auditPlanSqlInfo.totalQueryTimeSeconds + sqlItem.queryTimeSeconds,
-					startTime:             sqlItem.startTime,
-				}
-			} else {
-				sqlInfosMap[fp] = &sqlFingerprintInfo{
-					sqlCount:              1,
-					lastSql:               sqlItem.sql,
-					lastSqlSchema:         sqlItem.schema,
-					totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
-					startTime:             sqlItem.startTime,
-				}
+			sqlInfosMap[fp] = &sqlFingerprintInfo{
+				sqlCount:              1,
+				lastSql:               sqlItem.sql,
+				lastSqlSchema:         sqlItem.schema,
+				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
+				startTime:			   sqlItem.startTime,
 			}
+			sqlInfos = append(sqlInfos, sqlInfo{fingerprint: fp})
 		}
 	}
 
-	for fingerprint, v := range sqlInfosMap {
-		info := sqlInfo{}
-		info.counter = v.sqlCount
-		info.sql = v.lastSql
-		info.schema = v.lastSqlSchema
-		info.queryTimeSeconds = v.queryTime()
-		info.fingerprint = fingerprint
-		info.startTime = v.startTime
-
-		sqlInfos = append(sqlInfos, info)
+	for i := range sqlInfos {
+		fp := sqlInfos[i].fingerprint
+		sqlInfo := sqlInfosMap[fp]
+		if sqlInfo != nil {
+			sqlInfos[i].counter = sqlInfo.sqlCount
+			sqlInfos[i].sql = sqlInfo.lastSql
+			sqlInfos[i].schema = sqlInfo.lastSqlSchema
+			sqlInfos[i].queryTimeSeconds = sqlInfo.queryTime()
+			sqlInfos[i].startTime = sqlInfo.startTime
+		}
 	}
 
 	return sqlInfos, nil
