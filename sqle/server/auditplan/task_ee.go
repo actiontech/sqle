@@ -479,7 +479,7 @@ func (at *SlowLogTask) collectorDo() {
 	if len(sqlInfos) == 0 {
 		return
 	}
-	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint()
+	sqlFingerprintInfos, err := sqlFromSlowLogs(sqlInfos).mergeByFingerprint(at.logger)
 	if err != nil {
 		at.logger.Errorf("merge finger sqls failed, error: %v", err)
 		return
@@ -528,7 +528,7 @@ func (s *sqlFingerprintInfo) queryTime() int {
 	return s.totalQueryTimeSeconds / s.sqlCount
 }
 
-func (s sqlFromSlowLogs) mergeByFingerprint() ([]sqlInfo, error) {
+func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, error) {
 
 	sqlInfos := []sqlInfo{}
 	sqlInfosMap := map[string] /*sql fingerprint*/ *sqlFingerprintInfo{}
@@ -537,7 +537,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint() ([]sqlInfo, error) {
 		sqlItem := s[i]
 		fp, err := util.Fingerprint(sqlItem.sql, true)
 		if err != nil {
-			return nil, err
+			entry.Warnf("get sql finger print failed, err: %v", err)
 		}
 		if fp == "" {
 			continue
