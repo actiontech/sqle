@@ -904,6 +904,7 @@ type sqlInfo struct {
 	sql              string
 	schema           string
 	queryTimeSeconds int
+	startTime        string
 }
 
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
