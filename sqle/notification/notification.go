@@ -142,6 +142,8 @@ func (w *WorkflowNotification) NotificationBody() string {
 			w.workflow.Project.Name,
 			w.workflow.WorkflowId,
 		))
+	} else {
+		buf.WriteString("\n- 工单链接: 请在系统设置-全局配置中补充全局url")
 	}
 
 	for _, t := range tasks {
