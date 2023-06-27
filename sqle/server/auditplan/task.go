@@ -1385,13 +1385,14 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 	slowSqlList := make([]SqlFromBaiduCloud, 0)
 	for {
 		// 每次取100条
-		slowSqlList, err = bt.pullLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
+		slowSqlListFromBaiduRds, err := bt.pullLogs(client, rdsDBInstanceId, startTime, now, int32(pageSize), pageNum)
 		if err != nil {
 			bt.logger.Warnf("pull slow logs failed, error: %v", err)
 			return
 		}
 
-		if len(slowSqlList) < pageSize {
+		slowSqlList = append(slowSqlList, slowSqlListFromBaiduRds...)
+		if len(slowSqlListFromBaiduRds) < pageSize {
 			break
 		}
 		pageNum++
