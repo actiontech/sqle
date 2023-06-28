@@ -1219,6 +1219,7 @@ type WorkflowTasksSummaryDetail struct {
 	TaskPassRate              float64    `json:"task_pass_rate"`
 	TaskScore                 int32      `json:"task_score"`
 	TaskStatus                string     `json:"task_status"`
+	InstanceId                uint       `json:"instance_id"`
 	InstanceName              string     `json:"instance_name"`
 	InstanceDeletedAt         *time.Time `json:"instance_deleted_at"`
 	InstanceMaintenancePeriod Periods    `json:"instance_maintenance_period" gorm:"text"`
@@ -1236,6 +1237,7 @@ SELECT wr.status                                                     AS workflow
        tasks.pass_rate                                               AS task_pass_rate,
        tasks.score                                                   AS task_score,
        tasks.status                                                  AS task_status,
+       inst.id                                                       AS instance_id,
        inst.name                                                     AS instance_name,
        inst.deleted_at                                               AS instance_deleted_at,
        inst.maintenance_period                                       AS instance_maintenance_period,
@@ -1279,6 +1281,22 @@ func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 	err = s.getListResult(workflowTasksSummaryQueryBodyTplV2, workflowTasksSummaryQueryTpl, data, &result)
 	if err != nil {
 		return result, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, detail := range result {
+		if detail.WorkflowRecordStatus == WorkflowStatusWaitForExecution {
+			users, err := s.GetCanExecuteWorkflowUsers(&Instance{
+				Model: Model{ID: detail.InstanceId},
+			})
+			if err != nil {
+				return nil, errors.New(errors.ConnectStorageError, err)
+			}
+			var userList []string
+			for _, user := range users {
+				userList = append(userList, user.Name)
+			}
+			detail.CurrentStepAssigneeUsers = userList
+		}
 	}
 
 	return result, nil
