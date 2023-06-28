@@ -1371,7 +1371,9 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 		return
 	}
 
-	now := time.Now()
+	// use UTC time
+	// https://cloud.baidu.com/doc/RDS/s/Ejwvz0uoq
+	now := time.Now().UTC()
 	var startTime time.Time
 	if bt.isFirstScrap() {
 		startTime = now.Add(time.Duration(-1*firstScrapInLastHours) * time.Hour)
