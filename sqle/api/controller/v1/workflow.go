@@ -1012,13 +1012,10 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	projectName := c.Param("project_name")
 	workflowID := c.Param("workflow_id")
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	s := model.GetStorage()
 
 	var workflow *model.Workflow
+	var err error
 	{
 		var exist bool
 		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
@@ -1032,13 +1029,13 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err = checkBeforeTasksTermination(c, projectName, workflow, user)
+		err := checkBeforeTasksTermination(c, projectName, workflow)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 
-	terminatingTaskIDs := getTerminatingTaskIDs(s, workflow, user.ID)
+	terminatingTaskIDs := getTerminatingTaskIDs(workflow)
 
 	err = s.UpdateTaskStatusByIDs(terminatingTaskIDs,
 		map[string]string{"status": model.TaskStatusTerminating})
@@ -1065,10 +1062,6 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	s := model.GetStorage()
 
 	var workflow *model.Workflow
@@ -1085,7 +1078,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := checkBeforeTasksTermination(c, projectName, workflow, user)
+		err := checkBeforeTasksTermination(c, projectName, workflow)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1109,8 +1102,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
 
-func checkBeforeTasksTermination(c echo.Context, projectName string,
-	workflow *model.Workflow, user *model.User) error {
+func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *model.Workflow) error {
 
 	if workflow.Record.Status != model.WorkflowStatusExecuting {
 		return errors.NewDataInvalidErr(
@@ -1146,8 +1138,7 @@ func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 	return false, nil
 }
 
-func getTerminatingTaskIDs(s *model.Storage, workflow *model.Workflow, userID uint) (
-	taskIDs []uint) {
+func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
 
 	taskIDs = make([]uint, 0)
 	for i := range workflow.Record.InstanceRecords {
