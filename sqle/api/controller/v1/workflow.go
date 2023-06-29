@@ -1027,6 +1027,8 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 		}
 	}
 
+	terminatingTaskIDs := getTerminatingTaskIDs(workflow)
+
 	// check workflow permission
 	{
 		err := checkBeforeTasksTermination(c, projectName, workflow)
@@ -1034,8 +1036,6 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
-	terminatingTaskIDs := getTerminatingTaskIDs(workflow)
 
 	err = s.UpdateTaskStatusByIDs(terminatingTaskIDs,
 		map[string]string{"status": model.TaskStatusTerminating})
