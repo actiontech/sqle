@@ -1283,11 +1283,16 @@ func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 		return result, errors.New(errors.ConnectStorageError, err)
 	}
 
+	// https://github.com/actiontech/sqle/issues/1605
+	// 当工单处于审核阶段时，待操作人概览将显示能够审核该步骤的用户；而当工单处于上线阶段时，待操作人概览将显示能上线该数据源用户
 	for _, detail := range result {
 		isWorkflowWaitForExecution := detail.WorkflowRecordStatus == WorkflowStatusWaitForExecution
 		isWorkflowExecuting := detail.WorkflowRecordStatus == WorkflowStatusExecuting
+		isTaskAudited := detail.TaskStatus == TaskStatusAudited
 		isTaskExecuting := detail.TaskStatus == TaskStatusExecuting
-		if isWorkflowWaitForExecution || isWorkflowExecuting || isTaskExecuting {
+		isTaskExecuteSucceeded := detail.TaskStatus == TaskStatusExecuteSucceeded
+
+		if (isWorkflowExecuting || isWorkflowWaitForExecution) && (isTaskAudited || isTaskExecuting) {
 			users, err := s.GetCanExecuteWorkflowUsers(&Instance{
 				Model: Model{ID: detail.InstanceId},
 			})
@@ -1299,6 +1304,8 @@ func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 				userList = append(userList, user.Name)
 			}
 			detail.CurrentStepAssigneeUsers = userList
+		} else if (isWorkflowExecuting || isWorkflowWaitForExecution) && isTaskExecuteSucceeded {
+			detail.CurrentStepAssigneeUsers = []string{}
 		}
 	}
 
