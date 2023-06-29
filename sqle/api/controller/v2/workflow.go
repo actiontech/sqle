@@ -533,28 +533,12 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	s := model.GetStorage()
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Code logic optimization
-	instances, err := s.GetUserCanOpInstancesFromProject(user, projectName, []uint{model.OP_WORKFLOW_EXECUTE})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := make(map[string]string)
-	for i := range instances {
-		inst := instances[i]
-		instanceMap[inst.Name] = user.Name
-	}
-
 	queryData := map[string]interface{}{
 		"workflow_id":  workflowId,
 		"project_name": projectName,
 	}
 
+	s := model.GetStorage()
 	taskDetails, err := s.GetWorkflowTasksSummaryByReqV2(queryData)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -562,15 +546,14 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToTasksSummaryRes(taskDetails, instanceMap),
+		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
 	})
 }
 
-func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail, instanceMap map[string]string) []*GetWorkflowTasksItemV2 {
+func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail) []*GetWorkflowTasksItemV2 {
 	res := make([]*GetWorkflowTasksItemV2, len(taskDetails))
 
 	for i, taskDetail := range taskDetails {
-
 		res[i] = &GetWorkflowTasksItemV2{
 			TaskId:                   taskDetail.TaskId,
 			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
@@ -584,12 +567,8 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 			InstanceMaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
 			ExecutionUserName:        utils.AddDelTag(taskDetail.ExecutionUserDeletedAt, taskDetail.ExecutionUserName),
 		}
-
-		// NOTE: 当 SQL 处于上线中时，CurrentStepAssigneeUser 可能为空。此处需要「拥有上线权限的用户」
-		if taskDetail.TaskStatus == model.TaskStatusExecuting {
-			res[i].CurrentStepAssigneeUser = []string{instanceMap[taskDetail.InstanceName]}
-		}
 	}
+
 	return res
 }
 
