@@ -1284,7 +1284,10 @@ func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 	}
 
 	for _, detail := range result {
-		if detail.WorkflowRecordStatus == WorkflowStatusWaitForExecution {
+		isWorkflowWaitForExecution := detail.WorkflowRecordStatus == WorkflowStatusWaitForExecution
+		isWorkflowExecuting := detail.WorkflowRecordStatus == WorkflowStatusExecuting
+		isTaskExecuting := detail.TaskStatus == TaskStatusExecuting
+		if isWorkflowWaitForExecution || isWorkflowExecuting || isTaskExecuting {
 			users, err := s.GetCanExecuteWorkflowUsers(&Instance{
 				Model: Model{ID: detail.InstanceId},
 			})
