@@ -2,7 +2,7 @@
 name: Add Audit Rule
 about: Create a report to add rule
 title: ''
-labels: audit_rule
+labels: audit_rule,feature
 assignees: ''
 
 ---
