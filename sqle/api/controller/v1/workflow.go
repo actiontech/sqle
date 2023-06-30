@@ -1031,7 +1031,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := checkBeforeTasksTermination(c, projectName, workflow)
+		err := checkBeforeTasksTermination(c, projectName, workflow, terminatingTaskIDs)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1078,7 +1078,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := checkBeforeTasksTermination(c, projectName, workflow)
+		err := checkBeforeTasksTermination(c, projectName, workflow, []uint{uint(taskID)})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1102,12 +1102,24 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
 
-func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *model.Workflow) error {
+func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *model.Workflow, needTerminatedTaskIdList []uint) error {
+	needTerminatedTaskIdMap := make(map[uint]struct{}, len(needTerminatedTaskIdList))
+	for _, taskID := range needTerminatedTaskIdList {
+		needTerminatedTaskIdMap[taskID] = struct{}{}
+	}
 
-	if workflow.Record.Status != model.WorkflowStatusExecuting {
-		return errors.NewDataInvalidErr(
-			"workflow status is %s, termination can not be performed",
-			workflow.Record.Status)
+	for _, record := range workflow.Record.InstanceRecords {
+		if _, ok := needTerminatedTaskIdMap[record.TaskId]; ok {
+			isWorkflowWaitForExecution := workflow.Record.Status == model.WorkflowStatusWaitForExecution
+			isWorkflowExecuting := workflow.Record.Status == model.WorkflowStatusExecuting
+			isTaskExecuting := record.Task.Status == model.TaskStatusExecuting
+			if (isWorkflowWaitForExecution || isWorkflowExecuting) && isTaskExecuting {
+				continue
+			}
+			return errors.NewDataInvalidErr(
+				"workflow status is %s and task status is %s, termination can not be performed",
+				workflow.Record.Status, record.Task.Status)
+		}
 	}
 
 	err := CheckCurrentUserCanOperateWorkflow(c,
