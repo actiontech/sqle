@@ -469,3 +469,28 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 		},
 	})
 }
+
+type WorkflowStatusCount struct {
+	Status string `json:"status"`
+	Count  uint   `json:"count"`
+}
+
+type StatisticWorkflowStatusResV1 struct {
+	controller.BaseRes
+	Data []WorkflowStatusCount `json:"data"`
+}
+
+// StatisticWorkflowStatusV1
+// @Summary 获取工单各个状态的数量
+// @Description statistic workflow status
+// @Tags statistic
+// @Id statisticWorkflowStatusV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.StatisticWorkflowStatusResV1
+// @router /statistic/workflow_status [get]
+func StatisticWorkflowStatusV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticWorkflowStatusResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: []WorkflowStatusCount{},
+	})
+}

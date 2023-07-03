@@ -32,6 +32,29 @@
                 }
             }
         },
+        "/statistic/workflow_status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic workflow status",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单各个状态的数量",
+                "operationId": "statisticWorkflowStatusV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticWorkflowStatusResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -12486,6 +12509,25 @@
                 }
             }
         },
+        "v1.StatisticWorkflowStatusResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowStatusCount"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.StatisticsAuditedSQLResV1": {
             "type": "object",
             "properties": {
@@ -13858,6 +13900,17 @@
                 },
                 "need_me_to_review_workflow_number": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowStatusCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
