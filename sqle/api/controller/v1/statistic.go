@@ -441,3 +441,31 @@ func GetProjectStatisticsV1(c echo.Context) error {
 		Data:    resp,
 	})
 }
+
+type AuditedSQLCount struct {
+	TotalSQL uint `json:"total_sql_count"`
+	RiskSQL  uint `json:"risk_sql_count"`
+}
+
+type StatisticsAuditedSQLResV1 struct {
+	controller.BaseRes
+	Data AuditedSQLCount `json:"data"`
+}
+
+// StatisticsAuditedSQLV1
+// @Summary 获取审核SQL总数，以及触发审核规则的SQL数量
+// @Description statistics audited sql
+// @Tags statistic
+// @Id statisticsAuditedSQLV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.StatisticsAuditedSQLResV1
+// @router /statistic/audited_sqls [get]
+func StatisticsAuditedSQLV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: AuditedSQLCount{
+			TotalSQL: 1,
+			RiskSQL:  1,
+		},
+	})
+}
