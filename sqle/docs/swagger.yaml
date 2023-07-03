@@ -2759,6 +2759,19 @@ definitions:
       percent:
         type: number
     type: object
+  v1.StatisticWorkflowStatusResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowStatusCount'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.StatisticsAuditedSQLResV1:
     properties:
       code:
@@ -3680,6 +3693,13 @@ definitions:
       need_me_to_review_workflow_number:
         type: integer
     type: object
+  v1.WorkflowStatusCount:
+    properties:
+      count:
+        type: integer
+      status:
+        type: string
+    type: object
   v1.WorkflowStatusCountV1:
     properties:
       closed_count:
@@ -4360,6 +4380,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取审核SQL总数，以及触发审核规则的SQL数量
+      tags:
+      - statistic
+  /statistic/workflow_status:
+    get:
+      description: statistic workflow status
+      operationId: statisticWorkflowStatusV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticWorkflowStatusResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单各个状态的数量
       tags:
       - statistic
   /v1/audit_plan_metas:
