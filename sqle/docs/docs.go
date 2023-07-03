@@ -25,6 +25,29 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/statistic/audited_sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistics audited sql",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取审核SQL总数，以及触发审核规则的SQL数量",
+                "operationId": "statisticsAuditedSQLV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticsAuditedSQLResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -8868,6 +8891,17 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditedSQLCount": {
+            "type": "object",
+            "properties": {
+                "risk_sql_count": {
+                    "type": "integer"
+                },
+                "total_sql_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.BatchCancelWorkflowsReqV1": {
             "type": "object",
             "properties": {
@@ -12465,6 +12499,23 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.StatisticsAuditedSQLResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditedSQLCount"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
