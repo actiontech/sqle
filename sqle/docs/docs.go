@@ -48,6 +48,29 @@ var doc = `{
                 }
             }
         },
+        "/statistic/risk_workflow": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic risk workflow",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取存在风险的工单",
+                "operationId": "statisticRiskWorkflowV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticRiskWorkflowResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/statistic/workflow_status": {
             "get": {
                 "security": [
@@ -12203,6 +12226,26 @@ var doc = `{
                 }
             }
         },
+        "v1.RiskWorkflow": {
+            "type": "object",
+            "properties": {
+                "create_user_name": {
+                    "type": "string"
+                },
+                "update_time": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "string"
+                },
+                "workflow_name": {
+                    "type": "string"
+                },
+                "workflow_status": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RoleResV1": {
             "type": "object",
             "properties": {
@@ -12522,6 +12565,25 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.StatisticRiskWorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RiskWorkflow"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

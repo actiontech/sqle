@@ -2542,6 +2542,19 @@ definitions:
       reason:
         type: string
     type: object
+  v1.RiskWorkflow:
+    properties:
+      create_user_name:
+        type: string
+      update_time:
+        type: string
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+      workflow_status:
+        type: string
+    type: object
   v1.RoleResV1:
     properties:
       is_disabled:
@@ -2758,6 +2771,19 @@ definitions:
         type: string
       percent:
         type: number
+    type: object
+  v1.StatisticRiskWorkflowResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RiskWorkflow'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.StatisticWorkflowStatusResV1:
     properties:
@@ -4380,6 +4406,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取审核SQL总数，以及触发审核规则的SQL数量
+      tags:
+      - statistic
+  /statistic/risk_workflow:
+    get:
+      description: statistic risk workflow
+      operationId: statisticRiskWorkflowV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticRiskWorkflowResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取存在风险的工单
       tags:
       - statistic
   /statistic/workflow_status:
