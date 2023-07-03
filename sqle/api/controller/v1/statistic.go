@@ -6,6 +6,8 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 
+	"time"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -491,6 +493,34 @@ type StatisticWorkflowStatusResV1 struct {
 func StatisticWorkflowStatusV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticWorkflowStatusResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: []WorkflowStatusCount{},
+		Data:    []WorkflowStatusCount{},
+	})
+}
+
+type RiskWorkflow struct {
+	Name       string     `json:"workflow_name"`
+	WorkflowID string     `json:"workflow_id"`
+	Status     string     `json:"workflow_status"`
+	CreateUser string     `json:"create_user_name"`
+	UpdateTime *time.Time `json:"update_time"`
+}
+
+type StatisticRiskWorkflowResV1 struct {
+	controller.BaseRes
+	Data []*RiskWorkflow `json:"data"`
+}
+
+// StatisticRiskWorkflowV1
+// @Summary 获取存在风险的工单
+// @Description statistic risk workflow
+// @Tags statistic
+// @Id statisticRiskWorkflowV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.StatisticRiskWorkflowResV1
+// @router /statistic/risk_workflow [get]
+func StatisticRiskWorkflowV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RiskWorkflow{},
 	})
 }

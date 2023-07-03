@@ -180,6 +180,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/statistics", v1.GetProjectStatisticsV1)
 	v1Router.GET("/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
 	v1Router.GET("/statistic/workflow_status", v1.StatisticWorkflowStatusV1)
+	v1Router.GET("/statistic/risk_workflow", v1.StatisticWorkflowStatusV1)
 
 	// audit whitelist
 	v1Router.GET("/projects/:project_name/audit_whitelist", v1.GetSqlWhitelist)
