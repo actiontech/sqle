@@ -12964,7 +12964,7 @@ var doc = `{
                     "type": "string",
                     "example": "ok"
                 },
-                "riskRate": {
+                "risk_rate": {
                     "type": "integer"
                 }
             }
