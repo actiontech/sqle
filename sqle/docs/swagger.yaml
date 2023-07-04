@@ -669,6 +669,19 @@ definitions:
       db_type:
         type: string
     type: object
+  v1.DBTypeHealth:
+    properties:
+      db_type:
+        type: string
+      health_instance_names:
+        items:
+          type: string
+        type: array
+      unhealth_instance_names:
+        items:
+          type: string
+        type: array
+    type: object
   v1.DashboardProjectTipV1:
     properties:
       project_name:
@@ -1058,6 +1071,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.InstanceConnectableResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceHealthResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.DBTypeHealth'
         type: object
       message:
         example: ok
@@ -7055,6 +7080,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取审核SQL总数，以及触发审核规则的SQL数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_instance_health:
+    get:
+      description: get instance health
+      operationId: GetInstanceHealthV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceHealthResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各类型数据源的健康情况
       tags:
       - statistic
   /v1/projects/{project_name}/statistic_project_score:

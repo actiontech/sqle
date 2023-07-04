@@ -638,3 +638,30 @@ func GetPorjectScoreV1(c echo.Context) error {
 		Data:    PorjectScore{},
 	})
 }
+
+type DBTypeHealth struct {
+	DBType            string   `json:"db_type"`
+	HealthInstances   []string `json:"health_instance_names"`
+	UnHealthInstances []string `json:"unhealth_instance_names"`
+}
+
+type GetInstanceHealthResV1 struct {
+	controller.BaseRes
+	Data DBTypeHealth `json:"data"`
+}
+
+// GetInstanceHealthV1
+// @Summary 获取各类型数据源的健康情况
+// @Description get instance health
+// @Tags statistic
+// @Id GetInstanceHealthV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetInstanceHealthResV1
+// @router /v1/projects/{project_name}/statistic_instance_health [get]
+func GetInstanceHealthV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    DBTypeHealth{},
+	})
+}
