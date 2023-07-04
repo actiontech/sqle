@@ -554,3 +554,31 @@ func StatisticAuditPlanV1(c echo.Context) error {
 		Data:    []*DBTypeAuditPlan{},
 	})
 }
+
+type RiskAuditPlan struct {
+	ReportName    string     `json:"audit_plan_report_name"`
+	ReportId      uint       `json:"audit_plan_report_id"`
+	AuditPlanName string     `json:"audit_plan_name"`
+	TiggerTime    *time.Time `json:"tigger_audit_plan_time"`
+	RiskSQLCount  uint       `json:"risk_sql_count"`
+}
+
+type GetRiskAuditPlanResV1 struct {
+	controller.BaseRes
+	Data []*RiskAuditPlan `json:"data"`
+}
+
+// GetRiskAuditPlanV1
+// @Summary 获取扫描任务报告评分低于60的扫描任务
+// @Description get risk audit plan
+// @Tags statistic
+// @Id getRiskAuditPlanV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetRiskAuditPlanResV1
+// @router /statistic/risk_audit_plans [get]
+func GetRiskAuditPlanV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetRiskAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RiskAuditPlan{},
+	})
+}
