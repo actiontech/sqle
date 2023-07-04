@@ -582,3 +582,28 @@ func GetRiskAuditPlanV1(c echo.Context) error {
 		Data:    []*RiskAuditPlan{},
 	})
 }
+
+type RoleUserCount struct {
+	Role  string `json:"role"`
+	Count uint   `json:"count"`
+}
+
+type GetRoleUserCountResV1 struct {
+	controller.BaseRes
+	Data []*RoleUserCount `json:"data"`
+}
+
+// GetRoleUserCountV1
+// @Summary 获取扫描任务报告评分低于60的扫描任务
+// @Description get risk audit plan
+// @Tags statistic
+// @Id getRoleUserCountV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetRoleUserCountResV1
+// @router /statistic/role_user [get]
+func GetRoleUserCountV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RoleUserCount{},
+	})
+}
