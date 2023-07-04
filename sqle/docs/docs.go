@@ -4044,6 +4044,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/statistic_project_score": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get porject score",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取项目分数",
+                "operationId": "GetPorjectScoreV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetPorjectScoreResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistic_risk_audit_plans": {
             "get": {
                 "security": [
@@ -10641,6 +10673,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetPorjectScoreResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.PorjectScore"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetProjectDetailResV1": {
             "type": "object",
             "properties": {
@@ -12325,6 +12374,14 @@ var doc = `{
             "properties": {
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.PorjectScore": {
+            "type": "object",
+            "properties": {
+                "score": {
+                    "type": "integer"
                 }
             }
         },
