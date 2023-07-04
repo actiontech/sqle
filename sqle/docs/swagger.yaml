@@ -4469,90 +4469,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /statistic/audit_plans:
-    get:
-      description: statistic audit plan
-      operationId: statisticAuditPlanV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.StatisticAuditPlanResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取各类型数据源上的扫描任务数量
-      tags:
-      - statistic
-  /statistic/audited_sqls:
-    get:
-      description: statistics audited sql
-      operationId: statisticsAuditedSQLV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.StatisticsAuditedSQLResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取审核SQL总数，以及触发审核规则的SQL数量
-      tags:
-      - statistic
-  /statistic/risk_audit_plans:
-    get:
-      description: get risk audit plan
-      operationId: getRiskAuditPlanV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRiskAuditPlanResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取扫描任务报告评分低于60的扫描任务
-      tags:
-      - statistic
-  /statistic/risk_workflow:
-    get:
-      description: statistic risk workflow
-      operationId: statisticRiskWorkflowV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.StatisticRiskWorkflowResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取存在风险的工单
-      tags:
-      - statistic
-  /statistic/role_user:
-    get:
-      description: get risk audit plan
-      operationId: getRoleUserCountV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRoleUserCountResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取扫描任务报告评分低于60的扫描任务
-      tags:
-      - statistic
-  /statistic/workflow_status:
-    get:
-      description: statistic workflow status
-      operationId: statisticWorkflowStatusV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.StatisticWorkflowStatusResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单各个状态的数量
-      tags:
-      - statistic
   /v1/audit_plan_metas:
     get:
       description: get audit plan metas
@@ -7084,6 +7000,126 @@ paths:
       summary: 导出项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/statistic_audit_plans:
+    get:
+      description: statistic audit plan
+      operationId: statisticAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各类型数据源上的扫描任务数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_audited_sqls:
+    get:
+      description: statistics audited sql
+      operationId: statisticsAuditedSQLV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticsAuditedSQLResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核SQL总数，以及触发审核规则的SQL数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_risk_audit_plans:
+    get:
+      description: get risk audit plan
+      operationId: getRiskAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRiskAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务报告评分低于60的扫描任务
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_risk_workflow:
+    get:
+      description: statistic risk workflow
+      operationId: statisticRiskWorkflowV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticRiskWorkflowResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取存在风险的工单
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_role_user:
+    get:
+      description: get risk audit plan
+      operationId: getRoleUserCountV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRoleUserCountResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务报告评分低于60的扫描任务
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic_workflow_status:
+    get:
+      description: statistic workflow status
+      operationId: statisticWorkflowStatusV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticWorkflowStatusResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单各个状态的数量
+      tags:
+      - statistic
   /v1/projects/{project_name}/statistics:
     get:
       description: get project statistics

@@ -460,8 +460,9 @@ type StatisticsAuditedSQLResV1 struct {
 // @Tags statistic
 // @Id statisticsAuditedSQLV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
-// @router /statistic/audited_sqls [get]
+// @router /v1/projects/{project_name}/statistic_audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -488,8 +489,9 @@ type StatisticWorkflowStatusResV1 struct {
 // @Tags statistic
 // @Id statisticWorkflowStatusV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticWorkflowStatusResV1
-// @router /statistic/workflow_status [get]
+// @router /v1/projects/{project_name}/statistic_workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticWorkflowStatusResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -516,8 +518,9 @@ type StatisticRiskWorkflowResV1 struct {
 // @Tags statistic
 // @Id statisticRiskWorkflowV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
-// @router /statistic/risk_workflow [get]
+// @router /v1/projects/{project_name}/statistic_risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -546,8 +549,9 @@ type StatisticAuditPlanResV1 struct {
 // @Tags statistic
 // @Id statisticAuditPlanV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticAuditPlanResV1
-// @router /statistic/audit_plans [get]
+// @router /v1/projects/{project_name}/statistic_audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -574,8 +578,9 @@ type GetRiskAuditPlanResV1 struct {
 // @Tags statistic
 // @Id getRiskAuditPlanV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetRiskAuditPlanResV1
-// @router /statistic/risk_audit_plans [get]
+// @router /v1/projects/{project_name}/statistic_risk_audit_plans [get]
 func GetRiskAuditPlanV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetRiskAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -599,8 +604,9 @@ type GetRoleUserCountResV1 struct {
 // @Tags statistic
 // @Id getRoleUserCountV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetRoleUserCountResV1
-// @router /statistic/role_user [get]
+// @router /v1/projects/{project_name}/statistic_role_user [get]
 func GetRoleUserCountV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
