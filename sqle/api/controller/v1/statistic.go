@@ -452,7 +452,7 @@ type AuditedSQLCount struct {
 type StatisticsAuditedSQLResV1 struct {
 	controller.BaseRes
 	Data     AuditedSQLCount `json:"data"`
-	RiskRate int             `json:""risk_rate`
+	RiskRate int             `json:"risk_rate"`
 }
 
 // StatisticsAuditedSQLV1

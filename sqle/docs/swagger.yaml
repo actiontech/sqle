@@ -2913,7 +2913,7 @@ definitions:
       message:
         example: ok
         type: string
-      riskRate:
+      risk_rate:
         type: integer
     type: object
   v1.SyncInstanceResV1:
