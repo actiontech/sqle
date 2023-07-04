@@ -613,3 +613,28 @@ func GetRoleUserCountV1(c echo.Context) error {
 		Data:    []*RoleUserCount{},
 	})
 }
+
+type PorjectScore struct {
+	Score int `json:"score"`
+}
+
+type GetPorjectScoreResV1 struct {
+	controller.BaseRes
+	Data PorjectScore `json:"data"`
+}
+
+// GetPorjectScoreV1
+// @Summary 获取项目分数
+// @Description get porject score
+// @Tags statistic
+// @Id GetPorjectScoreV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetPorjectScoreResV1
+// @router /v1/projects/{project_name}/statistic_project_score [get]
+func GetPorjectScoreV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetPorjectScoreResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    PorjectScore{},
+	})
+}

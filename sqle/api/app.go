@@ -184,6 +184,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/statistic_audit_plans", v1.StatisticAuditPlanV1)
 	v1Router.GET("/projects/:project_name/statistic_risk_audit_plans", v1.GetRiskAuditPlanV1)
 	v1Router.GET("/projects/:project_name/statistic_role_user", v1.GetRoleUserCountV1)
+	v1Router.GET("/projects/:project_name/statistic_project_score", v1.GetPorjectScoreV1)
 
 	// audit whitelist
 	v1Router.GET("/projects/:project_name/audit_whitelist", v1.GetSqlWhitelist)
