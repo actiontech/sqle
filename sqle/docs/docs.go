@@ -4215,7 +4215,7 @@ var doc = `{
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取工单各个状态的数量",
+                "summary": "获取项目下工单各个状态的数量",
                 "operationId": "statisticWorkflowStatusV1",
                 "parameters": [
                     {
@@ -4230,7 +4230,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.StatisticWorkflowStatusResV1"
+                            "$ref": "#/definitions/v1.GetWorkflowStatusCountResV1"
                         }
                     }
                 }
@@ -12949,25 +12949,6 @@ var doc = `{
                 }
             }
         },
-        "v1.StatisticWorkflowStatusResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkflowStatusCount"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.StatisticsAuditedSQLResV1": {
             "type": "object",
             "properties": {
@@ -12982,6 +12963,9 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "riskRate": {
+                    "type": "integer"
                 }
             }
         },
@@ -14340,17 +14324,6 @@ var doc = `{
                 },
                 "need_me_to_review_workflow_number": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.WorkflowStatusCount": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string"
                 }
             }
         },
