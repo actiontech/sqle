@@ -71,6 +71,29 @@ var doc = `{
                 }
             }
         },
+        "/statistic/risk_audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get risk audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "operationId": "getRiskAuditPlanV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRiskAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/statistic/risk_workflow": {
             "get": {
                 "security": [
@@ -10678,6 +10701,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRiskAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RiskAuditPlan"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -12270,6 +12312,26 @@ var doc = `{
             "type": "object",
             "properties": {
                 "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RiskAuditPlan": {
+            "type": "object",
+            "properties": {
+                "audit_plan_name": {
+                    "type": "string"
+                },
+                "audit_plan_report_id": {
+                    "type": "integer"
+                },
+                "audit_plan_report_name": {
+                    "type": "string"
+                },
+                "risk_sql_count": {
+                    "type": "integer"
+                },
+                "tigger_audit_plan_time": {
                     "type": "string"
                 }
             }
