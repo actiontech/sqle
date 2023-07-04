@@ -25,6 +25,29 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/statistic/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各类型数据源上的扫描任务数量",
+                "operationId": "statisticAuditPlanV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/statistic/audited_sqls": {
             "get": {
                 "security": [
@@ -8517,6 +8540,17 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanCount": {
+            "type": "object",
+            "properties": {
+                "audit_plan_count": {
+                    "type": "integer"
+                },
+                "audit_plan_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanMetaV1": {
             "type": "object",
             "properties": {
@@ -9454,6 +9488,20 @@ var doc = `{
                     }
                 },
                 "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.DBTypeAuditPlan": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanCount"
+                    }
+                },
+                "db_type": {
                     "type": "string"
                 }
             }
@@ -12565,6 +12613,25 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.StatisticAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DBTypeAuditPlan"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

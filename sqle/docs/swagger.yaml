@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditPlanCount:
+    properties:
+      audit_plan_count:
+        type: integer
+      audit_plan_name:
+        type: string
+    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -651,6 +658,15 @@ definitions:
           type: integer
         type: array
       workflow_subject:
+        type: string
+    type: object
+  v1.DBTypeAuditPlan:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanCount'
+        type: array
+      db_type:
         type: string
     type: object
   v1.DashboardProjectTipV1:
@@ -2772,6 +2788,19 @@ definitions:
       percent:
         type: number
     type: object
+  v1.StatisticAuditPlanResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DBTypeAuditPlan'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.StatisticRiskWorkflowResV1:
     properties:
       code:
@@ -4394,6 +4423,20 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /statistic/audit_plans:
+    get:
+      description: statistic audit plan
+      operationId: statisticAuditPlanV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各类型数据源上的扫描任务数量
+      tags:
+      - statistic
   /statistic/audited_sqls:
     get:
       description: statistics audited sql

@@ -524,3 +524,33 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 		Data:    []*RiskWorkflow{},
 	})
 }
+
+type AuditPlanCount struct {
+	Name  string `json:"audit_plan_name"`
+	Count uint   `json:"audit_plan_count"`
+}
+
+type DBTypeAuditPlan struct {
+	DBType string            `json:"db_type"`
+	Date   []*AuditPlanCount `json:"data"`
+}
+
+type StatisticAuditPlanResV1 struct {
+	controller.BaseRes
+	Data []*DBTypeAuditPlan `json:"data"`
+}
+
+// StatisticAuditPlanV1
+// @Summary 获取各类型数据源上的扫描任务数量
+// @Description statistic audit plan
+// @Tags statistic
+// @Id statisticAuditPlanV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.StatisticAuditPlanResV1
+// @router /statistic/audit_plans [get]
+func StatisticAuditPlanV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*DBTypeAuditPlan{},
+	})
+}
