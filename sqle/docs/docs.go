@@ -12547,7 +12547,7 @@ var doc = `{
                 "audit_plan_report_id": {
                     "type": "integer"
                 },
-                "audit_plan_report_name": {
+                "audit_plan_report_timestamp": {
                     "type": "string"
                 },
                 "risk_sql_count": {
