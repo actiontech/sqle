@@ -4179,11 +4179,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get risk audit plan",
+                "description": "get role user count",
                 "tags": [
                     "statistic"
                 ],
-                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "summary": "获取各角色类型对应的成员数量",
                 "operationId": "getRoleUserCountV1",
                 "parameters": [
                     {

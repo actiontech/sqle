@@ -599,8 +599,8 @@ type GetRoleUserCountResV1 struct {
 }
 
 // GetRoleUserCountV1
-// @Summary 获取扫描任务报告评分低于60的扫描任务
-// @Description get risk audit plan
+// @Summary 获取各角色类型对应的成员数量
+// @Description get role user count
 // @Tags statistic
 // @Id getRoleUserCountV1
 // @Security ApiKeyAuth

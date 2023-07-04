@@ -7164,7 +7164,7 @@ paths:
       - statistic
   /v1/projects/{project_name}/statistic_role_user:
     get:
-      description: get risk audit plan
+      description: get role user count
       operationId: getRoleUserCountV1
       parameters:
       - description: project name
@@ -7179,7 +7179,7 @@ paths:
             $ref: '#/definitions/v1.GetRoleUserCountResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取扫描任务报告评分低于60的扫描任务
+      summary: 获取各角色类型对应的成员数量
       tags:
       - statistic
   /v1/projects/{project_name}/statistic_workflow_status:
