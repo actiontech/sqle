@@ -4044,6 +4044,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/statistic_instance_health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance health",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各类型数据源的健康情况",
+                "operationId": "GetInstanceHealthV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceHealthResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistic_project_score": {
             "get": {
                 "security": [
@@ -9638,6 +9670,26 @@ var doc = `{
                 }
             }
         },
+        "v1.DBTypeHealth": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "health_instance_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "unhealth_instance_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "v1.DashboardProjectTipV1": {
             "type": "object",
             "properties": {
@@ -10203,6 +10255,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.InstanceConnectableResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetInstanceHealthResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DBTypeHealth"
                 },
                 "message": {
                     "type": "string",
