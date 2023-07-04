@@ -178,12 +178,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	// statistic
 	v1Router.GET("/projects/:project_name/statistics", v1.GetProjectStatisticsV1)
-	v1Router.GET("/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
-	v1Router.GET("/statistic/workflow_status", v1.StatisticWorkflowStatusV1)
-	v1Router.GET("/statistic/risk_workflow", v1.StatisticRiskWorkflowV1)
-	v1Router.GET("/statistic/audit_plans", v1.StatisticAuditPlanV1)
-	v1Router.GET("/statistic/risk_audit_plans", v1.GetRiskAuditPlanV1)
-	v1Router.GET("/statistic/role_user", v1.GetRoleUserCountV1)
+	v1Router.GET("/projects/:project_name/statistic_audited_sqls", v1.StatisticsAuditedSQLV1)
+	v1Router.GET("/projects/:project_name/statistic_workflow_status", v1.StatisticWorkflowStatusV1)
+	v1Router.GET("/projects/:project_name/statistic_risk_workflow", v1.StatisticRiskWorkflowV1)
+	v1Router.GET("/projects/:project_name/statistic_audit_plans", v1.StatisticAuditPlanV1)
+	v1Router.GET("/projects/:project_name/statistic_risk_audit_plans", v1.GetRiskAuditPlanV1)
+	v1Router.GET("/projects/:project_name/statistic_role_user", v1.GetRoleUserCountV1)
 
 	// audit whitelist
 	v1Router.GET("/projects/:project_name/audit_whitelist", v1.GetSqlWhitelist)

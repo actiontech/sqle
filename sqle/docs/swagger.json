@@ -9,144 +9,6 @@
     },
     "basePath": "/",
     "paths": {
-        "/statistic/audit_plans": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "statistic audit plan",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取各类型数据源上的扫描任务数量",
-                "operationId": "statisticAuditPlanV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.StatisticAuditPlanResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/statistic/audited_sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "statistics audited sql",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取审核SQL总数，以及触发审核规则的SQL数量",
-                "operationId": "statisticsAuditedSQLV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.StatisticsAuditedSQLResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/statistic/risk_audit_plans": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get risk audit plan",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取扫描任务报告评分低于60的扫描任务",
-                "operationId": "getRiskAuditPlanV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetRiskAuditPlanResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/statistic/risk_workflow": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "statistic risk workflow",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取存在风险的工单",
-                "operationId": "statisticRiskWorkflowV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.StatisticRiskWorkflowResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/statistic/role_user": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get risk audit plan",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取扫描任务报告评分低于60的扫描任务",
-                "operationId": "getRoleUserCountV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetRoleUserCountResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/statistic/workflow_status": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "statistic workflow status",
-                "tags": [
-                    "statistic"
-                ],
-                "summary": "获取工单各个状态的数量",
-                "operationId": "statisticWorkflowStatusV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.StatisticWorkflowStatusResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -4097,6 +3959,198 @@
                         "description": "sqle rule template file",
                         "schema": {
                             "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各类型数据源上的扫描任务数量",
+                "operationId": "statisticAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_audited_sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistics audited sql",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取审核SQL总数，以及触发审核规则的SQL数量",
+                "operationId": "statisticsAuditedSQLV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticsAuditedSQLResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_risk_audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get risk audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "operationId": "getRiskAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRiskAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_risk_workflow": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic risk workflow",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取存在风险的工单",
+                "operationId": "statisticRiskWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticRiskWorkflowResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_role_user": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get risk audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "operationId": "getRoleUserCountV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRoleUserCountResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic_workflow_status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic workflow status",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取工单各个状态的数量",
+                "operationId": "statisticWorkflowStatusV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticWorkflowStatusResV1"
                         }
                     }
                 }
