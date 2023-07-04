@@ -117,6 +117,29 @@ var doc = `{
                 }
             }
         },
+        "/statistic/role_user": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get risk audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "operationId": "getRoleUserCountV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRoleUserCountResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/statistic/workflow_status": {
             "get": {
                 "security": [
@@ -10739,6 +10762,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRoleUserCountResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RoleUserCount"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRolesResV1": {
             "type": "object",
             "properties": {
@@ -12386,6 +12428,17 @@ var doc = `{
                     }
                 },
                 "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RoleUserCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "role": {
                     "type": "string"
                 }
             }

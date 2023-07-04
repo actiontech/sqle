@@ -1500,6 +1500,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetRoleUserCountResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RoleUserCount'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRolesResV1:
     properties:
       code:
@@ -2617,6 +2630,13 @@ definitions:
           $ref: '#/definitions/v1.Operation'
         type: array
       role_name:
+        type: string
+    type: object
+  v1.RoleUserCount:
+    properties:
+      count:
+        type: integer
+      role:
         type: string
     type: object
   v1.RuleParamReqV1:
@@ -4503,6 +4523,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取存在风险的工单
+      tags:
+      - statistic
+  /statistic/role_user:
+    get:
+      description: get risk audit plan
+      operationId: getRoleUserCountV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRoleUserCountResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务报告评分低于60的扫描任务
       tags:
       - statistic
   /statistic/workflow_status:
