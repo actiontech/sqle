@@ -517,7 +517,7 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 }
 
 type AuditPlanCount struct {
-	Name  string `json:"audit_plan_name"`
+	Type  string `json:"audit_plan_type"`
 	Count uint   `json:"audit_plan_count"`
 }
 
