@@ -8710,7 +8710,7 @@ var doc = `{
                 "audit_plan_count": {
                     "type": "integer"
                 },
-                "audit_plan_name": {
+                "audit_plan_type": {
                     "type": "string"
                 }
             }
