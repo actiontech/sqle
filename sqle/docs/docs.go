@@ -4083,12 +4083,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get porject score",
+                "description": "get project score",
                 "tags": [
                     "statistic"
                 ],
                 "summary": "获取项目分数",
-                "operationId": "GetPorjectScoreV1",
+                "operationId": "GetProjectScoreV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -4102,7 +4102,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetPorjectScoreResV1"
+                            "$ref": "#/definitions/v1.GetProjectScoreResV1"
                         }
                     }
                 }
@@ -10742,23 +10742,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetPorjectScoreResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.PorjectScore"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetProjectDetailResV1": {
             "type": "object",
             "properties": {
@@ -10834,6 +10817,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetProjectScoreResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ProjectScore"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -12446,14 +12446,6 @@ var doc = `{
                 }
             }
         },
-        "v1.PorjectScore": {
-            "type": "object",
-            "properties": {
-                "score": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
@@ -12522,6 +12514,14 @@ var doc = `{
                 }
             }
         },
+        "v1.ProjectScore": {
+            "type": "object",
+            "properties": {
+                "score": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.ProjectTipResV1": {
             "type": "object",
             "properties": {
@@ -12553,7 +12553,7 @@ var doc = `{
                 "risk_sql_count": {
                     "type": "integer"
                 },
-                "tigger_audit_plan_time": {
+                "trigger_audit_plan_time": {
                     "type": "string"
                 }
             }
