@@ -160,15 +160,26 @@ func TriggerLogin() echo.MiddlewareFunc {
 				// 没有找到sqle-token，有可能是用户直接通过url访问cb页面，但没有登录sqle
 				return c.Redirect(http.StatusFound, "/login?target=/sqlQuery")
 			}
+			l := log.NewEntry().WithField("action", "trigger cloudbeaver login")
 			CBSessionId := getCBSessionIdBySqleToken(sqleToken)
 			if CBSessionId != "" {
-				// todo 处理sessionId超时的情况
+				c.Request().Header.Set("Cookie", "cb-session-id="+CBSessionId)
+				// 判断是否访问cb数据接口，在访问前发送测试请求验证session id是否过期
+				if c.Request().RequestURI == "/sql_query/api/gql" {
+					activeUser, err := service.GetActiveUserQuery(c.Cookies())
+					if err != nil {
+						l.Errorf("get active user failed: %v", err)
+						return err
+					}
+					if activeUser.User == nil {
+						goto LoginCb
+					}
+				}
 				c.Request().Header.Set("Cookie", "cb-session-id="+CBSessionId)
 				return next(c)
 			}
-
+		LoginCb:
 			// CBSessionId不存在认为当前用户没有登录cb，登录cb
-			l := log.NewEntry().WithField("action", "trigger cloudbeaver login")
 			userName, err := utils.GetUserNameFromJWTToken(sqleToken)
 			if err != nil {
 				l.Errorf("get user name from token failed: %v", err)
@@ -200,9 +211,10 @@ func TriggerLogin() echo.MiddlewareFunc {
 			for _, ck := range cookies {
 				if ck.Name == "cb-session-id" {
 					setCBSessionIdBySqleToken(sqleToken, ck.Value)
+					CBSessionId = ck.Value
 				}
 			}
-
+			c.Request().Header.Set("Cookie", "cb-session-id="+CBSessionId)
 			return next(c)
 		}
 	}

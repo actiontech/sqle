@@ -147,3 +147,18 @@ func LoginToCBServer(user, pwd string) (cookie []*http.Cookie, err error) {
 
 	return cookie, nil
 }
+
+type ActiveUserQueryRes struct {
+	User interface{} `json:"user"`
+}
+
+func GetActiveUserQuery(cookies []*http.Cookie) (*ActiveUserQueryRes, error) {
+	client := gqlClient.NewClient(GetGqlServerURI(), gqlClient.WithCookie(cookies))
+	req := gqlClient.NewRequest(QueryGQL.GetActiveUserQuery(), map[string]interface{}{})
+
+	res := &ActiveUserQueryRes{}
+	if err := client.Run(context.TODO(), req, res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
