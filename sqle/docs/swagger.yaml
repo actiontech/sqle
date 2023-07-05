@@ -7024,7 +7024,7 @@ paths:
       summary: 导出项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_name}/statistic_audit_plans:
+  /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
       operationId: statisticAuditPlanV1
@@ -7044,7 +7044,7 @@ paths:
       summary: 获取各类型数据源上的扫描任务数量
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_audited_sqls:
+  /v1/projects/{project_name}/statistic/audited_sqls:
     get:
       description: statistics audited sql
       operationId: statisticsAuditedSQLV1
@@ -7064,7 +7064,7 @@ paths:
       summary: 获取审核SQL总数，以及触发审核规则的SQL数量
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_instance_health:
+  /v1/projects/{project_name}/statistic/instance_health:
     get:
       description: get instance health
       operationId: GetInstanceHealthV1
@@ -7084,7 +7084,7 @@ paths:
       summary: 获取各类型数据源的健康情况
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_project_score:
+  /v1/projects/{project_name}/statistic/project_score:
     get:
       description: get porject score
       operationId: GetPorjectScoreV1
@@ -7104,7 +7104,7 @@ paths:
       summary: 获取项目分数
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_risk_audit_plans:
+  /v1/projects/{project_name}/statistic/risk_audit_plans:
     get:
       description: get risk audit plan
       operationId: getRiskAuditPlanV1
@@ -7124,7 +7124,7 @@ paths:
       summary: 获取扫描任务报告评分低于60的扫描任务
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_risk_workflow:
+  /v1/projects/{project_name}/statistic/risk_workflow:
     get:
       description: statistic risk workflow
       operationId: statisticRiskWorkflowV1
@@ -7144,7 +7144,7 @@ paths:
       summary: 获取存在风险的工单
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_role_user:
+  /v1/projects/{project_name}/statistic/role_user:
     get:
       description: get role user count
       operationId: getRoleUserCountV1
@@ -7164,7 +7164,7 @@ paths:
       summary: 获取各角色类型对应的成员数量
       tags:
       - statistic
-  /v1/projects/{project_name}/statistic_workflow_status:
+  /v1/projects/{project_name}/statistic/workflow_status:
     get:
       description: statistic workflow status
       operationId: statisticWorkflowStatusV1

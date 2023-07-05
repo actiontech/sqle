@@ -463,7 +463,7 @@ type StatisticsAuditedSQLResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
-// @router /v1/projects/{project_name}/statistic_audited_sqls [get]
+// @router /v1/projects/{project_name}/statistic/audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -479,7 +479,7 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetWorkflowStatusCountResV1
-// @router /v1/projects/{project_name}/statistic_workflow_status [get]
+// @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -508,7 +508,7 @@ type StatisticRiskWorkflowResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
-// @router /v1/projects/{project_name}/statistic_risk_workflow [get]
+// @router /v1/projects/{project_name}/statistic/risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -539,7 +539,7 @@ type StatisticAuditPlanResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.StatisticAuditPlanResV1
-// @router /v1/projects/{project_name}/statistic_audit_plans [get]
+// @router /v1/projects/{project_name}/statistic/audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -548,7 +548,7 @@ func StatisticAuditPlanV1(c echo.Context) error {
 }
 
 type RiskAuditPlan struct {
-	ReportTimeStamp string     `json:"audit_plan_report_timestamp"`
+	ReportTimeStamp *time.Time `json:"audit_plan_report_timestamp"`
 	ReportId        uint       `json:"audit_plan_report_id"`
 	AuditPlanName   string     `json:"audit_plan_name"`
 	TiggerTime      *time.Time `json:"tigger_audit_plan_time"`
@@ -568,7 +568,7 @@ type GetRiskAuditPlanResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetRiskAuditPlanResV1
-// @router /v1/projects/{project_name}/statistic_risk_audit_plans [get]
+// @router /v1/projects/{project_name}/statistic/risk_audit_plans [get]
 func GetRiskAuditPlanV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetRiskAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -594,7 +594,7 @@ type GetRoleUserCountResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetRoleUserCountResV1
-// @router /v1/projects/{project_name}/statistic_role_user [get]
+// @router /v1/projects/{project_name}/statistic/role_user [get]
 func GetRoleUserCountV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -619,7 +619,7 @@ type GetPorjectScoreResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetPorjectScoreResV1
-// @router /v1/projects/{project_name}/statistic_project_score [get]
+// @router /v1/projects/{project_name}/statistic/project_score [get]
 func GetPorjectScoreV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetPorjectScoreResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -646,7 +646,7 @@ type GetInstanceHealthResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetInstanceHealthResV1
-// @router /v1/projects/{project_name}/statistic_instance_health [get]
+// @router /v1/projects/{project_name}/statistic/instance_health [get]
 func GetInstanceHealthV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
 		BaseRes: controller.NewBaseReq(nil),

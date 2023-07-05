@@ -3980,7 +3980,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_audit_plans": {
+        "/v1/projects/{project_name}/statistic/audit_plans": {
             "get": {
                 "security": [
                     {
@@ -4012,7 +4012,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_audited_sqls": {
+        "/v1/projects/{project_name}/statistic/audited_sqls": {
             "get": {
                 "security": [
                     {
@@ -4044,7 +4044,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_instance_health": {
+        "/v1/projects/{project_name}/statistic/instance_health": {
             "get": {
                 "security": [
                     {
@@ -4076,7 +4076,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_project_score": {
+        "/v1/projects/{project_name}/statistic/project_score": {
             "get": {
                 "security": [
                     {
@@ -4108,7 +4108,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_risk_audit_plans": {
+        "/v1/projects/{project_name}/statistic/risk_audit_plans": {
             "get": {
                 "security": [
                     {
@@ -4140,7 +4140,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_risk_workflow": {
+        "/v1/projects/{project_name}/statistic/risk_workflow": {
             "get": {
                 "security": [
                     {
@@ -4172,7 +4172,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_role_user": {
+        "/v1/projects/{project_name}/statistic/role_user": {
             "get": {
                 "security": [
                     {
@@ -4204,7 +4204,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/statistic_workflow_status": {
+        "/v1/projects/{project_name}/statistic/workflow_status": {
             "get": {
                 "security": [
                     {
