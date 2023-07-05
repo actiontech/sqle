@@ -253,3 +253,28 @@ func (s *Storage) GetLatestAuditPlanRecords(after time.Time) ([]*AuditPlan, erro
 	err := s.db.Unscoped().Model(AuditPlan{}).Select("id, updated_at").Where("updated_at > ?", after).Order("updated_at").Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
+
+type RiskAuditPlan struct {
+	ReportId       uint       `json:"report_id"`
+	AuditPlanName  string     `json:"audit_plan_name"`
+	ReportCreateAt *time.Time `json:"report_create_at"`
+	RiskSqlCOUNT   uint       `json:"risk_sql_count"`
+}
+
+func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error) {
+	var RiskAuditPlans []*RiskAuditPlan
+	err := s.db.Model(AuditPlan{}).
+		Select("reports.id report_id, audit_plans.name audit_plan_name, reports.created_at report_create_at, count(report_sqls.id) risk_sql_count").
+		Joins("left join audit_plan_reports_v2 reports on audit_plans.id=reports.audit_plan_id").
+		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
+		Joins("left join projects on projects.id=audit_plans.project_id").
+		Where("reports.score<60 and projects.name=? and audit_plans.deleted_at is NULL", projectName).
+		Group("audit_plans.name, reports.created_at, audit_plans.created_at, reports.id").
+		Order("audit_plans.created_at desc").Scan(&RiskAuditPlans).Error
+
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return RiskAuditPlans, nil
+
+}

@@ -1337,3 +1337,20 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 
 	return names, nil
 }
+
+type WorkFlowIdStatus struct {
+	Id     uint   `json:"id"`
+	Status string `json:"status"`
+}
+
+func (s *Storage) GetExecedWorkflowIdStatusByProjectName(projectName string) ([]*WorkFlowIdStatus, error) {
+	workFlowIdStatus := []*WorkFlowIdStatus{}
+	execStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusExecuting}
+	err := s.db.Model(&Workflow{}).
+		Select("workflows.id, workflow_records.status").
+		Joins("left join projects on workflows.project_id = projects.id").
+		Joins("left join workflow_records on workflows.workflow_record_id=workflow_records.id").
+		Where("projects.name = ? and workflow_records.status in (?)", projectName, execStatus).
+		Scan(&workFlowIdStatus).Error
+	return workFlowIdStatus, errors.ConnectStorageErrWrapper(err)
+}
