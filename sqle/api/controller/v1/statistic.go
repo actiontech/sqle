@@ -551,7 +551,7 @@ type RiskAuditPlan struct {
 	ReportTimeStamp *time.Time `json:"audit_plan_report_timestamp"`
 	ReportId        uint       `json:"audit_plan_report_id"`
 	AuditPlanName   string     `json:"audit_plan_name"`
-	TiggerTime      *time.Time `json:"tigger_audit_plan_time"`
+	TriggerTime      *time.Time `json:"trigger_audit_plan_time"`
 	RiskSQLCount    uint       `json:"risk_sql_count"`
 }
 
@@ -602,28 +602,28 @@ func GetRoleUserCountV1(c echo.Context) error {
 	})
 }
 
-type PorjectScore struct {
+type ProjectScore struct {
 	Score int `json:"score"`
 }
 
-type GetPorjectScoreResV1 struct {
+type GetProjectScoreResV1 struct {
 	controller.BaseRes
-	Data PorjectScore `json:"data"`
+	Data ProjectScore `json:"data"`
 }
 
-// GetPorjectScoreV1
+// GetProjectScoreV1
 // @Summary 获取项目分数
-// @Description get porject score
+// @Description get project score
 // @Tags statistic
-// @Id GetPorjectScoreV1
+// @Id GetProjectScoreV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Success 200 {object} v1.GetPorjectScoreResV1
+// @Success 200 {object} v1.GetProjectScoreResV1
 // @router /v1/projects/{project_name}/statistic/project_score [get]
-func GetPorjectScoreV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetPorjectScoreResV1{
+func GetProjectScoreV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetProjectScoreResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    PorjectScore{},
+		Data:    ProjectScore{},
 	})
 }
 
