@@ -6,6 +6,8 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 
+	"time"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -439,5 +441,215 @@ func GetProjectStatisticsV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetProjectStatisticsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    resp,
+	})
+}
+
+type AuditedSQLCount struct {
+	TotalSQL uint `json:"total_sql_count"`
+	RiskSQL  uint `json:"risk_sql_count"`
+}
+
+type StatisticsAuditedSQLResV1 struct {
+	controller.BaseRes
+	Data     AuditedSQLCount `json:"data"`
+	RiskRate int             `json:"risk_rate"`
+}
+
+// StatisticsAuditedSQLV1
+// @Summary 获取审核SQL总数，以及触发审核规则的SQL数量
+// @Description statistics audited sql
+// @Tags statistic
+// @Id statisticsAuditedSQLV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.StatisticsAuditedSQLResV1
+// @router /v1/projects/{project_name}/statistic/audited_sqls [get]
+func StatisticsAuditedSQLV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    AuditedSQLCount{},
+	})
+}
+
+// StatisticWorkflowStatusV1
+// @Summary 获取项目下工单各个状态的数量
+// @Description statistic workflow status
+// @Tags statistic
+// @Id statisticWorkflowStatusV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetWorkflowStatusCountResV1
+// @router /v1/projects/{project_name}/statistic/workflow_status [get]
+func StatisticWorkflowStatusV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetWorkflowStatusCountResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    &WorkflowStatusCountV1{},
+	})
+}
+
+type RiskWorkflow struct {
+	Name       string     `json:"workflow_name"`
+	WorkflowID string     `json:"workflow_id"`
+	Status     string     `json:"workflow_status"`
+	CreateUser string     `json:"create_user_name"`
+	UpdateTime *time.Time `json:"update_time"`
+}
+
+type StatisticRiskWorkflowResV1 struct {
+	controller.BaseRes
+	Data []*RiskWorkflow `json:"data"`
+}
+
+// StatisticRiskWorkflowV1
+// @Summary 获取存在风险的工单
+// @Description statistic risk workflow
+// @Tags statistic
+// @Id statisticRiskWorkflowV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.StatisticRiskWorkflowResV1
+// @router /v1/projects/{project_name}/statistic/risk_workflow [get]
+func StatisticRiskWorkflowV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RiskWorkflow{},
+	})
+}
+
+type AuditPlanCount struct {
+	Type  string `json:"audit_plan_type"`
+	Count uint   `json:"audit_plan_count"`
+}
+
+type DBTypeAuditPlan struct {
+	DBType string            `json:"db_type"`
+	Data   []*AuditPlanCount `json:"data"`
+}
+
+type StatisticAuditPlanResV1 struct {
+	controller.BaseRes
+	Data []*DBTypeAuditPlan `json:"data"`
+}
+
+// StatisticAuditPlanV1
+// @Summary 获取各类型数据源上的扫描任务数量
+// @Description statistic audit plan
+// @Tags statistic
+// @Id statisticAuditPlanV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.StatisticAuditPlanResV1
+// @router /v1/projects/{project_name}/statistic/audit_plans [get]
+func StatisticAuditPlanV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*DBTypeAuditPlan{},
+	})
+}
+
+type RiskAuditPlan struct {
+	ReportTimeStamp *time.Time `json:"audit_plan_report_timestamp"`
+	ReportId        uint       `json:"audit_plan_report_id"`
+	AuditPlanName   string     `json:"audit_plan_name"`
+	TiggerTime      *time.Time `json:"tigger_audit_plan_time"`
+	RiskSQLCount    uint       `json:"risk_sql_count"`
+}
+
+type GetRiskAuditPlanResV1 struct {
+	controller.BaseRes
+	Data []*RiskAuditPlan `json:"data"`
+}
+
+// GetRiskAuditPlanV1
+// @Summary 获取扫描任务报告评分低于60的扫描任务
+// @Description get risk audit plan
+// @Tags statistic
+// @Id getRiskAuditPlanV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetRiskAuditPlanResV1
+// @router /v1/projects/{project_name}/statistic/risk_audit_plans [get]
+func GetRiskAuditPlanV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetRiskAuditPlanResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RiskAuditPlan{},
+	})
+}
+
+type RoleUserCount struct {
+	Role  string `json:"role"`
+	Count uint   `json:"count"`
+}
+
+type GetRoleUserCountResV1 struct {
+	controller.BaseRes
+	Data []*RoleUserCount `json:"data"`
+}
+
+// GetRoleUserCountV1
+// @Summary 获取各角色类型对应的成员数量
+// @Description get role user count
+// @Tags statistic
+// @Id getRoleUserCountV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetRoleUserCountResV1
+// @router /v1/projects/{project_name}/statistic/role_user [get]
+func GetRoleUserCountV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []*RoleUserCount{},
+	})
+}
+
+type PorjectScore struct {
+	Score int `json:"score"`
+}
+
+type GetPorjectScoreResV1 struct {
+	controller.BaseRes
+	Data PorjectScore `json:"data"`
+}
+
+// GetPorjectScoreV1
+// @Summary 获取项目分数
+// @Description get porject score
+// @Tags statistic
+// @Id GetPorjectScoreV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetPorjectScoreResV1
+// @router /v1/projects/{project_name}/statistic/project_score [get]
+func GetPorjectScoreV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetPorjectScoreResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    PorjectScore{},
+	})
+}
+
+type DBTypeHealth struct {
+	DBType            string   `json:"db_type"`
+	HealthInstances   []string `json:"health_instance_names"`
+	UnHealthInstances []string `json:"unhealth_instance_names"`
+}
+
+type GetInstanceHealthResV1 struct {
+	controller.BaseRes
+	Data DBTypeHealth `json:"data"`
+}
+
+// GetInstanceHealthV1
+// @Summary 获取各类型数据源的健康情况
+// @Description get instance health
+// @Tags statistic
+// @Id GetInstanceHealthV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetInstanceHealthResV1
+// @router /v1/projects/{project_name}/statistic/instance_health [get]
+func GetInstanceHealthV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    DBTypeHealth{},
 	})
 }

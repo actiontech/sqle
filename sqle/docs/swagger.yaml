@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AuditPlanCount:
+    properties:
+      audit_plan_count:
+        type: integer
+      audit_plan_type:
+        type: string
+    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -298,6 +305,13 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  v1.AuditedSQLCount:
+    properties:
+      risk_sql_count:
+        type: integer
+      total_sql_count:
+        type: integer
     type: object
   v1.BatchCancelWorkflowsReqV1:
     properties:
@@ -645,6 +659,28 @@ definitions:
         type: array
       workflow_subject:
         type: string
+    type: object
+  v1.DBTypeAuditPlan:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/v1.AuditPlanCount'
+        type: array
+      db_type:
+        type: string
+    type: object
+  v1.DBTypeHealth:
+    properties:
+      db_type:
+        type: string
+      health_instance_names:
+        items:
+          type: string
+        type: array
+      unhealth_instance_names:
+        items:
+          type: string
+        type: array
     type: object
   v1.DashboardProjectTipV1:
     properties:
@@ -1040,6 +1076,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetInstanceHealthResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.DBTypeHealth'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetInstanceResV1:
     properties:
       code:
@@ -1357,6 +1405,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetPorjectScoreResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.PorjectScore'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetProjectDetailResV1:
     properties:
       code:
@@ -1451,6 +1511,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetRiskAuditPlanResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RiskAuditPlan'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRoleTipsResV1:
     properties:
       code:
@@ -1459,6 +1532,19 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.RoleTipResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetRoleUserCountResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RoleUserCount'
         type: array
       message:
         example: ok
@@ -2481,6 +2567,11 @@ definitions:
       title:
         type: string
     type: object
+  v1.PorjectScore:
+    properties:
+      score:
+        type: integer
+    type: object
   v1.ProjectDetailItem:
     properties:
       archived:
@@ -2535,6 +2626,32 @@ definitions:
       reason:
         type: string
     type: object
+  v1.RiskAuditPlan:
+    properties:
+      audit_plan_name:
+        type: string
+      audit_plan_report_id:
+        type: integer
+      audit_plan_report_timestamp:
+        type: string
+      risk_sql_count:
+        type: integer
+      tigger_audit_plan_time:
+        type: string
+    type: object
+  v1.RiskWorkflow:
+    properties:
+      create_user_name:
+        type: string
+      update_time:
+        type: string
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+      workflow_status:
+        type: string
+    type: object
   v1.RoleResV1:
     properties:
       is_disabled:
@@ -2555,6 +2672,13 @@ definitions:
           $ref: '#/definitions/v1.Operation'
         type: array
       role_name:
+        type: string
+    type: object
+  v1.RoleUserCount:
+    properties:
+      count:
+        type: integer
+      role:
         type: string
     type: object
   v1.RuleParamReqV1:
@@ -2751,6 +2875,46 @@ definitions:
         type: string
       percent:
         type: number
+    type: object
+  v1.StatisticAuditPlanResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DBTypeAuditPlan'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.StatisticRiskWorkflowResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RiskWorkflow'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.StatisticsAuditedSQLResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditedSQLCount'
+        type: object
+      message:
+        example: ok
+        type: string
+      risk_rate:
+        type: integer
     type: object
   v1.SyncInstanceResV1:
     properties:
@@ -6860,6 +7024,166 @@ paths:
       summary: 导出项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/statistic/audit_plans:
+    get:
+      description: statistic audit plan
+      operationId: statisticAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各类型数据源上的扫描任务数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/audited_sqls:
+    get:
+      description: statistics audited sql
+      operationId: statisticsAuditedSQLV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticsAuditedSQLResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核SQL总数，以及触发审核规则的SQL数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/instance_health:
+    get:
+      description: get instance health
+      operationId: GetInstanceHealthV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceHealthResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各类型数据源的健康情况
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/project_score:
+    get:
+      description: get porject score
+      operationId: GetPorjectScoreV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetPorjectScoreResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目分数
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/risk_audit_plans:
+    get:
+      description: get risk audit plan
+      operationId: getRiskAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRiskAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务报告评分低于60的扫描任务
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/risk_workflow:
+    get:
+      description: statistic risk workflow
+      operationId: statisticRiskWorkflowV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.StatisticRiskWorkflowResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取存在风险的工单
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/role_user:
+    get:
+      description: get role user count
+      operationId: getRoleUserCountV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRoleUserCountResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取各角色类型对应的成员数量
+      tags:
+      - statistic
+  /v1/projects/{project_name}/statistic/workflow_status:
+    get:
+      description: statistic workflow status
+      operationId: statisticWorkflowStatusV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowStatusCountResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取项目下工单各个状态的数量
+      tags:
+      - statistic
   /v1/projects/{project_name}/statistics:
     get:
       description: get project statistics

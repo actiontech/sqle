@@ -3980,6 +3980,262 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/statistic/audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各类型数据源上的扫描任务数量",
+                "operationId": "statisticAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/audited_sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistics audited sql",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取审核SQL总数，以及触发审核规则的SQL数量",
+                "operationId": "statisticsAuditedSQLV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticsAuditedSQLResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/instance_health": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance health",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各类型数据源的健康情况",
+                "operationId": "GetInstanceHealthV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceHealthResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/project_score": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get porject score",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取项目分数",
+                "operationId": "GetPorjectScoreV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetPorjectScoreResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/risk_audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get risk audit plan",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取扫描任务报告评分低于60的扫描任务",
+                "operationId": "getRiskAuditPlanV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRiskAuditPlanResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/risk_workflow": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic risk workflow",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取存在风险的工单",
+                "operationId": "statisticRiskWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.StatisticRiskWorkflowResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/role_user": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get role user count",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取各角色类型对应的成员数量",
+                "operationId": "getRoleUserCountV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRoleUserCountResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/workflow_status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "statistic workflow status",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取项目下工单各个状态的数量",
+                "operationId": "statisticWorkflowStatusV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowStatusCountResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistics": {
             "get": {
                 "security": [
@@ -8448,6 +8704,17 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanCount": {
+            "type": "object",
+            "properties": {
+                "audit_plan_count": {
+                    "type": "integer"
+                },
+                "audit_plan_type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanMetaV1": {
             "type": "object",
             "properties": {
@@ -8865,6 +9132,17 @@ var doc = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.AuditedSQLCount": {
+            "type": "object",
+            "properties": {
+                "risk_sql_count": {
+                    "type": "integer"
+                },
+                "total_sql_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -9375,6 +9653,40 @@ var doc = `{
                 },
                 "workflow_subject": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.DBTypeAuditPlan": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanCount"
+                    }
+                },
+                "db_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.DBTypeHealth": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "health_instance_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "unhealth_instance_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -9950,6 +10262,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetInstanceHealthResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DBTypeHealth"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetInstanceResV1": {
             "type": "object",
             "properties": {
@@ -10413,6 +10742,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetPorjectScoreResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.PorjectScore"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetProjectDetailResV1": {
             "type": "object",
             "properties": {
@@ -10550,6 +10896,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRiskAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RiskAuditPlan"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRoleTipsResV1": {
             "type": "object",
             "properties": {
@@ -10561,6 +10926,25 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.RoleTipResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetRoleUserCountResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RoleUserCount"
                     }
                 },
                 "message": {
@@ -12062,6 +12446,14 @@ var doc = `{
                 }
             }
         },
+        "v1.PorjectScore": {
+            "type": "object",
+            "properties": {
+                "score": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.ProjectDetailItem": {
             "type": "object",
             "properties": {
@@ -12146,6 +12538,46 @@ var doc = `{
                 }
             }
         },
+        "v1.RiskAuditPlan": {
+            "type": "object",
+            "properties": {
+                "audit_plan_name": {
+                    "type": "string"
+                },
+                "audit_plan_report_id": {
+                    "type": "integer"
+                },
+                "audit_plan_report_timestamp": {
+                    "type": "string"
+                },
+                "risk_sql_count": {
+                    "type": "integer"
+                },
+                "tigger_audit_plan_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RiskWorkflow": {
+            "type": "object",
+            "properties": {
+                "create_user_name": {
+                    "type": "string"
+                },
+                "update_time": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "string"
+                },
+                "workflow_name": {
+                    "type": "string"
+                },
+                "workflow_status": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RoleResV1": {
             "type": "object",
             "properties": {
@@ -12176,6 +12608,17 @@ var doc = `{
                     }
                 },
                 "role_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RoleUserCount": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "role": {
                     "type": "string"
                 }
             }
@@ -12465,6 +12908,64 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.StatisticAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DBTypeAuditPlan"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.StatisticRiskWorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RiskWorkflow"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.StatisticsAuditedSQLResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditedSQLCount"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "risk_rate": {
+                    "type": "integer"
                 }
             }
         },
