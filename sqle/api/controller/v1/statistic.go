@@ -638,6 +638,23 @@ type GetInstanceHealthResV1 struct {
 	Data []*DBTypeHealth `json:"data"`
 }
 
+func getStringMapFromMap(stringMap map[string]map[string]struct{}, name string) map[string]struct{} {
+	queryMap, exist := stringMap[name]
+	if !exist {
+		queryMap = make(map[string]struct{})
+		stringMap[name] = queryMap
+	}
+	return queryMap
+}
+
+func keysFromMap(m map[string]struct{}) []string {
+    keys := make([]string, 0, len(m))
+    for key := range m {
+        keys = append(keys, key)
+    }
+    return keys
+}
+
 // GetInstanceHealthV1
 // @Summary 获取各类型数据源的健康情况
 // @Description get instance health
@@ -648,8 +665,89 @@ type GetInstanceHealthResV1 struct {
 // @Success 200 {object} v1.GetInstanceHealthResV1
 // @router /v1/projects/{project_name}/statistic/instance_health [get]
 func GetInstanceHealthV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByproject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceHealthMap := make(map[string]map[string]struct{}) // key1: db_type key2: instance name
+	instanceUnHealthMap := make(map[string]map[string]struct{})
+	for i := range instanceWorkFlowFailedStatus {
+		instanceStatus := instanceWorkFlowFailedStatus[i]
+		dbType := instanceStatus.DbType
+		if instanceStatus.StatusCount > 0 {
+			unhealthMap := getStringMapFromMap(instanceUnHealthMap, dbType)
+			unhealthMap[instanceStatus.InstanceName] = struct{}{}
+		} else {
+			healthMap := getStringMapFromMap(instanceHealthMap, dbType)
+			healthMap[instanceStatus.InstanceName] = struct{}{}
+		}
+	}
+	for i := range latestAuditPlanReportScores {
+		latestReportScore := latestAuditPlanReportScores[i]
+		dbType := latestReportScore.DbType
+		if latestReportScore.Score >= 60 {
+			healthMap := getStringMapFromMap(instanceHealthMap, dbType)
+			healthMap[latestReportScore.InstanceName] = struct{}{}
+		} else {
+			unhealthMap := getStringMapFromMap(instanceUnHealthMap, dbType)
+			unhealthMap[latestReportScore.InstanceName] = struct{}{}
+		}
+
+	}
+
+	dBTypeHealthMap := make(map[string]DBTypeHealth)
+	// 从instanceHealthMap中去除在instanceUnHealthMap中重复的instance name
+	for dbType := range instanceUnHealthMap {
+		dBTypeHealth := DBTypeHealth{DBType: dbType}
+		unHealthInstanceNames := instanceUnHealthMap[dbType]
+		healthInstanceNames, exist := instanceHealthMap[dbType]
+
+		dBTypeHealth.UnHealthInstances = keysFromMap(unHealthInstanceNames)
+		if !exist {
+			dBTypeHealthMap[dbType] = dBTypeHealth
+			continue
+		}
+		for instanceName := range unHealthInstanceNames {
+			_, exist := healthInstanceNames[instanceName]
+			if exist {
+				delete(healthInstanceNames, instanceName)
+			}
+		}
+		dBTypeHealth.HealthInstances = keysFromMap(healthInstanceNames)
+		dBTypeHealthMap[dbType] = dBTypeHealth
+	}
+
+	for dbType := range instanceHealthMap {
+		_, exist := dBTypeHealthMap[dbType]
+		if exist {
+			continue
+		}
+		dBTypeHealth := DBTypeHealth{DBType: dbType}
+		dBTypeHealth.HealthInstances = keysFromMap(instanceHealthMap[dbType])
+		dBTypeHealthMap[dbType] = dBTypeHealth
+	}
+
+	dBTypeHealth := []*DBTypeHealth{}
+	for i := range dBTypeHealthMap {
+		tmp := dBTypeHealthMap[i]
+		dBTypeHealth = append(dBTypeHealth, &tmp)
+	}
+
+
 	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*DBTypeHealth{},
+		Data:    dBTypeHealth,
 	})
 }
