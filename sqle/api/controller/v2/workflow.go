@@ -542,16 +542,16 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	var isWaitForAuditOrExecuting bool
+	var isExecuting bool
 	workflowStatus := workflow.Record.Status
-	if workflowStatus == model.WorkflowStatusWaitForAudit || workflowStatus == model.WorkflowStatusExecuting {
-		isWaitForAuditOrExecuting = true
+	if workflowStatus == model.WorkflowStatusExecuting {
+		isExecuting = true
 	}
 
 	queryData := map[string]interface{}{
-		"workflow_id":                  workflowId,
-		"project_name":                 projectName,
-		"is_waitForAudit_or_executing": isWaitForAuditOrExecuting,
+		"workflow_id":  workflowId,
+		"project_name": projectName,
+		"is_executing": isExecuting,
 	}
 
 	taskDetails, err := s.GetWorkflowTasksSummaryByReqV2(queryData)
