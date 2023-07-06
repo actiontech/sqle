@@ -1311,7 +1311,7 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName 
 
 func (s *Storage) GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Joins("left join projects on workflows.project_id = projects.id").
+	err := s.db.Model(&Workflow{}).Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
 		Where("projects.name = ?", projectName).
 		Where("workflows.workflow_id = ?", workflowId).
 		First(&workflow).Error
