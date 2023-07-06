@@ -1245,7 +1245,13 @@ SELECT wr.status                                                     AS workflow
        GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_users
 
 {{- template "body" . -}}
+{{- if .is_executing }}
+GROUP BY tasks.id, wir.id, curr_ws.id
+ORDER BY curr_ws.id DESC
+LIMIT 1
+{{- else}}
 GROUP BY tasks.id, wir.id
+{{- end }}
 `
 
 var workflowTasksSummaryQueryBodyTplV2 = `
