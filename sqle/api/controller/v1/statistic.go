@@ -551,7 +551,7 @@ type RiskAuditPlan struct {
 	ReportTimeStamp *time.Time `json:"audit_plan_report_timestamp"`
 	ReportId        uint       `json:"audit_plan_report_id"`
 	AuditPlanName   string     `json:"audit_plan_name"`
-	TriggerTime      *time.Time `json:"trigger_audit_plan_time"`
+	TriggerTime     *time.Time `json:"trigger_audit_plan_time"`
 	RiskSQLCount    uint       `json:"risk_sql_count"`
 }
 
@@ -635,7 +635,7 @@ type DBTypeHealth struct {
 
 type GetInstanceHealthResV1 struct {
 	controller.BaseRes
-	Data DBTypeHealth `json:"data"`
+	Data []*DBTypeHealth `json:"data"`
 }
 
 // GetInstanceHealthV1
@@ -650,6 +650,6 @@ type GetInstanceHealthResV1 struct {
 func GetInstanceHealthV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    DBTypeHealth{},
+		Data:    []*DBTypeHealth{},
 	})
 }
