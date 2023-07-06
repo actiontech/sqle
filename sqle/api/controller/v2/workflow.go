@@ -533,12 +533,27 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	queryData := map[string]interface{}{
-		"workflow_id":  workflowId,
-		"project_name": projectName,
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	s := model.GetStorage()
+	var isWaitForAuditOrExecuting bool
+	workflowStatus := workflow.Record.Status
+	if workflowStatus == model.WorkflowStatusWaitForAudit || workflowStatus == model.WorkflowStatusExecuting {
+		isWaitForAuditOrExecuting = true
+	}
+
+	queryData := map[string]interface{}{
+		"workflow_id":                  workflowId,
+		"project_name":                 projectName,
+		"is_waitForAudit_or_executing": isWaitForAuditOrExecuting,
+	}
+
 	taskDetails, err := s.GetWorkflowTasksSummaryByReqV2(queryData)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
