@@ -1257,7 +1257,7 @@ LEFT JOIN projects ON projects.id = w.project_id
 LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
-{{- if .is_waitForAudit_or_executing }}
+{{- if .is_executing }}
 LEFT JOIN workflow_steps AS curr_ws ON wr.id = curr_ws.workflow_record_id
 {{- else}}
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id	
