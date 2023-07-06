@@ -1286,6 +1286,8 @@ func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
 		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
 	}
 
+	// 由于工单正在上线状态时（即工单处于正在状态且没有当前步骤），无法获取待操作人。为解决此问题，
+	// 我们增加一个名为 "is_executing" 的标识符，如果其值为 true，则直接获取工单流程的最后一个step的分配用户(工单流程最后一个step一定是执行上线step)。
 	err = s.getListResult(workflowTasksSummaryQueryBodyTplV2, workflowTasksSummaryQueryTpl, data, &result)
 	if err != nil {
 		return result, errors.New(errors.ConnectStorageError, err)
