@@ -10270,8 +10270,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.DBTypeHealth"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DBTypeHealth"
+                    }
                 },
                 "message": {
                     "type": "string",
