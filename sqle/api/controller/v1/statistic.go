@@ -510,9 +510,32 @@ type StatisticRiskWorkflowResV1 struct {
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
 // @router /v1/projects/{project_name}/statistic/risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	projectWorkflowStatusDetails, err := s.GetProjectWorkflowStatusDetail(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
+	for i, info := range projectWorkflowStatusDetails {
+		riskWorkflows[i] = &RiskWorkflow{
+			Name:       info.Subject,
+			WorkflowID: info.Id,
+			Status:     info.Status,
+			CreateUser: info.LoginName,
+			UpdateTime: info.UpdatedAt,
+		}
+	}
+
 	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*RiskWorkflow{},
+		Data:    riskWorkflows,
 	})
 }
 
@@ -541,9 +564,43 @@ type StatisticAuditPlanResV1 struct {
 // @Success 200 {object} v1.StatisticAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	dBTypeAuditPlanCounts, err := s.GetDBTypeAuditPlanCountByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	dbTypeAuditPlanCountSliceMap := make(map[string][]*AuditPlanCount)
+	for i := range dBTypeAuditPlanCounts {
+		dbType := dBTypeAuditPlanCounts[i].DbType
+		auditPlanCountSlice, exist := dbTypeAuditPlanCountSliceMap[dbType]
+		if !exist {
+			auditPlanCountSlice = []*AuditPlanCount{}
+			dbTypeAuditPlanCountSliceMap[dbType] = auditPlanCountSlice
+		}
+		newAuditPlanCount := &AuditPlanCount{
+			Count: dBTypeAuditPlanCounts[i].AuditPlanCount,
+			Type:  dBTypeAuditPlanCounts[i].Type,
+		}
+		dbTypeAuditPlanCountSliceMap[dbType] = append(auditPlanCountSlice, newAuditPlanCount)
+	}
+
+	dBTypeAuditPlanSlice := []*DBTypeAuditPlan{}
+	for dbType := range dbTypeAuditPlanCountSliceMap {
+		dBTypeAuditPlan := DBTypeAuditPlan{DBType: dbType, Data: dbTypeAuditPlanCountSliceMap[dbType]}
+		dBTypeAuditPlanSlice = append(dBTypeAuditPlanSlice, &dBTypeAuditPlan)
+	}
+
+
 	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*DBTypeAuditPlan{},
+		Data:    dBTypeAuditPlanSlice,
 	})
 }
 

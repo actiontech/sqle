@@ -253,3 +253,19 @@ func (s *Storage) GetLatestAuditPlanRecords(after time.Time) ([]*AuditPlan, erro
 	err := s.db.Unscoped().Model(AuditPlan{}).Select("id, updated_at").Where("updated_at > ?", after).Order("updated_at").Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
+
+type DBTypeAuditPlanCount struct {
+	DbType         string `json:"db_type"`
+	Type           string `json:"type"`
+	AuditPlanCount uint   `json:"audit_plan_count"`
+}
+
+func (s *Storage) GetDBTypeAuditPlanCountByProject(projectName string) ([]*DBTypeAuditPlanCount, error) {
+	dBTypeAuditPlanCounts := []*DBTypeAuditPlanCount{}
+	err := s.db.Model(AuditPlan{}).
+		Select("audit_plans.db_type, audit_plans.type, count(1) audit_plan_count").
+		Joins("left join projects on audit_plans.project_id=projects.id").
+		Where("projects.name=?", projectName).
+		Group("audit_plans.db_type, audit_plans.type").Scan(&dBTypeAuditPlanCounts).Error
+	return dBTypeAuditPlanCounts, errors.New(errors.ConnectStorageError, err)
+}
