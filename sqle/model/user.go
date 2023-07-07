@@ -325,3 +325,33 @@ func (s *Storage) GetMemberTips(projectName string) ([]*User, error) {
 		Find(&users).Error
 	return users, errors.ConnectStorageErrWrapper(err)
 }
+
+type UserRole struct {
+	UserName string `json:"user_name"`
+	RoleName string `json:"role_name"`
+}
+
+func (s *Storage) GetUserRoleByProjectName(projectName string) ([]*UserRole, error) {
+	userRoles := []*UserRole{}
+	err := s.db.Model(&User{}).Select("users.login_name user_name, roles.name role_name").
+		Joins("LEFT JOIN project_user ON users.id = project_user.user_id").
+		Joins("LEFT JOIN projects AS p ON p.id = project_user.project_id").
+		Joins("LEFT JOIN project_member_roles ON project_member_roles.user_id=users.id").
+		Joins("LEFT JOIN roles ON roles.id=project_member_roles.role_id").
+		Where("users.deleted_at IS NULL AND p.name=? AND p.deleted_at IS NULL AND roles.id is not NULL", projectName).
+		Scan(&userRoles).Error
+	return userRoles, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetUserRoleFromUserGroupByProjectName(projectName string) ([]*UserRole, error) {
+	userRoles := []*UserRole{}
+	err := s.db.Model(&User{}).Select("users.login_name user_name, r.name role_name").
+		Joins("LEFT JOIN user_group_users ON user_group_users.user_id = users.id").
+		Joins("LEFT JOIN project_user_group ON project_user_group.user_group_id = user_group_users.user_group_id").
+		Joins("LEFT JOIN projects AS pg ON pg.id = project_user_group.project_id").
+		Joins("LEFT JOIN project_member_group_roles mr ON mr.user_group_id=user_group_users.user_group_id").
+		Joins("LEFT JOIN roles AS r ON r.id=mr.role_id").
+		Where("users.deleted_at IS NULL AND pg.name=? AND pg.deleted_at IS NULL AND r.id is not NULL", projectName).
+		Scan(&userRoles).Error
+	return userRoles, errors.ConnectStorageErrWrapper(err)
+}

@@ -9,6 +9,8 @@ import (
 
 	"time"
 
+	"math"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -472,6 +474,16 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 	})
 }
 
+type WorkflowStatus struct {
+	WorkFlowStatus string `json:"workflow_status"`
+	Count          uint   `json:"count"`
+}
+
+type GetWorkflowStatusResV1 struct {
+	controller.BaseRes
+	Data []*WorkflowStatus `json:"data"`
+}
+
 // StatisticWorkflowStatusV1
 // @Summary 获取项目下工单各个状态的数量
 // @Description statistic workflow status
@@ -479,12 +491,12 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 // @Id statisticWorkflowStatusV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Success 200 {object} v1.GetWorkflowStatusCountResV1
+// @Success 200 {object} v1.GetWorkflowStatusResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetWorkflowStatusCountResV1{
+	return c.JSON(http.StatusOK, GetWorkflowStatusResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    &WorkflowStatusCountV1{},
+		Data:    []*WorkflowStatus{},
 	})
 }
 
@@ -634,9 +646,32 @@ type GetRiskAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetRiskAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/risk_audit_plans [get]
 func GetRiskAuditPlanV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	riskAuditPlanInfos, err := s.GetRiskAuditPlan(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	riskAuditPlans := make([]*RiskAuditPlan, len(riskAuditPlanInfos))
+	for i, info := range riskAuditPlanInfos {
+		riskAuditPlans[i] = &RiskAuditPlan{
+			ReportTimeStamp: info.ReportCreateAt,
+			ReportId:        info.ReportId,
+			AuditPlanName:   info.AuditPlanName,
+			TriggerTime:     info.ReportCreateAt,
+			RiskSQLCount:    info.RiskSqlCOUNT,
+		}
+	}
+
 	return c.JSON(http.StatusOK, GetRiskAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*RiskAuditPlan{},
+		Data:    riskAuditPlans,
 	})
 }
 
@@ -660,9 +695,51 @@ type GetRoleUserCountResV1 struct {
 // @Success 200 {object} v1.GetRoleUserCountResV1
 // @router /v1/projects/{project_name}/statistic/role_user [get]
 func GetRoleUserCountV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	userRoles, err := s.GetUserRoleByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	userRoleFromUserGroup, err := s.GetUserRoleFromUserGroupByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 若成员和成员组重复绑定相同角色，需要去重
+	userRoleMap := make(map[string]map[string]struct{}) // key 1: role_name, key 2: username
+	for i := range userRoles {
+		userRole := userRoles[i]
+		subMap, exist := userRoleMap[userRole.RoleName]
+		if !exist {
+			subMap = make(map[string]struct{})
+			userRoleMap[userRole.RoleName] = subMap
+		}
+		subMap[userRole.UserName] = struct{}{}
+	}
+	for i := range userRoleFromUserGroup {
+		userRole := userRoleFromUserGroup[i]
+		subMap, exist := userRoleMap[userRole.RoleName]
+		if !exist {
+			subMap = make(map[string]struct{})
+			userRoleMap[userRole.RoleName] = subMap
+		}
+		subMap[userRole.UserName] = struct{}{}
+	}
+
+	roleUserCountSlice := []*RoleUserCount{}
+	for k, v := range userRoleMap {
+		roleUserCountSlice = append(roleUserCountSlice, &RoleUserCount{Role: k, Count: uint(len(v))})
+	}
+
 	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*RoleUserCount{},
+		Data:    roleUserCountSlice,
 	})
 }
 
@@ -685,9 +762,64 @@ type GetProjectScoreResV1 struct {
 // @Success 200 {object} v1.GetProjectScoreResV1
 // @router /v1/projects/{project_name}/statistic/project_score [get]
 func GetProjectScoreV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	execFailedStatus := []string{model.WorkflowStatusExecFailed, model.WorkflowStatusFinish, model.WorkflowStatusExecuting}
+	workflowsStatuses, err := s.GetWorkflowIdStatusByProjectNameAndStatus(projectName, execFailedStatus)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	auditReports, err := s.GetAuditPlanReportByProjectName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 项目分数=工单上线成功率*2/5+扫描任务通过率*3/5
+	// 工单上线成功率=成功上线的工单数量/执行上线的工单总数
+	// 扫描任务通过率=报告>60分的扫描任务数量/扫描任务报告总数
+	var projectScore float64
+	var workflowScore float64
+	var auditReportScore float64
+
+	workflowCount := len(workflowsStatuses)
+	if workflowCount > 0 {
+		workFlowFinishCount := 0
+		for i := range workflowsStatuses {
+			if workflowsStatuses[i].Status == model.WorkflowStatusFinish {
+				workFlowFinishCount++
+			}
+		}
+		workflowScore = float64(workFlowFinishCount) / float64(workflowCount)
+	}
+	auditReportCount := len(auditReports)
+	if auditReportCount > 0 {
+		auditReportPassCount := 0
+		for i := range auditReports {
+			if auditReports[i].Score > 60 {
+				auditReportPassCount++
+			}
+		}
+		auditReportScore = float64(auditReportPassCount) / float64(auditReportCount)
+	}
+
+	if workflowCount > 0 && auditReportCount > 0 {
+		projectScore = workflowScore*2/5 + auditReportScore*3/5
+	} else if workflowCount > 0 {
+		projectScore = workflowScore
+	} else if auditReportCount > 0 {
+		projectScore = auditReportScore
+	}
+
 	return c.JSON(http.StatusOK, GetProjectScoreResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    ProjectScore{},
+		Data: ProjectScore{
+			Score: int(math.Round(projectScore * 100)),
+		},
 	})
 }
 
