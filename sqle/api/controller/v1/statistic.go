@@ -475,18 +475,18 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	workflowSqlCount, err := s.GetSqlCountAndAuditedCountFromWorklowByProject(projectName)
+	workflowSqlCount, err := s.GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndAuditedCountByproject(projectName)
+	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	auditedSQLCount := AuditedSQLCount{
 		TotalSQL: workflowSqlCount.SqlCount + auditPlanSqlCount.SqlCount,
-		RiskSQL:  workflowSqlCount.AuditedCount + auditPlanSqlCount.AuditedCount,
+		RiskSQL:  workflowSqlCount.TriggerRuleCount + auditPlanSqlCount.TriggerRuleCount,
 	}
 
 	riskRate := float64(auditedSQLCount.RiskSQL) / float64(auditedSQLCount.TotalSQL)
