@@ -1343,14 +1343,13 @@ type WorkFlowIdStatus struct {
 	Status string `json:"status"`
 }
 
-func (s *Storage) GetExecedWorkflowIdStatusByProjectName(projectName string) ([]*WorkFlowIdStatus, error) {
+func (s *Storage) GetWorkflowIdStatusByProjectNameAndStatus(projectName string, queryStatus []string) ([]*WorkFlowIdStatus, error) {
 	workFlowIdStatus := []*WorkFlowIdStatus{}
-	execStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusExecuting}
 	err := s.db.Model(&Workflow{}).
 		Select("workflows.id, workflow_records.status").
 		Joins("left join projects on workflows.project_id = projects.id").
 		Joins("left join workflow_records on workflows.workflow_record_id=workflow_records.id").
-		Where("projects.name = ? and workflow_records.status in (?)", projectName, execStatus).
+		Where("projects.name = ? and workflow_records.status in (?)", projectName, queryStatus).
 		Scan(&workFlowIdStatus).Error
 	return workFlowIdStatus, errors.ConnectStorageErrWrapper(err)
 }
