@@ -63,6 +63,7 @@ type LatestAuditPlanReportScore struct {
 	Score        uint   `json:"score"`
 }
 
+// 使用子查询获取最新的report的生成时间，再去获取report相关信息 
 func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName string) ([]*LatestAuditPlanReportScore, error) {
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore
 	subQuery := s.db.Model(&AuditPlanReportV2{}).
