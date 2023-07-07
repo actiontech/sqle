@@ -1347,7 +1347,7 @@ type WorkflowStatusDetail struct {
 }
 
 func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
-	WwrkflowStatusDetails := []WorkflowStatusDetail{}
+	WorkflowStatusDetails := []WorkflowStatusDetail{}
 
 	err := s.db.Model(&Workflow{}).
 		Select("workflows.subject, workflows.id, wr.status, wr.updated_at, users.login_name").
@@ -1355,9 +1355,9 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 		Joins("left join users on users.id=workflows.create_user_id").
 		Joins("left join projects on projects.id=workflows.project_id").
 		Where("wr.status in (?) and projects.name=?", queryStatus, projectName).
-		Scan(&WwrkflowStatusDetails).Error
+		Scan(&WorkflowStatusDetails).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return WwrkflowStatusDetails, nil
+	return WorkflowStatusDetails, nil
 }

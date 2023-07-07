@@ -54,7 +54,7 @@ type LatestAuditPlanReportScore struct {
 	Score        uint   `json:"score"`
 }
 
-func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByproject(projectName string) ([]*LatestAuditPlanReportScore, error) {
+func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName string) ([]*LatestAuditPlanReportScore, error) {
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore
 	subQuery := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, MAX(audit_plan_reports_v2.created_at) as latest_created_at").

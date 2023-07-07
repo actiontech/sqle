@@ -5,6 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"time"
 
@@ -542,6 +543,7 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 type AuditPlanCount struct {
 	Type  string `json:"audit_plan_type"`
 	Count uint   `json:"audit_plan_count"`
+	Desc  string `json:"audit_plan_desc"`
 }
 
 type DBTypeAuditPlan struct {
@@ -584,9 +586,14 @@ func StatisticAuditPlanV1(c echo.Context) error {
 			auditPlanCountSlice = []*AuditPlanCount{}
 			dbTypeAuditPlanCountSliceMap[dbType] = auditPlanCountSlice
 		}
+		meta, err := auditplan.GetMeta(dBTypeAuditPlanCounts[i].Type)
+		if err != nil {
+			continue
+		}
 		newAuditPlanCount := &AuditPlanCount{
 			Count: dBTypeAuditPlanCounts[i].AuditPlanCount,
 			Type:  dBTypeAuditPlanCounts[i].Type,
+			Desc: meta.Desc,
 		}
 		dbTypeAuditPlanCountSliceMap[dbType] = append(auditPlanCountSlice, newAuditPlanCount)
 	}
@@ -733,7 +740,7 @@ func GetInstanceHealthV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByproject(projectName)
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
