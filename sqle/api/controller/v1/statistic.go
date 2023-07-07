@@ -770,7 +770,7 @@ func GetProjectScoreV1(c echo.Context) error {
 
 	s := model.GetStorage()
 	execFailedStatus := []string{model.WorkflowStatusExecFailed, model.WorkflowStatusFinish, model.WorkflowStatusExecuting}
-	workflowsStatuses, err := s.GetWorkflowIdStatusByProjectNameAndStatus(projectName, execFailedStatus)
+	workflowsStatuses, err := s.GetProjectWorkflowStatusDetail(projectName, execFailedStatus)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
