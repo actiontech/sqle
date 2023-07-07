@@ -1352,7 +1352,7 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 
 type WorkflowStatusDetail struct {
 	Subject   string     `json:"subject"`
-	Id        string     `json:"id"`
+	WorkflowId        string     `json:"workflow_id"`
 	Status    string     `json:"status"`
 	LoginName string     `json:"login_name"`
 	UpdatedAt *time.Time `json:"updated_at"`
@@ -1362,7 +1362,7 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 	WorkflowStatusDetails := []WorkflowStatusDetail{}
 
 	err := s.db.Model(&Workflow{}).
-		Select("workflows.subject, workflows.id, wr.status, wr.updated_at, users.login_name").
+		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, users.login_name").
 		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
 		Joins("left join users on users.id=workflows.create_user_id").
 		Joins("left join projects on projects.id=workflows.project_id").
