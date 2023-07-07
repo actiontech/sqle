@@ -591,7 +591,7 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 	for i, info := range projectWorkflowStatusDetails {
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
-			WorkflowID: info.Id,
+			WorkflowID: info.WorkflowId,
 			Status:     info.Status,
 			CreateUser: info.LoginName,
 			UpdateTime: info.UpdatedAt,
