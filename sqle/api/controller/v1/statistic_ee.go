@@ -358,11 +358,6 @@ func getWorkflowStatusCountV1(c echo.Context) error {
 	})
 }
 
-type dbErr struct {
-	s   *model.Storage
-	err error
-}
-
 func (d *dbErr) getWorkFlowStatusCount(status string) (count int) {
 	if d.err != nil {
 		return 0
