@@ -280,8 +280,9 @@ func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error)
 
 }
 
-func (s *Storage) GetAuditPlanSQLCountAndAuditedCountByproject(projectName string) (SqlCountAndAuditedCount, error) {
-	sqlCountAndAuditedCount := SqlCountAndAuditedCount{}
+// 使用子查询获取最新的report时间，然后再获取最新report的sql数量和触发规则的sql数量
+func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
+	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
 	subQuery := s.db.Model(&AuditPlan{}).
 		Select("audit_plans.id as audit_plan_id, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plan_reports_v2 on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
@@ -291,15 +292,15 @@ func (s *Storage) GetAuditPlanSQLCountAndAuditedCountByproject(projectName strin
 		SubQuery()
 
 	err := s.db.Model(&AuditPlan{}).
-		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)='NULL' then 1 else null end) audited_count").
+		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)='NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join audit_plan_reports_v2 reports on reports.audit_plan_id=audit_plans.id").
 		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
 		Joins("left join projects on audit_plans.project_id=projects.id").
 		Joins("join (?) as sq on audit_plans.id=sq.audit_plan_id and reports.created_at=sq.latest_created_at", subQuery).
 		Where("projects.name=? and audit_plans.deleted_at is null", projectName).
-		Scan(&sqlCountAndAuditedCount).Error
+		Scan(&sqlCountAndTriggerRuleCount).Error
 
-	return sqlCountAndAuditedCount, errors.ConnectStorageErrWrapper(err)
+	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
 }
 
 type DBTypeAuditPlanCount struct {
