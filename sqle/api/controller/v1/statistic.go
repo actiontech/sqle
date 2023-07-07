@@ -473,14 +473,19 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 	})
 }
 
-type WorkflowStatus struct {
-	WorkFlowStatus string `json:"workflow_status"`
-	Count          uint   `json:"count"`
+type dbErr struct {
+	s   *model.Storage
+	err error
 }
 
-type GetWorkflowStatusResV1 struct {
-	controller.BaseRes
-	Data []*WorkflowStatus `json:"data"`
+func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectName string) (count int) {
+	if d.err != nil {
+		return 0
+	}
+
+	count, d.err = d.s.GetWorkflowCountByStatusAndProject(status, projectName)
+
+	return count
 }
 
 // StatisticWorkflowStatusV1
@@ -490,12 +495,36 @@ type GetWorkflowStatusResV1 struct {
 // @Id statisticWorkflowStatusV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Success 200 {object} v1.GetWorkflowStatusResV1
+// @Success 200 {object} v1.GetWorkflowStatusCountResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetWorkflowStatusResV1{
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	d := &dbErr{s: model.GetStorage()}
+	waitingForAuditCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForAudit, projectName)
+	waitingForExecutionCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForExecution, projectName)
+	executingCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecuting, projectName)
+	executionSuccessCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusFinish, projectName)
+	executingFailedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecFailed, projectName)
+	rejectedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusReject, projectName)
+	closedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusCancel, projectName)
+
+
+	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*WorkflowStatus{},
+		Data: &WorkflowStatusCountV1{
+			ExecutionSuccessCount:    executionSuccessCount,
+			ExecutingCount:           executingCount,
+			ExecutingFailedCount:     executingFailedCount,
+			WaitingForExecutionCount: waitingForExecutionCount,
+			RejectedCount:            rejectedCount,
+			WaitingForAuditCount:     waitingForAuditCount,
+			ClosedCount:              closedCount,
+		},
 	})
 }
 
