@@ -292,7 +292,7 @@ func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName s
 		SubQuery()
 
 	err := s.db.Model(&AuditPlan{}).
-		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)='NULL' then 1 else null end) trigger_rule_count").
+		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join audit_plan_reports_v2 reports on reports.audit_plan_id=audit_plans.id").
 		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
 		Joins("left join projects on audit_plans.project_id=projects.id").

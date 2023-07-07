@@ -1352,7 +1352,7 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 
 type WorkflowStatusDetail struct {
 	Subject   string     `json:"subject"`
-	Id        string     `json:"id"`
+	WorkflowId        string     `json:"workflow_id"`
 	Status    string     `json:"status"`
 	LoginName string     `json:"login_name"`
 	UpdatedAt *time.Time `json:"updated_at"`
@@ -1362,7 +1362,7 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 	WorkflowStatusDetails := []WorkflowStatusDetail{}
 
 	err := s.db.Model(&Workflow{}).
-		Select("workflows.subject, workflows.id, wr.status, wr.updated_at, users.login_name").
+		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, users.login_name").
 		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
 		Joins("left join users on users.id=workflows.create_user_id").
 		Joins("left join projects on projects.id=workflows.project_id").
@@ -1382,7 +1382,7 @@ type SqlCountAndTriggerRuleCount struct {
 func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
 	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
 	err := s.db.Model(&Workflow{}).
-		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)='NULL' then 1 else null end) trigger_rule_count").
+		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
 		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
 		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").

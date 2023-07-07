@@ -489,7 +489,10 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 		RiskSQL:  workflowSqlCount.TriggerRuleCount + auditPlanSqlCount.TriggerRuleCount,
 	}
 
-	riskRate := float64(auditedSQLCount.RiskSQL) / float64(auditedSQLCount.TotalSQL)
+	var riskRate float64
+	if auditedSQLCount.RiskSQL > 0 {
+		riskRate = float64(auditedSQLCount.RiskSQL) / float64(auditedSQLCount.TotalSQL)
+	}
 
 	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
 		BaseRes:  controller.NewBaseReq(nil),
@@ -591,7 +594,7 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 	for i, info := range projectWorkflowStatusDetails {
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
-			WorkflowID: info.Id,
+			WorkflowID: info.WorkflowId,
 			Status:     info.Status,
 			CreateUser: info.LoginName,
 			UpdateTime: info.UpdatedAt,
@@ -875,8 +878,8 @@ func GetProjectScoreV1(c echo.Context) error {
 }
 
 type DBTypeHealth struct {
-	DBType            string   `json:"db_type"`
-	HealthInstances   []string `json:"health_instance_names"`
+	DBType             string   `json:"db_type"`
+	HealthInstances    []string `json:"health_instance_names"`
 	UnhealthyInstances []string `json:"unhealth_instance_names"`
 }
 
