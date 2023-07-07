@@ -471,6 +471,16 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 	})
 }
 
+type WorkflowStatus struct {
+	WorkFlowStatus string `json:"workflow_status"`
+	Count          uint   `json:"count"`
+}
+
+type GetWorkflowStatusResV1 struct {
+	controller.BaseRes
+	Data []*WorkflowStatus `json:"data"`
+}
+
 // StatisticWorkflowStatusV1
 // @Summary 获取项目下工单各个状态的数量
 // @Description statistic workflow status
@@ -478,12 +488,12 @@ func StatisticsAuditedSQLV1(c echo.Context) error {
 // @Id statisticWorkflowStatusV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Success 200 {object} v1.GetWorkflowStatusCountResV1
+// @Success 200 {object} v1.GetWorkflowStatusResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetWorkflowStatusCountResV1{
+	return c.JSON(http.StatusOK, GetWorkflowStatusResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    &WorkflowStatusCountV1{},
+		Data:    []*WorkflowStatus{},
 	})
 }
 
