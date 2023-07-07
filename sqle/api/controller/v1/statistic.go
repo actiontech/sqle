@@ -467,9 +467,33 @@ type StatisticsAuditedSQLResV1 struct {
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
 // @router /v1/projects/{project_name}/statistic/audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflowSqlCount, err := s.GetSqlCountAndAuditedCountFromWorklowByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndAuditedCountByproject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	auditedSQLCount := AuditedSQLCount{
+		TotalSQL: workflowSqlCount.SqlCount + auditPlanSqlCount.SqlCount,
+		RiskSQL:  workflowSqlCount.AuditedCount + auditPlanSqlCount.AuditedCount,
+	}
+
+	riskRate := float64(auditedSQLCount.RiskSQL) / float64(auditedSQLCount.TotalSQL)
+
 	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    AuditedSQLCount{},
+		BaseRes:  controller.NewBaseReq(nil),
+		Data:     auditedSQLCount,
+		RiskRate: int(math.Round(riskRate * 100)),
 	})
 }
 
@@ -512,7 +536,6 @@ func StatisticWorkflowStatusV1(c echo.Context) error {
 	executingFailedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecFailed, projectName)
 	rejectedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusReject, projectName)
 	closedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusCancel, projectName)
-
 
 	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
