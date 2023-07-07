@@ -47,3 +47,12 @@ func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number ui
 
 	return auditPlanReportSQLV2, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetAuditPlanReportByProjectName(projectName string) ([]*AuditPlanReportV2, error) {
+	auditPlanReportV2Slice := []*AuditPlanReportV2{}
+	err := s.db.Model(&AuditPlanReportV2{}).
+		Joins("left join audit_plans on audit_plans.id=audit_plan_reports_v2.audit_plan_id").
+		Joins("left join projects on projects.id=audit_plans.project_id").
+		Where("projects.name=? and audit_plans.deleted_at is NULL", projectName).Find(&auditPlanReportV2Slice).Error
+	return auditPlanReportV2Slice, errors.ConnectStorageErrWrapper(err)
+}
