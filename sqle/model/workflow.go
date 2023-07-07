@@ -1374,7 +1374,7 @@ type SqlCountAndAuditedCount struct {
 func (s *Storage) GetSqlCountAndAuditedCountFromWorklowByProject(projectName string) (SqlCountAndAuditedCount, error) {
 	sqlCountAndAuditedCount := SqlCountAndAuditedCount{}
 	err := s.db.Model(&Workflow{}).
-		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)='NULL' then 1 else null end)").
+		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)='NULL' then 1 else null end) audited_count").
 		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
 		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
 		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").

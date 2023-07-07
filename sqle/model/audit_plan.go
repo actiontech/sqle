@@ -279,3 +279,25 @@ func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error)
 	return RiskAuditPlans, nil
 
 }
+
+func (s *Storage) GetAuditPlanSQLCountAndAuditedCountByproject(projectName string) (SqlCountAndAuditedCount, error) {
+	sqlCountAndAuditedCount := SqlCountAndAuditedCount{}
+	subQuery := s.db.Model(&AuditPlan{}).
+		Select("audit_plans.id as audit_plan_id, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
+		Joins("left join audit_plan_reports_v2 on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
+		Joins("left join projects on audit_plans.project_id=projects.id").
+		Where("projects.name=? and audit_plans.deleted_at is null and audit_plan_reports_v2.id is not null", projectName).
+		Group("audit_plans.id").
+		SubQuery()
+
+	err := s.db.Model(&AuditPlan{}).
+		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)='NULL' then 1 else null end) audited_count").
+		Joins("left join audit_plan_reports_v2 reports on reports.audit_plan_id=audit_plans.id").
+		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
+		Joins("left join projects on audit_plans.project_id=projects.id").
+		Joins("join (?) as sq on audit_plans.id=sq.audit_plan_id and reports.created_at=sq.latest_created_at", subQuery).
+		Where("projects.name=? and audit_plans.deleted_at is null", projectName).
+		Scan(&sqlCountAndAuditedCount).Error
+
+	return sqlCountAndAuditedCount, errors.ConnectStorageErrWrapper(err)
+}
