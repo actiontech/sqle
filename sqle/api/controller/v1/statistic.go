@@ -5,6 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"time"
 
@@ -467,20 +468,49 @@ type StatisticsAuditedSQLResV1 struct {
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
 // @router /v1/projects/{project_name}/statistic/audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	workflowSqlCount, err := s.GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	auditedSQLCount := AuditedSQLCount{
+		TotalSQL: workflowSqlCount.SqlCount + auditPlanSqlCount.SqlCount,
+		RiskSQL:  workflowSqlCount.TriggerRuleCount + auditPlanSqlCount.TriggerRuleCount,
+	}
+
+	riskRate := float64(auditedSQLCount.RiskSQL) / float64(auditedSQLCount.TotalSQL)
+
 	return c.JSON(http.StatusOK, StatisticsAuditedSQLResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    AuditedSQLCount{},
+		BaseRes:  controller.NewBaseReq(nil),
+		Data:     auditedSQLCount,
+		RiskRate: int(math.Round(riskRate * 100)),
 	})
 }
 
-type WorkflowStatus struct {
-	WorkFlowStatus string `json:"workflow_status"`
-	Count          uint   `json:"count"`
+type dbErr struct {
+	s   *model.Storage
+	err error
 }
 
-type GetWorkflowStatusResV1 struct {
-	controller.BaseRes
-	Data []*WorkflowStatus `json:"data"`
+func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectName string) (count int) {
+	if d.err != nil {
+		return 0
+	}
+
+	count, d.err = d.s.GetWorkflowCountByStatusAndProject(status, projectName)
+
+	return count
 }
 
 // StatisticWorkflowStatusV1
@@ -490,12 +520,35 @@ type GetWorkflowStatusResV1 struct {
 // @Id statisticWorkflowStatusV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Success 200 {object} v1.GetWorkflowStatusResV1
+// @Success 200 {object} v1.GetWorkflowStatusCountResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetWorkflowStatusResV1{
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	d := &dbErr{s: model.GetStorage()}
+	waitingForAuditCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForAudit, projectName)
+	waitingForExecutionCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForExecution, projectName)
+	executingCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecuting, projectName)
+	executionSuccessCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusFinish, projectName)
+	executingFailedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecFailed, projectName)
+	rejectedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusReject, projectName)
+	closedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusCancel, projectName)
+
+	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*WorkflowStatus{},
+		Data: &WorkflowStatusCountV1{
+			ExecutionSuccessCount:    executionSuccessCount,
+			ExecutingCount:           executingCount,
+			ExecutingFailedCount:     executingFailedCount,
+			WaitingForExecutionCount: waitingForExecutionCount,
+			RejectedCount:            rejectedCount,
+			WaitingForAuditCount:     waitingForAuditCount,
+			ClosedCount:              closedCount,
+		},
 	})
 }
 
@@ -522,15 +575,39 @@ type StatisticRiskWorkflowResV1 struct {
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
 // @router /v1/projects/{project_name}/statistic/risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	projectWorkflowStatusDetails, err := s.GetProjectWorkflowStatusDetail(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
+	for i, info := range projectWorkflowStatusDetails {
+		riskWorkflows[i] = &RiskWorkflow{
+			Name:       info.Subject,
+			WorkflowID: info.Id,
+			Status:     info.Status,
+			CreateUser: info.LoginName,
+			UpdateTime: info.UpdatedAt,
+		}
+	}
+
 	return c.JSON(http.StatusOK, StatisticRiskWorkflowResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*RiskWorkflow{},
+		Data:    riskWorkflows,
 	})
 }
 
 type AuditPlanCount struct {
 	Type  string `json:"audit_plan_type"`
 	Count uint   `json:"audit_plan_count"`
+	Desc  string `json:"audit_plan_desc"`
 }
 
 type DBTypeAuditPlan struct {
@@ -553,9 +630,47 @@ type StatisticAuditPlanResV1 struct {
 // @Success 200 {object} v1.StatisticAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	dBTypeAuditPlanCounts, err := s.GetDBTypeAuditPlanCountByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	dbTypeAuditPlanCountSliceMap := make(map[string][]*AuditPlanCount)
+	for i := range dBTypeAuditPlanCounts {
+		dbType := dBTypeAuditPlanCounts[i].DbType
+		auditPlanCountSlice, exist := dbTypeAuditPlanCountSliceMap[dbType]
+		if !exist {
+			auditPlanCountSlice = []*AuditPlanCount{}
+			dbTypeAuditPlanCountSliceMap[dbType] = auditPlanCountSlice
+		}
+		meta, err := auditplan.GetMeta(dBTypeAuditPlanCounts[i].Type)
+		if err != nil {
+			continue
+		}
+		newAuditPlanCount := &AuditPlanCount{
+			Count: dBTypeAuditPlanCounts[i].AuditPlanCount,
+			Type:  dBTypeAuditPlanCounts[i].Type,
+			Desc:  meta.Desc,
+		}
+		dbTypeAuditPlanCountSliceMap[dbType] = append(auditPlanCountSlice, newAuditPlanCount)
+	}
+
+	dBTypeAuditPlanSlice := []*DBTypeAuditPlan{}
+	for dbType := range dbTypeAuditPlanCountSliceMap {
+		dBTypeAuditPlan := DBTypeAuditPlan{DBType: dbType, Data: dbTypeAuditPlanCountSliceMap[dbType]}
+		dBTypeAuditPlanSlice = append(dBTypeAuditPlanSlice, &dBTypeAuditPlan)
+	}
+
 	return c.JSON(http.StatusOK, StatisticAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*DBTypeAuditPlan{},
+		Data:    dBTypeAuditPlanSlice,
 	})
 }
 
@@ -706,7 +821,7 @@ func GetProjectScoreV1(c echo.Context) error {
 
 	s := model.GetStorage()
 	execFailedStatus := []string{model.WorkflowStatusExecFailed, model.WorkflowStatusFinish, model.WorkflowStatusExecuting}
-	workflowsStatuses, err := s.GetWorkflowIdStatusByProjectNameAndStatus(projectName, execFailedStatus)
+	workflowsStatuses, err := s.GetProjectWorkflowStatusDetail(projectName, execFailedStatus)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -762,12 +877,60 @@ func GetProjectScoreV1(c echo.Context) error {
 type DBTypeHealth struct {
 	DBType            string   `json:"db_type"`
 	HealthInstances   []string `json:"health_instance_names"`
-	UnHealthInstances []string `json:"unhealth_instance_names"`
+	UnhealthyInstances []string `json:"unhealth_instance_names"`
 }
 
 type GetInstanceHealthResV1 struct {
 	controller.BaseRes
 	Data []*DBTypeHealth `json:"data"`
+}
+
+func getStringMapFromMap(stringMap map[string]map[string]struct{}, name string) map[string]struct{} {
+	queryMap, exist := stringMap[name]
+	if !exist {
+		queryMap = make(map[string]struct{})
+		stringMap[name] = queryMap
+	}
+	return queryMap
+}
+
+func keysFromMap(m map[string]struct{}) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func generateMaps(instanceWorkFlowFailedStatus []*model.InstanceWorkFlowStatusCount,
+	latestAuditPlanReportScores []*model.LatestAuditPlanReportScore) (map[string]map[string]struct{}, map[string]map[string]struct{}) {
+
+	instanceHealthMap := make(map[string]map[string]struct{}) // key1: db_type key2: instance name
+	instanceUnhealthyMap := make(map[string]map[string]struct{})
+
+	for i := range instanceWorkFlowFailedStatus {
+		instanceStatus := instanceWorkFlowFailedStatus[i]
+		dbType := instanceStatus.DbType
+		if instanceStatus.StatusCount > 0 {
+			unHealthMap := getStringMapFromMap(instanceUnhealthyMap, dbType)
+			unHealthMap[instanceStatus.InstanceName] = struct{}{}
+		} else {
+			healthMap := getStringMapFromMap(instanceHealthMap, dbType)
+			healthMap[instanceStatus.InstanceName] = struct{}{}
+		}
+	}
+	for i := range latestAuditPlanReportScores {
+		latestReportScore := latestAuditPlanReportScores[i]
+		dbType := latestReportScore.DbType
+		if latestReportScore.Score >= 60 {
+			healthMap := getStringMapFromMap(instanceHealthMap, dbType)
+			healthMap[latestReportScore.InstanceName] = struct{}{}
+		} else {
+			unhealthMap := getStringMapFromMap(instanceUnhealthyMap, dbType)
+			unhealthMap[latestReportScore.InstanceName] = struct{}{}
+		}
+	}
+	return instanceHealthMap, instanceUnhealthyMap
 }
 
 // GetInstanceHealthV1
@@ -780,8 +943,65 @@ type GetInstanceHealthResV1 struct {
 // @Success 200 {object} v1.GetInstanceHealthResV1
 // @router /v1/projects/{project_name}/statistic/instance_health [get]
 func GetInstanceHealthV1(c echo.Context) error {
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceHealthMap, instanceUnhealthyMap := generateMaps(instanceWorkFlowFailedStatus, latestAuditPlanReportScores)
+
+	dBTypeHealthMap := make(map[string]DBTypeHealth)
+	// 从instanceHealthMap中去除在instanceUnhealthyMap中重复的instance name
+	for dbType := range instanceUnhealthyMap {
+		dBTypeHealth := DBTypeHealth{DBType: dbType}
+		unhealthyInstanceNames := instanceUnhealthyMap[dbType]
+		healthInstanceNames, exist := instanceHealthMap[dbType]
+		if !exist {
+			dBTypeHealthMap[dbType] = dBTypeHealth
+			continue
+		}
+
+		dBTypeHealth.UnhealthyInstances = keysFromMap(unhealthyInstanceNames)
+
+		for instanceName := range unhealthyInstanceNames {
+			_, exist := healthInstanceNames[instanceName]
+			if exist {
+				delete(healthInstanceNames, instanceName)
+			}
+		}
+		dBTypeHealth.HealthInstances = keysFromMap(healthInstanceNames)
+		dBTypeHealthMap[dbType] = dBTypeHealth
+	}
+
+	for dbType := range instanceHealthMap {
+		_, exist := dBTypeHealthMap[dbType]
+		if exist {
+			continue
+		}
+		dBTypeHealth := DBTypeHealth{DBType: dbType}
+		dBTypeHealth.HealthInstances = keysFromMap(instanceHealthMap[dbType])
+		dBTypeHealthMap[dbType] = dBTypeHealth
+	}
+
+	dBTypeHealth := []*DBTypeHealth{}
+	for i := range dBTypeHealthMap {
+		tmp := dBTypeHealthMap[i]
+		dBTypeHealth = append(dBTypeHealth, &tmp)
+	}
+
 	return c.JSON(http.StatusOK, GetInstanceHealthResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    []*DBTypeHealth{},
+		Data:    dBTypeHealth,
 	})
 }

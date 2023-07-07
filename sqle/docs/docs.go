@@ -4230,7 +4230,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowStatusResV1"
+                            "$ref": "#/definitions/v1.GetWorkflowStatusCountResV1"
                         }
                     }
                 }
@@ -8710,6 +8710,9 @@ var doc = `{
                 "audit_plan_count": {
                     "type": "integer"
                 },
+                "audit_plan_desc": {
+                    "type": "string"
+                },
                 "audit_plan_type": {
                     "type": "string"
                 }
@@ -11628,25 +11631,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetWorkflowStatusResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.WorkflowStatus"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetWorkflowTasksItemV1": {
             "type": "object",
             "properties": {
@@ -14345,17 +14329,6 @@ var doc = `{
                 },
                 "need_me_to_review_workflow_number": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.WorkflowStatus": {
-            "type": "object",
-            "properties": {
-                "count": {
-                    "type": "integer"
-                },
-                "workflow_status": {
-                    "type": "string"
                 }
             }
         },

@@ -1350,18 +1350,58 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 	return names, nil
 }
 
-type WorkFlowIdStatus struct {
-	Id     uint   `json:"id"`
-	Status string `json:"status"`
+type WorkflowStatusDetail struct {
+	Subject   string     `json:"subject"`
+	Id        string     `json:"id"`
+	Status    string     `json:"status"`
+	LoginName string     `json:"login_name"`
+	UpdatedAt *time.Time `json:"updated_at"`
 }
 
-func (s *Storage) GetWorkflowIdStatusByProjectNameAndStatus(projectName string, queryStatus []string) ([]*WorkFlowIdStatus, error) {
-	workFlowIdStatus := []*WorkFlowIdStatus{}
+func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
+	WorkflowStatusDetails := []WorkflowStatusDetail{}
+
 	err := s.db.Model(&Workflow{}).
-		Select("workflows.id, workflow_records.status").
-		Joins("left join projects on workflows.project_id = projects.id").
-		Joins("left join workflow_records on workflows.workflow_record_id=workflow_records.id").
-		Where("projects.name = ? and workflow_records.status in (?)", projectName, queryStatus).
-		Scan(&workFlowIdStatus).Error
-	return workFlowIdStatus, errors.ConnectStorageErrWrapper(err)
+		Select("workflows.subject, workflows.id, wr.status, wr.updated_at, users.login_name").
+		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
+		Joins("left join users on users.id=workflows.create_user_id").
+		Joins("left join projects on projects.id=workflows.project_id").
+		Where("wr.status in (?) and projects.name=?", queryStatus, projectName).
+		Scan(&WorkflowStatusDetails).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+	return WorkflowStatusDetails, nil
+}
+
+type SqlCountAndTriggerRuleCount struct {
+	SqlCount     uint `json:"sql_count"`
+	TriggerRuleCount uint `json:"trigger_rule_count"`
+}
+
+func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
+	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
+	err := s.db.Model(&Workflow{}).
+		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)='NULL' then 1 else null end) trigger_rule_count").
+		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
+		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
+		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").
+		Joins("left join projects on projects.id=workflows.project_id").
+		Where("projects.name=?", projectName).
+		Scan(&sqlCountAndTriggerRuleCount).Error
+	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectName string) (int, error) {
+	var count int
+	err := s.db.Table("workflows").
+		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
+		Joins("left join projects on projects.id=workflows.project_id").
+		Where("workflow_records.status = ? and projects.name=?", status, projectName).
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return count, nil
 }
