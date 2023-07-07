@@ -1365,3 +1365,35 @@ func (s *Storage) GetWorkflowIdStatusByProjectNameAndStatus(projectName string, 
 		Scan(&workFlowIdStatus).Error
 	return workFlowIdStatus, errors.ConnectStorageErrWrapper(err)
 }
+
+type SqlCountAndAuditedCount struct {
+	SqlCount     uint `json:"sql_count"`
+	AuditedCount uint `json:"audited_count"`
+}
+
+func (s *Storage) GetSqlCountAndAuditedCountFromWorklowByProject(projectName string) (SqlCountAndAuditedCount, error) {
+	sqlCountAndAuditedCount := SqlCountAndAuditedCount{}
+	err := s.db.Model(&Workflow{}).
+		Select("count(1) sql_count, count(case when execute_sql_detail.audit_results is not null then 1 else null end)").
+		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
+		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
+		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").
+		Joins("left join projects on projects.id=workflows.project_id").
+		Where("projects.name=?", projectName).
+		Scan(&sqlCountAndAuditedCount).Error
+	return sqlCountAndAuditedCount, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectName string) (int, error) {
+	var count int
+	err := s.db.Table("workflows").
+		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
+		Joins("left join projects on projects.id=workflows.project_id").
+		Where("workflow_records.status = ? and projects.name=?", status, projectName).
+		Count(&count).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return count, nil
+}

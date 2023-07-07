@@ -2017,19 +2017,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetWorkflowStatusResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.WorkflowStatus'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetWorkflowTasksItemV1:
     properties:
       current_step_assignee_user_name_list:
@@ -3838,13 +3825,6 @@ definitions:
         type: integer
       need_me_to_review_workflow_number:
         type: integer
-    type: object
-  v1.WorkflowStatus:
-    properties:
-      count:
-        type: integer
-      workflow_status:
-        type: string
     type: object
   v1.WorkflowStatusCountV1:
     properties:
@@ -7199,7 +7179,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetWorkflowStatusResV1'
+            $ref: '#/definitions/v1.GetWorkflowStatusCountResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取项目下工单各个状态的数量
