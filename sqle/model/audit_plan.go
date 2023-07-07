@@ -264,7 +264,7 @@ type RiskAuditPlan struct {
 func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error) {
 	var RiskAuditPlans []*RiskAuditPlan
 	err := s.db.Model(AuditPlan{}).
-		Select("reports.id report_id, audit_plans.name audit_plan_name, reports.created_at report_create_at, count(report_sqls.id) risk_sql_count").
+		Select(`reports.id report_id, audit_plans.name audit_plan_name, reports.created_at report_create_at, count(report_sqls.audit_results) risk_sql_count`).
 		Joins("left join audit_plan_reports_v2 reports on audit_plans.id=reports.audit_plan_id").
 		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
 		Joins("left join projects on projects.id=audit_plans.project_id").
