@@ -39,6 +39,8 @@ const (
 
 	SQLAnalysisSQLIsNotSupported ErrorCode = 8001
 
+	SQLAnalysisCommunityNotSupported = 8002
+
 	// 需要隐藏所有错误细节或不确定时使用
 	GenericError ErrorCode = 9999
 )
