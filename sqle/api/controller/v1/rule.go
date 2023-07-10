@@ -1416,7 +1416,7 @@ func DeleteCustomRule(c echo.Context) error {
 }
 
 type CreateCustomRuleReqV1 struct {
-	Id         string `json:"rule_id" form:"rule_id" example:"rule1" valid:"required"`
+	Id         string `json:"rule_id" form:"rule_id" example:"rule1" valid:"required,custom_rule"`
 	DBType     string `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
 	RuleName   string `json:"rule_name" form:"rule_name" example:"this is test rule" valid:"required"`
 	Desc       string `json:"desc" form:"desc" example:"this is test rule"`
