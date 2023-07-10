@@ -82,7 +82,8 @@ func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt
 
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil || !exist {
-		return "", "", err
+		i.Logger().Errorf("get create table stmt failed when generate alter table rollbackSql: %v", err)
+		return "", "", nil
 	}
 	rollbackStmt := &ast.AlterTableStmt{
 		Table: util.NewTableName(schemaName, tableName),
@@ -310,13 +311,12 @@ func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) 
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
-		if err != nil {
-			return "", "", err
-		}
 		// if table not exist, can not rollback it.
-		if !tableExist {
-			continue
+		if err != nil || !tableExist {
+			i.Logger().Errorf("get create table stmt failed when generate drop table rollbackSql: %v", err)
+			return "", "", nil
 		}
+
 		rollbackSql += stmt.Text() + ";\n"
 	}
 	return rollbackSql, "", nil
@@ -331,13 +331,12 @@ func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexSt
 func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
-	if err != nil {
-		return "", "", err
-	}
 	// if table not exist, don't rollback
-	if !tableExist {
+	if err != nil || !tableExist {
+		i.Logger().Errorf("get create table stmt failed when generate drop index rollbackSql: %v", err)
 		return "", "", nil
 	}
+
 	rollbackSql := ""
 	for _, constraint := range createTableStmt.Constraints {
 		if constraint.Name == indexName {
@@ -373,13 +372,12 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 	}
 	table := tables[0]
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
-	if err != nil {
-		return "", "", err
-	}
 	// if table not exist, insert will failed.
-	if !exist {
+	if err != nil || !exist {
+		i.Logger().Errorf("get create table stmt failed when generate insert rollbackSql: %v", err)
 		return "", "", nil
 	}
+
 	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
 		return "", "", err
@@ -466,7 +464,8 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 	table := tables[0]
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
-		return "", "", err
+		i.Logger().Errorf("get create table stmt failed when generate delete rollbackSql: %v", err)
+		return "", "", nil
 	}
 	_, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
@@ -553,7 +552,8 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 	}
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
-		return "", "", err
+		i.Logger().Errorf("get create table stmt failed when generate alter table rollbackSql: %v", err)
+		return "", "", nil
 	}
 	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
