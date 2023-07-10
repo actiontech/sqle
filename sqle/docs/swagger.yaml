@@ -740,8 +740,9 @@ definitions:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.SqlAnalysisResDataV1'
-        type: object
+        items:
+          $ref: '#/definitions/v1.SqlAnalysisResDataV1'
+        type: array
       message:
         example: ok
         type: string
@@ -2894,8 +2895,9 @@ definitions:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
       table_meta:
-        $ref: '#/definitions/v1.TableMeta'
-        type: object
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v1.SqlAverageExecutionTime:
     properties:
