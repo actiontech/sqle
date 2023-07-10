@@ -969,13 +969,13 @@ func GetInstanceHealthV1(c echo.Context) error {
 	for dbType := range instanceUnhealthyMap {
 		dBTypeHealth := DBTypeHealth{DBType: dbType}
 		unhealthyInstanceNames := instanceUnhealthyMap[dbType]
+		dBTypeHealth.UnhealthyInstances = keysFromMap(unhealthyInstanceNames)
+
 		healthInstanceNames, exist := instanceHealthMap[dbType]
 		if !exist {
 			dBTypeHealthMap[dbType] = dBTypeHealth
 			continue
 		}
-
-		dBTypeHealth.UnhealthyInstances = keysFromMap(unhealthyInstanceNames)
 
 		for instanceName := range unhealthyInstanceNames {
 			_, exist := healthInstanceNames[instanceName]
