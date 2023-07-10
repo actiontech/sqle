@@ -1365,3 +1365,113 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", ruleTemplateName)}))
 	return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buff.Bytes())
 }
+
+type CustomRuleResV1 struct {
+	RuleId         string         `json:"rule_id"`
+	DBType     string         `json:"db_type" example:"MySQL"`
+	RuleName   string         `json:"rule_name" example:"this is test rule"`
+	Desc       string         `json:"desc" example:"this is test rule"`
+	Level      string         `json:"level" example:"notice"`
+	Type       string         `json:"type" example:"DDL规则"`
+	Params     RuleParamResV1 `json:"params,omitempty"`
+	RuleScript string         `json:"rule_script,omitempty"`
+}
+
+type GetCustomRulesResV1 struct {
+	controller.BaseRes
+	Data []CustomRuleResV1 `json:"data"`
+}
+
+type GetCustomRulesReqV1 struct {
+	FilterDBType    string `json:"filter_db_type" query:"filter_db_type"`
+	FilterRuleName string `json:"filter_rule_name" query:"filter_rule_name"`
+}
+
+// @Summary 自定义规则列表
+// @Description get all custom rule template
+// @Id getCustomRulesV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param filter_db_type query string false "filter db type"
+// @Param filter_rule_name query string false "filter rule name"
+// @Success 200 {object} v1.GetCustomRulesResV1
+// @router /v1/custom_rules [get]
+func GetCustomRules(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetCustomRulesResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []CustomRuleResV1{},
+	})
+}
+
+// @Summary 删除自定义规则
+// @Description delete custom rule
+// @Id deleteCustomRuleV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_id query string true "rule id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/custom_rules/{rule_id} [delete]
+func DeleteCustomRule(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+type CreateCustomRuleReqV1 struct {
+	Id         string         `json:"rule_id" form:"rule_id" example:"rule1" valid:"required"`
+	DBType     string         `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
+	RuleName   string         `json:"rule_name" form:"rule_name" example:"this is test rule"`
+	Desc       string         `json:"desc" form:"desc" example:"this is test rule"`
+	Level      string         `json:"level" form:"level" example:"notice" valid:"required"`
+	Type       string         `json:"type" form:"type" example:"DDL规则" valid:"required"`
+	Params     RuleParamResV1 `json:"params,omitempty"`
+	RuleScript string         `json:"rule_script" form:"rule_script" valid:"required"`
+}
+
+// @Summary 添加自定义规则
+// @Description create custom rule
+// @Id createCustomRuleV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param instance body v1.CreateCustomRuleReqV1 true "add custom rule"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/custom_rules [post]
+func CreateCustomRule(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+type UpdateCustomRuleReqV1 struct {
+	RuleName   string         `json:"rule_name" form:"rule_name" example:"this is test rule"`
+	Desc       string         `json:"desc" form:"desc" example:"this is test rule"`
+	Level      string         `json:"level" form:"level" example:"notice" valid:"required"`
+	Type       string         `json:"type" form:"type" example:"DDL规则" valid:"required"`
+	Params     RuleParamResV1 `json:"params" form:"params"`
+	RuleScript string         `json:"rule_script" form:"rule_script" valid:"required"`
+}
+
+// @Summary 更新自定义规则
+// @Description update custom rule
+// @Id updateCustomRuleV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param instance body v1.UpdateCustomRuleReqV1 true "update custom rule"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/custom_rules/{rule_id} [patch]
+func UpdateCustomRule(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+type GetCustomRuleResV1 struct {
+	controller.BaseRes
+	Data CustomRuleResV1 `json:"data"`
+}
+
+// @Summary 获取自定义规则
+// @Description get custom rule by rule_id
+// @Id getCustomRuleV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_id query string true "rule id"
+// @Success 200 {object} v1.GetCustomRuleResV1
+// @router /v1/custom_rules/{rule_id} [get]
+func GetCustomRule(c echo.Context) error {
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
