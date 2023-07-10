@@ -2894,7 +2894,7 @@ definitions:
       sql_explain:
         $ref: '#/definitions/v1.SQLExplain'
         type: object
-      table_meta:
+      table_metas:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array

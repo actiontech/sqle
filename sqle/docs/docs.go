@@ -12969,7 +12969,7 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
                 },
-                "table_meta": {
+                "table_metas": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
