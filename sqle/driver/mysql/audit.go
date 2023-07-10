@@ -34,6 +34,7 @@ const (
 )
 
 const CheckInvalidErrorFormat = "预检查失败: %v"
+const CheckInvalidError = "预检查失败"
 
 func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	var err error
@@ -262,7 +263,8 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
-		return err
+		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+		return nil
 	}
 	if !tableExist {
 		i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
@@ -650,7 +652,8 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
-		return err
+		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+		return nil
 	}
 	if !tableExist {
 		i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
@@ -737,7 +740,8 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
-		return err
+		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+		return nil
 	}
 	if !tableExist {
 		i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
@@ -781,7 +785,8 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil {
-		return err
+		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+		return nil
 	}
 	if !tableExist {
 		i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
@@ -944,8 +949,14 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 			tableName = alias
 		}
 		createStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
-		if err != nil || !exist {
-			return err
+		if err != nil {
+			i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+			return nil
+		}
+		if !exist {
+			i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
+				i.getTableName(table))
+			return nil
 		}
 		tc.Add(schemaName, tableName, createStmt)
 	}
@@ -1071,8 +1082,14 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 			tableName = alias
 		}
 		createStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
-		if err != nil || !exist {
-			return err
+		if err != nil {
+			i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, CheckInvalidErrorFormat, err)
+			return nil
+		}
+		if !exist {
+			i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
+				i.getTableName(table))
+			return nil
 		}
 		tc.Add(schemaName, tableName, createStmt)
 	}

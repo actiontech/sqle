@@ -370,6 +370,10 @@ func (c *Context) UpdateContext(node ast.Node) {
 			}
 			info.MergedTable, _ = util.MergeAlterToTable(oldTable, s)
 			info.AlterTables = append(info.AlterTables, s)
+			if info.MergedTable.Table == nil {
+				// 解析器不支持create table的某些格式，当对已有的table简表语句解析失败，同时又没有rename等需要对上下文切换或添加表名的语句时，这个table为nil，不需要额外处理
+				return
+			}
 			// rename table
 			if s.Table.Name.String() != info.MergedTable.Table.Name.String() {
 				schemaName := c.GetSchemaName(s.Table)
