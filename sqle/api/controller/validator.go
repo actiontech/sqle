@@ -39,9 +39,10 @@ func Validate(i interface{}) error {
 var defaultCustomValidator *CustomValidator
 
 var (
-	ValidNameTag = "name"
-	ValidPortTag = "port"
-	ValidCronTag = "cron"
+	ValidNameTag           = "name"
+	ValidPortTag           = "port"
+	ValidCronTag           = "cron"
+	ValidateCustomeRuleTag = "custom_rule"
 )
 
 func init() {
@@ -61,6 +62,7 @@ func init() {
 	_ = cv.validate.RegisterValidation(ValidNameTag, ValidateName)
 	_ = cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
 	_ = cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
+	_ = cv.validate.RegisterValidation(ValidateCustomeRuleTag, ValidateCustomeRule)
 
 	type registerTranslationArgs struct {
 		tag    string
@@ -104,6 +106,11 @@ func init() {
 			tag:    ValidCronTag,
 			enText: "{0} is invalid cron",
 			zhText: "{0}是无效的Cron表达式",
+		},
+		{
+			tag:    ValidateCustomeRuleTag,
+			enText: "{0} must only contain letters, numbers, dashes and underscores, must start with English",
+			zhText: "{0}只能包含字母、数字、中划线和下划线，必须以英文开头",
 		},
 	}
 	// register custom validator error message
@@ -167,6 +174,7 @@ func (cv *CustomValidator) RegisterTranslation(tag, enText, zhText string, param
 }
 
 var ValidateNameRegexpPattern = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9\u4e00-\u9fa5_-]{0,59}$"
+var ValidateCustomRuleRegexpPattern = "^[a-zA-Z][a-zA-Z0-9_-]*$"
 
 // ValidateName implements validator.Func
 func ValidateName(fl validator.FieldLevel) bool {
@@ -197,4 +205,14 @@ func validatePort(port string) bool {
 func ValidateCron(fl validator.FieldLevel) bool {
 	_, err := cron.ParseStandard(fl.Field().String())
 	return err == nil
+}
+
+func ValidateCustomeRule(fl validator.FieldLevel) bool {
+	return validateCustomeRule(fl.Field().String())
+}
+
+func validateCustomeRule(name string) bool {
+	match, _ := regexp.MatchString(ValidateCustomRuleRegexpPattern, name)
+
+	return match
 }
