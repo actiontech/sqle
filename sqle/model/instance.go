@@ -488,7 +488,7 @@ func (s *Storage) GetInstanceWorkFlowStatusCountByProject(projectName string, qu
 		Joins("left join workflow_instance_records on instances.id=workflow_instance_records.instance_id").
 		Joins("left join workflow_records on workflow_instance_records.workflow_record_id=workflow_records.id").
 		Joins("left join projects on instances.project_id=projects.id").
-		Where("projects.name=?", projectName).
+		Where("projects.name=? and instances.deleted_at is null", projectName).
 		Group("instances.db_type, instances.name").
 		Scan(&instanceWorkFlowStatusCount).Error
 	return instanceWorkFlowStatusCount, errors.ConnectStorageErrWrapper(err)

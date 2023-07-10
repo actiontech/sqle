@@ -78,8 +78,9 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName
 		Select("audit_plans.db_type, audit_plans.instance_name, audit_plan_reports_v2.score").
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Joins("left join projects on audit_plans.project_id=projects.id").
+		Joins("left join instances on audit_plans.instance_name=instances.name").
 		Joins("join (?) as sq on audit_plans.db_type=sq.db_type and audit_plans.instance_name=sq.instance_name and audit_plan_reports_v2.created_at=sq.latest_created_at", subQuery).
-		Where("projects.name=?", projectName).
+		Where("projects.name=? and instances.deleted_at is null", projectName).
 		Scan(&latestAuditPlanReportScore).Error
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)
