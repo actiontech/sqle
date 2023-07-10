@@ -479,6 +479,32 @@ definitions:
         example: create table
         type: string
     type: object
+  v1.CreateCustomRuleReqV1:
+    properties:
+      db_type:
+        example: MySQL
+        type: string
+      desc:
+        example: this is test rule
+        type: string
+      level:
+        example: notice
+        type: string
+      params:
+        $ref: '#/definitions/v1.RuleParamResV1'
+        type: object
+      rule_id:
+        example: rule1
+        type: string
+      rule_name:
+        example: this is test rule
+        type: string
+      rule_script:
+        type: string
+      type:
+        example: DDL规则
+        type: string
+    type: object
   v1.CreateInstanceReqV1:
     properties:
       additional_params:
@@ -660,6 +686,31 @@ definitions:
           type: integer
         type: array
       workflow_subject:
+        type: string
+    type: object
+  v1.CustomRuleResV1:
+    properties:
+      db_type:
+        example: MySQL
+        type: string
+      desc:
+        example: this is test rule
+        type: string
+      level:
+        example: notice
+        type: string
+      params:
+        $ref: '#/definitions/v1.RuleParamResV1'
+        type: object
+      rule_id:
+        type: string
+      rule_name:
+        example: this is test rule
+        type: string
+      rule_script:
+        type: string
+      type:
+        example: DDL规则
         type: string
     type: object
   v1.DBTypeAuditPlan:
@@ -969,6 +1020,31 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetCustomRuleResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CustomRuleResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetCustomRulesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.CustomRuleResV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetDashboardProjectTipsResV1:
     properties:
@@ -3249,6 +3325,26 @@ definitions:
         example: UserID
         type: string
     type: object
+  v1.UpdateCustomRuleReqV1:
+    properties:
+      desc:
+        example: this is test rule
+        type: string
+      level:
+        example: notice
+        type: string
+      params:
+        $ref: '#/definitions/v1.RuleParamResV1'
+        type: object
+      rule_name:
+        example: this is test rule
+        type: string
+      rule_script:
+        type: string
+      type:
+        example: DDL规则
+        type: string
+    type: object
   v1.UpdateDingTalkConfigurationReqV1:
     properties:
       app_key:
@@ -5080,6 +5176,108 @@ paths:
       summary: 测试 企业微信 配置
       tags:
       - configuration
+  /v1/custom_rules:
+    get:
+      description: get all custom rule template
+      operationId: getCustomRulesV1
+      parameters:
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCustomRulesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 自定义规则列表
+      tags:
+      - rule_template
+    post:
+      description: create custom rule
+      operationId: createCustomRuleV1
+      parameters:
+      - description: add custom rule
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateCustomRuleReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加自定义规则
+      tags:
+      - rule_template
+  /v1/custom_rules/{rule_id}:
+    delete:
+      description: delete custom rule
+      operationId: deleteCustomRuleV1
+      parameters:
+      - description: rule id
+        in: query
+        name: rule_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除自定义规则
+      tags:
+      - rule_template
+    get:
+      description: get custom rule by rule_id
+      operationId: getCustomRuleV1
+      parameters:
+      - description: rule id
+        in: query
+        name: rule_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCustomRuleResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取自定义规则
+      tags:
+      - rule_template
+    patch:
+      description: update custom rule
+      operationId: updateCustomRuleV1
+      parameters:
+      - description: update custom rule
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCustomRuleReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新自定义规则
+      tags:
+      - rule_template
   /v1/dashboard:
     get:
       description: get dashboard info
