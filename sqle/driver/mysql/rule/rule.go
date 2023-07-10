@@ -2681,10 +2681,7 @@ func checkIndexesExistBeforeCreatConstraints(input *RuleHandlerInput) error {
 			}
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return err
-		}
-		if !exist {
+		if err != nil || !exist {
 			return nil
 		}
 		for _, constraints := range createTableStmt.Constraints {
@@ -3013,10 +3010,7 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 	case *ast.AlterTableStmt:
 		// collect columns type from original table
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return err
-		}
-		if exist {
+		if err == nil && exist {
 			for _, col := range createTableStmt.Cols {
 				if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
 					isTypeBlobCols[col.Name.Name.String()] = true
@@ -3057,7 +3051,7 @@ func disableAddIndexForColumnsTypeBlob(input *RuleHandlerInput) error {
 	case *ast.CreateIndexStmt:
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil || !exist {
-			return err
+			return nil
 		}
 		for _, col := range createTableStmt.Cols {
 			if util.MysqlDataTypeIsBlob(col.Tp.Tp) {
@@ -3277,10 +3271,7 @@ func checkIndex(input *RuleHandlerInput) error {
 			}
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return err
-		}
-		if exist {
+		if err == nil && exist {
 			for _, constraint := range createTableStmt.Constraints {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
@@ -3309,10 +3300,7 @@ func checkIndex(input *RuleHandlerInput) error {
 		}
 		newIndexs = append(newIndexs, singleConstraint)
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return err
-		}
-		if exist {
+		if err == nil && exist {
 			for _, constraint := range createTableStmt.Constraints {
 				switch constraint.Tp {
 				case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
@@ -3456,10 +3444,7 @@ func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struc
 			}
 		}
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return indexCols, colsWithNotNullConstraint, err
-		}
-		if exist {
+		if err == nil && exist {
 			for _, col := range createTableStmt.Cols {
 				for _, option := range col.Options {
 					switch option.Tp {
@@ -3471,10 +3456,7 @@ func getIndexAndNotNullCols(input *RuleHandlerInput) ([]string, map[string]struc
 		}
 	case *ast.CreateIndexStmt:
 		createTableStmt, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil {
-			return indexCols, colsWithNotNullConstraint, err
-		}
-		if exist {
+		if err == nil && exist {
 			for _, col := range createTableStmt.Cols {
 				for _, option := range col.Options {
 					switch option.Tp {
@@ -4253,7 +4235,7 @@ func checkExistFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.Audi
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
-		if exist && err == nil {
+		if err == nil && exist {
 			cols = append(cols, createTableStmt.Cols...)
 		}
 	}
@@ -4329,7 +4311,7 @@ func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.
 	var cols []*ast.ColumnDef
 	for _, tableName := range tables {
 		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
-		if exist && err == nil {
+		if err == nil && exist {
 			cols = append(cols, createTableStmt.Cols...)
 		}
 	}
@@ -5143,10 +5125,7 @@ func notRecommendUpdatePK(input *RuleHandlerInput) error {
 			return nil
 		}
 		createTable, exist, err := input.Ctx.GetCreateTableStmt(t)
-		if err != nil {
-			return err
-		}
-		if !exist {
+		if err != nil || !exist {
 			return nil
 		}
 		primary := map[string]struct{}{}
@@ -5637,10 +5616,7 @@ func checkSortColumnLength(input *RuleHandlerInput) error {
 	invalidCols := []string{}
 	checkColLen := func(column col) error {
 		table, exist, err := input.Ctx.GetCreateTableStmt(column.Table)
-		if err != nil {
-			return err
-		}
-		if !exist {
+		if err != nil || !exist {
 			return nil
 		}
 		for _, def := range table.Cols {
@@ -5909,7 +5885,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5895,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
