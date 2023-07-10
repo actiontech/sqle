@@ -734,6 +734,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.DirectGetSQLAnalysisResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlAnalysisResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.DriversResV1:
     properties:
       driver_name_list:
@@ -1642,6 +1654,21 @@ definitions:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array
+    type: object
+  v1.GetSQLAnalysisReq:
+    properties:
+      instance_name:
+        example: MySQL
+        type: string
+      project_name:
+        example: default
+        type: string
+      schema_name:
+        example: test
+        type: string
+      sql:
+        example: select * from t1; select * from t2;
+        type: string
     type: object
   v1.GetSQLEInfoResDataV1:
     properties:
@@ -2860,6 +2887,15 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
+    type: object
+  v1.SqlAnalysisResDataV1:
+    properties:
+      sql_explain:
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
+      table_meta:
+        $ref: '#/definitions/v1.TableMeta'
+        type: object
     type: object
   v1.SqlAverageExecutionTime:
     properties:
@@ -8271,6 +8307,27 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
+  /v1/sql_analysis:
+    get:
+      description: Direct get sql analysis result
+      operationId: directGetSQLAnalysisV1
+      parameters:
+      - description: get sql analysis
+        in: body
+        name: sql_analysis
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetSQLAnalysisReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DirectGetSQLAnalysisResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 直接获取SQL分析结果
+      tags:
+      - sql_analysis
   /v1/sql_audit:
     post:
       description: Direct audit sql
