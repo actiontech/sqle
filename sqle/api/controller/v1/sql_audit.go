@@ -111,12 +111,12 @@ type GetSQLAnalysisReq struct {
 
 type DirectGetSQLAnalysisResV1 struct {
 	controller.BaseRes
-	Data *SqlAnalysisResDataV1 `json:"data"`
+	Data []*SqlAnalysisResDataV1 `json:"data"`
 }
 
 type SqlAnalysisResDataV1 struct {
-	SQLExplain *SQLExplain `json:"sql_explain"`
-	TableMetas *TableMeta  `json:"table_meta"`
+	SQLExplain SQLExplain  `json:"sql_explain"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 // DirectGetSQLAnalysis
@@ -129,5 +129,5 @@ type SqlAnalysisResDataV1 struct {
 // @Success 200 {object} v1.DirectGetSQLAnalysisResV1
 // @router /v1/sql_analysis [get]
 func DirectGetSQLAnalysis(c echo.Context) error {
-	return nil
+	return directGetSQLAnalysis(c)
 }

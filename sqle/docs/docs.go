@@ -9807,8 +9807,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.SqlAnalysisResDataV1"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlAnalysisResDataV1"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -12967,9 +12969,11 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
                 },
-                "table_meta": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMeta"
+                "table_metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
