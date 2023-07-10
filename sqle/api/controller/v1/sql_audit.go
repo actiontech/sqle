@@ -116,7 +116,7 @@ type DirectGetSQLAnalysisResV1 struct {
 
 type SqlAnalysisResDataV1 struct {
 	SQLExplain SQLExplain  `json:"sql_explain"`
-	TableMetas []TableMeta `json:"table_meta"`
+	TableMetas []TableMeta `json:"table_metas"`
 }
 
 // DirectGetSQLAnalysis
