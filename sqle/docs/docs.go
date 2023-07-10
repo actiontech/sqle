@@ -5904,6 +5904,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct get sql analysis result",
+                "tags": [
+                    "sql_analysis"
+                ],
+                "summary": "直接获取SQL分析结果",
+                "operationId": "directGetSQLAnalysisV1",
+                "parameters": [
+                    {
+                        "description": "get sql analysis",
+                        "name": "sql_analysis",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAnalysisReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectGetSQLAnalysisResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sql_audit": {
             "post": {
                 "security": [
@@ -9765,6 +9799,23 @@ var doc = `{
                 }
             }
         },
+        "v1.DirectGetSQLAnalysisResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysisResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.DriversResV1": {
             "type": "object",
             "properties": {
@@ -11086,6 +11137,27 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
+                }
+            }
+        },
+        "v1.GetSQLAnalysisReq": {
+            "type": "object",
+            "properties": {
+                "instance_name": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "default"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "test"
+                },
+                "sql": {
+                    "type": "string",
+                    "example": "select * from t1; select * from t2;"
                 }
             }
         },
@@ -12885,6 +12957,19 @@ var doc = `{
                 },
                 "query_timeout_second": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SqlAnalysisResDataV1": {
+            "type": "object",
+            "properties": {
+                "sql_explain": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
+                },
+                "table_meta": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMeta"
                 }
             }
         },
