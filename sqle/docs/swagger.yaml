@@ -490,9 +490,6 @@ definitions:
       level:
         example: notice
         type: string
-      params:
-        $ref: '#/definitions/v1.RuleParamResV1'
-        type: object
       rule_id:
         example: rule1
         type: string

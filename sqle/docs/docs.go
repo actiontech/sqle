@@ -9570,10 +9570,6 @@ var doc = `{
                     "type": "string",
                     "example": "notice"
                 },
-                "params": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.RuleParamResV1"
-                },
                 "rule_id": {
                     "type": "string",
                     "example": "rule1"

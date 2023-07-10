@@ -1367,7 +1367,7 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 }
 
 type CustomRuleResV1 struct {
-	RuleId         string         `json:"rule_id"`
+	RuleId     string         `json:"rule_id"`
 	DBType     string         `json:"db_type" example:"MySQL"`
 	RuleName   string         `json:"rule_name" example:"this is test rule"`
 	Desc       string         `json:"desc" example:"this is test rule"`
@@ -1383,7 +1383,7 @@ type GetCustomRulesResV1 struct {
 }
 
 type GetCustomRulesReqV1 struct {
-	FilterDBType    string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDBType   string `json:"filter_db_type" query:"filter_db_type"`
 	FilterRuleName string `json:"filter_rule_name" query:"filter_rule_name"`
 }
 
@@ -1416,14 +1416,13 @@ func DeleteCustomRule(c echo.Context) error {
 }
 
 type CreateCustomRuleReqV1 struct {
-	Id         string         `json:"rule_id" form:"rule_id" example:"rule1" valid:"required"`
-	DBType     string         `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
-	RuleName   string         `json:"rule_name" form:"rule_name" example:"this is test rule"`
-	Desc       string         `json:"desc" form:"desc" example:"this is test rule"`
-	Level      string         `json:"level" form:"level" example:"notice" valid:"required"`
-	Type       string         `json:"type" form:"type" example:"DDL规则" valid:"required"`
-	Params     RuleParamResV1 `json:"params,omitempty"`
-	RuleScript string         `json:"rule_script" form:"rule_script" valid:"required"`
+	Id         string `json:"rule_id" form:"rule_id" example:"rule1" valid:"required"`
+	DBType     string `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
+	RuleName   string `json:"rule_name" form:"rule_name" example:"this is test rule" valid:"required"`
+	Desc       string `json:"desc" form:"desc" example:"this is test rule"`
+	Level      string `json:"level" form:"level" example:"notice" valid:"required"`
+	Type       string `json:"type" form:"type" example:"DDL规则" valid:"required"`
+	RuleScript string `json:"rule_script" form:"rule_script" valid:"required"`
 }
 
 // @Summary 添加自定义规则
