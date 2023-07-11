@@ -1475,3 +1475,27 @@ type GetCustomRuleResV1 struct {
 func GetCustomRule(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
+
+type RuleTypeV1 struct {
+	RuleType string `json:"rule_type"`
+}
+
+type GetRuleTypeByDBTypeResV1 struct {
+	controller.BaseRes
+	Data []RuleTypeV1 `json:"data"`
+}
+
+// @Summary 获取规则分类
+// @Description get rule type by db type
+// @Id getRuleTypeByDBTypeV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param db_type query string true "db type"
+// @Success 200 {object} v1.GetRuleTypeByDBTypeResV1
+// @router /v1/custom_rules/{db_type}/rule_types [get]
+func GetRuleTypeByDBType(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetRuleTypeByDBTypeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    []RuleTypeV1{},
+	})
+}
