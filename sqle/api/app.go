@@ -107,6 +107,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.PATCH("/rule_templates/:rule_template_name/", v1.UpdateRuleTemplate, AdminUserAllowed())
 		v1Router.DELETE("/rule_templates/:rule_template_name/", v1.DeleteRuleTemplate, AdminUserAllowed())
 		v1Router.GET("/rule_templates/:rule_template_name/export", v1.ExportRuleTemplateFile, AdminUserAllowed())
+		v1Router.DELETE("/custom_rules/:rule_id", v1.DeleteCustomRule, AdminUserAllowed())
+		v1Router.POST("/custom_rules", v1.CreateCustomRule, AdminUserAllowed())
+		v1Router.PATCH("/custom_rules/:rule_id", v1.CreateCustomRule, AdminUserAllowed())
 
 		// configurations
 		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
@@ -264,6 +267,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
+	v1Router.GET("/custom_rules", v1.GetCustomRules)
+	v1Router.GET("/custom_rules/:rule_id", v1.GetCustomRule)
 
 	// workflow template
 	v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate)
@@ -359,6 +364,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
 	v2Router.POST("/sql_audit", v2.DirectAudit)
+
+	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
 	// UI
 	e.File("/", "ui/index.html")

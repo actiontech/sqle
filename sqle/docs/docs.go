@@ -965,6 +965,176 @@ var doc = `{
                 }
             }
         },
+        "/v1/custom_rules": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all custom rule template",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "自定义规则列表",
+                "operationId": "getCustomRulesV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCustomRulesResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create custom rule",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "添加自定义规则",
+                "operationId": "createCustomRuleV1",
+                "parameters": [
+                    {
+                        "description": "add custom rule",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateCustomRuleReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/custom_rules/{rule_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get custom rule by rule_id",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取自定义规则",
+                "operationId": "getCustomRuleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCustomRuleResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete custom rule",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "删除自定义规则",
+                "operationId": "deleteCustomRuleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update custom rule",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新自定义规则",
+                "operationId": "updateCustomRuleV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "update custom rule",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCustomRuleReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dashboard": {
             "get": {
                 "security": [
@@ -9426,6 +9596,38 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateCustomRuleReqV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "notice"
+                },
+                "rule_id": {
+                    "type": "string",
+                    "example": "rule1"
+                },
+                "rule_name": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "rule_script": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "DDL规则"
+                }
+            }
+        },
         "v1.CreateInstanceReqV1": {
             "type": "object",
             "properties": {
@@ -9693,6 +9895,41 @@ var doc = `{
                 }
             }
         },
+        "v1.CustomRuleResV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "notice"
+                },
+                "params": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleParamResV1"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "rule_script": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "DDL规则"
+                }
+            }
+        },
         "v1.DBTypeAuditPlan": {
             "type": "object",
             "properties": {
@@ -9807,8 +10044,10 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.SqlAnalysisResDataV1"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlAnalysisResDataV1"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -10159,6 +10398,42 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetCustomRuleResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CustomRuleResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetCustomRulesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.CustomRuleResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -12967,9 +13242,11 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLExplain"
                 },
-                "table_meta": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMeta"
+                "table_metas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
@@ -13546,6 +13823,34 @@ var doc = `{
                 "wechat_id": {
                     "type": "string",
                     "example": "UserID"
+                }
+            }
+        },
+        "v1.UpdateCustomRuleReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "notice"
+                },
+                "params": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleParamResV1"
+                },
+                "rule_name": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "rule_script": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "DDL规则"
                 }
             }
         },
