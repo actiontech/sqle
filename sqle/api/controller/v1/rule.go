@@ -1397,10 +1397,7 @@ type GetCustomRulesReqV1 struct {
 // @Success 200 {object} v1.GetCustomRulesResV1
 // @router /v1/custom_rules [get]
 func GetCustomRules(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetCustomRulesResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    []CustomRuleResV1{},
-	})
+	return getCustomRules(c)
 }
 
 // @Summary 删除自定义规则
@@ -1412,7 +1409,7 @@ func GetCustomRules(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [delete]
 func DeleteCustomRule(c echo.Context) error {
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return deleteCustomRule(c)
 }
 
 type CreateCustomRuleReqV1 struct {
