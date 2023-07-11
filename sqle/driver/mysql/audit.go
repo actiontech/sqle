@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -34,6 +35,7 @@ const (
 )
 
 const CheckInvalidErrorFormat = "预检查失败: %v"
+const CheckInvalidError = "预检查失败"
 
 func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	var err error
@@ -65,7 +67,10 @@ func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	case *ast.UnparsedStmt:
 		err = i.checkUnparsedStmt(stmt)
 	}
-	if err != nil {
+
+	if err != nil && session.IsParseShowCreateTableContentErr(err) {
+		return err // todo #1630 直接返回原始错误类型，方便跳过
+	} else if err != nil {
 		return fmt.Errorf(CheckInvalidErrorFormat, err)
 	}
 	return nil
