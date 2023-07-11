@@ -1492,7 +1492,7 @@ type GetRuleTypeByDBTypeResV1 struct {
 // @Security ApiKeyAuth
 // @Param db_type query string true "db type"
 // @Success 200 {object} v1.GetRuleTypeByDBTypeResV1
-// @router /v1/custom_rules/{db_type}/rule_type [get]
+// @router /v1/custom_rules/{db_type}/rule_types [get]
 func GetRuleTypeByDBType(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetRuleTypeByDBTypeResV1{
 		BaseRes: controller.NewBaseReq(nil),

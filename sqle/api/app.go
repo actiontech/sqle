@@ -269,7 +269,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/rules", v1.GetRules)
 	v1Router.GET("/custom_rules", v1.GetCustomRules)
 	v1Router.GET("/custom_rules/:rule_id", v1.GetCustomRule)
-	v1Router.GET("/custom_rules/:db_type/rule_type", v1.GetCustomRule)
+	v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
 
 	// workflow template
 	v1Router.GET("/projects/:project_name/workflow_template", v1.GetWorkflowTemplate)
