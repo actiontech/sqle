@@ -1694,6 +1694,19 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetRuleTypeByDBTypeResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTypeV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRulesResV1:
     properties:
       code:
@@ -2900,6 +2913,11 @@ definitions:
       db_type:
         type: string
       rule_template_name:
+        type: string
+    type: object
+  v1.RuleTypeV1:
+    properties:
+      rule_type:
         type: string
     type: object
   v1.SMTPConfigurationResV1:
@@ -5252,6 +5270,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 添加自定义规则
+      tags:
+      - rule_template
+  /v1/custom_rules/{db_type}/rule_types:
+    get:
+      description: get rule type by db type
+      operationId: getRuleTypeByDBTypeV1
+      parameters:
+      - description: db type
+        in: query
+        name: db_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleTypeByDBTypeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则分类
       tags:
       - rule_template
   /v1/custom_rules/{rule_id}:
