@@ -5272,7 +5272,7 @@ paths:
       summary: 添加自定义规则
       tags:
       - rule_template
-  /v1/custom_rules/{db_type}/rule_type:
+  /v1/custom_rules/{db_type}/rule_types:
     get:
       description: get rule type by db type
       operationId: getRuleTypeByDBTypeV1

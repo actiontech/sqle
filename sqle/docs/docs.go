@@ -1034,7 +1034,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/custom_rules/{db_type}/rule_type": {
+        "/v1/custom_rules/{db_type}/rule_types": {
             "get": {
                 "security": [
                     {
