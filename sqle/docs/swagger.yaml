@@ -701,10 +701,6 @@ definitions:
         - error
         example: notice
         type: string
-      params:
-        items:
-          $ref: '#/definitions/v1.RuleParamResV1'
-        type: array
       rule_id:
         type: string
       rule_name:
