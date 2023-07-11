@@ -377,14 +377,14 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 
 type CustomRule struct {
 	Model
-	RuleId     string        `json:"rule_id" gorm:"unique; not null"`
-	RuleName   string        `json:"name" gorm:"not null"`
-	DBType     string        `json:"db_type" gorm:"not null; default:\"mysql\""`
-	Desc       string        `json:"desc"`
-	Level      string        `json:"level" example:"error"` // notice, warn, error
-	Typ        string        `json:"type" gorm:"column:type; not null"`
-	Params     params.Params `json:"params" gorm:"type:varchar(1000)"`
-	RuleScript string        `json:"rule_script" gorm:"type:text"`
+	RuleId     string `json:"rule_id" gorm:"unique; not null"`
+	RuleName   string `json:"name" gorm:"not null"`
+	DBType     string `json:"db_type" gorm:"not null; default:\"mysql\""`
+	Desc       string `json:"desc"`
+	Level      string `json:"level" example:"error"` // notice, warn, error
+	Typ        string `json:"type" gorm:"column:type; not null"`
+	RuleScript string `json:"rule_script" gorm:"type:text"`
+	ScriptType string `json:"script_type" gorm:"not null; default:\"regular\""`
 }
 
 func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
@@ -396,17 +396,17 @@ func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error
 	return rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesByRuleNameAndDBType(queryFields, filterDbType, filterRuleName string) ([]*CustomRule, error) {
+func (s *Storage) GetCustomRulesByRuleNameAndDBType(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	db := s.db.Select(queryFields)
 	if filterDbType != "" {
 		db = db.Where("db_type=?", filterDbType)
 	}
-	if filterRuleName != "" {
-		db = db.Where("rule_name like ?", "%"+filterRuleName+"%")
+	if fuzzyRuleName != "" {
+		db = db.Where("rule_name like ?", "%"+fuzzyRuleName+"%")
 	}
 	err := db.Find(&rules).Error
-	
+
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 

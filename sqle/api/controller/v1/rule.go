@@ -1367,14 +1367,13 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 }
 
 type CustomRuleResV1 struct {
-	RuleId     string           `json:"rule_id"`
-	DBType     string           `json:"db_type" example:"MySQL"`
-	RuleName   string           `json:"rule_name" example:"this is test rule"`
-	Desc       string           `json:"desc" example:"this is test rule"`
-	Level      string           `json:"level" example:"notice" enums:"normal,notice,warn,error"`
-	Type       string           `json:"type" example:"DDL规则"`
-	Params     []RuleParamResV1 `json:"params,omitempty"`
-	RuleScript string           `json:"rule_script,omitempty"`
+	RuleId     string `json:"rule_id"`
+	DBType     string `json:"db_type" example:"MySQL"`
+	RuleName   string `json:"rule_name" example:"this is test rule"`
+	Desc       string `json:"desc" example:"this is test rule"`
+	Level      string `json:"level" example:"notice" enums:"normal,notice,warn,error"`
+	Type       string `json:"type" example:"DDL规则"`
+	RuleScript string `json:"rule_script,omitempty"`
 }
 
 type GetCustomRulesResV1 struct {
