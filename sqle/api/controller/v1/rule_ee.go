@@ -23,19 +23,6 @@ func convertCustomRuleToRes(rule *model.CustomRule) CustomRuleResV1 {
 		Type:       rule.Typ,
 		RuleScript: rule.RuleScript,
 	}
-	if rule.Params != nil && len(rule.Params) > 0 {
-		paramsRes := make([]RuleParamResV1, 0, len(rule.Params))
-		for _, p := range rule.Params {
-			paramRes := RuleParamResV1{
-				Key:   p.Key,
-				Desc:  p.Desc,
-				Type:  string(p.Type),
-				Value: p.Value,
-			}
-			paramsRes = append(paramsRes, paramRes)
-		}
-		ruleRes.Params = paramsRes
-	}
 	return ruleRes
 }
 
@@ -54,7 +41,7 @@ func getCustomRules(c echo.Context) error {
 		return err
 	}
 
-	queryFields := "rule_id, rule_name, db_type, `desc`, level, type, params"
+	queryFields := "rule_id, rule_name, db_type, `desc`, level, type"
 	var err error
 	var rules []*model.CustomRule
 	if req.FilterDBType == "" && req.FilterRuleName == "" {
