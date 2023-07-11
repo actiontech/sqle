@@ -1109,6 +1109,13 @@ var doc = `{
                 "operationId": "updateCustomRuleV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "update custom rule",
                         "name": "instance",
                         "in": "body",

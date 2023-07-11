@@ -5297,6 +5297,11 @@ paths:
       description: update custom rule
       operationId: updateCustomRuleV1
       parameters:
+      - description: rule id
+        in: query
+        name: rule_id
+        required: true
+        type: string
       - description: update custom rule
         in: body
         name: instance
