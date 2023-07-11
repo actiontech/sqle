@@ -1451,6 +1451,7 @@ type UpdateCustomRuleReqV1 struct {
 // @Id updateCustomRuleV1
 // @Tags rule_template
 // @Security ApiKeyAuth
+// @Param rule_id query string true "rule id"
 // @Param instance body v1.UpdateCustomRuleReqV1 true "update custom rule"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [patch]
