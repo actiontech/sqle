@@ -35,6 +35,8 @@ type TableInfo struct {
 	// OriginalTable save parser object from db by query "show create table ...";
 	// using in inspect and generate rollback sql
 	OriginalTable *ast.CreateTableStmt
+	// OriginalTableError save the error about getting original table
+	OriginalTableError error // todo #1630 临时缓存错误，方便跳过解析建表语句的错误
 
 	//
 	MergedTable *ast.CreateTableStmt
@@ -503,6 +505,17 @@ func (c *Context) AddSystemVariable(name, value string) {
 	c.sysVars[name] = value
 }
 
+type ParseShowCreateTableContentErr struct{} // todo #1630 临时返回一个指定的错误类型，方便跳过解析建表语句的错误
+
+func (p *ParseShowCreateTableContentErr) Error() string {
+	return "parse show create table content failed"
+}
+
+func IsParseShowCreateTableContentErr(err error) bool {
+	var target *ParseShowCreateTableContentErr
+	return errors.As(err, &target)
+}
+
 // GetCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
 	exist, err := c.IsTableExist(stmt)
@@ -525,6 +538,9 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, false, nil
 	}
 
+	if info.OriginalTableError != nil && IsParseShowCreateTableContentErr(err) { // todo #1630 临时减少解析失败时的调用次数
+		return nil, false, info.OriginalTableError
+	}
 	createTableSql, err := c.e.ShowCreateTable(utils.SupplementalQuotationMarks(stmt.Schema.String()), utils.SupplementalQuotationMarks(stmt.Name.String()))
 	if err != nil {
 		return nil, exist, err
@@ -535,7 +551,7 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
 		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
 		if err != nil {
-			return nil, exist, err
+			return nil, exist, &ParseShowCreateTableContentErr{}
 		}
 	}
 	info.OriginalTable = createStmt
@@ -595,8 +611,9 @@ func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.Create
 			}
 		}
 	}
-
-	return nil, fmt.Errorf("convert OB MySQL create table sql failed")
+	errMsg := "convert OB MySQL create table sql failed"
+	log.Logger().Errorf(errMsg)
+	return nil, errors.New(errMsg)
 }
 
 // GetCollationDatabase get collation database.
