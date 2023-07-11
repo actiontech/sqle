@@ -1,9 +1,10 @@
 package session
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"unicode"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_LoadSchemaLowerCaseTableNamesOpen(t *testing.T) {
@@ -53,5 +54,42 @@ func Test_LoadTablesLowerCaseTableNamesOpen(t *testing.T) {
 		for _, s := range table {
 			assert.True(t, unicode.IsLower(s))
 		}
+	}
+}
+
+func TestParseObMysqlCreateTableSql(t *testing.T) {
+	args := []struct {
+		sql     string
+		wantSql string
+	}{
+		{
+			`CREATE TABLE tb01 (
+  ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID',
+  NAME varchar(20) NOT NULL DEFAULT '' COMMENT '名字',
+  PRIMARY KEY (ID)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='测试表'`,
+			`CREATE TABLE tb01 (
+  ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID',
+  NAME varchar(20) NOT NULL DEFAULT '' COMMENT '名字',
+  PRIMARY KEY (ID)
+)`,
+		},
+		{
+			`CREATE TABLE tb01 (
+  ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='测试表'`,
+			`CREATE TABLE tb01 (
+  ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID'
+)`,
+		},
+	}
+
+	c := &Context{}
+	for _, arg := range args {
+		t.Run("test parse OB MySQL create table", func(t *testing.T) {
+			createTbStmt, err := c.parseObMysqlCreateTableSql(arg.sql)
+			assert.NoError(t, err)
+			assert.Equal(t, arg.wantSql, createTbStmt.Text())
+		})
 	}
 }

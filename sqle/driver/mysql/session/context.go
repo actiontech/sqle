@@ -539,6 +539,7 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
 		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
 		if err != nil {
+			log.Logger().Errorf("parse create table as OB-MySQL-Mode failed:%v", err)
 			return nil, exist, err
 		}
 	}
@@ -591,16 +592,26 @@ partition p15)
 
 */
 func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.CreateTableStmt, error) {
-	for i := len(createTableSql) - 1; i >= 0; i-- {
-		if createTableSql[i] == ')' {
-			stmt, err := util.ParseCreateTableStmt(createTableSql[0 : i+1])
-			if err == nil {
-				return stmt, nil
+	parseErr := fmt.Errorf("parse converted create table sql failed")
+	leftCount, rightCount := 0, 0
+	compatibleSql := createTableSql
+	for j := range createTableSql {
+		if createTableSql[j] == '(' {
+			leftCount++
+		}
+		if createTableSql[j] == ')' {
+			rightCount++
+		}
+		if leftCount > 0 && leftCount == rightCount { // 匹配到第一个小括号结束的地方
+			compatibleSql = createTableSql[0 : j+1]
+			convertedStmt, err := util.ParseCreateTableStmt(compatibleSql)
+			if err != nil { // 去掉options后的sql解析失败，说明可能不是create table语句或者处理方式有问题
+				return nil, parseErr
 			}
+			return convertedStmt, nil
 		}
 	}
-
-	return nil, fmt.Errorf("convert OB MySQL create table sql failed")
+	return nil, parseErr
 }
 
 // GetCollationDatabase get collation database.
