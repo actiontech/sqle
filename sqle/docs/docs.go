@@ -9916,12 +9916,6 @@ var doc = `{
                     ],
                     "example": "notice"
                 },
-                "params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.RuleParamResV1"
-                    }
-                },
                 "rule_id": {
                     "type": "string"
                 },
