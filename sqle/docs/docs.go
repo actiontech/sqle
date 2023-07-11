@@ -1034,6 +1034,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/custom_rules/{db_type}/rule_type": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule type by db type",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取规则分类",
+                "operationId": "getRuleTypeByDBTypeV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "db_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleTypeByDBTypeResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/custom_rules/{rule_id}": {
             "get": {
                 "security": [
@@ -11364,6 +11396,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetRuleTypeByDBTypeResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTypeV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRulesResV1": {
             "type": "object",
             "properties": {
@@ -13145,6 +13196,14 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RuleTypeV1": {
+            "type": "object",
+            "properties": {
+                "rule_type": {
                     "type": "string"
                 }
             }
