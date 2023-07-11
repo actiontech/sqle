@@ -59,7 +59,8 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if !exist || err != nil {
-		return "", err
+		i.Logger().Errorf("generate osc command failed: %v", err)
+		return "", nil
 	}
 
 	// In almost all cases a PRIMARY KEY or UNIQUE INDEX needs to be present in the table.
