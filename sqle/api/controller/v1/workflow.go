@@ -23,6 +23,12 @@ var ErrForbidMyBatisXMLTask = func(taskId uint) error {
 		fmt.Errorf("the task for audit mybatis xml file is not allow to create workflow. taskId=%v", taskId))
 }
 
+var ErrCanNotTerminateExecute = func(workflowStatus, taskStatus string) error {
+	return errors.NewDataInvalidErr(
+		"workflow status is %s and task status is %s, termination can not be performed",
+		workflowStatus, taskStatus)
+}
+
 var ErrWorkflowExecuteTimeIncorrect = errors.New(errors.TaskActionInvalid, fmt.Errorf("please go online during instance operation and maintenance time"))
 
 type GetWorkflowTemplateResV1 struct {
@@ -1109,17 +1115,23 @@ func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *m
 	}
 
 	for _, record := range workflow.Record.InstanceRecords {
-		if _, ok := needTerminatedTaskIdMap[record.TaskId]; ok {
-			isWorkflowWaitForExecution := workflow.Record.Status == model.WorkflowStatusWaitForExecution
-			isWorkflowExecuting := workflow.Record.Status == model.WorkflowStatusExecuting
-			isTaskExecuting := record.Task.Status == model.TaskStatusExecuting
-			if (isWorkflowWaitForExecution || isWorkflowExecuting) && isTaskExecuting {
-				continue
-			}
-			return errors.NewDataInvalidErr(
-				"workflow status is %s and task status is %s, termination can not be performed",
-				workflow.Record.Status, record.Task.Status)
+		if _, ok := needTerminatedTaskIdMap[record.TaskId]; !ok {
+			continue
 		}
+
+		isWorkflowWaitForExecution := workflow.Record.Status == model.WorkflowStatusWaitForExecution
+		isWorkflowExecuting := workflow.Record.Status == model.WorkflowStatusExecuting
+		isTaskExecuting := record.Task.Status == model.TaskStatusExecuting
+
+		if !(isWorkflowWaitForExecution || isWorkflowExecuting) {
+			return ErrCanNotTerminateExecute(workflow.Record.Status, record.Task.Status)
+		}
+
+		if !isTaskExecuting {
+			return ErrCanNotTerminateExecute(workflow.Record.Status, record.Task.Status)
+		}
+
+		return nil
 	}
 
 	err := CheckCurrentUserCanOperateWorkflow(c,
