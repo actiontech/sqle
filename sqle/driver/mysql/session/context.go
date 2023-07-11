@@ -505,10 +505,12 @@ func (c *Context) AddSystemVariable(name, value string) {
 	c.sysVars[name] = value
 }
 
-type ParseShowCreateTableContentErr struct{} // todo #1630 临时返回一个指定的错误类型，方便跳过解析建表语句的错误
+type ParseShowCreateTableContentErr struct { // todo #1630 临时返回一个指定的错误类型，方便跳过解析建表语句的错误
+	Msg string
+}
 
 func (p *ParseShowCreateTableContentErr) Error() string {
-	return "parse show create table content failed"
+	return fmt.Sprintf("parse show create table content failed: %v", p.Msg)
 }
 
 func IsParseShowCreateTableContentErr(err error) bool {
@@ -545,13 +547,13 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if err != nil {
 		return nil, exist, err
 	}
-	createStmt, err := util.ParseCreateTableStmt(createTableSql)
-	if err != nil {
+	createStmt, errByMysqlParser := util.ParseCreateTableStmt(createTableSql)
+	if errByMysqlParser != nil {
 		//todo to be compatible with OceanBase-MySQL-Mode
 		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
 		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
 		if err != nil {
-			return nil, exist, &ParseShowCreateTableContentErr{}
+			return nil, exist, &ParseShowCreateTableContentErr{Msg: errByMysqlParser.Error()}
 		}
 	}
 	info.OriginalTable = createStmt
