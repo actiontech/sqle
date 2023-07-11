@@ -372,6 +372,9 @@ func (c *Context) UpdateContext(node ast.Node) {
 			}
 			info.MergedTable, _ = util.MergeAlterToTable(oldTable, s)
 			info.AlterTables = append(info.AlterTables, s)
+			if info.MergedTable.Table == nil {
+				return
+			}
 			// rename table
 			if s.Table.Name.String() != info.MergedTable.Table.Name.String() {
 				schemaName := c.GetSchemaName(s.Table)

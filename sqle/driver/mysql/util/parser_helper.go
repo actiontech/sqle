@@ -498,13 +498,17 @@ func GetLimitCount(limit *ast.Limit, _default int64) (int64, error) {
 }
 
 func MergeAlterToTable(oldTable *ast.CreateTableStmt, alterTable *ast.AlterTableStmt) (*ast.CreateTableStmt, error) {
-	newTable := &ast.CreateTableStmt{
-		Table:       oldTable.Table,
-		Cols:        oldTable.Cols,
-		Constraints: oldTable.Constraints,
-		Options:     oldTable.Options,
-		Partition:   oldTable.Partition,
+	newTable := &ast.CreateTableStmt{}
+	if oldTable != nil {
+		newTable = &ast.CreateTableStmt{
+			Table:       oldTable.Table,
+			Cols:        oldTable.Cols,
+			Constraints: oldTable.Constraints,
+			Options:     oldTable.Options,
+			Partition:   oldTable.Partition,
+		}
 	}
+
 	for _, spec := range GetAlterTableSpecByTp(alterTable.Specs, ast.AlterTableRenameTable) {
 		newTable.Table = spec.NewTable
 	}
