@@ -67,7 +67,7 @@ func TestParseObMysqlCreateTableSql(t *testing.T) {
   ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID',
   NAME varchar(20) NOT NULL DEFAULT '' COMMENT '名字',
   PRIMARY KEY (ID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='测试表'`,
+) ENGINE=InnoDB DEFAULT anyOpts=anything COMMENT='测试表'`,
 			`CREATE TABLE tb01 (
   ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID',
   NAME varchar(20) NOT NULL DEFAULT '' COMMENT '名字',
@@ -77,7 +77,7 @@ func TestParseObMysqlCreateTableSql(t *testing.T) {
 		{
 			`CREATE TABLE tb01 (
   ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='测试表'`,
+) ENGINE=InnoDB DEFAULT anyOpts=anything COMMENT='测试表'`,
 			`CREATE TABLE tb01 (
   ID int unsigned NOT NULL AUTO_INCREMENT COMMENT '自增 ID'
 )`,
