@@ -1744,21 +1744,6 @@ definitions:
           $ref: '#/definitions/v1.TableMeta'
         type: array
     type: object
-  v1.GetSQLAnalysisReq:
-    properties:
-      instance_name:
-        example: MySQL
-        type: string
-      project_name:
-        example: default
-        type: string
-      schema_name:
-        example: test
-        type: string
-      sql:
-        example: select * from t1; select * from t2;
-        type: string
-    type: object
   v1.GetSQLEInfoResDataV1:
     properties:
       logo_url:
@@ -8554,12 +8539,24 @@ paths:
       description: Direct get sql analysis result
       operationId: directGetSQLAnalysisV1
       parameters:
-      - description: get sql analysis
-        in: body
-        name: sql_analysis
+      - description: project name
+        in: query
+        name: project_name
         required: true
-        schema:
-          $ref: '#/definitions/v1.GetSQLAnalysisReq'
+        type: string
+      - description: instance name
+        in: query
+        name: instance_name
+        required: true
+        type: string
+      - description: schema name
+        in: query
+        name: schema_name
+        type: string
+      - description: sql
+        in: query
+        name: sql
+        type: string
       responses:
         "200":
           description: OK

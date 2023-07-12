@@ -6121,13 +6121,30 @@ var doc = `{
                 "operationId": "directGetSQLAnalysisV1",
                 "parameters": [
                     {
-                        "description": "get sql analysis",
-                        "name": "sql_analysis",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLAnalysisReq"
-                        }
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema name",
+                        "name": "schema_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql",
+                        "name": "sql",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -11465,27 +11482,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
-                }
-            }
-        },
-        "v1.GetSQLAnalysisReq": {
-            "type": "object",
-            "properties": {
-                "instance_name": {
-                    "type": "string",
-                    "example": "MySQL"
-                },
-                "project_name": {
-                    "type": "string",
-                    "example": "default"
-                },
-                "schema_name": {
-                    "type": "string",
-                    "example": "test"
-                },
-                "sql": {
-                    "type": "string",
-                    "example": "select * from t1; select * from t2;"
                 }
             }
         },
