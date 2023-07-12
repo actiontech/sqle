@@ -1430,15 +1430,14 @@ type CreateCustomRuleReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules [post]
 func CreateCustomRule(c echo.Context) error {
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return createCustomRule(c)
 }
 
 type UpdateCustomRuleReqV1 struct {
-	RuleName   string         `json:"rule_name" form:"rule_name" example:"this is test rule"`
+	RuleName   string         `json:"rule_name" form:"rule_name" example:"this is test rule" valid:"required"`
 	Desc       string         `json:"desc" form:"desc" example:"this is test rule"`
 	Level      string         `json:"level" form:"level" example:"notice" valid:"required"`
 	Type       string         `json:"type" form:"type" example:"DDL规则" valid:"required"`
-	Params     RuleParamResV1 `json:"params" form:"params"`
 	RuleScript string         `json:"rule_script" form:"rule_script" valid:"required"`
 }
 
@@ -1452,7 +1451,7 @@ type UpdateCustomRuleReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [patch]
 func UpdateCustomRule(c echo.Context) error {
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return updateCustomRule(c)
 }
 
 type GetCustomRuleResV1 struct {
@@ -1469,7 +1468,7 @@ type GetCustomRuleResV1 struct {
 // @Success 200 {object} v1.GetCustomRuleResV1
 // @router /v1/custom_rules/{rule_id} [get]
 func GetCustomRule(c echo.Context) error {
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return getCustomRule(c)
 }
 
 type RuleTypeV1 struct {
