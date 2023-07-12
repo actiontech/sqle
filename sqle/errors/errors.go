@@ -41,6 +41,8 @@ const (
 
 	SQLAnalysisCommunityNotSupported = 8002
 
+	CustomRuleEditionNotSupported = 8003
+
 	// 需要隐藏所有错误细节或不确定时使用
 	GenericError ErrorCode = 9999
 )
