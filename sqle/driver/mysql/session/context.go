@@ -553,8 +553,8 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	createStmt, errByMysqlParser := util.ParseCreateTableStmt(createTableSql)
 	if errByMysqlParser != nil {
 		//todo to be compatible with OceanBase-MySQL-Mode
-		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
-		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
+		log.Logger().Warnf("parse create table stmt failed. try to parse it with compabile method. err:%v", errByMysqlParser)
+		createStmt, err = c.parseCreateTableSqlCompatibly(createTableSql)
 		if err != nil {
 			info.OriginalTableError = &ParseShowCreateTableContentErr{Msg: errByMysqlParser.Error()}
 			return nil, exist, info.OriginalTableError
@@ -608,7 +608,7 @@ partition p15)
 建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 然后尝试解析一次, 直到解析成功, 此时剩余的建表语句将不在包含OB特有options
 
 */
-func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.CreateTableStmt, error) {
+func (c *Context) parseCreateTableSqlCompatibly(createTableSql string) (*ast.CreateTableStmt, error) {
 	for i := len(createTableSql) - 1; i >= 0; i-- {
 		if createTableSql[i] == ')' {
 			stmt, err := util.ParseCreateTableStmt(createTableSql[0 : i+1])
@@ -617,7 +617,7 @@ func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.Create
 			}
 		}
 	}
-	errMsg := "convert OB MySQL create table sql failed"
+	errMsg := "parse create table sql with compatible method failed"
 	log.Logger().Errorf(errMsg)
 	return nil, errors.New(errMsg)
 }
