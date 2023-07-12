@@ -377,7 +377,7 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 
 type CustomRule struct {
 	Model
-	RuleId     string `json:"rule_id" gorm:"index; not null"`
+	RuleId     string `json:"rule_id" gorm:"unique; not null"`
 	RuleName   string `json:"name" gorm:"not null"`
 	DBType     string `json:"db_type" gorm:"not null; default:\"mysql\""`
 	Desc       string `json:"desc"`

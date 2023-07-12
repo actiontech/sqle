@@ -12,7 +12,6 @@ import (
 
 var errCommunityEditionNotSupportCustomRule = errors.New(errors.CustomRuleEditionNotSupported, e.New("custom rule community not supported"))
 
-
 func getCustomRules(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
 }
