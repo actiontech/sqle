@@ -109,7 +109,7 @@ func init() {
 		},
 		{
 			tag:    ValidateCustomeRuleTag,
-			enText: "{0} must only contain letters, numbers, dashes and underscores, must start with English",
+			enText: "{0} must only contain letters, numbers, dashes and underscores, must start with letter",
 			zhText: "{0}只能包含字母、数字、中划线和下划线，必须以英文开头",
 		},
 	}
