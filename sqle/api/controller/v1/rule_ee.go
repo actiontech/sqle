@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
 )
@@ -88,18 +89,10 @@ func createCustomRule(c echo.Context) error {
 		return err
 	}
 
-	ruleId := req.Id
 	ruleName := req.RuleName
 	dBType := req.DBType
-	_, exist, err := s.GetCustomRuleByRuleId(ruleId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule id:[%v] is exist", ruleId)))
-	}
 
-	_, exist, err = s.GetCustomRulesByRuleNameAndDBType(ruleName, dBType)
+	_, exist, err := s.GetCustomRulesByRuleNameAndDBType(ruleName, dBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -107,6 +100,10 @@ func createCustomRule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist in %v", ruleName, dBType)))
 	}
 
+	ruleId, err := utils.GenUid()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	customRule := &model.CustomRule{
 		RuleId:     ruleId,
 		RuleName:   ruleName,
@@ -141,22 +138,33 @@ func updateCustomRule(c echo.Context) error {
 	}
 
 	updateMap := map[string]interface{}{}
-	if req.RuleName != rule.RuleName {
-		_, exist, err = s.GetCustomRulesByRuleNameAndDBType(req.RuleName, rule.DBType)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+	if req.RuleName != nil {
+		if *req.RuleName != rule.RuleName {
+			_, exist, err = s.GetCustomRulesByRuleNameAndDBType(*req.RuleName, rule.DBType)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if exist {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist", *req.RuleName)))
+			}
+			updateMap["rule_name"] = req.RuleName
 		}
-		if exist {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist", req.RuleName)))
+	}
+	if req.Desc != nil {
+		updateMap["desc"] = *req.Desc
+	}
+	if req.Level != nil {
+		updateMap["level"] = *req.Level
+	}
+	if req.Type != nil {
+		if "" == *req.Type {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("type is not allowed to be empty")))
 		}
-		updateMap["rule_name"] = req.RuleName
+		updateMap["type"] = *req.Type
 	}
-	if req.Desc != "" {
-		updateMap["desc"] = req.Desc
+	if req.RuleScript != nil {
+		updateMap["rule_script"] = *req.RuleScript
 	}
-	updateMap["level"] = req.Level
-	updateMap["type"] = req.Type
-	updateMap["rule_script"] = req.RuleScript
 
 	err = s.UpdateCustomRuleByRuleId(ruleId, updateMap)
 	if err != nil {
