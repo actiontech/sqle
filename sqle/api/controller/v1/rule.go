@@ -1474,6 +1474,7 @@ func GetCustomRule(c echo.Context) error {
 
 type RuleTypeV1 struct {
 	RuleType string `json:"rule_type"`
+	Count    uint   `json:"rule_count"`
 }
 
 type GetRuleTypeByDBTypeResV1 struct {
