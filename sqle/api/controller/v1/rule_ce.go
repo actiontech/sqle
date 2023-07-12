@@ -20,3 +20,15 @@ func getCustomRules(c echo.Context) error {
 func deleteCustomRule(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
 }
+
+func createCustomRule(c echo.Context) error {
+	return errCommunityEditionNotSupportCustomRule
+}
+
+func updateCustomRule(c echo.Context) error {
+	return errCommunityEditionNotSupportCustomRule
+}
+
+func getCustomRule(c echo.Context) error {
+	return errCommunityEditionNotSupportCustomRule
+}
