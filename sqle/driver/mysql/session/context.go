@@ -543,7 +543,7 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, false, nil
 	}
 
-	if info.OriginalTableError != nil && IsParseShowCreateTableContentErr(err) { // todo #1630 临时减少解析失败时的调用次数
+	if info.OriginalTableError != nil && IsParseShowCreateTableContentErr(info.OriginalTableError) { // todo #1630 临时减少解析失败时的调用次数
 		return nil, false, info.OriginalTableError
 	}
 	createTableSql, err := c.e.ShowCreateTable(utils.SupplementalQuotationMarks(stmt.Schema.String()), utils.SupplementalQuotationMarks(stmt.Name.String()))
@@ -556,7 +556,8 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
 		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
 		if err != nil {
-			return nil, exist, &ParseShowCreateTableContentErr{Msg: errByMysqlParser.Error()}
+			info.OriginalTableError = &ParseShowCreateTableContentErr{Msg: errByMysqlParser.Error()}
+			return nil, exist, info.OriginalTableError
 		}
 	}
 	info.OriginalTable = createStmt
