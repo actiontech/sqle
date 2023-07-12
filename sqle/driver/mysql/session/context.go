@@ -35,6 +35,8 @@ type TableInfo struct {
 	// OriginalTable save parser object from db by query "show create table ...";
 	// using in inspect and generate rollback sql
 	OriginalTable *ast.CreateTableStmt
+	// OriginalTableError save the error about getting original table
+	OriginalTableError error // todo #1630 临时缓存错误，方便跳过解析建表语句的错误
 
 	//
 	MergedTable *ast.CreateTableStmt
@@ -370,6 +372,9 @@ func (c *Context) UpdateContext(node ast.Node) {
 			}
 			info.MergedTable, _ = util.MergeAlterToTable(oldTable, s)
 			info.AlterTables = append(info.AlterTables, s)
+			if info.MergedTable.Table == nil {
+				return
+			}
 			// rename table
 			if s.Table.Name.String() != info.MergedTable.Table.Name.String() {
 				schemaName := c.GetSchemaName(s.Table)
@@ -503,6 +508,19 @@ func (c *Context) AddSystemVariable(name, value string) {
 	c.sysVars[name] = value
 }
 
+type ParseShowCreateTableContentError struct { // todo #1630 临时返回一个指定的错误类型，方便跳过解析建表语句的错误
+	Msg string
+}
+
+func (p *ParseShowCreateTableContentError) Error() string {
+	return fmt.Sprintf("parse show create table content failed: %v", p.Msg)
+}
+
+func IsParseShowCreateTableContentErr(err error) bool {
+	var target *ParseShowCreateTableContentError
+	return errors.As(err, &target)
+}
+
 // GetCreateTableStmt get create table stmtNode for db by query; if table not exist, return null.
 func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt, bool, error) {
 	exist, err := c.IsTableExist(stmt)
@@ -525,17 +543,21 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 		return nil, false, nil
 	}
 
+	if info.OriginalTableError != nil && IsParseShowCreateTableContentErr(info.OriginalTableError) { // todo #1630 临时减少解析失败时的调用次数
+		return nil, false, info.OriginalTableError
+	}
 	createTableSql, err := c.e.ShowCreateTable(utils.SupplementalQuotationMarks(stmt.Schema.String()), utils.SupplementalQuotationMarks(stmt.Name.String()))
 	if err != nil {
 		return nil, exist, err
 	}
-	createStmt, err := util.ParseCreateTableStmt(createTableSql)
-	if err != nil {
+	createStmt, errByMysqlParser := util.ParseCreateTableStmt(createTableSql)
+	if errByMysqlParser != nil {
 		//todo to be compatible with OceanBase-MySQL-Mode
-		log.Logger().Warnf("parse create table stmt failed. try to parse it as OB-MySQL-Mode. err:%v", err)
-		createStmt, err = c.parseObMysqlCreateTableSql(createTableSql)
+		log.Logger().Warnf("parse create table stmt failed. try to parse it with compatible method. err:%v", errByMysqlParser)
+		createStmt, err = c.parseCreateTableSqlCompatibly(createTableSql)
 		if err != nil {
-			return nil, exist, err
+			info.OriginalTableError = &ParseShowCreateTableContentError{Msg: errByMysqlParser.Error()}
+			return nil, exist, info.OriginalTableError
 		}
 	}
 	info.OriginalTable = createStmt
@@ -586,7 +608,7 @@ partition p15)
 建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 然后尝试解析一次, 直到解析成功, 此时剩余的建表语句将不在包含OB特有options
 
 */
-func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.CreateTableStmt, error) {
+func (c *Context) parseCreateTableSqlCompatibly(createTableSql string) (*ast.CreateTableStmt, error) {
 	for i := len(createTableSql) - 1; i >= 0; i-- {
 		if createTableSql[i] == ')' {
 			stmt, err := util.ParseCreateTableStmt(createTableSql[0 : i+1])
@@ -595,8 +617,9 @@ func (c *Context) parseObMysqlCreateTableSql(createTableSql string) (*ast.Create
 			}
 		}
 	}
-
-	return nil, fmt.Errorf("convert OB MySQL create table sql failed")
+	errMsg := "parse create table sql with compatible method failed"
+	log.Logger().Errorf(errMsg)
+	return nil, errors.New(errMsg)
 }
 
 // GetCollationDatabase get collation database.
