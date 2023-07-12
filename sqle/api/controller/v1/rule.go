@@ -1367,14 +1367,13 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 }
 
 type CustomRuleResV1 struct {
-	RuleId     string         `json:"rule_id"`
-	DBType     string         `json:"db_type" example:"MySQL"`
-	RuleName   string         `json:"rule_name" example:"this is test rule"`
-	Desc       string         `json:"desc" example:"this is test rule"`
-	Level      string         `json:"level" example:"notice"`
-	Type       string         `json:"type" example:"DDL规则"`
-	Params     RuleParamResV1 `json:"params,omitempty"`
-	RuleScript string         `json:"rule_script,omitempty"`
+	RuleId     string `json:"rule_id"`
+	DBType     string `json:"db_type" example:"MySQL"`
+	RuleName   string `json:"rule_name" example:"this is test rule"`
+	Desc       string `json:"desc" example:"this is test rule"`
+	Level      string `json:"level" example:"notice" enums:"normal,notice,warn,error"`
+	Type       string `json:"type" example:"DDL规则"`
+	RuleScript string `json:"rule_script,omitempty"`
 }
 
 type GetCustomRulesResV1 struct {
@@ -1397,10 +1396,7 @@ type GetCustomRulesReqV1 struct {
 // @Success 200 {object} v1.GetCustomRulesResV1
 // @router /v1/custom_rules [get]
 func GetCustomRules(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetCustomRulesResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    []CustomRuleResV1{},
-	})
+	return getCustomRules(c)
 }
 
 // @Summary 删除自定义规则
@@ -1412,7 +1408,7 @@ func GetCustomRules(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [delete]
 func DeleteCustomRule(c echo.Context) error {
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return deleteCustomRule(c)
 }
 
 type CreateCustomRuleReqV1 struct {

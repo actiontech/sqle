@@ -694,11 +694,13 @@ definitions:
         example: this is test rule
         type: string
       level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         example: notice
         type: string
-      params:
-        $ref: '#/definitions/v1.RuleParamResV1'
-        type: object
       rule_id:
         type: string
       rule_name:
