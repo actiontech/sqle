@@ -47,7 +47,7 @@ func getCustomRules(c echo.Context) error {
 	if req.FilterDBType == "" && req.FilterRuleName == "" {
 		rules, err = s.GetCustomRules(queryFields)
 	} else {
-		rules, err = s.GetCustomRulesByRuleNameAndDBType(queryFields, req.FilterDBType, req.FilterRuleName)
+		rules, err = s.GetCustomRulesByDBTypeAndFuzzyRuleName(queryFields, req.FilterDBType, req.FilterRuleName)
 	}
 
 	if err != nil {
@@ -79,4 +79,115 @@ func deleteCustomRule(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func createCustomRule(c echo.Context) error {
+	s := model.GetStorage()
+	req := new(CreateCustomRuleReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	ruleId := req.Id
+	ruleName := req.RuleName
+	dBType := req.DBType
+	_, exist, err := s.GetCustomRuleByRuleId(ruleId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule id:[%v] is exist", ruleId)))
+	}
+
+	_, exist, err = s.GetCustomRulesByRuleNameAndDBType(ruleName, dBType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist in %v", ruleName, dBType)))
+	}
+
+	customRule := &model.CustomRule{
+		RuleId:     ruleId,
+		RuleName:   ruleName,
+		DBType:     dBType,
+		Desc:       req.Desc,
+		Level:      req.Level,
+		Typ:        req.Type,
+		RuleScript: req.RuleScript,
+	}
+	err = s.Save(customRule)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func updateCustomRule(c echo.Context) error {
+	req := new(UpdateCustomRuleReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	ruleId := c.Param("rule_id")
+	s := model.GetStorage()
+	rule, exist, err := s.GetCustomRuleByRuleId(ruleId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule id:[%v] is not exist", ruleId)))
+	}
+
+	updateMap := map[string]interface{}{}
+	if req.RuleName != rule.RuleName {
+		_, exist, err = s.GetCustomRulesByRuleNameAndDBType(req.RuleName, rule.DBType)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist", req.RuleName)))
+		}
+		updateMap["rule_name"] = req.RuleName
+	}
+	if req.Desc != "" {
+		updateMap["desc"] = req.Desc
+	}
+	updateMap["level"] = req.Level
+	updateMap["type"] = req.Type
+	updateMap["rule_script"] = req.RuleScript
+
+	err = s.UpdateCustomRuleByRuleId(ruleId, updateMap)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func getCustomRule(c echo.Context) error {
+	ruleId := c.Param("rule_id")
+
+	s := model.GetStorage()
+	rule, exist, err := s.GetCustomRuleByRuleId(ruleId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule id:[%v] is not exist", ruleId)))
+	}
+	res := CustomRuleResV1{
+		RuleId:     ruleId,
+		DBType:     rule.DBType,
+		RuleName:   rule.RuleName,
+		Desc:       rule.Desc,
+		Level:      rule.Level,
+		Type:       rule.Typ,
+		RuleScript: rule.RuleScript,
+	}
+	return c.JSON(http.StatusOK, &GetCustomRuleResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    res,
+	})
 }
