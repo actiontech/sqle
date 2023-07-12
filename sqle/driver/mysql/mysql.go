@@ -405,7 +405,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	// print osc
 	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
 	if err != nil && session.IsParseShowCreateTableContentErr(err) {
-		i.Logger().Errorf(err.Error()) // todo #1630 临时跳过创表语句解析错误
+		i.Logger().Errorf("generate osc command failed: %v", err.Error()) // todo #1630 临时跳过创表语句解析错误
 	} else if err != nil {
 		return nil, err
 	}
