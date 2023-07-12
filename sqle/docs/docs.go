@@ -13898,10 +13898,6 @@ var doc = `{
                     "type": "string",
                     "example": "notice"
                 },
-                "params": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.RuleParamResV1"
-                },
                 "rule_name": {
                     "type": "string",
                     "example": "this is test rule"
