@@ -9940,11 +9940,13 @@ var doc = `{
                 },
                 "level": {
                     "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
                     "example": "notice"
-                },
-                "params": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.RuleParamResV1"
                 },
                 "rule_id": {
                     "type": "string"

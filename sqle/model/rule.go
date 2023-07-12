@@ -374,3 +374,44 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 
 	return auditPlanNames, nil
 }
+
+type CustomRule struct {
+	Model
+	RuleId     string `json:"rule_id" gorm:"unique; not null"`
+	RuleName   string `json:"name" gorm:"not null"`
+	DBType     string `json:"db_type" gorm:"not null; default:\"mysql\""`
+	Desc       string `json:"desc"`
+	Level      string `json:"level" example:"error"` // notice, warn, error
+	Typ        string `json:"type" gorm:"column:type; not null"`
+	RuleScript string `json:"rule_script" gorm:"type:text"`
+	ScriptType string `json:"script_type" gorm:"not null; default:\"regular\""`
+}
+
+func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
+	rule := &CustomRule{}
+	err := s.db.Where("rule_id = ?", ruleId).Find(rule).Error
+	if err == gorm.ErrRecordNotFound {
+		return rule, false, nil
+	}
+	return rule, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetCustomRulesByRuleNameAndDBType(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
+	rules := []*CustomRule{}
+	db := s.db.Select(queryFields)
+	if filterDbType != "" {
+		db = db.Where("db_type=?", filterDbType)
+	}
+	if fuzzyRuleName != "" {
+		db = db.Where("rule_name like ?", "%"+fuzzyRuleName+"%")
+	}
+	err := db.Find(&rules).Error
+
+	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetCustomRules(queryFields string) ([]*CustomRule, error) {
+	rules := []*CustomRule{}
+	err := s.db.Select(queryFields).Find(&rules).Error
+	return rules, errors.New(errors.ConnectStorageError, err)
+}
