@@ -1368,9 +1368,9 @@ func exportRuleTemplateFile(c echo.Context, projectID uint, ruleTemplateName str
 
 type CustomRuleResV1 struct {
 	RuleId     string `json:"rule_id"`
-	DBType     string `json:"db_type" example:"MySQL"`
-	RuleName   string `json:"rule_name" example:"this is test rule"`
 	Desc       string `json:"desc" example:"this is test rule"`
+	Annotation string `json:"annotation" example:"this is test rule"`
+	DBType     string `json:"db_type" example:"MySQL"`
 	Level      string `json:"level" example:"notice" enums:"normal,notice,warn,error"`
 	Type       string `json:"type" example:"DDL规则"`
 	RuleScript string `json:"rule_script,omitempty"`
@@ -1382,8 +1382,8 @@ type GetCustomRulesResV1 struct {
 }
 
 type GetCustomRulesReqV1 struct {
-	FilterDBType   string `json:"filter_db_type" query:"filter_db_type"`
-	FilterRuleName string `json:"filter_rule_name" query:"filter_rule_name"`
+	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
+	FilterDesc   string `json:"filter_desc" query:"filter_desc"`
 }
 
 // @Summary 自定义规则列表
@@ -1392,7 +1392,7 @@ type GetCustomRulesReqV1 struct {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
-// @Param filter_rule_name query string false "filter rule name"
+// @Param filter_desc query string false "filter desc"
 // @Success 200 {object} v1.GetCustomRulesResV1
 // @router /v1/custom_rules [get]
 func GetCustomRules(c echo.Context) error {
@@ -1413,8 +1413,8 @@ func DeleteCustomRule(c echo.Context) error {
 
 type CreateCustomRuleReqV1 struct {
 	DBType     string `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
-	RuleName   string `json:"rule_name" form:"rule_name" example:"this is test rule" valid:"required"`
-	Desc       string `json:"desc" form:"desc" example:"this is test rule"`
+	Desc       string `json:"desc" form:"desc" example:"this is test rule" valid:"required"`
+	Annotation string `json:"annotation" form:"rule_name" example:"this is test rule"`
 	Level      string `json:"level" form:"level" example:"notice" valid:"required" enums:"normal,notice,warn,error"`
 	Type       string `json:"type" form:"type" example:"DDL规则" valid:"required"`
 	RuleScript string `json:"rule_script" form:"rule_script" valid:"required"`
@@ -1433,8 +1433,8 @@ func CreateCustomRule(c echo.Context) error {
 }
 
 type UpdateCustomRuleReqV1 struct {
-	RuleName   *string `json:"rule_name" form:"rule_name" example:"this is test rule"`
 	Desc       *string `json:"desc" form:"desc" example:"this is test rule"`
+	Annotation *string `json:"annotation" form:"annotation" example:"this is test rule"`
 	Level      *string `json:"level" form:"level" example:"notice" enums:"normal,notice,warn,error"`
 	Type       *string `json:"type" form:"type" example:"DDL规则"`
 	RuleScript *string `json:"rule_script" form:"rule_script"`
