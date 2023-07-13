@@ -375,6 +375,19 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 	return auditPlanNames, nil
 }
 
+func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
+	rules := []*Rule{}
+	err := s.db.Select("type").Where("db_type = ?", DBType).Group("type").Find(&rules).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	ruleDBTypes := make([]string, len(rules))
+	for i := range rules {
+		ruleDBTypes[i] = rules[i].Typ
+	}
+	return ruleDBTypes, nil
+}
+
 type CustomRule struct {
 	Model
 	RuleId     string `json:"rule_id" gorm:"unique; not null"`
@@ -396,7 +409,7 @@ func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error
 	return rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesByRuleNameAndDBType(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
+func (s *Storage) GetCustomRulesByDBTypeAndFuzzyRuleName(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	db := s.db.Select(queryFields)
 	if filterDbType != "" {
@@ -414,4 +427,36 @@ func (s *Storage) GetCustomRules(queryFields string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	err := s.db.Select(queryFields).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetCustomRulesByRuleNameAndDBType(filterRuleName, filterDbType string) (CustomRule, bool, error) {
+	rule := CustomRule{}
+	err := s.db.Where("db_type = ? and rule_name = ?", filterDbType, filterRuleName).First(&rule).Error
+	if err == gorm.ErrRecordNotFound {
+		return rule, false, nil
+	}
+	return rule, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs ...interface{}) error {
+	err := s.db.Table("custom_rules").Where("rule_id = ?", ruleId).Update(attrs...).Error
+	return errors.New(errors.ConnectStorageError, err)
+}
+
+type typeCount struct {
+	Type      string `json:"type"`
+	TypeCount uint   `json:"type_count"`
+}
+
+func (s *Storage) GetCustomRuleTypeCountByDBType(DBType string) (map[string]uint, error) {
+	typeCounts := []*typeCount{}
+	err := s.db.Model(&CustomRule{}).Select("type, count(1) type_count").Where("db_type = ?", DBType).Group("type").Scan(&typeCounts).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	dbTypeCount := make(map[string]uint, len(typeCounts))
+	for i := range typeCounts {
+		dbTypeCount[typeCounts[i].Type] = typeCounts[i].TypeCount
+	}
+	return dbTypeCount, nil
 }
