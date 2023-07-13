@@ -220,10 +220,9 @@ func getRuleTypeByDBType(c echo.Context) error {
 	dbTypeMap := make(map[string]uint, len(allRuleTypes))
 	for i := range allRuleTypes {
 		ruleType := allRuleTypes[i]
-		count := uint(0)
-		if typeCount, exist := existRuleTypeCount[ruleType]; exist {
-			count = typeCount
-		}
+		dbTypeMap[ruleType] = uint(0)
+	}
+	for ruleType, count := range existRuleTypeCount {
 		dbTypeMap[ruleType] = count
 	}
 
