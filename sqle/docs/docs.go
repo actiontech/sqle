@@ -13205,6 +13205,9 @@ var doc = `{
         "v1.RuleTypeV1": {
             "type": "object",
             "properties": {
+                "rule_count": {
+                    "type": "integer"
+                },
                 "rule_type": {
                     "type": "string"
                 }

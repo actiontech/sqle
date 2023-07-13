@@ -309,7 +309,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	} else {
 		err = i.CheckInvalid(nodes[0])
 	}
-	if err != nil {
+	if err != nil && session.IsParseShowCreateTableContentErr(err) {
+		i.Logger().Errorf("check invalid failed: %v", err)
+		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, fmt.Sprintf(CheckInvalidErrorFormat, "解析建表语句失败，部分在线审核规则可能失效，请人工确认"))
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -354,6 +357,11 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 
 		if err := handler.Func(input); err != nil {
+			// todo #1630 临时跳过解析建表语句失败导致的规则
+			if session.IsParseShowCreateTableContentErr(err) {
+				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.Desc, err.Error())
+				continue
+			}
 			return nil, err
 		}
 	}
@@ -396,7 +404,9 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 
 	// print osc
 	oscCommandLine, err := i.generateOSCCommandLine(nodes[0])
-	if err != nil {
+	if err != nil && session.IsParseShowCreateTableContentErr(err) {
+		i.Logger().Errorf("generate osc command failed: %v", err.Error()) // todo #1630 临时跳过创表语句解析错误
+	} else if err != nil {
 		return nil, err
 	}
 	if oscCommandLine != "" {
