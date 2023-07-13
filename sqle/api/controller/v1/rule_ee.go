@@ -100,10 +100,11 @@ func createCustomRule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist in %v", ruleName, dBType)))
 	}
 
-	ruleId, err := utils.GenUid()
+	uid, err := utils.GenUid()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	ruleId := fmt.Sprintf("rule_id_%v", uid)
 	customRule := &model.CustomRule{
 		RuleId:     ruleId,
 		RuleName:   ruleName,
