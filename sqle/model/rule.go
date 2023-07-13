@@ -391,9 +391,9 @@ func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
 type CustomRule struct {
 	Model
 	RuleId     string `json:"rule_id" gorm:"unique; not null"`
-	RuleName   string `json:"name" gorm:"not null"`
+	Desc       string `json:"desc" gorm:"not null"`
+	Annotation string `json:"annotation"`
 	DBType     string `json:"db_type" gorm:"not null; default:\"mysql\""`
-	Desc       string `json:"desc"`
 	Level      string `json:"level" example:"error"` // notice, warn, error
 	Typ        string `json:"type" gorm:"column:type; not null"`
 	RuleScript string `json:"rule_script" gorm:"type:text"`
@@ -409,14 +409,14 @@ func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error
 	return rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesByDBTypeAndFuzzyRuleName(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
+func (s *Storage) GetCustomRulesByDBTypeAndFuzzyDesc(queryFields, filterDbType, fuzzyDesc string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	db := s.db.Select(queryFields)
 	if filterDbType != "" {
 		db = db.Where("db_type=?", filterDbType)
 	}
-	if fuzzyRuleName != "" {
-		db = db.Where("rule_name like ?", "%"+fuzzyRuleName+"%")
+	if fuzzyDesc != "" {
+		db = db.Where("`desc` like ?", "%"+fuzzyDesc+"%")
 	}
 	err := db.Find(&rules).Error
 
@@ -429,9 +429,9 @@ func (s *Storage) GetCustomRules(queryFields string) ([]*CustomRule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesByRuleNameAndDBType(filterRuleName, filterDbType string) (CustomRule, bool, error) {
+func (s *Storage) GetCustomRulesByDescAndDBType(filterDesc, filterDbType string) (CustomRule, bool, error) {
 	rule := CustomRule{}
-	err := s.db.Where("db_type = ? and rule_name = ?", filterDbType, filterRuleName).First(&rule).Error
+	err := s.db.Where("db_type = ? and `desc` = ?", filterDbType, filterDesc).First(&rule).Error
 	if err == gorm.ErrRecordNotFound {
 		return rule, false, nil
 	}

@@ -987,8 +987,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter rule name",
-                        "name": "filter_rule_name",
+                        "description": "filter desc",
+                        "name": "filter_desc",
                         "in": "query"
                     }
                 ],
@@ -9631,6 +9631,10 @@ var doc = `{
         "v1.CreateCustomRuleReqV1": {
             "type": "object",
             "properties": {
+                "annotation": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
                 "db_type": {
                     "type": "string",
                     "example": "MySQL"
@@ -9641,15 +9645,13 @@ var doc = `{
                 },
                 "level": {
                     "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
                     "example": "notice"
-                },
-                "rule_id": {
-                    "type": "string",
-                    "example": "rule1"
-                },
-                "rule_name": {
-                    "type": "string",
-                    "example": "this is test rule"
                 },
                 "rule_script": {
                     "type": "string"
@@ -9930,6 +9932,10 @@ var doc = `{
         "v1.CustomRuleResV1": {
             "type": "object",
             "properties": {
+                "annotation": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
                 "db_type": {
                     "type": "string",
                     "example": "MySQL"
@@ -9950,10 +9956,6 @@ var doc = `{
                 },
                 "rule_id": {
                     "type": "string"
-                },
-                "rule_name": {
-                    "type": "string",
-                    "example": "this is test rule"
                 },
                 "rule_script": {
                     "type": "string"
@@ -13893,17 +13895,23 @@ var doc = `{
         "v1.UpdateCustomRuleReqV1": {
             "type": "object",
             "properties": {
+                "annotation": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
                 "desc": {
                     "type": "string",
                     "example": "this is test rule"
                 },
                 "level": {
                     "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ],
                     "example": "notice"
-                },
-                "rule_name": {
-                    "type": "string",
-                    "example": "this is test rule"
                 },
                 "rule_script": {
                     "type": "string"
