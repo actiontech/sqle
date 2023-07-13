@@ -20,3 +20,7 @@ func getCustomRules(c echo.Context) error {
 func deleteCustomRule(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
 }
+
+func getRuleTypeByDBType(c echo.Context) error {
+	return errCommunityEditionNotSupportCustomRule
+}
