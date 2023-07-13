@@ -80,3 +80,39 @@ func deleteCustomRule(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
+
+func getRuleTypeByDBType(c echo.Context) error {
+	dbType := c.Param("db_type")
+
+	s := model.GetStorage()
+	allRuleTypes, err := s.GetRuleTypeByDBType(dbType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	existRuleTypeCount, err := s.GetCustomRuleTypeCountByDBType(dbType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	dbTypeMap := make(map[string]uint, len(allRuleTypes))
+	for i := range allRuleTypes {
+		ruleType := allRuleTypes[i]
+		count := uint(0)
+		if typeCount, exist := existRuleTypeCount[ruleType]; exist {
+			count = typeCount
+		}
+		dbTypeMap[ruleType] = count
+	}
+
+	ruleTypeV1s := []RuleTypeV1{}
+	for k, v := range dbTypeMap {
+		ruleTypeV1s = append(ruleTypeV1s, RuleTypeV1{
+			RuleType:  k,
+			RuleCount: v,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetRuleTypeByDBTypeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    ruleTypeV1s,
+	})
+}
