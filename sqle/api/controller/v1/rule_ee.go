@@ -19,7 +19,8 @@ func convertCustomRuleToRes(rule *model.CustomRule) CustomRuleResV1 {
 	ruleRes := CustomRuleResV1{
 		RuleId:     rule.RuleId,
 		DBType:     rule.DBType,
-		RuleName:   rule.RuleName,
+		Desc:       rule.Desc,
+		Annotation: rule.Annotation,
 		Level:      rule.Level,
 		Type:       rule.Typ,
 		RuleScript: rule.RuleScript,
@@ -42,13 +43,13 @@ func getCustomRules(c echo.Context) error {
 		return err
 	}
 
-	queryFields := "rule_id, rule_name, db_type, `desc`, level, type"
+	queryFields := "rule_id, db_type, `desc`, annotation,level, type"
 	var err error
 	var rules []*model.CustomRule
-	if req.FilterDBType == "" && req.FilterRuleName == "" {
+	if req.FilterDBType == "" && req.FilterDesc == "" {
 		rules, err = s.GetCustomRules(queryFields)
 	} else {
-		rules, err = s.GetCustomRulesByDBTypeAndFuzzyRuleName(queryFields, req.FilterDBType, req.FilterRuleName)
+		rules, err = s.GetCustomRulesByDBTypeAndFuzzyDesc(queryFields, req.FilterDBType, req.FilterDesc)
 	}
 
 	if err != nil {
@@ -89,15 +90,15 @@ func createCustomRule(c echo.Context) error {
 		return err
 	}
 
-	ruleName := req.RuleName
+	desc := req.Desc
 	dBType := req.DBType
 
-	_, exist, err := s.GetCustomRulesByRuleNameAndDBType(ruleName, dBType)
+	_, exist, err := s.GetCustomRulesByDescAndDBType(desc, dBType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist in %v", ruleName, dBType)))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("desc:[%v] is exist in %v", desc, dBType)))
 	}
 
 	uid, err := utils.GenUid()
@@ -107,9 +108,9 @@ func createCustomRule(c echo.Context) error {
 	ruleId := fmt.Sprintf("rule_id_%v", uid)
 	customRule := &model.CustomRule{
 		RuleId:     ruleId,
-		RuleName:   ruleName,
 		DBType:     dBType,
-		Desc:       req.Desc,
+		Desc:       desc,
+		Annotation: req.Annotation,
 		Level:      req.Level,
 		Typ:        req.Type,
 		RuleScript: req.RuleScript,
@@ -139,20 +140,23 @@ func updateCustomRule(c echo.Context) error {
 	}
 
 	updateMap := map[string]interface{}{}
-	if req.RuleName != nil {
-		if *req.RuleName != rule.RuleName {
-			_, exist, err = s.GetCustomRulesByRuleNameAndDBType(*req.RuleName, rule.DBType)
+	if req.Desc != nil {
+		if *req.Desc != rule.Desc {
+			if "" == *req.Desc {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("desc is not allowed to be empty")))
+			}
+			_, exist, err = s.GetCustomRulesByDescAndDBType(*req.Desc, rule.DBType)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			if exist {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist", *req.RuleName)))
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("rule name:[%v] is exist", *req.Desc)))
 			}
-			updateMap["rule_name"] = req.RuleName
+			updateMap["desc"] = req.Desc
 		}
 	}
-	if req.Desc != nil {
-		updateMap["desc"] = *req.Desc
+	if req.Annotation != nil {
+		updateMap["annotation"] = *req.Annotation
 	}
 	if req.Level != nil {
 		updateMap["level"] = *req.Level
@@ -189,8 +193,8 @@ func getCustomRule(c echo.Context) error {
 	res := CustomRuleResV1{
 		RuleId:     ruleId,
 		DBType:     rule.DBType,
-		RuleName:   rule.RuleName,
 		Desc:       rule.Desc,
+		Annotation: rule.Annotation,
 		Level:      rule.Level,
 		Type:       rule.Typ,
 		RuleScript: rule.RuleScript,
