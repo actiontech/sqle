@@ -2919,6 +2919,8 @@ definitions:
     type: object
   v1.RuleTypeV1:
     properties:
+      rule_count:
+        type: integer
       rule_type:
         type: string
     type: object
