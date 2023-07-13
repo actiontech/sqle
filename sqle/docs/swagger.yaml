@@ -3390,9 +3390,6 @@ definitions:
       level:
         example: notice
         type: string
-      params:
-        $ref: '#/definitions/v1.RuleParamResV1'
-        type: object
       rule_name:
         example: this is test rule
         type: string

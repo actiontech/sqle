@@ -409,7 +409,7 @@ func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error
 	return rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesByRuleNameAndDBType(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
+func (s *Storage) GetCustomRulesByDBTypeAndFuzzyRuleName(queryFields, filterDbType, fuzzyRuleName string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	db := s.db.Select(queryFields)
 	if filterDbType != "" {
@@ -427,6 +427,20 @@ func (s *Storage) GetCustomRules(queryFields string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	err := s.db.Select(queryFields).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetCustomRulesByRuleNameAndDBType(filterRuleName, filterDbType string) (CustomRule, bool, error) {
+	rule := CustomRule{}
+	err := s.db.Where("db_type = ? and rule_name = ?", filterDbType, filterRuleName).First(&rule).Error
+	if err == gorm.ErrRecordNotFound {
+		return rule, false, nil
+	}
+	return rule, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs ...interface{}) error {
+	err := s.db.Table("custom_rules").Where("rule_id = ?", ruleId).Update(attrs...).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 type typeCount struct {
