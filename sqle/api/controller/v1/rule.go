@@ -1471,7 +1471,8 @@ func GetCustomRule(c echo.Context) error {
 }
 
 type RuleTypeV1 struct {
-	RuleType string `json:"rule_type"`
+	RuleType  string `json:"rule_type"`
+	RuleCount uint   `json:"rule_count"`
 }
 
 type GetRuleTypeByDBTypeResV1 struct {
@@ -1488,8 +1489,5 @@ type GetRuleTypeByDBTypeResV1 struct {
 // @Success 200 {object} v1.GetRuleTypeByDBTypeResV1
 // @router /v1/custom_rules/{db_type}/rule_types [get]
 func GetRuleTypeByDBType(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetRuleTypeByDBTypeResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    []RuleTypeV1{},
-	})
+	return getRuleTypeByDBType(c)
 }

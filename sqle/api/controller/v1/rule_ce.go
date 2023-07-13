@@ -31,3 +31,7 @@ func updateCustomRule(c echo.Context) error {
 func getCustomRule(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
 }
+
+func getRuleTypeByDBType(c echo.Context) error {
+	return errCommunityEditionNotSupportCustomRule
+}

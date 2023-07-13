@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -278,7 +279,10 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
 	for _, executeSQL := range task.ExecuteSQLs {
 		rollbackSQL, reason, err := p.GenRollbackSQL(context.TODO(), executeSQL.Content)
-		if err != nil {
+		if err != nil && session.IsParseShowCreateTableContentErr(err) {
+			l.Errorf("gen rollback sql error, %v", err) // todo #1630 临时跳过创表语句解析错误
+			return nil, nil
+		} else if err != nil {
 			l.Errorf("gen rollback sql error, %v", err)
 			return nil, err
 		}
