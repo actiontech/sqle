@@ -201,7 +201,6 @@ func getCustomRule(c echo.Context) error {
 	})
 }
 
-
 func getRuleTypeByDBType(c echo.Context) error {
 	dbType := c.Param("db_type")
 
