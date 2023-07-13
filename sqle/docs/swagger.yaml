@@ -481,6 +481,9 @@ definitions:
     type: object
   v1.CreateCustomRuleReqV1:
     properties:
+      annotation:
+        example: this is test rule
+        type: string
       db_type:
         example: MySQL
         type: string
@@ -488,13 +491,12 @@ definitions:
         example: this is test rule
         type: string
       level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         example: notice
-        type: string
-      rule_id:
-        example: rule1
-        type: string
-      rule_name:
-        example: this is test rule
         type: string
       rule_script:
         type: string
@@ -687,6 +689,9 @@ definitions:
     type: object
   v1.CustomRuleResV1:
     properties:
+      annotation:
+        example: this is test rule
+        type: string
       db_type:
         example: MySQL
         type: string
@@ -702,9 +707,6 @@ definitions:
         example: notice
         type: string
       rule_id:
-        type: string
-      rule_name:
-        example: this is test rule
         type: string
       rule_script:
         type: string
@@ -3384,14 +3386,19 @@ definitions:
     type: object
   v1.UpdateCustomRuleReqV1:
     properties:
+      annotation:
+        example: this is test rule
+        type: string
       desc:
         example: this is test rule
         type: string
       level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
         example: notice
-        type: string
-      rule_name:
-        example: this is test rule
         type: string
       rule_script:
         type: string
@@ -5239,9 +5246,9 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: filter rule name
+      - description: filter desc
         in: query
-        name: filter_rule_name
+        name: filter_desc
         type: string
       responses:
         "200":
