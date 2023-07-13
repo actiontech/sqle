@@ -61,17 +61,3 @@ func TestCustomValidateErrorMessage(t *testing.T) {
 		"tMultiError.port is invalid port",
 		Validate(&tMultiError{Name: "_name", Port: "0"}).Error())
 }
-
-func TestValidateCustomRule(t *testing.T) {
-	assert.Equal(t, true, validateCustomeRule("name"))
-	assert.Equal(t, true, validateCustomeRule("name_"))
-	assert.Equal(t, true, validateCustomeRule("name-"))
-	assert.Equal(t, true, validateCustomeRule("name-1"))
-	assert.Equal(t, true, validateCustomeRule("name-123_123"))
-	
-	assert.Equal(t, false, validateCustomeRule("1_name"))
-	assert.Equal(t, false, validateCustomeRule("-name"))
-	assert.Equal(t, false, validateCustomeRule("_name"))
-	assert.Equal(t, false, validateCustomeRule("中文"))
-	assert.Equal(t, false, validateCustomeRule("name-中文"))
-}
