@@ -443,6 +443,15 @@ func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs ...interface{}) 
 	return errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetCustomRuleByDBTypeAndScriptType(DBType, ScriptType string) ([]CustomRule, bool, error) {
+	rules := []CustomRule{}
+	err := s.db.Where("db_type = ? and script_type = ?", DBType, ScriptType).Find(&rules).Error
+	if err == gorm.ErrRecordNotFound {
+		return rules, false, nil
+	}
+	return rules, true, errors.New(errors.ConnectStorageError, err)
+}
+
 type typeCount struct {
 	Type      string `json:"type"`
 	TypeCount uint   `json:"type_count"`
