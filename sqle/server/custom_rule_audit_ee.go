@@ -19,7 +19,7 @@ func CustomRuleAudit(l *logrus.Entry, DbType string, sqls []string, results []*d
 	if err != nil {
 		l.Errorf("query custom rules failed:%v", err)
 	}
-	if exist {
+	if !exist {
 		return
 	}
 	for i, sql := range sqls {
