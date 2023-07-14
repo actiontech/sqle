@@ -454,9 +454,9 @@ func (at *SlowLogTask) collectorDo() {
 
 		for i := range res {
 			sqlInfo := &sqlFromSlowLog{
-				sql:        res[i]["sql_text"].String,
-				schema:     res[i]["db"].String,
-				startTime:  res[i]["start_time"].String,
+				sql:       res[i]["sql_text"].String,
+				schema:    res[i]["db"].String,
+				startTime: res[i]["start_time"].String,
 			}
 			queryTime, err := strconv.Atoi(res[i]["query_time"].String)
 			if err != nil {
@@ -490,7 +490,7 @@ func (at *SlowLogTask) collectorDo() {
 		now := time.Now()
 		for i := range sqlFingerprintInfos {
 			fp := sqlFingerprintInfos[i]
-			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":"%d","start_time":"%v"}`,
+			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":%d,"start_time":"%v"}`,
 				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds, fp.startTime)
 			auditPlanSQLs[i] = &model.AuditPlanSQLV2{
 				Fingerprint: fp.fingerprint,
@@ -555,7 +555,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, err
 				lastSql:               sqlItem.sql,
 				lastSqlSchema:         sqlItem.schema,
 				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
-				startTime:			   sqlItem.startTime,
+				startTime:             sqlItem.startTime,
 			}
 			sqlInfos = append(sqlInfos, sqlInfo{fingerprint: fp})
 		}
@@ -612,7 +612,7 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 		var info = struct {
 			Counter              uint64 `json:"counter"`
 			LastReceiveTimestamp string `json:"last_receive_timestamp"`
-			AverageQueryTime     string `json:"average_query_time"`
+			AverageQueryTime     int    `json:"average_query_time"`
 		}{}
 		err := json.Unmarshal(sql.Info, &info)
 		if err != nil {
@@ -623,7 +623,7 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 			"fingerprint":            sql.Fingerprint,
 			"counter":                strconv.FormatUint(info.Counter, 10),
 			"last_receive_timestamp": info.LastReceiveTimestamp,
-			"average_query_time":     info.AverageQueryTime,
+			"average_query_time":     strconv.Itoa(info.AverageQueryTime),
 		})
 	}
 	return head, rows, count, nil
