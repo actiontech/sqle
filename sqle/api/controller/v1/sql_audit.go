@@ -103,10 +103,10 @@ func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
 }
 
 type GetSQLAnalysisReq struct {
-	ProjectName  string `json:"project_name" form:"project_name" example:"default" valid:"required"`
-	InstanceName string `json:"instance_name" form:"instance_name" example:"MySQL" valid:"required"`
-	SchemaName   string `json:"schema_name" form:"schema_name" example:"test"`
-	Sql          string `json:"sql" form:"sql" example:"select * from t1; select * from t2;"`
+	ProjectName  string `json:"project_name" query:"project_name" example:"default" valid:"required"`
+	InstanceName string `json:"instance_name" query:"instance_name" example:"MySQL" valid:"required"`
+	SchemaName   string `json:"schema_name" query:"schema_name" example:"test"`
+	Sql          string `json:"sql" query:"sql" example:"select * from t1; select * from t2;"`
 }
 
 type DirectGetSQLAnalysisResV1 struct {
@@ -124,7 +124,10 @@ type SqlAnalysisResDataV1 struct {
 // @Description Direct get sql analysis result
 // @Id directGetSQLAnalysisV1
 // @Tags sql_analysis
-// @param sql_analysis body v1.GetSQLAnalysisReq true "get sql analysis"
+// @Param project_name query string true "project name"
+// @Param instance_name query string true "instance name"
+// @Param schema_name query string false "schema name"
+// @Param sql query string false "sql"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.DirectGetSQLAnalysisResV1
 // @router /v1/sql_analysis [get]
