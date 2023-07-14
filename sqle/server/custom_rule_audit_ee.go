@@ -45,7 +45,7 @@ func CustomRuleAudit(l *logrus.Entry, DbType string, sqls []string, results []*d
 					RuleName: customRule.RuleId,
 					Level:    driverV2.RuleLevel(customRule.Level),
 				}
-				result := results[i]
+				result := results[i]  // TODO: 判断越界
 				result.Results = append(result.Results, &res)
 			}
 		}
