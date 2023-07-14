@@ -25,6 +25,9 @@ func getAction(sqls []string, typ int, p driver.Plugin) *action {
 		Model:      model.Model{ID: 1},
 		SQLSource:  model.TaskSQLSourceFromMyBatisXMLFile,
 		InstanceId: 1,
+		Instance: &model.Instance{
+			DbType: "MySQL",
+		},
 	}
 
 	for _, sql := range sqls {
