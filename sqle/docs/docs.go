@@ -13203,6 +13203,9 @@ var doc = `{
         "v1.RuleTypeV1": {
             "type": "object",
             "properties": {
+                "is_new_rule_type": {
+                    "type": "boolean"
+                },
                 "rule_count": {
                     "type": "integer"
                 },
