@@ -1079,3 +1079,20 @@ type GetTableMetadataResV1 struct {
 func GetTableMetadata(c echo.Context) error {
 	return getTableMetadata(c)
 }
+
+type GetInstanceTypeLogoReqV1 struct {
+	InstanceType string `json:"instance_type" query:"instance_type"`
+}
+
+// GetInstanceTypeLogo
+// @Summary 获取实例类型logo
+// @Description get instance type logo
+// @Id getInstanceTypeLogo
+// @Tags instance
+// @Param instance_type query string true "instance type"
+// @Security ApiKeyAuth
+// @Success 200 {file} file "get instance type logo"
+// @router /v1/static/instance_logo [get]
+func GetInstanceTypeLogo(c echo.Context) error {
+	return nil
+}

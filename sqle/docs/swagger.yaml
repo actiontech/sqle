@@ -4275,6 +4275,8 @@ definitions:
         type: integer
       driver_name:
         type: string
+      logo_url:
+        type: string
     type: object
   v2.GetAuditPlanAnalysisDataResV2:
     properties:
@@ -8596,6 +8598,26 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/static/instance_logo:
+    get:
+      description: get instance type logo
+      operationId: getInstanceTypeLogo
+      parameters:
+      - description: instance type
+        in: query
+        name: instance_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: get instance type logo
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例类型logo
+      tags:
+      - instance
   /v1/static/logo:
     get:
       description: get logo
