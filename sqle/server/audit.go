@@ -33,6 +33,22 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uin
 
 const AuditSchema = "AuditSchema"
 
+func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *model.Instance) (*model.Task, error) {
+	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType, nil, "")
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	task, err := convertSQLsToTask(sql, plugin)
+	if err != nil {
+		return nil, err
+	}
+	task.Instance = instance
+
+	return task, audit(l, task, plugin)
+}
+
 func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *uint, ruleTemplateName string) (*model.Task, error) {
 	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, projectId, ruleTemplateName)
 	if err != nil {

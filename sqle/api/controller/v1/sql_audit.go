@@ -75,7 +75,30 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	s := model.GetStorage()
+	var instance *model.Instance
+	var exist bool
+	if req.ProjectName != nil && req.InstanceName != nil {
+		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, *req.ProjectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+		}
+	}
+
+	var schemaName string
+	if req.SchemaName != nil {
+		schemaName = *req.SchemaName
+	}
+
+	var task *model.Task
+	if instance != nil && schemaName != "" {
+		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
+	} else {
+		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
