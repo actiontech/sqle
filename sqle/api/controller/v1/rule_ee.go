@@ -218,12 +218,18 @@ func getRuleTypeByDBType(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	dbTypeMap := make(map[string]uint, len(allRuleTypes))
+	newRuleTypes := []model.CustomTypeCount{}
 	for i := range allRuleTypes {
 		ruleType := allRuleTypes[i]
 		dbTypeMap[ruleType] = uint(0)
 	}
-	for ruleType, count := range existRuleTypeCount {
-		dbTypeMap[ruleType] = count
+	for _, ruleType := range existRuleTypeCount {
+		_, exist := dbTypeMap[ruleType.Type]
+		if exist {
+			dbTypeMap[ruleType.Type] = ruleType.TypeCount
+		} else {
+			newRuleTypes = append(newRuleTypes, *ruleType)
+		}
 	}
 
 	ruleTypeV1s := []RuleTypeV1{}
@@ -231,6 +237,13 @@ func getRuleTypeByDBType(c echo.Context) error {
 		ruleTypeV1s = append(ruleTypeV1s, RuleTypeV1{
 			RuleType:  k,
 			RuleCount: v,
+		})
+	}
+	for _, ruleType := range newRuleTypes {
+		ruleTypeV1s = append(ruleTypeV1s, RuleTypeV1{
+			RuleType:      ruleType.Type,
+			RuleCount:     ruleType.TypeCount,
+			IsNewRuleType: true,
 		})
 	}
 
