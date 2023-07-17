@@ -6191,6 +6191,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/static/instance_logo": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance type logo",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例类型logo",
+                "operationId": "getInstanceTypeLogo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance type",
+                        "name": "instance_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "get instance type logo",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/static/logo": {
             "get": {
                 "description": "get logo",
@@ -15229,6 +15261,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "driver_name": {
+                    "type": "string"
+                },
+                "logo_url": {
                     "type": "string"
                 }
             }
