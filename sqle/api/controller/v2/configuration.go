@@ -17,6 +17,7 @@ type GetDriversRes struct {
 type DriverMeta struct {
 	Name        string `json:"driver_name"`
 	DefaultPort uint   `json:"default_port"`
+	LogoUrl     string `json:"logo_url"`
 }
 
 // GetDrivers get support Driver list.
