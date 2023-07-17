@@ -319,6 +319,9 @@ func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {
 		return false, err
 	}
 	switch node.(type) {
+	// pingcap将show语句归为DML语句，应该判断为非DML语句
+	case *ast.ShowStmt:
+		return false, nil
 	case ast.DMLNode:
 		return true, nil
 	default:
