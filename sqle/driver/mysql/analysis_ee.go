@@ -320,6 +320,7 @@ func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {
 	}
 	switch node.(type) {
 	// pingcap将show语句归为DML语句，应该判断为非DML语句
+	// DML文档 https://dev.mysql.com/doc/refman/5.7/en/sql-data-manipulation-statements.html
 	case *ast.ShowStmt:
 		return false, nil
 	case ast.DMLNode:
