@@ -2828,6 +2828,8 @@ definitions:
     type: object
   v1.RuleReqV1:
     properties:
+      is_custom_rule:
+        type: boolean
       level:
         example: error
         type: string
@@ -2849,6 +2851,8 @@ definitions:
         type: string
       desc:
         type: string
+      is_custom_rule:
+        type: boolean
       level:
         enum:
         - normal
