@@ -1088,6 +1088,7 @@ type GetInstanceTypeLogoReqV1 struct {
 }
 
 var defaultInstanceLogo []byte
+var instanceTypeLogoMap = map[string][]byte{}
 
 // GetInstanceTypeLogo
 // @Summary 获取实例类型logo
@@ -1104,9 +1105,27 @@ func GetInstanceTypeLogo(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	logo, err := getDefaultLogo()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if _, ok := instanceTypeLogoMap[req.InstanceType]; ok {
+		return c.Blob(http.StatusOK, "image/png", instanceTypeLogoMap[req.InstanceType])
+	}
+
+	allDriverMetaList := driver.GetPluginManager().AllDriverMetas()
+	for _, driverMeta := range allDriverMetaList {
+		// 有可能插件没有配置logo
+		if driverMeta.Logo != nil {
+			instanceTypeLogoMap[driverMeta.PluginName] = driverMeta.Logo
+		}
+	}
+
+	var logo []byte
+	var err error
+	if _, ok := instanceTypeLogoMap[req.InstanceType]; ok {
+		return c.Blob(http.StatusOK, "image/png", instanceTypeLogoMap[req.InstanceType])
+	} else {
+		logo, err = getDefaultLogo()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	return c.Blob(http.StatusOK, "image/png", logo)
