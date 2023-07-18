@@ -17,8 +17,11 @@ import (
 type DirectAuditReqV1 struct {
 	InstanceType string `json:"instance_type" form:"instance_type" example:"MySQL" valid:"required"`
 	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
-	SQLContent string `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
-	SQLType    string `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
+	SQLContent   string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
+	SQLType      string  `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
+	ProjectName  *string `json:"project_name" form:"project_name" example:"project1"`
+	InstanceName *string `json:"instance_name" form:"instance_name" example:"instance1"`
+	SchemaName   *string `json:"schema_name" form:"schema_name" example:"schema1"`
 }
 
 const (
@@ -72,7 +75,30 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	s := model.GetStorage()
+	var instance *model.Instance
+	var exist bool
+	if req.ProjectName != nil && req.InstanceName != nil {
+		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, *req.ProjectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+		}
+	}
+
+	var schemaName string
+	if req.SchemaName != nil {
+		schemaName = *req.SchemaName
+	}
+
+	var task *model.Task
+	if instance != nil && schemaName != "" {
+		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
+	} else {
+		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, ErrDirectAudit)
