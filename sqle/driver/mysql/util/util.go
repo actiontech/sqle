@@ -22,7 +22,7 @@ var MysqlLogo []byte
 const LogoDir = "./ui/static/media"
 
 func init() {
-	entry := log.NewEntry().WithField("entry", "read logo dir failed")
+	entry := log.NewEntry().WithField("mysql_log", "read logo dir failed")
 	fileInfos, err := ioutil.ReadDir(LogoDir)
 	if err != nil {
 		entry.Error(err.Error())
