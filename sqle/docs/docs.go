@@ -13120,6 +13120,9 @@ var doc = `{
         "v1.RuleReqV1": {
             "type": "object",
             "properties": {
+                "is_custom_rule": {
+                    "type": "boolean"
+                },
                 "level": {
                     "type": "string",
                     "example": "error"
@@ -13149,6 +13152,9 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "is_custom_rule": {
+                    "type": "boolean"
                 },
                 "level": {
                     "type": "string",
