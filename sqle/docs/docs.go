@@ -10084,9 +10084,21 @@ var doc = `{
         "v1.DirectAuditReqV1": {
             "type": "object",
             "properties": {
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
                 "instance_type": {
                     "type": "string",
                     "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "project1"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
                 },
                 "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
@@ -13120,6 +13132,9 @@ var doc = `{
         "v1.RuleReqV1": {
             "type": "object",
             "properties": {
+                "is_custom_rule": {
+                    "type": "boolean"
+                },
                 "level": {
                     "type": "string",
                     "example": "error"
@@ -13149,6 +13164,9 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "is_custom_rule": {
+                    "type": "boolean"
                 },
                 "level": {
                     "type": "string",
