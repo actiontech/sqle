@@ -150,6 +150,7 @@ var autoMigrateList = []interface{}{
 	&LogoConfig{},
 	&WebHookConfig{},
 	&CustomRule{},
+	&RuleTemplateCustomRule{},
 }
 
 func (s *Storage) AutoMigrate() error {
