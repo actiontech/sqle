@@ -3,7 +3,10 @@ package v1
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"path"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -1084,6 +1087,8 @@ type GetInstanceTypeLogoReqV1 struct {
 	InstanceType string `json:"instance_type" query:"instance_type"`
 }
 
+var defaultInstanceLogo []byte
+
 // GetInstanceTypeLogo
 // @Summary 获取实例类型logo
 // @Description get instance type logo
@@ -1094,5 +1099,29 @@ type GetInstanceTypeLogoReqV1 struct {
 // @Success 200 {file} file "get instance type logo"
 // @router /v1/static/instance_logo [get]
 func GetInstanceTypeLogo(c echo.Context) error {
-	return nil
+	req := new(GetInstanceTypeLogoReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if defaultInstanceLogo != nil {
+		return c.Blob(http.StatusOK, "image/png", defaultInstanceLogo)
+	} else {
+		fileInfos, err := ioutil.ReadDir(LogoDir)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		for _, fileInfo := range fileInfos {
+			if strings.HasPrefix(fileInfo.Name(), "default_instance_logo.") {
+				logoPath := path.Join(LogoDir, fileInfo.Name())
+				defaultInstanceLogo, err = ioutil.ReadFile(logoPath)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+			}
+		}
+	}
+
+	return c.Blob(http.StatusOK, "image/png", defaultInstanceLogo)
 }

@@ -250,6 +250,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
 	v1Router.DELETE("/projects/:project_name/instances/:instance_name/", v1.DeleteInstance)
 	v1Router.PATCH("/projects/:project_name/instances/:instance_name/", v1.UpdateInstance)
+	v1Router.GET("/static/instance_logo", v1.GetInstanceTypeLogo)
 
 	// rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
