@@ -27,9 +27,10 @@ type CreateRuleTemplateReqV1 struct {
 }
 
 type RuleReqV1 struct {
-	Name   string           `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
-	Level  string           `json:"level" form:"level" valid:"required" example:"error"`
-	Params []RuleParamReqV1 `json:"params" form:"params" valid:"dive,required"`
+	Name         string           `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
+	Level        string           `json:"level" form:"level" valid:"required" example:"error"`
+	Params       []RuleParamReqV1 `json:"params" form:"params" valid:"dive,required"`
+	IsCustomRule bool             `json:"is_custom_rule" form:"is_custom_rule" valid:"required"`
 }
 
 type RuleParamReqV1 struct {
@@ -435,13 +436,14 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name       string           `json:"rule_name"`
-	Desc       string           `json:"desc"`
-	Annotation string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
-	Level      string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ        string           `json:"type" example:"全局配置" `
-	DBType     string           `json:"db_type" example:"mysql"`
-	Params     []RuleParamResV1 `json:"params,omitempty"`
+	Name         string           `json:"rule_name"`
+	Desc         string           `json:"desc"`
+	Annotation   string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
+	Level        string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ          string           `json:"type" example:"全局配置" `
+	DBType       string           `json:"db_type" example:"mysql"`
+	Params       []RuleParamResV1 `json:"params,omitempty"`
+	IsCustomRule bool             `json:"is_custom_rule"`
 }
 
 type RuleParamResV1 struct {
