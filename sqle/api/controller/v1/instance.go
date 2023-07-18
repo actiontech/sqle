@@ -1104,12 +1104,21 @@ func GetInstanceTypeLogo(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	logo, err := getDefaultLogo()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.Blob(http.StatusOK, "image/png", logo)
+}
+
+func getDefaultLogo() ([]byte, error) {
 	if defaultInstanceLogo != nil {
-		return c.Blob(http.StatusOK, "image/png", defaultInstanceLogo)
+		return defaultInstanceLogo, nil
 	} else {
 		fileInfos, err := ioutil.ReadDir(LogoDir)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+			return nil, err
 		}
 
 		for _, fileInfo := range fileInfos {
@@ -1117,11 +1126,11 @@ func GetInstanceTypeLogo(c echo.Context) error {
 				logoPath := path.Join(LogoDir, fileInfo.Name())
 				defaultInstanceLogo, err = ioutil.ReadFile(logoPath)
 				if err != nil {
-					return controller.JSONBaseErrorReq(c, err)
+					return nil, err
 				}
 			}
 		}
 	}
 
-	return c.Blob(http.StatusOK, "image/png", defaultInstanceLogo)
+	return defaultInstanceLogo, nil
 }
