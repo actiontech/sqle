@@ -4,15 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
+
+var MysqlLogo []byte
+
+const LogoDir = "./ui/static/media"
+
+func init() {
+	entry := log.NewEntry().WithField("entry", "read logo dir failed")
+	fileInfos, err := ioutil.ReadDir(LogoDir)
+	if err != nil {
+		entry.Error(err.Error())
+	}
+
+	for _, fileInfo := range fileInfos {
+		if strings.HasPrefix(fileInfo.Name(), "mysql_logo.") {
+			logoPath := path.Join(LogoDir, fileInfo.Name())
+			MysqlLogo, err = ioutil.ReadFile(logoPath)
+			if err != nil {
+				entry.Error(err.Error())
+			}
+		}
+	}
+}
 
 var ErrUnsupportedSqlType = errors.New("unsupported sql type")
 

@@ -587,6 +587,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	return &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
+		Logo:                     util.MysqlLogo,
 		Rules:                    allRules,
 		DatabaseAdditionalParams: params.Params{},
 		EnabledOptionalModule: []driverV2.OptionalModule{
