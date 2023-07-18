@@ -72,6 +72,17 @@ func (pm *pluginManager) AllDriverMetas() []*driverV2.DriverMetas {
 	return metas
 }
 
+func (pm *pluginManager) AllLogo() map[string][]byte {
+	logoMap := map[string][]byte{}
+	for _, pluginName := range pm.pluginNames {
+		meta := pm.metas[pluginName]
+		if meta.Logo != nil {
+			logoMap[pluginName] = meta.Logo
+		}
+	}
+	return logoMap
+}
+
 func (pm *pluginManager) AllAdditionalParams() map[string] /*driver name*/ params.Params {
 	newParams := map[string]params.Params{}
 	for k, v := range pm.metas {
