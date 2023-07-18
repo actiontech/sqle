@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -38,6 +39,7 @@ func GetDrivers(c echo.Context) error {
 		data[i] = &DriverMeta{
 			Name:        meta.PluginName,
 			DefaultPort: uint(meta.DatabaseDefaultPort),
+			LogoUrl:     fmt.Sprintf("/v1/static/instance_logo?instance_type=%s", meta.PluginName),
 		}
 	}
 
