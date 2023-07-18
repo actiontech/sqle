@@ -172,7 +172,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	if len(results) != len(sqls) {
 		return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
 	}
-	CustomRuleAudit(l, task.Instance.DbType, sqls, results)
+	CustomRuleAudit(l, task.DBType, sqls, results)
 	for i, sql := range auditSqls {
 		hook.AfterAudit(sql)
 		sql.AuditStatus = model.SQLAuditStatusFinished
