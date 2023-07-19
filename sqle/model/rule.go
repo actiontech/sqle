@@ -560,6 +560,7 @@ func (s *Storage) GetAllCustomRuleByGlobalRuleTemplateName(name string) ([]*Cust
 	err := s.db.Joins("LEFT JOIN rule_template_custom_rules ON custom_rules.rule_id = rule_template_custom_rules.rule_id").
 		Joins("LEFT JOIN rule_templates ON rule_template_custom_rules.rule_template_id = rule_templates.id").
 		Where("rule_templates.project_id = 0").
+		Where("rule_templates.deleted_at is null").
 		Where("rule_templates.name = ?", name).
 		Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)

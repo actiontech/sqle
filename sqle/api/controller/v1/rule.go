@@ -30,7 +30,7 @@ type RuleReqV1 struct {
 	Name         string           `json:"name" form:"name" valid:"required" example:"ddl_check_index_count"`
 	Level        string           `json:"level" form:"level" valid:"required" example:"error"`
 	Params       []RuleParamReqV1 `json:"params" form:"params" valid:"dive,required"`
-	IsCustomRule *bool            `json:"is_custom_rule" form:"is_custom_rule" valid:"required"`
+	IsCustomRule bool             `json:"is_custom_rule" form:"is_custom_rule"`
 }
 
 type RuleParamReqV1 struct {
@@ -118,7 +118,7 @@ func checkAndGenerateAllTypeRules(rulesReq []RuleReqV1, template *model.RuleTemp
 	rules := []RuleReqV1{}
 	customRules := []RuleReqV1{}
 	for i := range rulesReq {
-		if *rulesReq[i].IsCustomRule {
+		if rulesReq[i].IsCustomRule {
 			customRules = append(customRules, rulesReq[i])
 		} else {
 			rules = append(rules, rulesReq[i])
