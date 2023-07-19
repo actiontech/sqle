@@ -735,6 +735,10 @@ func CloneRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	err = s.CloneRuleTemplateCustomRules(sourceTpl, ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1283,6 +1287,10 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	err = s.CloneRuleTemplateRules(sourceTpl, ruleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.CloneRuleTemplateCustomRules(sourceTpl, ruleTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
