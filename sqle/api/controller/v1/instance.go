@@ -3,10 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"path"
-	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -1087,8 +1084,6 @@ type GetInstanceTypeLogoReqV1 struct {
 	InstanceType string `json:"instance_type" query:"instance_type"`
 }
 
-var defaultInstanceLogo []byte
-
 // GetInstanceTypeLogo
 // @Summary 获取实例类型logo
 // @Description get instance type logo
@@ -1106,40 +1101,9 @@ func GetInstanceTypeLogo(c echo.Context) error {
 
 	instanceTypeLogoMap := driver.GetPluginManager().AllLogo()
 
-	var logo []byte
-	var err error
-	var ok bool
-	if logo, ok = instanceTypeLogoMap[req.InstanceType]; ok {
+	if logo, ok := instanceTypeLogoMap[req.InstanceType]; ok {
 		return c.Blob(http.StatusOK, "image/png", logo)
-	} else {
-		logo, err = getDefaultLogo()
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 	}
 
-	return c.Blob(http.StatusOK, "image/png", logo)
-}
-
-func getDefaultLogo() ([]byte, error) {
-	if defaultInstanceLogo != nil {
-		return defaultInstanceLogo, nil
-	} else {
-		fileInfos, err := ioutil.ReadDir(LogoDir)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, fileInfo := range fileInfos {
-			if strings.HasPrefix(fileInfo.Name(), "default_instance_logo.") {
-				logoPath := path.Join(LogoDir, fileInfo.Name())
-				defaultInstanceLogo, err = ioutil.ReadFile(logoPath)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	return defaultInstanceLogo, nil
+	return c.Blob(http.StatusOK, "image/png", defaultInstanceLogo)
 }
