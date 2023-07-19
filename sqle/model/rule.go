@@ -483,22 +483,22 @@ func (s *Storage) GetCustomRuleByDBTypeAndScriptType(DBType, ScriptType string) 
 	return rules, true, errors.New(errors.ConnectStorageError, err)
 }
 
-type typeCount struct {
+type CustomTypeCount struct {
 	Type      string `json:"type"`
 	TypeCount uint   `json:"type_count"`
 }
 
-func (s *Storage) GetCustomRuleTypeCountByDBType(DBType string) (map[string]uint, error) {
-	typeCounts := []*typeCount{}
-	err := s.db.Model(&CustomRule{}).Select("type, count(1) type_count").Where("db_type = ?", DBType).Group("type").Scan(&typeCounts).Error
+func (s *Storage) GetCustomRuleTypeCountByDBType(DBType string) ([]*CustomTypeCount, error) {
+	typeCounts := []*CustomTypeCount{}
+	err := s.db.Model(&CustomRule{}).
+		Select("type, count(1) type_count, MIN(created_at) as min_created_at").
+		Where("db_type = ?", DBType).
+		Group("type").
+		Order("min_created_at").Scan(&typeCounts).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
-	dbTypeCount := make(map[string]uint, len(typeCounts))
-	for i := range typeCounts {
-		dbTypeCount[typeCounts[i].Type] = typeCounts[i].TypeCount
-	}
-	return dbTypeCount, nil
+	return typeCounts, nil
 }
 
 func (s *Storage) GetCustomRulesByDBType(filterDbType string) ([]*CustomRule, error) {
