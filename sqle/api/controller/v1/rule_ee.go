@@ -241,9 +241,9 @@ func getRuleTypeByDBType(c echo.Context) error {
 	}
 	for _, ruleType := range newRuleTypes {
 		ruleTypeV1s = append(ruleTypeV1s, RuleTypeV1{
-			RuleType:      ruleType.Type,
-			RuleCount:     ruleType.TypeCount,
-			IsNewRuleType: true,
+			RuleType:         ruleType.Type,
+			RuleCount:        ruleType.TypeCount,
+			IsCustomRuleType: true,
 		})
 	}
 
