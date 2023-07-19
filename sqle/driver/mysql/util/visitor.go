@@ -163,7 +163,10 @@ type TableSourceExtractor struct {
 func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
 	case *ast.TableSource:
-		ts.TableSources[(stmt.Source).(*ast.TableName).Name.O] = stmt
+		if tn, ok := stmt.Source.(*ast.TableName); ok {
+			ts.TableSources[tn.Name.O] = stmt
+		}
+
 	}
 	return in, false
 }
@@ -197,7 +200,11 @@ func (se *SelectFieldExtractor) Enter(in ast.Node) (node ast.Node, skipChildren 
 				arg = expr.GetValue()
 			}
 
-			isDigitOne := arg.(int64) == 1
+			isDigitOne := false
+			if val, ok := arg.(int64); ok && val == 1 {
+				isDigitOne = true
+			}
+
 			isCountFunc := strings.ToLower(aggregateFuncExpr.F) == ast.AggFuncCount
 			if isCountFunc && isDigitOne {
 				se.IsSelectOnlyIncludeCountFunc = true

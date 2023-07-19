@@ -146,7 +146,17 @@ func (a AuditResults) Value() (driver.Value, error) {
 }
 
 func (a *AuditResults) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), a)
+
+	if input == nil {
+		return nil
+	}
+	switch v := input.(type) {
+	case []byte:
+		return json.Unmarshal(v, a)
+	case string:
+		return json.Unmarshal([]byte(v), a)
+	}
+	return fmt.Errorf("unsupported input: %#v", input)
 }
 
 func (a *AuditResults) String() string {

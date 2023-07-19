@@ -167,9 +167,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 }
 
 // SelectStmt:
-//   1. single select on single table
-//   2. single select on multiple tables, such join
-//   3. multi select on multiple tables, such subqueries
+//  1. single select on single table
+//  2. single select on multiple tables, such join
+//  3. multi select on multiple tables, such subqueries
 func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 	visitor := util.SelectStmtExtractor{}
 	ss.Accept(&visitor)
@@ -215,8 +215,20 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 
 			} else if ss.From.TableRefs.Using != nil {
 
-				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.O
-				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.O
+				leftTableName := ""
+				if ts, ok := left.(*ast.TableSource); ok {
+					if tn, ok := ts.Source.(*ast.TableName); ok {
+						leftTableName = tn.Name.O
+					}
+				}
+
+				rightTableName := ""
+				if ts, ok := right.(*ast.TableSource); ok {
+					if tn, ok := ts.Source.(*ast.TableName); ok {
+						rightTableName = tn.Name.O
+					}
+				}
+
 				for _, col := range ss.From.TableRefs.Using {
 					o.tables[leftTableName] = &tableInSelect{joinOnColumn: col.Name.L}
 					o.tables[rightTableName] = &tableInSelect{joinOnColumn: col.Name.L}
@@ -604,7 +616,13 @@ func getTableNameFromSingleSelect(ss *ast.SelectStmt) string {
 	if ss.From.TableRefs.Left == nil {
 		return ""
 	}
-	return ss.From.TableRefs.Left.(*ast.TableSource).Source.(*ast.TableName).Name.O
+
+	if ts, ok := ss.From.TableRefs.Left.(*ast.TableSource); ok {
+		if tn, ok := ts.Source.(*ast.TableName); ok {
+			return tn.Name.O
+		}
+	}
+	return ""
 }
 
 // removeDrivingTable remove driving table from execution plan.

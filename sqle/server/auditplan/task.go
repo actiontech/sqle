@@ -630,7 +630,11 @@ type TiDBAuditLogTask struct {
 }
 
 func NewTiDBAuditLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
-	return &TiDBAuditLogTask{NewDefaultTask(entry, ap).(*DefaultTask)}
+	return &TiDBAuditLogTask{&DefaultTask{&baseTask{
+		ap:      ap,
+		persist: model.GetStorage(),
+		logger:  entry,
+	}}}
 }
 
 func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {

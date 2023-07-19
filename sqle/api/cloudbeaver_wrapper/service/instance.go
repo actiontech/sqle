@@ -167,8 +167,12 @@ func UpdateCloudBeaverInstance(client *gqlClient.Client, cbInstID string, sqleIn
 		//nolint:nilerr
 		return nil
 	}
+
 	// 更新实例
-	params["config"].(map[string]interface{})["connectionId"] = cbInstID
+	if res, ok := params["config"].(map[string]interface{}); ok {
+		res["connectionId"] = cbInstID
+	}
+
 	req := gqlClient.NewRequest(QueryGQL.UpdateConnectionQuery(), params)
 	resp := struct {
 		Connection struct {
@@ -370,6 +374,10 @@ func fillOceanBaseParams(inst *sqleModel.Instance, config map[string]interface{}
 
 	config["driverId"] = "oceanbase:alipay_oceanbase"
 	config["authModelId"] = "oceanbase_native"
-	config["credentials"].(map[string]interface{})["userName"] = fmt.Sprintf("%v@%v", inst.User, tenant)
+
+	if res, ok := config["credentials"].(map[string]interface{}); ok {
+		res["userName"] = fmt.Sprintf("%v@%v", inst.User, tenant)
+	}
+
 	return nil
 }
