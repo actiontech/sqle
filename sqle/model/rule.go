@@ -260,6 +260,10 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
+func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
+	return s.UpdateRuleTemplateCustomRules(destination, source.CustomRuleList...)
+}
+
 func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	ruleMap := map[string]Rule{}
 	for _, rules := range allRules {
