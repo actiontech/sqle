@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	_driver "database/sql/driver"
 	"fmt"
+	"io/ioutil"
+	"path"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver"
@@ -587,6 +589,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	return &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
+		Logo:                     MysqlLogo,
 		Rules:                    allRules,
 		DatabaseAdditionalParams: params.Params{},
 		EnabledOptionalModule: []driverV2.OptionalModule{
@@ -608,6 +611,26 @@ func (p *PluginProcessor) Stop() error {
 	return nil
 }
 
+var MysqlLogo []byte
+
+const LogoDir = "./ui/static/media"
+
 func init() {
 	driver.BuiltInPluginProcessors[driverV2.DriverTypeMySQL] = &PluginProcessor{}
+
+	entry := log.NewEntry().WithField("mysql_log", "read logo dir failed")
+	fileInfos, err := ioutil.ReadDir(LogoDir)
+	if err != nil {
+		entry.Error(err.Error())
+	}
+
+	for _, fileInfo := range fileInfos {
+		if strings.HasPrefix(fileInfo.Name(), "mysql_logo.") {
+			logoPath := path.Join(LogoDir, fileInfo.Name())
+			MysqlLogo, err = ioutil.ReadFile(logoPath)
+			if err != nil {
+				entry.Error(err.Error())
+			}
+		}
+	}
 }
