@@ -70,6 +70,7 @@ func (m OptionalModule) String() string {
 type DriverMetas struct {
 	PluginName               string
 	DatabaseDefaultPort      int64
+	Logo                     []byte
 	DatabaseAdditionalParams params.Params
 	Rules                    []*Rule
 	EnabledOptionalModule    []OptionalModule
