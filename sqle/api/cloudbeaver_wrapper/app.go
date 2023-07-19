@@ -167,7 +167,6 @@ func TriggerLogin() echo.MiddlewareFunc {
 				// 判断是否访问cb数据接口，在访问前发送测试请求验证session id是否过期
 				if c.Request().RequestURI == "/sql_query/api/gql" {
 					activeUser, err := service.GetActiveUserQuery(c.Cookies())
-					fmt.Println(activeUser, err)
 					if err != nil {
 						l.Errorf("get active user failed: %v", err)
 						return err
