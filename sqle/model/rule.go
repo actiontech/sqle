@@ -569,3 +569,33 @@ func (s *Storage) GetAllCustomRuleByGlobalRuleTemplateName(name string) ([]*Cust
 		Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetCustomRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*CustomRule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, err)
+	}
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	rules := make([]*CustomRule, 0, len(tpl.CustomRuleList))
+	for _, r := range tpl.CustomRuleList {
+		rules = append(rules, r.GetRule())
+	}
+	return rules, nil
+}
+
+func (s *Storage) GetCustomRulesByInstanceId(instanceId string) ([]*CustomRule, error) {
+	instance, _, err := s.GetInstanceById(instanceId)
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	templates := instance.RuleTemplates
+	if len(templates) <= 0 {
+		return nil, nil
+	}
+	tplName := templates[0].Name
+	// 数据源可以绑定全局模板和项目模板
+	return s.GetCustomRulesFromRuleTemplateByName([]uint{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, tplName)
+}
