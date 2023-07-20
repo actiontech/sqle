@@ -84,6 +84,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 	return &protoV2.MetasResponse{
 		PluginName:               d.Meta.PluginName,
 		DatabaseDefaultPort:      d.Meta.DatabaseDefaultPort,
+		Logo:                     d.Meta.Logo,
 		DatabaseAdditionalParams: ConvertParamToProtoParam(d.Meta.DatabaseAdditionalParams),
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,

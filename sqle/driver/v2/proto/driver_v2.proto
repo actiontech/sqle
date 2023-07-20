@@ -39,12 +39,12 @@ message Session {
 }
 
 enum OptionalModule {
-    GenRollbackSQL = 0;
-    Query = 1;
-    Explain = 2;
-    GetTableMeta = 3;
-    ExtractTableFromSQL = 4;
-    EstimateSQLAffectRows = 5;
+  GenRollbackSQL = 0;
+  Query = 1;
+  Explain = 2;
+  GetTableMeta = 3;
+  ExtractTableFromSQL = 4;
+  EstimateSQLAffectRows = 5;
 }
 
 message Param {
@@ -79,9 +79,10 @@ message MetasResponse {
   repeated Param databaseAdditionalParams = 3;
   repeated Rule rules = 4;
   repeated OptionalModule enabledOptionalModule = 5;
+  bytes logo = 6;
 }
 
-// Init 
+// Init
 message InitRequest {
   DSN dsn = 1;
   repeated Rule rules = 2;
@@ -133,7 +134,7 @@ message AuditResult {
 }
 
 message AuditResults {
-  repeated AuditResult results = 1;    
+  repeated AuditResult results = 1;
 }
 
 message AuditResponse {
@@ -143,7 +144,7 @@ message AuditResponse {
 // GenRollbackSQL
 message NeedRollbackSQL {
   string query = 1;
-} 
+}
 
 message GenRollbackSQLRequest {
   Session session = 1;
@@ -153,7 +154,7 @@ message GenRollbackSQLRequest {
 message RollbackSQL {
   string query = 1;
   string message = 2;
-} 
+}
 
 message GenRollbackSQLResponse {
   RollbackSQL sql = 1;
@@ -161,7 +162,7 @@ message GenRollbackSQLResponse {
 
 // Ping
 message PingRequest {
-  Session session = 1;  
+  Session session = 1;
 }
 
 // Exec
@@ -223,9 +224,9 @@ message QueryResultValue {
   string value = 1;
 }
 
-// explain 
+// explain
 message ExplainSQL {
-  string query = 1;  
+  string query = 1;
 }
 
 message ExplainRequest {
@@ -257,7 +258,7 @@ message GetDatabasesResponse {
 // GetTableMeta
 message Table {
   string name = 1;
-  string schema = 2;  
+  string schema = 2;
 }
 
 message GetTableMetaRequest {
@@ -295,12 +296,12 @@ message TabularDataRows {
 
 message TabularData {
   repeated TabularDataHead columns = 1;
-  repeated TabularDataRows rows = 2;  
+  repeated TabularDataRows rows = 2;
 }
 
 // ExtractTableFromSQL
 message ExtractedSQL {
-  string query = 1;  
+  string query = 1;
 }
 
 message ExtractTableFromSQLRequest {
