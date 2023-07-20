@@ -85,6 +85,7 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	meta := &driverV2.DriverMetas{
 		PluginName:               result.PluginName,
 		DatabaseDefaultPort:      result.DatabaseDefaultPort,
+		Logo:                     result.Logo,
 		DatabaseAdditionalParams: driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,
