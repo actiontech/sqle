@@ -266,7 +266,7 @@ func (a *action) validation(task *model.Task) error {
 func (a *action) audit() (err error) {
 	st := model.GetStorage()
 
-	err = audit(a.entry, a.task, a.plugin)
+	err = audit(a.entry, a.task, a.plugin, nil, "")
 	if err != nil {
 		return err
 	}
