@@ -22,19 +22,29 @@ func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName 
 }
 
 func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
-	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, projectId, ruleTemplateName)
+	st := model.GetStorage()
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, projectId, task.Instance, task.DBType)
+	if err != nil {
+		return err
+	}
+	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, rules)
 	if err != nil {
 		return err
 	}
 	defer plugin.Close(context.TODO())
 
-	return hookAudit(l, task, plugin, hook, projectId, ruleTemplateName)
+	return hookAudit(l, task, plugin, hook, customRules)
 }
 
 const AuditSchema = "AuditSchema"
 
 func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *model.Instance) (*model.Task, error) {
-	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType, nil, "")
+	st := model.GetStorage()
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", nil, instance, instance.DbType)
+	if err != nil {
+		return nil, err
+	}
+	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType, rules)
 	if err != nil {
 		return nil, err
 	}
@@ -46,25 +56,30 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 	}
 	task.Instance = instance
 
-	return task, audit(l, task, plugin, nil, "")
+	return task, audit(l, task, plugin, customRules)
 }
 
 func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *uint, ruleTemplateName string) (*model.Task, error) {
-	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, projectId, ruleTemplateName)
+	st := model.GetStorage()
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, projectId, nil, dbType)
+	if err != nil {
+		return nil, err
+	}
+	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, rules)
 	if err != nil {
 		return nil, err
 	}
 	defer plugin.Close(context.TODO())
 
-	return AuditSQLByDriver(l, sql, plugin, projectId, ruleTemplateName)
+	return AuditSQLByDriver(l, sql, plugin, customRules)
 }
 
-func AuditSQLByDriver(l *logrus.Entry, sql string, p driver.Plugin, projectId *uint, ruleTemplateName string) (*model.Task, error) {
+func AuditSQLByDriver(l *logrus.Entry, sql string, p driver.Plugin, customRules []*model.CustomRule) (*model.Task, error) {
 	task, err := convertSQLsToTask(sql, p)
 	if err != nil {
 		return nil, err
 	}
-	return task, audit(l, task, p, projectId, ruleTemplateName)
+	return task, audit(l, task, p, customRules)
 }
 
 func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
@@ -84,8 +99,8 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	return task, nil
 }
 
-func audit(l *logrus.Entry, task *model.Task, p driver.Plugin, projectId *uint, ruleTemplateName string) (err error) {
-	return hookAudit(l, task, p, &EmptyAuditHook{}, projectId, ruleTemplateName)
+func audit(l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
+	return hookAudit(l, task, p, &EmptyAuditHook{}, customRules)
 }
 
 type AuditHook interface {
@@ -99,7 +114,7 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
-func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
+func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, customRules []*model.CustomRule) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
@@ -172,7 +187,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	if len(results) != len(sqls) {
 		return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
 	}
-	CustomRuleAudit(l, task, sqls, results, projectId, ruleTemplateName)
+	CustomRuleAudit(l, task, sqls, results, customRules)
 	for i, sql := range auditSqls {
 		hook.AfterAudit(sql)
 		sql.AuditStatus = model.SQLAuditStatusFinished

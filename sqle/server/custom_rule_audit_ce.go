@@ -10,4 +10,4 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results []*driverV2.AuditResults, projectId *uint, ruleTemplateName string) {}
+func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results []*driverV2.AuditResults, customRules []*model.CustomRule) {}
