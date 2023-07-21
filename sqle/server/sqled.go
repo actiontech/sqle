@@ -608,7 +608,7 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 	}
 
 	var dsn *driverV2.DSN
-	
+
 	// 填充dsn
 	if inst != nil {
 		dsn = &driverV2.DSN{
