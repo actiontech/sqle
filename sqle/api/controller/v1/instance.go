@@ -978,7 +978,7 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	rules, err := s.GetRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
+	rules, _, err := s.GetAllRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
