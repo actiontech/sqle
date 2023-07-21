@@ -4,36 +4,21 @@
 package server
 
 import (
-	"fmt"
 	"regexp"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
-	xerrors "github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
 
-func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results []*driverV2.AuditResults, projectId *uint, ruleTemplateName string) {
-	st := model.GetStorage()
-
-	var customRules []*model.CustomRule
+func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results []*driverV2.AuditResults, customRules []*model.CustomRule) {
 	var err error
-	if ruleTemplateName != "" {
-		if projectId == nil {
-			err = xerrors.New("project id is needed when rule template name is given")
-		} else {
-			customRules, err = st.GetCustomRulesFromRuleTemplateByName([]uint{*projectId, model.ProjectIdForGlobalRuleTemplate}, ruleTemplateName)
-		}
-	} else {
-		if task.Instance != nil {
-			customRules, err = st.GetCustomRulesByInstanceId(fmt.Sprintf("%v", task.Instance.ID))
-		} else {
-			templateName := st.GetDefaultRuleTemplateName(task.DBType)
-			// 默认规则模板从全局模板里拿
-			customRules, err = st.GetCustomRulesFromRuleTemplateByName([]uint{model.ProjectIdForGlobalRuleTemplate}, templateName)
-		}
+	if len(results) != len(sqls) {
+		l.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
+		return
 	}
+
 	if err != nil {
 		l.Errorf("get rules error: %v", err)
 		return
@@ -53,7 +38,7 @@ func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results [
 					RuleName: customRule.RuleId,
 					Level:    driverV2.RuleLevel(customRule.Level),
 				}
-				result := results[i] // TODO: 判断越界
+				result := results[i]
 				result.Results = append(result.Results, &res)
 			}
 		}
