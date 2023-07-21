@@ -6,6 +6,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -83,6 +84,11 @@ func deleteCustomRule(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
+func checkRuleScript(ruleScript string) error {
+	_, err := regexp.Compile(ruleScript)
+	return err
+}
+
 func createCustomRule(c echo.Context) error {
 	s := model.GetStorage()
 	req := new(CreateCustomRuleReqV1)
@@ -99,6 +105,11 @@ func createCustomRule(c echo.Context) error {
 	}
 	if exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("desc:[%v] is exist in %v", desc, dBType)))
+	}
+
+	err = checkRuleScript(req.RuleScript)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	uid, err := utils.GenUid()
@@ -168,6 +179,10 @@ func updateCustomRule(c echo.Context) error {
 		updateMap["type"] = *req.Type
 	}
 	if req.RuleScript != nil {
+		err := checkRuleScript(*req.RuleScript)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		updateMap["rule_script"] = *req.RuleScript
 	}
 
