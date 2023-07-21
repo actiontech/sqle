@@ -208,13 +208,17 @@ func Test_action_execute(t *testing.T) {
 			return nil
 		})
 
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ []uint, _ string) ([]*model.Rule, error) {
-			return nil, nil
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ []uint, _ string) ([]*model.Rule, []*model.CustomRule, error) {
+			return nil, nil, nil
 		})
 	}
 
 	newDriver := func() (driver.Plugin, error) {
-		p, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driverV2.DriverTypeMySQL, nil, "")
+		rules, _, err := model.GetStorage().GetAllRulesByTmpNameAndProjectIdInstanceDBType("", nil, nil, driverV2.DriverTypeMySQL)
+		if err != nil {
+			return nil, err
+		}
+		p, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driverV2.DriverTypeMySQL, rules)
 		if err != nil {
 			return nil, err
 		}
