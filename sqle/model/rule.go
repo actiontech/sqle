@@ -158,30 +158,34 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*Rule, error) {
+func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*Rule, []*CustomRule, error) {
 	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
 	if !exist {
-		return nil, errors.New(errors.DataNotExist, err)
+		return nil, nil, errors.New(errors.DataNotExist, err)
 	}
 	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
+		return nil, nil, errors.New(errors.ConnectStorageError, err)
 	}
 
 	rules := make([]*Rule, 0, len(tpl.RuleList))
 	for _, r := range tpl.RuleList {
 		rules = append(rules, r.GetRule())
 	}
-	return rules, nil
+	customRules := make([]*CustomRule, 0, len(tpl.CustomRuleList))
+	for _, r := range tpl.CustomRuleList {
+		customRules = append(customRules, r.GetRule())
+	}
+	return rules, customRules, nil
 }
 
-func (s *Storage) GetRulesByInstanceId(instanceId string) ([]*Rule, error) {
+func (s *Storage) GetAllRulesByInstanceId(instanceId string) ([]*Rule, []*CustomRule, error) {
 	instance, _, err := s.GetInstanceById(instanceId)
 	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
+		return nil, nil, errors.New(errors.ConnectStorageError, err)
 	}
 	templates := instance.RuleTemplates
 	if len(templates) <= 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	tplName := templates[0].Name
 	// 数据源可以绑定全局模板和项目模板
@@ -570,32 +574,25 @@ func (s *Storage) GetAllCustomRuleByGlobalRuleTemplateName(name string) ([]*Cust
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetCustomRulesFromRuleTemplateByName(projectIds []uint, name string) ([]*CustomRule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
-	if !exist {
-		return nil, errors.New(errors.DataNotExist, err)
+func (s *Storage) GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName string, projectId *uint,
+	inst *Instance, dbType string) (rules []*Rule, customRules []*CustomRule, err error) {
+	if ruleTemplateName != "" {
+		if projectId == nil {
+			return nil, nil, errors.New(errors.DataInvalid,
+				fmt.Errorf("project id is needed when rule template name is given"))
+		}
+		rules, customRules, err = s.GetRulesFromRuleTemplateByName([]uint{*projectId, ProjectIdForGlobalRuleTemplate}, ruleTemplateName)
+	} else {
+		if inst != nil {
+			rules, customRules, err = s.GetAllRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
+		} else {
+			templateName := s.GetDefaultRuleTemplateName(dbType)
+			// 默认规则模板从全局模板里拿
+			rules, customRules, err = s.GetRulesFromRuleTemplateByName([]uint{ProjectIdForGlobalRuleTemplate}, templateName)
+		}
 	}
 	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
+		return nil, nil, err
 	}
-
-	rules := make([]*CustomRule, 0, len(tpl.CustomRuleList))
-	for _, r := range tpl.CustomRuleList {
-		rules = append(rules, r.GetRule())
-	}
-	return rules, nil
-}
-
-func (s *Storage) GetCustomRulesByInstanceId(instanceId string) ([]*CustomRule, error) {
-	instance, _, err := s.GetInstanceById(instanceId)
-	if err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	templates := instance.RuleTemplates
-	if len(templates) <= 0 {
-		return nil, nil
-	}
-	tplName := templates[0].Name
-	// 数据源可以绑定全局模板和项目模板
-	return s.GetCustomRulesFromRuleTemplateByName([]uint{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, tplName)
+	return rules, customRules, nil
 }

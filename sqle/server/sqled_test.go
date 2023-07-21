@@ -214,7 +214,11 @@ func Test_action_execute(t *testing.T) {
 	}
 
 	newDriver := func() (driver.Plugin, error) {
-		p, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driverV2.DriverTypeMySQL, nil, "")
+		rules, _, err := model.GetStorage().GetAllRulesByTmpNameAndProjectIdInstanceDBType("", nil, nil, driverV2.DriverTypeMySQL)
+		if err != nil {
+			return nil, err
+		}
+		p, err := newDriverManagerWithAudit(log.NewEntry(), nil, "", driverV2.DriverTypeMySQL, rules)
 		if err != nil {
 			return nil, err
 		}
