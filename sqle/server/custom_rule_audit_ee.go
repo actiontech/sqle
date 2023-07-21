@@ -13,14 +13,12 @@ import (
 )
 
 func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results []*driverV2.AuditResults, customRules []*model.CustomRule) {
-	var err error
-	if len(results) != len(sqls) {
-		l.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
+	if len(customRules) == 0 {
 		return
 	}
-
-	if err != nil {
-		l.Errorf("get rules error: %v", err)
+	
+	if len(results) != len(sqls) {
+		l.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
 		return
 	}
 
