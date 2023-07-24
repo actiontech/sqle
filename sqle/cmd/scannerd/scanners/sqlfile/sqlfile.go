@@ -1,4 +1,4 @@
-package mybatis
+package sqlfile
 
 import (
 	"context"
@@ -11,15 +11,14 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/parse"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/parse"
 
-	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/sirupsen/logrus"
 )
 
-type MyBatis struct {
+type SQLFile struct {
 	l *logrus.Entry
 	c *scanner.Client
 
@@ -28,54 +27,54 @@ type MyBatis struct {
 	allSQL []driverV2.Node
 	getAll chan struct{}
 
-	apName         string
-	xmlDir         string
-	skipErrorQuery bool
-	skipErrorXml   bool
-	skipAudit      bool
+	apName           string
+	sqlDir           string
+	skipErrorQuery   bool
+	skipErrorSqlFile bool
+	skipAudit        bool
 }
 
 type Params struct {
-	XMLDir         string
-	APName         string
-	SkipErrorQuery bool
-	SkipErrorXml   bool
-	SkipAudit      bool
+	SQLDir           string
+	APName           string
+	SkipErrorQuery   bool
+	SkipErrorSqlFile bool
+	SkipAudit        bool
 }
 
-func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
-	return &MyBatis{
-		xmlDir:         params.XMLDir,
-		apName:         params.APName,
-		skipErrorQuery: params.SkipErrorQuery,
-		skipErrorXml:   params.SkipErrorXml,
-		skipAudit:      params.SkipAudit,
-		l:              l,
-		c:              c,
-		getAll:         make(chan struct{}),
+func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
+	return &SQLFile{
+		sqlDir:           params.SQLDir,
+		apName:           params.APName,
+		skipErrorQuery:   params.SkipErrorQuery,
+		skipErrorSqlFile: params.SkipErrorSqlFile,
+		skipAudit:        params.SkipAudit,
+		l:                l,
+		c:                c,
+		getAll:           make(chan struct{}),
 	}, nil
 }
 
-func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml)
+func (sf *SQLFile) Run(ctx context.Context) error {
+	sqls, err := GetSQLFromPath(sf.sqlDir, sf.skipErrorQuery, sf.skipErrorSqlFile)
 	if err != nil {
 		return err
 	}
 
-	mb.allSQL = sqls
-	close(mb.getAll)
+	sf.allSQL = sqls
+	close(sf.getAll)
 
 	<-ctx.Done()
 	return nil
 }
 
-func (mb *MyBatis) SQLs() <-chan scanners.SQL {
+func (sf *SQLFile) SQLs() <-chan scanners.SQL {
 	// todo: channel size configurable
 	sqlCh := make(chan scanners.SQL, 10240)
 
 	go func() {
-		<-mb.getAll
-		for _, sql := range mb.allSQL {
+		<-sf.getAll
+		for _, sql := range sf.allSQL {
 			sqlCh <- scanners.SQL{
 				Fingerprint: sql.Fingerprint,
 				RawText:     sql.Text,
@@ -86,14 +85,14 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 	return sqlCh
 }
 
-func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	mb.sqls = append(mb.sqls, sqls...)
+func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
+	sf.sqls = append(sf.sqls, sqls...)
 
 	// key=fingerPrint val=count
-	counterMap := make(map[string]uint, len(mb.sqls))
+	counterMap := make(map[string]uint, len(sf.sqls))
 
-	nodeList := make([]scanners.SQL, 0, len(mb.sqls))
-	for _, node := range mb.sqls {
+	nodeList := make([]scanners.SQL, 0, len(sf.sqls))
+	for _, node := range sf.sqls {
 		counterMap[node.Fingerprint]++
 		if counterMap[node.Fingerprint] <= 1 {
 			nodeList = append(nodeList, node)
@@ -111,23 +110,24 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		})
 	}
 
-	err := mb.c.UploadReq(scanner.FullUpload, mb.apName, reqBody)
+	err := sf.c.UploadReq(scanner.FullUpload, sf.apName, reqBody)
 	if err != nil {
 		return err
 	}
 
-	if mb.skipAudit {
+	if sf.skipAudit {
 		return nil
 	}
 
-	reportID, err := mb.c.TriggerAuditReq(mb.apName)
+	reportID, err := sf.c.TriggerAuditReq(sf.apName)
 	if err != nil {
 		return err
 	}
-	return mb.c.GetAuditReportReq(mb.apName, reportID)
+	return sf.c.GetAuditReportReq(sf.apName, reportID)
 }
 
-func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL []driverV2.Node, err error) {
+
+func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorSqlFile bool) (allSQL []driverV2.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -145,14 +145,14 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL 
 		pathJoin := path.Join(pathName, fi.Name())
 
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorXml)
-		} else if strings.HasSuffix(fi.Name(), "xml") {
-			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery)
+			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorSqlFile)
+		} else if strings.HasSuffix(fi.Name(), "sql") {
+			sqlList, err = GetSQLFromFile(pathJoin)
 		}
 
 		if err != nil {
-			if skipErrorXml {
-				fmt.Printf("[parse xml file error] parse file %s error: %v\n", pathJoin, err)
+			if skipErrorSqlFile {
+				fmt.Printf("[parse sql file error] parse file %s error: %v\n", pathJoin, err)
 			} else {
 				return nil, fmt.Errorf("parse file %s error: %v", pathJoin, err)
 			}
@@ -162,22 +162,16 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorXml bool) (allSQL 
 	return allSQL, err
 }
 
-func GetSQLFromFile(file string, skipErrorQuery bool) (r []driverV2.Node, err error) {
+func GetSQLFromFile(file string) (r []driverV2.Node, err error) {
 	content, err := ReadFileContent(file)
 	if err != nil {
 		return nil, err
 	}
-	sqls, err := mybatisParser.ParseXMLQuery(content, skipErrorQuery)
+	n, err := parse.Parse(context.TODO(), content)
 	if err != nil {
 		return nil, err
 	}
-	for _, sql := range sqls {
-		n, err := parse.Parse(context.TODO(), sql)
-		if err != nil {
-			return nil, err
-		}
-		r = append(r, n...)
-	}
+	r = append(r, n...)
 	return r, nil
 }
 
