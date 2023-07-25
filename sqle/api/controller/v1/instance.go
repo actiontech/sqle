@@ -1084,6 +1084,8 @@ type GetInstanceTypeLogoReqV1 struct {
 	InstanceType string `json:"instance_type" query:"instance_type"`
 }
 
+const ETag = "isCached"
+
 // GetInstanceTypeLogo
 // @Summary 获取实例类型logo
 // @Description get instance type logo
@@ -1099,8 +1101,14 @@ func GetInstanceTypeLogo(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	val := c.Request().Header.Get("If-None-Match")
+	if val == ETag {
+		return c.NoContent(http.StatusNotModified)
+	}
+
 	instanceTypeLogoMap := driver.GetPluginManager().AllLogo()
 
+	c.Response().Header().Set("ETag", ETag)
 	if logo, ok := instanceTypeLogoMap[req.InstanceType]; ok {
 		return c.Blob(http.StatusOK, "image/png", logo)
 	}
