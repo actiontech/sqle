@@ -11,6 +11,7 @@ import (
 
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 )
 
 func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileExtenssion string) (allSQL []driverV2.Node, err error) {
@@ -54,7 +55,7 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileExtenssion string) (r 
 		return nil, err
 	}
 	switch fileExtenssion {
-	case "xml":
+	case scanners.MybatisFileExtension:
 		sqls, err := mybatisParser.ParseXMLQuery(content, skipErrorQuery)
 		if err != nil {
 			return nil, err
@@ -66,7 +67,7 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileExtenssion string) (r 
 			}
 			r = append(r, n...)
 		}
-	case "sql":
+	case scanners.SQLFileExtension:
 		n, err := Parse(context.TODO(), content)
 		if err != nil {
 			return nil, err

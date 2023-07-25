@@ -47,7 +47,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
 }
 
 func (sf *SQLFile) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, "sql")
+	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, scanners.SQLFileExtension)
 	if err != nil {
 		return err
 	}
@@ -78,5 +78,5 @@ func (sf *SQLFile) SQLs() <-chan scanners.SQL {
 
 func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	sf.sqls = append(sf.sqls, sqls...)
-	return common.Upload(ctx, sf.sqls, sf.c, sf.apName, sf.skipAudit)
+	return common.UploadAndAudit(ctx, sf.sqls, sf.c, sf.apName, sf.skipAudit)
 }

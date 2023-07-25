@@ -9,7 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 )
 
-func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName string, skipAudit bool) error {
+func UploadAndAudit(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName string, skipAudit bool) error {
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(sqls))
 

@@ -49,7 +49,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, "xml")
+	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, scanners.MybatisFileExtension)
 	if err != nil {
 		return err
 	}
@@ -80,5 +80,5 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	mb.sqls = append(mb.sqls, sqls...)
-	return common.Upload(ctx, mb.sqls, mb.c, mb.apName, mb.skipAudit)
+	return common.UploadAndAudit(ctx, mb.sqls, mb.c, mb.apName, mb.skipAudit)
 }
