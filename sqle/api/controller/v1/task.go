@@ -629,13 +629,6 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
 	}
 
-	instNames := make([]string, len(req.Instances))
-	for i, instance := range req.Instances {
-		instNames[i] = instance.InstanceName
-	}
-
-	distinctInstNames := utils.RemoveDuplicate(instNames)
-
 	projectName := c.Param("project_name")
 	userName := controller.GetUserName(c)
 
@@ -645,33 +638,31 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	instances, err := s.GetInstancesByNamesAndProjectName(distinctInstNames, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
+	distinctInstNameList := getDistinctInstNameList(req.Instances)
 	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
-	for _, instance := range instances {
-		nameInstanceMap[instance.Name] = instance
-	}
-
-	// check instances
-	if len(instances) != len(distinctInstNames) {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-
-	for _, instance := range instances {
-		if err := common.CheckInstanceIsConnectable(instance); err != nil {
+	for _, instName := range distinctInstNameList {
+		// https://github.com/actiontech/sqle/issues/1673
+		inst, exist, err := s.GetInstanceByNameAndProjectName(instName, projectName)
+		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+		}
+
+		can, err := checkCurrentUserCanAccessInstance(c, inst)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !can {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+		}
+
+		if err := common.CheckInstanceIsConnectable(inst); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		nameInstanceMap[instName] = inst
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -701,6 +692,15 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			TaskGroupId: taskGroup.ID,
 		},
 	})
+}
+
+func getDistinctInstNameList(instList []*InstanceForCreatingTask) []string {
+	instNames := make([]string, len(instList))
+	for i, inst := range instList {
+		instNames[i] = inst.InstanceName
+	}
+
+	return utils.RemoveDuplicate(instNames)
 }
 
 type AuditTaskGroupReqV1 struct {
