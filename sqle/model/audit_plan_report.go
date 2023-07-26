@@ -63,7 +63,7 @@ type LatestAuditPlanReportScore struct {
 	Score        uint   `json:"score"`
 }
 
-// 使用子查询获取最新的report的生成时间，再去获取report相关信息 
+// 使用子查询获取最新的report的生成时间，再去获取report相关信息
 func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName string) ([]*LatestAuditPlanReportScore, error) {
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore
 	subQuery := s.db.Model(&AuditPlanReportV2{}).
@@ -80,7 +80,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName
 		Joins("left join projects on audit_plans.project_id=projects.id").
 		Joins("left join instances on audit_plans.instance_name=instances.name").
 		Joins("join (?) as sq on audit_plans.db_type=sq.db_type and audit_plans.instance_name=sq.instance_name and audit_plan_reports_v2.created_at=sq.latest_created_at", subQuery).
-		Where("projects.name=? and instances.deleted_at is null", projectName).
+		Where("projects.name=? and instances.deleted_at is null and audit_plans.deleted_at is null and instances.id is not null", projectName).
 		Scan(&latestAuditPlanReportScore).Error
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)
