@@ -271,7 +271,7 @@ func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error)
 		Joins("left join projects on projects.id=audit_plans.project_id").
 		Where("reports.score<60 and projects.name=? and audit_plans.deleted_at is NULL", projectName).
 		Group("audit_plans.name, reports.created_at, audit_plans.created_at, reports.id").
-		Order("audit_plans.created_at desc").Scan(&RiskAuditPlans).Error
+		Order("reports.created_at desc").Scan(&RiskAuditPlans).Error
 
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
