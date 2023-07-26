@@ -836,7 +836,7 @@ func GetProjectScoreV1(c echo.Context) error {
 	// 项目分数=工单上线成功率*2/5+扫描任务通过率*3/5
 	// 工单上线成功率=成功上线的工单数量/执行上线的工单总数
 	// 扫描任务通过率=报告>60分的扫描任务数量/扫描任务报告总数
-	var projectScore float64
+	var projectScore float64 = 1
 	var workflowScore float64
 	var auditReportScore float64
 
