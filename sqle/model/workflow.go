@@ -1367,6 +1367,7 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 		Joins("left join users on users.id=workflows.create_user_id").
 		Joins("left join projects on projects.id=workflows.project_id").
 		Where("wr.status in (?) and projects.name=?", queryStatus, projectName).
+		Order("wr.updated_at desc").
 		Scan(&WorkflowStatusDetails).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
