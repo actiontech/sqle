@@ -405,24 +405,9 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		Mode:         workflowMode,
 	}
 
-	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
-	for i, task := range tasks {
-		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
-		}
-	}
-
-	record := &WorkflowRecord{
-		InstanceRecords: instanceRecords,
-	}
-
-	if len(stepTemplates) == 1 {
-		record.Status = WorkflowStatusWaitForExecution
-	}
-
 	allUsers := make([][]*User, len(tasks))
 	allExecutor := make([][]*User, len(tasks))
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	for i, task := range tasks {
 		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
 		if err != nil {
@@ -435,6 +420,19 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			return err
 		}
 		allExecutor[i] = executor
+
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+	}
+
+	record := &WorkflowRecord{
+		InstanceRecords: instanceRecords,
+	}
+
+	if len(stepTemplates) == 1 {
+		record.Status = WorkflowStatusWaitForExecution
 	}
 
 	canOptUsers := allUsers[0]
