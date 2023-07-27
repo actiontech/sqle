@@ -423,8 +423,9 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		allExecutor[i] = executor
 
 		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
+			TaskId:           task.ID,
+			InstanceId:       task.InstanceId,
+			ExecutorUserList: executor,
 		}
 	}
 
@@ -464,6 +465,13 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range record.InstanceRecords {
+		if tx.Model(instanceRecord).Association("ExecutorUserList").Replace(instanceRecord.ExecutorUserList).Error != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
 	}
 
 	workflow.WorkflowRecordId = record.ID
