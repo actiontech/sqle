@@ -598,15 +598,22 @@ func (s *Storage) GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateNam
 }
 
 func (s *Storage) DeleteCustomRule(ruleId string) error {
-	tx := s.db.Begin()
-	if err := tx.Where("rule_id = ?", ruleId).Delete(&CustomRule{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	if err := tx.Where("rule_id = ?", ruleId).Delete(&RuleTemplateCustomRule{}).Error; err != nil {
-		tx.Rollback()
-		return err
+	err := s.Tx(func(tx *gorm.DB) error {
+		if err := tx.Where("rule_id = ?", ruleId).Delete(&CustomRule{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+		if err := tx.Where("rule_id = ?", ruleId).Delete(&RuleTemplateCustomRule{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.ConnectStorageErrWrapper(err)
 	}
 
-	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+	return nil
 }
