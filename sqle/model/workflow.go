@@ -1349,11 +1349,11 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 }
 
 type WorkflowStatusDetail struct {
-	Subject   string     `json:"subject"`
-	WorkflowId        string     `json:"workflow_id"`
-	Status    string     `json:"status"`
-	LoginName string     `json:"login_name"`
-	UpdatedAt *time.Time `json:"updated_at"`
+	Subject    string     `json:"subject"`
+	WorkflowId string     `json:"workflow_id"`
+	Status     string     `json:"status"`
+	LoginName  string     `json:"login_name"`
+	UpdatedAt  *time.Time `json:"updated_at"`
 }
 
 func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
@@ -1374,7 +1374,7 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 }
 
 type SqlCountAndTriggerRuleCount struct {
-	SqlCount     uint `json:"sql_count"`
+	SqlCount         uint `json:"sql_count"`
 	TriggerRuleCount uint `json:"trigger_rule_count"`
 }
 
