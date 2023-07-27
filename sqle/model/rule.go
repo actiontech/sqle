@@ -596,3 +596,17 @@ func (s *Storage) GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateNam
 	}
 	return rules, customRules, nil
 }
+
+func (s *Storage) DeleteCustomRule(ruleId string) error {
+	tx := s.db.Begin()
+	if err := tx.Where("rule_id = ?", ruleId).Delete(&CustomRule{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Where("rule_id = ?", ruleId).Delete(&RuleTemplateCustomRule{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
