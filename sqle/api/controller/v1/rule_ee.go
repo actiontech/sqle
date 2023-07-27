@@ -67,7 +67,7 @@ func deleteCustomRule(c echo.Context) error {
 	ruleId := c.Param("rule_id")
 
 	s := model.GetStorage()
-	rule, exist, err := s.GetCustomRuleByRuleId(ruleId)
+	_, exist, err := s.GetCustomRuleByRuleId(ruleId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -76,7 +76,7 @@ func deleteCustomRule(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule is not exist")))
 	}
 
-	err = s.Delete(rule)
+	err = s.DeleteCustomRule(ruleId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
