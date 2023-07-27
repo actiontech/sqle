@@ -212,9 +212,10 @@ type WorkflowInstanceRecord struct {
 	IsSQLExecuted   bool
 	ExecutionUserId uint
 
-	Instance *Instance `gorm:"foreignkey:InstanceId"`
-	Task     *Task     `gorm:"foreignkey:TaskId"`
-	User     *User     `gorm:"foreignkey:ExecutionUserId"`
+	ExecutorUserList []*User   `gorm:"many2many:workflow_instance_record_user"`
+	Instance         *Instance `gorm:"foreignkey:InstanceId"`
+	Task             *Task     `gorm:"foreignkey:TaskId"`
+	User             *User     `gorm:"foreignkey:ExecutionUserId"`
 }
 
 func (wir *WorkflowInstanceRecord) ExecuteUserName() string {
