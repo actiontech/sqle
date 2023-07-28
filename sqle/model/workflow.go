@@ -1291,6 +1291,56 @@ func (s *Storage) GetWorkflowStepSummaryByReqV2(data map[string]interface{}) (
 	return result, nil
 }
 
+var workflowTaskSummaryQueryTpl = `
+SELECT wr.status                                                               AS workflow_record_status,
+       tasks.id                                                                AS task_id,
+       tasks.exec_start_at                                                     AS task_exec_start_at,
+       tasks.exec_end_at                                                       AS task_exec_end_at,
+       tasks.pass_rate                                                         AS task_pass_rate,
+       tasks.score                                                             AS task_score,
+       tasks.status                                                            AS task_status,
+       inst.name                                                               AS instance_name,
+       inst.deleted_at                                                         AS instance_deleted_at,
+       inst.maintenance_period                                                 AS instance_maintenance_period,
+       wir.scheduled_at                                                        AS instance_scheduled_at,
+       exec_user.deleted_at                                                    AS execution_user_deleted_at,
+       COALESCE(exec_user.login_name, '')                                      AS execution_user_name,
+       IF(tasks.status = 'audited' || tasks.status = 'executing' ||
+          tasks.status = 'terminating', GROUP_CONCAT(ass_user.login_name), '') AS current_step_assignee_users
+{{- template "body" . -}}
+GROUP BY tasks.id, wir.id
+`
+
+var workflowTaskSummaryQueryBodyTpl = `
+{{ define "body" }}
+FROM workflow_instance_records AS wir
+         LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
+         LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
+         LEFT JOIN projects ON projects.id = w.project_id
+         LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
+         LEFT JOIN tasks ON wir.task_id = tasks.id
+         LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
+         LEFT JOIN workflow_instance_record_user wiru ON wir.id = wiru.workflow_instance_record_id
+         LEFT JOIN users ass_user ON ass_user.id = wiru.user_id
+WHERE w.deleted_at IS NULL
+	AND w.workflow_id = :workflow_id
+	AND projects.name = :project_name
+{{ end }}
+`
+
+func (s *Storage) GetWorkflowTaskSummaryByReq(data map[string]interface{}) (result []*WorkflowTasksSummaryDetail, err error) {
+	if data["workflow_id"] == nil || data["project_name"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	}
+
+	err = s.getListResult(workflowTaskSummaryQueryBodyTpl, workflowTaskSummaryQueryTpl, data, &result)
+	if err != nil {
+		return result, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return result, nil
+}
+
 func (s *Storage) GetTasksByWorkFlowRecordID(id uint) ([]*Task, error) {
 	var tasks []*Task
 	err := s.db.Model(&WorkflowInstanceRecord{}).Select("tasks.id,tasks.status").
