@@ -550,7 +550,10 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 	var taskDetails []*model.WorkflowTasksSummaryDetail
 	workflowStatus := workflow.Record.Status
 	if workflowStatus == model.WorkflowStatusExecuting || workflowStatus == model.WorkflowStatusWaitForExecution {
-		// todo : 展示task概览
+		taskDetails, err = s.GetWorkflowTaskSummaryByReq(queryData)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	} else {
 		taskDetails, err = s.GetWorkflowStepSummaryByReqV2(queryData)
 		if err != nil {
