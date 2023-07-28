@@ -732,7 +732,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 
 func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
 	instanceRecords := []*WorkflowInstanceRecord{}
-	err := s.db.Preload("Instance").Preload("Task").Where("workflow_record_id = ?", id).
+	err := s.db.Preload("Instance").Preload("Task").Preload("ExecutionAssignees").Where("workflow_record_id = ?", id).
 		Find(&instanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
