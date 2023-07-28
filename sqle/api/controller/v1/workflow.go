@@ -2,6 +2,7 @@ package v1
 
 import (
 	"database/sql"
+	e "errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -518,6 +519,31 @@ func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.
 		needExecTaskIds[instRecord.TaskId] = user.ID
 	}
 	return needExecTaskIds, nil
+}
+
+func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model.Workflow, user *model.User, TaskId int) error {
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid, e.New("workflow need to be approved first"))
+	}
+
+	err := CheckCurrentUserCanOperateWorkflow(c, &model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE})
+	if err != nil {
+		return err
+	}
+
+	for _, record := range workflow.Record.InstanceRecords {
+		if record.TaskId != uint(TaskId) {
+			continue
+		}
+
+		for _, u := range record.ExecutionAssignees {
+			if u.ID == user.ID {
+				return nil
+			}
+		}
+	}
+
+	return e.New("you are not allow to execute the task")
 }
 
 func PrepareForWorkflowExecution(c echo.Context, projectName string, workflow *model.Workflow, user *model.User) error {
