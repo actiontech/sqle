@@ -212,10 +212,10 @@ type WorkflowInstanceRecord struct {
 	IsSQLExecuted   bool
 	ExecutionUserId uint
 
-	ExecutorUserList []*User   `gorm:"many2many:workflow_instance_record_user"`
-	Instance         *Instance `gorm:"foreignkey:InstanceId"`
-	Task             *Task     `gorm:"foreignkey:TaskId"`
-	User             *User     `gorm:"foreignkey:ExecutionUserId"`
+	ExecutionAssignees []*User   `gorm:"many2many:workflow_instance_record_user"`
+	Instance           *Instance `gorm:"foreignkey:InstanceId"`
+	Task               *Task     `gorm:"foreignkey:TaskId"`
+	User               *User     `gorm:"foreignkey:ExecutionUserId"`
 }
 
 func (wir *WorkflowInstanceRecord) ExecuteUserName() string {
@@ -423,9 +423,9 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		allExecutor[i] = executor
 
 		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:           task.ID,
-			InstanceId:       task.InstanceId,
-			ExecutorUserList: executor,
+			TaskId:             task.ID,
+			InstanceId:         task.InstanceId,
+			ExecutionAssignees: executor,
 		}
 	}
 
@@ -468,7 +468,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	for _, instanceRecord := range record.InstanceRecords {
-		if tx.Model(instanceRecord).Association("ExecutorUserList").Replace(instanceRecord.ExecutorUserList).Error != nil {
+		if tx.Model(instanceRecord).Association("ExecutionAssignees").Replace(instanceRecord.ExecutionAssignees).Error != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
 		}
