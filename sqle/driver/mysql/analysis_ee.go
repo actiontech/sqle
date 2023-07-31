@@ -212,28 +212,63 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 
 // GetTableMetaBySQL get table's metadata by SQL.
 func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.GetTableMetaBySQLConf) (*driver.GetTableMetaBySQLResult, error) {
+	schemaTableList, err := i.ExtractSchemaTableList(conf.Sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var tableMetas []*driver.TableMeta
+	for _, schemaTable := range schemaTableList {
+		tableMeta := i.GetTableMeta(ctx, schemaTable)
+		tableMetas = append(tableMetas, tableMeta)
+	}
+
+	return &driver.GetTableMetaBySQLResult{
+		TableMetas: tableMetas,
+	}, nil
+}
+
+func (i *MysqlDriverImpl) GetTableMeta(ctx context.Context, schemaTable SchemaTable) *driver.TableMeta {
+	msg := ""
+	columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
+	if err != nil {
+		msg = err.Error()
+	}
+
+	tm := &driver.TableMeta{}
+	tm.Name = schemaTable.Table
+	tm.Schema = schemaTable.Schema
+	tm.ColumnsInfo = columnsInfo
+	tm.IndexesInfo = indexesInfo
+	tm.CreateTableSQL = sql
+	tm.Message = msg
+
+	return tm
+}
+
+type SchemaTable struct {
+	Schema string
+	Table  string
+}
+
+func (i *MysqlDriverImpl) ExtractSchemaTableList(sql string) ([]SchemaTable, error) {
 	// check sql
-	if conf.Sql == "" {
+	if sql == "" {
 		return nil, errors.New("the SQL should not be empty")
 	}
 	// only support dml
-	if isDML, err := i.isDML(conf.Sql); err != nil {
+	if isDML, err := i.isDML(sql); err != nil {
 		return nil, err
 	} else if !isDML {
 		return nil, driverV2.ErrSQLIsNotSupported
 	}
 
-	node, err := util.ParseOneSql(conf.Sql)
+	node, err := util.ParseOneSql(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	type schemaTable struct {
-		Schema string
-		Table  string
-	}
-
-	var schemaTables []schemaTable
+	var schemaTables []SchemaTable
 	schemaTableMap := make(map[string]struct{}, 0)
 	addTable := func(t *ast.TableName) {
 		schema := t.Schema.String()
@@ -244,7 +279,7 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 		schemaTableKey := fmt.Sprintf("%s.%s", schema, t.Name.String())
 		if _, ok := schemaTableMap[schemaTableKey]; !ok {
 			schemaTableMap[schemaTableKey] = struct{}{}
-			schemaTables = append(schemaTables, schemaTable{
+			schemaTables = append(schemaTables, SchemaTable{
 				Schema: schema,
 				Table:  t.Name.String(),
 			})
@@ -287,29 +322,10 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 			addTable(stmt.Table)
 		}
 	default:
-		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", conf.Sql)
+		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", sql)
 	}
 
-	tableMetas := make([]*driver.TableMeta, len(schemaTables))
-	for j, schemaTable := range schemaTables {
-		msg := ""
-		columnsInfo, indexesInfo, sql, err := i.getTableMetaByTableName(ctx, schemaTable.Schema, schemaTable.Table)
-		if err != nil {
-			msg = err.Error()
-		}
-		tm := &driver.TableMeta{}
-		tm.Name = schemaTable.Table
-		tm.Schema = schemaTable.Schema
-		tm.ColumnsInfo = columnsInfo
-		tm.IndexesInfo = indexesInfo
-		tm.CreateTableSQL = sql
-		tm.Message = msg
-		tableMetas[j] = tm
-	}
-
-	return &driver.GetTableMetaBySQLResult{
-		TableMetas: tableMetas,
-	}, nil
+	return schemaTables, nil
 }
 
 func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {
