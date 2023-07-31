@@ -212,9 +212,10 @@ type WorkflowInstanceRecord struct {
 	IsSQLExecuted   bool
 	ExecutionUserId uint
 
-	Instance *Instance `gorm:"foreignkey:InstanceId"`
-	Task     *Task     `gorm:"foreignkey:TaskId"`
-	User     *User     `gorm:"foreignkey:ExecutionUserId"`
+	ExecutionAssignees []*User   `gorm:"many2many:workflow_instance_record_user"`
+	Instance           *Instance `gorm:"foreignkey:InstanceId"`
+	Task               *Task     `gorm:"foreignkey:TaskId"`
+	User               *User     `gorm:"foreignkey:ExecutionUserId"`
 }
 
 func (wir *WorkflowInstanceRecord) ExecuteUserName() string {
@@ -405,24 +406,9 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		Mode:         workflowMode,
 	}
 
-	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
-	for i, task := range tasks {
-		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
-		}
-	}
-
-	record := &WorkflowRecord{
-		InstanceRecords: instanceRecords,
-	}
-
-	if len(stepTemplates) == 1 {
-		record.Status = WorkflowStatusWaitForExecution
-	}
-
 	allUsers := make([][]*User, len(tasks))
 	allExecutor := make([][]*User, len(tasks))
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	for i, task := range tasks {
 		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
 		if err != nil {
@@ -435,6 +421,20 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			return err
 		}
 		allExecutor[i] = executor
+
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:             task.ID,
+			InstanceId:         task.InstanceId,
+			ExecutionAssignees: executor,
+		}
+	}
+
+	record := &WorkflowRecord{
+		InstanceRecords: instanceRecords,
+	}
+
+	if len(stepTemplates) == 1 {
+		record.Status = WorkflowStatusWaitForExecution
 	}
 
 	canOptUsers := allUsers[0]
@@ -465,6 +465,13 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range record.InstanceRecords {
+		if tx.Model(instanceRecord).Association("ExecutionAssignees").Replace(instanceRecord.ExecutionAssignees).Error != nil {
+			tx.Rollback()
+			return errors.New(errors.ConnectStorageError, err)
+		}
 	}
 
 	workflow.WorkflowRecordId = record.ID
@@ -1351,11 +1358,11 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 }
 
 type WorkflowStatusDetail struct {
-	Subject   string     `json:"subject"`
-	WorkflowId        string     `json:"workflow_id"`
-	Status    string     `json:"status"`
-	LoginName string     `json:"login_name"`
-	UpdatedAt *time.Time `json:"updated_at"`
+	Subject    string     `json:"subject"`
+	WorkflowId string     `json:"workflow_id"`
+	Status     string     `json:"status"`
+	LoginName  string     `json:"login_name"`
+	UpdatedAt  *time.Time `json:"updated_at"`
 }
 
 func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
@@ -1376,7 +1383,7 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 }
 
 type SqlCountAndTriggerRuleCount struct {
-	SqlCount     uint `json:"sql_count"`
+	SqlCount         uint `json:"sql_count"`
 	TriggerRuleCount uint `json:"trigger_rule_count"`
 }
 
