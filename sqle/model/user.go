@@ -43,7 +43,8 @@ type User struct {
 	Stat             uint         `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 	ThirdPartyUserID string       `json:"third_party_user_id"`
 
-	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
+	WorkflowStepTemplates   []*WorkflowStepTemplate   `gorm:"many2many:workflow_step_template_user"`
+	WorkflowInstanceRecords []*WorkflowInstanceRecord `gorm:"many2many:workflow_instance_record_user"`
 }
 
 func (u *User) IsDisabled() bool {
