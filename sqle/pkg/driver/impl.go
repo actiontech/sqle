@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	hclog "github.com/hashicorp/go-hclog"
+	sqleError "github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
@@ -275,4 +276,8 @@ func (p *DriverImpl) ExtractTableFromSQL(ctx context.Context, sql string) ([]*dr
 
 func (p *DriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
 	return &driverV2.EstimatedAffectRows{}, nil
+}
+
+func (p *DriverImpl) KillProcess(ctx context.Context) error {
+	return sqleError.NewNotImplementedError("KillProcess not support yet")
 }

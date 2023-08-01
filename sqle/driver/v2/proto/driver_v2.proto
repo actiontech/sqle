@@ -12,6 +12,7 @@ service Driver {
   // We put all communication on gRPC for unification in the end.
   rpc Init(InitRequest) returns (InitResponse);
   rpc Close(CloseRequest) returns (Empty);
+  rpc KillProcess(KillProcessRequest) returns (Empty);
 
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
@@ -94,6 +95,11 @@ message InitResponse {
 
 // Close
 message CloseRequest {
+  Session session = 1;
+}
+
+// Kill
+message KillProcessRequest {
   Session session = 1;
 }
 

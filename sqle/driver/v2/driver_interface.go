@@ -87,6 +87,7 @@ type Driver interface {
 	GetTableMeta(ctx context.Context, table *Table) (*TableMeta, error)
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
+	KillProcess(ctx context.Context) error
 }
 
 type Node struct {
