@@ -476,7 +476,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = v1.PrepareForWorkflowExecution(c, projectName, workflow, user)
+	err = v1.PrepareForTaskExecution(c, projectName, workflow, user, taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
