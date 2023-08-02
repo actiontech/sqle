@@ -9,7 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 )
 
-func UploadAndAudit(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName string, skipAudit bool) error {
+func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName string) error {
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(sqls))
 
@@ -33,18 +33,13 @@ func UploadAndAudit(ctx context.Context, sqls []scanners.SQL, c *scanner.Client,
 	}
 
 	err := c.UploadReq(scanner.FullUpload, apName, reqBody)
-	if err != nil {
-		return err
-	}
+	return err
+}
 
-	if skipAudit {
-		return nil
-	}
-
+func Audit(c *scanner.Client, apName string) error {
 	reportID, err := c.TriggerAuditReq(apName)
 	if err != nil {
 		return err
 	}
 	return c.GetAuditReportReq(apName, reportID)
 }
-
