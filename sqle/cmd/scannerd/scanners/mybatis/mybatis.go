@@ -87,7 +87,5 @@ func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	if mb.skipAudit {
 		return nil
 	}
-
-	err = common.Audit(mb.c, mb.apName)
-	return err
+	return common.Audit(mb.c, mb.apName)
 }
