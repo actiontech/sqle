@@ -175,11 +175,17 @@ func (s *PluginImplV2) Close(ctx context.Context) {
 func (s *PluginImplV2) KillProcess(ctx context.Context) error {
 	api := "Kill Process"
 	s.preLog(api)
-	_, err := s.client.KillProcess(ctx, &protoV2.KillProcessRequest{
+	rs, err := s.client.KillProcess(ctx, &protoV2.KillProcessRequest{
 		Session: s.Session,
 	})
 	s.afterLog(api, err)
-	return err
+	if err != nil {
+		return err
+	}
+	if rs.ErrMessage != "" {
+		return fmt.Errorf(rs.ErrMessage)
+	}
+	return nil
 }
 
 // audit
