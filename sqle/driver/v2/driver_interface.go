@@ -291,3 +291,9 @@ type EstimatedAffectRows struct {
 type KillProcessInfo struct {
 	ErrMessage string
 }
+
+func NewKillProcessInfo(errorMessage string) *KillProcessInfo {
+	return &KillProcessInfo{
+		ErrMessage: errorMessage,
+	}
+}
