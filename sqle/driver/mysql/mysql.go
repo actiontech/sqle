@@ -532,6 +532,10 @@ func (i *MysqlDriverImpl) getDbConn() (*executor.Executor, error) {
 	return conn, err
 }
 
+func (i *MysqlDriverImpl) GetConn() *executor.Executor {
+	return i.dbConn
+}
+
 // closeDbConn close db conn and just close once.
 func (i *MysqlDriverImpl) closeDbConn() {
 	if i.isConnected {
