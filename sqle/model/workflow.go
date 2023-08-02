@@ -229,6 +229,20 @@ func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord Workf
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
 }
 
+func (s *Storage) GetInstanceByTaskIDList(taskIds []uint) (instances []*Instance, err error) {
+	var instanceRecords []*WorkflowInstanceRecord
+	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("Instance").Where("task_id in (?)", taskIds).Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range instanceRecords {
+		instances = append(instances, instanceRecord.Instance)
+	}
+
+	return instances, nil
+}
+
 const (
 	WorkflowStepStateInit    = "initialized"
 	WorkflowStepStateApprove = "approved"
