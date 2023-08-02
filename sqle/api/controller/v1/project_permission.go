@@ -45,6 +45,51 @@ func CheckIsProjectManager(userName, projectName string) error {
 	return nil
 }
 
+func CheckCurrentUserCanOperateTasks(c echo.Context, project *model.Project, workflow *model.Workflow, ops []uint, taskIdList []uint) error {
+	if controller.GetUserName(c) == model.DefaultAdminUser {
+		return nil
+	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+
+	isManager, err := s.IsProjectManager(user.Name, project.Name)
+	if err != nil {
+		return err
+	}
+	if isManager {
+		return nil
+	}
+
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+
+	if len(ops) > 0 {
+		instances, err := s.GetInstanceByTaskIDList(taskIdList)
+		if err != nil {
+			return err
+		}
+
+		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+
+	return ErrWorkflowNoAccess
+}
+
 /*
 
 workflow permission.
