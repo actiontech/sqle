@@ -5,6 +5,7 @@ import (
 	sqlDriver "database/sql/driver"
 	"fmt"
 	"sync"
+	"errors"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
@@ -183,7 +184,7 @@ func (s *PluginImplV2) KillProcess(ctx context.Context) error {
 		return err
 	}
 	if rs.ErrMessage != "" {
-		return fmt.Errorf(rs.ErrMessage)
+		return errors.New(rs.ErrMessage)
 	}
 	return nil
 }
