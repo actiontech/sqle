@@ -8,10 +8,12 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/sirupsen/logrus"
 )
 
 var ErrUnsupportedSqlType = errors.New("unsupported sql type")
@@ -213,5 +215,19 @@ func checkSql(affectRowSql string) error {
 		return errors.New("affectRowSql error")
 	}
 
+	return nil
+}
+
+func KillProcess(ctx context.Context, killSQL string, killConn *executor.Executor, logEntry *logrus.Entry) error {
+	killFunc := func() error {
+		_, err := killConn.Db.Exec(killSQL)
+		return err
+	}
+	err := utils.AsyncCallTimeout(ctx, killFunc)
+	if err != nil {
+		err = fmt.Errorf("exec sql(%v) failed, err: %v", killSQL, err)
+		return err
+	}
+	logEntry.Infof("exec sql(%v) successfully", killSQL)
 	return nil
 }
