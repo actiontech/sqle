@@ -78,5 +78,14 @@ func (sf *SQLFile) SQLs() <-chan scanners.SQL {
 
 func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	sf.sqls = append(sf.sqls, sqls...)
-	return common.UploadAndAudit(ctx, sf.sqls, sf.c, sf.apName, sf.skipAudit)
+	err := common.Upload(ctx, sf.sqls, sf.c, sf.apName)
+	if err != nil {
+		return err
+	}
+	if sf.skipAudit {
+		return nil
+	}
+
+	err = common.Audit(sf.c, sf.apName)
+	return err
 }

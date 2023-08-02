@@ -80,5 +80,14 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	mb.sqls = append(mb.sqls, sqls...)
-	return common.UploadAndAudit(ctx, mb.sqls, mb.c, mb.apName, mb.skipAudit)
+	err := common.Upload(ctx, mb.sqls, mb.c, mb.apName)
+	if err != nil {
+		return err
+	}
+	if mb.skipAudit {
+		return nil
+	}
+
+	err = common.Audit(mb.c, mb.apName)
+	return err
 }
