@@ -526,7 +526,7 @@ func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model
 		return errors.New(errors.DataInvalid, e.New("workflow need to be approved first"))
 	}
 
-	err := CheckCurrentUserCanOperateWorkflowByTask(c, &model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE}, []uint{uint(TaskId)})
+	err := CheckCurrentUserCanOperateTasks(c, &model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE}, []uint{uint(TaskId)})
 	if err != nil {
 		return err
 	}
@@ -1160,7 +1160,7 @@ func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *m
 		return nil
 	}
 
-	err := CheckCurrentUserCanOperateWorkflowByTask(c,
+	err := CheckCurrentUserCanOperateTasks(c,
 		&model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE}, needTerminatedTaskIdList)
 	if err != nil {
 		return err
