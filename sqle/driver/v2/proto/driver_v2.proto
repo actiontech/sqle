@@ -12,7 +12,7 @@ service Driver {
   // We put all communication on gRPC for unification in the end.
   rpc Init(InitRequest) returns (InitResponse);
   rpc Close(CloseRequest) returns (Empty);
-  rpc KillProcess(KillProcessRequest) returns (Empty);
+  rpc KillProcess(KillProcessRequest) returns (KillProcessResponse);
 
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
@@ -332,4 +332,8 @@ message EstimateSQLAffectRowsRequest {
 message EstimateSQLAffectRowsResponse {
   int64 count = 1;
   string errMessage = 2; // 记录执行失败原因
+}
+
+message KillProcessResponse {
+  string errMessage = 1; // 记录执行失败原因
 }
