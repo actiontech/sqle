@@ -324,6 +324,10 @@ func (a *action) audit() (err error) {
 }
 
 func (a *action) terminateExecution(ctx context.Context) error {
+	if !driver.GetPluginManager().
+		IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleKillProcess) {
+		return driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleKillProcess)
+	}
 	return a.plugin.KillProcess(ctx)
 }
 
