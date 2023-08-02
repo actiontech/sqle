@@ -86,6 +86,5 @@ func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		return nil
 	}
 
-	err = common.Audit(sf.c, sf.apName)
-	return err
+	return common.Audit(sf.c, sf.apName)
 }
