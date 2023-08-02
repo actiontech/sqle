@@ -45,7 +45,7 @@ func CheckIsProjectManager(userName, projectName string) error {
 	return nil
 }
 
-func CheckCurrentUserCanOperateWorkflowByTask(c echo.Context, project *model.Project, workflow *model.Workflow, ops []uint, taskIdList []uint) error {
+func CheckCurrentUserCanOperateTasks(c echo.Context, project *model.Project, workflow *model.Workflow, ops []uint, taskIdList []uint) error {
 	if controller.GetUserName(c) == model.DefaultAdminUser {
 		return nil
 	}
