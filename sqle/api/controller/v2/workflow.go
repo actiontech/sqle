@@ -549,6 +549,8 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 
 	var taskDetails []*model.WorkflowTasksSummaryDetail
 	workflowStatus := workflow.Record.Status
+	// 当工单处于工作流程模板的审核阶段时，工单概览应该显示每个task的待操作人对应的审核模板步骤待操作人
+	// 当工单处于工作流程模板的上线阶段时，工单概览应该分别显示每个task的待操作人，而不是审核模板步骤的待操作人
 	if workflowStatus == model.WorkflowStatusExecuting || workflowStatus == model.WorkflowStatusWaitForExecution {
 		taskDetails, err = s.GetWorkflowTaskSummaryByReq(queryData)
 		if err != nil {
