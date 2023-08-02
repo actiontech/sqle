@@ -542,21 +542,25 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	var isExecuting bool
-	workflowStatus := workflow.Record.Status
-	if workflowStatus == model.WorkflowStatusExecuting {
-		isExecuting = true
-	}
-
 	queryData := map[string]interface{}{
 		"workflow_id":  workflowId,
 		"project_name": projectName,
-		"is_executing": isExecuting,
 	}
 
-	taskDetails, err := s.GetWorkflowTasksSummaryByReqV2(queryData)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	var taskDetails []*model.WorkflowTasksSummaryDetail
+	workflowStatus := workflow.Record.Status
+	// 当工单处于工作流程模板的审核阶段时，工单概览应该显示每个task的待操作人对应的审核模板步骤待操作人
+	// 当工单处于工作流程模板的上线阶段时，工单概览应该分别显示每个task的待操作人，而不是审核模板步骤的待操作人
+	if workflowStatus == model.WorkflowStatusExecuting || workflowStatus == model.WorkflowStatusWaitForExecution {
+		taskDetails, err = s.GetWorkflowTaskSummaryByReq(queryData)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		taskDetails, err = s.GetWorkflowStepSummaryByReqV2(queryData)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
