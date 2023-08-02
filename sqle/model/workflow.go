@@ -229,6 +229,20 @@ func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord Workf
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
 }
 
+func (s *Storage) GetInstanceByTaskIDList(taskIds []uint) (instances []*Instance, err error) {
+	var instanceRecords []*WorkflowInstanceRecord
+	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("Instance").Where("task_id in (?)", taskIds).Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range instanceRecords {
+		instances = append(instances, instanceRecord.Instance)
+	}
+
+	return instances, nil
+}
+
 const (
 	WorkflowStepStateInit    = "initialized"
 	WorkflowStepStateApprove = "approved"
@@ -1235,7 +1249,7 @@ type WorkflowTasksSummaryDetail struct {
 	CurrentStepAssigneeUsers  RowList    `json:"current_step_assignee_users"`
 }
 
-var workflowTasksSummaryQueryTpl = `
+var workflowStepSummaryQueryTpl = `
 SELECT wr.status                                                     AS workflow_record_status,
        tasks.id                                                      AS task_id,
        tasks.exec_start_at                                           AS task_exec_start_at,
@@ -1252,16 +1266,10 @@ SELECT wr.status                                                     AS workflow
        GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_users
 
 {{- template "body" . -}}
-{{- if .is_executing }}
-GROUP BY tasks.id, wir.id, curr_ws.id
-ORDER BY curr_ws.id DESC
-LIMIT 1
-{{- else}}
 GROUP BY tasks.id, wir.id
-{{- end }}
 `
 
-var workflowTasksSummaryQueryBodyTplV2 = `
+var workflowStepSummaryQueryBodyTplV2 = `
 {{ define "body" }}
 FROM workflow_instance_records AS wir
 LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
@@ -1270,11 +1278,7 @@ LEFT JOIN projects ON projects.id = w.project_id
 LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
-{{- if .is_executing }}
-LEFT JOIN workflow_steps AS curr_ws ON wr.id = curr_ws.workflow_record_id
-{{- else}}
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id	
-{{- end }}
 LEFT JOIN workflow_step_user AS curr_ws_user ON curr_ws.id = curr_ws_user.workflow_step_id
 LEFT JOIN users AS curr_ass_user ON curr_ws_user.user_id = curr_ass_user.id
 
@@ -1286,16 +1290,64 @@ AND projects.name = :project_name
 {{ end }}
 `
 
-func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
+func (s *Storage) GetWorkflowStepSummaryByReqV2(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
 
 	if data["workflow_id"] == nil || data["project_name"] == nil {
 		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
 	}
 
-	// 由于工单正在上线状态时（即工单处于正在状态且没有当前步骤），无法获取待操作人。为解决此问题，
-	// 我们增加一个名为 "is_executing" 的标识符，如果其值为 true，则直接获取工单流程的最后一个step的分配用户(工单流程最后一个step一定是执行上线step)。
-	err = s.getListResult(workflowTasksSummaryQueryBodyTplV2, workflowTasksSummaryQueryTpl, data, &result)
+	err = s.getListResult(workflowStepSummaryQueryBodyTplV2, workflowStepSummaryQueryTpl, data, &result)
+	if err != nil {
+		return result, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return result, nil
+}
+
+var workflowTaskSummaryQueryTpl = `
+SELECT wr.status                                                               AS workflow_record_status,
+       tasks.id                                                                AS task_id,
+       tasks.exec_start_at                                                     AS task_exec_start_at,
+       tasks.exec_end_at                                                       AS task_exec_end_at,
+       tasks.pass_rate                                                         AS task_pass_rate,
+       tasks.score                                                             AS task_score,
+       tasks.status                                                            AS task_status,
+       inst.name                                                               AS instance_name,
+       inst.deleted_at                                                         AS instance_deleted_at,
+       inst.maintenance_period                                                 AS instance_maintenance_period,
+       wir.scheduled_at                                                        AS instance_scheduled_at,
+       exec_user.deleted_at                                                    AS execution_user_deleted_at,
+       COALESCE(exec_user.login_name, '')                                      AS execution_user_name,
+       IF(tasks.status = 'audited' || tasks.status = 'executing' ||
+          tasks.status = 'terminating', GROUP_CONCAT(ass_user.login_name), '') AS current_step_assignee_users
+{{- template "body" . -}}
+GROUP BY tasks.id, wir.id
+`
+
+var workflowTaskSummaryQueryBodyTpl = `
+{{ define "body" }}
+FROM workflow_instance_records AS wir
+         LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
+         LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
+         LEFT JOIN projects ON projects.id = w.project_id
+         LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
+         LEFT JOIN tasks ON wir.task_id = tasks.id
+         LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
+         LEFT JOIN workflow_instance_record_user wiru ON wir.id = wiru.workflow_instance_record_id
+         LEFT JOIN users ass_user ON ass_user.id = wiru.user_id
+WHERE w.deleted_at IS NULL
+	AND w.workflow_id = :workflow_id
+	AND projects.name = :project_name
+{{ end }}
+`
+
+func (s *Storage) GetWorkflowTaskSummaryByReq(data map[string]interface{}) (result []*WorkflowTasksSummaryDetail, err error) {
+	if data["workflow_id"] == nil || data["project_name"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	}
+
+	err = s.getListResult(workflowTaskSummaryQueryBodyTpl, workflowTaskSummaryQueryTpl, data, &result)
 	if err != nil {
 		return result, errors.New(errors.ConnectStorageError, err)
 	}
