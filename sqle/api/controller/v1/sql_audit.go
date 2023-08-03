@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
-
+	sqlFormat "github.com/kanmu/go-sqlfmt/sqlfmt"
 	"github.com/labstack/echo/v4"
 )
 
@@ -112,10 +112,16 @@ func DirectAudit(c echo.Context) error {
 
 func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
 	results := make([]AuditSQLResV1, len(task.ExecuteSQLs))
+	opt := &sqlFormat.Options{}
 	for i, sql := range task.ExecuteSQLs {
+		format, err := sqlFormat.Format(sql.Content, opt)
+		if err != nil {
+			log.NewEntry().WithField("sql", "pretty sql").Errorf("format sql failed: %v", err)
+		}
+
 		results[i] = AuditSQLResV1{
 			Number:      sql.Number,
-			ExecSQL:     sql.Content,
+			ExecSQL:     format,
 			AuditResult: sql.GetAuditResults(),
 			AuditLevel:  sql.AuditLevel,
 		}
