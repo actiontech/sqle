@@ -50,6 +50,7 @@ require (
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/jmoiron/sqlx v1.3.3
+	github.com/kanmu/go-sqlfmt v0.0.2-0.20200215095417-d1e63e2ee5eb
 	github.com/labstack/echo/v4 v4.6.1
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.18
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect

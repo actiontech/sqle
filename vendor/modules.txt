@@ -257,6 +257,12 @@ github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
 # github.com/json-iterator/go v1.1.11
 github.com/json-iterator/go
+# github.com/kanmu/go-sqlfmt v0.0.2-0.20200215095417-d1e63e2ee5eb
+## explicit
+github.com/kanmu/go-sqlfmt/sqlfmt
+github.com/kanmu/go-sqlfmt/sqlfmt/lexer
+github.com/kanmu/go-sqlfmt/sqlfmt/parser
+github.com/kanmu/go-sqlfmt/sqlfmt/parser/group
 # github.com/labstack/echo/v4 v4.6.1
 ## explicit
 github.com/labstack/echo/v4
