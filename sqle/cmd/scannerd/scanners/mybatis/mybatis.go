@@ -49,7 +49,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, scanners.MybatisFileExtension)
+	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, scanners.MybatisFileSuffix)
 	if err != nil {
 		return err
 	}
