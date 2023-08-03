@@ -1,7 +1,8 @@
-package sqlfile
+package sqlFile
 
 import (
 	"context"
+
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
@@ -47,7 +48,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
 }
 
 func (sf *SQLFile) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, scanners.SQLFileExtension)
+	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, scanners.SQLFileSuffix)
 	if err != nil {
 		return err
 	}
@@ -82,6 +83,7 @@ func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	if err != nil {
 		return err
 	}
+
 	if sf.skipAudit {
 		return nil
 	}
