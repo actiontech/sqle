@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/sqlfile"
+	sqlFile "github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/sql_file"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 
@@ -19,19 +19,19 @@ var (
 	skipErrorSqlFile bool
 
 	sqlFileCmd = &cobra.Command{
-		Use:   "sqlfile",
+		Use:   "sqlFile",
 		Short: "Parse sql file",
 		Run: func(cmd *cobra.Command, args []string) {
-			param := &sqlfile.Params{
+			param := &sqlFile.Params{
 				SQLDir:           dir,
 				APName:           rootCmdFlags.auditPlanName,
 				SkipErrorQuery:   skipErrorQuery,
 				SkipErrorSqlFile: skipErrorSqlFile,
 				SkipAudit:        skipAudit,
 			}
-			log := logrus.WithField("scanner", "sqlfile")
+			log := logrus.WithField("scanner", "sqlFile")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
-			scanner, err := sqlfile.New(param, log, client)
+			scanner, err := sqlFile.New(param, log, client)
 			if err != nil {
 				fmt.Println(color.RedString(err.Error()))
 				os.Exit(1)
