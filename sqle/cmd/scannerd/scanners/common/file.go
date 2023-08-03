@@ -14,7 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 )
 
-func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileExtenssion string) (allSQL []driverV2.Node, err error) {
+func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuffix string) (allSQL []driverV2.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -32,14 +32,14 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileExt
 		pathJoin := path.Join(pathName, fi.Name())
 
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorFile, fileExtenssion)
-		} else if strings.HasSuffix(fi.Name(), fileExtenssion) {
-			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery, fileExtenssion)
+			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorFile, fileSuffix)
+		} else if strings.HasSuffix(fi.Name(), fileSuffix) {
+			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery, fileSuffix)
 		}
 
 		if err != nil {
 			if skipErrorFile {
-				fmt.Printf("[parse %s file error] parse file %s error: %v\n", fileExtenssion, pathJoin, err)
+				fmt.Printf("[parse %s file error] parse file %s error: %v\n", fileSuffix, pathJoin, err)
 			} else {
 				return nil, fmt.Errorf("parse file %s error: %v", pathJoin, err)
 			}
@@ -49,13 +49,13 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileExt
 	return allSQL, err
 }
 
-func GetSQLFromFile(file string, skipErrorQuery bool, fileExtenssion string) (r []driverV2.Node, err error) {
+func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []driverV2.Node, err error) {
 	content, err := ReadFileContent(file)
 	if err != nil {
 		return nil, err
 	}
-	switch fileExtenssion {
-	case scanners.MybatisFileExtension:
+	switch fileSuffix {
+	case scanners.MybatisFileSuffix:
 		sqls, err := mybatisParser.ParseXMLQuery(content, skipErrorQuery)
 		if err != nil {
 			return nil, err
@@ -67,7 +67,7 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileExtenssion string) (r 
 			}
 			r = append(r, n...)
 		}
-	case scanners.SQLFileExtension:
+	case scanners.SQLFileSuffix:
 		n, err := Parse(context.TODO(), content)
 		if err != nil {
 			return nil, err

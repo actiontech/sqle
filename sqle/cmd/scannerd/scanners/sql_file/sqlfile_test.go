@@ -1,4 +1,4 @@
-package sqlfile
+package sqlFile
 
 import (
 	"context"
