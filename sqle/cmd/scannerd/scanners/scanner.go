@@ -4,6 +4,11 @@ import (
 	"context"
 )
 
+const (
+	MybatisFileExtension = "xml"
+	SQLFileExtension = "sql"
+)
+
 type SQL struct {
 	Fingerprint string
 	RawText     string
