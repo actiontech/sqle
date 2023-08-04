@@ -55,7 +55,8 @@ func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
 	for i := range cases {
 		c := cases[i]
 		t.Run(fmt.Sprintf("case %v", i), func(t *testing.T) {
-			actual, _ := sqlFromSlowLogs(c.sqls).mergeByFingerprint(log)
+			actual, err := sqlFromSlowLogs(c.sqls).mergeByFingerprint(log)
+			assert.NoError(t, err)
 			assert.EqualValues(t, c.expected, actual)
 		})
 	}
