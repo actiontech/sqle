@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
+	log := logrus.WithField("test", "test")
+	log.Level = logrus.DebugLevel
 	cases := []struct {
 		sqls     []*sqlFromSlowLog
 		expected []sqlInfo
@@ -22,7 +25,7 @@ func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
 				{sql: "set names utf8", schema: "", queryTimeSeconds: 3},
 			},
 			expected: []sqlInfo{
-				{counter: 3, fingerprint: "set names utf8", sql: "set names utf8", schema: "", queryTimeSeconds: 2},
+				{counter: 3, fingerprint: "SET NAMES ?", sql: "set names utf8", schema: "", queryTimeSeconds: 2},
 			},
 		},
 		{
@@ -32,7 +35,7 @@ func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
 				{sql: "select sleep(4)", schema: "", queryTimeSeconds: 4},
 			},
 			expected: []sqlInfo{
-				{counter: 3, fingerprint: "select sleep(?)", sql: "select sleep(4)", schema: "", queryTimeSeconds: 3},
+				{counter: 3, fingerprint: "SELECT SLEEP(?)", sql: "select sleep(4)", schema: "", queryTimeSeconds: 3},
 			},
 		},
 		{
@@ -43,8 +46,8 @@ func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
 				{sql: "select * from tb1 where a=3", schema: "tb1", queryTimeSeconds: 3},
 			},
 			expected: []sqlInfo{
-				{counter: 2, fingerprint: "select * from tb1 where a=?", sql: "select * from tb1 where a=3", schema: "tb1", queryTimeSeconds: 2},
-				{counter: 2, fingerprint: "select sleep(?)", sql: "select sleep(4)", schema: "", queryTimeSeconds: 3},
+				{counter: 2, fingerprint: "SELECT * FROM `tb1` WHERE `a`=?", sql: "select * from tb1 where a=3", schema: "tb1", queryTimeSeconds: 2},
+				{counter: 2, fingerprint: "SELECT SLEEP(?)", sql: "select sleep(4)", schema: "", queryTimeSeconds: 3},
 			},
 		},
 	}
@@ -52,7 +55,8 @@ func TestMergeSlowlogSQLsByFingerprint(t *testing.T) {
 	for i := range cases {
 		c := cases[i]
 		t.Run(fmt.Sprintf("case %v", i), func(t *testing.T) {
-			actual := sqlFromSlowLogs(c.sqls).mergeByFingerprint()
+			actual, err := sqlFromSlowLogs(c.sqls).mergeByFingerprint(log)
+			assert.NoError(t, err)
 			assert.EqualValues(t, c.expected, actual)
 		})
 	}
