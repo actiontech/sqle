@@ -921,7 +921,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 	valIsCreated := false
 	defer func() {
 		if valIsCreated {
-			_, err = plugin.Exec(context.Background(), `DROP VARIABLE sqle_get_ddl_token`)
+			_, err = plugin.Exec(context.Background(), fmt.Sprintf(`DROP VARIABLE %v.sqle_get_ddl_token`, at.ap.InstanceDatabase))
 			if err != nil {
 				at.logger.Errorf("drop variable failed, error: %v", err)
 			}
@@ -954,22 +954,23 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 	}
 
 	var sqls []string
-	_, err = plugin.Exec(context.Background(), `CREATE OR REPLACE VARIABLE sqle_get_ddl_token integer`)
+	tempVariableName := fmt.Sprintf("%v.sqle_get_ddl_token", at.ap.InstanceDatabase)
+	_, err = plugin.Exec(context.Background(), fmt.Sprintf(`CREATE OR REPLACE VARIABLE %v integer`, tempVariableName))
 	if err != nil {
 		at.logger.Errorf("create variable failed, error: %v", err)
 		return
 	}
 	valIsCreated = true
 	for _, table := range tables {
-		sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, table)
+		sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',%v)`, at.ap.InstanceDatabase, table, tempVariableName)
 		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
 			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
-		result, err := plugin.Query(context.Background(), `
-SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = sqle_get_ddl_token AND OBJ_TYPE = 'TABLE' ORDER BY OP_SEQUENCE ASC
-`, &driverV2.QueryConf{TimeOutSecond: 10})
+		result, err := plugin.Query(context.Background(), fmt.Sprintf(`
+SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = %v AND OBJ_TYPE = 'TABLE' ORDER BY OP_SEQUENCE ASC
+`, tempVariableName), &driverV2.QueryConf{TimeOutSecond: 10})
 		if err != nil {
 			at.logger.Errorf("get create table ddl for table [%v] failed, error: %v", table, err)
 			continue
@@ -991,16 +992,16 @@ SELECT VARCHAR(SQL_STMT,2000) AS CREATE_TABLE_DDL FROM SYSTOOLS.DB2LOOK_INFO WHE
 	}
 
 	for _, view := range views {
-		sql := fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',sqle_get_ddl_token)`, at.ap.InstanceDatabase, view)
+		sql := fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',%v)`, at.ap.InstanceDatabase, view, tempVariableName)
 		_, err = plugin.Exec(context.Background(), sql)
 		if err != nil {
 
 			at.logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
 			continue
 		}
-		result, err := plugin.Query(context.Background(), `
-SELECT VARCHAR(SQL_STMT,2000) AS CREATE_VIEW_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = sqle_get_ddl_token AND OBJ_TYPE = 'VIEW' ORDER BY OP_SEQUENCE ASC
-`, &driverV2.QueryConf{TimeOutSecond: 10})
+		result, err := plugin.Query(context.Background(), fmt.Sprintf(`
+SELECT VARCHAR(SQL_STMT,2000) AS CREATE_VIEW_DDL FROM SYSTOOLS.DB2LOOK_INFO WHERE OP_TOKEN = %v AND OBJ_TYPE = 'VIEW' ORDER BY OP_SEQUENCE ASC
+`, tempVariableName), &driverV2.QueryConf{TimeOutSecond: 10})
 		if err != nil {
 			at.logger.Errorf("get create view ddl for view [%v] failed, error: %v", view, err)
 			continue
