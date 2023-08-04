@@ -435,12 +435,6 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			return err
 		}
 		allExecutor[i] = executor
-
-		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:             task.ID,
-			InstanceId:         task.InstanceId,
-			ExecutionAssignees: executor,
-		}
 	}
 
 	record := &WorkflowRecord{
@@ -472,6 +466,10 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+
+	// 工单详情概览页面待操作人是流程模版执行上线step的待操作人加上该数据源待操作人
+	// 如果流程模版制定了待操作人,即指定待操作人上线
+	UpdateInstanceRecord(stepTemplates, tasks, steps, instanceRecords, allExecutor)
 
 	tx := s.db.Begin()
 
@@ -520,6 +518,39 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 	}
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
+
+func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, steps []*WorkflowStep, instanceRecords []*WorkflowInstanceRecord, allExecutor [][]*User) {
+	executionStep := stepTemplates[len(stepTemplates)-1]
+	isExecuteByAuthorized := executionStep.ExecuteByAuthorized.Bool
+	stepTemplateAssignees := executionStep.Users
+	stepAssignees := steps[len(steps)-1].Assignees
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+
+		if isExecuteByAuthorized {
+			distinctOfUsers := getDistinctOfUsers(stepAssignees, allExecutor[i])
+			instanceRecords[i].ExecutionAssignees = distinctOfUsers
+		} else {
+			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
+		}
+	}
+}
+
+func getDistinctOfUsers(users1, users2 []*User) []*User {
+	resUsers := users1
+	for _, user1 := range users1 {
+		for _, user2 := range users2 {
+			if user1.ID == user2.ID {
+				continue
+			}
+			resUsers = append(resUsers, user2)
+		}
+	}
+	return resUsers
 }
 
 func getOverlapOfUsers(users1, users2 []*User) []*User {
