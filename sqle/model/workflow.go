@@ -10,6 +10,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+var UnScopedFunc = func(db *gorm.DB) *gorm.DB { return db.Unscoped() }
+
 type WorkflowTemplate struct {
 	Model
 	Name                          string
@@ -810,7 +812,7 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 
 func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	w := new(Workflow)
-	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
+	err := s.db.Preload("CreateUser", UnScopedFunc).
 		Preload("Record").Where("id = ?", id).First(&w).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
