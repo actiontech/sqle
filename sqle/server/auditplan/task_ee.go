@@ -918,10 +918,11 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Errorf("connect to instance fail, error: %v", err)
 		return
 	}
+	tempVariableName := fmt.Sprintf("%v.sqle_get_ddl_token", at.ap.InstanceDatabase)
 	valIsCreated := false
 	defer func() {
 		if valIsCreated {
-			_, err = plugin.Exec(context.Background(), fmt.Sprintf(`DROP VARIABLE %v.sqle_get_ddl_token`, at.ap.InstanceDatabase))
+			_, err = plugin.Exec(context.Background(), fmt.Sprintf(`DROP VARIABLE %v`, tempVariableName))
 			if err != nil {
 				at.logger.Errorf("drop variable failed, error: %v", err)
 			}
@@ -954,7 +955,6 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 	}
 
 	var sqls []string
-	tempVariableName := fmt.Sprintf("%v.sqle_get_ddl_token", at.ap.InstanceDatabase)
 	_, err = plugin.Exec(context.Background(), fmt.Sprintf(`CREATE OR REPLACE VARIABLE %v integer`, tempVariableName))
 	if err != nil {
 		at.logger.Errorf("create variable failed, error: %v", err)
