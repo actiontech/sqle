@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -114,11 +115,11 @@ func exportWorkflowV1(c echo.Context) error {
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
-				instanceRecord.Instance.Name,
+				utils.AddDelTag(instanceRecord.Instance.DeletedAt, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
-				workflow.CreateUser.Name,
+				addDelUserTag(workflow.CreateUser),
 				model.WorkflowStatus[workflow.Record.Status],
-				instanceRecord.ExecuteUserName(),
+				addDelUserTag(instanceRecord.User),
 				instanceRecord.Task.TaskExecEndAt(),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
 			}
@@ -158,7 +159,7 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	auditAndExecuteList = append(auditAndExecuteList, getAuditList(workflow)...)
 	// 上线节点
 	auditAndExecuteList = append(auditAndExecuteList,
-		instanceRecord.ExecuteUserName(),
+		addDelUserTag(instanceRecord.User),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
 		executeStateMap[instanceRecord.Task.Status],
@@ -181,9 +182,16 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
 		stepIndex := i * stepSize
-		auditNodeList[stepIndex] = step.OperationUserName()
+		auditNodeList[stepIndex] = addDelUserTag(step.OperationUser)
 		auditNodeList[stepIndex+1] = step.OperationTime()
 		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
 	}
 	return auditNodeList
+}
+
+func addDelUserTag(user *model.User) string {
+	if user != nil {
+		return utils.AddDelTag(user.DeletedAt, user.Name)
+	}
+	return ""
 }
