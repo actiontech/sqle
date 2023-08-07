@@ -826,7 +826,8 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	}
 
 	instanceRecordList := make([]*WorkflowInstanceRecord, 0)
-	err = s.db.Preload("Instance").Preload("Task").Preload("User").
+	err = s.db.Preload("Instance", UnScopedFunc).Preload("Task").
+		Preload("User", UnScopedFunc).
 		Where("workflow_record_id = ?", w.Record.ID).
 		Find(&instanceRecordList).Error
 	if err != nil {
@@ -844,7 +845,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 
 	steps := make([]*WorkflowStep, 0)
 	err = s.db.Where("workflow_record_id = ?", w.Record.ID).
-		Preload("OperationUser").
+		Preload("OperationUser", UnScopedFunc).
 		Find(&steps).Error
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
