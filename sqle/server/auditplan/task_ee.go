@@ -867,6 +867,14 @@ func (at *DB2SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
 	}
+	if at.ap.InstanceName != "" {
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		task.Instance = instance
+		task.Schema = at.ap.InstanceDatabase
+	}
 	return at.baseTask.audit(task)
 }
 
