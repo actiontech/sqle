@@ -469,7 +469,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 
 	// 工单详情概览页面待操作人是流程模版执行上线step的待操作人加上该数据源待操作人
 	// 如果流程模版制定了待操作人,即指定待操作人上线
-	UpdateInstanceRecord(stepTemplates, tasks, steps, instanceRecords, allExecutor)
+	UpdateInstanceRecord(stepTemplates, tasks, canExecUsers, instanceRecords, allExecutor)
 
 	tx := s.db.Begin()
 
@@ -520,11 +520,10 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, steps []*WorkflowStep, instanceRecords []*WorkflowInstanceRecord, allExecutor [][]*User) {
+func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, stepExecUsers []*User, instanceRecords []*WorkflowInstanceRecord, allExecutor [][]*User) {
 	executionStep := stepTemplates[len(stepTemplates)-1]
 	isExecuteByAuthorized := executionStep.ExecuteByAuthorized.Bool
 	stepTemplateAssignees := executionStep.Users
-	stepAssignees := steps[len(steps)-1].Assignees
 	for i, task := range tasks {
 		instanceRecords[i] = &WorkflowInstanceRecord{
 			TaskId:     task.ID,
@@ -532,7 +531,7 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 		}
 
 		if isExecuteByAuthorized {
-			distinctOfUsers := GetDistinctOfUsers(stepAssignees, allExecutor[i])
+			distinctOfUsers := GetDistinctOfUsers(stepExecUsers, allExecutor[i])
 			instanceRecords[i].ExecutionAssignees = distinctOfUsers
 		} else {
 			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
