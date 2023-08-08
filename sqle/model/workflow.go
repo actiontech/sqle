@@ -448,8 +448,8 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	canOptUsers := allUsers[0]
 	canExecUsers := allExecutor[0]
 	for i := 1; i < len(allUsers); i++ {
-		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
-		canExecUsers = getOverlapOfUsers(canExecUsers, allExecutor[i])
+		canOptUsers = GetOverlapOfUsers(canOptUsers, allUsers[i])
+		canExecUsers = GetOverlapOfUsers(canExecUsers, allExecutor[i])
 	}
 
 	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
@@ -532,37 +532,12 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 		}
 
 		if isExecuteByAuthorized {
-			distinctOfUsers := getDistinctOfUsers(stepAssignees, allExecutor[i])
+			distinctOfUsers := GetDistinctOfUsers(stepAssignees, allExecutor[i])
 			instanceRecords[i].ExecutionAssignees = distinctOfUsers
 		} else {
 			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
 		}
 	}
-}
-
-func getDistinctOfUsers(users1, users2 []*User) []*User {
-	resUsers := users1
-	for _, user1 := range users1 {
-		for _, user2 := range users2 {
-			if user1.ID == user2.ID {
-				continue
-			}
-			resUsers = append(resUsers, user2)
-		}
-	}
-	return resUsers
-}
-
-func getOverlapOfUsers(users1, users2 []*User) []*User {
-	var res []*User
-	for _, user1 := range users1 {
-		for _, user2 := range users2 {
-			if user1.ID == user2.ID {
-				res = append(res, user1)
-			}
-		}
-	}
-	return res
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
