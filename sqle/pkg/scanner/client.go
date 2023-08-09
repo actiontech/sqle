@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 
@@ -125,6 +126,8 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 	var pageIndex, pageSize, cursor uint64
 	pageIndex, pageSize = 1, 10
 	cursor = pageIndex * pageSize
+	var finalErr error
+	auditError := errors.New("audit result error")
 
 	for {
 		url := sc.baseURL + fmt.Sprintf(GetAuditReport, sc.project, auditPlanName, reportID, pageIndex, pageSize)
@@ -145,7 +148,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 			fmt.Println(res.SQL)
 			fmt.Println(res.AuditResult)
 			if strings.Contains(res.AuditResult, "[error]") {
-				return fmt.Errorf("audit result error, stopped")
+				finalErr = auditError
 			}
 		}
 
@@ -157,7 +160,7 @@ func (sc *Client) GetAuditReportReq(auditPlanName string, reportID string) error
 		}
 	}
 
-	return nil
+	return finalErr
 }
 
 const (
