@@ -5308,7 +5308,7 @@ paths:
       operationId: deleteCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
@@ -5327,7 +5327,7 @@ paths:
       operationId: getCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
@@ -5346,7 +5346,7 @@ paths:
       operationId: updateCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
