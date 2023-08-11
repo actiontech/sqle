@@ -91,15 +91,18 @@ func oauth2Callback(c echo.Context) error {
 	uri := oauth2C.ClientHost
 	data := callbackRedirectData{}
 
+	entry := log.NewEntry().WithField("oauth2", "callback")
 	// check callback request
 	state := c.QueryParam("state")
 	if state != oauthState {
 		data.Error = fmt.Sprintf("invalid state: %v", state)
+		entry.Errorf("invalid state: %v", state)
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
 	code := c.QueryParam("code")
 	if code == "" {
 		data.Error = "code is nil"
+		entry.Errorf("code is nil")
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
 
@@ -107,6 +110,7 @@ func oauth2Callback(c echo.Context) error {
 	oauth2Token, err := generateOauth2Config(oauth2C).Exchange(context.Background(), code)
 	if err != nil {
 		data.Error = err.Error()
+		entry.Errorf("get oauth2 token failed: %v", err)
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
 	data.Oauth2Token = oauth2Token.AccessToken
@@ -115,11 +119,13 @@ func oauth2Callback(c echo.Context) error {
 	userID, err := getOauth2UserID(oauth2C, oauth2Token.AccessToken)
 	if err != nil {
 		data.Error = err.Error()
+		entry.Errorf("get oauth2 user id failed: %v", err)
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
 	user, exist, err := s.GetUserByThirdPartyUserID(userID)
 	if err != nil {
 		data.Error = err.Error()
+		entry.Errorf("get user by third party user id failed: %v", err)
 		return c.Redirect(http.StatusFound, data.generateQuery(uri))
 	}
 	data.UserExist = exist
@@ -129,6 +135,7 @@ func oauth2Callback(c echo.Context) error {
 		t, err := generateToken(user.Name)
 		if err != nil {
 			data.Error = err.Error()
+			entry.Errorf("generate token failed: %v", err)
 			return c.Redirect(http.StatusFound, data.generateQuery(uri))
 		}
 		data.SqleToken = t
