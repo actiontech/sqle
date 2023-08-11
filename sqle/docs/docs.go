@@ -1084,7 +1084,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -1114,7 +1114,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -1144,7 +1144,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
