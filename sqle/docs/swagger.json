@@ -1068,7 +1068,7 @@
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -1098,7 +1098,7 @@
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -1128,7 +1128,7 @@
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
