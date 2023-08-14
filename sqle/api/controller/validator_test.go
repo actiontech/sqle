@@ -14,9 +14,9 @@ func TestValidateName(t *testing.T) {
 	assert.Equal(t, true, validateName("姓名name_1"))
 	assert.Equal(t, true, validateName("name_1"))
 
-	len60 := `test_name_length_60_0000000000000000000000000000000000000000`
-	assert.Equal(t, 60, len(len60))
-	assert.Equal(t, true, validateName(len60))
+	len120 := `test_name_length_120_000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`
+	assert.Equal(t, 120, len(len120))
+	assert.Equal(t, true, validateName(len120))
 
 	assert.Equal(t, false, validateName(""))
 	assert.Equal(t, false, validateName("1name姓名"))
@@ -28,10 +28,10 @@ func TestValidateName(t *testing.T) {
 	assert.Equal(t, false, validateName("name*name"))
 	assert.Equal(t, false, validateName("*name姓名"))
 
-	len61 := `test_name_length_61_00000000000000000000000000000000000000000`
-	assert.Equal(t, 61, len(len61))
-	assert.Equal(t, false, validateName(len61))
-	assert.Equal(t, false, validateName(len61+"*"))
+	len121 := `test_name_length_121_0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000`
+	assert.Equal(t, 121, len(len121))
+	assert.Equal(t, false, validateName(len121))
+	assert.Equal(t, false, validateName(len121+"*"))
 }
 
 func TestValidatePort(t *testing.T) {
