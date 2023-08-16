@@ -1,11 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -62,13 +65,17 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			projectName := c.Param("project_name")
+
+			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
 			apnInParam := c.Param("audit_plan_name")
 			if apnInToken != apnInParam {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectName, apnInParam)
+			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectById(projectUid, apnInParam)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}

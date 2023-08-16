@@ -17,13 +17,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Audit(l *logrus.Entry, task *model.Task, projectId *uint, ruleTemplateName string) (err error) {
+func Audit(l *logrus.Entry, task *model.Task, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	return HookAudit(l, task, &EmptyAuditHook{}, projectId, ruleTemplateName)
 }
 
-func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uint, ruleTemplateName string) (err error) {
+func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, projectId, task.Instance, task.DBType)
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, string(*projectId), task.Instance, task.DBType)
 	if err != nil {
 		return err
 	}
@@ -40,11 +40,11 @@ const AuditSchema = "AuditSchema"
 
 func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *model.Instance) (*model.Task, error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", nil, instance, instance.DbType)
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", instance, instance.DbType)
 	if err != nil {
 		return nil, err
 	}
-	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType, rules)
+	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType,  rules)
 	if err != nil {
 		return nil, err
 	}
@@ -59,13 +59,13 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 	return task, audit(l, task, plugin, customRules)
 }
 
-func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *uint, ruleTemplateName string) (*model.Task, error) {
+func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *model.ProjectUID, ruleTemplateName string) (*model.Task, error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, projectId, nil, dbType)
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, string(*projectId), nil, dbType)
 	if err != nil {
 		return nil, err
 	}
-	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, rules)
+	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType,  rules)
 	if err != nil {
 		return nil, err
 	}

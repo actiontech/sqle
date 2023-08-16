@@ -23,6 +23,7 @@ import (
 
 func NewService(config *larkcore.Config) *VcService {
 	v := &VcService{config: config}
+	v.Alert = &alert{service: v}
 	v.Export = &export{service: v}
 	v.Meeting = &meeting{service: v}
 	v.MeetingRecording = &meetingRecording{service: v}
@@ -33,6 +34,7 @@ func NewService(config *larkcore.Config) *VcService {
 	v.Reserve = &reserve{service: v}
 	v.ReserveConfig = &reserveConfig{service: v}
 	v.ReserveConfigAdmin = &reserveConfigAdmin{service: v}
+	v.ReserveConfigForm = &reserveConfigForm{service: v}
 	v.ResourceReservationList = &resourceReservationList{service: v}
 	v.Room = &room{service: v}
 	v.RoomConfig = &roomConfig{service: v}
@@ -43,6 +45,7 @@ func NewService(config *larkcore.Config) *VcService {
 
 type VcService struct {
 	config                  *larkcore.Config
+	Alert                   *alert                   // 告警中心
 	Export                  *export                  // 导出
 	Meeting                 *meeting                 // 会议
 	MeetingRecording        *meetingRecording        // 录制
@@ -53,6 +56,7 @@ type VcService struct {
 	Reserve                 *reserve                 // 预约
 	ReserveConfig           *reserveConfig           // reserve_config
 	ReserveConfigAdmin      *reserveConfigAdmin      // reserve_config.admin
+	ReserveConfigForm       *reserveConfigForm       // reserve_config.form
 	ResourceReservationList *resourceReservationList // resource_reservation_list
 	Room                    *room                    // 会议室
 	RoomConfig              *roomConfig              // room_config
@@ -60,6 +64,9 @@ type VcService struct {
 	ScopeConfig             *scopeConfig             // 会议室配置
 }
 
+type alert struct {
+	service *VcService
+}
 type export struct {
 	service *VcService
 }
@@ -90,6 +97,9 @@ type reserveConfig struct {
 type reserveConfigAdmin struct {
 	service *VcService
 }
+type reserveConfigForm struct {
+	service *VcService
+}
 type resourceReservationList struct {
 	service *VcService
 }
@@ -104,6 +114,40 @@ type roomLevel struct {
 }
 type scopeConfig struct {
 	service *VcService
+}
+
+// 获取告警记录
+//
+// - 获取特定条件下租户的设备告警记录
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/vc-v1/alert/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/vcv1/list_alert.go
+func (a *alert) List(ctx context.Context, req *ListAlertReq, options ...larkcore.RequestOptionFunc) (*ListAlertResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/vc/v1/alerts"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListAlertResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (a *alert) ListByIterator(ctx context.Context, req *ListAlertReq, options ...larkcore.RequestOptionFunc) (*ListAlertIterator, error) {
+	return &ListAlertIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: a.List,
+		options:  options,
+		limit:    req.Limit}, nil
 }
 
 // 下载导出文件
@@ -454,7 +498,7 @@ func (m *meetingRecording) Get(ctx context.Context, req *GetMeetingRecordingReq,
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/vc/v1/meetings/:meeting_id/recording"
 	apiReq.HttpMethod = http.MethodGet
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
 	apiResp, err := larkcore.Request(ctx, apiReq, m.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -752,7 +796,7 @@ func (r *reserve) Delete(ctx context.Context, req *DeleteReserveReq, options ...
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/vc/v1/reserves/:reserve_id"
 	apiReq.HttpMethod = http.MethodDelete
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
 	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -780,7 +824,7 @@ func (r *reserve) Get(ctx context.Context, req *GetReserveReq, options ...larkco
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/vc/v1/reserves/:reserve_id"
 	apiReq.HttpMethod = http.MethodGet
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
 	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -808,7 +852,7 @@ func (r *reserve) GetActiveMeeting(ctx context.Context, req *GetActiveMeetingRes
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/vc/v1/reserves/:reserve_id/get_active_meeting"
 	apiReq.HttpMethod = http.MethodGet
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
 	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -836,7 +880,7 @@ func (r *reserve) Update(ctx context.Context, req *UpdateReserveReq, options ...
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/vc/v1/reserves/:reserve_id"
 	apiReq.HttpMethod = http.MethodPut
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
 	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -947,6 +991,58 @@ func (r *reserveConfigAdmin) Patch(ctx context.Context, req *PatchReserveConfigA
 	}
 	// 反序列响应结果
 	resp := &PatchReserveConfigAdminResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, r.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=vc&resource=reserve_config.form&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/vcv1/get_reserveConfigForm.go
+func (r *reserveConfigForm) Get(ctx context.Context, req *GetReserveConfigFormReq, options ...larkcore.RequestOptionFunc) (*GetReserveConfigFormResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/vc/v1/reserve_configs/:reserve_config_id/form"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetReserveConfigFormResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, r.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=patch&project=vc&resource=reserve_config.form&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/vcv1/patch_reserveConfigForm.go
+func (r *reserveConfigForm) Patch(ctx context.Context, req *PatchReserveConfigFormReq, options ...larkcore.RequestOptionFunc) (*PatchReserveConfigFormResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/vc/v1/reserve_configs/:reserve_config_id/form"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, r.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchReserveConfigFormResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, r.service.config)
 	if err != nil {
 		return nil, err

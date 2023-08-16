@@ -6163,16 +6163,20 @@ func (resp *ListPeriodResp) Success() bool {
 }
 
 type CreateProgressRecordReqBodyBuilder struct {
-	sourceTitle     string // 进展来源
-	sourceTitleFlag bool
-	sourceUrl       string // 进展来源链接
-	sourceUrlFlag   bool
-	targetId        string // 目标id，与target_type对应
-	targetIdFlag    bool
-	targetType      int // 目标类型
-	targetTypeFlag  bool
-	content         *ContentBlock // 进展详情 富文本格式
-	contentFlag     bool
+	sourceTitle         string // 进展来源
+	sourceTitleFlag     bool
+	sourceUrl           string // 进展来源链接
+	sourceUrlFlag       bool
+	targetId            string // 目标id，与target_type对应
+	targetIdFlag        bool
+	targetType          int // 目标类型
+	targetTypeFlag      bool
+	content             *ContentBlock // 进展详情 富文本格式
+	contentFlag         bool
+	sourceUrlPc         string // pc进展来源链接
+	sourceUrlPcFlag     bool
+	sourceUrlMobile     string // mobile进展来源链接
+	sourceUrlMobileFlag bool
 }
 
 func NewCreateProgressRecordReqBodyBuilder() *CreateProgressRecordReqBodyBuilder {
@@ -6225,6 +6229,24 @@ func (builder *CreateProgressRecordReqBodyBuilder) Content(content *ContentBlock
 	return builder
 }
 
+// pc进展来源链接
+//
+//示例值：open.feishu.cn
+func (builder *CreateProgressRecordReqBodyBuilder) SourceUrlPc(sourceUrlPc string) *CreateProgressRecordReqBodyBuilder {
+	builder.sourceUrlPc = sourceUrlPc
+	builder.sourceUrlPcFlag = true
+	return builder
+}
+
+// mobile进展来源链接
+//
+//示例值：open.feishu.cn
+func (builder *CreateProgressRecordReqBodyBuilder) SourceUrlMobile(sourceUrlMobile string) *CreateProgressRecordReqBodyBuilder {
+	builder.sourceUrlMobile = sourceUrlMobile
+	builder.sourceUrlMobileFlag = true
+	return builder
+}
+
 func (builder *CreateProgressRecordReqBodyBuilder) Build() *CreateProgressRecordReqBody {
 	req := &CreateProgressRecordReqBody{}
 	if builder.sourceTitleFlag {
@@ -6242,20 +6264,30 @@ func (builder *CreateProgressRecordReqBodyBuilder) Build() *CreateProgressRecord
 	if builder.contentFlag {
 		req.Content = builder.content
 	}
+	if builder.sourceUrlPcFlag {
+		req.SourceUrlPc = &builder.sourceUrlPc
+	}
+	if builder.sourceUrlMobileFlag {
+		req.SourceUrlMobile = &builder.sourceUrlMobile
+	}
 	return req
 }
 
 type CreateProgressRecordPathReqBodyBuilder struct {
-	sourceTitle     string // 进展来源
-	sourceTitleFlag bool
-	sourceUrl       string // 进展来源链接
-	sourceUrlFlag   bool
-	targetId        string // 目标id，与target_type对应
-	targetIdFlag    bool
-	targetType      int // 目标类型
-	targetTypeFlag  bool
-	content         *ContentBlock // 进展详情 富文本格式
-	contentFlag     bool
+	sourceTitle         string // 进展来源
+	sourceTitleFlag     bool
+	sourceUrl           string // 进展来源链接
+	sourceUrlFlag       bool
+	targetId            string // 目标id，与target_type对应
+	targetIdFlag        bool
+	targetType          int // 目标类型
+	targetTypeFlag      bool
+	content             *ContentBlock // 进展详情 富文本格式
+	contentFlag         bool
+	sourceUrlPc         string // pc进展来源链接
+	sourceUrlPcFlag     bool
+	sourceUrlMobile     string // mobile进展来源链接
+	sourceUrlMobileFlag bool
 }
 
 func NewCreateProgressRecordPathReqBodyBuilder() *CreateProgressRecordPathReqBodyBuilder {
@@ -6308,6 +6340,24 @@ func (builder *CreateProgressRecordPathReqBodyBuilder) Content(content *ContentB
 	return builder
 }
 
+// pc进展来源链接
+//
+// 示例值：open.feishu.cn
+func (builder *CreateProgressRecordPathReqBodyBuilder) SourceUrlPc(sourceUrlPc string) *CreateProgressRecordPathReqBodyBuilder {
+	builder.sourceUrlPc = sourceUrlPc
+	builder.sourceUrlPcFlag = true
+	return builder
+}
+
+// mobile进展来源链接
+//
+// 示例值：open.feishu.cn
+func (builder *CreateProgressRecordPathReqBodyBuilder) SourceUrlMobile(sourceUrlMobile string) *CreateProgressRecordPathReqBodyBuilder {
+	builder.sourceUrlMobile = sourceUrlMobile
+	builder.sourceUrlMobileFlag = true
+	return builder
+}
+
 func (builder *CreateProgressRecordPathReqBodyBuilder) Build() (*CreateProgressRecordReqBody, error) {
 	req := &CreateProgressRecordReqBody{}
 	if builder.sourceTitleFlag {
@@ -6324,6 +6374,12 @@ func (builder *CreateProgressRecordPathReqBodyBuilder) Build() (*CreateProgressR
 	}
 	if builder.contentFlag {
 		req.Content = builder.content
+	}
+	if builder.sourceUrlPcFlag {
+		req.SourceUrlPc = &builder.sourceUrlPc
+	}
+	if builder.sourceUrlMobileFlag {
+		req.SourceUrlMobile = &builder.sourceUrlMobile
 	}
 	return req, nil
 }
@@ -6365,11 +6421,13 @@ func (builder *CreateProgressRecordReqBuilder) Build() *CreateProgressRecordReq 
 }
 
 type CreateProgressRecordReqBody struct {
-	SourceTitle *string       `json:"source_title,omitempty"` // 进展来源
-	SourceUrl   *string       `json:"source_url,omitempty"`   // 进展来源链接
-	TargetId    *string       `json:"target_id,omitempty"`    // 目标id，与target_type对应
-	TargetType  *int          `json:"target_type,omitempty"`  // 目标类型
-	Content     *ContentBlock `json:"content,omitempty"`      // 进展详情 富文本格式
+	SourceTitle     *string       `json:"source_title,omitempty"`      // 进展来源
+	SourceUrl       *string       `json:"source_url,omitempty"`        // 进展来源链接
+	TargetId        *string       `json:"target_id,omitempty"`         // 目标id，与target_type对应
+	TargetType      *int          `json:"target_type,omitempty"`       // 目标类型
+	Content         *ContentBlock `json:"content,omitempty"`           // 进展详情 富文本格式
+	SourceUrlPc     *string       `json:"source_url_pc,omitempty"`     // pc进展来源链接
+	SourceUrlMobile *string       `json:"source_url_mobile,omitempty"` // mobile进展来源链接
 }
 
 type CreateProgressRecordReq struct {

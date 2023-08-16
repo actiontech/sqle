@@ -31,6 +31,17 @@ const (
 )
 
 const (
+	DepartmentIdTypeDepartmentId     = "department_id"      // 以自定义department_id来标识部门
+	DepartmentIdTypeOpenDepartmentId = "open_department_id" // 以open_department_id来标识部门
+)
+
+const (
+	UserIdTypeContactsRangeConfigurationApplicationUserId  = "user_id"  // 以user_id来识别用户
+	UserIdTypeContactsRangeConfigurationApplicationUnionId = "union_id" // 以union_id来识别用户
+	UserIdTypeContactsRangeConfigurationApplicationOpenId  = "open_id"  // 以open_id来识别用户
+)
+
+const (
 	I18nKeyZhCn = "zh_cn" // 中文
 	I18nKeyEnUs = "en_us" // 英文
 	I18nKeyJaJp = "ja_jp" // 日文
@@ -75,8 +86,19 @@ const (
 )
 
 const (
-	DepartmentIdTypeDepartmentId     = "department_id"      // 以自定义department_id来标识部门
-	DepartmentIdTypeOpenDepartmentId = "open_department_id" // 以open_department_id来标识部门
+	DepartmentIdTypeOverviewApplicationAppUsageDepartmentId     = "department_id"      // 以自定义department_id来标识部门
+	DepartmentIdTypeOverviewApplicationAppUsageOpenDepartmentId = "open_department_id" // 以open_department_id来标识部门
+)
+
+const (
+	DepartmentIdTypeContactsRangeSuggestApplicationAppVersionDepartmentId     = "department_id"      // 以自定义department_id来标识部门
+	DepartmentIdTypeContactsRangeSuggestApplicationAppVersionOpenDepartmentId = "open_department_id" // 以open_department_id来标识部门
+)
+
+const (
+	UserIdTypeContactsRangeSuggestApplicationAppVersionUserId  = "user_id"  // 以user_id来识别用户
+	UserIdTypeContactsRangeSuggestApplicationAppVersionUnionId = "union_id" // 以union_id来识别用户
+	UserIdTypeContactsRangeSuggestApplicationAppVersionOpenId  = "open_id"  // 以open_id来识别用户
 )
 
 const (
@@ -150,6 +172,17 @@ const (
 	OpenMarkStatusPatchApplicationFeedbackProcessing = 2 // 反馈处理中
 	OpenMarkStatusPatchApplicationFeedbackClosed     = 3 // 反馈已关闭
 
+)
+
+const (
+	UserIdTypeCheckWhiteBlackListApplicationVisibilityUserId  = "user_id"  // 以user_id来标识用户
+	UserIdTypeCheckWhiteBlackListApplicationVisibilityUnionId = "union_id" // 以union_id来标识用户
+	UserIdTypeCheckWhiteBlackListApplicationVisibilityOpenId  = "open_id"  // 以open_id来标识用户
+)
+
+const (
+	DepartmentIdTypeCheckWhiteBlackListApplicationVisibilityDepartmentId     = "department_id"      // 以department_id来标识部门
+	DepartmentIdTypeCheckWhiteBlackListApplicationVisibilityOpenDepartmentId = "open_department_id" // 以open_department_id来标识部门
 )
 
 type AppAbility struct {
@@ -1773,6 +1806,7 @@ func (builder *AppVisibilityItemBuilder) Build() *AppVisibilityItem {
 type AppVisibleList struct {
 	OpenIds       []string `json:"open_ids,omitempty"`       // 可见性成员 open_id 列表
 	DepartmentIds []string `json:"department_ids,omitempty"` // 可见性部门的 id 列表
+	GroupIds      []string `json:"group_ids,omitempty"`      // 可见性成员 group_id 列表
 }
 
 type AppVisibleListBuilder struct {
@@ -1780,6 +1814,8 @@ type AppVisibleListBuilder struct {
 	openIdsFlag       bool
 	departmentIds     []string // 可见性部门的 id 列表
 	departmentIdsFlag bool
+	groupIds          []string // 可见性成员 group_id 列表
+	groupIdsFlag      bool
 }
 
 func NewAppVisibleListBuilder() *AppVisibleListBuilder {
@@ -1805,6 +1841,15 @@ func (builder *AppVisibleListBuilder) DepartmentIds(departmentIds []string) *App
 	return builder
 }
 
+// 可见性成员 group_id 列表
+//
+// 示例值：
+func (builder *AppVisibleListBuilder) GroupIds(groupIds []string) *AppVisibleListBuilder {
+	builder.groupIds = groupIds
+	builder.groupIdsFlag = true
+	return builder
+}
+
 func (builder *AppVisibleListBuilder) Build() *AppVisibleList {
 	req := &AppVisibleList{}
 	if builder.openIdsFlag {
@@ -1812,6 +1857,9 @@ func (builder *AppVisibleListBuilder) Build() *AppVisibleList {
 	}
 	if builder.departmentIdsFlag {
 		req.DepartmentIds = builder.departmentIds
+	}
+	if builder.groupIdsFlag {
+		req.GroupIds = builder.groupIds
 	}
 	return req
 }
@@ -2141,6 +2189,53 @@ func (builder *ApplicationBuilder) Build() *Application {
 	}
 	if builder.ownerFlag {
 		req.Owner = builder.owner
+	}
+	return req
+}
+
+type ApplicationAppContactsRange struct {
+	ContactsScopeType *string         `json:"contacts_scope_type,omitempty"` // 通讯录可见性类型
+	VisibleList       *AppVisibleList `json:"visible_list,omitempty"`        // 可用名单
+}
+
+type ApplicationAppContactsRangeBuilder struct {
+	contactsScopeType     string // 通讯录可见性类型
+	contactsScopeTypeFlag bool
+	visibleList           *AppVisibleList // 可用名单
+	visibleListFlag       bool
+}
+
+func NewApplicationAppContactsRangeBuilder() *ApplicationAppContactsRangeBuilder {
+	builder := &ApplicationAppContactsRangeBuilder{}
+	return builder
+}
+
+// 通讯录可见性类型
+//
+// 示例值：some
+func (builder *ApplicationAppContactsRangeBuilder) ContactsScopeType(contactsScopeType string) *ApplicationAppContactsRangeBuilder {
+	builder.contactsScopeType = contactsScopeType
+	builder.contactsScopeTypeFlag = true
+	return builder
+}
+
+// 可用名单
+//
+// 示例值：
+func (builder *ApplicationAppContactsRangeBuilder) VisibleList(visibleList *AppVisibleList) *ApplicationAppContactsRangeBuilder {
+	builder.visibleList = visibleList
+	builder.visibleListFlag = true
+	return builder
+}
+
+func (builder *ApplicationAppContactsRangeBuilder) Build() *ApplicationAppContactsRange {
+	req := &ApplicationAppContactsRange{}
+	if builder.contactsScopeTypeFlag {
+		req.ContactsScopeType = &builder.contactsScopeType
+
+	}
+	if builder.visibleListFlag {
+		req.VisibleList = builder.visibleList
 	}
 	return req
 }
@@ -3353,6 +3448,214 @@ func (builder *ApplicationVisibilityBuilder) Build() *ApplicationVisibility {
 	}
 	if builder.invisibleListFlag {
 		req.InvisibleList = builder.invisibleList
+	}
+	return req
+}
+
+type ApplicationVisibilityDepartmentWhiteBlackInfo struct {
+	DepartmentId *string `json:"department_id,omitempty"` // 部门ID
+	InWhiteList  *bool   `json:"in_white_list,omitempty"` // 是否在白名单中
+	InBlackList  *bool   `json:"in_black_list,omitempty"` // 是否在黑名单中
+}
+
+type ApplicationVisibilityDepartmentWhiteBlackInfoBuilder struct {
+	departmentId     string // 部门ID
+	departmentIdFlag bool
+	inWhiteList      bool // 是否在白名单中
+	inWhiteListFlag  bool
+	inBlackList      bool // 是否在黑名单中
+	inBlackListFlag  bool
+}
+
+func NewApplicationVisibilityDepartmentWhiteBlackInfoBuilder() *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder {
+	builder := &ApplicationVisibilityDepartmentWhiteBlackInfoBuilder{}
+	return builder
+}
+
+// 部门ID
+//
+// 示例值：od-aa2c50a04769feefededb7a05b7525a8
+func (builder *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder) DepartmentId(departmentId string) *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder {
+	builder.departmentId = departmentId
+	builder.departmentIdFlag = true
+	return builder
+}
+
+// 是否在白名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder) InWhiteList(inWhiteList bool) *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder {
+	builder.inWhiteList = inWhiteList
+	builder.inWhiteListFlag = true
+	return builder
+}
+
+// 是否在黑名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder) InBlackList(inBlackList bool) *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder {
+	builder.inBlackList = inBlackList
+	builder.inBlackListFlag = true
+	return builder
+}
+
+func (builder *ApplicationVisibilityDepartmentWhiteBlackInfoBuilder) Build() *ApplicationVisibilityDepartmentWhiteBlackInfo {
+	req := &ApplicationVisibilityDepartmentWhiteBlackInfo{}
+	if builder.departmentIdFlag {
+		req.DepartmentId = &builder.departmentId
+
+	}
+	if builder.inWhiteListFlag {
+		req.InWhiteList = &builder.inWhiteList
+
+	}
+	if builder.inBlackListFlag {
+		req.InBlackList = &builder.inBlackList
+
+	}
+	return req
+}
+
+type ApplicationVisibilityGroupWhiteBlackInfo struct {
+	GroupId     *string `json:"group_id,omitempty"`      // 用户组ID
+	InWhiteList *bool   `json:"in_white_list,omitempty"` // 是否在白名单中
+	InBlackList *bool   `json:"in_black_list,omitempty"` // 是否在黑名单中
+}
+
+type ApplicationVisibilityGroupWhiteBlackInfoBuilder struct {
+	groupId         string // 用户组ID
+	groupIdFlag     bool
+	inWhiteList     bool // 是否在白名单中
+	inWhiteListFlag bool
+	inBlackList     bool // 是否在黑名单中
+	inBlackListFlag bool
+}
+
+func NewApplicationVisibilityGroupWhiteBlackInfoBuilder() *ApplicationVisibilityGroupWhiteBlackInfoBuilder {
+	builder := &ApplicationVisibilityGroupWhiteBlackInfoBuilder{}
+	return builder
+}
+
+// 用户组ID
+//
+// 示例值：96815a9cd9beg8g4
+func (builder *ApplicationVisibilityGroupWhiteBlackInfoBuilder) GroupId(groupId string) *ApplicationVisibilityGroupWhiteBlackInfoBuilder {
+	builder.groupId = groupId
+	builder.groupIdFlag = true
+	return builder
+}
+
+// 是否在白名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityGroupWhiteBlackInfoBuilder) InWhiteList(inWhiteList bool) *ApplicationVisibilityGroupWhiteBlackInfoBuilder {
+	builder.inWhiteList = inWhiteList
+	builder.inWhiteListFlag = true
+	return builder
+}
+
+// 是否在黑名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityGroupWhiteBlackInfoBuilder) InBlackList(inBlackList bool) *ApplicationVisibilityGroupWhiteBlackInfoBuilder {
+	builder.inBlackList = inBlackList
+	builder.inBlackListFlag = true
+	return builder
+}
+
+func (builder *ApplicationVisibilityGroupWhiteBlackInfoBuilder) Build() *ApplicationVisibilityGroupWhiteBlackInfo {
+	req := &ApplicationVisibilityGroupWhiteBlackInfo{}
+	if builder.groupIdFlag {
+		req.GroupId = &builder.groupId
+
+	}
+	if builder.inWhiteListFlag {
+		req.InWhiteList = &builder.inWhiteList
+
+	}
+	if builder.inBlackListFlag {
+		req.InBlackList = &builder.inBlackList
+
+	}
+	return req
+}
+
+type ApplicationVisibilityUserWhiteBlackInfo struct {
+	UserId      *string `json:"user_id,omitempty"`       // 用户ID
+	InWhiteList *bool   `json:"in_white_list,omitempty"` // 是否在白名单中
+	InBlackList *bool   `json:"in_black_list,omitempty"` // 是否在黑名单中
+	InPaidList  *bool   `json:"in_paid_list,omitempty"`  // 是否在付费名单中
+}
+
+type ApplicationVisibilityUserWhiteBlackInfoBuilder struct {
+	userId          string // 用户ID
+	userIdFlag      bool
+	inWhiteList     bool // 是否在白名单中
+	inWhiteListFlag bool
+	inBlackList     bool // 是否在黑名单中
+	inBlackListFlag bool
+	inPaidList      bool // 是否在付费名单中
+	inPaidListFlag  bool
+}
+
+func NewApplicationVisibilityUserWhiteBlackInfoBuilder() *ApplicationVisibilityUserWhiteBlackInfoBuilder {
+	builder := &ApplicationVisibilityUserWhiteBlackInfoBuilder{}
+	return builder
+}
+
+// 用户ID
+//
+// 示例值：ou_d317f090b7258ad0372aa53963cda70d
+func (builder *ApplicationVisibilityUserWhiteBlackInfoBuilder) UserId(userId string) *ApplicationVisibilityUserWhiteBlackInfoBuilder {
+	builder.userId = userId
+	builder.userIdFlag = true
+	return builder
+}
+
+// 是否在白名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityUserWhiteBlackInfoBuilder) InWhiteList(inWhiteList bool) *ApplicationVisibilityUserWhiteBlackInfoBuilder {
+	builder.inWhiteList = inWhiteList
+	builder.inWhiteListFlag = true
+	return builder
+}
+
+// 是否在黑名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityUserWhiteBlackInfoBuilder) InBlackList(inBlackList bool) *ApplicationVisibilityUserWhiteBlackInfoBuilder {
+	builder.inBlackList = inBlackList
+	builder.inBlackListFlag = true
+	return builder
+}
+
+// 是否在付费名单中
+//
+// 示例值：false
+func (builder *ApplicationVisibilityUserWhiteBlackInfoBuilder) InPaidList(inPaidList bool) *ApplicationVisibilityUserWhiteBlackInfoBuilder {
+	builder.inPaidList = inPaidList
+	builder.inPaidListFlag = true
+	return builder
+}
+
+func (builder *ApplicationVisibilityUserWhiteBlackInfoBuilder) Build() *ApplicationVisibilityUserWhiteBlackInfo {
+	req := &ApplicationVisibilityUserWhiteBlackInfo{}
+	if builder.userIdFlag {
+		req.UserId = &builder.userId
+
+	}
+	if builder.inWhiteListFlag {
+		req.InWhiteList = &builder.inWhiteList
+
+	}
+	if builder.inBlackListFlag {
+		req.InBlackList = &builder.inBlackList
+
+	}
+	if builder.inPaidListFlag {
+		req.InPaidList = &builder.inPaidList
+
 	}
 	return req
 }
@@ -5055,6 +5358,87 @@ func (resp *ListAppRecommendRuleResp) Success() bool {
 	return resp.Code == 0
 }
 
+type ContactsRangeConfigurationApplicationReqBuilder struct {
+	apiReq *larkcore.ApiReq
+}
+
+func NewContactsRangeConfigurationApplicationReqBuilder() *ContactsRangeConfigurationApplicationReqBuilder {
+	builder := &ContactsRangeConfigurationApplicationReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 应用的 id
+//
+// 示例值：cli_9b445f5258795107
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) AppId(appId string) *ContactsRangeConfigurationApplicationReqBuilder {
+	builder.apiReq.PathParams.Set("app_id", fmt.Sprint(appId))
+	return builder
+}
+
+// 分页大小
+//
+// 示例值：20
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) PageSize(pageSize int) *ContactsRangeConfigurationApplicationReqBuilder {
+	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
+	return builder
+}
+
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该 page_token 获取查询结果
+//
+// 示例值：new-e3c5a0627cdf0c2e057da7257b90376a
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) PageToken(pageToken string) *ContactsRangeConfigurationApplicationReqBuilder {
+	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
+	return builder
+}
+
+// 返回值的部门ID的类型
+//
+// 示例值：department_id
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) DepartmentIdType(departmentIdType string) *ContactsRangeConfigurationApplicationReqBuilder {
+	builder.apiReq.QueryParams.Set("department_id_type", fmt.Sprint(departmentIdType))
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) UserIdType(userIdType string) *ContactsRangeConfigurationApplicationReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+func (builder *ContactsRangeConfigurationApplicationReqBuilder) Build() *ContactsRangeConfigurationApplicationReq {
+	req := &ContactsRangeConfigurationApplicationReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	return req
+}
+
+type ContactsRangeConfigurationApplicationReq struct {
+	apiReq *larkcore.ApiReq
+}
+
+type ContactsRangeConfigurationApplicationRespData struct {
+	ContactsRange *ApplicationAppContactsRange `json:"contacts_range,omitempty"` //
+	HasMore       *bool                        `json:"has_more,omitempty"`       // 是否还有更多项
+	PageToken     *string                      `json:"page_token,omitempty"`     // 分页标记，当 has_more 为 true 时，会同时返回新的 page_token，否则不返回 page_token
+}
+
+type ContactsRangeConfigurationApplicationResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *ContactsRangeConfigurationApplicationRespData `json:"data"` // 业务数据
+}
+
+func (resp *ContactsRangeConfigurationApplicationResp) Success() bool {
+	return resp.Code == 0
+}
+
 type GetApplicationReqBuilder struct {
 	apiReq *larkcore.ApiReq
 }
@@ -5205,7 +5589,7 @@ func (builder *UnderauditlistApplicationReqBuilder) Lang(lang string) *Underaudi
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：new-e3c5a0627cdf0c2e057da7257b90376a
 func (builder *UnderauditlistApplicationReqBuilder) PageToken(pageToken string) *UnderauditlistApplicationReqBuilder {
@@ -5213,7 +5597,7 @@ func (builder *UnderauditlistApplicationReqBuilder) PageToken(pageToken string) 
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *UnderauditlistApplicationReqBuilder) PageSize(pageSize int) *UnderauditlistApplicationReqBuilder {
@@ -5465,6 +5849,77 @@ type OverviewApplicationAppUsageResp struct {
 }
 
 func (resp *OverviewApplicationAppUsageResp) Success() bool {
+	return resp.Code == 0
+}
+
+type ContactsRangeSuggestApplicationAppVersionReqBuilder struct {
+	apiReq *larkcore.ApiReq
+}
+
+func NewContactsRangeSuggestApplicationAppVersionReqBuilder() *ContactsRangeSuggestApplicationAppVersionReqBuilder {
+	builder := &ContactsRangeSuggestApplicationAppVersionReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 应用 id
+//
+// 示例值：cli_9f3ca975326b501b
+func (builder *ContactsRangeSuggestApplicationAppVersionReqBuilder) AppId(appId string) *ContactsRangeSuggestApplicationAppVersionReqBuilder {
+	builder.apiReq.PathParams.Set("app_id", fmt.Sprint(appId))
+	return builder
+}
+
+// 唯一标识应用版本的 ID
+//
+// 示例值：oav_d317f090b7258ad0372aa53963cda70d
+func (builder *ContactsRangeSuggestApplicationAppVersionReqBuilder) VersionId(versionId string) *ContactsRangeSuggestApplicationAppVersionReqBuilder {
+	builder.apiReq.PathParams.Set("version_id", fmt.Sprint(versionId))
+	return builder
+}
+
+// 返回值的部门ID的类型
+//
+// 示例值：department_id
+func (builder *ContactsRangeSuggestApplicationAppVersionReqBuilder) DepartmentIdType(departmentIdType string) *ContactsRangeSuggestApplicationAppVersionReqBuilder {
+	builder.apiReq.QueryParams.Set("department_id_type", fmt.Sprint(departmentIdType))
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *ContactsRangeSuggestApplicationAppVersionReqBuilder) UserIdType(userIdType string) *ContactsRangeSuggestApplicationAppVersionReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+func (builder *ContactsRangeSuggestApplicationAppVersionReqBuilder) Build() *ContactsRangeSuggestApplicationAppVersionReq {
+	req := &ContactsRangeSuggestApplicationAppVersionReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	return req
+}
+
+type ContactsRangeSuggestApplicationAppVersionReq struct {
+	apiReq *larkcore.ApiReq
+}
+
+type ContactsRangeSuggestApplicationAppVersionRespData struct {
+	ContactsRange *ApplicationAppContactsRange `json:"contacts_range,omitempty"` //
+}
+
+type ContactsRangeSuggestApplicationAppVersionResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *ContactsRangeSuggestApplicationAppVersionRespData `json:"data"` // 业务数据
+}
+
+func (resp *ContactsRangeSuggestApplicationAppVersionResp) Success() bool {
 	return resp.Code == 0
 }
 
@@ -5900,6 +6355,196 @@ func (resp *PatchApplicationFeedbackResp) Success() bool {
 	return resp.Code == 0
 }
 
+type CheckWhiteBlackListApplicationVisibilityReqBodyBuilder struct {
+	userIds           []string // 用户ID列表
+	userIdsFlag       bool
+	departmentIds     []string // 部门ID列表
+	departmentIdsFlag bool
+	groupIds          []string // 用户组ID列表
+	groupIdsFlag      bool
+}
+
+func NewCheckWhiteBlackListApplicationVisibilityReqBodyBuilder() *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder {
+	builder := &CheckWhiteBlackListApplicationVisibilityReqBodyBuilder{}
+	return builder
+}
+
+// 用户ID列表
+//
+//示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder) UserIds(userIds []string) *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder {
+	builder.userIds = userIds
+	builder.userIdsFlag = true
+	return builder
+}
+
+// 部门ID列表
+//
+//示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder) DepartmentIds(departmentIds []string) *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder {
+	builder.departmentIds = departmentIds
+	builder.departmentIdsFlag = true
+	return builder
+}
+
+// 用户组ID列表
+//
+//示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder) GroupIds(groupIds []string) *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder {
+	builder.groupIds = groupIds
+	builder.groupIdsFlag = true
+	return builder
+}
+
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBodyBuilder) Build() *CheckWhiteBlackListApplicationVisibilityReqBody {
+	req := &CheckWhiteBlackListApplicationVisibilityReqBody{}
+	if builder.userIdsFlag {
+		req.UserIds = builder.userIds
+	}
+	if builder.departmentIdsFlag {
+		req.DepartmentIds = builder.departmentIds
+	}
+	if builder.groupIdsFlag {
+		req.GroupIds = builder.groupIds
+	}
+	return req
+}
+
+type CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder struct {
+	userIds           []string // 用户ID列表
+	userIdsFlag       bool
+	departmentIds     []string // 部门ID列表
+	departmentIdsFlag bool
+	groupIds          []string // 用户组ID列表
+	groupIdsFlag      bool
+}
+
+func NewCheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder() *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder {
+	builder := &CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder{}
+	return builder
+}
+
+// 用户ID列表
+//
+// 示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder) UserIds(userIds []string) *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder {
+	builder.userIds = userIds
+	builder.userIdsFlag = true
+	return builder
+}
+
+// 部门ID列表
+//
+// 示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder) DepartmentIds(departmentIds []string) *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder {
+	builder.departmentIds = departmentIds
+	builder.departmentIdsFlag = true
+	return builder
+}
+
+// 用户组ID列表
+//
+// 示例值：
+func (builder *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder) GroupIds(groupIds []string) *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder {
+	builder.groupIds = groupIds
+	builder.groupIdsFlag = true
+	return builder
+}
+
+func (builder *CheckWhiteBlackListApplicationVisibilityPathReqBodyBuilder) Build() (*CheckWhiteBlackListApplicationVisibilityReqBody, error) {
+	req := &CheckWhiteBlackListApplicationVisibilityReqBody{}
+	if builder.userIdsFlag {
+		req.UserIds = builder.userIds
+	}
+	if builder.departmentIdsFlag {
+		req.DepartmentIds = builder.departmentIds
+	}
+	if builder.groupIdsFlag {
+		req.GroupIds = builder.groupIds
+	}
+	return req, nil
+}
+
+type CheckWhiteBlackListApplicationVisibilityReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *CheckWhiteBlackListApplicationVisibilityReqBody
+}
+
+func NewCheckWhiteBlackListApplicationVisibilityReqBuilder() *CheckWhiteBlackListApplicationVisibilityReqBuilder {
+	builder := &CheckWhiteBlackListApplicationVisibilityReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 目标应用ID
+//
+// 示例值：cli_a3a3d00b40b8d01b
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBuilder) AppId(appId string) *CheckWhiteBlackListApplicationVisibilityReqBuilder {
+	builder.apiReq.PathParams.Set("app_id", fmt.Sprint(appId))
+	return builder
+}
+
+// 此次请求传参中的user_id的类型
+//
+// 示例值：user_id
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBuilder) UserIdType(userIdType string) *CheckWhiteBlackListApplicationVisibilityReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+// 此次请求传参中的department_id的类型
+//
+// 示例值：department_id
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBuilder) DepartmentIdType(departmentIdType string) *CheckWhiteBlackListApplicationVisibilityReqBuilder {
+	builder.apiReq.QueryParams.Set("department_id_type", fmt.Sprint(departmentIdType))
+	return builder
+}
+
+//
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBuilder) Body(body *CheckWhiteBlackListApplicationVisibilityReqBody) *CheckWhiteBlackListApplicationVisibilityReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *CheckWhiteBlackListApplicationVisibilityReqBuilder) Build() *CheckWhiteBlackListApplicationVisibilityReq {
+	req := &CheckWhiteBlackListApplicationVisibilityReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type CheckWhiteBlackListApplicationVisibilityReqBody struct {
+	UserIds       []string `json:"user_ids,omitempty"`       // 用户ID列表
+	DepartmentIds []string `json:"department_ids,omitempty"` // 部门ID列表
+	GroupIds      []string `json:"group_ids,omitempty"`      // 用户组ID列表
+}
+
+type CheckWhiteBlackListApplicationVisibilityReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *CheckWhiteBlackListApplicationVisibilityReqBody `body:""`
+}
+
+type CheckWhiteBlackListApplicationVisibilityRespData struct {
+	UserVisibilityList       []*ApplicationVisibilityUserWhiteBlackInfo       `json:"user_visibility_list,omitempty"`       // 用户可见性信息列表
+	DepartmentVisibilityList []*ApplicationVisibilityDepartmentWhiteBlackInfo `json:"department_visibility_list,omitempty"` // 部门可见性信息列表
+	GroupVisibilityList      []*ApplicationVisibilityGroupWhiteBlackInfo      `json:"group_visibility_list,omitempty"`      // 用户组可见性信息列表
+}
+
+type CheckWhiteBlackListApplicationVisibilityResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *CheckWhiteBlackListApplicationVisibilityRespData `json:"data"` // 业务数据
+}
+
+func (resp *CheckWhiteBlackListApplicationVisibilityResp) Success() bool {
+	return resp.Code == 0
+}
+
 type P2ApplicationCreatedV6Data struct {
 	OperatorId      *UserId `json:"operator_id,omitempty"`      // 用户 ID
 	AppId           *string `json:"app_id,omitempty"`           // 应用 ID
@@ -6030,6 +6675,22 @@ type P2ApplicationVisibilityAddedV6 struct {
 }
 
 func (m *P2ApplicationVisibilityAddedV6) RawReq(req *larkevent.EventReq) {
+	m.EventReq = req
+}
+
+type P2BotMenuV6Data struct {
+	Operator  *Operator `json:"operator,omitempty"`  // 用户信息
+	EventKey  *string   `json:"event_key,omitempty"` // 菜单事件的唯一标识
+	Timestamp *string   `json:"timestamp,omitempty"` // 用户点击菜单时间
+}
+
+type P2BotMenuV6 struct {
+	*larkevent.EventV2Base                  // 事件基础数据
+	*larkevent.EventReq                     // 请求原生数据
+	Event                  *P2BotMenuV6Data `json:"event"` // 事件内容
+}
+
+func (m *P2BotMenuV6) RawReq(req *larkevent.EventReq) {
 	m.EventReq = req
 }
 

@@ -38,7 +38,7 @@ const TaskExecResultOK = "OK"
 
 type Task struct {
 	Model
-	InstanceId   uint    `json:"instance_id"`
+	InstanceId   uint64  `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
 	Score        int32   `json:"score"`
@@ -47,11 +47,10 @@ type Task struct {
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	GroupId      uint    `json:"group_id" gorm:"column:group_id"`
-	CreateUserId uint
+	CreateUserId uint64
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
 
-	CreateUser   *User          `gorm:"foreignkey:CreateUserId"`
 	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
@@ -426,7 +425,7 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 	return tasks, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
+func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Where(&Task{InstanceId: instanceId}).Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
@@ -558,9 +557,18 @@ type TaskGroup struct {
 
 func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
 	taskGroup := &TaskGroup{}
-	err := s.db.Preload("Tasks").Preload("Tasks.Instance").
+	err := s.db.Preload("Tasks").
 		Where("id = ?", groupId).Find(&taskGroup).Error
 	return taskGroup, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetInstancesByGroupId(groupId uint) ([]*Instance, error) {
+	instances := make([]*Instance, 0)
+	err := s.db.Raw(`select instances.* from instances 
+		LEFT JOIN tasks on tasks.instance_id = instances.id
+		LEFT JOIN task_groups on tasks.group_id = task_groups.id
+		where task_groups.id= ?;`, groupId).Scan(&instances).Error
+	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
 type SqlExecuteStatistic struct {
