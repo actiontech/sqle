@@ -72,13 +72,18 @@ func Login(c echo.Context, userName, password string) (token string, err error) 
 		return "", errors.New(http.StatusInternalServerError, err)
 	}
 
+	SetCookie(c, token)
+
+	return
+}
+
+func SetCookie(c echo.Context, token string) {
 	c.SetCookie(&http.Cookie{
 		Name:    "sqle-token",
 		Value:   token,
 		Expires: time.Now().Add(tokenLifeTime),
 		Path:    "/",
 	})
-	return
 }
 
 const tokenLifeTime = time.Hour * 24
