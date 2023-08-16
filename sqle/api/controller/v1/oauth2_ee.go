@@ -138,6 +138,8 @@ func oauth2Callback(c echo.Context) error {
 			entry.Errorf("generate token failed: %v", err)
 			return c.Redirect(http.StatusFound, data.generateQuery(uri))
 		}
+
+		SetCookie(c, t)
 		data.SqleToken = t
 	}
 
@@ -248,6 +250,9 @@ func bindOauth2User(c echo.Context) error {
 	}
 
 	t, err := generateToken(req.UserName)
+
+	SetCookie(c, t)
+
 	return c.JSON(http.StatusOK, BindOauth2UserResV1{
 		BaseRes: controller.NewBaseReq(err),
 		Data: BindOauth2UserResDataV1{
