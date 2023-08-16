@@ -56,7 +56,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 		}
 
 		entry.Infof("start to execute scheduled workflow %s", w.Subject)
-		needExecuteTaskIds := map[uint]uint{}
+		needExecuteTaskIds := map[uint]string{}
 		for _, ir := range w.Record.InstanceRecords {
 			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
 				needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
@@ -74,7 +74,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) error {
 	s := model.GetStorage()
 
 	// get task and check connection before to execute it.
@@ -223,7 +223,7 @@ func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model
 	currentStep.State = model.WorkflowStepStateApprove
 	now := time.Now()
 	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
+	currentStep.OperationUserId = user.GetIDStr()
 	nextStep := workflow.NextStep()
 	workflow.Record.CurrentWorkflowStepId = nextStep.ID
 	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
@@ -246,7 +246,7 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	currentStep.Reason = reason
 	now := time.Now()
 	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
+	currentStep.OperationUserId = user.GetIDStr()
 
 	workflow.Record.Status = model.WorkflowStatusReject
 	workflow.Record.CurrentWorkflowStepId = 0

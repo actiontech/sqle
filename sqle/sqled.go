@@ -7,12 +7,11 @@ import (
 	"syscall"
 
 	"github.com/actiontech/sqle/sqle/api"
-	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
+	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -45,7 +44,7 @@ func Run(config *config.Config) error {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 
-	service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
+	// service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
 	dbConfig := config.Server.DBCnf.MysqlCnf
 
@@ -78,15 +77,12 @@ func Run(config *config.Config) error {
 		if err := s.CreateDefaultTemplate(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateAdminUser(); err != nil {
-			return fmt.Errorf("create default admin user failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultProject(); err != nil {
-			return fmt.Errorf("create default project failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultRole(); err != nil {
-			return fmt.Errorf("create default rule failed while auto migrating table: %v", err)
-		}
+		// if err := s.CreateDefaultProject(); err != nil {
+		// 	return fmt.Errorf("create default project failed while auto migrating table: %v", err)
+		// }
+		// if err := s.CreateDefaultRole(); err != nil {
+		// 	return fmt.Errorf("create default rule failed while auto migrating table: %v", err)
+		// }
 	}
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
@@ -102,19 +98,14 @@ func Run(config *config.Config) error {
 		node = &cluster.NoClusterNode{}
 	}
 
-	// webhook
-	{
-		cfg, _, err := s.GetWorkflowWebHookConfig()
-		if err != nil {
-			return fmt.Errorf("get workflow webhook config failed: %v", err)
-		}
-		webhook.UpdateWorkflowConfig(cfg.Enable,
-			cfg.MaxRetryTimes, cfg.RetryIntervalSeconds, cfg.URL, cfg.Token)
-	}
-
 	jm := server.NewServerJobManger(node)
 	jm.Start()
 	defer jm.Stop()
+
+	err = api.RegisterAsDMSTarget(config.Server.SqleCnf)
+	if err != nil {
+		return fmt.Errorf("register to dms failed :%v", err)
+	}
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)

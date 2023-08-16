@@ -1,5 +1,5 @@
 module github.com/go-playground/locales
 
-go 1.13
+go 1.17
 
-require golang.org/x/text v0.3.6
+require golang.org/x/text v0.3.8

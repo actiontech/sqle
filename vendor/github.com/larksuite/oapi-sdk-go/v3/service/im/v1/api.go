@@ -60,7 +60,7 @@ type ImService struct {
 	ChatTopNotice    *chatTopNotice    // chat.top_notice
 	File             *file             // 消息 - 文件信息
 	Image            *image            // 消息 - 图片信息
-	Message          *message          // 消息加急
+	Message          *message          // 消息 - 消息卡片
 	MessageReaction  *messageReaction  // 消息 - 表情回复
 	MessageResource  *messageResource  // message.resource
 	Pin              *pin              // 消息 - Pin
@@ -1259,6 +1259,32 @@ func (m *message) Delete(ctx context.Context, req *DeleteMessageReq, options ...
 	return resp, err
 }
 
+//
+//
+// - 转发一条消息
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=forward&project=im&resource=message&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/imv1/forward_message.go
+func (m *message) Forward(ctx context.Context, req *ForwardMessageReq, options ...larkcore.RequestOptionFunc) (*ForwardMessageResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/im/v1/messages/:message_id/forward"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, m.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ForwardMessageResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, m.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
 // 获取指定消息的内容
 //
 // - 通过 message_id 查询消息内容。
@@ -1323,6 +1349,32 @@ func (m *message) ListByIterator(ctx context.Context, req *ListMessageReq, optio
 		listFunc: m.List,
 		options:  options,
 		limit:    req.Limit}, nil
+}
+
+//
+//
+// - 合并转发多条消息
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=merge_forward&project=im&resource=message&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/imv1/mergeForward_message.go
+func (m *message) MergeForward(ctx context.Context, req *MergeForwardMessageReq, options ...larkcore.RequestOptionFunc) (*MergeForwardMessageResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/im/v1/messages/merge_forward"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, m.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &MergeForwardMessageResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, m.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // 更新应用发送的消息

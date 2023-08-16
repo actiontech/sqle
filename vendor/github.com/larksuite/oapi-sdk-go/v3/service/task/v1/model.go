@@ -574,6 +574,9 @@ func (builder *ReminderBuilder) Build() *Reminder {
 	return req
 }
 
+type Section struct {
+}
+
 type Task struct {
 	Id              *string         `json:"id,omitempty"`               // 任务的唯一ID，例如"83912691-2e43-47fc-94a4-d512e03984fa"
 	Summary         *string         `json:"summary,omitempty"`          // 任务的标题，类型为文本字符串。;如果要在任务标题中插入 URL 或者 @某个用户，请使用rich_summary字段。;创建任务时，任务标题(summary字段)和任务富文本标题(rich_summary字段)不能同时为空，需要至少填充其中一个字段。;<md-alert>;任务标题和任务富文本标题同时存在时只使用富文本标题。;</md-alert>
