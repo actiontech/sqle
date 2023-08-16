@@ -56,38 +56,38 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestStorage_GetAuditPlanFromProjectByName(t *testing.T) {
-	// 1. test record exist
-	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	assert.NoError(t, err)
-	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-		WithArgs("project_1", "audit_plan_for_java_repo1").
-		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
-	mock.ExpectClose()
-	ap, exist, err := GetStorage().GetAuditPlanFromProjectByName("project_1", "audit_plan_for_java_repo1")
-	assert.NoError(t, err)
-	assert.True(t, exist)
-	assert.Equal(t, "audit_plan_1", ap.Name)
-	mockDB.Close()
-	err = mock.ExpectationsWereMet()
-	assert.NoError(t, err)
+// func TestStorage_GetAuditPlanFromProjectByName(t *testing.T) {
+// 	// 1. test record exist
+// 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+// 	assert.NoError(t, err)
+// 	InitMockStorage(mockDB)
+// 	mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
+// 		WithArgs("project_1", "audit_plan_for_java_repo1").
+// 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
+// 	mock.ExpectClose()
+// 	ap, exist, err := GetStorage().GetAuditPlanFromProjectByName("project_1", "audit_plan_for_java_repo1")
+// 	assert.NoError(t, err)
+// 	assert.True(t, exist)
+// 	assert.Equal(t, "audit_plan_1", ap.Name)
+// 	mockDB.Close()
+// 	err = mock.ExpectationsWereMet()
+// 	assert.NoError(t, err)
 
-	// 2. test record not exist
-	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	assert.NoError(t, err)
-	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-		WithArgs("project_1", "audit_plan_for_java_repo1").
-		WillReturnRows(sqlmock.NewRows([]string{"name"}))
-	mock.ExpectClose()
-	_, exist, err = GetStorage().GetAuditPlanFromProjectByName("project_1", "audit_plan_for_java_repo1")
-	assert.NoError(t, err)
-	assert.False(t, exist)
-	mockDB.Close()
-	err = mock.ExpectationsWereMet()
-	assert.NoError(t, err)
-}
+// 	// 2. test record not exist
+// 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+// 	assert.NoError(t, err)
+// 	InitMockStorage(mockDB)
+// 	mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
+// 		WithArgs("project_1", "audit_plan_for_java_repo1").
+// 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
+// 	mock.ExpectClose()
+// 	_, exist, err = GetStorage().GetAuditPlanFromProjectByName("project_1", "audit_plan_for_java_repo1")
+// 	assert.NoError(t, err)
+// 	assert.False(t, exist)
+// 	mockDB.Close()
+// 	err = mock.ExpectationsWereMet()
+// 	assert.NoError(t, err)
+// }
 
 func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))

@@ -68,20 +68,16 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 const (
 	InputSQLFileName        = "input_sql_file"
 	InputMyBatisXMLFileName = "input_mybatis_xml_file"
-	InputZipFileName        = "input_zip_file"
-	GitHttpURL              = "git_http_url"
-	GitUserName             = "git_user_name"
-	GitPassword             = "git_user_password"
 )
 
 func getSQLFromFile(c echo.Context) (string, string, error) {
 	// Read it from sql file.
-	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	sql, exist, err := controller.ReadFileContent(c, InputSQLFileName)
 	if err != nil {
 		return "", model.TaskSQLSourceFromSQLFile, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromSQLFile, nil
+		return sql, model.TaskSQLSourceFromSQLFile, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
@@ -95,24 +91,6 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
 		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
-	}
-
-	// If mybatis xml file is not exist, read it from zip file.
-	sqls, exist, err = getSqlsFromZip(c)
-	if err != nil {
-		return "", model.TaskSQLSourceFromZipFile, err
-	}
-	if exist {
-		return sqls, model.TaskSQLSourceFromZipFile, nil
-	}
-
-	// If zip file is not exist, read it from git repository
-	sqls, exist, err = getSqlsFromGit(c)
-	if err != nil {
-		return "", model.TaskSQLSourceFromGitRepository, err
-	}
-	if exist {
-		return sqls, model.TaskSQLSourceFromGitRepository, nil
 	}
 	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
@@ -154,25 +132,69 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
+	userName := controller.GetUserName(c)
 
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	err = CheckIsProjectMember(user.Name, projectName)
+	err = CheckIsProjectMember(userName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
 
-	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sql)
+	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+	}
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+	}
+
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	defer plugin.Close(context.TODO())
+
+	if err := plugin.Ping(context.TODO()); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	task := &model.Task{
+		Schema:       req.InstanceSchema,
+		InstanceId:   instance.ID,
+		Instance:     instance,
+		CreateUserId: user.ID,
+		ExecuteSQLs:  []*model.ExecuteSQL{},
+		SQLSource:    source,
+		DBType:       instance.DbType,
+	}
+	createAt := time.Now()
+	task.CreatedAt = createAt
+
+	nodes, err := plugin.Parse(context.TODO(), sql)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	for n, node := range nodes {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(n + 1),
+				Content: node.Text,
+			},
+		})
+	}
 	// if task instance is not nil, gorm will update instance when save task.
-	tmpInst := *task.Instance
 	task.Instance = nil
 
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
@@ -181,7 +203,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task.Instance = &tmpInst
+	task.Instance = instance
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

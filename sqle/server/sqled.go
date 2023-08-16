@@ -99,7 +99,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.task = task
 
 	// plugin will be closed by drvMgr in Sqled.do().
-	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", nil, task.Instance, task.DBType)
+	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", task.Instance, task.DBType)
 	if err != nil {
 		goto Error
 	}
@@ -602,7 +602,7 @@ ExecSQLs:
 	return execErr
 }
 
-func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, modelRules []*model.Rule) (driver.Plugin, error) {
+func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string,  modelRules []*model.Rule) (driver.Plugin, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
 	}

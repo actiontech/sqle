@@ -97,6 +97,70 @@ func (builder *AvatarBuilder) Build() *Avatar {
 	return req
 }
 
+type ProductI18nName struct {
+	ZhCn *string `json:"zh_cn,omitempty"` // 商业化产品的中文名
+	JaJp *string `json:"ja_jp,omitempty"` // 商业化产品的日文名
+	EnUs *string `json:"en_us,omitempty"` // 商业化产品的英文名
+}
+
+type ProductI18nNameBuilder struct {
+	zhCn     string // 商业化产品的中文名
+	zhCnFlag bool
+	jaJp     string // 商业化产品的日文名
+	jaJpFlag bool
+	enUs     string // 商业化产品的英文名
+	enUsFlag bool
+}
+
+func NewProductI18nNameBuilder() *ProductI18nNameBuilder {
+	builder := &ProductI18nNameBuilder{}
+	return builder
+}
+
+// 商业化产品的中文名
+//
+// 示例值：zh_cn_name
+func (builder *ProductI18nNameBuilder) ZhCn(zhCn string) *ProductI18nNameBuilder {
+	builder.zhCn = zhCn
+	builder.zhCnFlag = true
+	return builder
+}
+
+// 商业化产品的日文名
+//
+// 示例值：ja_jp_name
+func (builder *ProductI18nNameBuilder) JaJp(jaJp string) *ProductI18nNameBuilder {
+	builder.jaJp = jaJp
+	builder.jaJpFlag = true
+	return builder
+}
+
+// 商业化产品的英文名
+//
+// 示例值：en_name
+func (builder *ProductI18nNameBuilder) EnUs(enUs string) *ProductI18nNameBuilder {
+	builder.enUs = enUs
+	builder.enUsFlag = true
+	return builder
+}
+
+func (builder *ProductI18nNameBuilder) Build() *ProductI18nName {
+	req := &ProductI18nName{}
+	if builder.zhCnFlag {
+		req.ZhCn = &builder.zhCn
+
+	}
+	if builder.jaJpFlag {
+		req.JaJp = &builder.jaJp
+
+	}
+	if builder.enUsFlag {
+		req.EnUs = &builder.enUs
+
+	}
+	return req
+}
+
 type Tenant struct {
 	Name      *string `json:"name,omitempty"`       // 企业名称
 	DisplayId *string `json:"display_id,omitempty"` // 企业编号，平台内唯一
@@ -192,6 +256,149 @@ func (builder *TenantBuilder) Build() *Tenant {
 	return req
 }
 
+type TenantAssignInfo struct {
+	SubscriptionId *string          `json:"subscription_id,omitempty"`  // 席位id
+	LicensePlanKey *string          `json:"license_plan_key,omitempty"` // license_plan_key
+	ProductName    *string          `json:"product_name,omitempty"`     // 商业化产品名称
+	I18nName       *ProductI18nName `json:"i18n_name,omitempty"`        // 国际化名称
+	TotalSeats     *string          `json:"total_seats,omitempty"`      // 席位总数
+	AssignedSeats  *string          `json:"assigned_seats,omitempty"`   // 已分配席位数
+	StartTime      *string          `json:"start_time,omitempty"`       // 席位起始时间
+	EndTime        *string          `json:"end_time,omitempty"`         // 席位结束时间
+}
+
+type TenantAssignInfoBuilder struct {
+	subscriptionId     string // 席位id
+	subscriptionIdFlag bool
+	licensePlanKey     string // license_plan_key
+	licensePlanKeyFlag bool
+	productName        string // 商业化产品名称
+	productNameFlag    bool
+	i18nName           *ProductI18nName // 国际化名称
+	i18nNameFlag       bool
+	totalSeats         string // 席位总数
+	totalSeatsFlag     bool
+	assignedSeats      string // 已分配席位数
+	assignedSeatsFlag  bool
+	startTime          string // 席位起始时间
+	startTimeFlag      bool
+	endTime            string // 席位结束时间
+	endTimeFlag        bool
+}
+
+func NewTenantAssignInfoBuilder() *TenantAssignInfoBuilder {
+	builder := &TenantAssignInfoBuilder{}
+	return builder
+}
+
+// 席位id
+//
+// 示例值：7079609167680782300
+func (builder *TenantAssignInfoBuilder) SubscriptionId(subscriptionId string) *TenantAssignInfoBuilder {
+	builder.subscriptionId = subscriptionId
+	builder.subscriptionIdFlag = true
+	return builder
+}
+
+// license_plan_key
+//
+// 示例值：suite_enterprise_e5
+func (builder *TenantAssignInfoBuilder) LicensePlanKey(licensePlanKey string) *TenantAssignInfoBuilder {
+	builder.licensePlanKey = licensePlanKey
+	builder.licensePlanKeyFlag = true
+	return builder
+}
+
+// 商业化产品名称
+//
+// 示例值：旗舰版 E5
+func (builder *TenantAssignInfoBuilder) ProductName(productName string) *TenantAssignInfoBuilder {
+	builder.productName = productName
+	builder.productNameFlag = true
+	return builder
+}
+
+// 国际化名称
+//
+// 示例值：
+func (builder *TenantAssignInfoBuilder) I18nName(i18nName *ProductI18nName) *TenantAssignInfoBuilder {
+	builder.i18nName = i18nName
+	builder.i18nNameFlag = true
+	return builder
+}
+
+// 席位总数
+//
+// 示例值：500
+func (builder *TenantAssignInfoBuilder) TotalSeats(totalSeats string) *TenantAssignInfoBuilder {
+	builder.totalSeats = totalSeats
+	builder.totalSeatsFlag = true
+	return builder
+}
+
+// 已分配席位数
+//
+// 示例值：20
+func (builder *TenantAssignInfoBuilder) AssignedSeats(assignedSeats string) *TenantAssignInfoBuilder {
+	builder.assignedSeats = assignedSeats
+	builder.assignedSeatsFlag = true
+	return builder
+}
+
+// 席位起始时间
+//
+// 示例值：1674981000
+func (builder *TenantAssignInfoBuilder) StartTime(startTime string) *TenantAssignInfoBuilder {
+	builder.startTime = startTime
+	builder.startTimeFlag = true
+	return builder
+}
+
+// 席位结束时间
+//
+// 示例值：1674991000
+func (builder *TenantAssignInfoBuilder) EndTime(endTime string) *TenantAssignInfoBuilder {
+	builder.endTime = endTime
+	builder.endTimeFlag = true
+	return builder
+}
+
+func (builder *TenantAssignInfoBuilder) Build() *TenantAssignInfo {
+	req := &TenantAssignInfo{}
+	if builder.subscriptionIdFlag {
+		req.SubscriptionId = &builder.subscriptionId
+
+	}
+	if builder.licensePlanKeyFlag {
+		req.LicensePlanKey = &builder.licensePlanKey
+
+	}
+	if builder.productNameFlag {
+		req.ProductName = &builder.productName
+
+	}
+	if builder.i18nNameFlag {
+		req.I18nName = builder.i18nName
+	}
+	if builder.totalSeatsFlag {
+		req.TotalSeats = &builder.totalSeats
+
+	}
+	if builder.assignedSeatsFlag {
+		req.AssignedSeats = &builder.assignedSeats
+
+	}
+	if builder.startTimeFlag {
+		req.StartTime = &builder.startTime
+
+	}
+	if builder.endTimeFlag {
+		req.EndTime = &builder.endTime
+
+	}
+	return req
+}
+
 type QueryTenantRespData struct {
 	Tenant *Tenant `json:"tenant,omitempty"` // 企业信息
 }
@@ -203,5 +410,19 @@ type QueryTenantResp struct {
 }
 
 func (resp *QueryTenantResp) Success() bool {
+	return resp.Code == 0
+}
+
+type QueryTenantProductAssignInfoRespData struct {
+	AssignInfoList []*TenantAssignInfo `json:"assign_info_list,omitempty"` // 租户待分配席位列表
+}
+
+type QueryTenantProductAssignInfoResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *QueryTenantProductAssignInfoRespData `json:"data"` // 业务数据
+}
+
+func (resp *QueryTenantProductAssignInfoResp) Success() bool {
 	return resp.Code == 0
 }

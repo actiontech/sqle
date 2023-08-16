@@ -15,13 +15,13 @@ import (
 
 type AuditPlan struct {
 	Model
-	ProjectId        uint   `gorm:"index; not null"`
-	Name             string `json:"name" gorm:"not null;index"`
-	CronExpression   string `json:"cron_expression" gorm:"not null"`
-	DBType           string `json:"db_type" gorm:"not null"`
-	Token            string `json:"token" gorm:"not null"`
-	InstanceName     string `json:"instance_name"`
-	CreateUserID     uint
+	ProjectId        ProjectUID `gorm:"index; not null"`
+	Name             string     `json:"name" gorm:"not null;index"`
+	CronExpression   string     `json:"cron_expression" gorm:"not null"`
+	DBType           string     `json:"db_type" gorm:"not null"`
+	Token            string     `json:"token" gorm:"not null"`
+	InstanceName     string     `json:"instance_name"`
+	CreateUserID     string		`json:"create_user_id"`
 	InstanceDatabase string        `json:"instance_database"`
 	Type             string        `json:"type"`
 	RuleTemplateName string        `json:"rule_template_name"`
@@ -34,7 +34,9 @@ type AuditPlan struct {
 	WebHookURL          string `json:"web_hook_url"`
 	WebHookTemplate     string `json:"web_hook_template"`
 
-	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
+	ProjectStatus string `gorm:"default:'active'"` // dms-todo: 暂时将项目状态放在这里
+
+	// CreateUser    *User             // TODO 移除 `gorm:"foreignkey:CreateUserId"`
 	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
 }
@@ -100,8 +102,7 @@ func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
 	var aps []*AuditPlan
 	err := s.db.Model(AuditPlan{}).
-		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
-		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
+		Where("project_status = ?", ProjectStatusActive).
 		Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
@@ -127,19 +128,17 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).
-		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
-		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
-		Where("audit_plans.id = ?", id).Find(ap).Error
+		Where("project_status = ?", ProjectStatusActive).
+		Where("id = ?", id).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanFromProjectByName(projectName, AuditPlanName string) (*AuditPlan, bool, error) {
+func (s *Storage) GetAuditPlanFromProjectById(projectId, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
-		Where("projects.name = ? AND audit_plans.name = ?", projectName, AuditPlanName).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -298,35 +297,35 @@ func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) err
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, error) {
-	var count uint64
-	err := s.db.
-		Table("audit_plans").
-		Joins("LEFT JOIN projects ON audit_plans.project_id = projects.id").
-		Where("projects.name = ?", projectName).
-		Where("audit_plans.deleted_at IS NULL").
-		Count(&count).
-		Error
-	return count, errors.ConnectStorageErrWrapper(err)
-}
+// func (s *Storage) GetAuditPlanTotalByProjectName(projectName string) (uint64, error) {
+// 	var count uint64
+// 	err := s.db.
+// 		Table("audit_plans").
+// 		Joins("LEFT JOIN projects ON audit_plans.project_id = projects.id").
+// 		Where("projects.name = ?", projectName).
+// 		Where("audit_plans.deleted_at IS NULL").
+// 		Count(&count).
+// 		Error
+// 	return count, errors.ConnectStorageErrWrapper(err)
+// }
 
-func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, error) {
-	ids := []struct {
-		ID uint `json:"id"`
-	}{}
-	err := s.db.Table("audit_plans").
-		Select("audit_plans.id").
-		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
-		Where("projects.name = ?", projectName).
-		Find(&ids).Error
+// func (s *Storage) GetAuditPlanIDsByProjectName(projectName string) ([]uint, error) {
+// 	ids := []struct {
+// 		ID uint `json:"id"`
+// 	}{}
+// 	err := s.db.Table("audit_plans").
+// 		Select("audit_plans.id").
+// 		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
+// 		Where("projects.name = ?", projectName).
+// 		Find(&ids).Error
 
-	resp := []uint{}
-	for _, id := range ids {
-		resp = append(resp, id.ID)
-	}
+// 	resp := []uint{}
+// 	for _, id := range ids {
+// 		resp = append(resp, id.ID)
+// 	}
 
-	return resp, errors.ConnectStorageErrWrapper(err)
-}
+// 	return resp, errors.ConnectStorageErrWrapper(err)
+// }
 
 // GetLatestAuditPlanIds 获取所有变更过的记录，包括删除
 func (s *Storage) GetLatestAuditPlanRecords(after time.Time) ([]*AuditPlan, error) {

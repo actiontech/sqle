@@ -41,7 +41,7 @@ func NewSerialization(config *Config) {
 }
 
 func validateTokenType(accessTokenTypes []AccessTokenType, option *RequestOption) error {
-	if option == nil || len(accessTokenTypes) == 0 || len(accessTokenTypes) > 1 {
+	if option == nil || len(accessTokenTypes) > 1 {
 		return nil
 	}
 
@@ -175,6 +175,11 @@ func Request(ctx context.Context, req *ApiReq, config *Config, options ...Reques
 	option := &RequestOption{}
 	for _, optionFunc := range options {
 		optionFunc(option)
+	}
+
+	// 兼容 auth_v3
+	if len(req.SupportedAccessTokenTypes) == 0 {
+		req.SupportedAccessTokenTypes = append(req.SupportedAccessTokenTypes, AccessTokenTypeNone)
 	}
 
 	err := validateTokenType(req.SupportedAccessTokenTypes, option)
