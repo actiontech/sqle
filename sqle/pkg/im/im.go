@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+
+	"golang.org/x/net/context"
 )
 
 var (
@@ -63,17 +67,18 @@ func CreateApprove(id string) {
 		return
 	}
 
-	if workflow.CreateUser.Phone == "" {
-		newLog.Error("create user phone is empty")
-		return
-	}
+	// TODO 工单无法直接关联用户，需要保留校验？
+	// if workflow.CreateUser.Phone == "" {
+	// 	newLog.Error("create user phone is empty")
+	// 	return
+	// }
 
 	if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
 		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.ID)
 		return
 	}
 
-	users := workflow.CurrentAssigneeUser()
+	assignUsers := workflow.CurrentAssigneeUser()
 
 	ims, err := s.GetAllIMConfig()
 	if err != nil {
@@ -81,6 +86,11 @@ func CreateApprove(id string) {
 		return
 	}
 
+	workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, "")
+	if err != nil {
+		newLog.Errorf("get user error: %v", err)
+		return
+	}
 	for _, im := range ims {
 		switch im.Type {
 		case model.ImTypeDingTalk:
@@ -103,16 +113,22 @@ func CreateApprove(id string) {
 				ProcessCode: im.ProcessCode,
 			}
 
-			createUserId, err := dingTalk.GetUserIDByPhone(workflow.CreateUser.Phone)
+			createUserId, err := dingTalk.GetUserIDByPhone(workflowCreateUser.Phone)
 			if err != nil {
 				newLog.Errorf("get origin user id by phone error: %v", err)
 				continue
 			}
 
 			var userIds []*string
-			for _, user := range users {
+			for _, assignUser := range assignUsers {
+				// TODO 使用DMS提供的批量获取用户接口
+				user, err := dmsobject.GetUser(context.TODO(), assignUser, controller.GetDMSServerAddress())
+				if err != nil {
+					newLog.Errorf("get user error: %v", err)
+					return
+				}
 				if user.Phone == "" {
-					newLog.Infof("user %v phone is empty, skip", user.ID)
+					newLog.Infof("user %v phone is empty, skip", assignUser)
 					continue
 				}
 
@@ -132,13 +148,25 @@ func CreateApprove(id string) {
 			}
 
 			sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
-			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.WorkflowId)
+			// dms-todo: 从 dms 获取 project name
+			// workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.WorkflowId)
+			// if sqleUrl == "" {
+			// 	newLog.Errorf("sqle url is empty")
+			// 	workflowUrl = ""
+			// }
+
+			// if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
+			// 	newLog.Errorf("create dingtalk approval instance error: %v", err)
+			// 	continue
+			// }
+
+			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, "todo", workflow.WorkflowId)
 			if sqleUrl == "" {
 				newLog.Errorf("sqle url is empty")
 				workflowUrl = ""
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, "todo", workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}

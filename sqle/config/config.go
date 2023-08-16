@@ -13,6 +13,7 @@ type Server struct {
 
 type SqleConfig struct {
 	ServerId           string `yaml:"server_id"`
+	SqleServerHost     string `yaml:"server_host"`
 	EnableClusterMode  bool   `yaml:"enable_cluster_mode"`
 	SqleServerPort     int    `yaml:"server_port"`
 	EnableHttps        bool   `yaml:"enable_https"`
@@ -25,6 +26,7 @@ type SqleConfig struct {
 	LogMaxBackupNumber int    `yaml:"log_max_backup_number"`
 	PluginPath         string `yaml:"plugin_path"`
 	SecretKey          string `yaml:"secret_key"`
+	DMSServerAddress   string `yaml:"dms_server_address"`
 }
 
 type DatabaseConfig struct {

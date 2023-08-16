@@ -1,5 +1,5 @@
 module github.com/leodido/go-urn
 
-go 1.13
+go 1.16
 
-require github.com/stretchr/testify v1.6.1
+require github.com/stretchr/testify v1.8.2

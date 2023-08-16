@@ -1,11 +1,13 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -72,14 +74,17 @@ func DirectAudit(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), *req.ProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
 	s := model.GetStorage()
 	var instance *model.Instance
 	var exist bool
 	if req.ProjectName != nil && req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, *req.ProjectName)
+		instance, exist, err = s.GetInstanceByNameAndProjectID(*req.InstanceName, projectUid)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

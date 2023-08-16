@@ -273,7 +273,7 @@ func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 		if err != nil {
 			return nil, err
 		}
@@ -389,7 +389,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		return
 	}
@@ -507,7 +507,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -640,7 +640,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 		if err != nil {
 			return nil, err
 		}
@@ -1254,7 +1254,7 @@ func (at *MySQLProcesslistTask) collectorDo() {
 		at.logger.Warnf("instance is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		return
 	}

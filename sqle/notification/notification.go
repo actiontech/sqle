@@ -2,15 +2,19 @@ package notification
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/notification/webhook"
 )
 
 type Notification interface {
@@ -26,16 +30,14 @@ type WorkflowNotifyConfig struct {
 	SQLEUrl *string
 }
 
-var Notifiers = []Notifier{}
-
-func Notify(notification Notification, users []*model.User) error {
-	for _, n := range Notifiers {
-		err := n.Notify(notification, users)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func Notify(notification Notification, userIds []string) error {
+	return dmsobject.Notify(context.TODO(), controller.GetDMSServerAddress(), v1.NotificationReq{
+		Notification: &v1.Notification{
+			NotificationSubject: notification.NotificationSubject(),
+			NotificationBody:    notification.NotificationBody(),
+			UserUids:            userIds,
+		},
+	})
 }
 
 type WorkflowNotifyType int
@@ -118,7 +120,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 			w.workflow.Subject,
 			w.workflow.WorkflowId,
 			w.workflow.Desc,
-			w.workflow.CreateUserName(),
+			dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
 			w.workflow.CreatedAt)
 	}
 
@@ -132,14 +134,14 @@ func (w *WorkflowNotification) NotificationBody() string {
 		w.workflow.Subject,
 		w.workflow.WorkflowId,
 		w.workflow.Desc,
-		w.workflow.CreateUserName(),
+		dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
 		w.workflow.CreatedAt)
 	buf.WriteString(head)
 
 	if w.config.SQLEUrl != nil {
 		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
 			strings.TrimRight(*w.config.SQLEUrl, "/"),
-			w.workflow.Project.Name,
+			// w.workflow.Project.Name,
 			w.workflow.WorkflowId,
 		))
 	} else {
@@ -207,40 +209,33 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) string {
 	}
 }
 
-func (w *WorkflowNotification) notifyUser() []*model.User {
+func (w *WorkflowNotification) notifyUser() []string {
 	switch w.notifyType {
 	case WorkflowNotifyTypeApprove, WorkflowNotifyTypeCreate:
 		return w.workflow.CurrentAssigneeUser()
 
 	// if workflow is rejected, the creator needs to be notified.
 	case WorkflowNotifyTypeReject:
-		return []*model.User{
-			w.workflow.CreateUser,
+		return []string{
+			w.workflow.CreateUserId,
 		}
 		// if workflow is executed, the creator and executor needs to be notified.
 	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
-		users := []*model.User{
-			w.workflow.CreateUser,
+		users := []string{
+			w.workflow.CreateUserId,
 		}
-		if executeUser := w.workflow.FinalStep().OperationUser; executeUser != nil {
+		if executeUser := w.workflow.FinalStep().OperationUserId; executeUser != "" {
 			users = append(users, executeUser)
 		}
 		return users
 	default:
-		return []*model.User{}
+		return []string{}
 	}
 }
 
 func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
-	cfg := webhook.WorkflowCfg
-	if cfg == nil {
-		log.NewEntry().Error("workflow webhook failed: config missing")
-		return
-	}
-	if !cfg.Enable {
-		return
-	}
-	err := workflowSendRequest(getWorkflowNotifyTypeAction(wt), workflow.Project.Name, workflow.
+	// dms-todo 使用projectid代替name
+	err := workflowSendRequest(getWorkflowNotifyTypeAction(wt), string(workflow.ProjectId), workflow.
 		WorkflowId, workflow.Subject, workflow.Record.Status)
 	if err != nil {
 		log.NewEntry().Errorf("workflow webhook failed: %v", err)
@@ -253,12 +248,13 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 		config.SQLEUrl = &sqleUrl
 	}
 	wn := NewWorkflowNotification(workflow, wt, config)
-	users := wn.notifyUser()
+	userIds := wn.notifyUser()
 	// workflow has been finished.
-	if len(users) == 0 {
+	if len(userIds) == 0 {
 		return
 	}
-	err := Notify(wn, users)
+
+	err := Notify(wn, userIds)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
@@ -358,10 +354,10 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	if err != nil {
 		return err
 	}
-	ap.CreateUser, _, err = s.GetUserByID(ap.CreateUserID)
-	if err != nil {
-		return err
-	}
+	// ap.CreateUser, _, err = s.GetUserByID(ap.CreateUserID)
+	// if err != nil {
+	// 	return err
+	// }
 	url, err := s.GetSqleUrl()
 	if err != nil {
 		return err
@@ -371,11 +367,12 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	if len(url) > 0 {
 		config.SQLEUrl = &url
 
-		project, _, err := s.GetProjectByID(ap.ProjectId)
-		if err != nil {
-			return err
-		}
-		config.ProjectName = &project.Name
+		// dms-todo: 从 dms 获取 project 名称，但最终考虑将告警移走.
+		// project, _, err := s.GetProjectByID(ap.ProjectId)
+		// if err != nil {
+		// 	return err
+		// }
+		// config.ProjectName = &project.Name
 	}
 
 	if driverV2.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
@@ -393,16 +390,16 @@ func GetAuditPlanNotifier() *AuditPlanNotifier {
 }
 
 type AuditPlanNotifier struct {
-	lastSend      map[string] /*audit plan name*/ time.Time /*last send time*/
-	mutex         *sync.RWMutex
-	emailNotifier *EmailNotifier
+	lastSend map[string] /*audit plan name*/ time.Time /*last send time*/
+	mutex    *sync.RWMutex
+	// emailNotifier *EmailNotifier
 }
 
 func NewAuditPlanNotifier() *AuditPlanNotifier {
 	return &AuditPlanNotifier{
-		lastSend:      map[string]time.Time{},
-		mutex:         &sync.RWMutex{},
-		emailNotifier: &EmailNotifier{},
+		lastSend: map[string]time.Time{},
+		mutex:    &sync.RWMutex{},
+		// emailNotifier: &EmailNotifier{},
 	}
 }
 
@@ -429,7 +426,12 @@ func (n *AuditPlanNotifier) shouldNotify(auditPlan *model.AuditPlan) bool {
 
 func (n *AuditPlanNotifier) Send(notification Notification, auditPlan *model.AuditPlan) (err error) {
 	if auditPlan.EnableEmailNotify {
-		err = n.sendEmail(notification, auditPlan.CreateUser)
+		user, err := dms.GetUser(context.TODO(), auditPlan.CreateUserID, controller.GetDMSServerAddress())
+		if err != nil {
+			log.NewEntry().Errorf("get user error, %v", err)
+			return err
+		}
+		err = n.sendEmail(notification, user)
 		if err != nil {
 			return err
 		}
@@ -444,7 +446,14 @@ func (n *AuditPlanNotifier) Send(notification Notification, auditPlan *model.Aud
 }
 
 func (n *AuditPlanNotifier) sendEmail(notification Notification, user *model.User) error {
-	return n.emailNotifier.Notify(notification, []*model.User{user})
+	// dms-todo 只发送邮件告警
+	return dmsobject.Notify(context.TODO(), controller.GetDMSServerAddress(), v1.NotificationReq{
+		Notification: &v1.Notification{
+			NotificationSubject: notification.NotificationSubject(),
+			NotificationBody:    notification.NotificationBody(),
+			UserUids:            []string{user.GetIDStr()},
+		},
+	})
 }
 
 func (n *AuditPlanNotifier) updateRecord(auditPlanName string) {

@@ -37,18 +37,16 @@ SELECT COUNT(*)
 
 var auditPlanBodyTpl = `
 {{ define "body" }}
-FROM audit_plans
-LEFT JOIN users ON audit_plans.create_user_id = users.id
-LEFT JOIN projects ON audit_plans.project_id = projects.id
+FROM audit_plans 
+LEFT JOIN instances ON audit_plans.instance_name = instances.name
 
 WHERE audit_plans.deleted_at IS NULL
-AND users.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
 AND ( 
-users.login_name = :current_user_name
-{{- if .accessible_instances_name }}
-OR instance_name IN ( {{ .accessible_instances_name }} ) 
+audit_plans.create_user_id = :current_user_id
+{{- if .accessible_instances_id }}
+OR instances.id IN ( {{ .accessible_instances_id }} ) 
 {{- end }}
 )
 {{- end }}
@@ -69,8 +67,8 @@ AND audit_plans.type = :filter_audit_plan_type
 AND audit_plans.instance_name = :filter_audit_plan_instance_name
 {{- end }}
 
-{{- if .filter_project_name }}
-AND projects.name = :filter_project_name
+{{- if .filter_project_id }}
+AND audit_plans.project_id = :filter_project_id
 {{- end }}
 
 {{ end }}

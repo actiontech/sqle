@@ -37,7 +37,6 @@ func Creat(path string, mode uint32) (fd int, err error) {
 }
 
 //sys	utimes(path string, times *[2]Timeval) (err error)
-
 func Utimes(path string, tv []Timeval) error {
 	if len(tv) != 2 {
 		return EINVAL
@@ -46,7 +45,6 @@ func Utimes(path string, tv []Timeval) error {
 }
 
 //sys	utimensat(dirfd int, path string, times *[2]Timespec, flag int) (err error)
-
 func UtimesNano(path string, ts []Timespec) error {
 	if len(ts) != 2 {
 		return EINVAL
@@ -72,7 +70,9 @@ func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
-	sa.raw.Addr = sa.Addr
+	for i := 0; i < len(sa.Addr); i++ {
+		sa.raw.Addr[i] = sa.Addr[i]
+	}
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrInet4, nil
 }
 
@@ -85,7 +85,9 @@ func (sa *SockaddrInet6) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
 	sa.raw.Scope_id = sa.ZoneId
-	sa.raw.Addr = sa.Addr
+	for i := 0; i < len(sa.Addr); i++ {
+		sa.raw.Addr[i] = sa.Addr[i]
+	}
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrInet6, nil
 }
 
@@ -217,63 +219,20 @@ func Accept(fd int) (nfd int, sa Sockaddr, err error) {
 	return
 }
 
-func recvmsgRaw(fd int, iov []Iovec, oob []byte, flags int, rsa *RawSockaddrAny) (n, oobn int, recvflags int, err error) {
-	var msg Msghdr
-	msg.Name = (*byte)(unsafe.Pointer(rsa))
-	msg.Namelen = uint32(SizeofSockaddrAny)
-	var dummy byte
-	if len(oob) > 0 {
-		// receive at least one normal byte
-		if emptyIovecs(iov) {
-			var iova [1]Iovec
-			iova[0].Base = &dummy
-			iova[0].SetLen(1)
-			iov = iova[:]
-		}
-		msg.Control = (*byte)(unsafe.Pointer(&oob[0]))
-		msg.SetControllen(len(oob))
-	}
-	if len(iov) > 0 {
-		msg.Iov = &iov[0]
-		msg.SetIovlen(len(iov))
-	}
-	if n, err = recvmsg(fd, &msg, flags); n == -1 {
-		return
-	}
-	oobn = int(msg.Controllen)
-	recvflags = int(msg.Flags)
+func Recvmsg(fd int, p, oob []byte, flags int) (n, oobn int, recvflags int, from Sockaddr, err error) {
+	// Recvmsg not implemented on AIX
+	sa := new(SockaddrUnix)
+	return -1, -1, -1, sa, ENOSYS
+}
+
+func Sendmsg(fd int, p, oob []byte, to Sockaddr, flags int) (err error) {
+	_, err = SendmsgN(fd, p, oob, to, flags)
 	return
 }
 
-func sendmsgN(fd int, iov []Iovec, oob []byte, ptr unsafe.Pointer, salen _Socklen, flags int) (n int, err error) {
-	var msg Msghdr
-	msg.Name = (*byte)(unsafe.Pointer(ptr))
-	msg.Namelen = uint32(salen)
-	var dummy byte
-	var empty bool
-	if len(oob) > 0 {
-		// send at least one normal byte
-		empty = emptyIovecs(iov)
-		if empty {
-			var iova [1]Iovec
-			iova[0].Base = &dummy
-			iova[0].SetLen(1)
-			iov = iova[:]
-		}
-		msg.Control = (*byte)(unsafe.Pointer(&oob[0]))
-		msg.SetControllen(len(oob))
-	}
-	if len(iov) > 0 {
-		msg.Iov = &iov[0]
-		msg.SetIovlen(len(iov))
-	}
-	if n, err = sendmsg(fd, &msg, flags); err != nil {
-		return 0, err
-	}
-	if len(oob) > 0 && empty {
-		n = 0
-	}
-	return n, nil
+func SendmsgN(fd int, p, oob []byte, to Sockaddr, flags int) (n int, err error) {
+	// SendmsgN not implemented on AIX
+	return -1, ENOSYS
 }
 
 func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
@@ -302,7 +261,9 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa := new(SockaddrInet4)
 		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 		sa.Port = int(p[0])<<8 + int(p[1])
-		sa.Addr = pp.Addr
+		for i := 0; i < len(sa.Addr); i++ {
+			sa.Addr[i] = pp.Addr[i]
+		}
 		return sa, nil
 
 	case AF_INET6:
@@ -311,7 +272,9 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 		sa.Port = int(p[0])<<8 + int(p[1])
 		sa.ZoneId = pp.Scope_id
-		sa.Addr = pp.Addr
+		for i := 0; i < len(sa.Addr); i++ {
+			sa.Addr[i] = pp.Addr[i]
+		}
 		return sa, nil
 	}
 	return nil, EAFNOSUPPORT
@@ -351,13 +314,11 @@ func direntNamlen(buf []byte) (uint64, bool) {
 }
 
 //sys	getdirent(fd int, buf []byte) (n int, err error)
-
 func Getdents(fd int, buf []byte) (n int, err error) {
 	return getdirent(fd, buf)
 }
 
 //sys	wait4(pid Pid_t, status *_C_int, options int, rusage *Rusage) (wpid Pid_t, err error)
-
 func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
 	var status _C_int
 	var r Pid_t
@@ -424,12 +385,6 @@ func (w WaitStatus) TrapCause() int { return -1 }
 
 //sys	fcntl(fd int, cmd int, arg int) (val int, err error)
 
-//sys	fsyncRange(fd int, how int, start int64, length int64) (err error) = fsync_range
-
-func Fsync(fd int) error {
-	return fsyncRange(fd, O_SYNC, 0, 0)
-}
-
 /*
  * Direct access
  */
@@ -446,6 +401,7 @@ func Fsync(fd int) error {
 //sys	Fchmodat(dirfd int, path string, mode uint32, flags int) (err error)
 //sys	Fchownat(dirfd int, path string, uid int, gid int, flags int) (err error)
 //sys	Fdatasync(fd int) (err error)
+//sys	Fsync(fd int) (err error)
 // readdir_r
 //sysnb	Getpgid(pid int) (pgid int, err error)
 
@@ -506,8 +462,8 @@ func Fsync(fd int) error {
 //sys	Listen(s int, n int) (err error)
 //sys	lstat(path string, stat *Stat_t) (err error)
 //sys	Pause() (err error)
-//sys	pread(fd int, p []byte, offset int64) (n int, err error) = pread64
-//sys	pwrite(fd int, p []byte, offset int64) (n int, err error) = pwrite64
+//sys	Pread(fd int, p []byte, offset int64) (n int, err error) = pread64
+//sys	Pwrite(fd int, p []byte, offset int64) (n int, err error) = pwrite64
 //sys	Select(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (n int, err error)
 //sys	Pselect(nfd int, r *FdSet, w *FdSet, e *FdSet, timeout *Timespec, sigmask *Sigset_t) (n int, err error)
 //sysnb	Setregid(rgid int, egid int) (err error)
@@ -567,10 +523,8 @@ func Pipe(p []int) (err error) {
 	}
 	var pp [2]_C_int
 	err = pipe(&pp)
-	if err == nil {
-		p[0] = int(pp[0])
-		p[1] = int(pp[1])
-	}
+	p[0] = int(pp[0])
+	p[1] = int(pp[1])
 	return
 }
 
@@ -590,7 +544,6 @@ func Poll(fds []PollFd, timeout int) (n int, err error) {
 //sys	Getsystemcfg(label int) (n uint64)
 
 //sys	umount(target string) (err error)
-
 func Unmount(target string, flags int) (err error) {
 	if flags != 0 {
 		// AIX doesn't have any flags for umount.

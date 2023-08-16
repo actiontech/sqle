@@ -14,6 +14,7 @@
 package larkcorehr
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 
@@ -22,17 +23,1546 @@ import (
 
 func NewService(config *larkcore.Config) *CorehrService {
 	c := &CorehrService{config: config}
+	c.AssignedUser = &assignedUser{service: c}
+	c.Company = &company{service: c}
+	c.Contract = &contract{service: c}
+	c.CountryRegion = &countryRegion{service: c}
+	c.Currency = &currency{service: c}
+	c.CustomField = &customField{service: c}
+	c.Department = &department{service: c}
+	c.EmployeeType = &employeeType{service: c}
+	c.Employment = &employment{service: c}
+	c.File = &file{service: c}
+	c.Job = &job{service: c}
+	c.JobChange = &jobChange{service: c}
+	c.JobData = &jobData{service: c}
+	c.JobFamily = &jobFamily{service: c}
+	c.JobLevel = &jobLevel{service: c}
 	c.Leave = &leave{service: c}
+	c.LeaveGrantingRecord = &leaveGrantingRecord{service: c}
+	c.Location = &location{service: c}
+	c.NationalIdType = &nationalIdType{service: c}
+	c.Offboarding = &offboarding{service: c}
+	c.OrgRoleAuthorization = &orgRoleAuthorization{service: c}
+	c.Person = &person{service: c}
+	c.PreHire = &preHire{service: c}
+	c.ProcessFormVariableData = &processFormVariableData{service: c}
+	c.SecurityGroup = &securityGroup{service: c}
+	c.Subdivision = &subdivision{service: c}
+	c.Subregion = &subregion{service: c}
+	c.TransferReason = &transferReason{service: c}
+	c.TransferType = &transferType{service: c}
+	c.WorkingHoursType = &workingHoursType{service: c}
 	return c
 }
 
 type CorehrService struct {
-	config *larkcore.Config
-	Leave  *leave // 休假管理
+	config                  *larkcore.Config
+	AssignedUser            *assignedUser            // assigned_user
+	Company                 *company                 // 公司
+	Contract                *contract                // 合同
+	CountryRegion           *countryRegion           // 地理库信息
+	Currency                *currency                // 货币信息
+	CustomField             *customField             // 自定义字段
+	Department              *department              // 部门
+	EmployeeType            *employeeType            // 人员类型
+	Employment              *employment              // 雇佣信息
+	File                    *file                    // file
+	Job                     *job                     // 职务
+	JobChange               *jobChange               // 异动信息
+	JobData                 *jobData                 // 任职信息
+	JobFamily               *jobFamily               // 职务序列
+	JobLevel                *jobLevel                // 职务级别
+	Leave                   *leave                   // 休假管理
+	LeaveGrantingRecord     *leaveGrantingRecord     // leave_granting_record
+	Location                *location                // 地点
+	NationalIdType          *nationalIdType          // 国家证件类型
+	Offboarding             *offboarding             // 员工离职
+	OrgRoleAuthorization    *orgRoleAuthorization    // org_role_authorization
+	Person                  *person                  // 个人信息
+	PreHire                 *preHire                 // 待入职
+	ProcessFormVariableData *processFormVariableData // 流程管理
+	SecurityGroup           *securityGroup           // security_group
+	Subdivision             *subdivision             // 地理库信息
+	Subregion               *subregion               // 地理库信息
+	TransferReason          *transferReason          // 异动原因
+	TransferType            *transferType            // 异动类型
+	WorkingHoursType        *workingHoursType        // 工时制度
 }
 
+type assignedUser struct {
+	service *CorehrService
+}
+type company struct {
+	service *CorehrService
+}
+type contract struct {
+	service *CorehrService
+}
+type countryRegion struct {
+	service *CorehrService
+}
+type currency struct {
+	service *CorehrService
+}
+type customField struct {
+	service *CorehrService
+}
+type department struct {
+	service *CorehrService
+}
+type employeeType struct {
+	service *CorehrService
+}
+type employment struct {
+	service *CorehrService
+}
+type file struct {
+	service *CorehrService
+}
+type job struct {
+	service *CorehrService
+}
+type jobChange struct {
+	service *CorehrService
+}
+type jobData struct {
+	service *CorehrService
+}
+type jobFamily struct {
+	service *CorehrService
+}
+type jobLevel struct {
+	service *CorehrService
+}
 type leave struct {
 	service *CorehrService
+}
+type leaveGrantingRecord struct {
+	service *CorehrService
+}
+type location struct {
+	service *CorehrService
+}
+type nationalIdType struct {
+	service *CorehrService
+}
+type offboarding struct {
+	service *CorehrService
+}
+type orgRoleAuthorization struct {
+	service *CorehrService
+}
+type person struct {
+	service *CorehrService
+}
+type preHire struct {
+	service *CorehrService
+}
+type processFormVariableData struct {
+	service *CorehrService
+}
+type securityGroup struct {
+	service *CorehrService
+}
+type subdivision struct {
+	service *CorehrService
+}
+type subregion struct {
+	service *CorehrService
+}
+type transferReason struct {
+	service *CorehrService
+}
+type transferType struct {
+	service *CorehrService
+}
+type workingHoursType struct {
+	service *CorehrService
+}
+
+// 获取组织类角色授权列表
+//
+// - 查询组织类角色的授权信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/assigned_user/search
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/search_assignedUser.go
+func (a *assignedUser) Search(ctx context.Context, req *SearchAssignedUserReq, options ...larkcore.RequestOptionFunc) (*SearchAssignedUserResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/assigned_users/search"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &SearchAssignedUserResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建公司
+//
+// - 创建公司
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/company/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_company.go
+func (c *company) Create(ctx context.Context, req *CreateCompanyReq, options ...larkcore.RequestOptionFunc) (*CreateCompanyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/companies"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateCompanyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除公司
+//
+// - 删除公司
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/company/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_company.go
+func (c *company) Delete(ctx context.Context, req *DeleteCompanyReq, options ...larkcore.RequestOptionFunc) (*DeleteCompanyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/companies/:company_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteCompanyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个公司
+//
+// - 根据 ID 查询单个公司
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/company/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_company.go
+func (c *company) Get(ctx context.Context, req *GetCompanyReq, options ...larkcore.RequestOptionFunc) (*GetCompanyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/companies/:company_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetCompanyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询公司
+//
+// - 批量查询公司
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/company/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_company.go
+func (c *company) List(ctx context.Context, req *ListCompanyReq, options ...larkcore.RequestOptionFunc) (*ListCompanyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/companies"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListCompanyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建合同
+//
+// - 创建合同
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/contract/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_contract.go
+func (c *contract) Create(ctx context.Context, req *CreateContractReq, options ...larkcore.RequestOptionFunc) (*CreateContractResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/contracts"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateContractResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除合同
+//
+// - 删除合同
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/contract/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_contract.go
+func (c *contract) Delete(ctx context.Context, req *DeleteContractReq, options ...larkcore.RequestOptionFunc) (*DeleteContractResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/contracts/:contract_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteContractResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个合同
+//
+// - 根据 ID 查询单个合同
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/contract/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_contract.go
+func (c *contract) Get(ctx context.Context, req *GetContractReq, options ...larkcore.RequestOptionFunc) (*GetContractResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/contracts/:contract_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetContractResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询合同
+//
+// - 批量查询合同
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/contract/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_contract.go
+func (c *contract) List(ctx context.Context, req *ListContractReq, options ...larkcore.RequestOptionFunc) (*ListContractResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/contracts"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListContractResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新合同
+//
+// - 更新合同
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/contract/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_contract.go
+func (c *contract) Patch(ctx context.Context, req *PatchContractReq, options ...larkcore.RequestOptionFunc) (*PatchContractResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/contracts/:contract_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchContractResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单条国家/地区信息
+//
+// - 查询单条国家/地区信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/country_region/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_countryRegion.go
+func (c *countryRegion) Get(ctx context.Context, req *GetCountryRegionReq, options ...larkcore.RequestOptionFunc) (*GetCountryRegionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/country_regions/:country_region_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetCountryRegionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询国家/地区信息
+//
+// - 批量查询国家/地区信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/country_region/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_countryRegion.go
+func (c *countryRegion) List(ctx context.Context, req *ListCountryRegionReq, options ...larkcore.RequestOptionFunc) (*ListCountryRegionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/country_regions"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListCountryRegionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个货币信息
+//
+// - 查询单个货币信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/currency/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_currency.go
+func (c *currency) Get(ctx context.Context, req *GetCurrencyReq, options ...larkcore.RequestOptionFunc) (*GetCurrencyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/currencies/:currency_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetCurrencyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询货币信息
+//
+// - 批量查询货币信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/currency/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_currency.go
+func (c *currency) List(ctx context.Context, req *ListCurrencyReq, options ...larkcore.RequestOptionFunc) (*ListCurrencyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/currencies"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListCurrencyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取自定义字段详情
+//
+// - 获取「飞书人事」具体对象下某自定义字段的详细信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/custom_field/get_by_param
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/getByParam_customField.go
+func (c *customField) GetByParam(ctx context.Context, req *GetByParamCustomFieldReq, options ...larkcore.RequestOptionFunc) (*GetByParamCustomFieldResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/custom_fields/get_by_param"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetByParamCustomFieldResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取飞书人事对象列表
+//
+// - 获取「飞书人事」中的对象列表，含系统预置对象与自定义对象
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/custom_field/list_object_api_name
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/listObjectApiName_customField.go
+func (c *customField) ListObjectApiName(ctx context.Context, req *ListObjectApiNameCustomFieldReq, options ...larkcore.RequestOptionFunc) (*ListObjectApiNameCustomFieldResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/custom_fields/list_object_api_name"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListObjectApiNameCustomFieldResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取自定义字段列表
+//
+// - 获取「飞书人事」具体对象下的自定义字段列表
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/custom_field/query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/query_customField.go
+func (c *customField) Query(ctx context.Context, req *QueryCustomFieldReq, options ...larkcore.RequestOptionFunc) (*QueryCustomFieldResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/custom_fields/query"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, c.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QueryCustomFieldResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, c.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建部门
+//
+// - 创建部门
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/department/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_department.go
+func (d *department) Create(ctx context.Context, req *CreateDepartmentReq, options ...larkcore.RequestOptionFunc) (*CreateDepartmentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/departments"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, d.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateDepartmentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除部门
+//
+// - 删除部门
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/department/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_department.go
+func (d *department) Delete(ctx context.Context, req *DeleteDepartmentReq, options ...larkcore.RequestOptionFunc) (*DeleteDepartmentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/departments/:department_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, d.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteDepartmentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个部门
+//
+// - 根据 ID 查询单个部门
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/department/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_department.go
+func (d *department) Get(ctx context.Context, req *GetDepartmentReq, options ...larkcore.RequestOptionFunc) (*GetDepartmentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/departments/:department_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, d.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetDepartmentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询部门
+//
+// - 批量查询部门
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/department/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_department.go
+func (d *department) List(ctx context.Context, req *ListDepartmentReq, options ...larkcore.RequestOptionFunc) (*ListDepartmentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/departments"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, d.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListDepartmentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新部门
+//
+// - 更新部门
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/department/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_department.go
+func (d *department) Patch(ctx context.Context, req *PatchDepartmentReq, options ...larkcore.RequestOptionFunc) (*PatchDepartmentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/departments/:department_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, d.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchDepartmentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建人员类型
+//
+// - 创建人员类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employee_type/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_employeeType.go
+func (e *employeeType) Create(ctx context.Context, req *CreateEmployeeTypeReq, options ...larkcore.RequestOptionFunc) (*CreateEmployeeTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employee_types"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateEmployeeTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除人员类型
+//
+// - 删除人员类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employee_type/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_employeeType.go
+func (e *employeeType) Delete(ctx context.Context, req *DeleteEmployeeTypeReq, options ...larkcore.RequestOptionFunc) (*DeleteEmployeeTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employee_types/:employee_type_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteEmployeeTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个人员类型
+//
+// - 根据 ID 查询单个人员类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employee_type/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_employeeType.go
+func (e *employeeType) Get(ctx context.Context, req *GetEmployeeTypeReq, options ...larkcore.RequestOptionFunc) (*GetEmployeeTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employee_types/:employee_type_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetEmployeeTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询人员类型
+//
+// - 批量查询人员类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employee_type/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_employeeType.go
+func (e *employeeType) List(ctx context.Context, req *ListEmployeeTypeReq, options ...larkcore.RequestOptionFunc) (*ListEmployeeTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employee_types"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListEmployeeTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新人员类型数据
+//
+// - 更新人员类型数据
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employee_type/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_employeeType.go
+func (e *employeeType) Patch(ctx context.Context, req *PatchEmployeeTypeReq, options ...larkcore.RequestOptionFunc) (*PatchEmployeeTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employee_types/:employee_type_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchEmployeeTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建雇佣信息
+//
+// - 创建人员的雇佣信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employment/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_employment.go
+func (e *employment) Create(ctx context.Context, req *CreateEmploymentReq, options ...larkcore.RequestOptionFunc) (*CreateEmploymentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employments"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateEmploymentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除雇佣信息
+//
+// - 删除人员的雇佣信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employment/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_employment.go
+func (e *employment) Delete(ctx context.Context, req *DeleteEmploymentReq, options ...larkcore.RequestOptionFunc) (*DeleteEmploymentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employments/:employment_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteEmploymentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新雇佣信息
+//
+// - 更新雇佣信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/employment/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_employment.go
+func (e *employment) Patch(ctx context.Context, req *PatchEmploymentReq, options ...larkcore.RequestOptionFunc) (*PatchEmploymentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/employments/:employment_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, e.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchEmploymentResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, e.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=corehr&resource=file&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_file.go
+func (f *file) Get(ctx context.Context, req *GetFileReq, options ...larkcore.RequestOptionFunc) (*GetFileResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/files/:id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetFileResp{ApiResp: apiResp}
+	// 如果是下载，则设置响应结果
+	if apiResp.StatusCode == http.StatusOK {
+		resp.File = bytes.NewBuffer(apiResp.RawBody)
+		resp.FileName = larkcore.FileNameByHeader(apiResp.Header)
+		return resp, err
+	}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建职务
+//
+// - 创建职务
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_job.go
+func (j *job) Create(ctx context.Context, req *CreateJobReq, options ...larkcore.RequestOptionFunc) (*CreateJobResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/jobs"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除职务
+//
+// - 删除职务
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_job.go
+func (j *job) Delete(ctx context.Context, req *DeleteJobReq, options ...larkcore.RequestOptionFunc) (*DeleteJobResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/jobs/:job_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个职务
+//
+// - 根据 ID 查询单个职务
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_job.go
+func (j *job) Get(ctx context.Context, req *GetJobReq, options ...larkcore.RequestOptionFunc) (*GetJobResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/jobs/:job_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询职务
+//
+// - 批量查询职务
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_job.go
+func (j *job) List(ctx context.Context, req *ListJobReq, options ...larkcore.RequestOptionFunc) (*ListJobResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/jobs"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新职务
+//
+// - 更新职务
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_job.go
+func (j *job) Patch(ctx context.Context, req *PatchJobReq, options ...larkcore.RequestOptionFunc) (*PatchJobResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/jobs/:job_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchJobResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 发起员工异动
+//
+// - 创建员工异动信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_change/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_jobChange.go
+func (j *jobChange) Create(ctx context.Context, req *CreateJobChangeReq, options ...larkcore.RequestOptionFunc) (*CreateJobChangeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_changes"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobChangeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建任职信息
+//
+// - 在系统中第一次创建员工任职数据，通常在员工入职或者做数据批量导入的时候使用，【任职原因】只支持填写“入职”
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_data/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_jobData.go
+func (j *jobData) Create(ctx context.Context, req *CreateJobDataReq, options ...larkcore.RequestOptionFunc) (*CreateJobDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_datas"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除任职信息
+//
+// - 删除人员的任职信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_data/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_jobData.go
+func (j *jobData) Delete(ctx context.Context, req *DeleteJobDataReq, options ...larkcore.RequestOptionFunc) (*DeleteJobDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_datas/:job_data_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个任职信息
+//
+// - 根据 ID 查询单任职信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_data/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_jobData.go
+func (j *jobData) Get(ctx context.Context, req *GetJobDataReq, options ...larkcore.RequestOptionFunc) (*GetJobDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_datas/:job_data_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询任职信息
+//
+// - 批量查询人员的任职信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_data/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_jobData.go
+func (j *jobData) List(ctx context.Context, req *ListJobDataReq, options ...larkcore.RequestOptionFunc) (*ListJobDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_datas"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新任职信息
+//
+// - 更新任职信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_data/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_jobData.go
+func (j *jobData) Patch(ctx context.Context, req *PatchJobDataReq, options ...larkcore.RequestOptionFunc) (*PatchJobDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_datas/:job_data_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchJobDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建职务序列
+//
+// - 创建职务序列
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_family/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_jobFamily.go
+func (j *jobFamily) Create(ctx context.Context, req *CreateJobFamilyReq, options ...larkcore.RequestOptionFunc) (*CreateJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_families"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除职务序列
+//
+// - 删除职务序列
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_family/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_jobFamily.go
+func (j *jobFamily) Delete(ctx context.Context, req *DeleteJobFamilyReq, options ...larkcore.RequestOptionFunc) (*DeleteJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个职务序列
+//
+// - 根据 ID 查询单个职务序列
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_family/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_jobFamily.go
+func (j *jobFamily) Get(ctx context.Context, req *GetJobFamilyReq, options ...larkcore.RequestOptionFunc) (*GetJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询职务序列
+//
+// - 批量查询职务序列
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_family/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_jobFamily.go
+func (j *jobFamily) List(ctx context.Context, req *ListJobFamilyReq, options ...larkcore.RequestOptionFunc) (*ListJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_families"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新职务序列
+//
+// - 更新职务序列
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_family/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_jobFamily.go
+func (j *jobFamily) Patch(ctx context.Context, req *PatchJobFamilyReq, options ...larkcore.RequestOptionFunc) (*PatchJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建职务级别
+//
+// - 创建职务级别
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_level/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_jobLevel.go
+func (j *jobLevel) Create(ctx context.Context, req *CreateJobLevelReq, options ...larkcore.RequestOptionFunc) (*CreateJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_levels"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除职务级别
+//
+// - 删除职务级别
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_level/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_jobLevel.go
+func (j *jobLevel) Delete(ctx context.Context, req *DeleteJobLevelReq, options ...larkcore.RequestOptionFunc) (*DeleteJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个职务级别
+//
+// - 根据 ID 查询单个职务级别
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_level/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_jobLevel.go
+func (j *jobLevel) Get(ctx context.Context, req *GetJobLevelReq, options ...larkcore.RequestOptionFunc) (*GetJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询职务级别
+//
+// - 批量查询职务级别
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_level/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_jobLevel.go
+func (j *jobLevel) List(ctx context.Context, req *ListJobLevelReq, options ...larkcore.RequestOptionFunc) (*ListJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_levels"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新职务级别
+//
+// - 更新职务级别
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/job_level/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_jobLevel.go
+func (j *jobLevel) Patch(ctx context.Context, req *PatchJobLevelReq, options ...larkcore.RequestOptionFunc) (*PatchJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询员工假期余额
+//
+// - 批量获取员工各个假期的余额数据
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/leave/leave_balances
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/leaveBalances_leave.go
+func (l *leave) LeaveBalances(ctx context.Context, req *LeaveBalancesLeaveReq, options ...larkcore.RequestOptionFunc) (*LeaveBalancesLeaveResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/leaves/leave_balances"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &LeaveBalancesLeaveResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // 批量查询员工请假记录
@@ -55,6 +1585,951 @@ func (l *leave) LeaveRequestHistory(ctx context.Context, req *LeaveRequestHistor
 	// 反序列响应结果
 	resp := &LeaveRequestHistoryLeaveResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取假期类型列表
+//
+// - 获取休假设置后台配置的假期类型列表（比如年假、事假、婚假等）
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/leave/leave_types
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/leaveTypes_leave.go
+func (l *leave) LeaveTypes(ctx context.Context, req *LeaveTypesLeaveReq, options ...larkcore.RequestOptionFunc) (*LeaveTypesLeaveResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/leaves/leave_types"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &LeaveTypesLeaveResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建假期授予记录
+//
+// - 向飞书人事休假系统写入假期授予记录
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/leave_granting_record/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_leaveGrantingRecord.go
+func (l *leaveGrantingRecord) Create(ctx context.Context, req *CreateLeaveGrantingRecordReq, options ...larkcore.RequestOptionFunc) (*CreateLeaveGrantingRecordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/leave_granting_records"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateLeaveGrantingRecordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除假期授予记录
+//
+// - 删除飞书人事休假系统中的假期授予记录（仅支持删除授予来源是「手动授予」或「外部系统授予」的记录）
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/leave_granting_record/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_leaveGrantingRecord.go
+func (l *leaveGrantingRecord) Delete(ctx context.Context, req *DeleteLeaveGrantingRecordReq, options ...larkcore.RequestOptionFunc) (*DeleteLeaveGrantingRecordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/leave_granting_records/:leave_granting_record_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteLeaveGrantingRecordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建地点
+//
+// - 创建地点
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/location/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_location.go
+func (l *location) Create(ctx context.Context, req *CreateLocationReq, options ...larkcore.RequestOptionFunc) (*CreateLocationResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/locations"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateLocationResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除地点
+//
+// - 删除地点
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/location/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_location.go
+func (l *location) Delete(ctx context.Context, req *DeleteLocationReq, options ...larkcore.RequestOptionFunc) (*DeleteLocationResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/locations/:location_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteLocationResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个地点
+//
+// - 根据 ID 查询单个地点
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/location/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_location.go
+func (l *location) Get(ctx context.Context, req *GetLocationReq, options ...larkcore.RequestOptionFunc) (*GetLocationResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/locations/:location_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetLocationResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询地点
+//
+// - 批量查询地点
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/location/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_location.go
+func (l *location) List(ctx context.Context, req *ListLocationReq, options ...larkcore.RequestOptionFunc) (*ListLocationResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/locations"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListLocationResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建国家证件类型
+//
+// - 创建国家证件类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/national_id_type/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_nationalIdType.go
+func (n *nationalIdType) Create(ctx context.Context, req *CreateNationalIdTypeReq, options ...larkcore.RequestOptionFunc) (*CreateNationalIdTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/national_id_types"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, n.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateNationalIdTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, n.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除国家证件类型
+//
+// - 删除国家证件类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/national_id_type/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_nationalIdType.go
+func (n *nationalIdType) Delete(ctx context.Context, req *DeleteNationalIdTypeReq, options ...larkcore.RequestOptionFunc) (*DeleteNationalIdTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/national_id_types/:national_id_type_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, n.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteNationalIdTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, n.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个国家证件类型
+//
+// - 根据 ID 查询单个国家证件类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/national_id_type/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_nationalIdType.go
+func (n *nationalIdType) Get(ctx context.Context, req *GetNationalIdTypeReq, options ...larkcore.RequestOptionFunc) (*GetNationalIdTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/national_id_types/:national_id_type_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, n.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetNationalIdTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, n.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询国家证件类型
+//
+// - 批量查询国家证件类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/national_id_type/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_nationalIdType.go
+func (n *nationalIdType) List(ctx context.Context, req *ListNationalIdTypeReq, options ...larkcore.RequestOptionFunc) (*ListNationalIdTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/national_id_types"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, n.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListNationalIdTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, n.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新国家证件类型
+//
+// - 更新国家证件类型
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/national_id_type/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_nationalIdType.go
+func (n *nationalIdType) Patch(ctx context.Context, req *PatchNationalIdTypeReq, options ...larkcore.RequestOptionFunc) (*PatchNationalIdTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/national_id_types/:national_id_type_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, n.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchNationalIdTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, n.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询员工离职原因列表
+//
+// - 查询「飞书人事」-「离职设置」中的离职原因
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/offboarding/query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/query_offboarding.go
+func (o *offboarding) Query(ctx context.Context, req *QueryOffboardingReq, options ...larkcore.RequestOptionFunc) (*QueryOffboardingResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/offboardings/query"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, o.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QueryOffboardingResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, o.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// - 根据 雇佣 ID 查询员工离职信息
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=search&project=corehr&resource=offboarding&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/search_offboarding.go
+func (o *offboarding) Search(ctx context.Context, req *SearchOffboardingReq, options ...larkcore.RequestOptionFunc) (*SearchOffboardingResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/offboardings/search"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, o.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &SearchOffboardingResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, o.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (o *offboarding) SearchByIterator(ctx context.Context, req *SearchOffboardingReq, options ...larkcore.RequestOptionFunc) (*SearchOffboardingIterator, error) {
+	return &SearchOffboardingIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: o.Search,
+		options:  options,
+		limit:    req.Limit}, nil
+}
+
+// 操作员工离职
+//
+// - 操作员工直接离职
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/offboarding/submit
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/submit_offboarding.go
+func (o *offboarding) Submit(ctx context.Context, req *SubmitOffboardingReq, options ...larkcore.RequestOptionFunc) (*SubmitOffboardingResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/offboardings/submit"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, o.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &SubmitOffboardingResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, o.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除个人信息
+//
+// - 删除人员的个人信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/person/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_person.go
+func (p *person) Delete(ctx context.Context, req *DeletePersonReq, options ...larkcore.RequestOptionFunc) (*DeletePersonResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/persons/:person_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeletePersonResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个个人信息
+//
+// - 根据 ID 查询单个人员的个人信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/person/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_person.go
+func (p *person) Get(ctx context.Context, req *GetPersonReq, options ...larkcore.RequestOptionFunc) (*GetPersonResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/persons/:person_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetPersonResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 上传文件
+//
+// - 上传文件
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/person/upload
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/upload_person.go
+func (p *person) Upload(ctx context.Context, req *UploadPersonReq, options ...larkcore.RequestOptionFunc) (*UploadPersonResp, error) {
+	options = append(options, larkcore.WithFileUpload())
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/persons/upload"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &UploadPersonResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除待入职人员
+//
+// - 删除待入职人员
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/pre_hire/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_preHire.go
+func (p *preHire) Delete(ctx context.Context, req *DeletePreHireReq, options ...larkcore.RequestOptionFunc) (*DeletePreHireResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/pre_hires/:pre_hire_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeletePreHireResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个待入职人员
+//
+// - 根据 ID 查询单个待入职人员
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/pre_hire/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_preHire.go
+func (p *preHire) Get(ctx context.Context, req *GetPreHireReq, options ...larkcore.RequestOptionFunc) (*GetPreHireResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/pre_hires/:pre_hire_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetPreHireResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询待入职人员
+//
+// - 批量查询待入职人员
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/pre_hire/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_preHire.go
+func (p *preHire) List(ctx context.Context, req *ListPreHireReq, options ...larkcore.RequestOptionFunc) (*ListPreHireResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/pre_hires"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListPreHireResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新待入职数据
+//
+// - 更新待入职数据
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/pre_hire/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_preHire.go
+func (p *preHire) Patch(ctx context.Context, req *PatchPreHireReq, options ...larkcore.RequestOptionFunc) (*PatchPreHireResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/pre_hires/:pre_hire_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchPreHireResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取流程表单数据
+//
+// - 获取流程表单数据
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/process-form_variable_data/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_processFormVariableData.go
+func (p *processFormVariableData) Get(ctx context.Context, req *GetProcessFormVariableDataReq, options ...larkcore.RequestOptionFunc) (*GetProcessFormVariableDataResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/processes/:process_id/form_variable_data"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetProcessFormVariableDataResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量获取角色列表
+//
+// - 批量查询「飞书人事」-「权限设置」-「角色设置」中的角色列表
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/security_group/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_securityGroup.go
+func (s *securityGroup) List(ctx context.Context, req *ListSecurityGroupReq, options ...larkcore.RequestOptionFunc) (*ListSecurityGroupResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/security_groups"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListSecurityGroupResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// HRBP/属地 BP 查询
+//
+// - 通过部门或工作地点，查询对应的 HRBP/属地 BP
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/security_group/query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/query_securityGroup.go
+func (s *securityGroup) Query(ctx context.Context, req *QuerySecurityGroupReq, options ...larkcore.RequestOptionFunc) (*QuerySecurityGroupResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/security_groups/query"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QuerySecurityGroupResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单条省份/行政区信息
+//
+// - 查询单条省份/行政区信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/subdivision/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_subdivision.go
+func (s *subdivision) Get(ctx context.Context, req *GetSubdivisionReq, options ...larkcore.RequestOptionFunc) (*GetSubdivisionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/subdivisions/:subdivision_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetSubdivisionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询省份/行政区信息
+//
+// - 批量查询省份/行政区信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/subdivision/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_subdivision.go
+func (s *subdivision) List(ctx context.Context, req *ListSubdivisionReq, options ...larkcore.RequestOptionFunc) (*ListSubdivisionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/subdivisions"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListSubdivisionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单条城市/区域信息
+//
+// - 查询单条城市/区域信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/subregion/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_subregion.go
+func (s *subregion) Get(ctx context.Context, req *GetSubregionReq, options ...larkcore.RequestOptionFunc) (*GetSubregionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/subregions/:subregion_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetSubregionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询城市/区域信息
+//
+// - 批量查询城市/区域信息
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/subregion/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_subregion.go
+func (s *subregion) List(ctx context.Context, req *ListSubregionReq, options ...larkcore.RequestOptionFunc) (*ListSubregionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/subregions"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, s.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListSubregionResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, s.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取异动原因列表
+//
+// - 获取异动原因列表
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/transfer_reason/query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/query_transferReason.go
+func (t *transferReason) Query(ctx context.Context, req *QueryTransferReasonReq, options ...larkcore.RequestOptionFunc) (*QueryTransferReasonResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/transfer_reasons/query"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, t.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QueryTransferReasonResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, t.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 获取异动类型列表
+//
+// - 获取异动类型列表
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/transfer_type/query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/query_transferType.go
+func (t *transferType) Query(ctx context.Context, req *QueryTransferTypeReq, options ...larkcore.RequestOptionFunc) (*QueryTransferTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/transfer_types/query"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, t.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QueryTransferTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, t.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 创建工时制度
+//
+// - 创建工时制度
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/working_hours_type/create
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/create_workingHoursType.go
+func (w *workingHoursType) Create(ctx context.Context, req *CreateWorkingHoursTypeReq, options ...larkcore.RequestOptionFunc) (*CreateWorkingHoursTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/working_hours_types"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, w.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateWorkingHoursTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, w.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 删除工时制度
+//
+// - 删除工时制度
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/working_hours_type/delete
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/delete_workingHoursType.go
+func (w *workingHoursType) Delete(ctx context.Context, req *DeleteWorkingHoursTypeReq, options ...larkcore.RequestOptionFunc) (*DeleteWorkingHoursTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/working_hours_types/:working_hours_type_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, w.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteWorkingHoursTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, w.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 查询单个工时制度
+//
+// - 根据 ID 查询单个工时制度
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/working_hours_type/get
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/get_workingHoursType.go
+func (w *workingHoursType) Get(ctx context.Context, req *GetWorkingHoursTypeReq, options ...larkcore.RequestOptionFunc) (*GetWorkingHoursTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/working_hours_types/:working_hours_type_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, w.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetWorkingHoursTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, w.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量查询工时制度
+//
+// - 批量查询工时制度
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/working_hours_type/list
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/list_workingHoursType.go
+func (w *workingHoursType) List(ctx context.Context, req *ListWorkingHoursTypeReq, options ...larkcore.RequestOptionFunc) (*ListWorkingHoursTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/working_hours_types"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, w.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListWorkingHoursTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, w.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 更新工时制度
+//
+// - 更新工时制度
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/corehr-v1/working_hours_type/patch
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/corehrv1/patch_workingHoursType.go
+func (w *workingHoursType) Patch(ctx context.Context, req *PatchWorkingHoursTypeReq, options ...larkcore.RequestOptionFunc) (*PatchWorkingHoursTypeResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/corehr/v1/working_hours_types/:working_hours_type_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, w.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchWorkingHoursTypeResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, w.service.config)
 	if err != nil {
 		return nil, err
 	}

@@ -349,41 +349,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.BindOauth2UserReqV1:
-    properties:
-      oauth2_token:
-        type: string
-      pwd:
-        type: string
-      user_name:
-        type: string
-    type: object
-  v1.BindOauth2UserResDataV1:
-    properties:
-      token:
-        type: string
-    type: object
-  v1.BindOauth2UserResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.BindOauth2UserResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.BindRoleReqV1:
-    properties:
-      instance_name:
-        type: string
-      role_names:
-        items:
-          type: string
-        type: array
-    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -403,10 +368,6 @@ definitions:
     properties:
       desc:
         type: string
-      instance_name_list:
-        items:
-          type: string
-        type: array
       new_rule_template_name:
         type: string
     type: object
@@ -504,96 +465,17 @@ definitions:
         example: DDL规则
         type: string
     type: object
-  v1.CreateInstanceReqV1:
-    properties:
-      additional_params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
-        type: array
-      db_host:
-        example: 10.10.10.10
-        type: string
-      db_password:
-        example: "123456"
-        type: string
-      db_port:
-        example: "3306"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      db_user:
-        example: root
-        type: string
-      desc:
-        example: this is a test instance
-        type: string
-      instance_name:
-        example: test
-        type: string
-      maintenance_times:
-        items:
-          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
-        type: array
-      rule_template_name:
-        type: string
-      sql_query_config:
-        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
-        type: object
-    type: object
-  v1.CreateMemberGroupReqV1:
-    properties:
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-      user_group_name:
-        type: string
-    type: object
-  v1.CreateMemberReqV1:
-    properties:
-      is_manager:
-        type: boolean
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-      user_name:
-        type: string
-    type: object
-  v1.CreateProjectReqV1:
-    properties:
-      desc:
-        type: string
-      name:
-        type: string
-    type: object
   v1.CreateProjectRuleTemplateReqV1:
     properties:
       db_type:
         type: string
       desc:
         type: string
-      instance_name_list:
-        items:
-          type: string
-        type: array
       rule_list:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
-        type: string
-    type: object
-  v1.CreateRoleReqV1:
-    properties:
-      operation_code_list:
-        items:
-          type: integer
-        type: array
-      role_desc:
-        type: string
-      role_name:
         type: string
     type: object
   v1.CreateRuleTemplateReqV1:
@@ -607,73 +489,6 @@ definitions:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
-        type: string
-    type: object
-  v1.CreateSyncInstanceTaskReqV1:
-    properties:
-      db_type:
-        example: mysql
-        type: string
-      global_rule_template:
-        example: default_mysql
-        type: string
-      source:
-        example: actiontech-dmp
-        type: string
-      sync_instance_interval:
-        example: 0 0 * * *
-        type: string
-      url:
-        example: http://10.186.62.56:10000
-        type: string
-      version:
-        example: 5.23.01.0
-        type: string
-    required:
-    - db_type
-    - global_rule_template
-    - source
-    - sync_instance_interval
-    - url
-    - version
-    type: object
-  v1.CreateUserGroupReqV1:
-    properties:
-      user_group_desc:
-        example: this is a group
-        type: string
-      user_group_name:
-        example: test
-        type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
-    type: object
-  v1.CreateUserReqV1:
-    properties:
-      email:
-        example: test@email.com
-        type: string
-      management_permission_code_list:
-        items:
-          type: integer
-        type: array
-      phone:
-        example: "18962136666"
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name:
-        example: test
-        type: string
-      user_password:
-        example: "123456"
-        type: string
-      wechat_id:
-        example: UserID
         type: string
     type: object
   v1.CreateWorkflowReqV1:
@@ -827,13 +642,6 @@ definitions:
             type: string
           type: object
         type: array
-    type: object
-  v1.FeishuConfigurationV1:
-    properties:
-      app_id:
-        type: string
-      is_feishu_notification_enabled:
-        type: boolean
     type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
@@ -1118,31 +926,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetFeishuConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.FeishuConfigurationV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetInstanceAdditionalMetasResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalMetaV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetInstanceConnectableReqV1:
     properties:
       additional_params:
@@ -1190,18 +973,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetInstanceResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.InstanceResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetInstanceSchemaResV1:
     properties:
       code:
@@ -1227,21 +998,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetInstancesResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.InstanceResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
   v1.GetInstancesTypePercentResV1:
     properties:
       code:
@@ -1249,18 +1005,6 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.InstancesTypePercentV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetLDAPConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.LDAPConfigurationResV1'
         type: object
       message:
         example: ok
@@ -1288,166 +1032,6 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.LicenseUsageV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetManagementPermissionsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.ManagementPermissionResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetMemberGroupRespDataV1:
-    properties:
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-      user_group_name:
-        type: string
-      users:
-        items:
-          $ref: '#/definitions/v1.MemberGroupUserItem'
-        type: array
-    type: object
-  v1.GetMemberGroupRespV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetMemberGroupRespDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetMemberGroupsRespV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.GetMemberGroupRespDataV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetMemberRespDataV1:
-    properties:
-      is_manager:
-        type: boolean
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-      user_name:
-        type: string
-    type: object
-  v1.GetMemberRespV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetMemberRespDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetMemberTipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.MemberTipResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetMembersRespV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.GetMemberRespDataV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetOauth2ConfigurationResDataV1:
-    properties:
-      access_token_tag:
-        type: string
-      client_host:
-        type: string
-      client_id:
-        type: string
-      enable_oauth2:
-        type: boolean
-      login_tip:
-        type: string
-      scopes:
-        items:
-          type: string
-        type: array
-      server_auth_url:
-        type: string
-      server_token_url:
-        type: string
-      server_user_id_url:
-        type: string
-      user_id_tag:
-        type: string
-    type: object
-  v1.GetOauth2ConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetOauth2ConfigurationResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetOauth2TipsResDataV1:
-    properties:
-      enable_oauth2:
-        type: boolean
-      login_tip:
-        type: string
-    type: object
-  v1.GetOauth2TipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetOauth2TipsResDataV1'
         type: object
       message:
         example: ok
@@ -1506,33 +1090,6 @@ definitions:
       message:
         example: ok
         type: string
-    type: object
-  v1.GetProjectDetailResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.ProjectDetailItem'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetProjectResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.ProjectListItem'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
     type: object
   v1.GetProjectRuleTemplateResV1:
     properties:
@@ -1600,19 +1157,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetProjectTipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.ProjectTipResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetRiskAuditPlanResV1:
     properties:
       code:
@@ -1621,19 +1165,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.RiskAuditPlan'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetRoleTipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.RoleTipResV1'
         type: array
       message:
         example: ok
@@ -1651,21 +1182,6 @@ definitions:
       message:
         example: ok
         type: string
-    type: object
-  v1.GetRolesResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.RoleResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
     type: object
   v1.GetRuleTemplateResV1:
     properties:
@@ -1733,18 +1249,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetSMTPConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.SMTPConfigurationResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetSQLAnalysisDataResItemV1:
     properties:
       sql_explain:
@@ -1776,25 +1280,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetSQLQueryConfigurationResDataV1:
-    properties:
-      enable_sql_query:
-        type: boolean
-      sql_query_root_uri:
-        type: string
-    type: object
-  v1.GetSQLQueryConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetSQLQueryConfigurationResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetSqlAverageExecutionTimeResV1:
     properties:
       code:
@@ -1816,44 +1301,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.SqlExecutionFailPercent'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetSyncInstanceTaskListResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.InstanceTaskResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetSyncInstanceTaskResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.InstanceTaskDetailResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetSyncTaskSourceTipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.SyncTaskTipsResV1'
         type: array
       message:
         example: ok
@@ -1905,58 +1352,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetUserDetailResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.UserDetailResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetUserGroupTipsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.UserGroupTipListItem'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetUserGroupsResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.UserGroupListItemResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetUserLoginResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.UserLoginResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -1966,33 +1361,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.UserTipResV1'
         type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetUsersResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.UserResV1'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetWeChatConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.WeChatConfigurationResV1'
-        type: object
       message:
         example: ok
         type: string
@@ -2193,18 +1561,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetWorkflowWebHookConfigResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.WebHookConfigV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetWorkflowsResV1:
     properties:
       code:
@@ -2219,22 +1575,6 @@ definitions:
         type: string
       total_nums:
         type: integer
-    type: object
-  v1.GlobalRuleTemplateInstance:
-    properties:
-      instance_name:
-        type: string
-      project_name:
-        type: string
-    type: object
-  v1.InstanceAdditionalMetaV1:
-    properties:
-      db_type:
-        type: string
-      params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
-        type: array
     type: object
   v1.InstanceAdditionalParamReqV1:
     properties:
@@ -2286,42 +1626,6 @@ definitions:
       instance_schema:
         type: string
     type: object
-  v1.InstanceResV1:
-    properties:
-      additional_params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
-        type: array
-      db_host:
-        example: 10.10.10.10
-        type: string
-      db_port:
-        example: "3306"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      db_user:
-        example: root
-        type: string
-      desc:
-        example: this is a instance
-        type: string
-      instance_name:
-        type: string
-      maintenance_times:
-        items:
-          $ref: '#/definitions/v1.MaintenanceTimeResV1'
-        type: array
-      rule_template_name:
-        type: string
-      source:
-        example: SQLE
-        type: string
-      sql_query_config:
-        $ref: '#/definitions/v1.SQLQueryConfigResV1'
-        type: object
-    type: object
   v1.InstanceSchemaResV1:
     properties:
       schema_name_list:
@@ -2342,57 +1646,6 @@ definitions:
       name:
         type: string
       schema:
-        type: string
-    type: object
-  v1.InstanceTaskDetailResV1:
-    properties:
-      db_type:
-        example: mysql
-        type: string
-      id:
-        example: 1
-        type: integer
-      rule_template:
-        example: default_mysql
-        type: string
-      source:
-        example: actiontech-dmp
-        type: string
-      sync_instance_interval:
-        example: 0 0 * * *
-        type: string
-      url:
-        example: http://10.186.62.56:10000
-        type: string
-      version:
-        example: 1.23.1
-        type: string
-    type: object
-  v1.InstanceTaskResV1:
-    properties:
-      db_type:
-        example: mysql
-        type: string
-      id:
-        example: 1
-        type: integer
-      last_sync_status:
-        enum:
-        - succeeded
-        - failed
-        example: succeeded
-        type: string
-      last_sync_success_time:
-        example: "2021-08-12 12:00:00"
-        type: string
-      source:
-        example: actiontech-dmp
-        type: string
-      url:
-        example: http://10.186.62.56:10000
-        type: string
-      version:
-        example: 1.23.1
         type: string
     type: object
   v1.InstanceTipResV1:
@@ -2425,46 +1678,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.InstanceTypePercent'
         type: array
-    type: object
-  v1.LDAPConfigurationReqV1:
-    properties:
-      enable_ldap:
-        type: boolean
-      enable_ssl:
-        type: boolean
-      ldap_connect_dn:
-        type: string
-      ldap_connect_pwd:
-        type: string
-      ldap_search_base_dn:
-        type: string
-      ldap_server_host:
-        type: string
-      ldap_server_port:
-        type: string
-      ldap_user_email_rdn_key:
-        type: string
-      ldap_user_name_rdn_key:
-        type: string
-    type: object
-  v1.LDAPConfigurationResV1:
-    properties:
-      enable_ldap:
-        type: boolean
-      enable_ssl:
-        type: boolean
-      ldap_connect_dn:
-        type: string
-      ldap_search_base_dn:
-        type: string
-      ldap_server_host:
-        type: string
-      ldap_server_port:
-        type: string
-      ldap_user_email_rdn_key:
-        type: string
-      ldap_user_name_rdn_key:
-        type: string
     type: object
   v1.LicenseItem:
     properties:
@@ -2511,15 +1724,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.MaintenanceTimeReqV1:
-    properties:
-      maintenance_start_time:
-        $ref: '#/definitions/v1.TimeReqV1'
-        type: object
-      maintenance_stop_time:
-        $ref: '#/definitions/v1.TimeReqV1'
-        type: object
-    type: object
   v1.MaintenanceTimeResV1:
     properties:
       maintenance_start_time:
@@ -2528,57 +1732,6 @@ definitions:
       maintenance_stop_time:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
-    type: object
-  v1.ManagementPermissionResV1:
-    properties:
-      code:
-        type: integer
-      desc:
-        type: string
-    type: object
-  v1.MemberGroupUserItem:
-    properties:
-      name:
-        type: string
-    type: object
-  v1.MemberTipResV1:
-    properties:
-      user_name:
-        type: string
-    type: object
-  v1.Oauth2ConfigurationReqV1:
-    properties:
-      access_token_tag:
-        type: string
-      client_host:
-        type: string
-      client_id:
-        type: string
-      client_key:
-        type: string
-      enable_oauth2:
-        type: boolean
-      login_tip:
-        type: string
-      scopes:
-        items:
-          type: string
-        type: array
-      server_auth_url:
-        type: string
-      server_token_url:
-        type: string
-      server_user_id_url:
-        type: string
-      user_id_tag:
-        type: string
-    type: object
-  v1.Operation:
-    properties:
-      op_code:
-        type: integer
-      op_desc:
-        type: string
     type: object
   v1.OperationActionList:
     properties:
@@ -2665,52 +1818,9 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
     type: object
-  v1.PatchUserGroupReqV1:
-    properties:
-      is_disabled:
-        type: boolean
-      user_group_desc:
-        example: this is a group
-        type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
-    type: object
   v1.PersonaliseReqV1:
     properties:
       title:
-        type: string
-    type: object
-  v1.ProjectDetailItem:
-    properties:
-      archived:
-        type: boolean
-      create_time:
-        type: string
-      create_user_name:
-        type: string
-      desc:
-        type: string
-      name:
-        type: string
-    type: object
-  v1.ProjectListItem:
-    properties:
-      archived:
-        type: boolean
-      create_time:
-        type: string
-      create_user_name:
-        type: string
-      desc:
-        type: string
-      name:
-        type: string
-    type: object
-  v1.ProjectRuleTemplateInstance:
-    properties:
-      name:
         type: string
     type: object
   v1.ProjectRuleTemplateResV1:
@@ -2719,10 +1829,6 @@ definitions:
         type: string
       desc:
         type: string
-      instance_list:
-        items:
-          $ref: '#/definitions/v1.ProjectRuleTemplateInstance'
-        type: array
       rule_template_name:
         type: string
     type: object
@@ -2730,11 +1836,6 @@ definitions:
     properties:
       score:
         type: integer
-    type: object
-  v1.ProjectTipResV1:
-    properties:
-      project_name:
-        type: string
     type: object
   v1.RejectWorkflowReqV1:
     properties:
@@ -2765,28 +1866,6 @@ definitions:
       workflow_name:
         type: string
       workflow_status:
-        type: string
-    type: object
-  v1.RoleResV1:
-    properties:
-      is_disabled:
-        type: boolean
-      operation_list:
-        items:
-          $ref: '#/definitions/v1.Operation'
-        type: array
-      role_desc:
-        type: string
-      role_name:
-        type: string
-    type: object
-  v1.RoleTipResV1:
-    properties:
-      operations:
-        items:
-          $ref: '#/definitions/v1.Operation'
-        type: array
-      role_name:
         type: string
     type: object
   v1.RoleUserCount:
@@ -2824,10 +1903,6 @@ definitions:
         type: string
       desc:
         type: string
-      instance_list:
-        items:
-          $ref: '#/definitions/v1.ProjectRuleTemplateInstance'
-        type: array
       rule_list:
         items:
           $ref: '#/definitions/v1.RuleResV1'
@@ -2886,10 +1961,6 @@ definitions:
         type: string
       desc:
         type: string
-      instance_list:
-        items:
-          $ref: '#/definitions/v1.GlobalRuleTemplateInstance'
-        type: array
       rule_list:
         items:
           $ref: '#/definitions/v1.RuleResV1'
@@ -2903,16 +1974,14 @@ definitions:
         type: string
       desc:
         type: string
-      instance_list:
-        items:
-          $ref: '#/definitions/v1.GlobalRuleTemplateInstance'
-        type: array
       rule_template_name:
         type: string
     type: object
   v1.RuleTemplateTipResV1:
     properties:
       db_type:
+        type: string
+      rule_template_id:
         type: string
       rule_template_name:
         type: string
@@ -2926,19 +1995,6 @@ definitions:
       rule_type:
         type: string
     type: object
-  v1.SMTPConfigurationResV1:
-    properties:
-      enable_smtp_notify:
-        type: boolean
-      is_skip_verify:
-        type: boolean
-      smtp_host:
-        type: string
-      smtp_port:
-        type: string
-      smtp_username:
-        type: string
-    type: object
   v1.SQLExplain:
     properties:
       classic_result:
@@ -2949,26 +2005,6 @@ definitions:
         type: string
       sql:
         type: string
-    type: object
-  v1.SQLQueryConfigReqV1:
-    properties:
-      allow_query_when_less_than_audit_level:
-        enum:
-        - normal
-        - notice
-        - warn
-        - error
-        example: error
-        type: string
-      audit_enabled:
-        example: false
-        type: boolean
-      max_pre_query_rows:
-        example: 100
-        type: integer
-      query_timeout_second:
-        example: 10
-        type: integer
     type: object
   v1.SQLQueryConfigResV1:
     properties:
@@ -3053,24 +2089,6 @@ definitions:
         type: string
       risk_rate:
         type: integer
-    type: object
-  v1.SyncInstanceResV1:
-    properties:
-      is_sync_instance_success:
-        example: true
-        type: boolean
-      sync_error_message:
-        type: string
-    type: object
-  v1.SyncTaskTipsResV1:
-    properties:
-      db_types:
-        items:
-          type: string
-        type: array
-      source:
-        example: actiontech-dmp
-        type: string
     type: object
   v1.SystemVariablesResV1:
     properties:
@@ -3174,107 +2192,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.TestFeishuConfigResDataV1:
-    properties:
-      error_message:
-        type: string
-      is_message_sent_normally:
-        type: boolean
-    type: object
-  v1.TestFeishuConfigResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TestFeishuConfigResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.TestFeishuConfigurationReqV1:
-    properties:
-      account:
-        type: string
-      account_type:
-        enum:
-        - email
-        - phone
-        type: string
-    type: object
-  v1.TestSMTPConfigurationReqV1:
-    properties:
-      recipient_addr:
-        type: string
-    type: object
-  v1.TestSMTPConfigurationResDataV1:
-    properties:
-      is_smtp_send_normal:
-        type: boolean
-      send_error_message:
-        type: string
-    type: object
-  v1.TestSMTPConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TestSMTPConfigurationResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.TestWeChatConfigurationReqV1:
-    properties:
-      recipient_id:
-        type: string
-    type: object
-  v1.TestWeChatConfigurationResDataV1:
-    properties:
-      is_wechat_send_normal:
-        type: boolean
-      send_error_message:
-        type: string
-    type: object
-  v1.TestWeChatConfigurationResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TestWeChatConfigurationResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.TestWorkflowWebHookConfigResDataV1:
-    properties:
-      send_error_message:
-        type: string
-    type: object
-  v1.TestWorkflowWebHookConfigResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TestWorkflowWebHookConfigResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.TimeReqV1:
-    properties:
-      hour:
-        type: integer
-      minute:
-        type: integer
-    type: object
   v1.TimeResV1:
     properties:
       hour:
@@ -3289,18 +2206,6 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.AuditPlanReportResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.TriggerSyncInstanceResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.SyncInstanceResV1'
         type: object
       message:
         example: ok
@@ -3367,23 +2272,6 @@ definitions:
         example: create table
         type: string
     type: object
-  v1.UpdateCurrentUserPasswordReqV1:
-    properties:
-      new_password:
-        type: string
-      password:
-        type: string
-    type: object
-  v1.UpdateCurrentUserReqV1:
-    properties:
-      email:
-        type: string
-      phone:
-        type: string
-      wechat_id:
-        example: UserID
-        type: string
-    type: object
   v1.UpdateCustomRuleReqV1:
     properties:
       annotation:
@@ -3419,100 +2307,14 @@ definitions:
     - app_secret
     - is_enable_ding_talk_notify
     type: object
-  v1.UpdateFeishuConfigurationReqV1:
-    properties:
-      app_id:
-        type: string
-      app_secret:
-        type: string
-      is_feishu_notification_enabled:
-        type: boolean
-    type: object
-  v1.UpdateInstanceReqV1:
-    properties:
-      additional_params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
-        type: array
-      db_host:
-        example: 10.10.10.10
-        type: string
-      db_password:
-        example: "123456"
-        type: string
-      db_port:
-        example: "3306"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      db_user:
-        example: root
-        type: string
-      desc:
-        example: this is a test instance
-        type: string
-      maintenance_times:
-        items:
-          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
-        type: array
-      rule_template_name:
-        type: string
-      sql_query_config:
-        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
-        type: object
-    type: object
-  v1.UpdateMemberGroupReqV1:
-    properties:
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-    type: object
-  v1.UpdateMemberReqV1:
-    properties:
-      is_manager:
-        type: boolean
-      roles:
-        items:
-          $ref: '#/definitions/v1.BindRoleReqV1'
-        type: array
-    type: object
-  v1.UpdateOtherUserPasswordReqV1:
-    properties:
-      password:
-        type: string
-    type: object
-  v1.UpdateProjectReqV1:
-    properties:
-      desc:
-        type: string
-    type: object
   v1.UpdateProjectRuleTemplateReqV1:
     properties:
       desc:
         type: string
-      instance_name_list:
-        example:
-        - mysql-xxx
-        items:
-          type: string
-        type: array
       rule_list:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
-    type: object
-  v1.UpdateRoleReqV1:
-    properties:
-      is_disabled:
-        type: boolean
-      operation_code_list:
-        items:
-          type: integer
-        type: array
-      role_desc:
-        type: string
     type: object
   v1.UpdateRuleTemplateReqV1:
     properties:
@@ -3522,40 +2324,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
-    type: object
-  v1.UpdateSMTPConfigurationReqV1:
-    properties:
-      enable_smtp_notify:
-        type: boolean
-      is_skip_verify:
-        type: boolean
-      smtp_host:
-        example: smtp.email.qq.com
-        type: string
-      smtp_password:
-        example: "123"
-        type: string
-      smtp_port:
-        example: "465"
-        type: string
-      smtp_username:
-        example: test@qq.com
-        type: string
-    type: object
-  v1.UpdateSyncInstanceTaskReqV1:
-    properties:
-      global_rule_template:
-        example: default_mysql
-        type: string
-      sync_instance_interval:
-        example: 0 0 * * *
-        type: string
-      url:
-        example: http://10.186.62.56:10000
-        type: string
-      version:
-        example: 5.23.01.0
-        type: string
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
@@ -3568,41 +2336,6 @@ definitions:
       workflow_expired_hours:
         example: 720
         type: integer
-    type: object
-  v1.UpdateUserReqV1:
-    properties:
-      email:
-        type: string
-      is_disabled:
-        type: boolean
-      management_permission_code_list:
-        items:
-          type: integer
-        type: array
-      phone:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      wechat_id:
-        example: UserID
-        type: string
-    type: object
-  v1.UpdateWeChatConfigurationReqV1:
-    properties:
-      agent_id:
-        type: integer
-      corp_id:
-        type: string
-      corp_secret:
-        type: string
-      enable_wechat_notify:
-        type: boolean
-      proxy_ip:
-        type: string
-      safe_enabled:
-        type: boolean
     type: object
   v1.UpdateWorkflowReqV1:
     properties:
@@ -3627,10 +2360,6 @@ definitions:
         type: string
       desc:
         type: string
-      instance_name_list:
-        items:
-          type: string
-        type: array
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
@@ -3653,131 +2382,9 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.UserBindProjectResV1:
-    properties:
-      is_manager:
-        type: boolean
-      project_name:
-        type: string
-    type: object
-  v1.UserDetailResV1:
-    properties:
-      bind_projects:
-        items:
-          $ref: '#/definitions/v1.UserBindProjectResV1'
-        type: array
-      email:
-        type: string
-      is_admin:
-        type: boolean
-      is_disabled:
-        type: boolean
-      login_type:
-        type: string
-      management_permission_list:
-        items:
-          $ref: '#/definitions/v1.ManagementPermissionResV1'
-        type: array
-      phone:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name:
-        type: string
-      wechat_id:
-        type: string
-    type: object
-  v1.UserGroupListItemResV1:
-    properties:
-      is_disabled:
-        type: boolean
-      user_group_desc:
-        type: string
-      user_group_name:
-        type: string
-      user_name_list:
-        items:
-          type: string
-        type: array
-    type: object
-  v1.UserGroupTipListItem:
-    properties:
-      user_group_name:
-        type: string
-      user_names:
-        items:
-          type: string
-        type: array
-    type: object
-  v1.UserLoginReqV1:
-    properties:
-      password:
-        example: "123456"
-        type: string
-      username:
-        example: test
-        type: string
-    type: object
-  v1.UserLoginResV1:
-    properties:
-      token:
-        example: this is a jwt token string
-        type: string
-    type: object
-  v1.UserResV1:
-    properties:
-      email:
-        type: string
-      is_disabled:
-        type: boolean
-      login_type:
-        type: string
-      management_permission_list:
-        items:
-          $ref: '#/definitions/v1.ManagementPermissionResV1'
-        type: array
-      phone:
-        type: string
-      user_group_name_list:
-        items:
-          type: string
-        type: array
-      user_name:
-        type: string
-      wechat_id:
-        type: string
-    type: object
   v1.UserTipResV1:
     properties:
       user_name:
-        type: string
-    type: object
-  v1.WeChatConfigurationResV1:
-    properties:
-      agent_id:
-        type: integer
-      corp_id:
-        type: string
-      enable_wechat_notify:
-        type: boolean
-      proxy_ip:
-        type: string
-      safe_enabled:
-        type: boolean
-    type: object
-  v1.WebHookConfigV1:
-    properties:
-      enable:
-        type: boolean
-      max_retry_times:
-        type: integer
-      retry_interval_seconds:
-        type: integer
-      token:
-        type: string
-      url:
         type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
@@ -4050,10 +2657,6 @@ definitions:
         type: string
       desc:
         type: string
-      instance_name_list:
-        items:
-          type: string
-        type: array
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
@@ -4187,43 +2790,6 @@ definitions:
         items:
           type: string
         type: array
-    type: object
-  v2.CreateInstanceReqV2:
-    properties:
-      additional_params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
-        type: array
-      db_host:
-        example: 10.10.10.10
-        type: string
-      db_password:
-        example: "123456"
-        type: string
-      db_port:
-        example: "3306"
-        type: string
-      db_type:
-        example: mysql
-        type: string
-      db_user:
-        example: root
-        type: string
-      desc:
-        example: this is a test instance
-        type: string
-      instance_name:
-        example: test
-        type: string
-      maintenance_times:
-        items:
-          $ref: '#/definitions/v1.MaintenanceTimeReqV1'
-        type: array
-      rule_template_name:
-        type: string
-      sql_query_config:
-        $ref: '#/definitions/v1.SQLQueryConfigReqV1'
-        type: object
     type: object
   v2.CreateWorkflowReqV2:
     properties:
@@ -4372,21 +2938,6 @@ definitions:
       message:
         example: ok
         type: string
-    type: object
-  v2.GetInstancesResV2:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v2.InstanceResV2'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
     type: object
   v2.GetTaskAnalysisDataResV2:
     properties:
@@ -4766,101 +3317,6 @@ paths:
       summary: 获取当前 server 支持的审核类型
       tags:
       - configuration
-  /v1/configurations/feishu:
-    get:
-      description: get feishu configuration
-      operationId: getFeishuConfigurationV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetFeishuConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取飞书配置
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update feishu configuration
-      operationId: updateFeishuConfigurationV1
-      parameters:
-      - description: update feishu configuration req
-        in: body
-        name: param
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateFeishuConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加或更新飞书配置
-      tags:
-      - configuration
-  /v1/configurations/feishu/test:
-    post:
-      consumes:
-      - application/json
-      description: test feishu configuration
-      operationId: testFeishuConfigV1
-      parameters:
-      - description: test feishu configuration req
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.TestFeishuConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TestFeishuConfigResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 测试飞书配置
-      tags:
-      - configuration
-  /v1/configurations/ldap:
-    get:
-      description: get LDAP configuration
-      operationId: getLDAPConfigurationV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetLDAPConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取 LDAP 配置
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update LDAP configuration
-      operationId: updateLDAPConfigurationV1
-      parameters:
-      - description: update LDAP configuration req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.LDAPConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加 LDAP 配置
-      tags:
-      - configuration
   /v1/configurations/license:
     get:
       description: get sqle license
@@ -4932,54 +3388,6 @@ paths:
       summary: 获取生成 sqle license需要的的信息
       tags:
       - configuration
-  /v1/configurations/oauth2:
-    get:
-      description: get Oauth2 configuration
-      operationId: getOauth2ConfigurationV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOauth2ConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取 Oauth2 配置
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update Oauth2 configuration
-      operationId: updateOauth2ConfigurationV1
-      parameters:
-      - description: update Oauth2 configuration req
-        in: body
-        name: conf
-        required: true
-        schema:
-          $ref: '#/definitions/v1.Oauth2ConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 修改 Oauth2 配置
-      tags:
-      - configuration
-  /v1/configurations/oauth2/tips:
-    get:
-      description: get Oauth2 tips
-      operationId: getOauth2Tips
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOauth2TipsResV1'
-      summary: 获取 Oauth2 基本信息
-      tags:
-      - configuration
   /v1/configurations/personalise:
     patch:
       description: update personalise config
@@ -5023,79 +3431,6 @@ paths:
       summary: 上传Logo
       tags:
       - configuration
-  /v1/configurations/smtp:
-    get:
-      description: get SMTP configuration
-      operationId: getSMTPConfigurationV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSMTPConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取 SMTP 配置
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update SMTP configuration
-      operationId: updateSMTPConfigurationV1
-      parameters:
-      - description: update SMTP configuration req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSMTPConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加 SMTP 配置
-      tags:
-      - configuration
-  /v1/configurations/smtp/test:
-    post:
-      consumes:
-      - application/json
-      description: test SMTP configuration
-      operationId: testSMTPConfigurationV1
-      parameters:
-      - description: test SMTP configuration req
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.TestSMTPConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TestSMTPConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 测试 邮箱 配置
-      tags:
-      - configuration
-  /v1/configurations/sql_query:
-    get:
-      description: get sqle query configuration
-      operationId: getSQLQueryConfiguration
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSQLQueryConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取SQL查询配置信息
-      tags:
-      - configuration
   /v1/configurations/system_variables:
     get:
       description: get system variables
@@ -5130,113 +3465,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改系统变量
-      tags:
-      - configuration
-  /v1/configurations/webhook:
-    get:
-      description: get workflow webhook config
-      operationId: getGlobalWorkflowWebHookConfig
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetWorkflowWebHookConfigResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局工单 WebHook 配置
-      tags:
-      - configuration
-    patch:
-      description: update webhook config
-      operationId: updateGlobalWebHookConfig
-      parameters:
-      - description: update webhook config
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/v1.WebHookConfigV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新工单 WebHook 配置
-      tags:
-      - configuration
-  /v1/configurations/webhook/test:
-    post:
-      description: test workflow webhook config
-      operationId: testGlobalWorkflowWebHookConfig
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TestWorkflowWebHookConfigResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 测试全局工单 WebHook 配置
-      tags:
-      - configuration
-  /v1/configurations/wechat:
-    get:
-      description: get WeChat configuration
-      operationId: getWeChatConfigurationV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetWeChatConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取 企业微信 配置
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update WeChat configuration
-      operationId: updateWeChatConfigurationV1
-      parameters:
-      - description: update WeChat configuration req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateWeChatConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加 企业微信 配置
-      tags:
-      - configuration
-  /v1/configurations/wechat/test:
-    post:
-      consumes:
-      - application/json
-      description: test WeChat configuration
-      operationId: testWeChatConfigurationV1
-      parameters:
-      - description: test WeChat configuration req
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.TestWeChatConfigurationReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TestWeChatConfigurationResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 测试 企业微信 配置
       tags:
       - configuration
   /v1/custom_rules:
@@ -5403,20 +3631,6 @@ paths:
       summary: 获取dashboard项目提示列表
       tags:
       - dashboard
-  /v1/instance_additional_metas:
-    get:
-      description: get instance additional metas
-      operationId: getInstanceAdditionalMetas
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceAdditionalMetasResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例的额外属性列表
-      tags:
-      - instance
   /v1/instance_connection:
     post:
       consumes:
@@ -5441,77 +3655,6 @@ paths:
       summary: 实例连通性测试（实例提交前）
       tags:
       - instance
-  /v1/login:
-    post:
-      description: user login
-      operationId: loginV1
-      parameters:
-      - description: user login request
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UserLoginReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUserLoginResV1'
-      summary: 用户登录
-      tags:
-      - user
-  /v1/logout:
-    post:
-      description: user logout
-      operationId: logoutV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 用户登出
-      tags:
-      - user
-  /v1/management_permissions:
-    get:
-      description: get platform management permissions
-      operationId: GetManagementPermissionsV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetManagementPermissionsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取平台管理权限列表
-      tags:
-      - management_permission
-  /v1/oauth2/link:
-    get:
-      description: oauth2 link
-      operationId: Oauth2Link
-      summary: oauth2通过此链接跳转到第三方登录网址
-      tags:
-      - oauth2
-  /v1/oauth2/user/bind:
-    post:
-      description: bind Oauth2 user to sqle
-      operationId: bindOauth2User
-      parameters:
-      - description: bind oauth2 user req
-        in: body
-        name: conf
-        required: true
-        schema:
-          $ref: '#/definitions/v1.BindOauth2UserReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.BindOauth2UserResV1'
-      summary: 绑定 Oauth2 和 sqle用户
-      tags:
-      - oauth2
   /v1/operation_records:
     get:
       description: Get operation record list
@@ -5642,169 +3785,6 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
-  /v1/project_tips:
-    get:
-      description: get project tip list
-      operationId: getProjectTipsV1
-      parameters:
-      - description: functional module
-        enum:
-        - operation_record
-        in: query
-        name: functional_module
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetProjectTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取项目提示列表
-      tags:
-      - project
-  /v1/projects:
-    get:
-      description: get project list
-      operationId: getProjectListV1
-      parameters:
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - default: 50
-        description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetProjectResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取项目列表
-      tags:
-      - project
-    post:
-      consumes:
-      - application/json
-      description: create project
-      operationId: createProjectV1
-      parameters:
-      - description: create project request
-        in: body
-        name: project
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateProjectReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建项目
-      tags:
-      - project
-  /v1/projects/{project_name}/:
-    delete:
-      description: delete project
-      operationId: deleteProjectV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除项目
-      tags:
-      - project
-    get:
-      description: get project detail
-      operationId: getProjectDetailV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetProjectDetailResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取项目详情
-      tags:
-      - project
-    patch:
-      consumes:
-      - application/json
-      description: update project
-      operationId: updateProjectV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: create project request
-        in: body
-        name: project
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateProjectReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新项目
-      tags:
-      - project
-  /v1/projects/{project_name}/archive:
-    post:
-      consumes:
-      - application/json
-      description: archive project
-      operationId: archiveProjectV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 归档项目
-      tags:
-      - project
   /v1/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
@@ -6448,167 +4428,6 @@ paths:
       summary: 获取实例提示列表
       tags:
       - instance
-  /v1/projects/{project_name}/instances:
-    get:
-      description: get instance info list
-      operationId: getInstanceListV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter db host
-        in: query
-        name: filter_db_host
-        type: string
-      - description: filter db port
-        in: query
-        name: filter_db_port
-        type: string
-      - description: filter db user
-        in: query
-        name: filter_db_user
-        type: string
-      - description: filter rule template name
-        in: query
-        name: filter_rule_template_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstancesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例信息列表
-      tags:
-      - instance
-    post:
-      consumes:
-      - application/json
-      deprecated: true
-      description: create a instance
-      operationId: createInstanceV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateInstanceReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加实例
-      tags:
-      - instance
-  /v1/projects/{project_name}/instances/{instance_name}/:
-    delete:
-      description: delete instance db
-      operationId: deleteInstanceV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除实例
-      tags:
-      - instance
-    get:
-      description: get instance db
-      operationId: getInstanceV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例信息
-      tags:
-      - instance
-    patch:
-      description: update instance
-      operationId: updateInstanceV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance name
-        in: path
-        name: instance_name
-        required: true
-        type: string
-      - description: update instance request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateInstanceReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新实例
-      tags:
-      - instance
   /v1/projects/{project_name}/instances/{instance_name}/connection:
     get:
       description: test instance db connection
@@ -6775,326 +4594,6 @@ paths:
       summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
-  /v1/projects/{project_name}/member_groups:
-    get:
-      description: get member groups
-      operationId: getMemberGroupsV1
-      parameters:
-      - description: filter user group name
-        in: query
-        name: filter_user_group_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetMemberGroupsRespV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取成员组列表
-      tags:
-      - user_group
-    post:
-      consumes:
-      - application/json
-      description: add member group
-      operationId: addMemberGroupV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: add member group
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateMemberGroupReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加成员组
-      tags:
-      - user_group
-  /v1/projects/{project_name}/member_groups/{user_group_name}/:
-    delete:
-      description: delete member group
-      operationId: deleteMemberGroupV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user group name
-        in: path
-        name: user_group_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除成员组
-      tags:
-      - user_group
-    get:
-      description: get member group
-      operationId: getMemberGroupV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user group name
-        in: path
-        name: user_group_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetMemberGroupRespV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取成员组信息
-      tags:
-      - user_group
-    patch:
-      consumes:
-      - application/json
-      description: update member group
-      operationId: updateMemberGroupV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user group name
-        in: path
-        name: user_group_name
-        required: true
-        type: string
-      - description: update member_group
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateMemberGroupReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 修改成员组
-      tags:
-      - user_group
-  /v1/projects/{project_name}/member_tips:
-    get:
-      description: get member tip list
-      operationId: getMemberTipListV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetMemberTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取成员提示列表
-      tags:
-      - user
-  /v1/projects/{project_name}/members:
-    get:
-      description: get members
-      operationId: getMembersV1
-      parameters:
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetMembersRespV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取成员列表
-      tags:
-      - user
-    post:
-      consumes:
-      - application/json
-      description: add member
-      operationId: addMemberV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: add member
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateMemberReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加成员
-      tags:
-      - user
-  /v1/projects/{project_name}/members/{user_name}/:
-    delete:
-      description: delete member
-      operationId: deleteMemberV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除成员
-      tags:
-      - user
-    get:
-      description: get member
-      operationId: getMemberV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetMemberRespV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取成员信息
-      tags:
-      - user
-    patch:
-      consumes:
-      - application/json
-      description: update member
-      operationId: updateMemberV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: update member
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateMemberReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 修改成员
-      tags:
-      - user
   /v1/projects/{project_name}/rule_template_tips:
     get:
       description: get rule template tips in project
@@ -7572,30 +5071,6 @@ paths:
       summary: 创建Sql扫描任务并提交审核
       tags:
       - task
-  /v1/projects/{project_name}/unarchive:
-    post:
-      consumes:
-      - application/json
-      description: archive project
-      operationId: unarchiveProjectV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 取消归档项目
-      tags:
-      - project
   /v1/projects/{project_name}/workflow_template:
     get:
       description: get workflow template detail
@@ -8206,130 +5681,6 @@ paths:
       summary: 导出工单
       tags:
       - workflow
-  /v1/role_tips:
-    get:
-      description: get role tip list
-      operationId: getRoleTipListV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRoleTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取角色提示列表
-      tags:
-      - role
-  /v1/roles:
-    get:
-      consumes:
-      - application/json
-      description: get role list
-      operationId: getRoleListV1
-      parameters:
-      - description: filter role name
-        in: query
-        name: filter_role_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetRolesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取角色列表
-      tags:
-      - role
-    post:
-      consumes:
-      - application/json
-      description: create role
-      operationId: createRoleV1
-      parameters:
-      - description: create role
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateRoleReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建角色
-      tags:
-      - role
-  /v1/roles/{role_name}/:
-    delete:
-      consumes:
-      - application/json
-      description: delete role
-      operationId: deleteRoleV1
-      parameters:
-      - description: role name
-        in: path
-        name: role_name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除角色
-      tags:
-      - role
-    patch:
-      consumes:
-      - application/json
-      description: update role
-      operationId: updateRoleV1
-      parameters:
-      - description: role name
-        in: path
-        name: role_name
-        required: true
-        type: string
-      - description: update role request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateRoleReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新角色信息
-      tags:
-      - role
   /v1/rule_template_tips:
     get:
       description: get global rule template tips
@@ -8884,140 +6235,6 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/sync_instances:
-    get:
-      description: get sync instance task list
-      operationId: GetSyncInstanceTaskList
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSyncInstanceTaskListResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取同步实例任务列表
-      tags:
-      - sync_instance
-    post:
-      consumes:
-      - application/json
-      description: create sync instance task
-      operationId: createSyncInstanceTaskV1
-      parameters:
-      - description: create sync instance task request
-        in: body
-        name: sync_task
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateSyncInstanceTaskReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建同步实例任务
-      tags:
-      - sync_instance
-  /v1/sync_instances/{task_id}/:
-    delete:
-      description: delete sync instance task
-      operationId: deleteSyncInstanceTaskV1
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除同步实例任务
-      tags:
-      - sync_instance
-    get:
-      description: get sync task detail
-      operationId: GetSyncInstanceTask
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSyncInstanceTaskResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取同步任务详情
-      tags:
-      - sync_instance
-    patch:
-      description: update sync instance task
-      operationId: updateSyncInstanceTaskV1
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      - description: update sync instance request
-        in: body
-        name: sync_task
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSyncInstanceTaskReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新同步实例任务
-      tags:
-      - sync_instance
-  /v1/sync_instances/{task_id}/trigger:
-    post:
-      description: trigger sync instance
-      operationId: triggerSyncInstanceV1
-      parameters:
-      - description: sync task id
-        in: path
-        name: task_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TriggerSyncInstanceResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 触发同步实例
-      tags:
-      - sync_instance
-  /v1/sync_instances/source_tips:
-    get:
-      description: get sync task tips
-      operationId: GetSyncTaskSourceTips
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSyncTaskSourceTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取同步任务提示
-      tags:
-      - sync_instance
   /v1/task_groups/audit:
     post:
       consumes:
@@ -9263,188 +6480,6 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
-  /v1/user:
-    get:
-      description: get current user info
-      operationId: getCurrentUserV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUserDetailResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取当前用户信息
-      tags:
-      - user
-    patch:
-      consumes:
-      - application/json
-      description: update current user
-      operationId: updateCurrentUserV1
-      parameters:
-      - description: update user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateCurrentUserReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新个人信息
-      tags:
-      - user
-  /v1/user/password:
-    put:
-      consumes:
-      - application/json
-      description: update current user's password
-      operationId: UpdateCurrentUserPasswordV1
-      parameters:
-      - description: update user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateCurrentUserPasswordReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 用户修改密码
-      tags:
-      - user
-  /v1/user_group_tips:
-    get:
-      description: get user group tip list
-      operationId: getUserGroupTipListV1
-      parameters:
-      - description: project name
-        in: query
-        name: filter_project
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUserGroupTipsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取用户组提示列表
-      tags:
-      - user_group
-  /v1/user_groups:
-    get:
-      description: get user group info list
-      operationId: getUserGroupListV1
-      parameters:
-      - description: filter user group name
-        in: query
-        name: filter_user_group_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUserGroupsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取用户组列表
-      tags:
-      - user_group
-    post:
-      consumes:
-      - application/json
-      description: create user group
-      operationId: CreateUserGroupV1
-      parameters:
-      - description: create user group
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateUserGroupReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建用户组
-      tags:
-      - user_group
-  /v1/user_groups/{user_group_name}/:
-    delete:
-      description: delete user group
-      operationId: deleteUserGroupV1
-      parameters:
-      - description: user_group_name
-        in: path
-        name: user_group_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除用户组
-      tags:
-      - user_group
-    patch:
-      description: update user group
-      operationId: updateUserGroupV1
-      parameters:
-      - description: user_group_name
-        in: path
-        name: user_group_name
-        required: true
-        type: string
-      - description: update user group
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.PatchUserGroupReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新用户组
-      tags:
-      - user_group
   /v1/user_tips:
     get:
       description: get user tip list
@@ -9462,157 +6497,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取用户提示列表
-      tags:
-      - user
-  /v1/users:
-    get:
-      description: get user info list
-      operationId: getUserListV1
-      parameters:
-      - description: filter user name
-        in: query
-        name: filter_user_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUsersResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取用户信息列表
-      tags:
-      - user
-    post:
-      consumes:
-      - application/json
-      description: create user
-      operationId: createUserV1
-      parameters:
-      - description: create user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.CreateUserReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 创建用户
-      tags:
-      - user
-  /v1/users/{user_name}/:
-    delete:
-      description: delete user
-      operationId: deleteUserV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 删除用户
-      tags:
-      - user
-    get:
-      description: get user info
-      operationId: getUserV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetUserDetailResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取用户信息
-      tags:
-      - user
-    patch:
-      consumes:
-      - application/json
-      description: update user
-      operationId: updateUserV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: update user
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateUserReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新用户信息
-      tags:
-      - user
-  /v1/users/{user_name}/password:
-    patch:
-      consumes:
-      - application/json
-      description: admin modifies the passwords of other users
-      operationId: UpdateOtherUserPasswordV1
-      parameters:
-      - description: user name
-        in: path
-        name: user_name
-        required: true
-        type: string
-      - description: change user's password
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateOtherUserPasswordReqV1'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: admin修改其他用户密码
       tags:
       - user
   /v1/workflows:
@@ -9698,25 +6582,6 @@ paths:
       summary: 获取当前 server 支持的审核类型
       tags:
       - configuration
-  /v2/login:
-    post:
-      description: user login
-      operationId: loginV2
-      parameters:
-      - description: user login request
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UserLoginReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      summary: 用户登录
-      tags:
-      - user
   /v2/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
@@ -9838,87 +6703,6 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
-  /v2/projects/{project_name}/instances:
-    get:
-      description: get instance info list
-      operationId: getInstanceListV2
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: filter instance name
-        in: query
-        name: filter_instance_name
-        type: string
-      - description: filter db type
-        in: query
-        name: filter_db_type
-        type: string
-      - description: filter db host
-        in: query
-        name: filter_db_host
-        type: string
-      - description: filter db port
-        in: query
-        name: filter_db_port
-        type: string
-      - description: filter db user
-        in: query
-        name: filter_db_user
-        type: string
-      - description: filter rule template name
-        in: query
-        name: filter_rule_template_name
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetInstancesResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例信息列表
-      tags:
-      - instance
-    post:
-      consumes:
-      - application/json
-      description: create a instance
-      operationId: createInstanceV2
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: add instance
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v2.CreateInstanceReqV2'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 添加实例
-      tags:
-      - instance
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db

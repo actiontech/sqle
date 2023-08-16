@@ -66,7 +66,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					nextStep := workflow.NextStep()
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
+					user, err := getUserByUserId(d, userId, nil /* TODO workflow.CurrentStep().Assignees*/)
 					if err != nil {
 						entry.Errorf("get user by user id error: %v", err)
 						continue
@@ -106,7 +106,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
+					user, err := getUserByUserId(d, userId, nil /*TODO workflow.CurrentStep().Assignees*/)
 					if err != nil {
 						entry.Errorf("get user by user id error: %v", err)
 						continue

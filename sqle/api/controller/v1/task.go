@@ -10,9 +10,11 @@ import (
 	"strconv"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -70,7 +72,7 @@ const (
 	InputMyBatisXMLFileName = "input_mybatis_xml_file"
 )
 
-func getSQLFromFile(c echo.Context) (string, string, error) {
+func GetSQLFromFile(c echo.Context) (string, string, error) {
 	// Read it from sql file.
 	sql, exist, err := controller.ReadFileContent(c, InputSQLFileName)
 	if err != nil {
@@ -125,30 +127,27 @@ func CreateAndAuditTask(c echo.Context) error {
 	if req.Sql != "" {
 		sql, source = req.Sql, model.TaskSQLSourceFromFormData
 	} else {
-		sql, source, err = getSQLFromFile(c)
+		sql, source, err = GetSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
-
-	err = CheckIsProjectMember(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
 
-	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
+	instance, exist, err := s.GetInstanceByNameAndProjectID(req.InstanceName, projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -172,9 +171,9 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	task := &model.Task{
 		Schema:       req.InstanceSchema,
-		InstanceId:   instance.ID,
+		InstanceId:   uint64(instance.ID),
 		Instance:     instance,
-		CreateUserId: user.ID,
+		CreateUserId: uint64(user.ID),
 		ExecuteSQLs:  []*model.ExecuteSQL{},
 		SQLSource:    source,
 		DBType:       instance.DbType,
@@ -298,7 +297,7 @@ func GetTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
-	err = CheckCurrentUserCanViewTask(c, task)
+	err = CheckCurrentUserCanViewTaskDMS(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -547,7 +546,16 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 }
 
 func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
-	return checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	return checkCurrentUserCanAccessTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+}
+
+// TODO 使用DMS的权限校验
+func CheckCurrentUserCanViewTaskDMS(c echo.Context, task *model.Task) error {
+	_, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type SQLExplain struct {
@@ -623,26 +631,38 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	// 数据源个数最大为10
 	if len(req.Instances) > MaximumDataSourceNum {
 		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
 	}
 
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
+	instNames := make([]string, len(req.Instances))
+	for i, instance := range req.Instances {
+		instNames[i] = instance.InstanceName
+	}
 
-	err := CheckIsProjectMember(userName, projectName)
+	distinctInstNames := utils.RemoveDuplicate(instNames)
+
+	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	distinctInstNameList := getDistinctInstNameList(req.Instances)
+
+	instances, err := s.GetInstancesByNamesAndProjectId(distinctInstNames, projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
-	for _, instName := range distinctInstNameList {
+	for _, inst := range instances {
 		// https://github.com/actiontech/sqle/issues/1673
-		inst, exist, err := s.GetInstanceByNameAndProjectName(instName, projectName)
+		inst, exist, err := s.GetInstanceByNameAndProjectID(inst.Name, projectUid)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -650,7 +670,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 		}
 
-		can, err := checkCurrentUserCanAccessInstance(c, inst)
+		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, user.GetIDStr(), instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -662,20 +682,15 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		nameInstanceMap[instName] = inst
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		nameInstanceMap[inst.Name] = inst
 	}
 
 	tasks := make([]*model.Task, len(req.Instances))
 	for i, reqInstance := range req.Instances {
 		tasks[i] = &model.Task{
 			Schema:       reqInstance.InstanceSchema,
-			InstanceId:   nameInstanceMap[reqInstance.InstanceName].ID,
-			CreateUserId: user.ID,
+			InstanceId:   uint64(nameInstanceMap[reqInstance.InstanceName].ID),
+			CreateUserId: uint64(user.ID),
 			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
 		}
 		tasks[i].CreatedAt = time.Now()
@@ -748,7 +763,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 	if req.Sql != "" {
 		sql, source = req.Sql, model.TaskSQLSourceFromFormData
 	} else {
-		sql, source, err = getSQLFromFile(c)
+		sql, source, err = GetSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -762,43 +777,47 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	tasks := taskGroup.Tasks
 
-	instances := make([]*model.Instance, 0)
-	for _, task := range tasks {
-		instances = append(instances, task.Instance)
-	}
+	{
+		instances, err := s.GetInstancesByGroupId(req.TaskGroupId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
+		// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
+		projectId := instances[0].ProjectId
+		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !can {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+		}
 
-	l := log.NewEntry()
+		l := log.NewEntry()
 
-	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
-	dbType := instances[0].DbType
-	plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	defer plugin.Close(context.TODO())
+		// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
+		dbType := instances[0].DbType
+		plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		defer plugin.Close(context.TODO())
 
-	nodes, err := plugin.Parse(context.TODO(), sql)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+		nodes, err := plugin.Parse(context.TODO(), sql)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 
-	for _, task := range tasks {
-		task.SQLSource = source
-		for j, node := range nodes {
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:  uint(j + 1),
-					Content: node.Text,
-				},
-			})
+		for _, task := range tasks {
+			task.SQLSource = source
+			for j, node := range nodes {
+				task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+					BaseSQL: model.BaseSQL{
+						Number:  uint(j + 1),
+						Content: node.Text,
+					},
+				})
+			}
 		}
 	}
 

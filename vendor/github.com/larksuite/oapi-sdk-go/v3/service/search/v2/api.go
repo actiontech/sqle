@@ -22,27 +22,63 @@ import (
 
 func NewService(config *larkcore.Config) *SearchService {
 	s := &SearchService{config: config}
+	s.App = &app{service: s}
 	s.DataSource = &dataSource{service: s}
 	s.DataSourceItem = &dataSourceItem{service: s}
+	s.Message = &message{service: s}
 	s.Schema = &schema{service: s}
 	return s
 }
 
 type SearchService struct {
 	config         *larkcore.Config
+	App            *app            // app
 	DataSource     *dataSource     // 数据源
 	DataSourceItem *dataSourceItem // 数据项
+	Message        *message        // message
 	Schema         *schema         // 数据范式
 }
 
+type app struct {
+	service *SearchService
+}
 type dataSource struct {
 	service *SearchService
 }
 type dataSourceItem struct {
 	service *SearchService
 }
+type message struct {
+	service *SearchService
+}
 type schema struct {
 	service *SearchService
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=search&resource=app&version=v2
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/searchv2/create_app.go
+func (a *app) Create(ctx context.Context, req *CreateAppReq, options ...larkcore.RequestOptionFunc) (*CreateAppResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/search/v2/app"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateAppResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // 创建数据源
@@ -255,6 +291,32 @@ func (d *dataSourceItem) Get(ctx context.Context, req *GetDataSourceItemReq, opt
 	// 反序列响应结果
 	resp := &GetDataSourceItemResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, d.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=search&resource=message&version=v2
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/searchv2/create_message.go
+func (m *message) Create(ctx context.Context, req *CreateMessageReq, options ...larkcore.RequestOptionFunc) (*CreateMessageResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/search/v2/message"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, m.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateMessageResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, m.service.config)
 	if err != nil {
 		return nil, err
 	}

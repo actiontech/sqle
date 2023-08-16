@@ -1,14 +1,16 @@
 package v2
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
@@ -63,9 +65,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
-	err := v1.CheckIsProjectMember(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -75,22 +75,11 @@ func GetAuditPlans(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 
-	currentUser, err := controller.GetCurrentUser(c)
+	userId := controller.GetUserID(c)
+
+	up, err := dms.NewUserPermission(userId, projectUid)
 	if err != nil {
 		return err
-	}
-	instances, err := s.GetUserCanOpInstancesFromProject(currentUser, projectName, []uint{model.OP_AUDIT_PLAN_VIEW_OTHERS})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	names := []string{}
-	for _, instance := range instances {
-		names = append(names, instance.Name)
-	}
-
-	isManager, err := s.IsProjectManager(currentUser.Name, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	data := map[string]interface{}{
@@ -98,21 +87,22 @@ func GetAuditPlans(c echo.Context) error {
 		"fuzzy_search_audit_plan_name":    req.FuzzySearchAuditPlanName,
 		"filter_audit_plan_type":          req.FilterAuditPlanType,
 		"filter_audit_plan_instance_name": req.FilterAuditPlanInstanceName,
-		"current_user_name":               currentUser.Name,
-		"current_user_is_admin":           model.DefaultAdminUser == currentUser.Name || isManager,
-		"filter_project_name":             projectName,
+		"current_user_id":                 userId,
+		"current_user_is_admin":           up.IsAdmin(),
+		"filter_project_id":               projectUid,
 		"limit":                           req.PageSize,
 		"offset":                          offset,
 	}
-	if len(names) > 0 {
-		data["accessible_instances_name"] = fmt.Sprintf("'%s'", strings.Join(names, "', '"))
+	if !up.IsAdmin() {
+		data["accessible_instances_id"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan), ",")
 	}
+
 	auditPlans, count, err := s.GetAuditPlansByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	templateNamesInProject, err := s.GetRuleTemplateNamesByProjectName(projectName)
+	templateNamesInProject, err := s.GetRuleTemplateNamesByProjectId(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -187,10 +177,13 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanAccess(c, projectName, apName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanAccess(c, projectUid, apName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

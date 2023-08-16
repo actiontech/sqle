@@ -19,7 +19,7 @@ const InstanceSourceSQLE string = "SQLE"
 // - ProjectMemberRole, ProjectMemberGroupRole
 type Instance struct {
 	Model
-	ProjectId uint `gorm:"index; not null"`
+	ProjectId string `gorm:"index; not null"`
 	// has created composite index: [id, name] by gorm#AddIndex
 	Name               string         `json:"name" gorm:"not null;index" example:""`
 	DbType             string         `json:"db_type" gorm:"column:db_type; not null" example:"mysql"`
@@ -97,6 +97,7 @@ func (i *Instance) Fingerprint() string {
 `, i.ID, i.Host, i.Port, i.User, i.SecretPassword, i.AdditionalParams)
 }
 
+// dms-todo: 从 dms 获取实例信息
 func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Preload("RuleTemplates").Where("id = ?", id).First(instance).Error
@@ -106,36 +107,45 @@ func (s *Storage) GetInstanceById(id string) (*Instance, bool, error) {
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesFromActiveProjectByIds(ids []uint) ([]*Instance, error) {
-	instances := []*Instance{}
-	err := s.db.Joins("LEFT JOIN projects ON projects.id = instances.project_id").
-		Where("instances.id IN (?)", ids).
-		Where("projects.status = ?", ProjectStatusActive).
-		Find(&instances).Error
-	return instances, errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) GetInstancesFromActiveProjectByIds(ids []uint) ([]*Instance, error) {
+// 	instances := []*Instance{}
+// 	err := s.db.Joins("LEFT JOIN projects ON projects.id = instances.project_id").
+// 		Where("instances.id IN (?)", ids).
+// 		Where("projects.status = ?", ProjectStatusActive).
+// 		Find(&instances).Error
+// 	return instances, errors.New(errors.ConnectStorageError, err)
+// }
 
 func (s *Storage) GetInstancesByIds(ids []uint) (instances []*Instance, err error) {
 	distinctIds := utils.RemoveDuplicateUint(ids)
 	return instances, s.db.Model(&Instance{}).Where("id in (?)", distinctIds).Scan(&instances).Error
 }
 
-func (s *Storage) GetAllInstance() ([]*Instance, error) {
-	i := []*Instance{}
-	err := s.db.Preload("RuleTemplates").Find(&i).Error
-	return i, errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) GetAllInstance() ([]*Instance, error) {
+// 	i := []*Instance{}
+// 	err := s.db.Preload("RuleTemplates").Find(&i).Error
+// 	return i, errors.New(errors.ConnectStorageError, err)
+// }
 
-func (s *Storage) GetInstanceByNameAndProjectName(instName, projectName string) (*Instance, bool, error) {
-	instance := &Instance{}
-	err := s.db.Joins("JOIN projects on projects.id = instances.project_id").Where("projects.name = ?", projectName).Where("instances.name = ?", instName).First(instance).Error
-	if err == gorm.ErrRecordNotFound {
-		return instance, false, nil
-	}
-	return instance, true, errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) GetInstanceByNameAndProjectName(instName, projectName string) (*Instance, bool, error) {
+// 	instance := &Instance{}
+// 	err := s.db.Joins("JOIN projects on projects.id = instances.project_id").Where("projects.name = ?", projectName).Where("instances.name = ?", instName).First(instance).Error
+// 	if err == gorm.ErrRecordNotFound {
+// 		return instance, false, nil
+// 	}
+// 	return instance, true, errors.New(errors.ConnectStorageError, err)
+// }
 
-func (s *Storage) GetInstanceByNameAndProjectID(instName string, projectID uint) (*Instance, bool, error) {
+// func (s *Storage) GetInstances(instIds []string) ([]*Instance, bool, error) {
+// 	instances := []*Instance{}
+// 	err := s.db.Where("instances.id in (?)", instIds).Find(&instances).Error
+// 	if err == gorm.ErrRecordNotFound {
+// 		return instances, false, nil
+// 	}
+// 	return instances, true, errors.New(errors.ConnectStorageError, err)
+// }
+
+func (s *Storage) GetInstanceByNameAndProjectID(instName string, projectID string) (*Instance, bool, error) {
 	instance := &Instance{}
 	err := s.db.Where("instances.project_id = ?", projectID).Where("instances.name = ?", instName).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
@@ -152,26 +162,31 @@ func (s *Storage) GetInstancesBySyncTaskId(projectID, syncTaskID uint) ([]*Insta
 	return instances, nil
 }
 
-func (s *Storage) DeleteInstance(instance *Instance) error {
-	err := s.DeleteRoleByInstanceID(instance.ID)
-	if err != nil {
-		return errors.ConnectStorageErrWrapper(err)
-	}
-	err = s.Delete(instance)
-	if err != nil {
-		return errors.ConnectStorageErrWrapper(err)
-	}
-	return nil
-}
+// func (s *Storage) DeleteInstance(instance *Instance) error {
+// 	err := s.DeleteRoleByInstanceID(instance.ID)
+// 	if err != nil {
+// 		return errors.ConnectStorageErrWrapper(err)
+// 	}
+// 	err = s.Delete(instance)
+// 	if err != nil {
+// 		return errors.ConnectStorageErrWrapper(err)
+// 	}
+// 	return nil
+// }
 
-func (s *Storage) GetInstanceDetailByNameAndProjectName(instName string, projectName string) (*Instance, bool, error) {
+func (s *Storage) GetInstanceDetailByNameAndProjectId(instName string, projectId string) (*Instance, bool, error) {
 	instance := &Instance{}
-	err := s.db.Preload("WorkflowTemplate").Preload("RuleTemplates").
-		Joins("JOIN projects on projects.id = instances.project_id").
-		Where("instances.name = ?", instName).Where("projects.name = ?", projectName).First(instance).Error
+	err := s.db.
+		Where("instances.name = ?", instName).Where("instances.project_id = ?", projectId).First(instance).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
+	ruleTemplates := make([]RuleTemplate,0)
+	err = s.db.Raw("select rule_templates.* from rule_templates left join instance_rule_template on rule_templates.id = rule_templates.id where instance_rule_template.instance_id = ?;", instance.ID).Scan(&ruleTemplates).Error
+	if err == gorm.ErrRecordNotFound {
+		return instance, false, nil
+	}
+	instance.RuleTemplates = ruleTemplates
 	return instance, true, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -181,32 +196,29 @@ func (s *Storage) GetInstancesByType(dbType string) ([]*Instance, error) {
 	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByNamesAndProjectName(instNames []string, projectName string) ([]*Instance, error) {
+func (s *Storage) GetInstancesByNamesAndProjectId(instNames []string, projectId string) ([]*Instance, error) {
 	instances := []*Instance{}
-	err := s.db.Joins("JOIN projects on projects.id = instances.project_id").
-		Where("projects.name = ?", projectName).
-		Where("instances.name in (?)", instNames).
-		Find(&instances).Error
+	err := s.db.Where("project_id = ?", projectId).Where("instances.name in (?)", instNames).Find(&instances).Error
 	return instances, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) error {
-	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) UpdateInstanceById(InstanceId uint, attrs ...interface{}) error {
+// 	err := s.db.Table("instances").Where("id = ?", InstanceId).Update(attrs...).Error
+// 	return errors.New(errors.ConnectStorageError, err)
+// }
 
 func (s *Storage) UpdateInstanceRuleTemplates(instance *Instance, ts ...*RuleTemplate) error {
 	err := s.db.Model(instance).Association("RuleTemplates").Replace(ts).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
-	err := s.db.Model(instance).Association("Roles").Replace(rs).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) UpdateInstanceRoles(instance *Instance, rs ...*Role) error {
+// 	err := s.db.Model(instance).Association("Roles").Replace(rs).Error
+// 	return errors.New(errors.ConnectStorageError, err)
+// }
 
-func (s *Storage) GetAndCheckInstanceExist(instanceNames []string, projectName string) (instances []*Instance, err error) {
-	instances, err = s.GetInstancesByNamesAndProjectName(instanceNames, projectName)
+func (s *Storage) GetAndCheckInstanceExist(instanceNames []string, projectId string) (instances []*Instance, err error) {
+	instances, err = s.GetInstancesByNamesAndProjectId(instanceNames, projectId)
 	if err != nil {
 		return instances, err
 	}
@@ -249,8 +261,8 @@ func getDeduplicatedInstanceIds(instances []*Instance) []uint {
 	return instanceIds
 }
 
-func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectName string) (instances []*Instance, err error) {
-	query := s.db.Model(&Instance{}).Select("instances.name, instances.db_type, instances.db_host, instances.db_port, instances.workflow_template_id").Group("instances.id")
+func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, projectId string) (instances []*Instance, err error) {
+	query := s.db.Model(&Instance{}).Select("instances.id,instances.name, instances.db_type, instances.db_host, instances.db_port, instances.workflow_template_id")
 
 	if dbType != "" {
 		query = query.Where("db_type = ?", dbType)
@@ -260,8 +272,8 @@ func (s *Storage) GetInstanceTipsByTypeAndTempID(dbType string, tempID uint32, p
 		query = query.Where("workflow_template_id = ?", tempID)
 	}
 
-	if projectName != "" {
-		query = query.Joins("LEFT JOIN projects ON projects.id = instances.project_id").Where("projects.name = ?", projectName)
+	if projectId != "" {
+		query = query.Where("project_id = ?", projectId)
 	}
 
 	return instances, query.Scan(&instances).Error
@@ -282,21 +294,21 @@ func (s *Storage) GetAllInstanceCount() ([]*TypeCount, error) {
 	return counts, s.db.Table("instances").Select("db_type, count(*) as count").Where("deleted_at is NULL").Group("db_type").Find(&counts).Error
 }
 
-func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName string) (
-	instances []*Instance, err error) {
+// func (s *Storage) GetInstanceTipsByUser(user *User, dbType string, projectName string) (
+// 	instances []*Instance, err error) {
 
-	isMember, err := s.IsProjectMember(user.Name, projectName)
-	if err != nil {
-		return nil, err
-	}
-	if IsDefaultAdminUser(user.Name) || isMember {
-		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectName)
-	}
+// 	isMember, err := s.IsProjectMember(user.Name, projectName)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if IsDefaultAdminUser(user.Name) || isMember {
+// 		return s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectName)
+// 	}
 
-	return []*Instance{}, nil
-}
+// 	return []*Instance{}, nil
+// }
 
-func getInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
+func GetInstanceIDsFromInstances(instances []*Instance) (ids []uint) {
 	ids = make([]uint, len(instances))
 	for i := range instances {
 		ids[i] = instances[i].ID
@@ -374,10 +386,10 @@ func (s *Storage) CheckInstancesExist(projectName string, instNames []string) (b
 	return len(instNames) == count, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName string) (map[string] /*inst name*/ uint /*inst id*/, error) {
+func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectId string) (map[string] /*inst name*/ uint /*inst id*/, error) {
 	instNames = utils.RemoveDuplicate(instNames)
 
-	insts, err := s.GetInstancesByNamesAndProjectName(instNames, projectName)
+	insts, err := s.GetInstancesByNamesAndProjectId(instNames, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -395,42 +407,42 @@ func (s *Storage) getInstanceBindCacheByNames(instNames []string, projectName st
 	return instCache, nil
 }
 
-type SyncTaskInstance struct {
-	Instances            []*Instance
-	RuleTemplate         *RuleTemplate
-	NeedDeletedInstances []*Instance
-}
+// type SyncTaskInstance struct {
+// 	Instances            []*Instance
+// 	RuleTemplate         *RuleTemplate
+// 	NeedDeletedInstances []*Instance
+// }
 
-func (s *Storage) BatchUpdateSyncTask(instTemplate *SyncTaskInstance) error {
-	err := s.Tx(func(tx *gorm.DB) error {
-		for _, instance := range instTemplate.Instances {
-			if err := tx.Save(instance).Error; err != nil {
-				return err
-			}
+// func (s *Storage) BatchUpdateSyncTask(instTemplate *SyncTaskInstance) error {
+// 	err := s.Tx(func(tx *gorm.DB) error {
+// 		for _, instance := range instTemplate.Instances {
+// 			if err := tx.Save(instance).Error; err != nil {
+// 				return err
+// 			}
 
-			if err := s.UpdateInstanceRuleTemplates(instance, instTemplate.RuleTemplate); err != nil {
-				return err
-			}
-		}
+// 			if err := s.UpdateInstanceRuleTemplates(instance, instTemplate.RuleTemplate); err != nil {
+// 				return err
+// 			}
+// 		}
 
-		for _, instance := range instTemplate.NeedDeletedInstances {
-			if err := s.DeleteInstance(instance); err != nil {
-				return err
-			}
-		}
+// 		for _, instance := range instTemplate.NeedDeletedInstances {
+// 			if err := s.DeleteInstance(instance); err != nil {
+// 				return err
+// 			}
+// 		}
 
-		return nil
-	})
+// 		return nil
+// 	})
 
-	if err != nil {
-		return errors.ConnectStorageErrWrapper(err)
-	}
+// 	if err != nil {
+// 		return errors.ConnectStorageErrWrapper(err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (s *Storage) GetInstancesNamesByRuleTemplateAndProject(
-	ruleTemplateName string, projectID uint) (instanceNames []string, err error) {
+	ruleTemplateName string, projectID string) (instanceNames []string, err error) {
 
 	var instances []*Instance
 
