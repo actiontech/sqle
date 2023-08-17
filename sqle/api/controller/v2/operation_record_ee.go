@@ -5,6 +5,7 @@ package v2
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -21,13 +23,13 @@ import (
 func init() {
 	sqleMiddleware.ApiInterfaceInfoList = append(sqleMiddleware.ApiInterfaceInfoList, []sqleMiddleware.ApiInterfaceInfo{
 		// 数据源
-		{
-			RouterPath:               "/v2/projects/:project_name/instances",
-			Method:                   http.MethodPost,
-			OperationType:            model.OperationRecordTypeInstance,
-			OperationAction:          model.OperationRecordActionCreateInstance,
-			GetProjectAndContentFunc: getProjectAndContentFromCreatingInstance,
-		},
+		// {
+		// 	RouterPath:               "/v2/projects/:project_name/instances",
+		// 	Method:                   http.MethodPost,
+		// 	OperationType:            model.OperationRecordTypeInstance,
+		// 	OperationAction:          model.OperationRecordActionCreateInstance,
+		// 	GetProjectAndContentFunc: getProjectAndContentFromCreatingInstance,
+		// },
 		{
 			RouterPath:               "/v2/projects/:project_name/workflows",
 			Method:                   http.MethodPost,
@@ -89,9 +91,13 @@ func init() {
 
 func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}
@@ -121,21 +127,26 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string,
 	}
 }
 
-func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
-	req := new(CreateInstanceReqV2)
-	err := marshalRequestBody(c, req)
-	if err != nil {
-		return "", "", err
-	}
-	projectName := c.Param("project_name")
-	return projectName, fmt.Sprintf("添加数据源，数据源名称：%v", req.Name), nil
-}
+// func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
+// 	req := new(CreateInstanceReqV2)
+// 	err := marshalRequestBody(c, req)
+// 	if err != nil {
+// 		return "", "", err
+// 	}
+// 	projectName := c.Param("project_name")
+// 	return projectName, fmt.Sprintf("添加数据源，数据源名称：%v", req.Name), nil
+// }
 
 func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
+
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}
@@ -147,9 +158,14 @@ func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, str
 
 func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
+
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}
@@ -185,9 +201,13 @@ func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, str
 
 func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}
@@ -199,9 +219,13 @@ func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, string, 
 
 func getProjectAndContentFromApprovingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}
@@ -213,9 +237,13 @@ func getProjectAndContentFromApprovingWorkflow(c echo.Context) (string, string, 
 
 func getProjectAndContentFromRejectingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
 	id := c.Param("workflow_id")
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectNameAndWorkflowId(projectName, id)
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
 		return "", "", fmt.Errorf("get workflow failed: %v", err)
 	}

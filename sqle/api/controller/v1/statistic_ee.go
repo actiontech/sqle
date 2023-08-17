@@ -187,68 +187,70 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 		return err
 	}
 
-	s := model.GetStorage()
-	users, err := s.GetAllUserTip()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// dms-todo: 使用group by 按用户ID分组查询.接口暂时不需要
+	// s := model.GetStorage()
 
-	var percents []CreatorRejectedPercent
-	for _, user := range users {
-		rejected, err := s.GetWorkflowCountByReq(map[string]interface{}{
-			"filter_create_user_name": user.Name,
-			"filter_status":           model.WorkflowStatusReject,
-		})
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	// users, err := s.GetAllUserTip()
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-		if rejected == 0 {
-			continue
-		}
+	// var percents []CreatorRejectedPercent
+	// for _, user := range users {
+	// 	rejected, err := s.GetWorkflowCountByReq(map[string]interface{}{
+	// 		"filter_create_user_name": user.Name,
+	// 		"filter_status":           model.WorkflowStatusReject,
+	// 	})
+	// 	if err != nil {
+	// 		return controller.JSONBaseErrorReq(c, err)
+	// 	}
 
-		total, err := s.GetWorkflowCountByReq(map[string]interface{}{
-			"filter_create_user_name": user.Name,
-		})
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	// 	if rejected == 0 {
+	// 		continue
+	// 	}
 
-		percent := float64(rejected) / float64(total) * 100
-		percents = append(percents, CreatorRejectedPercent{
-			Creator:          user.Name,
-			WorkflowTotalNum: uint(total),
-			RejectedPercent:  percent,
-		})
-	}
+	// 	total, err := s.GetWorkflowCountByReq(map[string]interface{}{
+	// 		"filter_create_user_name": user.Name,
+	// 	})
+	// 	if err != nil {
+	// 		return controller.JSONBaseErrorReq(c, err)
+	// 	}
 
-	if percents == nil {
-		return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data:    nil,
-		})
-	}
+	// 	percent := float64(rejected) / float64(total) * 100
+	// 	percents = append(percents, CreatorRejectedPercent{
+	// 		Creator:          user.Name,
+	// 		WorkflowTotalNum: uint(total),
+	// 		RejectedPercent:  percent,
+	// 	})
+	// }
 
-	sort.Sort(CreatorRejectedPercents(percents))
+	// if percents == nil {
+	// 	return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
+	// 		BaseRes: controller.NewBaseReq(nil),
+	// 		Data:    nil,
+	// 	})
+	// }
 
-	actualPercentsCount := uint(len(percents))
-	resItemCount := req.Limit
-	if req.Limit > actualPercentsCount {
-		resItemCount = actualPercentsCount
-	}
+	// sort.Sort(CreatorRejectedPercents(percents))
 
-	percentsRes := make([]*WorkflowRejectedPercentGroupByCreator, resItemCount)
-	for i := 0; i < int(resItemCount); i++ {
-		percentsRes[i] = &WorkflowRejectedPercentGroupByCreator{
-			Creator:          percents[i].Creator,
-			WorkflowTotalNum: percents[i].WorkflowTotalNum,
-			RejectedPercent:  percents[i].RejectedPercent,
-		}
-	}
+	// actualPercentsCount := uint(len(percents))
+	// resItemCount := req.Limit
+	// if req.Limit > actualPercentsCount {
+	// 	resItemCount = actualPercentsCount
+	// }
+
+	// percentsRes := make([]*WorkflowRejectedPercentGroupByCreator, resItemCount)
+	// for i := 0; i < int(resItemCount); i++ {
+	// 	percentsRes[i] = &WorkflowRejectedPercentGroupByCreator{
+	// 		Creator:          percents[i].Creator,
+	// 		WorkflowTotalNum: percents[i].WorkflowTotalNum,
+	// 		RejectedPercent:  percents[i].RejectedPercent,
+	// 	}
+	// }
 
 	return c.JSON(http.StatusOK, &GetWorkflowRejectedPercentGroupByCreatorResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    percentsRes,
+		Data:    []*WorkflowRejectedPercentGroupByCreator{},
 	})
 }
 
@@ -369,13 +371,8 @@ func (d *dbErr) getWorkFlowStatusCount(status string) (count int) {
 }
 
 func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	s := model.GetStorage()
-	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
 	}

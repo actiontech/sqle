@@ -5,6 +5,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"mime"
@@ -12,7 +13,9 @@ import (
 	"strings"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -24,23 +27,18 @@ func exportWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectName := c.Param("project_name")
-
-	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
 
+	s := model.GetStorage()
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -54,12 +52,16 @@ func exportWorkflowV1(c echo.Context) error {
 		"filter_status":                          req.FilterStatus,
 		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"filter_project_name":                    project.Name,
+		"filter_project_id":                      projectUid,
 		"current_user_id":                        user.ID,
-		"check_user_can_access":                  CheckIsProjectManager(user.Name, project.Name) != nil,
+		"check_user_can_access":                  !up.IsAdmin(),
 	}
 
-	idList, err := s.GetExportWorkflowIDListByReq(data, user)
+	if !up.IsAdmin() {
+		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersWorkflow), ",")
+	}
+
+	idList, err := s.GetExportWorkflowIDListByReq(data, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -107,7 +109,6 @@ func exportWorkflowV1(c echo.Context) error {
 			log.NewEntry().Errorf("workflow not exist, id: %s", id)
 			continue
 		}
-
 		var exportWorkflowRecord []string
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
 			exportWorkflowRecord = []string{
@@ -116,9 +117,9 @@ func exportWorkflowV1(c echo.Context) error {
 				workflow.Desc,
 				instanceRecord.Instance.Name,
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
-				workflow.CreateUser.Name,
+				dms.GetUserNameWithDelTag(workflow.CreateUserId),
 				model.WorkflowStatus[workflow.Record.Status],
-				instanceRecord.ExecuteUserName(),
+				dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 				instanceRecord.Task.TaskExecEndAt(),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
 			}
@@ -158,7 +159,7 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	auditAndExecuteList = append(auditAndExecuteList, getAuditList(workflow)...)
 	// 上线节点
 	auditAndExecuteList = append(auditAndExecuteList,
-		instanceRecord.ExecuteUserName(),
+		dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
 		executeStateMap[instanceRecord.Task.Status],
@@ -181,7 +182,7 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
 		stepIndex := i * stepSize
-		auditNodeList[stepIndex] = step.OperationUserName()
+		auditNodeList[stepIndex] = dms.GetUserNameWithDelTag(step.OperationUserId)
 		auditNodeList[stepIndex+1] = step.OperationTime()
 		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
 	}

@@ -9,14 +9,15 @@ import (
 	"net/http"
 	"strconv"
 
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +28,10 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
 	number := c.Param("number")
 	apName := c.Param("audit_plan_name")
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	reportIdInt, err := strconv.Atoi(reportId)
 	if err != nil {
@@ -39,7 +43,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return errors.NewDataInvalidErr("parse number failed: %v", err)
 	}
 
-	auditPlanReport, auditPlanReportSQLV2, instance, err := GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, numberInt)
+	auditPlanReport, auditPlanReportSQLV2, instance, err := GetAuditPlantReportAndInstance(c, projectUid, apName, reportIdInt, numberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -187,15 +191,11 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 	return analysisDataResItemV1
 }
 
-func GetAuditPlantReportAndInstance(c echo.Context, projectName, auditPlanName string, reportID, sqlNumber int) (
+func GetAuditPlantReportAndInstance(c echo.Context, projectId, auditPlanName string, reportID, sqlNumber int) (
 	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
 	err error) {
 
-	if err := CheckIsProjectMember(controller.GetUserName(c), projectName); err != nil {
-		return nil, nil, nil, err
-	}
-
-	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectName, auditPlanName, model.OP_AUDIT_PLAN_VIEW_OTHERS)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -219,7 +219,7 @@ func GetAuditPlantReportAndInstance(c echo.Context, projectName, auditPlanName s
 	if !exist {
 		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report sql v2 not exist")
 	}
-	instance, exist, err = s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, auditPlanReport.AuditPlan.ProjectId)
+	instance, exist, err = s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, projectId)
 	if err != nil {
 		return nil, nil, nil, err
 	}

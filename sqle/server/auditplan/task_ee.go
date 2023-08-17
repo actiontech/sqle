@@ -54,7 +54,7 @@ func (at *OBMySQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -135,7 +135,7 @@ func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 		if err != nil {
 			return nil, err
 		}
@@ -407,7 +407,7 @@ func (at *SlowLogTask) collectorDo() {
 		return
 	}
 
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		return
 	}
@@ -654,7 +654,7 @@ func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{DBType: at.ap.DBType}
 
 	if at.ap.InstanceName != "" {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 		if err != nil {
 			return nil, err
 		}
@@ -729,7 +729,7 @@ func (at *DB2TopSQLTask) collectorDo() {
 	}
 
 	inst, _, err := at.persist.
-		GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -896,7 +896,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
 	if err != nil {
 		return
 	}

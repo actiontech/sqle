@@ -49,7 +49,12 @@ func OperationLogRecord() echo.MiddlewareFunc {
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range ApiInterfaceInfoList {
 				if c.Request().Method == interfaceInfo.Method && interfaceInfo.RouterPath == path {
-					userName := controller.GetUserName(c)
+					user, err := controller.GetCurrentUser(c)
+					if err != nil {
+						newLog.Errorf("get current error: %s", err)
+						return nil
+					}
+					userName := user.Name
 
 					operationRecord := &model.OperationRecord{
 						OperationTime:     time.Now(),

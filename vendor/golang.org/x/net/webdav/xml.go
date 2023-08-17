@@ -113,7 +113,7 @@ func escape(s string) string {
 	return s
 }
 
-// next returns the next token, if any, in the XML stream of d.
+// Next returns the next token, if any, in the XML stream of d.
 // RFC 4918 requires to ignore comments, processing instructions
 // and directives.
 // http://www.webdav.org/specs/rfc4918.html#property_values
