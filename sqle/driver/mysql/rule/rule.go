@@ -1132,12 +1132,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckWhereExistImplicitConversion,
-			Desc:       "条件字段不建议出现数值和字符的隐式转换",
-			Annotation: "隐式转化会导致查询有无法命中索引的风险，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
+			Desc:       "禁止WHERE条件中使用与过滤字段不一致的数据类型",
+			Annotation: "WHERE条件中使用与过滤字段不一致的数据类型会引发隐式数据类型转换，导致查询有无法命中索引的风险，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message: "条件字段不建议出现数值和字符的隐式转换",
+		Message: "禁止WHERE条件中使用与过滤字段不一致的数据类型",
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
