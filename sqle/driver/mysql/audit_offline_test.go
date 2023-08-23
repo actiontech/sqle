@@ -981,7 +981,7 @@ select id from exist_db.exist_tb_1 where id =1 limit 1001;
 select id from exist_db.exist_tb_1 where id =1 limit 2, 1001;
 `,
 		newTestResult().addResult(rulepkg.DMLCheckSelectLimit, 1000).
-			add(driverV2.RuleLevelNotice, "", "使用LIMIT分页时,避免使用LIMIT M,N"),
+			add(driverV2.RuleLevelNotice, "", "使用分页查询时，避免使用偏移量"),
 	)
 
 	runDefaultRulesInspectCase(t, "failed nil", DefaultMysqlInspectOffline(),
