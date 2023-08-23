@@ -1,12 +1,17 @@
 package sqled
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api"
+	"github.com/actiontech/sqle/sqle/api/controller"
+
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -67,6 +72,11 @@ func Run(config *config.Config) error {
 	}
 	model.InitStorage(s)
 
+	err = api.RegisterAsDMSTarget(config.Server.SqleCnf)
+	if err != nil {
+		return fmt.Errorf("register to dms failed :%v", err)
+	}
+
 	if sqleCnf.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
@@ -74,8 +84,17 @@ func Run(config *config.Config) error {
 		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(driver.GetPluginManager().GetAllRules()); err != nil {
-			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
+		namespaces, _, err := dmsobject.ListNamespaces(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
+			PageSize:  999,
+			PageIndex: 1,
+		})
+		if err != nil {
+			return err
+		}
+		for _, namespace := range namespaces {
+			if err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(namespace.NamespaceUid), driver.GetPluginManager().GetAllRules()); err != nil {
+				return fmt.Errorf("create default template failed while auto migrating table: %v", err)
+			}
 		}
 		// if err := s.CreateDefaultProject(); err != nil {
 		// 	return fmt.Errorf("create default project failed while auto migrating table: %v", err)
@@ -101,11 +120,6 @@ func Run(config *config.Config) error {
 	jm := server.NewServerJobManger(node)
 	jm.Start()
 	defer jm.Stop()
-
-	err = api.RegisterAsDMSTarget(config.Server.SqleCnf)
-	if err != nil {
-		return fmt.Errorf("register to dms failed :%v", err)
-	}
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)
