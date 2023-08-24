@@ -179,7 +179,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// statistic
 		v1Router.GET("/projects/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
-
+		// 数据资源更新处理 内部调用
+		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 	}
 
 	// auth
@@ -440,9 +441,18 @@ func DeprecatedBy(version string) func(echo.Context) error {
 
 func RegisterAsDMSTarget(config config.SqleConfig) error {
 	controller.InitDMSServerAddress(config.DMSServerAddress)
+	ctx := context.Background()
 	// 向DMS注册反向代理
-	if err := dmsRegister.RegisterDMSProxyTarget(context.Background(), controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", config.SqleServerHost, config.SqleServerPort) /* TODO https的处理*/, []string{"/sqle/v"}); nil != err {
+	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", config.SqleServerHost, config.SqleServerPort) /* TODO https的处理*/, []string{"/sqle/v"}); nil != err {
 		return fmt.Errorf("failed to register dms proxy target: %v", err)
 	}
+	// 注册校验接口
+	if err := dmsRegister.RegisterDMSPlugin(ctx, controller.GetDMSServerAddress(), &dmsV1.Plugin{
+		Name:                         "sqle",
+		OperateDataResourceHandleUrl: fmt.Sprintf("http://%s:%d/%s/%s", config.SqleServerHost, config.SqleServerPort, apiV1, "data_resource/handle"),
+	}); err != nil {
+		return fmt.Errorf("failed to register  dms plugin for operation data source handle")
+	}
+
 	return nil
 }
