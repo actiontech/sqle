@@ -3,83 +3,68 @@
 
 package model
 
-// import (
-// 	"github.com/actiontech/sqle/sqle/errors"
-// 	"github.com/jinzhu/gorm"
-// )
+import (
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/jinzhu/gorm"
+)
 
-// func (s *Storage) RemoveProject(projectName string) error {
+func (s *Storage) RemoveProjectRelateData(projectID ProjectUID) error {
 
-// 	project, _, err := s.GetProjectByName(projectName)
-// 	if err != nil {
-// 		return errors.ConnectStorageErrWrapper(err)
-// 	}
-// 	projectID := project.ID
+	// 删除项目的频率不会很高, 对性能不敏感, 但删除的项很多, 一条SQL全删SQL会比较复杂, 所以将各功能模块分开删除, 以提高可维护性
+	// 工单的删除复用回收工单的流程
+	// 流程模板不用删除, 流程模板的绑定方式是 项目表中记录项目绑定的流程模板, 删除项目后流程模板自动作废
+	return errors.ConnectStorageErrWrapper(s.Tx(func(txDB *gorm.DB) error {
+		if err := s.deleteAllWhitelistByProjectID(txDB, projectID); err != nil {
+			return err
+		}
 
-// 	// 删除项目的频率不会很高, 对性能不敏感, 但删除的项很多, 一条SQL全删SQL会比较复杂, 所以将各功能模块分开删除, 以提高可维护性
-// 	// 工单的删除复用回收工单的流程
-// 	// 流程模板不用删除, 流程模板的绑定方式是 项目表中记录项目绑定的流程模板, 删除项目后流程模板自动作废
-// 	// 成员, 成员组, 角色相关数据全部记录在关系表中, 删除项目和实例后自动作废
-// 	return errors.ConnectStorageErrWrapper(s.Tx(func(txDB *gorm.DB) error {
-// 		if err = s.deleteAllWhitelistByProjectID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+		if err := s.deleteAllRuleTemplateByProjectID(txDB, projectID); err != nil {
+			return err
+		}
 
-// 		if err = s.deleteAllRuleTemplateByProjectID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+		if err := s.deleteAllWorkflowByProjectID(txDB, projectID); err != nil {
+			return err
+		}
 
-// 		if err = s.deleteAllWorkflowByProjectID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+		if err := s.deleteAllAuditPlanByProjectID(txDB, projectID); err != nil {
+			return err
+		}
 
-// 		if err = s.deleteAllAuditPlanByProjectID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+		return nil
+	}))
+}
 
-// 		if err = s.deleteAllInstanceByProjectID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+// 删除项目所有SQL白名单
+func (s *Storage) deleteAllWhitelistByProjectID(tx *gorm.DB, projectID ProjectUID) error {
+	return tx.Where("project_id = ?", projectID).Delete(&SqlWhitelist{}).Error
+}
 
-// 		if err = s.deleteProjectByID(txDB, projectID); err != nil {
-// 			return err
-// 		}
+// 删除项目中所有规则模板
+func (s *Storage) deleteAllRuleTemplateByProjectID(tx *gorm.DB, projectID ProjectUID) error {
+	return tx.Where("project_id = ?", projectID).Delete(&RuleTemplate{}).Error
+}
 
-// 		return nil
-// 	}))
-// }
+// 删除项目中所有工单/工单对应任务
+func (s *Storage) deleteAllWorkflowByProjectID(tx *gorm.DB, projectID ProjectUID) error {
+	workflows, err := s.GetWorkflowsByProjectID(projectID)
+	if err != nil {
+		return err
+	}
 
-// // 删除项目所有SQL白名单
-// func (s *Storage) deleteAllWhitelistByProjectID(tx *gorm.DB, projectID uint) error {
-// 	return tx.Where("project_id = ?", projectID).Delete(&SqlWhitelist{}).Error
-// }
+	for _, workflow := range workflows {
+		err = s.deleteWorkflow(tx, workflow)
+		if err != nil {
+			return err
+		}
+	}
 
-// // 删除项目中所有规则模板
-// func (s *Storage) deleteAllRuleTemplateByProjectID(tx *gorm.DB, projectID uint) error {
-// 	return tx.Where("project_id = ?", projectID).Delete(&RuleTemplate{}).Error
-// }
+	return nil
+}
 
-// // 删除项目中所有工单/工单对应任务
-// func (s *Storage) deleteAllWorkflowByProjectID(tx *gorm.DB, projectID uint) error {
-// 	workflows, err := s.GetWorkflowsByProjectID(projectID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for _, workflow := range workflows {
-// 		err = s.deleteWorkflow(tx, workflow)
-// 		if err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// // 删除项目中所有扫描任务
-// func (s *Storage) deleteAllAuditPlanByProjectID(tx *gorm.DB, projectID uint) error {
-// 	return tx.Where("project_id = ?", projectID).Delete(&AuditPlan{}).Error
-// }
+// 删除项目中所有扫描任务
+func (s *Storage) deleteAllAuditPlanByProjectID(tx *gorm.DB, projectID ProjectUID) error {
+	return tx.Where("project_id = ?", projectID).Delete(&AuditPlan{}).Error
+}
 
 // // 删除项目中所有实例
 // func (s *Storage) deleteAllInstanceByProjectID(tx *gorm.DB, projectID uint) error {
