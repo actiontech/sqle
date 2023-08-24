@@ -161,7 +161,7 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, true)
+		ss, err := parser.ParseXMLs(req.FileContents, false)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
