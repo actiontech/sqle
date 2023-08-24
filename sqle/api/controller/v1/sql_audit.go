@@ -72,7 +72,7 @@ func DirectAudit(c echo.Context) error {
 		user := controller.GetUserName(c)
 		s := model.GetStorage()
 		if yes, err := s.IsProjectMember(user, *req.ProjectName); err != nil {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("check priviledge failed: %v", err))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 		} else if !yes {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 		}
@@ -170,7 +170,7 @@ func DirectAuditFiles(c echo.Context) error {
 	user := controller.GetUserName(c)
 	s := model.GetStorage()
 	if yes, err := s.IsProjectMember(user, req.ProjectName); err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check priviledge failed: %v", err))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 	} else if !yes {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 	}
