@@ -867,8 +867,8 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckUniqueIndexPrefix,
-			Desc:       "UNIQUE索引名必须使用 IDX_UK_表名_字段名",
-			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则",
+			Desc:       "UNIQUE索引必须使用固定前缀",
+			Annotation: "通过配置该规则可以规范指定业务的unique索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeNamingConvention,
 			//Value:    "uniq_",
@@ -1851,7 +1851,7 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driverV2.Rule{
 			Name:       DDLCheckColumnQuantityInPK,
-			Desc:       "表的列数不建议超过阈值",
+			Desc:       "主键包含的列数不建议超过阈值",
 			Annotation: "主建中的列过多，会导致二级索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
@@ -1864,7 +1864,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message: "表的列数不建议超过阈值",
+		Message: "主键包含的列数不建议超过阈值",
 		Func:    checkColumnQuantityInPK,
 	}, {
 		Rule: driverV2.Rule{ //select col1,col2 from tbl where name=xx limit 10
