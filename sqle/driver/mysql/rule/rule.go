@@ -176,6 +176,7 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckInsertSelect                      = "dml_check_insert_select"
 )
 
 // inspector config code
@@ -2081,6 +2082,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckInsertSelect,
+			Desc:       "禁止INSERT ... SELECT",
+			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止 INSERT ... SELECT",
+		Func:         checkInsertSelect,
 	},
 }
 
@@ -5909,7 +5922,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5932,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
@@ -5970,6 +5983,19 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	}
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkInsertSelect(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(ast.DMLNode); ok {
+		insertVisitor := &util.InsertVisitor{}
+		input.Node.Accept(insertVisitor)
+		for _, insertNode := range insertVisitor.InsertStmts {
+			if insertNode.Select != nil {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
 	}
 	return nil
 }
