@@ -6204,6 +6204,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -8857,6 +8858,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV2",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",

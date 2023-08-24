@@ -8644,6 +8644,7 @@ paths:
       - sql_analysis
   /v1/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV1
       parameters:
@@ -10351,6 +10352,7 @@ paths:
       - workflow
   /v2/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV2
       parameters:
