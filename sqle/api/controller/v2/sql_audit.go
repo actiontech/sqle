@@ -39,6 +39,7 @@ type DirectAuditResV2 struct {
 	Data *AuditResDataV2 `json:"data"`
 }
 
+// @Deprecated
 // @Summary 直接审核SQL
 // @Description Direct audit sql
 // @Id directAuditV2

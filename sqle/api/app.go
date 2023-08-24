@@ -366,9 +366,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
 	v2Router.POST("/sql_audit", v2.DirectAudit)
-
 	v1Router.POST("/audit_files", v1.DirectAuditFiles)
-
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
 	// UI

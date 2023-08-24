@@ -52,6 +52,7 @@ type AuditSQLResV1 struct {
 
 var ErrDirectAudit = errors.New(errors.GenericError, fmt.Errorf("audit failed, please confirm whether the type of audit plugin supports static audit, please check the log for details"))
 
+// @Deprecated
 // @Summary 直接审核SQL
 // @Description Direct audit sql
 // @Id directAuditV1
@@ -65,6 +66,16 @@ func DirectAudit(c echo.Context) error {
 	err := controller.BindAndValidateReq(c, req)
 	if err != nil {
 		return err
+	}
+
+	if req.ProjectName != nil {
+		user := controller.GetUserName(c)
+		s := model.GetStorage()
+		if yes, err := s.IsProjectMember(user, *req.ProjectName); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check priviledge failed: %v", err))
+		} else if !yes {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
+		}
 	}
 
 	sql := req.SQLContent
@@ -136,7 +147,7 @@ type DirectAuditFileReqV1 struct {
 	// 每个数组元素是一个文件内容
 	FileContents []string `json:"file_contents" form:"file_contents" example:"select * from t1; select * from t2;" valid:"required"`
 	SQLType      string   `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
-	ProjectName  *string  `json:"project_name" form:"project_name" example:"project1"`
+	ProjectName  string   `json:"project_name" form:"project_name" example:"project1" valid:"required"`
 	InstanceName *string  `json:"instance_name" form:"instance_name" example:"instance1"`
 	SchemaName   *string  `json:"schema_name" form:"schema_name" example:"schema1"`
 }
@@ -155,6 +166,15 @@ func DirectAuditFiles(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
+	user := controller.GetUserName(c)
+	s := model.GetStorage()
+	if yes, err := s.IsProjectMember(user, req.ProjectName); err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check priviledge failed: %v", err))
+	} else if !yes {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
+	}
+
 	if len(req.FileContents) <= 0 {
 		return controller.JSONBaseErrorReq(c, e.New("file_contents is required"))
 	}
@@ -173,11 +193,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	l := log.NewEntry().WithField("/v2/audit_files", "direct audit files failed")
 
-	s := model.GetStorage()
 	var instance *model.Instance
 	var exist bool
-	if req.ProjectName != nil && req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, *req.ProjectName)
+	if req.InstanceName != nil {
+		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, req.ProjectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
