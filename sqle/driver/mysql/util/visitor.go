@@ -227,3 +227,19 @@ func (v *SelectVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 func (v *SelectVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
+
+type InsertVisitor struct {
+	InsertStmts []*ast.InsertStmt
+}
+
+func (i *InsertVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.InsertStmt:
+		i.InsertStmts = append(i.InsertStmts, stmt)
+	}
+	return in, false
+}
+
+func (i *InsertVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
