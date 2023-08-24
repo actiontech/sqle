@@ -1419,7 +1419,7 @@ func (s *Storage) GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
+func (s *Storage) GetWorkflowsByProjectID(projectID ProjectUID) ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectID).Scan(&workflows).Error
 	return workflows, errors.ConnectStorageErrWrapper(err)
