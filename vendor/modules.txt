@@ -28,7 +28,7 @@ github.com/KyleBanks/depth
 github.com/Masterminds/semver/v3
 # github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 github.com/StackExchange/wmi
-# github.com/actiontech/mybatis-mapper-2-sql v0.3.0
+# github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 ## explicit
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
