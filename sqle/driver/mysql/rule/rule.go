@@ -868,7 +868,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckUniqueIndexPrefix,
 			Desc:       "UNIQUE索引必须使用固定前缀",
-			Annotation: "通过配置该规则可以规范指定业务的unique索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
+			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeNamingConvention,
 			//Value:    "uniq_",
