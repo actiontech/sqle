@@ -113,6 +113,7 @@ const (
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
+	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
 )
 
 // inspector DML rules
@@ -2081,6 +2082,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckColumnNotNULL,
+			Desc:       "表字段必须有NOT NULL约束",
+			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "字段%v没有NOT NULL约束",
+		Func:         checkColumnNotNull,
 	},
 }
 
@@ -5909,7 +5922,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5932,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
@@ -5970,6 +5983,33 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	}
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkColumnNotNull(input *RuleHandlerInput) error {
+	notNullColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, newColumn := range spec.NewColumns {
+				ok := util.IsAllInOptions(newColumn.Options, ast.ColumnOptionNotNull)
+				if !ok {
+					notNullColumns = append(notNullColumns, newColumn.Name.OrigColName())
+				}
+			}
+		}
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			ok := util.IsAllInOptions(col.Options, ast.ColumnOptionNotNull)
+			if !ok {
+				notNullColumns = append(notNullColumns, col.Name.OrigColName())
+			}
+		}
+	}
+	if len(notNullColumns) > 0 {
+		notNullColString := strings.Join(notNullColumns, ",")
+		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
 	}
 	return nil
 }

@@ -5456,3 +5456,65 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
 	)
 }
+
+func TestDDLCheckColumnNotNull(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnNotNULL].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT,
+			email VARCHAR(100),
+			address VARCHAR(200),
+			PRIMARY KEY (id)
+		);`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DDLCheckColumnNotNULL, "字段age,email,address没有NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		ADD COLUMN new_column3 DATE,
+		ADD COLUMN new_column4 VARCHAR(100),
+		MODIFY COLUMN name varchar(500);`,
+		newTestResult().add(driverV2.RuleLevelError, rulepkg.DDLCheckColumnNotNULL, "字段new_column3,new_column4,name没有NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT NOT NULL,
+			email VARCHAR(100) NOT NULL,
+			address VARCHAR(200) NOT NULL,
+			PRIMARY KEY (id)
+		);`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		MODIFY COLUMN name varchar(500) NOT NULL;`,
+		newTestResult(),
+	)
+}
