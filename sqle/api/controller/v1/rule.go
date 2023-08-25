@@ -658,8 +658,7 @@ func GetRuleTemplateTips(c echo.Context) error {
 		return err
 	}
 
-	// return getRuleTemplateTips(c, model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
-	return nil
+	return getRuleTemplateTips(c, model.ProjectIdForGlobalRuleTemplate, req.FilterDBType)
 }
 
 func getRuleTemplateTips(c echo.Context, projectId string, filterDBType string) error {
