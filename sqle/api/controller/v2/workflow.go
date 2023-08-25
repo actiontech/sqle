@@ -49,7 +49,7 @@ type WorkflowStepResV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflowV2(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
