@@ -15,13 +15,13 @@ import (
 
 type AuditPlan struct {
 	Model
-	ProjectId        ProjectUID `gorm:"index; not null"`
-	Name             string     `json:"name" gorm:"not null;index"`
-	CronExpression   string     `json:"cron_expression" gorm:"not null"`
-	DBType           string     `json:"db_type" gorm:"not null"`
-	Token            string     `json:"token" gorm:"not null"`
-	InstanceName     string     `json:"instance_name"`
-	CreateUserID     string		`json:"create_user_id"`
+	ProjectId        ProjectUID    `gorm:"index; not null"`
+	Name             string        `json:"name" gorm:"not null;index"`
+	CronExpression   string        `json:"cron_expression" gorm:"not null"`
+	DBType           string        `json:"db_type" gorm:"not null"`
+	Token            string        `json:"token" gorm:"not null"`
+	InstanceName     string        `json:"instance_name"`
+	CreateUserID     string        `json:"create_user_id"`
 	InstanceDatabase string        `json:"instance_database"`
 	Type             string        `json:"type"`
 	RuleTemplateName string        `json:"rule_template_name"`
@@ -341,15 +341,14 @@ type RiskAuditPlan struct {
 	RiskSqlCOUNT   uint       `json:"risk_sql_count"`
 }
 
-func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error) {
+func (s *Storage) GetRiskAuditPlan(projectUid string) ([]*RiskAuditPlan, error) {
 	var RiskAuditPlans []*RiskAuditPlan
 	err := s.db.Model(AuditPlan{}).
 		Select(`reports.id report_id, audit_plans.name audit_plan_name, reports.created_at report_create_at, 
 				count(case when JSON_TYPE(report_sqls.audit_results)<>'NULL' then 1 else null end) risk_sql_count`).
 		Joins("left join audit_plan_reports_v2 reports on audit_plans.id=reports.audit_plan_id").
 		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
-		Joins("left join projects on projects.id=audit_plans.project_id").
-		Where("reports.score<60 and projects.name=? and audit_plans.deleted_at is NULL", projectName).
+		Where("reports.score<60 and audit_plans.project_id=? and audit_plans.deleted_at is NULL", projectUid).
 		Group("audit_plans.name, reports.created_at, audit_plans.created_at, reports.id").
 		Order("reports.created_at desc").Scan(&RiskAuditPlans).Error
 
@@ -361,13 +360,12 @@ func (s *Storage) GetRiskAuditPlan(projectName string) ([]*RiskAuditPlan, error)
 }
 
 // 使用子查询获取最新的report时间，然后再获取最新report的sql数量和触发规则的sql数量
-func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
+func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectUid string) (SqlCountAndTriggerRuleCount, error) {
 	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
 	subQuery := s.db.Model(&AuditPlan{}).
 		Select("audit_plans.id as audit_plan_id, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plan_reports_v2 on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
-		Joins("left join projects on audit_plans.project_id=projects.id").
-		Where("projects.name=? and audit_plans.deleted_at is null and audit_plan_reports_v2.id is not null", projectName).
+		Where("audit_plans.project_id=? and audit_plans.deleted_at is null and audit_plan_reports_v2.id is not null", projectUid).
 		Group("audit_plans.id").
 		SubQuery()
 
@@ -375,9 +373,8 @@ func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName s
 		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join audit_plan_reports_v2 reports on reports.audit_plan_id=audit_plans.id").
 		Joins("left join audit_plan_report_sqls_v2 report_sqls on report_sqls.audit_plan_report_id=reports.id").
-		Joins("left join projects on audit_plans.project_id=projects.id").
 		Joins("join (?) as sq on audit_plans.id=sq.audit_plan_id and reports.created_at=sq.latest_created_at", subQuery).
-		Where("projects.name=? and audit_plans.deleted_at is null", projectName).
+		Where("audit_plans.project_id=? and audit_plans.deleted_at is null", projectUid).
 		Scan(&sqlCountAndTriggerRuleCount).Error
 
 	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
@@ -389,12 +386,11 @@ type DBTypeAuditPlanCount struct {
 	AuditPlanCount uint   `json:"audit_plan_count"`
 }
 
-func (s *Storage) GetDBTypeAuditPlanCountByProject(projectName string) ([]*DBTypeAuditPlanCount, error) {
+func (s *Storage) GetDBTypeAuditPlanCountByProject(projectUid string) ([]*DBTypeAuditPlanCount, error) {
 	dBTypeAuditPlanCounts := []*DBTypeAuditPlanCount{}
 	err := s.db.Model(AuditPlan{}).
 		Select("audit_plans.db_type, audit_plans.type, count(1) audit_plan_count").
-		Joins("left join projects on audit_plans.project_id=projects.id").
-		Where("projects.name=?", projectName).
+		Where("audit_plans.project_id=?", projectUid).
 		Group("audit_plans.db_type, audit_plans.type").Scan(&dBTypeAuditPlanCounts).Error
 	return dBTypeAuditPlanCounts, errors.New(errors.ConnectStorageError, err)
 }
