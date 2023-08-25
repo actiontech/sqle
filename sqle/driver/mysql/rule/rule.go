@@ -1859,7 +1859,7 @@ var RuleHandlers = []RuleHandler{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2",
-					Desc:  "主键应当不超过多少列",
+					Desc:  "最大列数",
 					Type:  params.ParamTypeInt,
 				},
 			},
