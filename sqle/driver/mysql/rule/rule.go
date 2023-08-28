@@ -176,6 +176,7 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 )
 
 // inspector config code
@@ -2081,6 +2082,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainUsingIndex,
+			Desc:       "SQL查询条件必须走索引",
+			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "SQL查询没有使用索引",
+		Func:         checkExplain,
 	},
 }
 
@@ -4718,6 +4731,9 @@ func checkExplain(input *RuleHandlerInput) error {
 			strings.Contains(record.Extra, executor.ExplainRecordExtraUsingIndexForSkipScan) {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
+		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
 
 	}
 	return nil
@@ -5909,7 +5925,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5935,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
