@@ -1,16 +1,13 @@
 package sqled
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
-	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api"
-	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
@@ -84,15 +81,12 @@ func Run(config *config.Config) error {
 		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		namespaces, _, err := dmsobject.ListNamespaces(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
-			PageSize:  999,
-			PageIndex: 1,
-		})
+		projectIds, err := dms.GetProjects()
 		if err != nil {
-			return err
+			return fmt.Errorf("get projects failed: %v", err)
 		}
-		for _, namespace := range namespaces {
-			if err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(namespace.NamespaceUid), driver.GetPluginManager().GetAllRules()); err != nil {
+		for _, projectId := range projectIds {
+			if err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(projectId), driver.GetPluginManager().GetAllRules()); err != nil {
 				return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 			}
 		}

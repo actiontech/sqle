@@ -132,3 +132,18 @@ func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.L
 	}
 	return ret[0], nil
 }
+
+func GetProjects() ([]string, error) {
+	projectIds := make([]string, 0)
+	namespaces, _, err := dmsobject.ListNamespaces(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
+		PageSize:  9999,
+		PageIndex: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, namespce := range namespaces {
+		projectIds = append(projectIds, namespce.NamespaceUid)
+	}
+	return projectIds, nil
+}
