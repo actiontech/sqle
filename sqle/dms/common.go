@@ -9,7 +9,9 @@ import (
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	dmsRegister "github.com/actiontech/dms/pkg/dms-common/register"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 )
@@ -146,4 +148,22 @@ func GetProjects() ([]string, error) {
 		projectIds = append(projectIds, namespce.NamespaceUid)
 	}
 	return projectIds, nil
+}
+
+func RegisterAsDMSTarget(config config.SqleConfig) error {
+	controller.InitDMSServerAddress(config.DMSServerAddress)
+	ctx := context.Background()
+	// 向DMS注册反向代理
+	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", config.SqleServerHost, config.SqleServerPort) /* TODO https的处理*/, []string{"/sqle/v"}); nil != err {
+		return fmt.Errorf("failed to register dms proxy target: %v", err)
+	}
+	// 注册校验接口
+	if err := dmsRegister.RegisterDMSPlugin(ctx, controller.GetDMSServerAddress(), &dmsV1.Plugin{
+		Name:                         "sqle",
+		OperateDataResourceHandleUrl: fmt.Sprintf("http://%s:%d/%s/%s", config.SqleServerHost, config.SqleServerPort, "v1", "data_resource/handle"),
+	}); err != nil {
+		return fmt.Errorf("failed to register dms plugin for operation data source handle")
+	}
+
+	return nil
 }

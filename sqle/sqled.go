@@ -69,7 +69,7 @@ func Run(config *config.Config) error {
 	}
 	model.InitStorage(s)
 
-	err = api.RegisterAsDMSTarget(config.Server.SqleCnf)
+	err = dms.RegisterAsDMSTarget(config.Server.SqleCnf)
 	if err != nil {
 		return fmt.Errorf("register to dms failed :%v", err)
 	}
