@@ -2088,7 +2088,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckExplainUsingIndex,
 			Desc:       "SQL查询条件必须走索引",
 			Annotation: "使用索引可以显著提高SQL查询的性能。",
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
