@@ -280,10 +280,10 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 // 	return nil
 // }
 
-func (s *Storage) CreateDefaultTemplate(rules map[string][]*driverV2.Rule) error {
+func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
-		exist, err := s.IsRuleTemplateExistFromAnyProject(templateName)
+		exist, err := s.IsRuleTemplateExistFromAnyProject(projectId, templateName)
 		if err != nil {
 			return xerrors.Wrap(err, "get rule template failed")
 		}
@@ -292,9 +292,10 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driverV2.Rule) error
 		}
 
 		t := &RuleTemplate{
-			Name:   templateName,
-			Desc:   "默认规则模板",
-			DBType: dbType,
+			ProjectId: projectId,
+			Name:      templateName,
+			Desc:      "默认规则模板",
+			DBType:    dbType,
 		}
 		if err := s.Save(t); err != nil {
 			return err

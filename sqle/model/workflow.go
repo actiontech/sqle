@@ -1290,7 +1290,7 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
+func (s *Storage) GetWorkflowsByProjectID(projectID ProjectUID) ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectID).Scan(&workflows).Error
 	return workflows, errors.ConnectStorageErrWrapper(err)
@@ -1307,22 +1307,21 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 }
 
 type WorkflowStatusDetail struct {
-	Subject   string     `json:"subject"`
-	WorkflowId        string     `json:"workflow_id"`
-	Status    string     `json:"status"`
-	LoginName string     `json:"login_name"`
-	UpdatedAt *time.Time `json:"updated_at"`
+	Subject      string     `json:"subject"`
+	WorkflowId   string     `json:"workflow_id"`
+	Status       string     `json:"status"`
+	CreateUserId string     `json:"create_user_id"`
+	LoginName    string     `json:"login_name"`
+	UpdatedAt    *time.Time `json:"updated_at"`
 }
 
-func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
+func (s *Storage) GetProjectWorkflowStatusDetail(projectUid string, queryStatus []string) ([]WorkflowStatusDetail, error) {
 	WorkflowStatusDetails := []WorkflowStatusDetail{}
 
 	err := s.db.Model(&Workflow{}).
-		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, users.login_name").
+		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, workflows.create_user_id").
 		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join users on users.id=workflows.create_user_id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("wr.status in (?) and projects.name=?", queryStatus, projectName).
+		Where("wr.status in (?) and workflows.project_id=?", queryStatus, projectUid).
 		Order("wr.updated_at desc").
 		Scan(&WorkflowStatusDetails).Error
 	if err != nil {
@@ -1332,29 +1331,27 @@ func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus
 }
 
 type SqlCountAndTriggerRuleCount struct {
-	SqlCount     uint `json:"sql_count"`
+	SqlCount         uint `json:"sql_count"`
 	TriggerRuleCount uint `json:"trigger_rule_count"`
 }
 
-func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
+func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectUid string) (SqlCountAndTriggerRuleCount, error) {
 	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
 	err := s.db.Model(&Workflow{}).
 		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
 		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
 		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("projects.name=?", projectName).
+		Where("workflows.project_id=?", projectUid).
 		Scan(&sqlCountAndTriggerRuleCount).Error
 	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectName string) (int, error) {
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int, error) {
 	var count int
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("workflow_records.status = ? and projects.name=?", status, projectName).
+		Where("workflow_records.status = ? and workflows.project_id=?", status, projectUid).
 		Count(&count).Error
 	if err != nil {
 		return 0, errors.New(errors.ConnectStorageError, err)

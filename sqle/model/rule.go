@@ -211,9 +211,9 @@ func (s *Storage) GetGlobalAndProjectRuleTemplateByNameAndProjectId(name string,
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsRuleTemplateExistFromAnyProject(name string) (bool, error) {
+func (s *Storage) IsRuleTemplateExistFromAnyProject(projectId ProjectUID, name string) (bool, error) {
 	var count int
-	err := s.db.Model(&RuleTemplate{}).Where("name = ?", name).Count(&count).Error
+	err := s.db.Model(&RuleTemplate{}).Where("name = ? and project_id = ?", name, string(projectId)).Count(&count).Error
 	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
 

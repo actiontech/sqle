@@ -28,11 +28,10 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 			}
 			// sqle-token为空时，可能是cookie过期被清理了，希望返回的错误是http.StatusUnauthorized
 			// 但sqle-token为空时jwt返回的错误是http.StatusBadRequest
-			_, err := c.Cookie("sqle-token")
+			_, err := c.Cookie("dms-token")
 			if err == http.ErrNoCookie && auth == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "can not find sqle-token")
+				return echo.NewHTTPError(http.StatusUnauthorized, "can not find dms-token")
 			}
-
 			return next(c)
 		}
 	}
@@ -41,7 +40,7 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 func JWTWithConfig(key interface{}) echo.MiddlewareFunc {
 	c := middleware.DefaultJWTConfig
 	c.SigningKey = key
-	c.TokenLookup = "cookie:sqle-token,header:Authorization" // tell the middleware where to get token: from cookie and header
+	c.TokenLookup = "cookie:dms-token,header:Authorization" // tell the middleware where to get token: from cookie and header
 	return middleware.JWTWithConfig(c)
 }
 
