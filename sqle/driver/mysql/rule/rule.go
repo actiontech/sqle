@@ -2088,7 +2088,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckInsertSelect,
 			Desc:       "禁止INSERT ... SELECT",
 			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
@@ -5988,13 +5988,15 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 }
 
 func checkInsertSelect(input *RuleHandlerInput) error {
-	if _, ok := input.Node.(ast.DMLNode); ok {
-		insertVisitor := &util.InsertVisitor{}
-		input.Node.Accept(insertVisitor)
-		for _, insertNode := range insertVisitor.InsertStmts {
-			if insertNode.Select != nil {
-				addResult(input.Res, input.Rule, input.Rule.Name)
-			}
+	if _, ok := input.Node.(*ast.InsertStmt); !ok {
+		return nil
+	}
+	insertVisitor := &util.InsertVisitor{}
+	input.Node.Accept(insertVisitor)
+	for _, insertNode := range insertVisitor.InsertStmts {
+		if insertNode.Select != nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
 		}
 	}
 	return nil
