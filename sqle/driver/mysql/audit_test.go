@@ -129,7 +129,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
 		rulepkg.DMLCheckAggregate:                           {},
 	}
 	for i := range rulepkg.RuleHandlers {
@@ -3823,6 +3823,11 @@ func Test_CheckExplain_ShouldNotError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).AddRow("ALL", "10"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult())
 
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(executor.ExplainRecordPrimaryKey))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t, "", inspect4, "select * from exist_tb_1 where id = 1", newTestResult())
+
 	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
@@ -3957,6 +3962,12 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).AddRow(executor.ExplainRecordExtraUsingIndexForSkipScan))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan].Rule,
 		t, "", inspect7, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan))
+
+	inspect8 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
+		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(""))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
+		t, "", inspect8, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
 	assert.NoError(t, handler.ExpectationsWereMet())
 
