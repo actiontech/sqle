@@ -5988,19 +5988,32 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 }
 
 func checkAggregateFunc(input *RuleHandlerInput) error {
-	if _, ok := input.Node.(ast.DMLNode); ok {
-		selectVisitor := &util.SelectVisitor{}
-		input.Node.Accept(selectVisitor)
-		for _, selectNode := range selectVisitor.SelectList {
-			if selectNode.Having != nil {
+	if _, ok := input.Node.(ast.DMLNode); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	for _, selectNode := range selectVisitor.SelectList {
+		if selectNode.Having != nil {
+			isHavingUseFunc := false
+			util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+				switch expr.(type) {
+				case *ast.AggregateFuncExpr:
+					isHavingUseFunc = true
+					return true
+				}
+				return false
+			}, selectNode.Having.Expr)
+
+			if isHavingUseFunc {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
-			for _, field := range selectNode.Fields.Fields {
-				if _, ok := field.Expr.(*ast.AggregateFuncExpr);ok {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
+		}
+		for _, field := range selectNode.Fields.Fields {
+			if _, ok := field.Expr.(*ast.AggregateFuncExpr); ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
 			}
 		}
 	}
