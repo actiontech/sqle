@@ -1359,3 +1359,47 @@ func TestWorkflowWebHookConfig(c echo.Context) error {
 		Data:    *data,
 	})
 }
+
+type GetFeishuAuditConfigurationResV1 struct {
+	controller.BaseRes
+	Data FeishuConfigurationV1 `json:"data"`
+}
+
+// GetFeishuAuditConfigurationV1
+// @Summary 获取飞书审核配置
+// @Description get feishu audit configuration
+// @Id getFeishuAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetFeishuAuditConfigurationResV1
+// @router /v1/configurations/feishu_audit [get]
+func GetFeishuAuditConfigurationV1(c echo.Context) error {
+	return nil
+}
+
+// UpdateFeishuAuditConfigurationV1
+// @Summary 添加或更新飞书配置
+// @Description update feishu audit configuration
+// @Accept json
+// @Id updateFeishuAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param param body v1.UpdateFeishuConfigurationReqV1 true "update feishu audit configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/feishu_audit [patch]
+func UpdateFeishuAuditConfigurationV1(c echo.Context) error {
+	return nil
+}
+
+// TestFeishuAuditConfigV1
+// @Summary 测试飞书审批配置
+// @Description test feishu audit configuration
+// @Accept json
+// @Id testFeishuAuditConfigV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestFeishuConfigResV1
+// @router /v1/configurations/feishu_audit/test [post]
+func TestFeishuAuditConfigV1(c echo.Context) error {
+	return nil
+}
