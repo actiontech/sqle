@@ -5988,13 +5988,8 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 }
 
 func checkInsertSelect(input *RuleHandlerInput) error {
-	if _, ok := input.Node.(*ast.InsertStmt); !ok {
-		return nil
-	}
-	insertVisitor := &util.InsertVisitor{}
-	input.Node.Accept(insertVisitor)
-	for _, insertNode := range insertVisitor.InsertStmts {
-		if insertNode.Select != nil {
+	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
+		if stmt.Select != nil {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
