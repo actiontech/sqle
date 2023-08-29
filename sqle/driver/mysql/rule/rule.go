@@ -178,6 +178,7 @@ const (
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
 	DMLCheckInsertSelect                      = "dml_check_insert_select"
 	DMLCheckAggregate                         = "dml_check_aggregate"
+	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 )
 
 // inspector config code
@@ -2083,6 +2084,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainUsingIndex,
+			Desc:       "SQL查询条件必须走索引",
+			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "SQL查询没有使用索引",
+		Func:         checkExplain,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -4742,6 +4755,9 @@ func checkExplain(input *RuleHandlerInput) error {
 
 		if input.Rule.Name == DMLCheckExplainExtraUsingIndexForSkipScan &&
 			strings.Contains(record.Extra, executor.ExplainRecordExtraUsingIndexForSkipScan) {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 
