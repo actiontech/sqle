@@ -5457,6 +5457,50 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 	)
 }
 
+func TestDMLCheckInsertSelect(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckInsertSelect].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select id from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1
+		select * from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		values(1), (2)`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select 1`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+}
+
 func TestDMLCheckAggregate(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckAggregate].Rule
 	runSingleRuleInspectCase(

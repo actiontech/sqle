@@ -176,6 +176,7 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckInsertSelect                      = "dml_check_insert_select"
 	DMLCheckAggregate                         = "dml_check_aggregate"
 )
 
@@ -2082,6 +2083,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckInsertSelect,
+			Desc:       "禁止INSERT ... SELECT",
+			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止 INSERT ... SELECT",
+		Func:         checkInsertSelect,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -5983,6 +5996,16 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	}
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkInsertSelect(input *RuleHandlerInput) error {
+	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
+		if stmt.Select != nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
 	}
 	return nil
 }
