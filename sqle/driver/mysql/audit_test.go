@@ -5499,4 +5499,12 @@ func TestDMLCheckAggregate(t *testing.T) {
 		`select v1 from exist_tb_1`,
 		newTestResult(),
 	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having v1 > 1`,
+		newTestResult(),
+	)
 }
