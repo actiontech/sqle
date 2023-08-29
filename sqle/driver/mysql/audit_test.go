@@ -129,7 +129,8 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
+		rulepkg.DMLCheckAggregate:                           {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5464,5 +5465,101 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 		LEFT JOIN EXIST_TB_2 ON exist_tb_2.name=EXIST_TB_2.name
 		`,
 		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
+	)
+}
+
+func TestDMLCheckInsertSelect(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckInsertSelect].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select id from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1
+		select * from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		values(1), (2)`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select 1`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+}
+
+func TestDMLCheckAggregate(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckAggregate].Rule
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select avg(v1) from exist_tb_1 group by v2`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having count(1) > 1`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select avg(v1) from exist_tb_2 group by v2 having count(1) > 1 limit 1)`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select v1 from exist_tb_2 limit 1)`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select v1 from exist_tb_1`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having v1 > 1`,
+		newTestResult(),
 	)
 }
