@@ -176,6 +176,7 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckAggregate                         = "dml_check_aggregate"
 )
 
 // inspector config code
@@ -2081,6 +2082,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAggregate,
+			Desc:       "禁止使用聚合函数",
+			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用聚合函数计算",
+		Func:         checkAggregateFunc,
 	},
 }
 
@@ -5909,7 +5922,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5932,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
@@ -5970,6 +5983,39 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	}
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkAggregateFunc(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(ast.DMLNode); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	for _, selectNode := range selectVisitor.SelectList {
+		if selectNode.Having != nil {
+			isHavingUseFunc := false
+			util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+				switch expr.(type) {
+				case *ast.AggregateFuncExpr:
+					isHavingUseFunc = true
+					return true
+				}
+				return false
+			}, selectNode.Having.Expr)
+
+			if isHavingUseFunc {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+		for _, field := range selectNode.Fields.Fields {
+			if _, ok := field.Expr.(*ast.AggregateFuncExpr); ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
 	}
 	return nil
 }

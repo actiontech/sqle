@@ -129,7 +129,8 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DMLCheckAggregate:                           {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5330,7 +5331,6 @@ func TestDDLCheckAllIndexNotNullConstraint(t *testing.T) {
 	)
 }
 
-
 func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSameTableJoinedMultipleTimes].Rule
 
@@ -5454,5 +5454,57 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 		LEFT JOIN EXIST_TB_2 ON exist_tb_2.name=EXIST_TB_2.name
 		`,
 		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
+	)
+}
+
+func TestDMLCheckAggregate(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckAggregate].Rule
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select avg(v1) from exist_tb_1 group by v2`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having count(1) > 1`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select avg(v1) from exist_tb_2 group by v2 having count(1) > 1 limit 1)`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select v1 from exist_tb_2 limit 1)`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select v1 from exist_tb_1`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having v1 > 1`,
+		newTestResult(),
 	)
 }
