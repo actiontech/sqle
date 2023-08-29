@@ -2085,6 +2085,42 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
 	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainUsingIndex,
+			Desc:       "SQL查询条件必须走索引",
+			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "SQL查询没有使用索引",
+		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckInsertSelect,
+			Desc:       "禁止INSERT ... SELECT",
+			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止 INSERT ... SELECT",
+		Func:         checkInsertSelect,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAggregate,
+			Desc:       "禁止使用聚合函数",
+			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用聚合函数计算",
+		Func:         checkAggregateFunc,
+	},
 }
 
 func checkFieldNotNUllMustContainDefaultValue(input *RuleHandlerInput) error {
