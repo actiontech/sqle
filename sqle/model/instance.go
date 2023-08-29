@@ -181,7 +181,7 @@ func (s *Storage) GetInstanceDetailByNameAndProjectId(instName string, projectId
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
 	}
-	ruleTemplates := make([]RuleTemplate,0)
+	ruleTemplates := make([]RuleTemplate, 0)
 	err = s.db.Raw("select rule_templates.* from rule_templates left join instance_rule_template on rule_templates.id = rule_templates.id where instance_rule_template.instance_id = ?;", instance.ID).Scan(&ruleTemplates).Error
 	if err == gorm.ErrRecordNotFound {
 		return instance, false, nil
@@ -492,7 +492,7 @@ type InstanceWorkFlowStatusCount struct {
 	StatusCount  uint   `json:"status_count"`
 }
 
-func (s *Storage) GetInstanceWorkFlowStatusCountByProject(projectName string, queryStatus []string) ([]*InstanceWorkFlowStatusCount, error) {
+func (s *Storage) GetInstanceWorkFlowStatusCountByProject(projectUid string, queryStatus []string) ([]*InstanceWorkFlowStatusCount, error) {
 	var instanceWorkFlowStatusCount []*InstanceWorkFlowStatusCount
 
 	err := s.db.Model(&Instance{}).
@@ -500,8 +500,7 @@ func (s *Storage) GetInstanceWorkFlowStatusCountByProject(projectName string, qu
 		Joins("left join workflow_instance_records on instances.id=workflow_instance_records.instance_id").
 		Joins("left join workflow_records on workflow_instance_records.workflow_record_id=workflow_records.id").
 		Joins("inner join workflows on workflow_records.id=workflows.workflow_record_id").
-		Joins("left join projects on instances.project_id=projects.id").
-		Where("projects.name=?", projectName).
+		Where("instances.project_id=?", projectUid).
 		Group("instances.db_type, instances.name").
 		Scan(&instanceWorkFlowStatusCount).Error
 	return instanceWorkFlowStatusCount, errors.ConnectStorageErrWrapper(err)

@@ -157,7 +157,7 @@ func CreateRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	exist, err := s.IsRuleTemplateExistFromAnyProject(req.Name)
+	exist, err := s.IsRuleTemplateExistFromAnyProject(model.ProjectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -704,7 +704,7 @@ func CloneRuleTemplate(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	exist, err := s.IsRuleTemplateExistFromAnyProject(req.Name)
+	exist, err := s.IsRuleTemplateExistFromAnyProject(model.ProjectIdForGlobalRuleTemplate, req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1090,7 +1090,6 @@ func GetProjectRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
-
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, projectUid)
 	if err != nil {
@@ -1162,7 +1161,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	// if !exist {
 	// 	return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	// }
-	exist, err := s.IsRuleTemplateExistFromAnyProject(req.Name)
+	exist, err := s.IsRuleTemplateExistFromAnyProject(model.ProjectUID(projectUid), req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

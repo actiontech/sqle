@@ -1,13 +1,11 @@
 package api
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
-	dmsRegister "github.com/actiontech/dms/pkg/dms-common/register"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -179,7 +177,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// statistic
 		v1Router.GET("/projects/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
-
+		// 数据资源更新处理 内部调用
+		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 	}
 
 	// auth
@@ -206,14 +205,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	{
 		// statistic
 		v1ProjectRouter.GET("/:project_name/statistics", v1.GetProjectStatisticsV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistics", v1.GetProjectStatisticsV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/workflow_status", v1.StatisticWorkflowStatusV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/risk_workflow", v1.StatisticRiskWorkflowV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/audit_plans", v1.StatisticAuditPlanV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/risk_audit_plans", v1.GetRiskAuditPlanV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/role_user", v1.GetRoleUserCountV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/project_score", v1.GetProjectScoreV1)
-		v1ProjectRouter.GET("/projects/:project_name/statistic/instance_health", v1.GetInstanceHealthV1)
+		v1ProjectRouter.GET("/:project_name/statistics", v1.GetProjectStatisticsV1)
+		v1ProjectRouter.GET("/:project_name/statistic/workflow_status", v1.StatisticWorkflowStatusV1)
+		v1ProjectRouter.GET("/:project_name/statistic/risk_workflow", v1.StatisticRiskWorkflowV1)
+		v1ProjectRouter.GET("/:project_name/statistic/audit_plans", v1.StatisticAuditPlanV1)
+		v1ProjectRouter.GET("/:project_name/statistic/risk_audit_plans", v1.GetRiskAuditPlanV1)
+		v1ProjectRouter.GET("/:project_name/statistic/role_user", v1.GetRoleUserCountV1)
+		v1ProjectRouter.GET("/:project_name/statistic/project_score", v1.GetProjectScoreV1)
+		v1ProjectRouter.GET("/:project_name/statistic/instance_health", v1.GetInstanceHealthV1)
 		// audit whitelist
 		v1ProjectRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
 		// instance
@@ -436,13 +435,4 @@ func DeprecatedBy(version string) func(echo.Context) error {
 		return echo.NewHTTPError(http.StatusForbidden, fmt.Sprintf(
 			"the API has been deprecated, please using the %s version", version))
 	}
-}
-
-func RegisterAsDMSTarget(config config.SqleConfig) error {
-	controller.InitDMSServerAddress(config.DMSServerAddress)
-	// 向DMS注册反向代理
-	if err := dmsRegister.RegisterDMSProxyTarget(context.Background(), controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", config.SqleServerHost, config.SqleServerPort) /* TODO https的处理*/, []string{"/sqle/v"}); nil != err {
-		return fmt.Errorf("failed to register dms proxy target: %v", err)
-	}
-	return nil
 }
