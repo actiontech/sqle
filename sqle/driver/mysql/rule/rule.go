@@ -2095,7 +2095,7 @@ var RuleHandlers = []RuleHandler{
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message:      "SQL查询没有使用索引",
+		Message:      "建议使用索引以优化 SQL 查询性能",
 		Func:         checkExplain,
 	},
 	{

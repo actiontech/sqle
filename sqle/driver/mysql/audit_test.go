@@ -129,7 +129,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
 		rulepkg.DMLCheckAggregate:                           {},
 		rulepkg.DDLCheckColumnNotNULL:                       {},
 	}
@@ -5564,7 +5564,6 @@ func TestDMLCheckAggregate(t *testing.T) {
 		newTestResult(),
 	)
 }
-
 
 func TestDDLCheckColumnNotNull(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnNotNULL].Rule
