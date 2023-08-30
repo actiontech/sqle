@@ -757,6 +757,37 @@ definitions:
       is_enable_ding_talk_notify:
         type: boolean
     type: object
+  v1.DirectAuditFileReqV1:
+    properties:
+      file_contents:
+        description: |-
+          调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
+          每个数组元素是一个文件内容
+        example:
+        - select * from t1; select * from t2;
+        items:
+          type: string
+        type: array
+      instance_name:
+        example: instance1
+        type: string
+      instance_type:
+        example: MySQL
+        type: string
+      project_name:
+        example: project1
+        type: string
+      schema_name:
+        example: schema1
+        type: string
+      sql_type:
+        enum:
+        - sql
+        - mybatis
+        - ""
+        example: sql
+        type: string
+    type: object
   v1.DirectAuditReqV1:
     properties:
       instance_name:
@@ -1113,6 +1144,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.DriversResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetFeishuAuditConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.FeishuConfigurationV1'
         type: object
       message:
         example: ok
@@ -4655,6 +4698,27 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/audit_files:
+    post:
+      description: Direct audit sql from SQL files and MyBatis files
+      operationId: directAuditFilesV1
+      parameters:
+      - description: files that should be audited
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DirectAuditFileReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DirectAuditResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件
+      tags:
+      - sql_audit
   /v1/audit_plan_metas:
     get:
       description: get audit plan metas
@@ -4823,6 +4887,58 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 测试飞书配置
+      tags:
+      - configuration
+  /v1/configurations/feishu_audit:
+    get:
+      description: get feishu audit configuration
+      operationId: getFeishuAuditConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetFeishuAuditConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取飞书审核配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update feishu audit configuration
+      operationId: updateFeishuAuditConfigurationV1
+      parameters:
+      - description: update feishu audit configuration req
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateFeishuConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新飞书配置
+      tags:
+      - configuration
+  /v1/configurations/feishu_audit/test:
+    post:
+      consumes:
+      - application/json
+      description: test feishu audit configuration
+      operationId: testFeishuAuditConfigV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestFeishuConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试飞书审批配置
       tags:
       - configuration
   /v1/configurations/ldap:
@@ -8592,6 +8708,7 @@ paths:
       - sql_analysis
   /v1/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV1
       parameters:
@@ -10299,6 +10416,7 @@ paths:
       - workflow
   /v2/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV2
       parameters:

@@ -66,12 +66,15 @@ LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
 LEFT JOIN workflow_step_user AS curr_wst_re_user ON curr_ws.id = curr_wst_re_user.workflow_step_id
 LEFT JOIN users AS curr_ass_user ON curr_wst_re_user.user_id = curr_ass_user.id
+LEFT JOIN workflow_instance_record_user wiru ON wiru.workflow_instance_record_id = wir.id
+LEFT JOIN users inst_assign_user ON inst_assign_user.id = wiru.user_id
 
 {{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !='initialized'
 LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
 LEFT JOIN workflow_step_user AS all_wst_re_user ON all_ws.id = all_wst_re_user.workflow_step_id
 LEFT JOIN users AS all_ass_user ON all_wst_re_user.user_id = all_ass_user.id
+LEFT JOIN workflow_instance_record_user all_wiru ON all_wiru.workflow_instance_record_id = wir.id
 {{- end }}
 WHERE
 w.deleted_at IS NULL 
@@ -81,6 +84,9 @@ AND (
 w.create_user_id = :current_user_id 
 OR curr_ass_user.id = :current_user_id
 OR all_ass_user.id = :current_user_id
+OR IF(wr.status = 'wait_for_execution'
+                , all_wiru.user_id = :current_user_id
+                , '')
 
 {{- if .viewable_instance_ids }} 
 OR inst.id IN ( {{ .viewable_instance_ids }})
@@ -122,7 +128,11 @@ AND wr.status IN (:filter_status)
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
-AND curr_ass_user.login_name = :filter_current_step_assignee_user_name
+AND (curr_ass_user.login_name = :filter_current_step_assignee_user_name
+OR IF(wr.status = 'wait_for_execution'
+                , inst_assign_user.login_name = :filter_current_step_assignee_user_name
+                , '')
+)
 {{- end }}
 
 {{- if .filter_task_status }}
