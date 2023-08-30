@@ -180,6 +180,7 @@ const (
 	DMLCheckInsertSelect                      = "dml_check_insert_select"
 	DMLCheckAggregate                         = "dml_check_aggregate"
 	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
+	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 )
 
 // inspector config code
@@ -2133,6 +2134,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "建议字段%v设置NOT NULL约束",
 		Func:         checkColumnNotNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckIndexSelectivity,
+			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
+			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "70",
+					Desc:  "可选择性（百分比）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
+		Func:         checkIndexSelectivity,
 	},
 }
 
@@ -6029,7 +6050,6 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	return nil
 }
 
-
 func checkInsertSelect(input *RuleHandlerInput) error {
 	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
 		if stmt.Select != nil {
@@ -6096,6 +6116,61 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	if len(notNullColumns) > 0 {
 		notNullColString := strings.Join(notNullColumns, ",")
 		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
+	}
+	return nil
+}
+
+func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
+	indexColumns := []string{}
+	for _, info := range indexesInfo {
+		if info.KeyName == indexName {
+			indexColumns = append(indexColumns, info.ColumnName)
+		}
+	}
+	return indexColumns
+}
+
+func checkIndexSelectivity(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(ast.DMLNode); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	for _, selectNode := range selectVisitor.SelectList {
+		epRecords, err := input.Ctx.GetExecutionPlan(selectNode.Text())
+		if err != nil {
+			log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", selectNode.Text(), err)
+			return nil
+		}
+		for _, record := range epRecords {
+			recordKey := record.Key
+			recordTable := record.Table
+			if recordKey == "" || recordTable == "" {
+				continue
+			}
+			tables := util.GetTables(selectNode.From.TableRefs)
+			for _, tableName := range tables {
+				if tableName.Name.L != recordTable {
+					continue
+				}
+				schemaName := input.Ctx.GetSchemaName(tableName)
+				indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.O)
+				if err != nil {
+					continue
+				}
+				indexColumns := getColumnFromIndexesInfoByIndexName(indexesInfo, recordKey)
+				maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+				if err != nil {
+					continue
+				}
+				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+				if maxIndexOption > 0 && float64(max) > maxIndexOption {
+					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
+					return nil
+				}
+			}
+		}
 	}
 	return nil
 }
