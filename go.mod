@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20230802083245-e05ef5ca6fff
+	github.com/actiontech/dms v0.0.0-20230829055317-69b048de7bd4
 	github.com/actiontech/mybatis-mapper-2-sql v0.3.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
@@ -45,7 +45,6 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
-	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jinzhu/gorm v1.9.15
 	github.com/jmoiron/sqlx v1.3.3

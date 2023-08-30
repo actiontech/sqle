@@ -28,7 +28,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/StackExchange/wmi v1.2.1
 github.com/StackExchange/wmi
-# github.com/actiontech/dms v0.0.0-20230802083245-e05ef5ca6fff
+# github.com/actiontech/dms v0.0.0-20230829055317-69b048de7bd4
 ## explicit
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
 github.com/actiontech/dms/pkg/dms-common/api/dms/v1
@@ -231,7 +231,6 @@ github.com/hashicorp/go-plugin/internal/plugin
 # github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb
 github.com/hashicorp/yamux
 # github.com/iancoleman/strcase v0.3.0
-## explicit
 github.com/iancoleman/strcase
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
@@ -563,7 +562,7 @@ golang.org/x/tools/internal/pkgbits
 golang.org/x/tools/internal/tokeninternal
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
-# google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e
+# google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.50.1 => google.golang.org/grpc v1.29.0
 ## explicit
@@ -610,7 +609,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.28.1
+# google.golang.org/protobuf v1.28.0
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt

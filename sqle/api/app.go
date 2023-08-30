@@ -177,8 +177,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 		// statistic
 		v1Router.GET("/projects/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
-		// 数据资源更新处理 内部调用
+		// 内部调用
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
+		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.AdminUserAllowed())
 	}
 
 	// auth
@@ -331,8 +332,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 
 	v2Router.GET("/projects/:project_name/instances/:instance_name/", v2.GetInstance)
 
-	v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable) // permission
-
+	// v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable) // permission
 	// v1Router.POST("/projects/:project_name/instances", DeprecatedBy(apiV2))
 	// v2Router.POST("/projects/:project_name/instances", v2.CreateInstance)
 	// v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
