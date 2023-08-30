@@ -5582,7 +5582,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 			address VARCHAR(200),
 			PRIMARY KEY (id)
 		);`,
-		newTestResult().add(driverV2.RuleLevelError, rulepkg.DDLCheckColumnNotNULL, "字段age,email,address没有NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(
@@ -5596,7 +5596,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 		ADD COLUMN new_column3 DATE,
 		ADD COLUMN new_column4 VARCHAR(100),
 		MODIFY COLUMN name varchar(500);`,
-		newTestResult().add(driverV2.RuleLevelError, rulepkg.DDLCheckColumnNotNULL, "字段new_column3,new_column4,name没有NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(

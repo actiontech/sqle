@@ -2127,11 +2127,11 @@ var RuleHandlers = []RuleHandler{
 			Name:       DDLCheckColumnNotNULL,
 			Desc:       "表字段必须有NOT NULL约束",
 			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
-		Message:      "字段%v没有NOT NULL约束",
+		Message:      "建议字段%v设置NOT NULL约束",
 		Func:         checkColumnNotNull,
 	},
 }
