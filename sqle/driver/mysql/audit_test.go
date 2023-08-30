@@ -131,6 +131,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckSortColumnLength:                    {},
 		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
 		rulepkg.DMLCheckAggregate:                           {},
+		rulepkg.DDLCheckColumnNotNULL:                       {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5560,6 +5561,69 @@ func TestDMLCheckAggregate(t *testing.T) {
 		"",
 		DefaultMysqlInspect(),
 		`select v2 from exist_tb_1 group by v2 having v1 > 1`,
+		newTestResult(),
+	)
+}
+
+
+func TestDDLCheckColumnNotNull(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnNotNULL].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT,
+			email VARCHAR(100),
+			address VARCHAR(200),
+			PRIMARY KEY (id)
+		);`,
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		ADD COLUMN new_column3 DATE,
+		ADD COLUMN new_column4 VARCHAR(100),
+		MODIFY COLUMN name varchar(500);`,
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT NOT NULL,
+			email VARCHAR(100) NOT NULL,
+			address VARCHAR(200) NOT NULL,
+			PRIMARY KEY (id)
+		);`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		MODIFY COLUMN name varchar(500) NOT NULL;`,
 		newTestResult(),
 	)
 }

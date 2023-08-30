@@ -113,6 +113,7 @@ const (
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
+	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
 )
 
 // inspector DML rules
@@ -2120,6 +2121,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用聚合函数计算",
 		Func:         checkAggregateFunc,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckColumnNotNULL,
+			Desc:       "表字段必须有NOT NULL约束",
+			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议字段%v设置NOT NULL约束",
+		Func:         checkColumnNotNull,
 	},
 }
 
@@ -6016,6 +6029,7 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	return nil
 }
 
+
 func checkInsertSelect(input *RuleHandlerInput) error {
 	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
 		if stmt.Select != nil {
@@ -6055,6 +6069,33 @@ func checkAggregateFunc(input *RuleHandlerInput) error {
 				return nil
 			}
 		}
+	}
+	return nil
+}
+
+func checkColumnNotNull(input *RuleHandlerInput) error {
+	notNullColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, newColumn := range spec.NewColumns {
+				ok := util.IsAllInOptions(newColumn.Options, ast.ColumnOptionNotNull)
+				if !ok {
+					notNullColumns = append(notNullColumns, newColumn.Name.OrigColName())
+				}
+			}
+		}
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			ok := util.IsAllInOptions(col.Options, ast.ColumnOptionNotNull)
+			if !ok {
+				notNullColumns = append(notNullColumns, col.Name.OrigColName())
+			}
+		}
+	}
+	if len(notNullColumns) > 0 {
+		notNullColString := strings.Join(notNullColumns, ",")
+		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
 	}
 	return nil
 }
