@@ -7,6 +7,8 @@ import (
 	"syscall"
 
 	"github.com/actiontech/sqle/sqle/api"
+	dms "github.com/actiontech/sqle/sqle/dms"
+
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -67,6 +69,11 @@ func Run(config *config.Config) error {
 	}
 	model.InitStorage(s)
 
+	err = dms.RegisterAsDMSTarget(config.Server.SqleCnf)
+	if err != nil {
+		return fmt.Errorf("register to dms failed :%v", err)
+	}
+
 	if sqleCnf.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
@@ -74,8 +81,14 @@ func Run(config *config.Config) error {
 		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(driver.GetPluginManager().GetAllRules()); err != nil {
-			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
+		projectIds, err := dms.GetProjects()
+		if err != nil {
+			return fmt.Errorf("get projects failed: %v", err)
+		}
+		for _, projectId := range projectIds {
+			if err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(projectId), driver.GetPluginManager().GetAllRules()); err != nil {
+				return fmt.Errorf("create default template failed while auto migrating table: %v", err)
+			}
 		}
 		// if err := s.CreateDefaultProject(); err != nil {
 		// 	return fmt.Errorf("create default project failed while auto migrating table: %v", err)
@@ -101,11 +114,6 @@ func Run(config *config.Config) error {
 	jm := server.NewServerJobManger(node)
 	jm.Start()
 	defer jm.Stop()
-
-	err = api.RegisterAsDMSTarget(config.Server.SqleCnf)
-	if err != nil {
-		return fmt.Errorf("register to dms failed :%v", err)
-	}
 
 	net := &gracenet.Net{}
 	go api.StartApi(net, exitChan, sqleCnf)

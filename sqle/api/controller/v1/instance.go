@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -742,18 +743,8 @@ type GetInstanceConnectableReqV1 struct {
 	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
-// CheckInstanceIsConnectable test instance db connection
-// @Summary 实例连通性测试（实例提交前）
-// @Description test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集
-// @Accept json
-// @Id checkInstanceIsConnectableV1
-// @Tags instance
-// @Security ApiKeyAuth
-// @Param instance body v1.GetInstanceConnectableReqV1 true "instance info"
-// @Success 200 {object} v1.GetInstanceConnectableResV1
-// @router /v1/instance_connection [post]
 func CheckInstanceIsConnectable(c echo.Context) error {
-	req := new(GetInstanceConnectableReqV1)
+	req := new(v1.CheckDbConnectable)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -783,12 +774,9 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	err := common.CheckInstanceIsConnectable(instance)
 	if err != nil {
 		l.Warnf("check instance is connectable failed: %v", err)
+		return c.JSON(http.StatusOK, baseV1.GenericResp{Code: http.StatusBadRequest, Msg: err.Error()})
 	}
-
-	return c.JSON(http.StatusOK, GetInstanceConnectableResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    newInstanceConnectableResV1(err),
-	})
+	return c.JSON(http.StatusOK, baseV1.GenericResp{Msg: "OK"})
 }
 
 type GetInstanceSchemaResV1 struct {
