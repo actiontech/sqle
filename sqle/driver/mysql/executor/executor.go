@@ -431,6 +431,8 @@ const (
 
 	ExplainRecordAccessTypeAll   = "ALL"
 	ExplainRecordAccessTypeIndex = "index"
+
+	ExplainRecordPrimaryKey = "PRIMARY"
 )
 
 func (c *Executor) Explain(query string) (columns []string, rows [][]sql.NullString, err error) {
