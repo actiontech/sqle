@@ -1001,6 +1001,7 @@ func GetWorkflowV1(c echo.Context) error {
 
 type ExportWorkflowReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
+	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
