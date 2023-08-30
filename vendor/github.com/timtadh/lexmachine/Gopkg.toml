@@ -1,0 +1,17 @@
+## "required" lists a set of packages (not projects) that must be included in
+## Gopkg.lock. This list is merged with the set of packages imported by the current
+## project. Use it when your project needs a package it doesn't explicitly import -
+## including "main" packages.
+required = []
+
+## "ignored" lists a set of packages (not projects) that are ignored when
+## dep statically analyzes source code. Ignored packages can be in this project,
+## or in a dependency.
+ignored = []
+
+## Constraints are rules for how directly imported projects
+## may be incorporated into the depgraph. They are respected by
+## dep whether coming from the Gopkg.toml of the current project or a dependency.
+[[constraint]]
+name = "github.com/timtadh/data-structures"
+version = ">=0.5.2"

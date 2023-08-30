@@ -105,6 +105,7 @@ func GetUserID(c echo.Context) string {
 	return fmt.Sprintf("%d", uid)
 }
 
+// TODO 该方法后面需要完全替代GetCurrentUser
 func GetCurrentUser(c echo.Context) (*model.User, error) {
 	key := "current_user"
 	currentUser := c.Get(key)

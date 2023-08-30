@@ -547,11 +547,11 @@ func (f *memFile) Seek(offset int64, whence int) (int64, error) {
 	npos := f.pos
 	// TODO: How to handle offsets greater than the size of system int?
 	switch whence {
-	case io.SeekStart:
+	case os.SEEK_SET:
 		npos = int(offset)
-	case io.SeekCurrent:
+	case os.SEEK_CUR:
 		npos += int(offset)
-	case io.SeekEnd:
+	case os.SEEK_END:
 		npos = len(f.n.data) + int(offset)
 	default:
 		npos = -1

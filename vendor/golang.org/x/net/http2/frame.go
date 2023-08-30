@@ -23,7 +23,7 @@ const frameHeaderLen = 9
 var padZeros = make([]byte, 255) // zeros for padding
 
 // A FrameType is a registered frame type as defined in
-// https://httpwg.org/specs/rfc7540.html#rfc.section.11.2
+// http://http2.github.io/http2-spec/#rfc.section.11.2
 type FrameType uint8
 
 const (
@@ -146,7 +146,7 @@ func typeFrameParser(t FrameType) frameParser {
 
 // A FrameHeader is the 9 byte header of all HTTP/2 frames.
 //
-// See https://httpwg.org/specs/rfc7540.html#FrameHeader
+// See http://http2.github.io/http2-spec/#FrameHeader
 type FrameHeader struct {
 	valid bool // caller can access []byte fields in the Frame
 
@@ -575,7 +575,7 @@ func (fr *Framer) checkFrameOrder(f Frame) error {
 
 // A DataFrame conveys arbitrary, variable-length sequences of octets
 // associated with a stream.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.1
+// See http://http2.github.io/http2-spec/#rfc.section.6.1
 type DataFrame struct {
 	FrameHeader
 	data []byte
@@ -662,15 +662,6 @@ func (f *Framer) WriteData(streamID uint32, endStream bool, data []byte) error {
 // It is the caller's responsibility not to violate the maximum frame size
 // and to not call other Write methods concurrently.
 func (f *Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error {
-	if err := f.startWriteDataPadded(streamID, endStream, data, pad); err != nil {
-		return err
-	}
-	return f.endWrite()
-}
-
-// startWriteDataPadded is WriteDataPadded, but only writes the frame to the Framer's internal buffer.
-// The caller should call endWrite to flush the frame to the underlying writer.
-func (f *Framer) startWriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error {
 	if !validStreamID(streamID) && !f.AllowIllegalWrites {
 		return errStreamID
 	}
@@ -700,14 +691,14 @@ func (f *Framer) startWriteDataPadded(streamID uint32, endStream bool, data, pad
 	}
 	f.wbuf = append(f.wbuf, data...)
 	f.wbuf = append(f.wbuf, pad...)
-	return nil
+	return f.endWrite()
 }
 
 // A SettingsFrame conveys configuration parameters that affect how
 // endpoints communicate, such as preferences and constraints on peer
 // behavior.
 //
-// See https://httpwg.org/specs/rfc7540.html#SETTINGS
+// See http://http2.github.io/http2-spec/#SETTINGS
 type SettingsFrame struct {
 	FrameHeader
 	p []byte
@@ -846,7 +837,7 @@ func (f *Framer) WriteSettingsAck() error {
 // A PingFrame is a mechanism for measuring a minimal round trip time
 // from the sender, as well as determining whether an idle connection
 // is still functional.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.7
+// See http://http2.github.io/http2-spec/#rfc.section.6.7
 type PingFrame struct {
 	FrameHeader
 	Data [8]byte
@@ -879,7 +870,7 @@ func (f *Framer) WritePing(ack bool, data [8]byte) error {
 }
 
 // A GoAwayFrame informs the remote peer to stop creating streams on this connection.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.8
+// See http://http2.github.io/http2-spec/#rfc.section.6.8
 type GoAwayFrame struct {
 	FrameHeader
 	LastStreamID uint32
@@ -943,7 +934,7 @@ func parseUnknownFrame(_ *frameCache, fh FrameHeader, countError func(string), p
 }
 
 // A WindowUpdateFrame is used to implement flow control.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.9
+// See http://http2.github.io/http2-spec/#rfc.section.6.9
 type WindowUpdateFrame struct {
 	FrameHeader
 	Increment uint32 // never read with high bit set
@@ -1132,7 +1123,7 @@ func (f *Framer) WriteHeaders(p HeadersFrameParam) error {
 }
 
 // A PriorityFrame specifies the sender-advised priority of a stream.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.3
+// See http://http2.github.io/http2-spec/#rfc.section.6.3
 type PriorityFrame struct {
 	FrameHeader
 	PriorityParam
@@ -1202,7 +1193,7 @@ func (f *Framer) WritePriority(streamID uint32, p PriorityParam) error {
 }
 
 // A RSTStreamFrame allows for abnormal termination of a stream.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.4
+// See http://http2.github.io/http2-spec/#rfc.section.6.4
 type RSTStreamFrame struct {
 	FrameHeader
 	ErrCode ErrCode
@@ -1234,7 +1225,7 @@ func (f *Framer) WriteRSTStream(streamID uint32, code ErrCode) error {
 }
 
 // A ContinuationFrame is used to continue a sequence of header block fragments.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.10
+// See http://http2.github.io/http2-spec/#rfc.section.6.10
 type ContinuationFrame struct {
 	FrameHeader
 	headerFragBuf []byte
@@ -1275,7 +1266,7 @@ func (f *Framer) WriteContinuation(streamID uint32, endHeaders bool, headerBlock
 }
 
 // A PushPromiseFrame is used to initiate a server stream.
-// See https://httpwg.org/specs/rfc7540.html#rfc.section.6.6
+// See http://http2.github.io/http2-spec/#rfc.section.6.6
 type PushPromiseFrame struct {
 	FrameHeader
 	PromiseID     uint32
