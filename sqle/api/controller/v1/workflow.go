@@ -804,6 +804,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
 // @Param filter_workflow_id query string false "filter by workflow_id"
+// @Param fuzzy_workflow_desc query string false "fuzzy filter by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
