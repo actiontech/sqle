@@ -5626,3 +5626,56 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 		newTestResult(),
 	)
 }
+
+func TestDMLCheckIndexSelectivity(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckIndexSelectivity].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("50.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1").AddRow("primary", "id"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("50.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_6 where v1='10'", newTestResult())
+
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select id from exist_tb_6 where v1='10'")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).AddRow("80.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
+
+}
