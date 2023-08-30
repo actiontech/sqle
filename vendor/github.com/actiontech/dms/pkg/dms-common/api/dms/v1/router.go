@@ -22,6 +22,7 @@ var (
 	NotificationRouterGroup       = "/dms/notifications"
 	WebHookRouterGroup            = "/dms/webhooks"
 	MemberForInternalRouterSuffix = "/internal"
+	InternalDBServiceRouterGroup  = "/internal/db_services"
 )
 
 // api group
@@ -73,4 +74,8 @@ func GetNotificationRouter() string {
 
 func GetWebHooksRouter() string {
 	return fmt.Sprintf("%s%s", CurrentGroupVersion, WebHookRouterGroup)
+}
+
+func GetDBConnectionAbleRouter() string {
+	return fmt.Sprintf("%s%s/connection", CurrentGroupVersion, InternalDBServiceRouterGroup)
 }
