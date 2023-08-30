@@ -4847,8 +4847,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "fuzzy filter by workflow description",
-                        "name": "fuzzy_workflow_desc",
+                        "description": "fuzzy search by workflow description",
+                        "name": "fuzzy_search_workflow_desc",
                         "in": "query"
                     },
                     {
