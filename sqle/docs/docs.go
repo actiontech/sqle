@@ -25,6 +25,40 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/audit_files": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql from SQL files and MyBatis files",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件",
+                "operationId": "directAuditFilesV1",
+                "parameters": [
+                    {
+                        "description": "files that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditFileReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -289,6 +323,90 @@ var doc = `{
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestFeishuConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/feishu_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get feishu audit configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取飞书审核配置",
+                "operationId": "getFeishuAuditConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetFeishuAuditConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update feishu audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新飞书配置",
+                "operationId": "updateFeishuAuditConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update feishu audit configuration req",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateFeishuConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/feishu_audit/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test feishu audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试飞书审批配置",
+                "operationId": "testFeishuAuditConfigV1",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -6170,6 +6288,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -8823,6 +8942,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV2",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -10081,6 +10201,46 @@ var doc = `{
                 }
             }
         },
+        "v1.DirectAuditFileReqV1": {
+            "type": "object",
+            "properties": {
+                "file_contents": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现\n每个数组元素是一个文件内容",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "select * from t1; select * from t2;"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
+                "instance_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "project1"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
+                }
+            }
+        },
         "v1.DirectAuditReqV1": {
             "type": "object",
             "properties": {
@@ -10597,6 +10757,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DriversResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetFeishuAuditConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.FeishuConfigurationV1"
                 },
                 "message": {
                     "type": "string",

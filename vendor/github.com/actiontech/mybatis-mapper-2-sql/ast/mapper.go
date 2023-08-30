@@ -70,7 +70,10 @@ func (m *Mapper) GetStmt(ctx *Context) (string, error) {
 
 func (m *Mapper) GetStmts(ctx *Context, skipErrorQuery bool) ([]string, error) {
 	var stmts []string
-	ctx.Sqls = m.SqlNodes
+	if len(ctx.Sqls) == 0 {
+		ctx.Sqls = m.SqlNodes
+	}
+	ctx.DefaultNamespace = m.NameSpace
 	for _, a := range m.QueryNodes {
 		data, err := a.GetStmt(ctx)
 		if err == nil {

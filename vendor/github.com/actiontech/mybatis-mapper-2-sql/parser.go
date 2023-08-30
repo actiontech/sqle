@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -25,6 +26,47 @@ func ParseXML(data string) (string, error) {
 		return "", err
 	}
 	return stmt, nil
+}
+
+// ParseXMLs is a parser for parse all query in several XML files to []string one by one;
+// you can set `skipErrorQuery` true to ignore invalid query.
+func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
+	ms := ast.NewMappers()
+	for i := range data {
+		r := strings.NewReader(data[i])
+		d := xml.NewDecoder(r)
+		n, err := parse(d)
+		if err != nil {
+			if skipErrorQuery {
+				continue
+			} else {
+				return nil, err
+			}
+		}
+
+		if n == nil {
+			continue
+		}
+
+		m, ok := n.(*ast.Mapper)
+		if !ok {
+			if skipErrorQuery {
+				continue
+			} else {
+				return nil, errors.New("the mapper is not found")
+			}
+		}
+		err = ms.AddMapper(m)
+		if err != nil && !skipErrorQuery {
+			return nil, fmt.Errorf("add mapper failed: %v", err)
+		}
+	}
+	stmts, err := ms.GetStmts(skipErrorQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	return stmts, nil
 }
 
 // ParseXMLQuery is a parser for parse all query in XML to []string one by one;
