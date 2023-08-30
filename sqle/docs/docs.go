@@ -4847,6 +4847,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "fuzzy filter by workflow description",
+                        "name": "fuzzy_workflow_desc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter create time from",
                         "name": "filter_create_time_from",
                         "in": "query"
