@@ -7774,6 +7774,10 @@ paths:
         in: query
         name: filter_workflow_id
         type: string
+      - description: fuzzy search by workflow description
+        in: query
+        name: fuzzy_search_workflow_desc
+        type: string
       - description: filter create time from
         in: query
         name: filter_create_time_from
