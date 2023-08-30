@@ -47,6 +47,7 @@ func exportWorkflowV1(c echo.Context) error {
 
 	data := map[string]interface{}{
 		"filter_subject":                         req.FilterSubject,
+		"fuzzy_search_workflow_desc":             req.FuzzySearchWorkflowDesc,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
 		"filter_create_user_name":                req.FilterCreateUserName,
