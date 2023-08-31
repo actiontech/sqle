@@ -653,7 +653,16 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	if !exist || !ti.isLoad {
 		return -1, nil
 	}
-
+	if ti.OriginalTable == nil {
+		originalTable, exist, err := c.GetCreateTableStmt(stmt)
+		if !exist {
+			return -1, nil
+		}
+		if err != nil {
+			return -1, err
+		}
+		ti.OriginalTable = originalTable
+	}
 	for _, columnName := range columnNames {
 		if !util.TableExistCol(ti.OriginalTable, columnName) {
 			return -1, nil
@@ -888,4 +897,8 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 
 func (c *Context) GetExecutor() *executor.Executor {
 	return c.e
+}
+
+func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
+	return c.e.GetTableIndexesInfo(schema, tableName)
 }

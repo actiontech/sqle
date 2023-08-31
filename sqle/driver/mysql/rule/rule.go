@@ -113,6 +113,7 @@ const (
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
+	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
 )
 
 // inspector DML rules
@@ -176,6 +177,10 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckInsertSelect                      = "dml_check_insert_select"
+	DMLCheckAggregate                         = "dml_check_aggregate"
+	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
+	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 )
 
 // inspector config code
@@ -2081,6 +2086,74 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainUsingIndex,
+			Desc:       "SQL查询条件必须走索引",
+			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议使用索引以优化 SQL 查询性能",
+		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckInsertSelect,
+			Desc:       "禁止INSERT ... SELECT",
+			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止 INSERT ... SELECT",
+		Func:         checkInsertSelect,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAggregate,
+			Desc:       "禁止使用聚合函数",
+			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用聚合函数计算",
+		Func:         checkAggregateFunc,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckColumnNotNULL,
+			Desc:       "表字段必须有NOT NULL约束",
+			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议字段%v设置NOT NULL约束",
+		Func:         checkColumnNotNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckIndexSelectivity,
+			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
+			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "70",
+					Desc:  "可选择性（百分比）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
+		Func:         checkIndexSelectivity,
 	},
 }
 
@@ -4718,6 +4791,9 @@ func checkExplain(input *RuleHandlerInput) error {
 			strings.Contains(record.Extra, executor.ExplainRecordExtraUsingIndexForSkipScan) {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
+		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
 
 	}
 	return nil
@@ -5970,6 +6046,132 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	}
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkInsertSelect(input *RuleHandlerInput) error {
+	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
+		if stmt.Select != nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkAggregateFunc(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(ast.DMLNode); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	for _, selectNode := range selectVisitor.SelectList {
+		if selectNode.Having != nil {
+			isHavingUseFunc := false
+			util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+				switch expr.(type) {
+				case *ast.AggregateFuncExpr:
+					isHavingUseFunc = true
+					return true
+				}
+				return false
+			}, selectNode.Having.Expr)
+
+			if isHavingUseFunc {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+		for _, field := range selectNode.Fields.Fields {
+			if _, ok := field.Expr.(*ast.AggregateFuncExpr); ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnNotNull(input *RuleHandlerInput) error {
+	notNullColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, newColumn := range spec.NewColumns {
+				ok := util.IsAllInOptions(newColumn.Options, ast.ColumnOptionNotNull)
+				if !ok {
+					notNullColumns = append(notNullColumns, newColumn.Name.OrigColName())
+				}
+			}
+		}
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			ok := util.IsAllInOptions(col.Options, ast.ColumnOptionNotNull)
+			if !ok {
+				notNullColumns = append(notNullColumns, col.Name.OrigColName())
+			}
+		}
+	}
+	if len(notNullColumns) > 0 {
+		notNullColString := strings.Join(notNullColumns, ",")
+		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
+	}
+	return nil
+}
+
+
+func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
+	indexColumns := []string{}
+	for _, info := range indexesInfo {
+		if info.KeyName == indexName {
+			indexColumns = append(indexColumns, info.ColumnName)
+		}
+	}
+	return indexColumns
+}
+
+func checkIndexSelectivity(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		recordKey := record.Key
+		recordTable := record.Table
+		if recordKey == "" || recordTable == "" {
+			continue
+		}
+		for _, selectNode := range selectVisitor.SelectList {
+			tables := util.GetTables(selectNode.From.TableRefs)
+			for _, tableName := range tables {
+				if tableName.Name.L != recordTable {
+					continue
+				}
+				schemaName := input.Ctx.GetSchemaName(tableName)
+				indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.O)
+				if err != nil {
+					continue
+				}
+				indexColumns := getColumnFromIndexesInfoByIndexName(indexesInfo, recordKey)
+				maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+				if err != nil {
+					continue
+				}
+				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+				if maxIndexOption > 0 && float64(max) > maxIndexOption {
+					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
+					return nil
+				}
+			}
+		}
 	}
 	return nil
 }
