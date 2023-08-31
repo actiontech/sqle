@@ -6120,6 +6120,7 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
+
 func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
 	indexColumns := []string{}
 	for _, info := range indexesInfo {
@@ -6131,23 +6132,23 @@ func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInf
 }
 
 func checkIndexSelectivity(input *RuleHandlerInput) error {
-	if _, ok := input.Node.(ast.DMLNode); !ok {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
 		return nil
 	}
 	selectVisitor := &util.SelectVisitor{}
 	input.Node.Accept(selectVisitor)
-	for _, selectNode := range selectVisitor.SelectList {
-		epRecords, err := input.Ctx.GetExecutionPlan(selectNode.Text())
-		if err != nil {
-			log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", selectNode.Text(), err)
-			return nil
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		recordKey := record.Key
+		recordTable := record.Table
+		if recordKey == "" || recordTable == "" {
+			continue
 		}
-		for _, record := range epRecords {
-			recordKey := record.Key
-			recordTable := record.Table
-			if recordKey == "" || recordTable == "" {
-				continue
-			}
+		for _, selectNode := range selectVisitor.SelectList {
 			tables := util.GetTables(selectNode.From.TableRefs)
 			for _, tableName := range tables {
 				if tableName.Name.L != recordTable {
