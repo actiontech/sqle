@@ -2433,6 +2433,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export audit plan report as csv",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "以csv的形式导出扫描报告",
+                "operationId": "exportAuditPlanReportV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan report id",
+                        "name": "audit_plan_report_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "get export audit plan report",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
             "get": {
                 "security": [
