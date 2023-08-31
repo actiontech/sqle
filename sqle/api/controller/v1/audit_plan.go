@@ -1418,6 +1418,14 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	})
 }
 
+func spliceAuditResults(auditResults []model.AuditResult) string {
+	results := []string{}
+	for _, auditResult := range auditResults {
+		results = append(results, fmt.Sprintf("[%v]%v", auditResult.Level, auditResult.Message))
+	}
+	return strings.Join(results, "\n")
+}
+
 // GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
 // @Summary 以csv的形式导出扫描报告
 // @Description export audit plan report as csv
@@ -1430,6 +1438,66 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 // @Success 200 {file} file "get export audit plan report"
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export [get]
 func ExportAuditPlanReport(c echo.Context) error {
+	s := model.GetStorage()
 	buff := new(bytes.Buffer)
+	reportIdStr := c.Param("audit_plan_report_id")
+	auditPlanName := c.Param("audit_plan_name")
+	projectName := c.Param("project_name")
+
+	reportId, err := strconv.Atoi(reportIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	csvWriter := csv.NewWriter(buff)
+	reportInfo, err := s.GetReportWithAuditPlanByReportID(reportId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if reportInfo.AuditPlan == nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("the audit plan corresponding to the report was not found"))
+	}
+
+	auditPlanCreateUser := ""
+	if reportInfo.AuditPlan.CreateUser != nil {
+		auditPlanCreateUser = reportInfo.AuditPlan.CreateUser.Name
+	}
+
+	baseInfo := [][]string{
+		{"扫描任务名称", auditPlanName},
+		{"报告生成时间", reportInfo.CreatedAt.Format("2006/01/02 15:04")},
+		{"审核结果评分", strconv.FormatInt(int64(reportInfo.Score), 10)},
+		{"审核通过率", fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
+		{"所属项目", projectName},
+		{"扫描任务创建人", auditPlanCreateUser},
+		{"扫描任务类型", reportInfo.AuditPlan.Type},
+		{"数据库类型", reportInfo.AuditPlan.DBType},
+		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
+	}
+	err = csvWriter.WriteAll(baseInfo)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = csvWriter.Write([]string{"编号", "SQL", "审核结果"})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	csvWriter.Flush()
+
+	sqlInfo := [][]string{}
+	for idx, sql := range reportInfo.AuditPlanReportSQLs {
+		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(sql.AuditResults)})
+	}
+
+	err = csvWriter.WriteAll(sqlInfo)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	fileName := fmt.Sprintf("扫描任务报告_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
+	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
+		"filename": fileName,
+	}))
+
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
