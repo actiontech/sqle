@@ -374,11 +374,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
 	// UI
-	e.File("/", "ui/index.html")
-	e.Static("/static", "ui/static")
-	e.File("/favicon.png", "ui/favicon.png")
+	e.File("/", "/home/lxt/dev/sqle/sqle/ui/index.html")
+	e.Static("/static", "/home/lxt/dev/sqle/sqle/ui/static")
+	e.File("/favicon.png", "/home/lxt/dev/sqle/sqle/ui/favicon.png")
 	e.GET("/*", func(c echo.Context) error {
-		return c.File("ui/index.html")
+		return c.File("/home/lxt/dev/sqle/sqle/ui/index.html")
 	})
 
 	address := fmt.Sprintf(":%v", config.SqleServerPort)

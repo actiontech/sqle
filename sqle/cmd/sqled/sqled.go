@@ -17,7 +17,7 @@ import (
 var version string
 var port int
 
-//var user string
+// var user string
 var mysqlUser string
 var mysqlPass string
 var mysqlHost string
@@ -80,6 +80,7 @@ func run(cmd *cobra.Command, _ []string) error {
 	var cfg = &config.Config{}
 
 	// read config from file first, then read from cmd args.
+	configPath = "/home/lxt/dev/sqle/.vscode/config.yaml"
 	if configPath != "" {
 		b, err := ioutil.ReadFile(configPath)
 		if err != nil {
