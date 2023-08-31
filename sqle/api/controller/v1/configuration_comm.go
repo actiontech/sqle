@@ -13,7 +13,7 @@ const (
 	LogoUrlBase = "/static/media"
 
 	// LogoDir sqle logo 的本地目录
-	LogoDir = "./ui/static/media"
+	LogoDir = "/home/lxt/dev/sqle/sqle/ui/static/media"
 )
 
 // GetDefaultLogoUrl 获取默认logo的静态资源url
