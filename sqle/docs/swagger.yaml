@@ -6218,6 +6218,36 @@ paths:
       summary: 获取指定扫描任务的SQL扫描记录统计信息
       tags:
       - audit_plan
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export:
+    get:
+      description: export audit plan report as csv
+      operationId: exportAuditPlanReportV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: get export audit plan report
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 以csv的形式导出扫描报告
+      tags:
+      - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
     get:
       description: get audit plan report SQLs
