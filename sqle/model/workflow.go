@@ -413,18 +413,37 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 	}
 
+	tx := s.db.Begin()
+
+	record := new(WorkflowRecord)
+	if len(stepTemplates) == 1 {
+		record.Status = WorkflowStatusWaitForExecution
+	}
+
+	err := tx.Save(record).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
+	}
+
 	workflow := &Workflow{
-		Subject:      subject,
-		WorkflowId:   workflowId,
-		Desc:         desc,
-		ProjectId:    projectId,
-		CreateUserId: user.ID,
-		Mode:         workflowMode,
+		Subject:          subject,
+		WorkflowId:       workflowId,
+		Desc:             desc,
+		ProjectId:        projectId,
+		CreateUserId:     user.ID,
+		Mode:             workflowMode,
+		WorkflowRecordId: record.ID,
+	}
+
+	err = tx.Save(workflow).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	allUsers := make([][]*User, len(tasks))
 	allExecutor := make([][]*User, len(tasks))
-	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	for i, task := range tasks {
 		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
 		if err != nil {
@@ -437,14 +456,6 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			return err
 		}
 		allExecutor[i] = executor
-	}
-
-	record := &WorkflowRecord{
-		InstanceRecords: instanceRecords,
-	}
-
-	if len(stepTemplates) == 1 {
-		record.Status = WorkflowStatusWaitForExecution
 	}
 
 	canOptUsers := allUsers[0]
@@ -467,62 +478,67 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 	}
 
-	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+	{
+		// 工单详情概览页面待操作人是流程模版执行上线step的待操作人加上该数据源待操作人
+		// 如果流程模版制定了待操作人,即指定待操作人上线
+		instanceRecords := UpdateInstanceRecord(stepTemplates, tasks, canExecUsers, allExecutor)
 
-	// 工单详情概览页面待操作人是流程模版执行上线step的待操作人加上该数据源待操作人
-	// 如果流程模版制定了待操作人,即指定待操作人上线
-	UpdateInstanceRecord(stepTemplates, tasks, canExecUsers, instanceRecords, allExecutor)
+		for _, instanceRecord := range instanceRecords {
+			instRecord := instanceRecord
+			instRecord.WorkflowRecordId = record.ID
+			assignees := instRecord.ExecutionAssignees
+			// 置为nil,防止用户被更新
+			// 相关issue:https://github.com/actiontech/sqle/issues/1775
+			instRecord.ExecutionAssignees = nil
+			err = tx.Save(instRecord).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
 
-	tx := s.db.Begin()
-
-	err := tx.Save(record).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
-	}
-
-	for _, instanceRecord := range record.InstanceRecords {
-		if tx.Model(instanceRecord).Association("ExecutionAssignees").Replace(instanceRecord.ExecutionAssignees).Error != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
+			err = tx.Model(instRecord).Association("ExecutionAssignees").Replace(assignees).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
 		}
 	}
 
-	workflow.WorkflowRecordId = record.ID
-	err = tx.Save(workflow).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
+	{
+		steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+
+		for _, step := range steps {
+			currentStep := step
+			currentStep.WorkflowRecordId = record.ID
+			currentStep.WorkflowId = workflow.ID
+			users := currentStep.Assignees
+			currentStep.Assignees = nil
+			err = tx.Save(currentStep).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
+			err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
+		}
+
+		if len(steps) > 0 {
+			err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
+		}
 	}
 
-	for _, step := range steps {
-		currentStep := step
-		currentStep.WorkflowRecordId = record.ID
-		currentStep.WorkflowId = workflow.ID
-		users := currentStep.Assignees
-		currentStep.Assignees = nil
-		err = tx.Save(currentStep).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
-	if len(steps) > 0 {
-		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
 }
 
-func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, stepExecUsers []*User, instanceRecords []*WorkflowInstanceRecord, allExecutor [][]*User) {
+func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, stepExecUsers []*User, allExecutor [][]*User) []*WorkflowInstanceRecord {
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	executionStep := stepTemplates[len(stepTemplates)-1]
 	isExecuteByAuthorized := executionStep.ExecuteByAuthorized.Bool
 	stepTemplateAssignees := executionStep.Users
@@ -539,6 +555,8 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
 		}
 	}
+
+	return instanceRecords
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
