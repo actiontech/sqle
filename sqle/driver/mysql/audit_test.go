@@ -129,7 +129,9 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DMLCheckAggregate:                           {},
+		rulepkg.DDLCheckColumnNotNULL:                       {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -3822,6 +3824,11 @@ func Test_CheckExplain_ShouldNotError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).AddRow("ALL", "10"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult())
 
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(executor.ExplainRecordPrimaryKey))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t, "", inspect4, "select * from exist_tb_1 where id = 1", newTestResult())
+
 	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
@@ -3956,6 +3963,12 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).AddRow(executor.ExplainRecordExtraUsingIndexForSkipScan))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan].Rule,
 		t, "", inspect7, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan))
+
+	inspect8 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
+		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(""))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
+		t, "", inspect8, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
 	assert.NoError(t, handler.ExpectationsWereMet())
 
@@ -5330,7 +5343,6 @@ func TestDDLCheckAllIndexNotNullConstraint(t *testing.T) {
 	)
 }
 
-
 func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSameTableJoinedMultipleTimes].Rule
 
@@ -5456,3 +5468,214 @@ func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 		newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckSameTableJoinedMultipleTimes, "表`exist_db`.`exist_tb_2`被连接多次"),
 	)
 }
+
+func TestDMLCheckInsertSelect(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckInsertSelect].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select id from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1
+		select * from exist_tb_2`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		values(1), (2)`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`insert into exist_tb_1(id)
+		select 1`,
+		newTestResult().addResult(rulepkg.DMLCheckInsertSelect),
+	)
+}
+
+func TestDMLCheckAggregate(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckAggregate].Rule
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select avg(v1) from exist_tb_1 group by v2`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having count(1) > 1`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select avg(v1) from exist_tb_2 group by v2 having count(1) > 1 limit 1)`,
+		newTestResult().addResult(rulepkg.DMLCheckAggregate),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 set v1 = (select v1 from exist_tb_2 limit 1)`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select v1 from exist_tb_1`,
+		newTestResult(),
+	)
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select v2 from exist_tb_1 group by v2 having v1 > 1`,
+		newTestResult(),
+	)
+}
+
+func TestDDLCheckColumnNotNull(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckColumnNotNULL].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT,
+			email VARCHAR(100),
+			address VARCHAR(200),
+			PRIMARY KEY (id)
+		);`,
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		ADD COLUMN new_column3 DATE,
+		ADD COLUMN new_column4 VARCHAR(100),
+		MODIFY COLUMN name varchar(500);`,
+		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`CREATE TABLE your_table (
+			id INT NOT NULL,
+			name VARCHAR(50) NOT NULL,
+			age INT NOT NULL,
+			email VARCHAR(100) NOT NULL,
+			address VARCHAR(200) NOT NULL,
+			PRIMARY KEY (id)
+		);`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`ALTER TABLE exist_tb_1
+		ADD COLUMN new_column1 INT NOT NULL,
+		ADD COLUMN new_column2 VARCHAR(50) NOT NULL,
+		MODIFY COLUMN name varchar(500) NOT NULL;`,
+		newTestResult(),
+	)
+}
+
+func TestDMLCheckIndexSelectivity(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckIndexSelectivity].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("50.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1").AddRow("primary", "id"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("50.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_6 where v1='10'", newTestResult())
+
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
+	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
+
+}
+
