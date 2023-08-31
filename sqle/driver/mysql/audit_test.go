@@ -5670,12 +5670,11 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
 			AddRow("80.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("select id from exist_tb_6 where v1='10'")).
-		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).AddRow("80.0000"))
+		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
+			AddRow("80.0000"))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
