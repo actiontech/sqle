@@ -24,12 +24,6 @@ const (
 
 var EEMetas = []Meta{
 	{
-		Type:         TypeOceanBaseForMySQLMybatis,
-		Desc:         "Mybatis 扫描",
-		InstanceType: InstanceTypeOceanBaseForMySQL,
-		CreateTask:   NewDefaultTask,
-	},
-	{
 		Type:         TypeOceanBaseForMySQLTopSQL,
 		Desc:         "Top SQL",
 		InstanceType: InstanceTypeOceanBaseForMySQL,
