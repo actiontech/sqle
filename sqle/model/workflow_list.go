@@ -147,6 +147,10 @@ AND inst.name = :filter_task_instance_name
 AND w.workflow_id = :filter_workflow_id
 {{- end }}
 
+{{- if .fuzzy_search_workflow_desc }}
+AND w.desc LIKE '%{{ .fuzzy_search_workflow_desc }}%'
+{{- end }}
+
 {{- if .filter_project_name }}
 AND p.name = :filter_project_name
 {{- end }}
