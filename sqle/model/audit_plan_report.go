@@ -85,3 +85,12 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) GetReportWithAuditPlanByReportID(reportId int) (*AuditPlanReportV2, error) {
+	result := &AuditPlanReportV2{}
+	err := s.db.Preload("AuditPlan").Preload("AuditPlan.CreateUser").Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(result).Error
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
