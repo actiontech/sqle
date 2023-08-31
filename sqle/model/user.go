@@ -359,14 +359,18 @@ func (s *Storage) GetUserRoleFromUserGroupByProjectName(projectName string) ([]*
 
 func GetDistinctOfUsers(users1, users2 []*User) []*User {
 	resUsers := users1
-	for _, user1 := range users1 {
-		for _, user2 := range users2 {
-			if user1.ID == user2.ID {
-				continue
-			}
-			resUsers = append(resUsers, user2)
+	m := make(map[uint]struct{})
+	for _, user := range users1 {
+		m[user.ID] = struct{}{}
+	}
+
+	for _, user := range users2 {
+		_, ok := m[user.ID]
+		if !ok {
+			resUsers = append(resUsers, user)
 		}
 	}
+
 	return resUsers
 }
 
