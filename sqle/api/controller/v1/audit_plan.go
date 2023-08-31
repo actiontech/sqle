@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -1413,4 +1414,20 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 		Data:      auditPlanReportSQLsResV1,
 		TotalNums: count,
 	})
+}
+
+// GetAuditPlanAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 以csv的形式导出扫描报告
+// @Description export audit plan report as csv
+// @Id exportAuditPlanReportV1
+// @Tags audit_plan
+// @Param project_name path string true "project name"
+// @Param audit_plan_name path string true "audit plan name"
+// @Param audit_plan_report_id path string true "audit plan report id"
+// @Security ApiKeyAuth
+// @Success 200 {file} file "get export audit plan report"
+// @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export [get]
+func ExportAuditPlanReport(c echo.Context) error {
+	buff := new(bytes.Buffer)
+	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
