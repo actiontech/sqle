@@ -5678,3 +5678,4 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
+

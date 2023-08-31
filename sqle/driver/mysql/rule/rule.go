@@ -6120,6 +6120,7 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
+
 func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
 	indexColumns := []string{}
 	for _, info := range indexesInfo {
