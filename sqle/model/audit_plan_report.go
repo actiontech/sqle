@@ -85,3 +85,12 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)
 }
+
+func (s *Storage) GetReportWithAuditPlanByReportID(reportId int) (auditPlanReportV2 *AuditPlanReportV2, exist bool, err error) {
+	auditPlanReportV2 = &AuditPlanReportV2{}
+	err = s.db.Preload("AuditPlan").Preload("AuditPlan.CreateUser", UnScopedFunc).Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(auditPlanReportV2).Error
+	if err == gorm.ErrRecordNotFound {
+		return auditPlanReportV2, false, nil
+	}
+	return auditPlanReportV2, true, errors.New(errors.ConnectStorageError, err)
+}
