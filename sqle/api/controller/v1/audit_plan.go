@@ -1437,7 +1437,7 @@ func spliceAuditResults(auditResults []model.AuditResult) string {
 // @Security ApiKeyAuth
 // @Success 200 {file} file "get export audit plan report"
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export [get]
-func ExportAuditPlanReport(c echo.Context) error {
+func ExportAuditPlanReportV1(c echo.Context) error {
 	s := model.GetStorage()
 	buff := new(bytes.Buffer)
 	reportIdStr := c.Param("audit_plan_report_id")
@@ -1449,7 +1449,11 @@ func ExportAuditPlanReport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	csvWriter := csv.NewWriter(buff)
-	reportInfo, err := s.GetReportWithAuditPlanByReportID(reportId)
+	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
+	reportInfo, exist, err := s.GetReportWithAuditPlanByReportID(reportId)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("not found audit report"))
+	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1457,9 +1461,8 @@ func ExportAuditPlanReport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("the audit plan corresponding to the report was not found"))
 	}
 
-	auditPlanCreateUser := ""
-	if reportInfo.AuditPlan.CreateUser != nil {
-		auditPlanCreateUser = reportInfo.AuditPlan.CreateUser.Name
+	if reportInfo.AuditPlan.CreateUser == nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("audit plan create user not found"))
 	}
 
 	baseInfo := [][]string{
@@ -1468,7 +1471,7 @@ func ExportAuditPlanReport(c echo.Context) error {
 		{"审核结果评分", strconv.FormatInt(int64(reportInfo.Score), 10)},
 		{"审核通过率", fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
 		{"所属项目", projectName},
-		{"扫描任务创建人", auditPlanCreateUser},
+		{"扫描任务创建人", reportInfo.AuditPlan.CreateUser.Name},
 		{"扫描任务类型", reportInfo.AuditPlan.Type},
 		{"数据库类型", reportInfo.AuditPlan.DBType},
 		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
@@ -1482,7 +1485,6 @@ func ExportAuditPlanReport(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	csvWriter.Flush()
 
 	sqlInfo := [][]string{}
 	for idx, sql := range reportInfo.AuditPlanReportSQLs {
