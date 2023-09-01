@@ -228,3 +228,25 @@ func (f *FeishuClient) GetApprovalInstDetail(ctx context.Context, instanceCode s
 
 	return resp.Data, nil
 }
+
+// CancelApproval 取消审批
+// https://open.feishu.cn/document/server-docs/approval-v4/instance/cancel
+func (f *FeishuClient) CancelApproval(ctx context.Context, approvalCode, instanceCode, userId string) error {
+	instanceCancel := &larkapproval.InstanceCancel{
+		ApprovalCode: &approvalCode,
+		InstanceCode: &instanceCode,
+		UserId:       &userId,
+	}
+
+	resp, err := f.client.Approval.Instance.Cancel(ctx, larkapproval.NewCancelInstanceReqBuilder().
+		InstanceCancel(instanceCancel).Build())
+	if err != nil {
+		return err
+	}
+
+	if !resp.Success() {
+		return fmt.Errorf("cancel approval instance failed: respCode=%v, respMsg=%v, respRequestId=%v", resp.Code, resp.Msg, resp.RequestId())
+	}
+
+	return nil
+}
