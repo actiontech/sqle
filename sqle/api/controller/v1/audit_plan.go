@@ -1461,10 +1461,6 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("the audit plan corresponding to the report was not found"))
 	}
 
-	if reportInfo.AuditPlan.CreateUser == nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("audit plan create user not found"))
-	}
-
 	baseInfo := [][]string{
 		{"扫描任务名称", auditPlanName},
 		{"报告生成时间", reportInfo.CreatedAt.Format("2006/01/02 15:04")},
@@ -1495,6 +1491,8 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("扫描任务报告_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
