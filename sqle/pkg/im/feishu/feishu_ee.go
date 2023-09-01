@@ -212,3 +212,19 @@ func (f *FeishuClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 
 	return resp.Data.InstanceCode, nil
 }
+
+// GetApprovalInstDetail 获取审批实例详情
+// https://open.feishu.cn/document/server-docs/approval-v4/instance/get
+func (f *FeishuClient) GetApprovalInstDetail(ctx context.Context, instanceCode string) (*larkapproval.GetInstanceRespData, error) {
+	resp, err := f.client.Approval.Instance.Get(ctx, larkapproval.NewGetInstanceReqBuilder().
+		InstanceId(instanceCode).Build())
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success() {
+		return nil, fmt.Errorf("get approval instance failed: respCode=%v, respMsg=%v, respRequestId=%v", resp.Code, resp.Msg, resp.RequestId())
+	}
+
+	return resp.Data, nil
+}
