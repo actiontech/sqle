@@ -1467,7 +1467,7 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		{"审核结果评分", strconv.FormatInt(int64(reportInfo.Score), 10)},
 		{"审核通过率", fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
 		{"所属项目", projectName},
-		{"扫描任务创建人", reportInfo.AuditPlan.CreateUser.Name},
+		{"扫描任务创建人", utils.AddDelTag(reportInfo.AuditPlan.CreateUser.DeletedAt, reportInfo.AuditPlan.CreateUser.Name)},
 		{"扫描任务类型", reportInfo.AuditPlan.Type},
 		{"数据库类型", reportInfo.AuditPlan.DBType},
 		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
