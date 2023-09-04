@@ -250,3 +250,27 @@ func (f *FeishuClient) CancelApproval(ctx context.Context, approvalCode, instanc
 
 	return nil
 }
+
+// ApproveApproval 同意审批
+// https://open.feishu.cn/document/server-docs/approval-v4/task/approve#1b8abd5d
+func (f *FeishuClient) ApproveApproval(ctx context.Context, approvalCode, instanceCode, userId, taskId string) error {
+	req := larkapproval.NewApproveTaskReqBuilder().
+		TaskApprove(larkapproval.NewTaskApproveBuilder().
+			ApprovalCode(approvalCode).
+			InstanceCode(instanceCode).
+			UserId(userId).
+			TaskId(taskId).
+			Build()).
+		Build()
+
+	resp, err := f.client.Approval.Task.Approve(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	if !resp.Success() {
+		return fmt.Errorf("approve approval instance failed: respCode=%v, respMsg=%v, respRequestId=%v", resp.Code, resp.Msg, resp.RequestId())
+	}
+
+	return nil
+}
