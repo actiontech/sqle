@@ -64,7 +64,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			}
 			projectName := c.Param("project_name")
 			apnInParam := c.Param("audit_plan_name")
-			if apnInToken != apnInParam || apnInToken != utils.Md5(apnInParam) {
+			if apnInToken != apnInParam && apnInToken != utils.Md5(apnInParam) {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
