@@ -4931,6 +4931,13 @@ paths:
       - application/json
       description: test feishu audit configuration
       operationId: testFeishuAuditConfigV1
+      parameters:
+      - description: test feishu configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestFeishuConfigurationReqV1'
       responses:
         "200":
           description: OK
