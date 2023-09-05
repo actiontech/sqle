@@ -407,6 +407,17 @@ var doc = `{
                 ],
                 "summary": "测试飞书审批配置",
                 "operationId": "testFeishuAuditConfigV1",
+                "parameters": [
+                    {
+                        "description": "test feishu configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestFeishuConfigurationReqV1"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

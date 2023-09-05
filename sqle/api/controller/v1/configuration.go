@@ -1398,6 +1398,7 @@ func UpdateFeishuAuditConfigurationV1(c echo.Context) error {
 // @Id testFeishuAuditConfigV1
 // @Tags configuration
 // @Security ApiKeyAuth
+// @Param req body v1.TestFeishuConfigurationReqV1 true "test feishu configuration req"
 // @Success 200 {object} v1.TestFeishuConfigResV1
 // @router /v1/configurations/feishu_audit/test [post]
 func TestFeishuAuditConfigV1(c echo.Context) error {
