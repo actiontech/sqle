@@ -9,10 +9,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/errors"
-
-	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -164,4 +163,41 @@ func getDefaultBaseInfo() (GetSQLEInfoResDataV1, error) {
 		LogoUrl: logoUrl,
 		Title:   Title,
 	}, nil
+}
+
+func updateFeishuAuditConfigurationV1(c echo.Context) error {
+	req := new(UpdateFeishuConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // disable
+		if req.IsFeishuNotificationEnabled != nil && !(*req.IsFeishuNotificationEnabled) {
+			feishuCfg.IsEnable = false
+			return controller.JSONBaseErrorReq(c, s.Save(feishuCfg))
+		}
+	}
+
+	if req.AppID != nil {
+		feishuCfg.AppKey = *req.AppID
+	}
+	if req.AppSecret != nil {
+		feishuCfg.AppSecret = *req.AppSecret
+	}
+	if req.IsFeishuNotificationEnabled != nil {
+		feishuCfg.IsEnable = *req.IsFeishuNotificationEnabled
+	}
+
+	feishuCfg.Type = model.ImTypeFeishuApproval
+
+	if err := s.Save(feishuCfg); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
