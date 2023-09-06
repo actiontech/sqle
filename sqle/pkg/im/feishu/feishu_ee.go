@@ -1,3 +1,6 @@
+//go:build enterprise
+// +build enterprise
+
 package feishu
 
 import (
@@ -185,7 +188,8 @@ func (f *FeishuClient) CreateApprovalTemplate(ctx context.Context) (approvalCode
 
 // CreateApprovalInstance 创建审批实例
 // https://open.feishu.cn/document/server-docs/approval-v4/instance/create?appId=cli_a4668286c92ed013
-func (f *FeishuClient) CreateApprovalInstance(ctx context.Context, approvalCode, workflowName string, originUserId string, approveUserIds []string, auditResult, projectName, desc, workflowUrl string) (*string, error) {
+func (f *FeishuClient) CreateApprovalInstance(ctx context.Context, approvalCode, workflowName string, originUserId string,
+	approveUserIds []string, auditResult, projectName, desc, workflowUrl string) (*string, error) {
 	form := fmt.Sprintf(CreateInstanceForm, projectName, workflowName, desc, workflowUrl, auditResult)
 
 	req := larkapproval.NewCreateInstanceReqBuilder().
