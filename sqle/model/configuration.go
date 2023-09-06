@@ -477,6 +477,7 @@ const (
 	ApproveStatusInitialized = "initialized"
 	ApproveStatusAgree       = "agree"
 	ApproveStatusRefuse      = "refuse"
+	ApproveStatusCancel      = "canceled"
 )
 
 type DingTalkInstance struct {
@@ -495,6 +496,24 @@ func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkIns
 		return dti, false, nil
 	}
 	return dti, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []uint) ([]DingTalkInstance, error) {
+	var dingTalkInstances []DingTalkInstance
+	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Find(&dingTalkInstances).Error
+	if err != nil {
+		return nil, err
+	}
+	return dingTalkInstances, nil
+}
+
+// batch update ding_talk_instances'status into canceled by workflow_ids
+func (s *Storage) BatchCancelDingTalkInstance(workflowIds []uint) error {
+	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": ApproveStatusCancel}).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, error) {
