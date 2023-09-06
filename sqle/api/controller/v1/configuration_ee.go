@@ -201,3 +201,25 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
+
+func getFeishuAuditConfigurationV1(c echo.Context) error {
+	s := model.GetStorage()
+	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    FeishuConfigurationV1{},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: FeishuConfigurationV1{
+			AppID:                       feishuCfg.AppKey,
+			IsFeishuNotificationEnabled: feishuCfg.IsEnable,
+		},
+	})
+}
