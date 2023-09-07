@@ -18,7 +18,7 @@ type FeishuClient struct {
 }
 
 func NewFeishuClient(appId, appSecret string) *FeishuClient {
-	return &FeishuClient{client: lark.NewClient(appId, appSecret)}
+	return &FeishuClient{client: lark.NewClient(appId, appSecret, lark.WithReqTimeout(30*time.Second))}
 }
 
 type UserContactInfo struct {
