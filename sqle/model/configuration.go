@@ -389,9 +389,9 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 }
 
 const (
-	ImTypeDingTalk       = "dingTalk"
-	ImTypeFeishu         = "feishu"
-	ImTypeFeishuApproval = "feishu_approval"
+	ImTypeDingTalk    = "dingTalk"
+	ImTypeFeishu      = "feishu"
+	ImTypeFeishuAudit = "feishu_audit"
 )
 
 type IM struct {
@@ -528,9 +528,9 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 }
 
 const (
-	FeishuApproveStatusInitialized = "INITIALIZED"
-	FeishuApproveStatusApprove     = "APPROVED"
-	FeishuApproveStatusRejected    = "REJECTED"
+	FeishuAuditStatusInitialized = "INITIALIZED"
+	FeishuAuditStatusApprove     = "APPROVED"
+	FeishuAuditStatusRejected    = "REJECTED"
 )
 
 type FeishuInstance struct {

@@ -10,20 +10,20 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-var ErrCommunityEditionNotSupportFeishuApproval = e.New("community edition not support feishu approval")
+var ErrCommunityEditionNotSupportFeishuAudit = e.New("community edition not support feishu audit")
 
-func CreateFeishuApprovalTemplate(ctx context.Context, im model.IM) error {
-	return ErrCommunityEditionNotSupportFeishuApproval
+func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
+	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func CreateFeishuApprovalInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
-	return ErrCommunityEditionNotSupportFeishuApproval
+func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
+	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func UpdateFeishuApprovalStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
-	return ErrCommunityEditionNotSupportFeishuApproval
+func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
+	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
-	return ErrCommunityEditionNotSupportFeishuApproval
+func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
+	return ErrCommunityEditionNotSupportFeishuAudit
 }
