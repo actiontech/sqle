@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	e "errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -388,8 +389,9 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 }
 
 const (
-	ImTypeDingTalk = "dingTalk"
-	ImTypeFeishu   = "feishu"
+	ImTypeDingTalk       = "dingTalk"
+	ImTypeFeishu         = "feishu"
+	ImTypeFeishuApproval = "feishu_approval"
 )
 
 type IM struct {
@@ -523,6 +525,39 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 		return nil, err
 	}
 	return dingTalkInstances, nil
+}
+
+const (
+	FeishuApproveStatusInitialized = "initialized"
+	FeishuApproveStatusApprove     = "APPROVED"
+	FeishuApproveStatusRejected    = "REJECTED"
+)
+
+type FeishuInstance struct {
+	Model
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
+	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	// 审批实例 taskID
+	TaskID string `json:"task_id" gorm:"column:task_id"`
+	Status string `json:"status" gorm:"default:\"initialized\""`
+}
+
+func (s *Storage) GetFeishuInstanceByWorkflowID(workflowId uint) (*FeishuInstance, bool, error) {
+	fi := new(FeishuInstance)
+	err := s.db.Where("workflow_id = ?", workflowId).Last(&fi).Error
+	if e.Is(err, gorm.ErrRecordNotFound) {
+		return fi, false, nil
+	}
+	return fi, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetFeishuInstByStatus(status string) ([]FeishuInstance, error) {
+	var feishuInst []FeishuInstance
+	err := s.db.Where("status = ?", status).Find(&feishuInst).Error
+	if err != nil {
+		return nil, err
+	}
+	return feishuInst, nil
 }
 
 type PersonaliseConfig struct {
