@@ -141,7 +141,7 @@ func (f FeishuClient) GetFeishuUserIdList(users []*model.User, userType string) 
 		return nil, err
 	}
 
-	var userIDs []string
+	userIDs := make([]string, 0, len(feishuUserMap))
 	for feishuUserID := range feishuUserMap {
 		userIDs = append(userIDs, feishuUserID)
 	}

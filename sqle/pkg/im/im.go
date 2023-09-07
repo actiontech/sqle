@@ -128,7 +128,7 @@ func CreateApprove(id string) {
 				continue
 			}
 
-			var userIds []*string
+			userIds := make([]*string, 0, len(users))
 			for _, user := range users {
 				if user.Phone == "" {
 					newLog.Infof("user %v phone is empty, skip", user.ID)
