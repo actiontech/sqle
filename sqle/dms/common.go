@@ -150,17 +150,18 @@ func GetProjects() ([]string, error) {
 	return projectIds, nil
 }
 
-func RegisterAsDMSTarget(config config.SqleConfig) error {
-	controller.InitDMSServerAddress(config.DMSServerAddress)
+func RegisterAsDMSTarget(sqleConfig config.SqleConfig) error {
+	controller.InitDMSServerAddress(sqleConfig.DMSServerAddress)
 	ctx := context.Background()
+
 	// 向DMS注册反向代理
-	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", config.SqleServerHost, config.SqleServerPort) /* TODO https的处理*/, []string{"/sqle/v"}); nil != err {
+	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle-api", fmt.Sprintf("http://%v:%v", sqleConfig.SqleServerHost, sqleConfig.SqleServerPort) /* TODO https的处理*/, config.Version, []string{"/sqle/v"}); nil != err {
 		return fmt.Errorf("failed to register dms proxy target: %v", err)
 	}
 	// 注册校验接口
 	if err := dmsRegister.RegisterDMSPlugin(ctx, controller.GetDMSServerAddress(), &dmsV1.Plugin{
 		Name:                         "sqle",
-		OperateDataResourceHandleUrl: fmt.Sprintf("http://%s:%d/%s/%s", config.SqleServerHost, config.SqleServerPort, "v1", "data_resource/handle"),
+		OperateDataResourceHandleUrl: fmt.Sprintf("http://%s:%d/%s/%s", sqleConfig.SqleServerHost, sqleConfig.SqleServerPort, "v1", "data_resource/handle"),
 	}); err != nil {
 		return fmt.Errorf("failed to register dms plugin for operation data source handle")
 	}
