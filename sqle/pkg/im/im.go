@@ -7,6 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -189,14 +190,52 @@ func CancelApprove(workflowID uint) {
 	s := model.GetStorage()
 	dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowID)
 	if err != nil {
-		newLog.Errorf("get dingtalk instance by workflow step id error: %v", err)
+		newLog.Errorf("get dingtalk instance by workflow id error: %v", err)
 		return
 	}
 	if !exist {
 		newLog.Infof("dingtalk instance not exist, workflow id: %v", workflowID)
 		return
 	}
+	// 如果在钉钉上已经同意或者拒绝<=>dingtalk instance的status不为initialized
+	// 则只修改钉钉工单状态为取消，不调用取消钉钉工单的API
+	if dingTalkInst.Status != model.ApproveStatusInitialized {
+		newLog.Infof("the dingtalk instance cannot be canceled if its status is not initialized, workflow id: %v", workflowID)
+	} else {
+		go DingTalkCancelApprove(s, newLog, dingTalkInst.ApproveInstanceCode)
+	}
+	// 关闭工单需要修改工单下的钉钉工单的状态
+	dingTalkInst.Status = model.ApproveStatusCancel
+	if err := s.Save(&dingTalkInst); err != nil {
+		newLog.Errorf("save ding talk instance error: %v", err)
+	}
+}
 
+func BatchCancelApprove(workflowIds []uint) {
+	newLog := log.NewEntry()
+	s := model.GetStorage()
+	instances, err := s.GetDingTalkInstanceListByWorkflowIDs(workflowIds)
+	if err != nil {
+		newLog.Errorf("get dingtalk instance list by workflowid slice error: %v", err)
+		return
+	}
+	// batch update ding_talk_instances'status into canceled
+	err = s.BatchUptateStatusOfDingTalkInstance(workflowIds, model.ApproveStatusCancel)
+	if err != nil {
+		newLog.Errorf("batch update ding_talk_instances'status into canceled, error: %v", err)
+	}
+	for idx, instance := range instances {
+		// 如果在钉钉上已经同意或者拒绝<=>dingtalk instance的status不为initialized
+		// 则只修改钉钉工单状态为取消，不调用取消钉钉工单的API
+		if instances[idx].Status != model.ApproveStatusInitialized {
+			newLog.Infof("the dingtalk instance cannot be canceled if its status is not initialized, workflow id: %v", instance.WorkflowId)
+			continue
+		}
+		go DingTalkCancelApprove(s, newLog, instance.ApproveInstanceCode)
+	}
+}
+
+func DingTalkCancelApprove(s *model.Storage, newLog *logrus.Entry, approveInstanceCode string) {
 	ims, err := s.GetAllIMConfig()
 	if err != nil {
 		newLog.Errorf("get im config error: %v", err)
@@ -215,7 +254,7 @@ func CancelApprove(workflowID uint) {
 				AppSecret: im.AppSecret,
 			}
 
-			if err := dingTalk.CancelApprovalInstance(dingTalkInst.ApproveInstanceCode); err != nil {
+			if err := dingTalk.CancelApprovalInstance(approveInstanceCode); err != nil {
 				newLog.Errorf("cancel dingtalk approval instance error: %v", err)
 				return
 			}
