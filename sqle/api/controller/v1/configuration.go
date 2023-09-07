@@ -446,9 +446,9 @@ func GetFeishuConfigurationV1(c echo.Context) error {
 }
 
 type UpdateFeishuConfigurationReqV1 struct {
-	AppID                       *string `json:"app_id" form:"app_id"`
-	AppSecret                   *string `json:"app_secret" form:"app_secret" `
-	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" description:"是否启用飞书推送"`
+	AppID                       *string `json:"app_id" form:"app_id" validate:"required" description:"飞书应用ID"`
+	AppSecret                   *string `json:"app_secret" form:"app_secret" validate:"required" description:"飞书应用Secret"`
+	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" validate:"required" description:"是否启用飞书推送"`
 }
 
 // UpdateFeishuConfigurationV1
