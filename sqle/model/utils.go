@@ -144,6 +144,7 @@ var autoMigrateList = []interface{}{
 	&ManagementPermission{},
 	&IM{},
 	&DingTalkInstance{},
+	&FeishuInstance{},
 	&SyncInstanceTask{},
 	&OperationRecord{},
 	&PersonaliseConfig{},
