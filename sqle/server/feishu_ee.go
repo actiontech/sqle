@@ -29,7 +29,7 @@ func NewFeishuJob(entry *logrus.Entry) ServerJob {
 
 func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 	s := model.GetStorage()
-	im, exist, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	im, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
 	if err != nil {
 		entry.Errorf("get im config by type error: %v", err)
 		return
@@ -44,7 +44,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 		return
 	}
 
-	instList, err := s.GetFeishuInstByStatus(model.FeishuApproveStatusInitialized)
+	instList, err := s.GetFeishuInstByStatus(model.FeishuAuditStatusInitialized)
 	if err != nil {
 		entry.Errorf("get feishu instance by status error: %v", err)
 		return
@@ -59,7 +59,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 		}
 
 		switch *instDetail.Status {
-		case model.FeishuApproveStatusApprove:
+		case model.FeishuAuditStatusApprove:
 			workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
 			if err != nil {
 				entry.Errorf("get workflow detail error: %v", err)
@@ -94,7 +94,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 				continue
 			}
 
-			inst.Status = model.FeishuApproveStatusApprove
+			inst.Status = model.FeishuAuditStatusApprove
 			if err := s.Save(&inst); err != nil {
 				entry.Errorf("save feishu instance error: %v", err)
 				continue
@@ -103,7 +103,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 			if nextStep != nil {
 				imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
 			}
-		case model.FeishuApproveStatusRejected:
+		case model.FeishuAuditStatusRejected:
 			workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
 			if err != nil {
 				entry.Errorf("get workflow detail error: %v", err)
@@ -134,7 +134,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 				continue
 			}
 
-			inst.Status = model.FeishuApproveStatusRejected
+			inst.Status = model.FeishuAuditStatusRejected
 			if err := s.Save(&inst); err != nil {
 				entry.Errorf("save feishu instance error: %v", err)
 				continue
