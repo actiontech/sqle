@@ -17,6 +17,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
 
 	"github.com/labstack/echo/v4"
+	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
 type UpdateSMTPConfigurationReqV1 struct {
@@ -564,7 +565,7 @@ func TestFeishuConfigV1(c echo.Context) error {
 	}
 
 	client := feishu.NewFeishuClient(feishuCfg.AppKey, feishuCfg.AppSecret)
-	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation(email, phone)
+	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation(email, phone, larkContact.UserIdTypeGetUserUserId)
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 			BaseRes: controller.NewBaseReq(nil),
