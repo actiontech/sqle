@@ -151,7 +151,7 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 	e := echo.New()
 
 	jwt := utils.NewJWT(utils.JWTSecretKey)
-	apName120 := "aaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbb120"
+	apName120 := "test_name_length_120_000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	projectName := "default"
 	userName := "admin"
 	assert.Equal(t, 120, len(apName120))
