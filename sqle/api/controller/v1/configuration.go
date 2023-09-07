@@ -446,9 +446,9 @@ func GetFeishuConfigurationV1(c echo.Context) error {
 }
 
 type UpdateFeishuConfigurationReqV1 struct {
-	AppID                       *string `json:"app_id" form:"app_id"`
-	AppSecret                   *string `json:"app_secret" form:"app_secret" `
-	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" description:"是否启用飞书推送"`
+	AppID                       *string `json:"app_id" form:"app_id" validate:"required" description:"飞书应用ID"`
+	AppSecret                   *string `json:"app_secret" form:"app_secret" validate:"required" description:"飞书应用Secret"`
+	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" validate:"required" description:"是否启用飞书推送"`
 }
 
 // UpdateFeishuConfigurationV1
@@ -1374,7 +1374,7 @@ type GetFeishuAuditConfigurationResV1 struct {
 // @Success 200 {object} v1.GetFeishuAuditConfigurationResV1
 // @router /v1/configurations/feishu_audit [get]
 func GetFeishuAuditConfigurationV1(c echo.Context) error {
-	return nil
+	return getFeishuAuditConfigurationV1(c)
 }
 
 // UpdateFeishuAuditConfigurationV1
@@ -1388,7 +1388,7 @@ func GetFeishuAuditConfigurationV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/feishu_audit [patch]
 func UpdateFeishuAuditConfigurationV1(c echo.Context) error {
-	return nil
+	return updateFeishuAuditConfigurationV1(c)
 }
 
 // TestFeishuAuditConfigV1
@@ -1402,5 +1402,5 @@ func UpdateFeishuAuditConfigurationV1(c echo.Context) error {
 // @Success 200 {object} v1.TestFeishuConfigResV1
 // @router /v1/configurations/feishu_audit/test [post]
 func TestFeishuAuditConfigV1(c echo.Context) error {
-	return nil
+	return testFeishuAuditConfigV1(c)
 }

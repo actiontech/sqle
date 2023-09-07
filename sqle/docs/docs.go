@@ -14238,6 +14238,11 @@ var doc = `{
         },
         "v1.UpdateFeishuConfigurationReqV1": {
             "type": "object",
+            "required": [
+                "app_id",
+                "app_secret",
+                "is_feishu_notification_enabled"
+            ],
             "properties": {
                 "app_id": {
                     "type": "string"

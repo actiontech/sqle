@@ -3470,6 +3470,10 @@ definitions:
         type: string
       is_feishu_notification_enabled:
         type: boolean
+    required:
+    - app_id
+    - app_secret
+    - is_feishu_notification_enabled
     type: object
   v1.UpdateInstanceReqV1:
     properties:
