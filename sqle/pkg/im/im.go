@@ -48,9 +48,9 @@ func CreateApprovalTemplate(imType string) {
 			log.NewEntry().Errorf("create approval template error: %v", err)
 			return
 		}
-	case model.ImTypeFeishuApproval:
-		if err := CreateFeishuApprovalTemplate(context.TODO(), im); err != nil {
-			log.NewEntry().Errorf("create feishu approval template error: %v", err)
+	case model.ImTypeFeishuAudit:
+		if err := CreateFeishuAuditTemplate(context.TODO(), im); err != nil {
+			log.NewEntry().Errorf("create feishu audit template error: %v", err)
 			return
 		}
 	}
@@ -148,9 +148,9 @@ func CreateApprove(id string) {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
-		case model.ImTypeFeishuApproval:
-			if err := CreateFeishuApprovalInst(context.TODO(), im, workflow, users, workflowUrl); err != nil {
-				newLog.Errorf("create feishu approval instance error: %v", err)
+		case model.ImTypeFeishuAudit:
+			if err := CreateFeishuAuditInst(context.TODO(), im, workflow, users, workflowUrl); err != nil {
+				newLog.Errorf("create feishu audit instance error: %v", err)
 				continue
 			}
 		default:
@@ -191,9 +191,9 @@ func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
 				newLog.Errorf("update approval status error: %v", err)
 				continue
 			}
-		case model.ImTypeFeishuApproval:
-			if err := UpdateFeishuApprovalStatus(context.Background(), im, workflowId, user, status, reason); err != nil {
-				newLog.Errorf("update feishu approval status error: %v", err)
+		case model.ImTypeFeishuAudit:
+			if err := UpdateFeishuAuditStatus(context.Background(), im, workflowId, user, status, reason); err != nil {
+				newLog.Errorf("update feishu audit status error: %v", err)
 				continue
 			}
 		}
@@ -249,10 +249,10 @@ func BatchCancelApprove(workflowIds []uint, user *model.User) {
 					}
 				}()
 			}
-		case model.ImTypeFeishuApproval:
-			err = CancelFeishuApprovalInst(context.TODO(), im, workflowIds, user)
+		case model.ImTypeFeishuAudit:
+			err = CancelFeishuAuditInst(context.TODO(), im, workflowIds, user)
 			if err != nil {
-				newLog.Errorf("cancel feishu approval instance error: %v", err)
+				newLog.Errorf("cancel feishu audit instance error: %v", err)
 				return
 			}
 		default:
