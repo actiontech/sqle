@@ -318,7 +318,7 @@ func CreateAuditPlan(c echo.Context) error {
 
 	// generate token
 	// 为了控制JWT Token的长度，保证其长度不超过数据表定义的长度上限(255字符)
-	// 因此使用MD5算法将变长的 currentUserName 和 Name 转换为到固定长度
+	// 因此使用MD5算法将变长的 currentUserName 和 Name 转换为固定长度
 	j := utils.NewJWT(utils.JWTSecretKey)
 	t, err := j.CreateToken(utils.Md5(currentUserName), time.Now().Add(tokenExpire).Unix(),
 		utils.WithAuditPlanName(utils.Md5(req.Name)))
