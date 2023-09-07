@@ -200,10 +200,9 @@ func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
 	}
 }
 
-func CancelApprove(workflowID uint, user *model.User) {
+func BatchCancelApprove(workflowIds []uint, user *model.User) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-
 	ims, err := s.GetAllIMConfig()
 	if err != nil {
 		newLog.Errorf("get im config error: %v", err)
@@ -217,30 +216,38 @@ func CancelApprove(workflowID uint, user *model.User) {
 
 		switch im.Type {
 		case model.ImTypeDingTalk:
-			dingTalkInst, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowID)
-			if err != nil {
-				newLog.Errorf("get dingtalk instance by workflow step id error: %v", err)
-				return
-			}
-			if !exist {
-				newLog.Infof("dingtalk instance not exist, workflow id: %v", workflowID)
-				return
-			}
-
 			dingTalk := &dingding.DingTalk{
 				AppKey:    im.AppKey,
 				AppSecret: im.AppSecret,
 			}
 
-			if err := dingTalk.CancelApprovalInstance(dingTalkInst.ApproveInstanceCode); err != nil {
-				newLog.Errorf("cancel dingtalk approval instance error: %v", err)
+			// batch update ding_talk_instances'status into canceled
+			err = s.BatchUptateStatusOfDingTalkInstance(workflowIds, model.ApproveStatusCancel)
+			if err != nil {
+				newLog.Errorf("batch update ding_talk_instances'status into canceled, error: %v", err)
 				return
 			}
-		case model.ImTypeFeishuApproval:
-			err = CancelFeishuApprovalInst(context.TODO(), im, workflowID, user)
+
+			dingTalkInstList, err := s.GetDingTalkInstanceListByWorkflowIDs(workflowIds)
 			if err != nil {
-				newLog.Errorf("cancel feishu approval instance error: %v", err)
+				newLog.Errorf("get dingtalk dingTalkInst list by workflow id slice error: %v", err)
 				return
+			}
+
+			for _, dingTalkInst := range dingTalkInstList {
+				inst := dingTalkInst
+				// 如果在钉钉上已经同意或者拒绝<=>dingtalk instance的status不为initialized
+				// 则只修改钉钉工单状态为取消，不调用取消钉钉工单的API
+				if inst.Status != model.ApproveStatusInitialized {
+					newLog.Infof("the dingtalk dingTalkInst cannot be canceled if its status is not initialized, workflow id: %v", dingTalkInst.WorkflowId)
+					continue
+				}
+
+				go func() {
+					if err := dingTalk.CancelApprovalInstance(inst.ApproveInstanceCode); err != nil {
+						newLog.Errorf("cancel dingtalk approval dingTalkInst error: %v", err)
+					}
+				}()
 			}
 		default:
 			newLog.Errorf("im type %s not found", im.Type)
