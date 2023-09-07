@@ -245,7 +245,7 @@ func BatchCancelApprove(workflowIds []uint, user *model.User) {
 
 				go func() {
 					if err := dingTalk.CancelApprovalInstance(inst.ApproveInstanceCode); err != nil {
-						newLog.Errorf("cancel dingtalk approval dingTalkInst error: %v", err)
+						newLog.Errorf("cancel dingtalk approval instance error: %v,instant id: %v", err, inst.ID)
 					}
 				}()
 			}
