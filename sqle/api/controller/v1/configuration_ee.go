@@ -174,7 +174,7 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 		return err
 	}
 	s := model.GetStorage()
-	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -197,7 +197,7 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 	}
 
 	// set type
-	feishuCfg.Type = model.ImTypeFeishuApproval
+	feishuCfg.Type = model.ImTypeFeishuAudit
 
 	if err := s.Save(feishuCfg); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -208,7 +208,7 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 
 func getFeishuAuditConfigurationV1(c echo.Context) error {
 	s := model.GetStorage()
-	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -251,7 +251,7 @@ func testFeishuAuditConfigV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuApproval)
+	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
