@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -317,24 +316,6 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
-	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
-		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
-	}
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
-	}
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return fmt.Errorf("workflow current step is not %d", stepId)
-	}
-
-	if !workflow.IsOperationUser(user) {
-		return fmt.Errorf("you are not allow to operate the workflow")
-	}
-	return nil
-}
-
 // @Deprecated
 // @Summary 审批通过
 // @Description approve workflow
@@ -493,34 +474,6 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 	return true, nil
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
-	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-	if err != nil {
-		return nil, err
-	}
-	// 有不在运维时间内的instances报错
-	var cannotExecuteInstanceNames []string
-	for _, inst := range instances {
-		if len(inst.MaintenancePeriod) != 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
-			cannotExecuteInstanceNames = append(cannotExecuteInstanceNames, inst.Name)
-		}
-	}
-	if len(cannotExecuteInstanceNames) > 0 {
-		return nil, errors.New(errors.TaskActionInvalid,
-			fmt.Errorf("please go online during instance operation and maintenance time. these instances are not in maintenance time[%v]", strings.Join(cannotExecuteInstanceNames, ",")))
-	}
-
-	// 定时的instances和已上线的跳过
-	needExecTaskIds := make(map[uint]uint)
-	for _, instRecord := range workflow.Record.InstanceRecords {
-		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
-			continue
-		}
-		needExecTaskIds[instRecord.TaskId] = user.ID
-	}
-	return needExecTaskIds, nil
-}
-
 func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model.Workflow, user *model.User, TaskId int) error {
 	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
 		return errors.New(errors.DataInvalid, e.New("workflow need to be approved first"))
@@ -544,29 +497,6 @@ func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model
 	}
 
 	return e.New("you are not allow to execute the task")
-}
-
-func PrepareForWorkflowExecution(c echo.Context, projectName string, workflow *model.Workflow, user *model.User) error {
-	err := CheckCurrentUserCanOperateWorkflow(c, &model.Project{Name: projectName}, workflow, []uint{})
-	if err != nil {
-		return err
-	}
-
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found"))
-	}
-
-	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
-		return errors.New(errors.DataInvalid,
-			fmt.Errorf("workflow need to be approved first"))
-	}
-
-	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
-	if err != nil {
-		return errors.New(errors.DataInvalid, err)
-	}
-	return nil
 }
 
 type GetWorkflowTasksResV1 struct {
@@ -686,7 +616,6 @@ func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 type GetWorkflowsReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
 	FilterWorkflowID                  string `json:"filter_workflow_id" query:"filter_workflow_id"`
-	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
@@ -805,7 +734,6 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
 // @Param filter_workflow_id query string false "filter by workflow_id"
-// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
@@ -853,7 +781,6 @@ func GetWorkflowsV1(c echo.Context) error {
 
 	data := map[string]interface{}{
 		"filter_workflow_id":                     req.FilterWorkflowID,
-		"fuzzy_search_workflow_desc":             req.FuzzySearchWorkflowDesc,
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
@@ -1001,7 +928,6 @@ func GetWorkflowV1(c echo.Context) error {
 
 type ExportWorkflowReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
-	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
@@ -1019,7 +945,6 @@ type ExportWorkflowReqV1 struct {
 // @Tags workflow
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
-// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
