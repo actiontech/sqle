@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	e "errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -388,8 +389,9 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 }
 
 const (
-	ImTypeDingTalk = "dingTalk"
-	ImTypeFeishu   = "feishu"
+	ImTypeDingTalk    = "dingTalk"
+	ImTypeFeishu      = "feishu"
+	ImTypeFeishuAudit = "feishu_audit"
 )
 
 type IM struct {
@@ -508,7 +510,7 @@ func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []uint) ([]Di
 }
 
 // batch updates ding_talk_instances'status into input status by workflow_ids, the status should be like ApproveStatusXXX in model package.
-func (s *Storage) BatchUptateStatusOfDingTalkInstance(workflowIds []uint, status string) error {
+func (s *Storage) BatchUpdateStatusOfDingTalkInstance(workflowIds []uint, status string) error {
 	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
 	if err != nil {
 		return err
@@ -523,6 +525,56 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 		return nil, err
 	}
 	return dingTalkInstances, nil
+}
+
+const (
+	FeishuAuditStatusInitialized = "INITIALIZED"
+	FeishuAuditStatusApprove     = "APPROVED"
+	FeishuAuditStatusRejected    = "REJECTED"
+)
+
+type FeishuInstance struct {
+	Model
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
+	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	// 审批实例 taskID
+	TaskID string `json:"task_id" gorm:"column:task_id"`
+	Status string `json:"status" gorm:"default:\"INITIALIZED\""`
+}
+
+func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []uint) ([]FeishuInstance, error) {
+	var feishuInstList []FeishuInstance
+	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Find(&feishuInstList).Error
+	if err != nil {
+		return nil, err
+	}
+	return feishuInstList, nil
+}
+
+func (s *Storage) BatchUpdateStatusOfFeishuInstance(workflowIds []uint, status string) error {
+	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) GetFeishuInstanceByWorkflowID(workflowId uint) (*FeishuInstance, bool, error) {
+	fi := new(FeishuInstance)
+	err := s.db.Where("workflow_id = ?", workflowId).Last(&fi).Error
+	if e.Is(err, gorm.ErrRecordNotFound) {
+		return fi, false, nil
+	}
+	return fi, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetFeishuInstByStatus(status string) ([]FeishuInstance, error) {
+	var feishuInst []FeishuInstance
+	err := s.db.Where("status = ?", status).Find(&feishuInst).Error
+	if err != nil {
+		return nil, err
+	}
+	return feishuInst, nil
 }
 
 type PersonaliseConfig struct {

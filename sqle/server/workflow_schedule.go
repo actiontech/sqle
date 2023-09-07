@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,9 +12,10 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
-
 	"github.com/sirupsen/logrus"
 )
+
+var ErrWorkflowNoAccess = errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 
 type WorkflowScheduleJob struct {
 	BaseJob
@@ -256,6 +258,143 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	}
 
 	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+
+	return nil
+}
+
+func ExecuteTasksProcess(workflowId string, projectName string, user *model.User) error {
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return err
+	}
+
+	if err := PrepareForWorkflowExecution(projectName, workflow, user); err != nil {
+		return err
+	}
+
+	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
+	if err != nil {
+		return err
+	}
+
+	err = ExecuteWorkflow(workflow, needExecTaskIds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func PrepareForWorkflowExecution(projectName string, workflow *model.Workflow, user *model.User) error {
+	err := CheckCurrentUserCanOperateWorkflowByUser(user, &model.Project{Name: projectName}, workflow, []uint{})
+	if err != nil {
+		return err
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found"))
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first"))
+	}
+
+	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return errors.New(errors.DataInvalid, err)
+	}
+	return nil
+}
+
+func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
+	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+	if err != nil {
+		return nil, err
+	}
+	// 有不在运维时间内的instances报错
+	var cannotExecuteInstanceNames []string
+	for _, inst := range instances {
+		if len(inst.MaintenancePeriod) != 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
+			cannotExecuteInstanceNames = append(cannotExecuteInstanceNames, inst.Name)
+		}
+	}
+	if len(cannotExecuteInstanceNames) > 0 {
+		return nil, errors.New(errors.TaskActionInvalid,
+			fmt.Errorf("please go online during instance operation and maintenance time. these instances are not in maintenance time[%v]", strings.Join(cannotExecuteInstanceNames, ",")))
+	}
+
+	// 定时的instances和已上线的跳过
+	needExecTaskIds := make(map[uint]uint)
+	for _, instRecord := range workflow.Record.InstanceRecords {
+		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
+			continue
+		}
+		needExecTaskIds[instRecord.TaskId] = user.ID
+	}
+	return needExecTaskIds, nil
+}
+
+func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, project *model.Project, workflow *model.Workflow, ops []uint) error {
+	if user.Name == model.DefaultAdminUser {
+		return nil
+	}
+
+	s := model.GetStorage()
+
+	isManager, err := s.IsProjectManager(user.Name, project.Name)
+	if err != nil {
+		return err
+	}
+	if isManager {
+		return nil
+	}
+
+	access, err := s.UserCanAccessWorkflow(user, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+	if len(ops) > 0 {
+		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+		if err != nil {
+			return err
+		}
+		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+
+	return ErrWorkflowNoAccess
+}
+
+func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
+	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return fmt.Errorf("workflow current step not found")
+	}
+	if uint(stepId) != workflow.CurrentStep().ID {
+		return fmt.Errorf("workflow current step is not %d", stepId)
+	}
+
+	if !workflow.IsOperationUser(user) {
+		return fmt.Errorf("you are not allow to operate the workflow")
+	}
 
 	return nil
 }

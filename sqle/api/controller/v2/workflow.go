@@ -99,7 +99,7 @@ func ApproveWorkflowV2(c echo.Context) error {
 
 	nextStep := workflow.NextStep()
 
-	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	err = server.CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -108,9 +108,9 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
 
-	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+	if nextStep != nil {
 		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
 	}
 
@@ -184,7 +184,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	err = server.CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -202,7 +202,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -262,7 +262,7 @@ func CancelWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	go im.CancelApprove(workflow.ID)
+	go im.BatchCancelApprove([]uint{workflow.ID}, user)
 
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
@@ -313,8 +313,12 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
-	if err := v1.CheckIsProjectManager(userName, projectName); err != nil {
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := v1.CheckIsProjectManager(user.Name, projectName); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -331,7 +335,7 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	go im.BatchCancelApprove(workflowIds)
+	go im.BatchCancelApprove(workflowIds, user)
 
 	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -985,7 +989,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 			fmt.Errorf("workflow need to be approved first")))
 	}
 
-	err = v1.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	err = server.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -1052,32 +1056,19 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	workflowId = fmt.Sprintf("%v", workflow.ID)
-
-	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if err := v1.PrepareForWorkflowExecution(c, projectName, workflow, user); err != nil {
-		return err
-	}
 
-	needExecTaskIds, err := v1.GetNeedExecTaskIds(s, workflow, user)
-	if err != nil {
-		return err
-	}
+	workflowId = fmt.Sprintf("%v", workflow.ID)
 
-	err = server.ExecuteWorkflow(workflow, needExecTaskIds)
+	err = server.ExecuteTasksProcess(workflowId, projectName, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
