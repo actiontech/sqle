@@ -64,7 +64,9 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			}
 			projectName := c.Param("project_name")
 			apnInParam := c.Param("audit_plan_name")
-			if apnInToken != apnInParam {
+			// 由于对生成的JWT Token的负载使用MD5算法进行预处理，因此在验证的时候也需要对param中的apn使用MD5处理
+			// 为了兼容老版本的JWT Token需要增加不经MD5处理的apnInParam和apnInToken的判断
+			if apnInToken != apnInParam && apnInToken != utils.Md5(apnInParam) {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
