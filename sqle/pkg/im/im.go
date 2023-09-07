@@ -249,6 +249,12 @@ func BatchCancelApprove(workflowIds []uint, user *model.User) {
 					}
 				}()
 			}
+		case model.ImTypeFeishuApproval:
+			err = CancelFeishuApprovalInst(context.TODO(), im, workflowIds, user)
+			if err != nil {
+				newLog.Errorf("cancel feishu approval instance error: %v", err)
+				return
+			}
 		default:
 			newLog.Errorf("im type %s not found", im.Type)
 		}

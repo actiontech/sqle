@@ -542,6 +542,23 @@ type FeishuInstance struct {
 	Status string `json:"status" gorm:"default:\"initialized\""`
 }
 
+func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []uint) ([]FeishuInstance, error) {
+	var feishuInstList []FeishuInstance
+	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Find(&feishuInstList).Error
+	if err != nil {
+		return nil, err
+	}
+	return feishuInstList, nil
+}
+
+func (s *Storage) BatchUpdateStatusOfFeishuInstance(workflowIds []uint, status string) error {
+	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Storage) GetFeishuInstanceByWorkflowID(workflowId uint) (*FeishuInstance, bool, error) {
 	fi := new(FeishuInstance)
 	err := s.db.Where("workflow_id = ?", workflowId).Last(&fi).Error

@@ -24,6 +24,6 @@ func UpdateFeishuApprovalStatus(ctx context.Context, im model.IM, workflowId uin
 	return ErrCommunityEditionNotSupportFeishuApproval
 }
 
-func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowID uint, user *model.User) error {
+func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
 	return ErrCommunityEditionNotSupportFeishuApproval
 }
