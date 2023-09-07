@@ -163,7 +163,7 @@ func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowIDs []ui
 		go func() {
 			err = client.CancelApproval(ctx, im.ProcessCode, inst.ApproveInstanceCode, userIdList[0])
 			if err != nil {
-				log.NewEntry().Errorf("cancel feishu approval instance error: %v", err)
+				log.NewEntry().Errorf("cancel feishu approval instance %v error: %v", inst.ApproveInstanceCode, err)
 			}
 		}()
 	}

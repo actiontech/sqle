@@ -196,6 +196,7 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 		feishuCfg.IsEnable = *req.IsFeishuNotificationEnabled
 	}
 
+	// set type
 	feishuCfg.Type = model.ImTypeFeishuApproval
 
 	if err := s.Save(feishuCfg); err != nil {
