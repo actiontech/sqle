@@ -204,4 +204,23 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		err = mw(h)(ctx)
 		assert.Contains(t, err.Error(), "unknown token")
 	}
+	{ // test old token
+		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName120))
+		assert.NoError(t, err)
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
+			WithArgs(projectName, apName120).
+			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
+		mock.ExpectClose()
+
+		ctx, _ := newContextFunc(token, apName120)
+		err = mw(h)(ctx)
+		assert.NoError(t, err)
+
+		mockDB.Close()
+		err = mock.ExpectationsWereMet()
+		assert.NoError(t, err)
+	}
 }
