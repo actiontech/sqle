@@ -507,9 +507,9 @@ func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []uint) ([]Di
 	return dingTalkInstances, nil
 }
 
-// batch update ding_talk_instances'status into canceled by workflow_ids
-func (s *Storage) BatchCancelDingTalkInstance(workflowIds []uint) error {
-	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": ApproveStatusCancel}).Error
+// batch updates ding_talk_instances'status into input status by workflow_ids, the status should be like ApproveStatusXXX in model package.
+func (s *Storage) BatchUptateStatusOfDingTalkInstance(workflowIds []uint, status string) error {
+	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
 	if err != nil {
 		return err
 	}

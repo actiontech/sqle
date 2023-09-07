@@ -219,8 +219,8 @@ func BatchCancelApprove(workflowIds []uint) {
 		newLog.Errorf("get dingtalk instance list by workflowid slice error: %v", err)
 		return
 	}
-	// batch update status
-	err = s.BatchCancelDingTalkInstance(workflowIds)
+	// batch update ding_talk_instances'status into canceled
+	err = s.BatchUptateStatusOfDingTalkInstance(workflowIds, model.ApproveStatusCancel)
 	if err != nil {
 		newLog.Errorf("batch update ding_talk_instances'status into canceled, error: %v", err)
 	}
