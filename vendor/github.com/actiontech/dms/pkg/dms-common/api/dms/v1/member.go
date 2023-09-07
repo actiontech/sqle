@@ -25,8 +25,6 @@ const (
 
 // A dms member for internal
 type ListMembersForInternalItem struct {
-	// member uid
-	MemberUid string `json:"uid"`
 	// member user
 	User UidWithName `json:"user"`
 	// is member namespace admin, admin has all permissions
