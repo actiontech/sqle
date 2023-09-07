@@ -102,6 +102,11 @@ func CreateApprove(id string) {
 
 		switch im.Type {
 		case model.ImTypeDingTalk:
+			if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
+				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.ID)
+				return
+			}
+
 			if workflow.CreateUser.Phone == "" {
 				newLog.Error("create user phone is empty")
 				return
