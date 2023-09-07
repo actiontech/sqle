@@ -528,7 +528,7 @@ func (s *Storage) GetDingTalkInstByStatus(status string) ([]DingTalkInstance, er
 }
 
 const (
-	FeishuApproveStatusInitialized = "initialized"
+	FeishuApproveStatusInitialized = "INITIALIZED"
 	FeishuApproveStatusApprove     = "APPROVED"
 	FeishuApproveStatusRejected    = "REJECTED"
 )
@@ -539,7 +539,7 @@ type FeishuInstance struct {
 	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
 	// 审批实例 taskID
 	TaskID string `json:"task_id" gorm:"column:task_id"`
-	Status string `json:"status" gorm:"default:\"initialized\""`
+	Status string `json:"status" gorm:"default:\"INITIALIZED\""`
 }
 
 func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []uint) ([]FeishuInstance, error) {
