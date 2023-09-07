@@ -16,6 +16,7 @@ type ServerJob interface {
 var OnlyRunOnLeaderJobs = []func(entry *logrus.Entry) ServerJob{
 	NewCleanJob,
 	NewDingTalkJob,
+	NewFeishuJob,
 }
 
 var RunOnAllJobs = []func(entry *logrus.Entry) ServerJob{
