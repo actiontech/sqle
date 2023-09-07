@@ -3,7 +3,10 @@ package feishu
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
@@ -111,4 +114,55 @@ func (f FeishuClient) SendMessage(receiveIdType, receiveId, msgType, content str
 	}
 
 	return nil
+}
+
+func (f FeishuClient) GetFeishuUserIdList(users []*model.User, userType string) ([]string, error) {
+	var emails, mobiles []string
+	userCount := 0
+	for _, u := range users {
+		if u.Email == "" && u.Phone == "" {
+			continue
+		}
+		if u.Email != "" {
+			emails = append(emails, u.Email)
+		}
+		if u.Phone != "" {
+			mobiles = append(mobiles, u.Phone)
+		}
+		userCount++
+		if userCount == MaxCountOfIdThatUsedToFindUser {
+			log.NewEntry().Infof("user %v exceed max count %v", u.Name, MaxCountOfIdThatUsedToFindUser)
+			break
+		}
+	}
+
+	feishuUserMap, err := f.GetUsersByEmailOrMobileWithLimitation(emails, mobiles, userType)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []string
+	for feishuUserID := range feishuUserMap {
+		userIDs = append(userIDs, feishuUserID)
+	}
+
+	return userIDs, nil
+}
+
+func (f FeishuClient) GetFeishuUserInfo(userID string, userType string) (*larkContact.User, error) {
+	req := larkContact.NewGetUserReqBuilder().
+		UserId(userID).
+		UserIdType(userType).
+		Build()
+
+	resp, err := f.client.Contact.User.Get(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success() {
+		return nil, fmt.Errorf("get user failed: respCode=%v, respMsg=%v", resp.Code, resp.Msg)
+	}
+
+	return resp.Data.User, nil
 }
