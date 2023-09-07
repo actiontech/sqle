@@ -7,6 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 	larkIm "github.com/larksuite/oapi-sdk-go/v3/service/im/v1"
 )
 
@@ -55,7 +56,7 @@ func (n *FeishuNotifier) Notify(notification Notification, users []*model.User) 
 	}
 
 	client := feishu.NewFeishuClient(cfg.AppKey, cfg.AppSecret)
-	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation(emails, mobiles)
+	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation(emails, mobiles, larkContact.UserIdTypeGetUserUserId)
 	if err != nil {
 		return fmt.Errorf("get user_ids from feishu failed: %v", err)
 	}

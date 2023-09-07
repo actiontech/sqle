@@ -30,7 +30,7 @@ const MaxCountOfIdThatUsedToFindUser = 50
 
 // 查询限制每次最多50条emails和mobiles，https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
 // 每次最多查询50个邮箱和50个手机号，如果超出50个，只查询前50个
-func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []string) (map[string]*UserContactInfo, error) {
+func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []string, userType string) (map[string]*UserContactInfo, error) {
 	tempEmails, tempMobiles := emails, mobiles
 	if len(emails) > MaxCountOfIdThatUsedToFindUser {
 		tempEmails = emails[:MaxCountOfIdThatUsedToFindUser]
@@ -40,7 +40,7 @@ func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []s
 	}
 
 	req := larkContact.NewBatchGetIdUserReqBuilder().
-		UserIdType(`user_id`).
+		UserIdType(userType).
 		Body(larkContact.NewBatchGetIdUserReqBodyBuilder().
 			Emails(tempEmails).
 			Mobiles(tempMobiles).
