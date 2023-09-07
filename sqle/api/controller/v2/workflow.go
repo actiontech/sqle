@@ -247,8 +247,6 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowStatus := workflow.Record.Status
-
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -264,16 +262,14 @@ func CancelWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
+	go im.CancelApprove(workflow.ID)
+
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
 	err = s.UpdateWorkflowStatus(workflow)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if workflowStatus == model.WorkflowStatusWaitForAudit {
-		go im.CancelApprove(workflow.ID)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
@@ -323,16 +319,19 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	}
 
 	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
+	workflowIds := make([]uint, 0, len(req.WorkflowIDList))
 	for i, workflowID := range req.WorkflowIDList {
 		workflow, err := checkCancelWorkflow(projectName, workflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		workflows[i] = workflow
-
+		workflowIds = append(workflowIds, workflow.ID)
 		workflow.Record.Status = model.WorkflowStatusCancel
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
+
+	go im.BatchCancelApprove(workflowIds)
 
 	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
