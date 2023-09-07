@@ -146,3 +146,81 @@ func TestScannerVerifier(t *testing.T) {
 		assert.NoError(t, err)
 	}
 }
+
+func TestScannerVerifierIssue1758(t *testing.T) {
+	e := echo.New()
+
+	jwt := utils.NewJWT(utils.JWTSecretKey)
+	apName120 := "aaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbb120"
+	projectName := "default"
+	userName := "admin"
+	assert.Equal(t, 120, len(apName120))
+	h := func(c echo.Context) error {
+		return c.HTML(http.StatusOK, "hello, world")
+	}
+
+	mw := ScannerVerifier()
+	newContextFunc := func(token, apName string) (echo.Context, *httptest.ResponseRecorder) {
+		req := httptest.NewRequest(http.MethodGet, "/:audit_plan_name/", nil)
+		req.Header.Set(echo.HeaderAuthorization, token)
+		res := httptest.NewRecorder()
+		ctx := e.NewContext(req, res)
+		ctx.SetParamNames("audit_plan_name", "project_name")
+		ctx.SetParamValues(apName, projectName)
+		return ctx, res
+	}
+	{ // test check success
+		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
+		assert.NoError(t, err)
+
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
+			WithArgs(projectName, apName120).
+			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
+		mock.ExpectClose()
+
+		ctx, res := newContextFunc(token, apName120) //这里模拟上下文不需要哈希
+		err = mw(h)(ctx)
+		assert.NoError(t, err)
+		assert.Contains(t, res.Body.String(), "hello, world")
+
+		mockDB.Close()
+		err = mock.ExpectationsWereMet()
+		assert.NoError(t, err)
+	}
+	{ // test audit plan name don't match the token
+		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
+		assert.NoError(t, err)
+		ctx, _ := newContextFunc(token, fmt.Sprintf("%s_modified", apName120))
+		err = mw(h)(ctx)
+		assert.Contains(t, err.Error(), errAuditPlanMisMatch.Error())
+	}
+	{ // test unknown token
+		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix())
+		assert.NoError(t, err)
+		ctx, _ := newContextFunc(token, apName120)
+		err = mw(h)(ctx)
+		assert.Contains(t, err.Error(), "unknown token")
+	}
+	{ // test old token
+		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName120))
+		assert.NoError(t, err)
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
+			WithArgs(projectName, apName120).
+			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
+		mock.ExpectClose()
+
+		ctx, _ := newContextFunc(token, apName120)
+		err = mw(h)(ctx)
+		assert.NoError(t, err)
+
+		mockDB.Close()
+		err = mock.ExpectationsWereMet()
+		assert.NoError(t, err)
+	}
+}
