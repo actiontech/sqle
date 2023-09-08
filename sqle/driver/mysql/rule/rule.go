@@ -4792,7 +4792,9 @@ func checkExplain(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
-			addResult(input.Res, input.Rule, input.Rule.Name)
+			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
 		}
 
 	}
@@ -6119,7 +6121,6 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	}
 	return nil
 }
-
 
 func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
 	indexColumns := []string{}
