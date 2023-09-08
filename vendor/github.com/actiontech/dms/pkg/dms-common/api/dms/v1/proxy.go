@@ -17,6 +17,9 @@ type DMSProxyTarget struct {
 	// target addr, eg: http://10.1.2.1:5432
 	// Required: true
 	Addr string `json:"addr" validate:"required,url"`
+	// version number
+	// Required: true
+	Version string `json:"version" validate:"required"`
 	// url prefix that need to be proxy, eg: /v1/user
 	// Required: true
 	ProxyUrlPrefixs []string `json:"proxy_url_prefixs" validate:"required"`
