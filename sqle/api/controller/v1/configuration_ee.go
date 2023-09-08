@@ -197,7 +197,7 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 		feishuCfg.IsEnable = *req.IsFeishuNotificationEnabled
 	}
 
-	// set type
+	// 如果是新创建的飞书审批配置，需要设置type
 	feishuCfg.Type = model.ImTypeFeishuAudit
 
 	if err := s.Save(feishuCfg); err != nil {
