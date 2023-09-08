@@ -44,7 +44,7 @@ func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 
 	s := model.GetStorage()
 	if err := s.UpdateImConfigById(im.ID, map[string]interface{}{
-		"process_code": approvalCode,
+		"process_code": *approvalCode,
 	}); err != nil {
 		return err
 	}
