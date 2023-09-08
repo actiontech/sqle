@@ -11,6 +11,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 
@@ -202,6 +203,8 @@ func updateFeishuAuditConfigurationV1(c echo.Context) error {
 	if err := s.Save(feishuCfg); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	go im.CreateApprovalTemplate(model.ImTypeFeishuAudit)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
