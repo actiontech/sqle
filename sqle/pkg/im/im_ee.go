@@ -35,7 +35,7 @@ var FeishuAuditResultLayout = `
       ]
 `
 
-func CreateFeishuApprovalTemplate(ctx context.Context, im model.IM) error {
+func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
 	approvalCode, err := client.CreateApprovalTemplate(ctx)
 	if err != nil {
@@ -52,7 +52,7 @@ func CreateFeishuApprovalTemplate(ctx context.Context, im model.IM) error {
 	return nil
 }
 
-func CreateFeishuApprovalInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
+func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
 	originUser, err := client.GetFeishuUserIdList([]*model.User{workflow.CreateUser}, larkContact.UserIdTypeOpenId)
 	if err != nil {
@@ -96,7 +96,7 @@ func CreateFeishuApprovalInst(ctx context.Context, im model.IM, workflow *model.
 	return nil
 }
 
-func UpdateFeishuApprovalStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
+func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
 	userId, err := client.GetFeishuUserIdList([]*model.User{user}, larkContact.UserIdTypeOpenId)
 	if err != nil {
@@ -135,7 +135,7 @@ func UpdateFeishuApprovalStatus(ctx context.Context, im model.IM, workflowId uin
 	return nil
 }
 
-func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
+func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
 	s := model.GetStorage()
 	err := s.BatchUpdateStatusOfFeishuInstance(workflowIDs, model.WorkflowStatusCancel)
 	if err != nil {
@@ -155,7 +155,7 @@ func CancelFeishuApprovalInst(ctx context.Context, im model.IM, workflowIDs []ui
 
 	for _, feishuInst := range feishuInstList {
 		inst := feishuInst
-		if inst.Status != model.FeishuApproveStatusInitialized {
+		if inst.Status != model.FeishuAuditStatusInitialized {
 			log.NewEntry().Infof("feishu approval instance %v status is %v, skip cancel", inst.ApproveInstanceCode, inst.Status)
 			continue
 		}
