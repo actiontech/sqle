@@ -10,7 +10,7 @@ import (
 
 // RegisterDMSProxyTarget 向DMS注册反向代理，将proxyPrefix开头的请求转发到自身服务
 // eg: name = sqle; url = http://10.1.2.1:5432; proxyPrefix = /v1/sqle 表示要求DMS将/v1/sqle开头的请求转发到sqle服务所在地址 http://10.1.2.1:5432
-func RegisterDMSProxyTarget(ctx context.Context, dmsAddr, targetName, targetAddr string, proxyUrlPrefixs []string) error {
+func RegisterDMSProxyTarget(ctx context.Context, dmsAddr, targetName, targetAddr, version string, proxyUrlPrefixs []string) error {
 	header := map[string]string{
 		"Authorization": pkgHttp.DefaultDMSToken,
 	}
@@ -20,6 +20,7 @@ func RegisterDMSProxyTarget(ctx context.Context, dmsAddr, targetName, targetAddr
 		DMSProxyTarget: &dmsV1.DMSProxyTarget{
 			Name:            targetName,
 			Addr:            targetAddr,
+			Version:         version,
 			ProxyUrlPrefixs: proxyUrlPrefixs,
 		},
 	}
