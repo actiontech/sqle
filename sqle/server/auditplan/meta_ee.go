@@ -10,11 +10,13 @@ const (
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
 	TypeDB2TopSQL                = "db2_top_sql"
 	TypeDB2SchemaMeta            = "db2_schema_meta"
+	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
 )
 
 const (
 	InstanceTypeOceanBaseForMySQL = "OceanBase For MySQL"
 	InstanceTypeDB2               = "DB2"
+	InstanceTypeTDSQL             = "TDSQL For InnoDB"
 )
 
 const (
@@ -23,6 +25,20 @@ const (
 )
 
 var EEMetas = []Meta{
+	{
+		Type:         TypeTDSQLSlowLog,
+		Desc:         "慢日志",
+		InstanceType: InstanceTypeTDSQL,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
+		CreateTask: NewSlowLogTask,
+	},
 	{
 		Type:         TypeOceanBaseForMySQLTopSQL,
 		Desc:         "Top SQL",
