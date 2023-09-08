@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
@@ -26,21 +27,55 @@ type SlowQuery struct {
 	sqlCh chan scanners.SQL
 
 	apName string
+
+	includeUsers   map[string]struct{} // 用户白名单: 仅采集这些用户的 SQL;
+	excludeUsers   map[string]struct{} // 用户黑名单: 不采集这些用户的 SQL;
+	includeSchemas map[string]struct{} // Schema 白名单: 仅采集这些库的 SQL;
+	excludeSchemas map[string]struct{} // Schema 黑名单: 不采集这些库的 SQL;
 }
 
 type Params struct {
-	LogFilePath string
-	APName      string
+	LogFilePath    string
+	APName         string
+	IncludeUsers   string
+	ExcludeUsers   string
+	IncludeSchemas string
+	ExcludeSchemas string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error) {
-	return &SlowQuery{
-		l:           l,
-		c:           c,
-		logFilePath: params.LogFilePath,
-		apName:      params.APName,
-		sqlCh:       make(chan scanners.SQL, 10),
-	}, nil
+	slowQuery := &SlowQuery{
+		l:              l,
+		c:              c,
+		logFilePath:    params.LogFilePath,
+		apName:         params.APName,
+		sqlCh:          make(chan scanners.SQL, 10),
+		includeUsers:   map[string]struct{}{},
+		excludeUsers:   map[string]struct{}{},
+		includeSchemas: map[string]struct{}{},
+		excludeSchemas: map[string]struct{}{},
+	}
+	if params.IncludeUsers != "" {
+		for _, user := range strings.Split(params.IncludeUsers, ",") {
+			slowQuery.includeUsers[strings.TrimSpace(user)] = struct{}{}
+		}
+	}
+	if params.ExcludeUsers != "" {
+		for _, user := range strings.Split(params.ExcludeUsers, ",") {
+			slowQuery.excludeUsers[strings.TrimSpace(user)] = struct{}{}
+		}
+	}
+	if params.IncludeSchemas != "" {
+		for _, schema := range strings.Split(params.IncludeSchemas, ",") {
+			slowQuery.includeSchemas[strings.TrimSpace(schema)] = struct{}{}
+		}
+	}
+	if params.ExcludeSchemas != "" {
+		for _, schema := range strings.Split(params.ExcludeSchemas, ",") {
+			slowQuery.excludeSchemas[strings.TrimSpace(schema)] = struct{}{}
+		}
+	}
+	return slowQuery, nil
 }
 
 func (s *SlowQuery) Run(ctx context.Context) error {
@@ -85,6 +120,27 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 				return nil
 			}
 			s.l.Debugf("parsed slowlog event: %+v.", e)
+
+			if len(s.includeUsers) > 0 {
+				if _, ok := s.includeUsers[e.User]; !ok {
+					continue
+				}
+			}
+			if len(s.excludeUsers) > 0 {
+				if _, ok := s.excludeUsers[e.User]; ok {
+					continue
+				}
+			}
+			if len(s.includeSchemas) > 0 {
+				if _, ok := s.includeSchemas[e.Db]; !ok {
+					continue
+				}
+			}
+			if len(s.excludeSchemas) > 0 {
+				if _, ok := s.excludeSchemas[e.Db]; ok {
+					continue
+				}
+			}
 			s.sqlCh <- scanners.SQL{
 				Fingerprint: query.Fingerprint(e.Query),
 				RawText:     e.Query,
