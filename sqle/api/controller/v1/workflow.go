@@ -616,6 +616,7 @@ func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 type GetWorkflowsReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
 	FilterWorkflowID                  string `json:"filter_workflow_id" query:"filter_workflow_id"`
+	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
@@ -734,6 +735,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
 // @Param filter_workflow_id query string false "filter by workflow_id"
+// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
@@ -781,6 +783,7 @@ func GetWorkflowsV1(c echo.Context) error {
 
 	data := map[string]interface{}{
 		"filter_workflow_id":                     req.FilterWorkflowID,
+		"fuzzy_search_workflow_desc":             req.FuzzySearchWorkflowDesc,
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
@@ -928,6 +931,7 @@ func GetWorkflowV1(c echo.Context) error {
 
 type ExportWorkflowReqV1 struct {
 	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
+	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
@@ -945,6 +949,7 @@ type ExportWorkflowReqV1 struct {
 // @Tags workflow
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
+// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
