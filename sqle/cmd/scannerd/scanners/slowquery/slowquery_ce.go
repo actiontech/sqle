@@ -17,8 +17,12 @@ var errSlowQueryNotImplemented = errors.NewNotImplemented("SlowQuery Scanner")
 type SlowQuery struct{}
 
 type Params struct {
-	LogFilePath string
-	APName      string
+	LogFilePath    string
+	APName         string
+	IncludeUsers   string
+	ExcludeUsers   string
+	IncludeSchemas string
+	ExcludeSchemas string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error) {
