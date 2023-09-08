@@ -75,6 +75,7 @@ type GetSQLAuditRecordsReqV1 struct {
 }
 
 type SQLAuditRecord struct {
+	CreatorUserId    uint       `json:"creator_user_id"`
 	SQLAuditRecordId uint       `json:"sql_audit_record_id"`
 	SQLAuditStatus   string     `json:"sql_audit_status"`
 	Tags             []string   `json:"tags"`
