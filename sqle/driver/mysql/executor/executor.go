@@ -428,6 +428,7 @@ const (
 	ExplainRecordExtraUsingFilesort         = "Using filesort"
 	ExplainRecordExtraUsingTemporary        = "Using temporary"
 	ExplainRecordExtraUsingIndexForSkipScan = "Using index for skip scan"
+	ExplainRecordExtraUsingWhere = "Using where"
 
 	ExplainRecordAccessTypeAll   = "ALL"
 	ExplainRecordAccessTypeIndex = "index"
