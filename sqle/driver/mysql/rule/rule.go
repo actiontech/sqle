@@ -11,6 +11,8 @@ import (
 	"strings"
 	"unicode"
 
+	"math"
+
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -114,6 +116,7 @@ const (
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
+	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 )
 
 // inspector DML rules
@@ -2154,6 +2157,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
 		Func:         checkIndexSelectivity,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckCompositeIndexDistinction,
+			Desc:       "建议在组合索引中将区分度高的字段靠前放",
+			Annotation: "将区分度高的字段靠前放置在组合索引中有助于提高索引的查询性能，因为它能更快地减小数据范围，提高检索效率。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "联合索引中，字段：%v区分度较高应放在左侧",
+		Func:         checkCompositeIndexSelectivity,
 	},
 }
 
@@ -6120,7 +6135,6 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
-
 func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
 	indexColumns := []string{}
 	for _, info := range indexesInfo {
@@ -6173,5 +6187,55 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 			}
 		}
 	}
+	return nil
+}
+
+func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
+	indexSlice := []string{}
+	schema := input.Ctx.CurrentSchema()
+	table := ""
+	switch stmt := input.Node.(type) {
+	case *ast.CreateIndexStmt:
+		for _, indexPart := range stmt.IndexPartSpecifications {
+			indexSlice = append(indexSlice, indexPart.Column.Name.O)
+		}
+		if stmt.Table.Schema.O != "" {
+			schema = stmt.Table.Schema.O
+		}
+		table = stmt.Table.Name.O
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint == nil {
+				continue
+			}
+			if spec.Constraint.Tp != ast.ConstraintIndex && spec.Constraint.Tp != ast.ConstraintUniq {
+				continue
+			}
+			for _, key := range spec.Constraint.Keys {
+				indexSlice = append(indexSlice, key.Column.Name.O)
+			}
+			if stmt.Table.Schema.O != "" {
+				schema = stmt.Table.Schema.O
+			}
+			table = stmt.Table.Name.O
+		}
+	}
+	currentSelectivityValue := math.Inf(1)
+	for _, indexColumn := range indexSlice {
+		selectivityValue, err := input.Ctx.GetIndexSelectivityValue(schema, table, indexColumn)
+		if err != nil {
+			return err
+		}
+		// 区分度为0，代表数据表中没有数据
+		if selectivityValue == float64(0) {
+			return nil
+		}
+		if selectivityValue > currentSelectivityValue {
+			addResult(input.Res, input.Rule, input.Rule.Name, indexColumn)
+			return nil
+		}
+		currentSelectivityValue = selectivityValue
+	}
+
 	return nil
 }
