@@ -3022,12 +3022,6 @@ definitions:
     type: object
   v1.SQLAuditRecord:
     properties:
-      audit_pass_rate:
-        type: number
-      audit_score:
-        type: integer
-      audit_started_at:
-        type: string
       creator_user_id:
         type: integer
       sql_audit_record_id:
@@ -3038,8 +3032,9 @@ definitions:
         items:
           type: string
         type: array
-      task_id:
-        type: integer
+      task:
+        $ref: '#/definitions/v1.AuditTaskResV1'
+        type: object
     type: object
   v1.SQLAuditRecordResData:
     properties:
@@ -7565,6 +7560,10 @@ paths:
         - successfully
         in: query
         name: filter_sql_audit_status
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
         type: string
       - description: page index
         in: query

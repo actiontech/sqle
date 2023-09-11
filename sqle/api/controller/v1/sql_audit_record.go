@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"time"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 
 	"github.com/labstack/echo/v4"
@@ -75,14 +73,11 @@ type GetSQLAuditRecordsReqV1 struct {
 }
 
 type SQLAuditRecord struct {
-	CreatorUserId    uint       `json:"creator_user_id"`
-	SQLAuditRecordId uint       `json:"sql_audit_record_id"`
-	SQLAuditStatus   string     `json:"sql_audit_status"`
-	Tags             []string   `json:"tags"`
-	AuditScore       int32      `json:"audit_score"`
-	AuditPassRate    float64    `json:"audit_pass_rate"`
-	AuditStartedAt   *time.Time `json:"audit_started_at"`
-	TaskId           uint       `json:"task_id"`
+	CreatorUserId    uint           `json:"creator_user_id"`
+	SQLAuditRecordId uint           `json:"sql_audit_record_id"`
+	SQLAuditStatus   string         `json:"sql_audit_status"`
+	Tags             []string       `json:"tags"`
+	Task             AuditTaskResV1 `json:"task"`
 }
 
 type GetSQLAuditRecordsResV1 struct {
@@ -99,6 +94,7 @@ type GetSQLAuditRecordsResV1 struct {
 // @Param fuzzy_search_sql_audit_record_id query string false "fuzzy search sql audit record_id"
 // @Param fuzzy_search_tags query string false "fuzzy search tags"
 // @Param filter_sql_audit_status query string false "filter sql audit status" Enums(auditing,successfully)
+// @Param filter_instance_name query string false "filter instance name"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
