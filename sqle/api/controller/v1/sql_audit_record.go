@@ -8,26 +8,26 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type SqlAuditRecordReqV1 struct {
+type CreateSQLAuditRecordReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	Sqls           string `json:"sqls" form:"sqls" example:"alter table tb1 drop columns c1; select * from tb"`
 }
 
-type SqlAuditRecordResV1 struct {
+type CreateSQLAuditRecordResV1 struct {
 	controller.BaseRes
-	Data *SqlAuditRecordResData `json:"data"`
+	Data *SQLAuditRecordResData `json:"data"`
 }
 
-type SqlAuditRecordResData struct {
+type SQLAuditRecordResData struct {
 	Id   string          `json:"sql_audit_record_id"`
 	Task *AuditTaskResV1 `json:"task"`
 }
 
 // CreateSQLAuditRecord
-// @Summary 创建SQL审核记录
-// @Id CreateSqlAuditRecordV1
-// @Description create SQL audit record
+// @Summary SQL审核
+// @Id CreateSQLAuditRecordV1
+// @Description SQL audit
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
 // @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
@@ -43,7 +43,7 @@ type SqlAuditRecordResData struct {
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
-// @Success 200 {object} v1.SqlAuditRecordResV1
+// @Success 200 {object} v1.CreateSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_record [post]
 func CreateSQLAuditRecord(c echo.Context) error {
 	return nil
