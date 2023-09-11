@@ -4373,12 +4373,6 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "fuzzy search sql audit record_id",
-                        "name": "fuzzy_search_sql_audit_record_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "fuzzy search tags",
                         "name": "fuzzy_search_tags",
                         "in": "query"
@@ -4397,6 +4391,18 @@ var doc = `{
                         "type": "string",
                         "description": "filter instance name",
                         "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
                         "in": "query"
                     },
                     {
@@ -4516,6 +4522,15 @@ var doc = `{
                 ],
                 "summary": "获取SQL审核记录标签列表",
                 "operationId": "GetSQLAuditRecordTagTipsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -12035,6 +12050,9 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },

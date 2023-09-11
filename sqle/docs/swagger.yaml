@@ -1835,6 +1835,8 @@ definitions:
       message:
         example: ok
         type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetSQLEInfoResDataV1:
     properties:
@@ -7546,10 +7548,6 @@ paths:
       description: get sql audit records
       operationId: getSQLAuditRecordsV1
       parameters:
-      - description: fuzzy search sql audit record_id
-        in: query
-        name: fuzzy_search_sql_audit_record_id
-        type: string
       - description: fuzzy search tags
         in: query
         name: fuzzy_search_tags
@@ -7564,6 +7562,14 @@ paths:
       - description: filter instance name
         in: query
         name: filter_instance_name
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
         type: string
       - description: page index
         in: query
@@ -7669,6 +7675,12 @@ paths:
     get:
       description: get sql audit record tag tips
       operationId: GetSQLAuditRecordTagTipsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
       responses:
         "200":
           description: OK
