@@ -114,6 +114,7 @@ const (
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
+	DDLAvoidText                                       = "ddl_avoid_text"
 )
 
 // inspector DML rules
@@ -2154,6 +2155,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
 		Func:         checkIndexSelectivity,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidText,
+			Desc:       "使用TEXT 类型的字段建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+			Annotation: "将TEXT类型的字段与原表主键分拆成另一个表可以提高数据库性能和查询速度，减少不必要的 I/O 操作。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+		Func:         checkText,
 	},
 }
 
@@ -6120,7 +6133,6 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
-
 func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
 	indexColumns := []string{}
 	for _, info := range indexesInfo {
@@ -6169,6 +6181,30 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 				if maxIndexOption > 0 && float64(max) > maxIndexOption {
 					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
 					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkText(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if col.Tp.Tp == mysql.TypeBlob {
+				addResult(input.Res, input.Rule, input.Rule.Name, col.Name.Name.O)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, col := range stmt.Specs {
+			if col.Tp == ast.AlterTableAddColumns {
+				for _, newColumn := range col.NewColumns {
+					if newColumn.Tp.Tp == mysql.TypeBlob {
+						addResult(input.Res, input.Rule, input.Rule.Name, newColumn.Name.Name.O)
+						return nil
+					}
 				}
 			}
 		}
