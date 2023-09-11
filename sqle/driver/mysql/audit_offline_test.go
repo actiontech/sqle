@@ -2540,3 +2540,56 @@ func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
 			newTestResult().addResult(rulepkg.DDLCheckAutoIncrementFieldNum))
 	})
 }
+
+func TestDDLAvoidText(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLAvoidText].Rule
+	t.Run(`create table with text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE IF NOT EXISTS tbl1(
+				id INT UNSIGNED AUTO_INCREMENT,
+				title text NOT NULL
+			 );`,
+			newTestResult().addResult(rulepkg.DDLAvoidText, "title"))
+	})
+
+	t.Run(`create table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE IF NOT EXISTS tbl1(
+				id INT UNSIGNED AUTO_INCREMENT
+			 );`,
+			newTestResult())
+	})
+
+	t.Run(`alter table with text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`ALTER TABLE t1
+			ADD new_column_name text,
+			DROP c;
+			`,
+			newTestResult().addResult(rulepkg.DDLAvoidText, "new_column_name"))
+	})
+
+	t.Run(`alter table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`ALTER TABLE t1
+			ADD new_column_name varchar(20);
+			`,
+			newTestResult())
+	})
+}
