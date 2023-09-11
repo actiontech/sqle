@@ -4430,7 +4430,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "create SQL audit record\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.",
+                "description": "SQL audit\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -4440,8 +4440,8 @@ var doc = `{
                 "tags": [
                     "sql_audit_record"
                 ],
-                "summary": "创建SQL审核记录",
-                "operationId": "CreateSqlAuditRecordV1",
+                "summary": "SQL审核",
+                "operationId": "CreateSQLAuditRecordV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -4491,7 +4491,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.SqlAuditRecordResV1"
+                            "$ref": "#/definitions/v1.CreateSQLAuditRecordResV1"
                         }
                     }
                 }
@@ -10257,6 +10257,23 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateSQLAuditRecordResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecordResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.CreateSyncInstanceTaskReqV1": {
             "type": "object",
             "required": [
@@ -13780,6 +13797,9 @@ var doc = `{
                 "audit_started_at": {
                     "type": "string"
                 },
+                "creator_user_id": {
+                    "type": "integer"
+                },
                 "sql_audit_record_id": {
                     "type": "integer"
                 },
@@ -13794,6 +13814,18 @@ var doc = `{
                 },
                 "task_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SQLAuditRecordResData": {
+            "type": "object",
+            "properties": {
+                "sql_audit_record_id": {
+                    "type": "string"
+                },
+                "task": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskResV1"
                 }
             }
         },
@@ -13875,35 +13907,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
-                }
-            }
-        },
-        "v1.SqlAuditRecordResData": {
-            "type": "object",
-            "properties": {
-                "sql_audit_record_id": {
-                    "type": "string"
-                },
-                "task": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.AuditTaskResV1"
-                }
-            }
-        },
-        "v1.SqlAuditRecordResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.SqlAuditRecordResData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
