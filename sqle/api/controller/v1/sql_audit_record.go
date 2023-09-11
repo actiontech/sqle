@@ -7,6 +7,7 @@ import (
 )
 
 type CreateSQLAuditRecordReqV1 struct {
+	DbType         string `json:"db_type" form:"db_type" example:"MySQL"`
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
 	Sqls           string `json:"sqls" form:"sqls" example:"alter table tb1 drop columns c1; select * from tb"`
@@ -82,7 +83,8 @@ type SQLAuditRecord struct {
 
 type GetSQLAuditRecordsResV1 struct {
 	controller.BaseRes
-	Data []SQLAuditRecord `json:"data"`
+	Data      []SQLAuditRecord `json:"data"`
+	TotalNums uint64           `json:"total_nums"`
 }
 
 // GetSQLAuditRecordsV1
@@ -91,10 +93,11 @@ type GetSQLAuditRecordsResV1 struct {
 // @Tags sql_audit_record
 // @Id getSQLAuditRecordsV1
 // @Security ApiKeyAuth
-// @Param fuzzy_search_sql_audit_record_id query string false "fuzzy search sql audit record_id"
 // @Param fuzzy_search_tags query string false "fuzzy search tags"
 // @Param filter_sql_audit_status query string false "filter sql audit status" Enums(auditing,successfully)
 // @Param filter_instance_name query string false "filter instance name"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
@@ -115,6 +118,7 @@ type GetSQLAuditRecordTagTipsResV1 struct {
 // @Tags sql_audit_record
 // @Id GetSQLAuditRecordTagTipsV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetSQLAuditRecordTagTipsResV1
 // @router /v1/projects/{project_name}/sql_audit_record/tag_tips [get]
 func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
