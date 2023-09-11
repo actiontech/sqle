@@ -3965,10 +3965,10 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		t, "", inspect7, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan))
 
 	inspect8 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
-		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(""))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1='a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "Extra"}).AddRow("", "Using where"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
-		t, "", inspect8, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+		t, "", inspect8, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
 	assert.NoError(t, handler.ExpectationsWereMet())
 
