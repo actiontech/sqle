@@ -4394,6 +4394,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -13788,15 +13794,6 @@ var doc = `{
         "v1.SQLAuditRecord": {
             "type": "object",
             "properties": {
-                "audit_pass_rate": {
-                    "type": "number"
-                },
-                "audit_score": {
-                    "type": "integer"
-                },
-                "audit_started_at": {
-                    "type": "string"
-                },
                 "creator_user_id": {
                     "type": "integer"
                 },
@@ -13812,8 +13809,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "task_id": {
-                    "type": "integer"
+                "task": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskResV1"
                 }
             }
         },
