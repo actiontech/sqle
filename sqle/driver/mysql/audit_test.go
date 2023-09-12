@@ -132,6 +132,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
 		rulepkg.DMLCheckAggregate:                           {},
 		rulepkg.DDLCheckColumnNotNULL:                       {},
+		rulepkg.DDLAvoidText:                                {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5678,4 +5679,3 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
-
