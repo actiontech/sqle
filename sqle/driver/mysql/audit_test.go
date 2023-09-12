@@ -5679,3 +5679,21 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 
 }
 
+func TestCheckTableRows(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableRows].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) as rows_count from `exist_db`.`exist_tb_7`")).
+		WillReturnRows(sqlmock.NewRows([]string{"rows_count"}).AddRow("10000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "CREATE TABLE exist_db.exist_tb_7 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult())
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) as rows_count from `exist_db`.`exist_tb_7`")).
+		WillReturnRows(sqlmock.NewRows([]string{"rows_count"}).AddRow("500000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "CREATE TABLE exist_db.exist_tb_7 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult().addResult(rulepkg.DDLCheckTableRows))
+
+	inspect3 := NewMockInspect(e)
+	runSingleRuleInspectCase(rule, t, "", inspect3, "CREATE INDEX idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult())
+}
