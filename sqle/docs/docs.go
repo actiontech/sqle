@@ -4594,8 +4594,14 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "fuzzy search sql fingerprint or assignee",
-                        "name": "fuzzy_search_sql_fingerprint_or_assignee",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search assignee",
+                        "name": "fuzzy_search_assignee",
                         "in": "query"
                     },
                     {
@@ -4647,12 +4653,6 @@ var doc = `{
                         "type": "string",
                         "description": "status",
                         "name": "filter_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "is related to me",
-                        "name": "filter_is_related_to_me",
                         "in": "query"
                     },
                     {
