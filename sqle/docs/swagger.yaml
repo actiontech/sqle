@@ -7756,6 +7756,11 @@ paths:
       description: update SQL audit record
       operationId: updateSQLAuditRecordV1
       parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
       - description: update SQL audit record
         in: body
         name: param
