@@ -447,8 +447,11 @@ func (at *SchemaMetaTask) collectorDo() {
 }
 
 func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
+	// todo: 判断instance
 	task := &model.Task{
-		DBType: at.ap.DBType,
+		DBType:   at.ap.DBType,
+		Schema:   at.ap.InstanceDatabase,
+		Instance: at.ap.Instance,
 	}
 	return at.baseTask.audit(task)
 }

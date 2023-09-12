@@ -902,3 +902,21 @@ func (c *Context) GetExecutor() *executor.Executor {
 func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
 	return c.e.GetTableIndexesInfo(schema, tableName)
 }
+
+func (c *Context) GetRowsCountFromTable(tableName string) (int, error) {
+	record, err := c.e.Db.Query(fmt.Sprintf("select count(*) as rows_count from `%s`.`%s`", c.currentSchema, tableName))
+	if err != nil {
+		return 0, errors.Wrap(err, "get rows count error")
+	}
+
+	if len(record) != 1 {
+		return 0, fmt.Errorf("get rows count error, result count: %v", len(record))
+	}
+
+	rowsCount, err := strconv.Atoi(record[0]["rows_count"].String)
+	if err != nil {
+		return 0, errors.Wrap(err, "get rows count error when parse cardinality")
+	}
+
+	return rowsCount, nil
+}
