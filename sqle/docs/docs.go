@@ -4600,8 +4600,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "fuzzy search assignee",
-                        "name": "fuzzy_search_assignee",
+                        "description": "assignee",
+                        "name": "filter_assignee",
                         "in": "query"
                     },
                     {
