@@ -68,16 +68,17 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 const (
 	InputSQLFileName        = "input_sql_file"
 	InputMyBatisXMLFileName = "input_mybatis_xml_file"
+	InputZipFileName        = "input_zip_file"
 )
 
 func getSQLFromFile(c echo.Context) (string, string, error) {
 	// Read it from sql file.
-	sql, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
 	if err != nil {
 		return "", model.TaskSQLSourceFromSQLFile, err
 	}
 	if exist {
-		return sql, model.TaskSQLSourceFromSQLFile, nil
+		return sqls, model.TaskSQLSourceFromSQLFile, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
@@ -92,7 +93,16 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 		}
 		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
 	}
-	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+
+	// If mybatis xml file is not exist, read it from zip file.
+	sqls, exist, err = getSqlsFromZip(c)
+	if err != nil {
+		return "", model.TaskSQLSourceFromZipFile, err
+	}
+	if !exist {
+		return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	}
+	return sqls, model.TaskSQLSourceFromZipFile, nil
 }
 
 // @Summary 创建Sql扫描任务并提交审核
