@@ -1810,6 +1810,18 @@ definitions:
           $ref: '#/definitions/v1.TableMeta'
         type: array
     type: object
+  v1.GetSQLAuditRecordResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SQLAuditRecord'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSQLAuditRecordTagTipsResV1:
     properties:
       code:
@@ -3026,6 +3038,9 @@ definitions:
     properties:
       creator_user_id:
         type: integer
+      instance:
+        $ref: '#/definitions/v1.SQLAuditRecordInstance'
+        type: object
       sql_audit_record_id:
         type: integer
       sql_audit_status:
@@ -3037,6 +3052,15 @@ definitions:
       task:
         $ref: '#/definitions/v1.AuditTaskResV1'
         type: object
+    type: object
+  v1.SQLAuditRecordInstance:
+    properties:
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_port:
+        example: "3306"
+        type: string
     type: object
   v1.SQLAuditRecordResData:
     properties:
@@ -7649,6 +7673,30 @@ paths:
       tags:
       - sql_audit_record
   /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id}:
+    get:
+      description: get sql audit record info
+      operationId: getSQLAuditRecordV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql audit record id
+        in: path
+        name: sql_audit_record_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLAuditRecordResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL审核记录信息
+      tags:
+      - sql_audit_record
     patch:
       consumes:
       - application/json

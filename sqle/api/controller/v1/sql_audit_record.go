@@ -74,11 +74,17 @@ type GetSQLAuditRecordsReqV1 struct {
 }
 
 type SQLAuditRecord struct {
-	CreatorUserId    uint           `json:"creator_user_id"`
-	SQLAuditRecordId uint           `json:"sql_audit_record_id"`
-	SQLAuditStatus   string         `json:"sql_audit_status"`
-	Tags             []string       `json:"tags"`
-	Task             AuditTaskResV1 `json:"task"`
+	CreatorUserId    uint                   `json:"creator_user_id"`
+	SQLAuditRecordId uint                   `json:"sql_audit_record_id"`
+	SQLAuditStatus   string                 `json:"sql_audit_status"`
+	Tags             []string               `json:"tags"`
+	Instance         SQLAuditRecordInstance `json:"instance"`
+	Task             AuditTaskResV1         `json:"task"`
+}
+
+type SQLAuditRecordInstance struct {
+	Host string `json:"db_host" example:"10.10.10.10"`
+	Port string `json:"db_port" example:"3306"`
 }
 
 type GetSQLAuditRecordsResV1 struct {
@@ -104,6 +110,25 @@ type GetSQLAuditRecordsResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordsResV1
 // @router /v1/projects/{project_name}/sql_audit_record [get]
 func GetSQLAuditRecordsV1(c echo.Context) error {
+	return nil
+}
+
+type GetSQLAuditRecordResV1 struct {
+	controller.BaseRes
+	Data SQLAuditRecord `json:"data"`
+}
+
+// GetSQLAuditRecordV1
+// @Summary 获取SQL审核记录信息
+// @Description get sql audit record info
+// @Tags sql_audit_record
+// @Id getSQLAuditRecordV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param sql_audit_record_id path string true "sql audit record id"
+// @Success 200 {object} v1.GetSQLAuditRecordResV1
+// @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [get]
+func GetSQLAuditRecordV1(c echo.Context) error {
 	return nil
 }
 
