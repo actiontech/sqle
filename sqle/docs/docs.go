@@ -4594,6 +4594,12 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "fuzzy search sql fingerprint or assignee",
+                        "name": "fuzzy_search_sql_fingerprint_or_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "instance name",
                         "name": "filter_instance_name",
                         "in": "query"
@@ -4622,12 +4628,6 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "assignee",
-                        "name": "filter_assignee",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "last audit start time from",
                         "name": "filter_last_audit_start_time_from",
                         "in": "query"
@@ -4639,15 +4639,20 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "boolean",
-                        "description": "is related to me",
-                        "name": "filter_is_related_to_me",
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
                         "in": "query"
                     },
                     {
                         "type": "boolean",
-                        "description": "is solved",
-                        "name": "filter_is_solved",
+                        "description": "is related to me",
+                        "name": "filter_is_related_to_me",
                         "in": "query"
                     },
                     {
@@ -14100,9 +14105,6 @@ var doc = `{
                 "remark": {
                     "type": "string"
                 },
-                "solve_status": {
-                    "type": "string"
-                },
                 "source": {
                     "type": "string"
                 },
@@ -14120,6 +14122,9 @@ var doc = `{
                 },
                 "sql_manage_total_num": {
                     "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
