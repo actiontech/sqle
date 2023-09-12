@@ -3154,8 +3154,6 @@ definitions:
         type: string
       remark:
         type: string
-      solve_status:
-        type: string
       source:
         type: string
       sql:
@@ -3168,6 +3166,8 @@ definitions:
         type: integer
       sql_manage_total_num:
         type: integer
+      status:
+        type: string
     type: object
   v1.StatisticAuditPlanResV1:
     properties:
@@ -7744,6 +7744,10 @@ paths:
     get:
       description: get sql manage list
       parameters:
+      - description: fuzzy search sql fingerprint or assignee
+        in: query
+        name: fuzzy_search_sql_fingerprint_or_assignee
+        type: string
       - description: instance name
         in: query
         name: filter_instance_name
@@ -7764,10 +7768,6 @@ paths:
         in: query
         name: filter_audit_level
         type: string
-      - description: assignee
-        in: query
-        name: filter_assignee
-        type: string
       - description: last audit start time from
         in: query
         name: filter_last_audit_start_time_from
@@ -7776,13 +7776,17 @@ paths:
         in: query
         name: filter_last_audit_start_time_to
         type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        in: query
+        name: filter_status
+        type: string
       - description: is related to me
         in: query
         name: filter_is_related_to_me
-        type: boolean
-      - description: is solved
-        in: query
-        name: filter_is_solved
         type: boolean
       - description: page index
         in: query
