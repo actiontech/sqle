@@ -3051,8 +3051,8 @@ definitions:
     type: object
   v1.SQLAuditRecord:
     properties:
-      creator_user_id:
-        type: integer
+      creator:
+        type: string
       instance:
         $ref: '#/definitions/v1.SQLAuditRecordInstance'
         type: object
@@ -7692,6 +7692,10 @@ paths:
       - description: schema of instance
         in: formData
         name: instance_schema
+        type: string
+      - description: db type of instance
+        in: formData
+        name: db_type
         type: string
       - description: sqls for audit
         in: formData

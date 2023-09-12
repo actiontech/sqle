@@ -4477,6 +4477,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "db type of instance",
+                        "name": "db_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
                         "description": "sqls for audit",
                         "name": "sql",
                         "in": "formData"
@@ -13985,8 +13991,8 @@ var doc = `{
         "v1.SQLAuditRecord": {
             "type": "object",
             "properties": {
-                "creator_user_id": {
-                    "type": "integer"
+                "creator": {
+                    "type": "string"
                 },
                 "instance": {
                     "type": "object",
