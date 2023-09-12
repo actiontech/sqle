@@ -76,7 +76,7 @@ func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 
 func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
 	var aps []*AuditPlan
-	err := s.db.Model(AuditPlan{}).
+	err := s.db.Model(AuditPlan{}).Preload("Instance").
 		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
 		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
 		Find(&aps).Error
@@ -103,7 +103,7 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).
+	err := s.db.Model(AuditPlan{}).Preload("Instance").
 		Joins("LEFT JOIN projects ON projects.id = audit_plans.project_id").
 		Where(fmt.Sprintf("projects.status = '%v'", ProjectStatusActive)).
 		Where("audit_plans.id = ?", id).Find(ap).Error
