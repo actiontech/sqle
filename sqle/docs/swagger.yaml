@@ -1916,6 +1916,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlManageListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlManage'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetSyncInstanceTaskListResV1:
     properties:
       code:
@@ -3144,6 +3159,39 @@ definitions:
         type: string
       percent:
         type: number
+    type: object
+  v1.SqlManage:
+    properties:
+      appear_num:
+        type: integer
+      assignee:
+        type: string
+      audit_result:
+        type: string
+      first_appear_time:
+        type: string
+      id:
+        type: integer
+      instance:
+        type: string
+      last_appear_time:
+        type: string
+      remark:
+        type: string
+      solve_status:
+        type: string
+      source:
+        type: string
+      sql:
+        type: string
+      sql_fingerprint:
+        type: string
+      sql_manage_bad_num:
+        type: integer
+      sql_manage_optimized_num:
+        type: integer
+      sql_manage_total_num:
+        type: integer
     type: object
   v1.StatisticAuditPlanResV1:
     properties:
@@ -6689,6 +6737,7 @@ paths:
         enum:
         - create_audit_plan
         - create_workflow
+        - sql_manage
         in: query
         name: functional_module
         type: string
@@ -7739,6 +7788,70 @@ paths:
       summary: 获取SQL审核记录标签列表
       tags:
       - sql_audit_record
+  /v1/projects/{project_name}/sql_manages:
+    get:
+      description: get sql manage list
+      parameters:
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - api_audit
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: is related to me
+        in: query
+        name: filter_is_related_to_me
+        type: boolean
+      - description: is solved
+        in: query
+        name: filter_is_solved
+        type: boolean
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控sql列表
+      tags:
+      - SqlManage
   /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
