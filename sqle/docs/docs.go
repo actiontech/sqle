@@ -3003,7 +3003,8 @@ var doc = `{
                     {
                         "enum": [
                             "create_audit_plan",
-                            "create_workflow"
+                            "create_workflow",
+                            "sql_manage"
                         ],
                         "type": "string",
                         "description": "functional module",
@@ -4610,6 +4611,102 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控sql列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "api_audit"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "is related to me",
+                        "name": "filter_is_related_to_me",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "is solved",
+                        "name": "filter_is_solved",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageListResp"
                         }
                     }
                 }
@@ -12207,6 +12304,28 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlManage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetSyncInstanceTaskListResV1": {
             "type": "object",
             "properties": {
@@ -14022,6 +14141,56 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.SqlManage": {
+            "type": "object",
+            "properties": {
+                "appear_num": {
+                    "type": "integer"
+                },
+                "assignee": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "first_appear_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance": {
+                    "type": "string"
+                },
+                "last_appear_time": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "solve_status": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                },
+                "sql_manage_bad_num": {
+                    "type": "integer"
+                },
+                "sql_manage_optimized_num": {
+                    "type": "integer"
+                },
+                "sql_manage_total_num": {
+                    "type": "integer"
                 }
             }
         },
