@@ -3051,13 +3051,15 @@ definitions:
     type: object
   v1.SQLAuditRecord:
     properties:
+      created_at:
+        type: string
       creator:
         type: string
       instance:
         $ref: '#/definitions/v1.SQLAuditRecordInstance'
         type: object
       sql_audit_record_id:
-        type: integer
+        type: string
       sql_audit_status:
         type: string
       tags:
@@ -7616,7 +7618,7 @@ paths:
       summary: 导出项目规则模板
       tags:
       - rule_template
-  /v1/projects/{project_name}/sql_audit_record:
+  /v1/projects/{project_name}/sql_audit_records:
     get:
       description: get sql audit records
       operationId: getSQLAuditRecordsV1
@@ -7699,7 +7701,7 @@ paths:
         type: string
       - description: sqls for audit
         in: formData
-        name: sql
+        name: sqls
         type: string
       - description: input SQL file
         in: formData
@@ -7725,7 +7727,7 @@ paths:
       summary: SQL审核
       tags:
       - sql_audit_record
-  /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id}:
+  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}:
     get:
       description: get sql audit record info
       operationId: getSQLAuditRecordV1
@@ -7750,6 +7752,7 @@ paths:
       summary: 获取SQL审核记录信息
       tags:
       - sql_audit_record
+  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/:
     patch:
       consumes:
       - application/json
@@ -7777,7 +7780,7 @@ paths:
       summary: 更新SQL审核记录
       tags:
       - sql_audit_record
-  /v1/projects/{project_name}/sql_audit_record/tag_tips:
+  /v1/projects/{project_name}/sql_audit_records/tag_tips:
     get:
       description: get sql audit record tag tips
       operationId: GetSQLAuditRecordTagTipsV1

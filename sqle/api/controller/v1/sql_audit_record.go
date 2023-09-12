@@ -58,12 +58,12 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Param instance_name formData string false "instance name"
 // @Param instance_schema formData string false "schema of instance"
 // @Param db_type formData string false "db type of instance"
-// @Param sql formData string false "sqls for audit"
+// @Param sqls formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.CreateSQLAuditRecordResV1
-// @router /v1/projects/{project_name}/sql_audit_record [post]
+// @router /v1/projects/{project_name}/sql_audit_records [post]
 func CreateSQLAuditRecord(c echo.Context) error {
 	req := new(CreateSQLAuditRecordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -334,24 +334,29 @@ type UpdateSQLAuditRecordReqV1 struct {
 // @Param project_name path string true "project name"
 // @Param param body v1.UpdateSQLAuditRecordReqV1 true "update SQL audit record"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [patch]
+// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [patch]
 func UpdateSQLAuditRecordV1(c echo.Context) error {
 	return nil
 }
 
 type GetSQLAuditRecordsReqV1 struct {
-	FuzzySearchSQLAuditRecordId string `json:"fuzzy_search_sql_audit_record_id" query:"fuzzy_search_sql_audit_record_id"`
-	FilterSQLAuditStatus        string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterTags                  string `json:"filter_tags" query:"filter_tags"`
+	FuzzySearchTags      string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
+	FilterSQLAuditStatus string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
+	FilterInstanceName   string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	PageIndex            uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize             uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type SQLAuditRecord struct {
 	Creator          string                 `json:"creator"`
-	SQLAuditRecordId uint                   `json:"sql_audit_record_id"`
+	SQLAuditRecordId string                 `json:"sql_audit_record_id"`
 	SQLAuditStatus   string                 `json:"sql_audit_status"`
 	Tags             []string               `json:"tags"`
 	Instance         SQLAuditRecordInstance `json:"instance"`
 	Task             AuditTaskResV1         `json:"task"`
+	CreatedAt        *time.Time             `json:"created_at"`
 }
 
 type SQLAuditRecordInstance struct {
@@ -380,7 +385,7 @@ type GetSQLAuditRecordsResV1 struct {
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetSQLAuditRecordsResV1
-// @router /v1/projects/{project_name}/sql_audit_record [get]
+// @router /v1/projects/{project_name}/sql_audit_records [get]
 func GetSQLAuditRecordsV1(c echo.Context) error {
 	return nil
 }
@@ -399,7 +404,7 @@ type GetSQLAuditRecordResV1 struct {
 // @Param project_name path string true "project name"
 // @Param sql_audit_record_id path string true "sql audit record id"
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
-// @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [get]
+// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id} [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
 	return nil
 }
@@ -417,7 +422,7 @@ type GetSQLAuditRecordTagTipsResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetSQLAuditRecordTagTipsResV1
-// @router /v1/projects/{project_name}/sql_audit_record/tag_tips [get]
+// @router /v1/projects/{project_name}/sql_audit_records/tag_tips [get]
 func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
 	return nil
 }
