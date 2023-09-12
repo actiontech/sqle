@@ -132,6 +132,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
 		rulepkg.DMLCheckAggregate:                           {},
 		rulepkg.DDLCheckColumnNotNULL:                       {},
+		rulepkg.DDLCheckCompositeIndexDistinction:           {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
