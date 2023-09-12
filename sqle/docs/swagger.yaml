@@ -3140,16 +3140,16 @@ definitions:
     properties:
       appear_num:
         type: integer
-      assign_person:
+      assignee:
         type: string
       audit_result:
-        type: string
-      data_source:
         type: string
       first_appear_time:
         type: string
       id:
         type: integer
+      instance:
+        type: string
       last_appear_time:
         type: string
       remark:
@@ -7744,9 +7744,9 @@ paths:
     get:
       description: get sql manage list
       parameters:
-      - description: data source
+      - description: instance name
         in: query
-        name: filter_data_source
+        name: filter_instance_name
         type: string
       - description: source
         enum:
@@ -7764,9 +7764,9 @@ paths:
         in: query
         name: filter_audit_level
         type: string
-      - description: operation person
+      - description: assignee
         in: query
-        name: filter_operation_person
+        name: filter_assignee
         type: string
       - description: last audit start time from
         in: query

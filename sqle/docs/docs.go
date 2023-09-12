@@ -4594,8 +4594,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "data source",
-                        "name": "filter_data_source",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
                         "in": "query"
                     },
                     {
@@ -4622,8 +4622,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "operation person",
-                        "name": "filter_operation_person",
+                        "description": "assignee",
+                        "name": "filter_assignee",
                         "in": "query"
                     },
                     {
@@ -14079,13 +14079,10 @@ var doc = `{
                 "appear_num": {
                     "type": "integer"
                 },
-                "assign_person": {
+                "assignee": {
                     "type": "string"
                 },
                 "audit_result": {
-                    "type": "string"
-                },
-                "data_source": {
                     "type": "string"
                 },
                 "first_appear_time": {
@@ -14093,6 +14090,9 @@ var doc = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "instance": {
+                    "type": "string"
                 },
                 "last_appear_time": {
                     "type": "string"
