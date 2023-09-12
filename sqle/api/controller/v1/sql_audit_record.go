@@ -266,7 +266,7 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 	}
 	size := currentPos + 1
 	if size > maxZipFileSize {
-		return "", false, _err.New("file can't be bigger than 100M")
+		return "", false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
 	}
 	r, err := zip.NewReader(f, size)
 	if err != nil {
@@ -307,8 +307,10 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 		return "", false, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
 	for i := range ss {
-		if _, err = sqlBuffer.WriteString(";"); err != nil {
-			return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
+		if !strings.HasSuffix(sqlBuffer.String(), ";") {
+			if _, err = sqlBuffer.WriteString(";"); err != nil {
+				return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
+			}
 		}
 		if _, err = sqlBuffer.WriteString(ss[i]); err != nil {
 			return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
