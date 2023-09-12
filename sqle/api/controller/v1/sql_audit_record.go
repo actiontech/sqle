@@ -124,6 +124,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("generate audit record id failed: %v", err))
 	}
 	record := model.SQLAuditRecord{
+		ProjectId:     project.ID,
 		CreatorID:     user.ID,
 		AuditRecordID: recordId,
 		TaskId:        task.ID,
