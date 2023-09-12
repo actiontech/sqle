@@ -132,69 +132,25 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
 
-	err = CheckIsProjectMember(userName, projectName)
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckIsProjectMember(user.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
 
-	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
+	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-
-	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	defer plugin.Close(context.TODO())
-
-	if err := plugin.Ping(context.TODO()); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	task := &model.Task{
-		Schema:       req.InstanceSchema,
-		InstanceId:   instance.ID,
-		Instance:     instance,
-		CreateUserId: user.ID,
-		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    source,
-		DBType:       instance.DbType,
-	}
-	createAt := time.Now()
-	task.CreatedAt = createAt
-
-	nodes, err := plugin.Parse(context.TODO(), sql)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
 	}
 	// if task instance is not nil, gorm will update instance when save task.
+	tmpInst := *task.Instance
 	task.Instance = nil
 
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
@@ -203,7 +159,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task.Instance = instance
+	task.Instance = &tmpInst
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

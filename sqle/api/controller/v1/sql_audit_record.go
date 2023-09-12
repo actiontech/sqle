@@ -47,6 +47,58 @@ type SQLAuditRecordResData struct {
 // @router /v1/projects/{project_name}/sql_audit_record [post]
 func CreateSQLAuditRecord(c echo.Context) error {
 	return nil
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, instanceName, instanceSchema, projectName, sourceType, sqls string) (*model.Task, error) {
+	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, ErrInstanceNoAccess
+	}
+	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	if err != nil {
+		return nil, err
+	}
+	if !can {
+		return nil, ErrInstanceNoAccess
+	}
+
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	if err := plugin.Ping(context.TODO()); err != nil {
+		return nil, err
+	}
+
+	task := &model.Task{
+		Schema:       instanceSchema,
+		InstanceId:   instance.ID,
+		Instance:     instance,
+		CreateUserId: userId,
+		ExecuteSQLs:  []*model.ExecuteSQL{},
+		SQLSource:    sourceType,
+		DBType:       instance.DbType,
+	}
+	createAt := time.Now()
+	task.CreatedAt = createAt
+
+	nodes, err := plugin.Parse(context.TODO(), sqls)
+	if err != nil {
+		return nil, err
+	}
+	for n, node := range nodes {
+		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:  uint(n + 1),
+				Content: node.Text,
+			},
+		})
+	}
+	return task, nil
+}
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
