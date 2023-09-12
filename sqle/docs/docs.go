@@ -4603,6 +4603,13 @@ var doc = `{
                 "operationId": "updateSQLAuditRecordV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "update SQL audit record",
                         "name": "param",
                         "in": "body",
