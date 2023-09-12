@@ -3,6 +3,7 @@ package v1
 import (
 	"archive/zip"
 	"context"
+	e "errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,13 +14,13 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 )
 
 type CreateSQLAuditRecordReqV1 struct {
@@ -70,7 +71,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if req.DbType == "" && req.InstanceName == "" {
-		return controller.JSONBaseErrorReq(c, errors.New("db_type and instance_name can't both be empty"))
+		return controller.JSONBaseErrorReq(c, e.New("db_type and instance_name can't both be empty"))
 	}
 	projectName := c.Param("project_name")
 
@@ -336,7 +337,40 @@ type UpdateSQLAuditRecordReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [patch]
 func UpdateSQLAuditRecordV1(c echo.Context) error {
-	return nil
+	req := new(UpdateSQLAuditRecordReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if req.Tags != nil {
+		if can, err := s.IsUserCanUpdateSQLAuditRecord(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+		} else if !can {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you can't update SQL audit record that created by others")))
+		}
+
+		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
+		if err = s.UpdateSQLAuditRecordById(req.SQLAuditRecordId, data); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("update SQL audit record failed: %v", err))
+		}
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetSQLAuditRecordsReqV1 struct {
