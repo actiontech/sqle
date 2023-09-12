@@ -7744,9 +7744,13 @@ paths:
     get:
       description: get sql manage list
       parameters:
-      - description: fuzzy search sql fingerprint or assignee
+      - description: fuzzy search sql fingerprint
         in: query
-        name: fuzzy_search_sql_fingerprint_or_assignee
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: fuzzy search assignee
+        in: query
+        name: fuzzy_search_assignee
         type: string
       - description: instance name
         in: query
@@ -7784,10 +7788,6 @@ paths:
         in: query
         name: filter_status
         type: string
-      - description: is related to me
-        in: query
-        name: filter_is_related_to_me
-        type: boolean
       - description: page index
         in: query
         name: page_index
