@@ -4358,7 +4358,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_audit_record": {
+        "/v1/projects/{project_name}/sql_audit_records": {
             "get": {
                 "security": [
                     {
@@ -4484,7 +4484,7 @@ var doc = `{
                     {
                         "type": "string",
                         "description": "sqls for audit",
-                        "name": "sql",
+                        "name": "sqls",
                         "in": "formData"
                     },
                     {
@@ -4516,7 +4516,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_audit_record/tag_tips": {
+        "/v1/projects/{project_name}/sql_audit_records/tag_tips": {
             "get": {
                 "security": [
                     {
@@ -4548,7 +4548,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id}": {
+        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}": {
             "get": {
                 "security": [
                     {
@@ -4585,7 +4585,9 @@ var doc = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
             "patch": {
                 "security": [
                     {
@@ -13998,6 +14000,9 @@ var doc = `{
         "v1.SQLAuditRecord": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "creator": {
                     "type": "string"
                 },
@@ -14006,7 +14011,7 @@ var doc = `{
                     "$ref": "#/definitions/v1.SQLAuditRecordInstance"
                 },
                 "sql_audit_record_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "sql_audit_status": {
                     "type": "string"
