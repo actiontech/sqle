@@ -38,6 +38,7 @@ type SQLAuditRecordResData struct {
 // @Param project_name path string true "project name"
 // @Param instance_name formData string false "instance name"
 // @Param instance_schema formData string false "schema of instance"
+// @Param db_type formData string false "db type of instance"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
@@ -74,7 +75,7 @@ type GetSQLAuditRecordsReqV1 struct {
 }
 
 type SQLAuditRecord struct {
-	CreatorUserId    uint                   `json:"creator_user_id"`
+	Creator          string                 `json:"creator"`
 	SQLAuditRecordId uint                   `json:"sql_audit_record_id"`
 	SQLAuditStatus   string                 `json:"sql_audit_status"`
 	Tags             []string               `json:"tags"`
