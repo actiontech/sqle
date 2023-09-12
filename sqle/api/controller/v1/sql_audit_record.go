@@ -61,6 +61,7 @@ type UpdateSQLAuditRecordReqV1 struct {
 // @Id updateSQLAuditRecordV1
 // @Tags sql_audit_record
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param param body v1.UpdateSQLAuditRecordReqV1 true "update SQL audit record"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [patch]
