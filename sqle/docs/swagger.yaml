@@ -7748,9 +7748,9 @@ paths:
         in: query
         name: fuzzy_search_sql_fingerprint
         type: string
-      - description: fuzzy search assignee
+      - description: assignee
         in: query
-        name: fuzzy_search_assignee
+        name: filter_assignee
         type: string
       - description: instance name
         in: query

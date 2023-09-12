@@ -7,7 +7,7 @@ import (
 
 type GetSqlManageListReq struct {
 	FuzzySearchSqlFingerprint    *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
-	FuzzySearchAssignee          *string `query:"fuzzy_search_assignee" json:"fuzzy_search_assignee,omitempty"`
+	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	FilterInstanceName           *string `query:"filter_instance_name" json:"filter_instance_name,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
 	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
@@ -48,7 +48,7 @@ type SqlManage struct {
 // @Tags SqlManage
 // @Security ApiKeyAuth
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
-// @Param fuzzy_search_assignee query string false "fuzzy search assignee"
+// @Param filter_assignee query string false "assignee"
 // @Param filter_instance_name query string false "instance name"
 // @Param filter_source query string false "source" Enums(audit_plan,api_audit)
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
