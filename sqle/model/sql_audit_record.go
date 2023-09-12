@@ -6,11 +6,11 @@ type SQLAuditRecordTags struct {
 
 type SQLAuditRecord struct {
 	Model
-	ProjectId     uint `gorm:"index"`
-	CreatorID     uint
-	AuditRecordID string `gorm:"unique"`
+	ProjectId     uint   `gorm:"index;not null"`
+	CreatorID     uint   `gorm:"not null"`
+	AuditRecordID string `gorm:"unique;not null"`
 	Tags          JSON
 
-	TaskId uint
+	TaskId uint  `gorm:"not null"`
 	Task   *Task `gorm:"foreignkey:TaskId"`
 }
