@@ -4526,6 +4526,43 @@
             }
         },
         "/v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql audit record info",
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "获取SQL审核记录信息",
+                "operationId": "getSQLAuditRecordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit record id",
+                        "name": "sql_audit_record_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAuditRecordResV1"
+                        }
+                    }
+                }
+            },
             "patch": {
                 "security": [
                     {
@@ -11999,6 +12036,23 @@
                 }
             }
         },
+        "v1.GetSQLAuditRecordResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecord"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSQLAuditRecordTagTipsResV1": {
             "type": "object",
             "properties": {
@@ -13799,6 +13853,10 @@
                 "creator_user_id": {
                     "type": "integer"
                 },
+                "instance": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecordInstance"
+                },
                 "sql_audit_record_id": {
                     "type": "integer"
                 },
@@ -13814,6 +13872,19 @@
                 "task": {
                     "type": "object",
                     "$ref": "#/definitions/v1.AuditTaskResV1"
+                }
+            }
+        },
+        "v1.SQLAuditRecordInstance": {
+            "type": "object",
+            "properties": {
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
                 }
             }
         },
