@@ -3,7 +3,6 @@ package v1
 import (
 	"archive/zip"
 	"context"
-	_err "errors"
 	"fmt"
 	"io"
 	"net/http"
