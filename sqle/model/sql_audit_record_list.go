@@ -9,6 +9,7 @@ type SQLAuditRecordListItem struct {
 	AuditRecordId   string          `json:"audit_record_id"`
 	RecordCreatedAt *time.Time      `json:"record_created_at"`
 	CreatorName     string          `json:"creator_name"`
+	Tags            string          `json:"tags"`
 	InstanceName    sql.NullString  `json:"instance_name"`
 	InstanceHost    sql.NullString  `json:"instance_host"`
 	InstancePort    sql.NullString  `json:"instance_port"`
@@ -25,6 +26,7 @@ type SQLAuditRecordListItem struct {
 var sqlAuditRecordQueryTpl = `
 SELECT sql_audit_records.audit_record_id AS audit_record_id,
        sql_audit_records.created_at      AS record_created_at,
+       sql_audit_records.tags            AS tags,
        create_user.login_name            AS creator_name,
        instances.name                    AS instance_name,
        instances.db_host                 AS instance_host,
@@ -59,6 +61,10 @@ AND p.name = :filter_project_name
 
 {{- if .check_user_can_access }}
 AND create_user.id = :filter_creator_id
+{{- end }}
+
+{{- if .fuzzy_search_tags }}
+AND sql_audit_records.tags LIKE '%{{ .fuzzy_search_tags }}%'
 {{- end }}
 
 {{- if .filter_sql_audit_status }}
