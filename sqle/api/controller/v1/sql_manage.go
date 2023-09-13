@@ -20,26 +20,25 @@ type GetSqlManageListReq struct {
 
 type GetSqlManageListResp struct {
 	controller.BaseRes
-	Data      []*SqlManage `json:"data"`
-	TotalNums uint64       `json:"total_nums"`
+	Data                  []*SqlManage `json:"data"`
+	SqlManageTotalNum     uint64       `json:"sql_manage_total_num"`
+	SqlManageBadNum       uint64       `json:"sql_manage_bad_num"`
+	SqlManageOptimizedNum uint64       `json:"sql_manage_optimized_num"`
 }
 
 type SqlManage struct {
-	Id                    uint64 `json:"id"`
-	SqlFingerprint        string `json:"sql_fingerprint"`
-	Sql                   string `json:"sql"`
-	Source                string `json:"source"`
-	Instance              string `json:"instance"`
-	AuditResult           string `json:"audit_result"`
-	FirstAppearTime       string `json:"first_appear_time"`
-	LastAppearTime        string `json:"last_appear_time"`
-	AppearNum             uint64 `json:"appear_num"`
-	Assignee              string `json:"assignee"`
-	Status                string `json:"status"`
-	Remark                string `json:"remark"`
-	SqlManageTotalNum     uint64 `json:"sql_manage_total_num"`
-	SqlManageBadNum       uint64 `json:"sql_manage_bad_num"`
-	SqlManageOptimizedNum uint64 `json:"sql_manage_optimized_num"`
+	Id              uint64 `json:"id"`
+	SqlFingerprint  string `json:"sql_fingerprint"`
+	Sql             string `json:"sql"`
+	Source          string `json:"source"`
+	InstanceName    string `json:"instance_name"`
+	AuditResult     string `json:"audit_result"`
+	FirstAppearTime string `json:"first_appear_time"`
+	LastAppearTime  string `json:"last_appear_time"`
+	AppearNum       uint64 `json:"appear_num"`
+	Assignee        string `json:"assignee"`
+	Status          string `json:"status"`
+	Remark          string `json:"remark"`
 }
 
 // GetSqlManageList

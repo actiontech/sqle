@@ -1928,7 +1928,11 @@ definitions:
       message:
         example: ok
         type: string
-      total_nums:
+      sql_manage_bad_num:
+        type: integer
+      sql_manage_optimized_num:
+        type: integer
+      sql_manage_total_num:
         type: integer
     type: object
   v1.GetSyncInstanceTaskListResV1:
@@ -3174,7 +3178,7 @@ definitions:
         type: string
       id:
         type: integer
-      instance:
+      instance_name:
         type: string
       last_appear_time:
         type: string
@@ -3186,12 +3190,6 @@ definitions:
         type: string
       sql_fingerprint:
         type: string
-      sql_manage_bad_num:
-        type: integer
-      sql_manage_optimized_num:
-        type: integer
-      sql_manage_total_num:
-        type: integer
       status:
         type: string
     type: object
