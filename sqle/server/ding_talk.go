@@ -63,7 +63,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 						continue
 					}
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has cancled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
 						continue
 					}
 
@@ -102,7 +102,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 						continue
 					}
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has cancled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
 						continue
 					}
 
