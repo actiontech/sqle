@@ -7761,6 +7761,11 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: sql audit record id
+        in: path
+        name: sql_audit_record_id
+        required: true
+        type: string
       - description: update SQL audit record
         in: body
         name: param
