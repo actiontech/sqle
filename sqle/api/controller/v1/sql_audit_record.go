@@ -322,7 +322,7 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
-	Tags *[]string `json:"tags" valid:"dive,tag_name"`
+	Tags []string `json:"tags" valid:"dive,tag_name"`
 }
 
 // UpdateSQLAuditRecordV1
@@ -366,7 +366,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
 		}
 
-		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
+		data := model.SQLAuditRecordUpdateData{Tags: req.Tags}
 		if err = s.UpdateSQLAuditRecordById(auditRecordId, data); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
