@@ -554,7 +554,7 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
 	}
 
-	record, exist, err := s.GetSQLAuditRecordById(project.ID,auditRecordId)
+	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -598,5 +598,8 @@ type GetSQLAuditRecordTagTipsResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordTagTipsResV1
 // @router /v1/projects/{project_name}/sql_audit_records/tag_tips [get]
 func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
-	return nil
+	return c.JSON(http.StatusOK, &GetSQLAuditRecordTagTipsResV1{
+		BaseRes: controller.BaseRes{},
+		Tags:    []string{"全量", "增量"},
+	})
 }
