@@ -3,6 +3,7 @@ package v1
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	e "errors"
 	"fmt"
 	"io"
@@ -322,7 +323,7 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 
 type UpdateSQLAuditRecordReqV1 struct {
 	SQLAuditRecordId string    `json:"sql_audit_record_id" valid:"required"`
-	Tags             *[]string `json:"tags"`
+	Tags             *[]string `json:"tags" valid:"dive,name"`
 }
 
 // UpdateSQLAuditRecordV1
@@ -480,12 +481,15 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		if record.TaskStatus == model.TaskStatusAudited {
 			status = SQLAuditRecordStatusSuccessfully
 		}
-
+		var tags []string
+		if err := json.Unmarshal([]byte(record.Tags), &tags); err != nil {
+			log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+		}
 		resData[i] = SQLAuditRecord{
 			Creator:          record.CreatorName,
 			SQLAuditRecordId: record.AuditRecordId,
 			SQLAuditStatus:   status,
-			Tags:             nil, // todo issue1811
+			Tags:             tags,
 			CreatedAt:        record.RecordCreatedAt,
 			Instance: SQLAuditRecordInstance{
 				Host: record.InstanceHost.String,
