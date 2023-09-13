@@ -4548,7 +4548,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}": {
+        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
             "get": {
                 "security": [
                     {
@@ -4585,9 +4585,7 @@ var doc = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
+            },
             "patch": {
                 "security": [
                     {
