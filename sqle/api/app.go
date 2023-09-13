@@ -363,7 +363,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	// sql audit record
 	v1Router.POST("/projects/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
 	v1Router.GET("/projects/:project_name/sql_audit_records", v1.GetSQLAuditRecordsV1)
+	v1Router.GET("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.GetSQLAuditRecordV1)
 	v1Router.PATCH("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
+	v1Router.GET("/projects/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
 
 	// sql query
 	if err := cloudbeaver_wrapper.StartApp(e); err != nil {

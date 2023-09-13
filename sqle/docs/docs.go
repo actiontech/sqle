@@ -4548,7 +4548,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}": {
+        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
             "get": {
                 "security": [
                     {
@@ -4585,9 +4585,7 @@ var doc = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
+            },
             "patch": {
                 "security": [
                     {
@@ -4608,6 +4606,13 @@ var doc = `{
                         "type": "string",
                         "description": "project name",
                         "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit record id",
+                        "name": "sql_audit_record_id",
                         "in": "path",
                         "required": true
                     },
@@ -15007,9 +15012,6 @@ var doc = `{
         "v1.UpdateSQLAuditRecordReqV1": {
             "type": "object",
             "properties": {
-                "sql_audit_record_id": {
-                    "type": "string"
-                },
                 "tags": {
                     "type": "array",
                     "items": {
