@@ -5686,87 +5686,87 @@ func TestDDLCheckCompositeIndexDistinction(t *testing.T) {
 	assert.NoError(t, err)
 
 	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
 	runSingleRuleInspectCase(rule, t, "", inspect1, "CREATE INDEX idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult())
 
 	inspect2 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "CREATE INDEX idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 	inspect3 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_name ( v1, v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 	inspect4 := NewMockInspect(e)
 	runSingleRuleInspectCase(rule, t, "", inspect4, "ALTER TABLE exist_db.exist_tb_1 drop INDEX idx_1;", newTestResult())
 
 	inspect5 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("90"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect5, "ALTER TABLE exist_db.exist_tb_1 ADD INDEX index_name ( v1, v2);", newTestResult())
 
 	inspect6 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect6, "ALTER TABLE exist_db.exist_tb_1 ADD unique INDEX index_name ( v1, v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 	inspect7 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("90"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect7, "CREATE index idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult())
 
 	inspect8 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect8, "CREATE index idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 	inspect9 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect9, "ALTER TABLE exist_db.exist_tb_1 ADD key index_name ( v1, v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 	inspect10 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 FROM exist_db.exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("100"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v1`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("60"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(distinct `v2`) as cardinality from `exist_db`.`exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"cardinality"}).AddRow("80"))
 	runSingleRuleInspectCase(rule, t, "", inspect10, "ALTER TABLE exist_db.exist_tb_1 ADD unique key index_name ( v1, v2);", newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "v2"))
 
 }
