@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math"
 	"reflect"
 	"regexp"
 	"sort"
@@ -2192,7 +2191,7 @@ var RuleHandlers = []RuleHandler{
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
-		Message:      "联合索引中，字段：%v区分度较高应放在左侧",
+		Message:      "建议在组合索引中将区分度高的字段靠前放，%v",
 		Func:         checkCompositeIndexSelectivity,
 	},
 }
@@ -6249,13 +6248,18 @@ func checkTableRows(input *RuleHandlerInput) error {
 }
 
 func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
-	indexSlice := []string{}
+	indexSlices := [][]string{}
 	table := &ast.TableName{}
 	switch stmt := input.Node.(type) {
 	case *ast.CreateIndexStmt:
-		for _, indexPart := range stmt.IndexPartSpecifications {
-			indexSlice = append(indexSlice, indexPart.Column.Name.O)
+		singleIndexSlice := []string{}
+		if len(stmt.IndexPartSpecifications) == 1 {
+			return nil
 		}
+		for _, indexPart := range stmt.IndexPartSpecifications {
+			singleIndexSlice = append(singleIndexSlice, indexPart.Column.Name.O)
+		}
+		indexSlices = append(indexSlices, singleIndexSlice)
 		table = stmt.Table
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
@@ -6265,11 +6269,34 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 			if spec.Constraint.Tp != ast.ConstraintIndex && spec.Constraint.Tp != ast.ConstraintUniq {
 				continue
 			}
-			for _, key := range spec.Constraint.Keys {
-				indexSlice = append(indexSlice, key.Column.Name.O)
+			singleIndexSlice := []string{}
+			if len(spec.Constraint.Keys) == 1 {
+				continue
 			}
-			table = stmt.Table
+			for _, key := range spec.Constraint.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
 		}
+		table = stmt.Table
+	case *ast.CreateTableStmt:
+		if stmt.Constraints == nil {
+			return nil
+		}
+		for _, con := range stmt.Constraints {
+			if con.Tp != ast.ConstraintIndex && con.Tp != ast.ConstraintUniq {
+				continue
+			}
+			singleIndexSlice := []string{}
+			if len(con.Keys) == 1 {
+				continue
+			}
+			for _, key := range con.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
+		}
+		table = stmt.Table
 	}
 	exist, err := input.Ctx.IsTableExist(table)
 	if err != nil {
@@ -6279,23 +6306,39 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 		return nil
 	}
 
-	currentSelectivityValue := math.Inf(1)
-	tableRows, err := input.Ctx.GetTableRowCount(table)
-	if err != nil {
-		return err
-	}
-	for _, indexColumn := range indexSlice {
-		columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
-		if err != nil {
-			return err
+	noticeInfos := []string{}
+	for _, singleIndexSlice := range indexSlices {
+		var indexSelectValueSlice []struct {
+			Index string
+			Value int
 		}
-		selectivityValue := float64(columnCardinality) / float64(tableRows)
-		if selectivityValue > currentSelectivityValue {
-			addResult(input.Res, input.Rule, input.Rule.Name, indexColumn)
-			return nil
+		sortIndexes := make([]string, len(singleIndexSlice))
+		for _, indexColumn := range singleIndexSlice {
+			columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
+			if err != nil {
+				return err
+			}
+			selectivityValue := columnCardinality
+			indexSelectValueSlice = append(indexSelectValueSlice, struct {
+				Index string
+				Value int
+			}{indexColumn, selectivityValue})
 		}
-		currentSelectivityValue = selectivityValue
+		sort.Slice(indexSelectValueSlice, func(i, j int) bool {
+			return indexSelectValueSlice[i].Value > indexSelectValueSlice[j].Value
+		})
+		for i, kv := range indexSelectValueSlice {
+			sortIndexes[i] = kv.Index
+		}
+		for ind, indexColumn := range singleIndexSlice {
+			if indexColumn != indexSelectValueSlice[ind].Index {
+				noticeInfos = append(noticeInfos, fmt.Sprintf("(%s)可调整为(%s)", strings.Join(singleIndexSlice, "，"), strings.Join(sortIndexes, "，")))
+				break
+			}
+		}
 	}
-
+	if len(noticeInfos) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(noticeInfos, "，"))
+	}
 	return nil
 }
