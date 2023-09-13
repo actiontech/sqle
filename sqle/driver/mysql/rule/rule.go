@@ -6211,8 +6211,7 @@ func checkTableRows(input *RuleHandlerInput) error {
 	if !ok {
 		return nil
 	}
-	tableName := stmt.Table.Name.O
-	rowsCount, err := input.Ctx.GetRowsCountFromTable(tableName)
+	rowsCount, err := input.Ctx.GetTableRowCount(stmt.Table)
 	if err != nil {
 		return err
 	}
