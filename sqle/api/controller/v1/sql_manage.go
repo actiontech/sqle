@@ -46,6 +46,7 @@ type SqlManage struct {
 // @Summary 获取管控sql列表
 // @Description get sql manage list
 // @Tags SqlManage
+// @Id GetSqlManageList
 // @Security ApiKeyAuth
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_assignee query string false "assignee"

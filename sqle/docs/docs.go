@@ -4643,6 +4643,7 @@ var doc = `{
                     "SqlManage"
                 ],
                 "summary": "获取管控sql列表",
+                "operationId": "GetSqlManageList",
                 "parameters": [
                     {
                         "type": "string",
