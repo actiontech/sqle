@@ -7803,6 +7803,7 @@ paths:
   /v1/projects/{project_name}/sql_manages:
     get:
       description: get sql manage list
+      operationId: GetSqlManageList
       parameters:
       - description: fuzzy search sql fingerprint
         in: query
