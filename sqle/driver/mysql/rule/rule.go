@@ -6287,7 +6287,7 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 	for _, indexColumn := range indexSlice {
 		columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
 		if err != nil {
-			return nil
+			return err
 		}
 		selectivityValue := float64(columnCardinality) / float64(tableRows)
 		if selectivityValue > currentSelectivityValue {
