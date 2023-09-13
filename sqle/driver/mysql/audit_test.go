@@ -97,6 +97,28 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	}
 }
 
+func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
+	log.Logger().SetLevel(logrus.ErrorLevel)
+	return &MysqlDriverImpl{
+		log: log.NewEntry(),
+		inst: &driverV2.DSN{
+			Host:         "127.0.0.1",
+			Port:         "3306",
+			User:         "root",
+			Password:     "123456",
+			DatabaseName: "mysql",
+		},
+		Ctx: session.NewMockContext(e),
+		cnf: &Config{
+			DDLOSCMinSize:      16,
+			DDLGhostMinSize:    16,
+			DMLRollbackMaxRows: 1000,
+			isExecutedSQL: true,
+		},
+		dbConn: e,
+	}
+}
+
 func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	i.rules = []*driverV2.Rule{&rule}
 	inspectCase(t, desc, i, sql, results...)
@@ -5685,16 +5707,16 @@ func TestCheckTableRows(t *testing.T) {
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
 
-	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select count(*) as rows_count from `exist_db`.`exist_tb_7`")).
-		WillReturnRows(sqlmock.NewRows([]string{"rows_count"}).AddRow("10000"))
-	runSingleRuleInspectCase(rule, t, "", inspect1, "CREATE TABLE exist_db.exist_tb_7 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult())
+	inspect1 := NewMockInspectWithIsExecutedSQL(e)
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("10000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "CREATE TABLE exist_db.exist_tb_1 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult())
 
-	inspect2 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select count(*) as rows_count from `exist_db`.`exist_tb_7`")).
-		WillReturnRows(sqlmock.NewRows([]string{"rows_count"}).AddRow("500000000"))
-	runSingleRuleInspectCase(rule, t, "", inspect2, "CREATE TABLE exist_db.exist_tb_7 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult().addResult(rulepkg.DDLCheckTableRows))
+	inspect2 := NewMockInspectWithIsExecutedSQL(e)
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("500000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "CREATE TABLE exist_db.exist_tb_1 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult().addResult(rulepkg.DDLCheckTableRows))
 
-	inspect3 := NewMockInspect(e)
+	inspect3 := NewMockInspectWithIsExecutedSQL(e)
 	runSingleRuleInspectCase(rule, t, "", inspect3, "CREATE INDEX idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult())
 }
