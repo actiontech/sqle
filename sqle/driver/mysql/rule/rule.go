@@ -114,6 +114,7 @@ const (
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
+	DDLCheckTableRows                                  = "ddl_check_table_rows"
 )
 
 // inspector DML rules
@@ -191,6 +192,11 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+)
+
+// 计算单位
+const (
+	TenThousand = 10000
 )
 
 type RuleHandlerInput struct {
@@ -2154,6 +2160,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
 		Func:         checkIndexSelectivity,
+	},
+	{
+		// 该规则只适用于库表元数据扫描并且需要与停用上线审核模式规则一起使用
+		Rule: driverV2.Rule{
+			Name:       DDLCheckTableRows,
+			Desc:       "表行数超过阈值，建议对表进行拆分",
+			Annotation: "当表行数超过阈值时，对表进行拆分有助于提高数据库性能和查询速度。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "表行数（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "表行数超过阈值，建议对表进行拆分",
+		Func:    checkTableRows,
 	},
 }
 
@@ -6173,6 +6199,37 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+func checkTableRows(input *RuleHandlerInput) error {
+	limitRowsString := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	limitRowsInt, err := strconv.Atoi(limitRowsString)
+	if err != nil {
+		return err
+	}
+
+	stmt, ok := input.Node.(*ast.CreateTableStmt)
+	if !ok {
+		return nil
+	}
+
+	exist, err := input.Ctx.IsTableExist(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	rowsCount, err := input.Ctx.GetTableRowCount(stmt.Table)
+	if err != nil {
+		return err
+	}
+
+	if rowsCount > limitRowsInt*TenThousand {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
