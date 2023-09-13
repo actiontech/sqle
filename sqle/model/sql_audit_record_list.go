@@ -3,12 +3,15 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type SQLAuditRecordListItem struct {
 	AuditRecordId   string          `json:"audit_record_id"`
 	RecordCreatedAt *time.Time      `json:"record_created_at"`
 	CreatorName     string          `json:"creator_name"`
+	Tags            sql.NullString  `json:"tags"`
 	InstanceName    sql.NullString  `json:"instance_name"`
 	InstanceHost    sql.NullString  `json:"instance_host"`
 	InstancePort    sql.NullString  `json:"instance_port"`
@@ -25,6 +28,7 @@ type SQLAuditRecordListItem struct {
 var sqlAuditRecordQueryTpl = `
 SELECT sql_audit_records.audit_record_id AS audit_record_id,
        sql_audit_records.created_at      AS record_created_at,
+       sql_audit_records.tags            AS tags,
        create_user.login_name            AS creator_name,
        instances.name                    AS instance_name,
        instances.db_host                 AS instance_host,
@@ -45,6 +49,12 @@ LIMIT :limit OFFSET :offset
 {{- end -}}
 `
 
+var sqlAuditRecordCountTpl = `
+SELECT COUNT(*)
+
+{{- template "body" . -}}
+`
+
 var sqlAuditRecordQueryBodyTpl = `
 {{ define "body" }}
 FROM sql_audit_records
@@ -61,8 +71,16 @@ AND p.name = :filter_project_name
 AND create_user.id = :filter_creator_id
 {{- end }}
 
-{{- if .filter_sql_audit_status }}
-AND tasks.status = :filter_sql_audit_status
+{{- if .fuzzy_search_tags }}
+AND sql_audit_records.tags LIKE '%{{ .fuzzy_search_tags }}%'
+{{- end }}
+
+{{- if .filter_task_status }}
+AND tasks.status = :filter_task_status
+{{- end }}
+
+{{- if .filter_task_status_exclude }}
+AND tasks.status <> :filter_task_status_exclude
 {{- end }}
 
 {{- if .filter_instance_name }}
@@ -82,12 +100,15 @@ AND sql_audit_records.created_at < :filter_create_time_to
 `
 
 func (s *Storage) GetSQLAuditRecordsByReq(data map[string]interface{}) (
-	result []*SQLAuditRecordListItem, err error) {
+	result []*SQLAuditRecordListItem, count uint64, err error) {
 
 	err = s.getListResult(sqlAuditRecordQueryBodyTpl, sqlAuditRecordQueryTpl, data, &result)
 	if err != nil {
-		return result, err
+		return result, 0, errors.New(errors.ConnectStorageError, err)
 	}
-
-	return result, err
+	count, err = s.getCountResult(sqlAuditRecordQueryBodyTpl, sqlAuditRecordCountTpl, data)
+	if err != nil {
+		return result, 0, errors.New(errors.ConnectStorageError, err)
+	}
+	return result, count, err
 }
