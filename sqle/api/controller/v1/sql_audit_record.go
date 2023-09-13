@@ -3,6 +3,7 @@ package v1
 import (
 	"archive/zip"
 	"context"
+	e "errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,13 +14,13 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 )
 
 type CreateSQLAuditRecordReqV1 struct {
@@ -58,19 +59,19 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Param instance_name formData string false "instance name"
 // @Param instance_schema formData string false "schema of instance"
 // @Param db_type formData string false "db type of instance"
-// @Param sql formData string false "sqls for audit"
+// @Param sqls formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.CreateSQLAuditRecordResV1
-// @router /v1/projects/{project_name}/sql_audit_record [post]
+// @router /v1/projects/{project_name}/sql_audit_records [post]
 func CreateSQLAuditRecord(c echo.Context) error {
 	req := new(CreateSQLAuditRecordReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if req.DbType == "" && req.InstanceName == "" {
-		return controller.JSONBaseErrorReq(c, errors.New("db_type and instance_name can't both be empty"))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, e.New("db_type and instance_name can't both be empty")))
 	}
 	projectName := c.Param("project_name")
 
@@ -124,8 +125,8 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 	record := model.SQLAuditRecord{
 		ProjectId:     project.ID,
-		CreatorID:     user.ID,
-		AuditRecordID: recordId,
+		CreatorId:     user.ID,
+		AuditRecordId: recordId,
 		TaskId:        task.ID,
 		Task:          task,
 	}
@@ -140,7 +141,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SQLAuditRecordResData{
-			Id: record.AuditRecordID,
+			Id: record.AuditRecordId,
 			Task: &AuditTaskResV1{
 				Id:             task.ID,
 				InstanceName:   task.InstanceName(),
@@ -334,24 +335,62 @@ type UpdateSQLAuditRecordReqV1 struct {
 // @Param project_name path string true "project name"
 // @Param param body v1.UpdateSQLAuditRecordReqV1 true "update SQL audit record"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [patch]
+// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [patch]
 func UpdateSQLAuditRecordV1(c echo.Context) error {
-	return nil
+	req := new(UpdateSQLAuditRecordReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if req.Tags != nil {
+		if can, err := s.IsUserCanUpdateSQLAuditRecord(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+		} else if !can {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+		}
+
+		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
+		if err = s.UpdateSQLAuditRecordById(req.SQLAuditRecordId, data); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetSQLAuditRecordsReqV1 struct {
-	FuzzySearchSQLAuditRecordId string `json:"fuzzy_search_sql_audit_record_id" query:"fuzzy_search_sql_audit_record_id"`
-	FilterSQLAuditStatus        string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterTags                  string `json:"filter_tags" query:"filter_tags"`
+	FuzzySearchTags      string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
+	FilterSQLAuditStatus string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
+	FilterInstanceName   string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	PageIndex            uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize             uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type SQLAuditRecord struct {
 	Creator          string                 `json:"creator"`
-	SQLAuditRecordId uint                   `json:"sql_audit_record_id"`
+	SQLAuditRecordId string                 `json:"sql_audit_record_id"`
 	SQLAuditStatus   string                 `json:"sql_audit_status"`
 	Tags             []string               `json:"tags"`
 	Instance         SQLAuditRecordInstance `json:"instance"`
 	Task             AuditTaskResV1         `json:"task"`
+	CreatedAt        *time.Time             `json:"created_at"`
 }
 
 type SQLAuditRecordInstance struct {
@@ -364,6 +403,11 @@ type GetSQLAuditRecordsResV1 struct {
 	Data      []SQLAuditRecord `json:"data"`
 	TotalNums uint64           `json:"total_nums"`
 }
+
+const (
+	SQLAuditRecordStatusAuditing     = "auditing"
+	SQLAuditRecordStatusSuccessfully = "successfully"
+)
 
 // GetSQLAuditRecordsV1
 // @Summary 获取SQL审核记录列表
@@ -380,9 +424,91 @@ type GetSQLAuditRecordsResV1 struct {
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetSQLAuditRecordsResV1
-// @router /v1/projects/{project_name}/sql_audit_record [get]
+// @router /v1/projects/{project_name}/sql_audit_records [get]
 func GetSQLAuditRecordsV1(c echo.Context) error {
-	return nil
+	req := new(GetSQLAuditRecordsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	_, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	isManager, err := s.IsProjectManager(user.Name, projectName)
+	if err != nil {
+		return err
+	}
+
+	var offset uint32
+	if req.PageIndex > 0 {
+		offset = (req.PageIndex - 1) * req.PageSize
+	}
+
+	data := map[string]interface{}{
+		"filter_project_name":     projectName,
+		"filter_creator_id":       user.ID,
+		"fuzzy_search_tags":       req.FuzzySearchTags,
+		"filter_sql_audit_status": req.FilterSQLAuditStatus,
+		"filter_instance_name":    req.FilterInstanceName,
+		"filter_create_time_from": req.FilterCreateTimeFrom,
+		"filter_create_time_to":   req.FilterCreateTimeTo,
+		"check_user_can_access":   !isManager,
+		"limit":                   req.PageSize,
+		"offset":                  offset,
+	}
+
+	records, err := s.GetSQLAuditRecordsByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resData := make([]SQLAuditRecord, len(records))
+	for i := range records {
+		record := records[i]
+		status := SQLAuditRecordStatusAuditing
+		if record.TaskStatus == model.TaskStatusAudited {
+			status = SQLAuditRecordStatusSuccessfully
+		}
+
+		resData[i] = SQLAuditRecord{
+			Creator:          record.CreatorName,
+			SQLAuditRecordId: record.AuditRecordId,
+			SQLAuditStatus:   status,
+			Tags:             nil, // todo issue1811
+			CreatedAt:        record.RecordCreatedAt,
+			Instance: SQLAuditRecordInstance{
+				Host: record.InstanceHost.String,
+				Port: record.InstancePort.String,
+			},
+			Task: AuditTaskResV1{
+				Id:             record.TaskId,
+				InstanceName:   record.InstanceName.String,
+				InstanceDbType: record.DbType,
+				InstanceSchema: record.InstanceSchema,
+				AuditLevel:     record.AuditLevel.String,
+				Score:          record.AuditScore.Int32,
+				PassRate:       record.AuditPassRate.Float64,
+				Status:         record.TaskStatus,
+				SQLSource:      record.SQLSource,
+			},
+		}
+	}
+	return c.JSON(http.StatusOK, &GetSQLAuditRecordsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resData,
+		TotalNums: uint64(len(records)),
+	})
 }
 
 type GetSQLAuditRecordResV1 struct {
@@ -399,7 +525,7 @@ type GetSQLAuditRecordResV1 struct {
 // @Param project_name path string true "project name"
 // @Param sql_audit_record_id path string true "sql audit record id"
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
-// @router /v1/projects/{project_name}/sql_audit_record/{sql_audit_record_id} [get]
+// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id} [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
 	return nil
 }
@@ -417,7 +543,7 @@ type GetSQLAuditRecordTagTipsResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetSQLAuditRecordTagTipsResV1
-// @router /v1/projects/{project_name}/sql_audit_record/tag_tips [get]
+// @router /v1/projects/{project_name}/sql_audit_records/tag_tips [get]
 func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
 	return nil
 }
