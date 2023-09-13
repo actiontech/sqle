@@ -6212,16 +6212,8 @@ func checkTableRows(input *RuleHandlerInput) error {
 	if !ok {
 		return nil
 	}
-	schema := input.Ctx.GetSchemaName(stmt.Table)
-	exist, err := input.Ctx.IsSchemaExist(schema)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return nil
-	}
 
-	exist, err = input.Ctx.IsTableExist(stmt.Table)
+	exist, err := input.Ctx.IsTableExist(stmt.Table)
 	if err != nil {
 		return err
 	}
