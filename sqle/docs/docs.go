@@ -12340,7 +12340,13 @@ var doc = `{
                     "type": "string",
                     "example": "ok"
                 },
-                "total_nums": {
+                "sql_manage_bad_num": {
+                    "type": "integer"
+                },
+                "sql_manage_optimized_num": {
+                    "type": "integer"
+                },
+                "sql_manage_total_num": {
                     "type": "integer"
                 }
             }
@@ -14181,7 +14187,7 @@ var doc = `{
                 "id": {
                     "type": "integer"
                 },
-                "instance": {
+                "instance_name": {
                     "type": "string"
                 },
                 "last_appear_time": {
@@ -14198,15 +14204,6 @@ var doc = `{
                 },
                 "sql_fingerprint": {
                     "type": "string"
-                },
-                "sql_manage_bad_num": {
-                    "type": "integer"
-                },
-                "sql_manage_optimized_num": {
-                    "type": "integer"
-                },
-                "sql_manage_total_num": {
-                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
