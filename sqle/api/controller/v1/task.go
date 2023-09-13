@@ -68,16 +68,17 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 const (
 	InputSQLFileName        = "input_sql_file"
 	InputMyBatisXMLFileName = "input_mybatis_xml_file"
+	InputZipFileName        = "input_zip_file"
 )
 
 func getSQLFromFile(c echo.Context) (string, string, error) {
 	// Read it from sql file.
-	sql, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
 	if err != nil {
 		return "", model.TaskSQLSourceFromSQLFile, err
 	}
 	if exist {
-		return sql, model.TaskSQLSourceFromSQLFile, nil
+		return sqls, model.TaskSQLSourceFromSQLFile, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
@@ -92,7 +93,16 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 		}
 		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
 	}
-	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+
+	// If mybatis xml file is not exist, read it from zip file.
+	sqls, exist, err = getSqlsFromZip(c)
+	if err != nil {
+		return "", model.TaskSQLSourceFromZipFile, err
+	}
+	if !exist {
+		return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	}
+	return sqls, model.TaskSQLSourceFromZipFile, nil
 }
 
 // @Summary 创建Sql扫描任务并提交审核
@@ -132,69 +142,25 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 
 	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
 
-	err = CheckIsProjectMember(userName, projectName)
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckIsProjectMember(user.Name, projectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
 
-	instance, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, projectName)
+	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-
-	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	defer plugin.Close(context.TODO())
-
-	if err := plugin.Ping(context.TODO()); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	task := &model.Task{
-		Schema:       req.InstanceSchema,
-		InstanceId:   instance.ID,
-		Instance:     instance,
-		CreateUserId: user.ID,
-		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    source,
-		DBType:       instance.DbType,
-	}
-	createAt := time.Now()
-	task.CreatedAt = createAt
-
-	nodes, err := plugin.Parse(context.TODO(), sql)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
 	}
 	// if task instance is not nil, gorm will update instance when save task.
+	tmpInst := *task.Instance
 	task.Instance = nil
 
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
@@ -203,7 +169,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task.Instance = instance
+	task.Instance = &tmpInst
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

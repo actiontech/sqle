@@ -97,6 +97,28 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	}
 }
 
+func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
+	log.Logger().SetLevel(logrus.ErrorLevel)
+	return &MysqlDriverImpl{
+		log: log.NewEntry(),
+		inst: &driverV2.DSN{
+			Host:         "127.0.0.1",
+			Port:         "3306",
+			User:         "root",
+			Password:     "123456",
+			DatabaseName: "mysql",
+		},
+		Ctx: session.NewMockContext(e),
+		cnf: &Config{
+			DDLOSCMinSize:      16,
+			DDLGhostMinSize:    16,
+			DMLRollbackMaxRows: 1000,
+			isExecutedSQL: true,
+		},
+		dbConn: e,
+	}
+}
+
 func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	i.rules = []*driverV2.Rule{&rule}
 	inspectCase(t, desc, i, sql, results...)
@@ -132,7 +154,10 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
 		rulepkg.DMLCheckAggregate:                           {},
 		rulepkg.DDLCheckColumnNotNULL:                       {},
+		rulepkg.DDLCheckTableRows:                           {},
 		rulepkg.DDLCheckCompositeIndexDistinction:           {},
+
+
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -3966,10 +3991,10 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		t, "", inspect7, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan))
 
 	inspect8 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
-		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(""))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1='a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"key", "Extra"}).AddRow("", "Using where"))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
-		t, "", inspect8, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+		t, "", inspect8, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
 	assert.NoError(t, handler.ExpectationsWereMet())
 
@@ -5678,6 +5703,25 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 			AddRow("80.0000"))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
+}
+
+func TestCheckTableRows(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableRows].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspectWithIsExecutedSQL(e)
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("10000"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "CREATE TABLE exist_db.exist_tb_1 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult())
+
+	inspect2 := NewMockInspectWithIsExecutedSQL(e)
+	handler.ExpectQuery(regexp.QuoteMeta("show table status from exist_db where name = 'exist_tb_1'")).
+		WillReturnRows(sqlmock.NewRows([]string{"Rows"}).AddRow("500000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "CREATE TABLE exist_db.exist_tb_1 (id INT AUTO_INCREMENT PRIMARY KEY);", newTestResult().addResult(rulepkg.DDLCheckTableRows))
+
+	inspect3 := NewMockInspectWithIsExecutedSQL(e)
+	runSingleRuleInspectCase(rule, t, "", inspect3, "CREATE INDEX idx_union1 ON exist_db.exist_tb_1 (v1,v2);", newTestResult())
 }
 
 func TestDDLCheckCompositeIndexDistinction(t *testing.T) {
