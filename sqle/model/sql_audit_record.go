@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type SQLAuditRecordTags struct {
@@ -27,20 +29,23 @@ type SQLAuditRecordUpdateData struct {
 func (s *Storage) UpdateSQLAuditRecordById(SQLAuditRecordId string, data SQLAuditRecordUpdateData) error {
 	tags, err := json.Marshal(data.Tags)
 	if err != nil {
-		return fmt.Errorf("marshal tags failed: %v", err)
+		return errors.New(errors.DataInvalid, fmt.Errorf("marshal tags failed: %v", err))
 	}
 
 	db := s.db.Model(SQLAuditRecord{}).Where("audit_record_id = ?", SQLAuditRecordId)
 	if len(data.Tags) == 0 {
-		return db.Update("tags", nil).Error
+		err = db.Update("tags", nil).Error
+	} else {
+		err = db.Update("tags", tags).Error
 	}
-	return db.Update("tags", tags).Error
+
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) IsUserCanUpdateSQLAuditRecord(userId, projectId uint, SQLAuditRecordId string) (bool, error) {
 	isManager, err := s.IsProjectManagerByID(userId, projectId)
 	if err != nil {
-		return false, fmt.Errorf("check project manager failed: %v", err)
+		return false, errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
 	}
 	if isManager {
 		return true, nil
@@ -51,7 +56,7 @@ func (s *Storage) IsUserCanUpdateSQLAuditRecord(userId, projectId uint, SQLAudit
 		Where("audit_record_id = ?", SQLAuditRecordId).
 		Where("creator_id = ?", userId).
 		Count(&count).Error; err != nil {
-		return false, fmt.Errorf("check creator failed: %v", err)
+		return false, errors.New(errors.ConnectStorageError, fmt.Errorf("check creator failed: %v", err))
 	}
 	return count == 1, nil
 }
