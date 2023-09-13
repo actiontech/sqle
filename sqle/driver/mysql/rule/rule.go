@@ -2162,6 +2162,7 @@ var RuleHandlers = []RuleHandler{
 		Func:         checkIndexSelectivity,
 	},
 	{
+		// 该规则只适用于库表元数据扫描并且需要与停用上线审核模式规则一起使用
 		Rule: driverV2.Rule{
 			Name:       DDLCheckTableRows,
 			Desc:       "表行数超过阈值，建议对表进行拆分",
@@ -2177,8 +2178,8 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:                 "表行数超过阈值，建议对表进行拆分",
-		Func:                    checkTableRows,
+		Message: "表行数超过阈值，建议对表进行拆分",
+		Func:    checkTableRows,
 	},
 }
 
@@ -6211,6 +6212,23 @@ func checkTableRows(input *RuleHandlerInput) error {
 	if !ok {
 		return nil
 	}
+	schema := input.Ctx.GetSchemaName(stmt.Table)
+	exist, err := input.Ctx.IsSchemaExist(schema)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	exist, err = input.Ctx.IsTableExist(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
 	rowsCount, err := input.Ctx.GetTableRowCount(stmt.Table)
 	if err != nil {
 		return err
