@@ -529,7 +529,7 @@ type GetSQLAuditRecordResV1 struct {
 // @Param project_name path string true "project name"
 // @Param sql_audit_record_id path string true "sql audit record id"
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
-// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id} [get]
+// @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
 	return nil
 }

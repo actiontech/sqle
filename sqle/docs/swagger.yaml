@@ -7727,7 +7727,7 @@ paths:
       summary: SQL审核
       tags:
       - sql_audit_record
-  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}:
+  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/:
     get:
       description: get sql audit record info
       operationId: getSQLAuditRecordV1
@@ -7752,7 +7752,6 @@ paths:
       summary: 获取SQL审核记录信息
       tags:
       - sql_audit_record
-  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/:
     patch:
       consumes:
       - application/json
