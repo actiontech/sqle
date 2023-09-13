@@ -460,13 +460,17 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_project_name":     projectName,
 		"filter_creator_id":       user.ID,
 		"fuzzy_search_tags":       req.FuzzySearchTags,
-		"filter_sql_audit_status": req.FilterSQLAuditStatus,
 		"filter_instance_name":    req.FilterInstanceName,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"check_user_can_access":   !isManager,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
+	}
+	if req.FilterSQLAuditStatus == SQLAuditRecordStatusAuditing {
+		data["filter_task_status_exclude"] = model.TaskStatusAudited
+	} else if req.FilterSQLAuditStatus == SQLAuditRecordStatusSuccessfully {
+		data["filter_task_status"] = model.TaskStatusAudited
 	}
 
 	records, err := s.GetSQLAuditRecordsByReq(data)

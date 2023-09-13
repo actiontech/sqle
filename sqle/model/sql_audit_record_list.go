@@ -9,7 +9,7 @@ type SQLAuditRecordListItem struct {
 	AuditRecordId   string          `json:"audit_record_id"`
 	RecordCreatedAt *time.Time      `json:"record_created_at"`
 	CreatorName     string          `json:"creator_name"`
-	Tags            string          `json:"tags"`
+	Tags            sql.NullString  `json:"tags"`
 	InstanceName    sql.NullString  `json:"instance_name"`
 	InstanceHost    sql.NullString  `json:"instance_host"`
 	InstancePort    sql.NullString  `json:"instance_port"`
@@ -67,8 +67,12 @@ AND create_user.id = :filter_creator_id
 AND sql_audit_records.tags LIKE '%{{ .fuzzy_search_tags }}%'
 {{- end }}
 
-{{- if .filter_sql_audit_status }}
-AND tasks.status = :filter_sql_audit_status
+{{- if .filter_task_status }}
+AND tasks.status = :filter_task_status
+{{- end }}
+
+{{- if .filter_task_status_exclude }}
+AND tasks.status <> :filter_task_status_exclude
 {{- end }}
 
 {{- if .filter_instance_name }}
