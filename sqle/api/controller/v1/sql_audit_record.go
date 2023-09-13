@@ -322,8 +322,7 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
-	SQLAuditRecordId string    `json:"sql_audit_record_id" valid:"required"`
-	Tags             *[]string `json:"tags" valid:"dive,name"`
+	Tags *[]string `json:"tags" valid:"dive,name"`
 }
 
 // UpdateSQLAuditRecordV1
@@ -343,6 +342,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	projectName := c.Param("project_name")
+	auditRecordId := c.Param("sql_audit_record_id")
 
 	s := model.GetStorage()
 	project, exist, err := s.GetProjectByName(projectName)
@@ -359,14 +359,14 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	}
 
 	if req.Tags != nil {
-		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
+		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 		} else if !yes {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
 		}
 
 		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
-		if err = s.UpdateSQLAuditRecordById(req.SQLAuditRecordId, data); err != nil {
+		if err = s.UpdateSQLAuditRecordById(auditRecordId, data); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
@@ -482,7 +482,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 			status = SQLAuditRecordStatusSuccessfully
 		}
 		var tags []string
-		if err := json.Unmarshal([]byte(record.Tags), &tags); err != nil {
+		if err := json.Unmarshal([]byte(record.Tags.String), &tags); err != nil {
 			log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
 		}
 		resData[i] = SQLAuditRecord{

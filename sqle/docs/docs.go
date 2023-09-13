@@ -15004,9 +15004,6 @@ var doc = `{
         "v1.UpdateSQLAuditRecordReqV1": {
             "type": "object",
             "properties": {
-                "sql_audit_record_id": {
-                    "type": "string"
-                },
                 "tags": {
                     "type": "array",
                     "items": {

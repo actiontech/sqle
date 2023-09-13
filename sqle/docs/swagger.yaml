@@ -3729,8 +3729,6 @@ definitions:
     type: object
   v1.UpdateSQLAuditRecordReqV1:
     properties:
-      sql_audit_record_id:
-        type: string
       tags:
         items:
           type: string
