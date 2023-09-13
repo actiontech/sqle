@@ -267,21 +267,9 @@ func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 }
 
 func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
-	var task *model.Task
-	if at.ap.InstanceName == "" {
-		task = &model.Task{
-			DBType: at.ap.DBType,
-		}
-	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
-		if err != nil {
-			return nil, err
-		}
-		task = &model.Task{
-			Instance: instance,
-			Schema:   at.ap.InstanceDatabase,
-			DBType:   at.ap.DBType,
-		}
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
@@ -367,6 +355,26 @@ func baseTaskGetSQLs(args map[string]interface{}, persist *model.Storage) ([]Hea
 	return head, rows, count, nil
 }
 
+func getTaskWithInstanceByAuditPlan(ap *model.AuditPlan, persist *model.Storage) (*model.Task, error) {
+	var task *model.Task
+	if ap.InstanceName == "" {
+		task = &model.Task{
+			DBType: ap.DBType,
+		}
+	} else {
+		instance, _, err := persist.GetInstanceByNameAndProjectID(ap.InstanceName, ap.ProjectId)
+		if err != nil {
+			return nil, err
+		}
+		task = &model.Task{
+			Instance: instance,
+			Schema:   ap.InstanceDatabase,
+			DBType:   ap.DBType,
+		}
+	}
+	return task, nil
+}
+
 type SchemaMetaTask struct {
 	*sqlCollector
 }
@@ -447,8 +455,9 @@ func (at *SchemaMetaTask) collectorDo() {
 }
 
 func (at *SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
