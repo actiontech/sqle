@@ -6192,17 +6192,13 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 
 func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 	indexSlice := []string{}
-	schema := input.Ctx.CurrentSchema()
-	table := ""
+	table := &ast.TableName{}
 	switch stmt := input.Node.(type) {
 	case *ast.CreateIndexStmt:
 		for _, indexPart := range stmt.IndexPartSpecifications {
 			indexSlice = append(indexSlice, indexPart.Column.Name.O)
 		}
-		if stmt.Table.Schema.O != "" {
-			schema = stmt.Table.Schema.O
-		}
-		table = stmt.Table.Name.O
+		table = stmt.Table
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			if spec.Constraint == nil {
@@ -6214,22 +6210,28 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 			for _, key := range spec.Constraint.Keys {
 				indexSlice = append(indexSlice, key.Column.Name.O)
 			}
-			if stmt.Table.Schema.O != "" {
-				schema = stmt.Table.Schema.O
-			}
-			table = stmt.Table.Name.O
+			table = stmt.Table
 		}
 	}
+	exist, err := input.Ctx.IsTableExist(table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
 	currentSelectivityValue := math.Inf(1)
+	tableRows, err := input.Ctx.GetTableRowCount(table)
+	if err != nil {
+		return err
+	}
 	for _, indexColumn := range indexSlice {
-		selectivityValue, err := input.Ctx.GetIndexSelectivityValue(schema, table, indexColumn)
+		columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
 		if err != nil {
-			return err
-		}
-		// 区分度为0，代表数据表中没有数据
-		if selectivityValue == float64(0) {
 			return nil
 		}
+		selectivityValue := float64(columnCardinality) / float64(tableRows)
 		if selectivityValue > currentSelectivityValue {
 			addResult(input.Res, input.Rule, input.Rule.Name, indexColumn)
 			return nil

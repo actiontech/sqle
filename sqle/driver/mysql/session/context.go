@@ -902,26 +902,3 @@ func (c *Context) GetExecutor() *executor.Executor {
 func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
 	return c.e.GetTableIndexesInfo(schema, tableName)
 }
-
-func (c *Context) GetIndexSelectivityValue(schema, table, column string) (float64, error) {
-	columnField := fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100", column)
-	tableWithSchema := fmt.Sprintf("%v.%v", schema, table)
-	result, err := c.e.Db.Query(fmt.Sprintf("SELECT %v FROM %v", columnField, tableWithSchema))
-	if err != nil {
-		return -1, fmt.Errorf("query index distinction for table error: %v", err)
-	}
-	indexSelectivityValue := -1.0
-	for _, r := range result {
-		for _, value := range r {
-            // 当表里没数据时上面的SQL查出来的结果为Null
-            if value.String == "" {
-                value.String = "0"
-            }
-            indexSelectivityValue, err = strconv.ParseFloat(value.String, 64)
-            if err != nil {
-                return -1, err
-            }
-        }
-	}
-	return indexSelectivityValue, nil
-}
