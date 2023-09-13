@@ -322,7 +322,7 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
-	Tags *[]string `json:"tags" valid:"dive,name"`
+	Tags *[]string `json:"tags" valid:"dive,tag_name"`
 }
 
 // UpdateSQLAuditRecordV1
@@ -333,6 +333,7 @@ type UpdateSQLAuditRecordReqV1 struct {
 // @Tags sql_audit_record
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param sql_audit_record_id path string true "sql audit record id"
 // @Param param body v1.UpdateSQLAuditRecordReqV1 true "update SQL audit record"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [patch]

@@ -4610,6 +4610,13 @@ var doc = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "sql audit record id",
+                        "name": "sql_audit_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "update SQL audit record",
                         "name": "param",
                         "in": "body",
