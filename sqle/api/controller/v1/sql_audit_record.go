@@ -362,7 +362,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 		} else if !yes {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you yes't update SQL audit record that created by others")))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
 		}
 
 		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
