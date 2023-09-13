@@ -473,7 +473,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		data["filter_task_status"] = model.TaskStatusAudited
 	}
 
-	records, err := s.GetSQLAuditRecordsByReq(data)
+	records, total, err := s.GetSQLAuditRecordsByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -515,7 +515,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordsResV1{
 		BaseRes:   controller.NewBaseReq(nil),
 		Data:      resData,
-		TotalNums: uint64(len(records)),
+		TotalNums: total,
 	})
 }
 

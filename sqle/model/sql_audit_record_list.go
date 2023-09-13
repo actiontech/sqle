@@ -3,6 +3,8 @@ package model
 import (
 	"database/sql"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type SQLAuditRecordListItem struct {
@@ -45,6 +47,12 @@ ORDER BY sql_audit_records.created_at DESC
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
 {{- end -}}
+`
+
+var sqlAuditRecordCountTpl = `
+SELECT COUNT(*)
+
+{{- template "body" . -}}
 `
 
 var sqlAuditRecordQueryBodyTpl = `
@@ -92,12 +100,15 @@ AND sql_audit_records.created_at < :filter_create_time_to
 `
 
 func (s *Storage) GetSQLAuditRecordsByReq(data map[string]interface{}) (
-	result []*SQLAuditRecordListItem, err error) {
+	result []*SQLAuditRecordListItem, count uint64, err error) {
 
 	err = s.getListResult(sqlAuditRecordQueryBodyTpl, sqlAuditRecordQueryTpl, data, &result)
 	if err != nil {
-		return result, err
+		return result, 0, errors.New(errors.ConnectStorageError, err)
 	}
-
-	return result, err
+	count, err = s.getCountResult(sqlAuditRecordQueryBodyTpl, sqlAuditRecordCountTpl, data)
+	if err != nil {
+		return result, 0, errors.New(errors.ConnectStorageError, err)
+	}
+	return result, count, err
 }
