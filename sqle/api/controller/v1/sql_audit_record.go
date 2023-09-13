@@ -71,7 +71,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if req.DbType == "" && req.InstanceName == "" {
-		return controller.JSONBaseErrorReq(c, e.New("db_type and instance_name can't both be empty"))
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, e.New("db_type and instance_name can't both be empty")))
 	}
 	projectName := c.Param("project_name")
 
@@ -125,8 +125,8 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 	record := model.SQLAuditRecord{
 		ProjectId:     project.ID,
-		CreatorID:     user.ID,
-		AuditRecordID: recordId,
+		CreatorId:     user.ID,
+		AuditRecordId: recordId,
 		TaskId:        task.ID,
 		Task:          task,
 	}
@@ -141,7 +141,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SQLAuditRecordResData{
-			Id: record.AuditRecordID,
+			Id: record.AuditRecordId,
 			Task: &AuditTaskResV1{
 				Id:             task.ID,
 				InstanceName:   task.InstanceName(),
