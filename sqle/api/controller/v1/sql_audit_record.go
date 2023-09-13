@@ -359,10 +359,10 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	}
 
 	if req.Tags != nil {
-		if can, err := s.IsUserCanUpdateSQLAuditRecord(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
+		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, req.SQLAuditRecordId); err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-		} else if !can {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+		} else if !yes {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you yes't update SQL audit record that created by others")))
 		}
 
 		data := model.SQLAuditRecordUpdateData{Tags: *req.Tags}
@@ -531,7 +531,56 @@ type GetSQLAuditRecordResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
-	return nil
+	projectName := c.Param("project_name")
+	auditRecordId := c.Param("sql_audit_record_id")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+	} else if !yes {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
+	}
+
+	record, exist, err := s.GetSQLAuditRecordById(project.ID,auditRecordId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
+	}
+
+	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &SQLAuditRecordResData{
+			Id: auditRecordId,
+			Task: &AuditTaskResV1{
+				Id:             record.Task.ID,
+				InstanceName:   record.Task.InstanceName(),
+				InstanceDbType: record.Task.DBType,
+				InstanceSchema: record.Task.Schema,
+				AuditLevel:     record.Task.AuditLevel,
+				Score:          record.Task.Score,
+				PassRate:       record.Task.PassRate,
+				Status:         record.Task.Status,
+				SQLSource:      record.Task.SQLSource,
+				ExecStartTime:  record.Task.ExecStartAt,
+				ExecEndTime:    record.Task.ExecEndAt,
+			},
+		},
+	})
 }
 
 type GetSQLAuditRecordTagTipsResV1 struct {

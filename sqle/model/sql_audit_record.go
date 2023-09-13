@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/actiontech/sqle/sqle/errors"
 )
 
@@ -42,7 +44,7 @@ func (s *Storage) UpdateSQLAuditRecordById(SQLAuditRecordId string, data SQLAudi
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsUserCanUpdateSQLAuditRecord(userId, projectId uint, SQLAuditRecordId string) (bool, error) {
+func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId uint, SQLAuditRecordId string) (bool, error) {
 	isManager, err := s.IsProjectManagerByID(userId, projectId)
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
@@ -59,4 +61,14 @@ func (s *Storage) IsUserCanUpdateSQLAuditRecord(userId, projectId uint, SQLAudit
 		return false, errors.New(errors.ConnectStorageError, fmt.Errorf("check creator failed: %v", err))
 	}
 	return count == 1, nil
+}
+
+func (s *Storage) GetSQLAuditRecordById(projectId uint, SQLAuditRecordId string) (record *SQLAuditRecord, exist bool, err error) {
+	record = &SQLAuditRecord{}
+	if err = s.db.Preload("Task").Where("project_id = ?", projectId).Where("audit_record_id = ?", SQLAuditRecordId).Find(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return record, true, nil
 }
