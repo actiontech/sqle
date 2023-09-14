@@ -4881,9 +4881,11 @@ func checkExplain(input *RuleHandlerInput) error {
 					return err
 				}
 			}
-			if affectCount > int64(max)*int64(TenThousand) && record.Key == "" {
-				addResult(input.Res, input.Rule, input.Rule.Name)
-				return nil
+			if affectCount > int64(max)*int64(TenThousand) {
+				if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
 			}
 
 		}
