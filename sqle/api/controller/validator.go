@@ -39,9 +39,10 @@ func Validate(i interface{}) error {
 var defaultCustomValidator *CustomValidator
 
 var (
-	ValidNameTag = "name"
-	ValidPortTag = "port"
-	ValidCronTag = "cron"
+	ValidNameTag    = "name"
+	ValidPortTag    = "port"
+	ValidCronTag    = "cron"
+	ValidTagNameTag = "tag_name"
 )
 
 func init() {
@@ -59,6 +60,7 @@ func init() {
 
 	// register custom validator
 	_ = cv.validate.RegisterValidation(ValidNameTag, ValidateName)
+	_ = cv.validate.RegisterValidation(ValidTagNameTag, ValidateTagName)
 	_ = cv.validate.RegisterValidation(ValidPortTag, ValidatePort)
 	_ = cv.validate.RegisterValidation(ValidCronTag, ValidateCron)
 
@@ -94,6 +96,12 @@ func init() {
 			enText: "{0} must match regexp `{1}`",
 			zhText: "{0}必须匹配正则`{1}`",
 			params: []string{ValidateNameRegexpPattern},
+		},
+		{
+			tag:    ValidTagNameTag,
+			enText: "{0} must match regexp `{1}`",
+			zhText: "{0}必须匹配正则`{1}`",
+			params: []string{ValidateTagNameRegexpPattern},
 		},
 		{
 			tag:    ValidPortTag,
@@ -167,6 +175,7 @@ func (cv *CustomValidator) RegisterTranslation(tag, enText, zhText string, param
 }
 
 var ValidateNameRegexpPattern = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9\u4e00-\u9fa5_-]{0,119}$"
+var ValidateTagNameRegexpPattern = "[a-zA-Z0-9\u4e00-\u9fa5_-]{0,49}$"
 var ValidateCustomRuleRegexpPattern = "^[a-zA-Z][a-zA-Z0-9_-]*$"
 
 // ValidateName implements validator.Func
@@ -176,6 +185,12 @@ func ValidateName(fl validator.FieldLevel) bool {
 
 func validateName(name string) bool {
 	match, _ := regexp.MatchString(ValidateNameRegexpPattern, name)
+
+	return match
+}
+
+func ValidateTagName(fl validator.FieldLevel) bool {
+	match, _ := regexp.MatchString(ValidateTagNameRegexpPattern, fl.Field().String())
 
 	return match
 }

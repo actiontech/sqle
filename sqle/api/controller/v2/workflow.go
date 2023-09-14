@@ -262,8 +262,6 @@ func CancelWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	go im.BatchCancelApprove([]uint{workflow.ID}, user)
-
 	workflow.Record.Status = model.WorkflowStatusCancel
 	workflow.Record.CurrentWorkflowStepId = 0
 
@@ -271,6 +269,8 @@ func CancelWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	go im.BatchCancelApprove([]uint{workflow.ID}, user)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -335,11 +335,11 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
 
-	go im.BatchCancelApprove(workflowIds, user)
-
 	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	go im.BatchCancelApprove(workflowIds, user)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }

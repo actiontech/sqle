@@ -3003,7 +3003,8 @@ var doc = `{
                     {
                         "enum": [
                             "create_audit_plan",
-                            "create_workflow"
+                            "create_workflow",
+                            "sql_manage"
                         ],
                         "type": "string",
                         "description": "functional module",
@@ -4352,6 +4353,386 @@ var doc = `{
                         "description": "sqle rule template file",
                         "schema": {
                             "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_audit_records": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql audit records",
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "获取SQL审核记录列表",
+                "operationId": "getSQLAuditRecordsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "fuzzy search tags",
+                        "name": "fuzzy_search_tags",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "auditing",
+                            "successfully"
+                        ],
+                        "type": "string",
+                        "description": "filter sql audit status",
+                        "name": "filter_sql_audit_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAuditRecordsResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "SQL audit\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "SQL审核",
+                "operationId": "CreateSQLAuditRecordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema of instance",
+                        "name": "instance_schema",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of instance",
+                        "name": "db_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sqls",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateSQLAuditRecordResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_audit_records/tag_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql audit record tag tips",
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "获取SQL审核记录标签列表",
+                "operationId": "GetSQLAuditRecordTagTipsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAuditRecordTagTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql audit record info",
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "获取SQL审核记录信息",
+                "operationId": "getSQLAuditRecordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit record id",
+                        "name": "sql_audit_record_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAuditRecordResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update SQL audit record",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_audit_record"
+                ],
+                "summary": "更新SQL审核记录",
+                "operationId": "updateSQLAuditRecordV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql audit record id",
+                        "name": "sql_audit_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update SQL audit record",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSQLAuditRecordReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控sql列表",
+                "operationId": "GetSqlManageList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "api_audit"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageListResp"
                         }
                     }
                 }
@@ -10057,6 +10438,23 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateSQLAuditRecordResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecordResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.CreateSyncInstanceTaskReqV1": {
             "type": "object",
             "required": [
@@ -11777,6 +12175,64 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSQLAuditRecordResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecord"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSQLAuditRecordTagTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSQLAuditRecordsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLAuditRecord"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetSQLEInfoResDataV1": {
             "type": "object",
             "properties": {
@@ -11871,6 +12327,34 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetSqlManageListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlManage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "sql_manage_bad_num": {
+                    "type": "integer"
+                },
+                "sql_manage_optimized_num": {
+                    "type": "integer"
+                },
+                "sql_manage_total_num": {
+                    "type": "integer"
                 }
             }
         },
@@ -13530,6 +14014,62 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLAuditRecord": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "instance": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLAuditRecordInstance"
+                },
+                "sql_audit_record_id": {
+                    "type": "string"
+                },
+                "sql_audit_status": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "task": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskResV1"
+                }
+            }
+        },
+        "v1.SQLAuditRecordInstance": {
+            "type": "object",
+            "properties": {
+                "db_host": {
+                    "type": "string",
+                    "example": "10.10.10.10"
+                },
+                "db_port": {
+                    "type": "string",
+                    "example": "3306"
+                }
+            }
+        },
+        "v1.SQLAuditRecordResData": {
+            "type": "object",
+            "properties": {
+                "sql_audit_record_id": {
+                    "type": "string"
+                },
+                "task": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditTaskResV1"
+                }
+            }
+        },
         "v1.SQLExplain": {
             "type": "object",
             "properties": {
@@ -13636,6 +14176,47 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.SqlManage": {
+            "type": "object",
+            "properties": {
+                "appear_num": {
+                    "type": "integer"
+                },
+                "assignee": {
+                    "type": "string"
+                },
+                "audit_result": {
+                    "type": "string"
+                },
+                "first_appear_time": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "last_appear_time": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -14422,6 +15003,17 @@ var doc = `{
                 "smtp_username": {
                     "type": "string",
                     "example": "test@qq.com"
+                }
+            }
+        },
+        "v1.UpdateSQLAuditRecordReqV1": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
