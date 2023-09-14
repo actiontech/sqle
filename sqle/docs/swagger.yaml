@@ -3182,6 +3182,8 @@ definitions:
         type: string
       remark:
         type: string
+      schema_name:
+        type: string
       source:
         type: string
       sql:
