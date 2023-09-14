@@ -546,7 +546,8 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 	if info.OriginalTableError != nil && IsParseShowCreateTableContentErr(info.OriginalTableError) { // todo #1630 临时减少解析失败时的调用次数
 		return nil, false, info.OriginalTableError
 	}
-	createTableSql, err := c.e.ShowCreateTable(utils.SupplementalQuotationMarks(stmt.Schema.String()), utils.SupplementalQuotationMarks(stmt.Name.String()))
+
+	createTableSql, err := c.e.ShowCreateTable(utils.SupplementalQuotationMarks(c.GetSchemaName(stmt)), utils.SupplementalQuotationMarks(stmt.Name.String()))
 	if err != nil {
 		return nil, exist, err
 	}
@@ -567,27 +568,31 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 /*
 建表语句可能如下:
 CREATE TABLE `__all_server_event_history` (
-  `gmt_create` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `svr_ip` varchar(46) NOT NULL,
-  `svr_port` bigint(20) NOT NULL,
-  `module` varchar(64) NOT NULL,
-  `event` varchar(64) NOT NULL,
-  `name1` varchar(256) DEFAULT '',
-  `value1` varchar(256) DEFAULT '',
-  `name2` varchar(256) DEFAULT '',
-  `value2` longtext DEFAULT NULL,
-  `name3` varchar(256) DEFAULT '',
-  `value3` varchar(256) DEFAULT '',
-  `name4` varchar(256) DEFAULT '',
-  `value4` varchar(256) DEFAULT '',
-  `name5` varchar(256) DEFAULT '',
-  `value5` varchar(256) DEFAULT '',
-  `name6` varchar(256) DEFAULT '',
-  `value6` varchar(256) DEFAULT '',
-  `extra_info` varchar(512) DEFAULT '',
-  PRIMARY KEY (`gmt_create`, `svr_ip`, `svr_port`)
+
+	`gmt_create` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+	`svr_ip` varchar(46) NOT NULL,
+	`svr_port` bigint(20) NOT NULL,
+	`module` varchar(64) NOT NULL,
+	`event` varchar(64) NOT NULL,
+	`name1` varchar(256) DEFAULT '',
+	`value1` varchar(256) DEFAULT '',
+	`name2` varchar(256) DEFAULT '',
+	`value2` longtext DEFAULT NULL,
+	`name3` varchar(256) DEFAULT '',
+	`value3` varchar(256) DEFAULT '',
+	`name4` varchar(256) DEFAULT '',
+	`value4` varchar(256) DEFAULT '',
+	`name5` varchar(256) DEFAULT '',
+	`value5` varchar(256) DEFAULT '',
+	`name6` varchar(256) DEFAULT '',
+	`value6` varchar(256) DEFAULT '',
+	`extra_info` varchar(512) DEFAULT '',
+	PRIMARY KEY (`gmt_create`, `svr_ip`, `svr_port`)
+
 ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = COMPACT COMPRESSION = 'none' REPLICA_NUM = 1 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10 TABLEGROUP = 'oceanbase'
- partition by key_v2(svr_ip, svr_port)
+
+	partition by key_v2(svr_ip, svr_port)
+
 (partition p0,
 partition p1,
 partition p2,
@@ -606,7 +611,6 @@ partition p14,
 partition p15)
 
 建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 然后尝试解析一次, 直到解析成功, 此时剩余的建表语句将不在包含OB特有options
-
 */
 func (c *Context) parseCreateTableSqlCompatibly(createTableSql string) (*ast.CreateTableStmt, error) {
 	for i := len(createTableSql) - 1; i >= 0; i-- {
