@@ -32,6 +32,7 @@ type SqlManage struct {
 	Sql             string `json:"sql"`
 	Source          string `json:"source"`
 	InstanceName    string `json:"instance_name"`
+	SchemaName      string `json:"schema_name"`
 	AuditResult     string `json:"audit_result"`
 	FirstAppearTime string `json:"first_appear_time"`
 	LastAppearTime  string `json:"last_appear_time"`
