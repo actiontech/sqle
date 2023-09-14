@@ -2226,7 +2226,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		AllowOffline: false,
 		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
-		Func:         checkExplain,
+		Func:         checkSelectRows,
 	},
 }
 
@@ -4834,9 +4834,6 @@ func checkExplain(input *RuleHandlerInput) error {
 	default:
 		return nil
 	}
-	if _, ok := input.Node.(*ast.SelectStmt); !ok && input.Rule.Name == DMLCheckSelectRows {
-		return nil
-	}
 
 	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
 	if err != nil {
@@ -4844,7 +4841,6 @@ func checkExplain(input *RuleHandlerInput) error {
 		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 		return nil
 	}
-	affectCount := int64(-1)
 	for _, record := range epRecords {
 		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
 			addResult(input.Res, input.Rule, DMLCheckExplainExtraUsingFilesort)
@@ -4872,22 +4868,6 @@ func checkExplain(input *RuleHandlerInput) error {
 			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
-		}
-
-		if input.Rule.Name == DMLCheckSelectRows {
-			if affectCount < 0 {
-				affectCount, err = util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
-				if err != nil {
-					return err
-				}
-			}
-			if affectCount > int64(max)*int64(TenThousand) {
-				if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
-			}
-
 		}
 
 	}
@@ -6473,6 +6453,35 @@ func checkText(input *RuleHandlerInput) error {
 		// 判断原表是否只存在主键
 		if len(originPK) != len(originTableAllColumns) {
 			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
+		}
+	}
+	return nil
+}
+
+func checkSelectRows(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
+		return nil
+	}
+	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if int64(max)*int64(TenThousand) > affectCount {
+		return nil
+	}
+
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+
+	for _, record := range epRecords {
+		if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
 		}
 	}
 	return nil
