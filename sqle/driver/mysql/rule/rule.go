@@ -2247,7 +2247,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		AllowOffline: true,
 		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
-		Func:         checkExplain,
+		Func:         checkScanRows,
 	},
 }
 
@@ -4890,11 +4890,6 @@ func checkExplain(input *RuleHandlerInput) error {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
-		if input.Rule.Name == DMLCheckScanRows && record.Rows > int64(max)*int64(TenThousand) {
-			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
-				addResult(input.Res, input.Rule, input.Rule.Name)
-			}
-		}
 
 	}
 	return nil
@@ -6514,5 +6509,29 @@ func checkSelectRows(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 
+	return nil
+}
+
+func checkScanRows(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		if record.Rows > int64(max)*int64(TenThousand) {
+			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+	}
 	return nil
 }
