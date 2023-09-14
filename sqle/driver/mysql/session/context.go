@@ -52,6 +52,7 @@ type SchemaInfo struct {
 	characterLoad    bool
 	DefaultCollation string
 	collationLoad    bool
+	IsVirtual        bool // issue #1832, 判断当前的 schema 是否是上下文中虚拟创建的.
 	Tables           map[string]*TableInfo
 }
 
@@ -208,7 +209,8 @@ func (c *Context) addSchema(name string) {
 		name = strings.ToLower(name)
 	}
 	c.schemas[name] = &SchemaInfo{
-		Tables: map[string]*TableInfo{},
+		Tables:    map[string]*TableInfo{},
+		IsVirtual: true,
 	}
 }
 
@@ -321,9 +323,19 @@ func (c *Context) UpdateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		if c.hasSchema(s.DBName) {
-			c.SetCurrentSchema(s.DBName)
+		schemaInfo, ok := c.getSchema(s.DBName)
+		if !ok {
+			return
 		}
+		if !schemaInfo.IsVirtual {
+			// issue #1832
+			err := c.UseSchema(s.DBName)
+			if err != nil {
+				log.Logger().Warnf("update sql context failed, error: %v", err)
+			}
+		}
+		c.SetCurrentSchema(s.DBName)
+
 	case *ast.CreateDatabaseStmt:
 		if c.hasLoadSchemas() {
 			c.addSchema(s.Name)
@@ -897,6 +909,14 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 	}
 
 	return *ti.columns[columnName].cardinality, nil
+}
+
+func (c *Context) UseSchema(schemaName string) error {
+	_, err := c.e.Db.Exec(fmt.Sprintf("use %s", schemaName))
+	if err != nil {
+		return errors.Wrap(err, "exec use schema")
+	}
+	return nil
 }
 
 func (c *Context) GetExecutor() *executor.Executor {
