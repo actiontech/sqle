@@ -6462,27 +6462,31 @@ func checkSelectRows(input *RuleHandlerInput) error {
 	if _, ok := input.Node.(*ast.SelectStmt); !ok {
 		return nil
 	}
-	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
-	if err != nil {
-		return err
-	}
-
-	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-	if int64(max)*int64(TenThousand) > affectCount {
-		return nil
-	}
-
 	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
 	if err != nil {
 		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 		return nil
 	}
 
+	var notUseIndex bool
 	for _, record := range epRecords {
 		if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
-			addResult(input.Res, input.Rule, input.Rule.Name)
-			return nil
+			notUseIndex = true
+			break
 		}
 	}
+
+	if !notUseIndex {
+		return nil
+	}
+	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(max)*int64(TenThousand) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+
 	return nil
 }
