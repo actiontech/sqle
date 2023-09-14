@@ -157,6 +157,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckTableRows:                           {},
 		rulepkg.DDLCheckCompositeIndexDistinction:           {},
 		rulepkg.DDLAvoidText:                                {},
+		rulepkg.DMLCheckSelectRows:                          {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -3854,35 +3855,6 @@ func Test_CheckExplain_ShouldNotError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"key"}).AddRow(executor.ExplainRecordPrimaryKey))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t, "", inspect4, "select * from exist_tb_1 where id = 1", newTestResult())
 
-	inspect5 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("range"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `v1`='a'")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule, t, "", inspect5, "select * from exist_tb_2 where v1 = 'a'", newTestResult())
-
-	inspect6 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeAll))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1`")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule, t, "", inspect6, "select * from exist_tb_1", newTestResult())
-
-	inspect7 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id=1")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1` WHERE `id`=1")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("1000000000000000"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule, t, "", inspect7, "select * from exist_tb_1 where id=1", newTestResult())
-
-	inspect8 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id in (select id from exist_tb_2)")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref").AddRow("ref"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1` WHERE `id` IN (SELECT `id` FROM `exist_tb_2`)")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("1000000000000000"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule, t, "", inspect8, "select * from exist_tb_1 where id in (select id from exist_tb_2)", newTestResult())
-
-
 	assert.NoError(t, handler.ExpectationsWereMet())
 }
 
@@ -4024,24 +3996,7 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
 		t, "", inspect8, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
-	inspect9 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1='a'")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `v1`='a'")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule,
-		t, "", inspect9, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
-
-	inspect10 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `user_id` IN (SELECT `v3` FROM `exist_tb_3`)")).
-		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule,
-		t, "", inspect10, "select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
-
 	assert.NoError(t, handler.ExpectationsWereMet())
-
 }
 
 func TestCheckPrepareStatementPlaceholders(t *testing.T) {
@@ -5872,4 +5827,51 @@ func TestDDLCheckCompositeIndexDistinction(t *testing.T) {
 		Index index_name1(v3,v2,v1)
 		)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="uint test";`,
 		newTestResult().addResult(rulepkg.DDLCheckCompositeIndexDistinction, "(v1，v2，v3)可调整为(v1，v3，v2)，(v3，v2，v1)可调整为(v1，v3，v2)"))
+}
+
+func TestDMLCheckSelectRows(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSelectRows].Rule
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `v1`='a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("range"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_2 where v1 = 'a'", newTestResult())
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1`")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_1", newTestResult())
+
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1` WHERE `id`=1")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("1000000000000000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id=1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
+	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_1 where id=1", newTestResult())
+
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1` WHERE `id` IN (SELECT `id` FROM `exist_tb_2`)")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("1000000000000000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id in (select id from exist_tb_2)")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref").AddRow("ref"))
+	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_1 where id in (select id from exist_tb_2)", newTestResult())
+
+	inspect5 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `v1`='a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1='a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
+	runSingleRuleInspectCase(rule, t, "", inspect5, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
+	inspect6 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `user_id` IN (SELECT `v3` FROM `exist_tb_3`)")).
+		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	runSingleRuleInspectCase(rule, t, "", inspect6, "select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
 }
