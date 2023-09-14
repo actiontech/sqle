@@ -6356,25 +6356,82 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 	return nil
 }
 
+func judgeTextField(col *ast.ColumnDef) bool {
+	if col.Tp.Tp == mysql.TypeBlob || col.Tp.Tp == mysql.TypeTinyBlob || col.Tp.Tp == mysql.TypeMediumBlob || col.Tp.Tp == mysql.TypeLongBlob {
+		// mysql blob字段为二进制对象
+		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
+		if col.Tp.Flag != mysql.BinaryFlag {
+			return true
+		}
+	}
+	return false
+}
+
 func checkText(input *RuleHandlerInput) error {
+	textColumns := []string{}
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
+		var hasPk bool
+		columnsWithoutPkAndText := make(map[string]struct{})
 		for _, col := range stmt.Cols {
-			if col.Tp.Tp == mysql.TypeBlob {
-				addResult(input.Res, input.Rule, input.Rule.Name, col.Name.Name.O)
-				return nil
+			isText := judgeTextField(col)
+			if isText {
+				textColumns = append(textColumns, col.Name.Name.O)
+				continue
 			}
+			if util.IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				hasPk = true
+				continue
+			}
+			columnsWithoutPkAndText[col.Name.Name.O] = struct{}{}
+		}
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp != ast.ConstraintPrimaryKey {
+				continue
+			}
+			hasPk = true
+			// 移除columnsWithoutPkAndText中主键的字段
+			for _, key := range constraint.Keys {
+				columnName := key.Column.Name.O
+				delete(columnsWithoutPkAndText, columnName)
+			}
+		}
+		if hasPk && len(textColumns) > 0 && len(columnsWithoutPkAndText) > 0 {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
 		}
 	case *ast.AlterTableStmt:
 		for _, col := range stmt.Specs {
-			if col.Tp == ast.AlterTableAddColumns {
-				for _, newColumn := range col.NewColumns {
-					if newColumn.Tp.Tp == mysql.TypeBlob {
-						addResult(input.Res, input.Rule, input.Rule.Name, newColumn.Name.Name.O)
-						return nil
-					}
+			if col.Tp != ast.AlterTableAddColumns {
+				continue
+			}
+			for _, newColumn := range col.NewColumns {
+				isText := judgeTextField(newColumn)
+				if isText {
+					textColumns = append(textColumns, newColumn.Name.Name.O)
 				}
 			}
+		}
+		if len(textColumns) == 0 {
+			return nil
+		}
+		originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		originPK, hasPk := util.GetPrimaryKey(originTable)
+		if !hasPk {
+			return nil
+		}
+		originTableAllColumns := []string{}
+		for _, col := range originTable.Cols {
+			originTableAllColumns = append(originTableAllColumns, col.Name.Name.L)
+		}
+		// 判断原表是否只存在主键
+		if len(originPK) != len(originTableAllColumns) {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
 		}
 	}
 	return nil
