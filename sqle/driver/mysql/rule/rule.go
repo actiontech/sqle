@@ -2219,7 +2219,7 @@ var RuleHandlers = []RuleHandler{
 				&params.Param{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10",
-					Desc:  "查询数量（万）",
+					Desc:  "查询数据量（万）",
 					Type:  params.ParamTypeInt,
 				},
 			},
