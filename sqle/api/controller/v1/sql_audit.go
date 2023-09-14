@@ -191,7 +191,7 @@ func DirectAuditFiles(c echo.Context) error {
 		sqls = req.FileContents[0]
 	}
 
-	l := log.NewEntry().WithField("/v2/audit_files", "direct audit files failed")
+	l := log.NewEntry().WithField("api", "[post]/v1/audit_files")
 
 	var instance *model.Instance
 	var exist bool
