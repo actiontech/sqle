@@ -184,6 +184,7 @@ const (
 	DMLCheckAggregate                         = "dml_check_aggregate"
 	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
+	DMLCheckScanRows                          = "dml_check_scan_rows"
 )
 
 // inspector config code
@@ -2206,6 +2207,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
 		Func:         checkText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckScanRows,
+			Desc:       "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "扫描行数量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkExplain,
 	},
 }
 
@@ -4845,6 +4866,11 @@ func checkExplain(input *RuleHandlerInput) error {
 		}
 		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
 			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+		if input.Rule.Name == DMLCheckScanRows && record.Rows > int64(max)*int64(TenThousand) {
+			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
