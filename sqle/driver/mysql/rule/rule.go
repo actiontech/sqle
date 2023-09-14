@@ -6475,22 +6475,3 @@ func checkText(input *RuleHandlerInput) error {
 	}
 	return nil
 }
-
-func checkSelectRows(input *RuleHandlerInput) error {
-	switch input.Node.(type) {
-	case *ast.SelectStmt:
-	default:
-		return nil
-	}
-	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-
-	affectCount, err := util.GetAffectedRowNum(
-		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
-	if err != nil {
-		return err
-	}
-	if int64(max) > affectCount {
-		return nil
-	}
-	return nil
-}
