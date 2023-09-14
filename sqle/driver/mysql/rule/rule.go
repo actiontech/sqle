@@ -114,6 +114,8 @@ const (
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
 	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
+	DDLCheckTableRows                                  = "ddl_check_table_rows"
+	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
 )
 
@@ -192,6 +194,11 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+)
+
+// 计算单位
+const (
+	TenThousand = 10000
 )
 
 type RuleHandlerInput struct {
@@ -2155,6 +2162,38 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
 		Func:         checkIndexSelectivity,
+	},
+	{
+		// 该规则只适用于库表元数据扫描并且需要与停用上线审核模式规则一起使用
+		Rule: driverV2.Rule{
+			Name:       DDLCheckTableRows,
+			Desc:       "表行数超过阈值，建议对表进行拆分",
+			Annotation: "当表行数超过阈值时，对表进行拆分有助于提高数据库性能和查询速度。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "表行数（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "表行数超过阈值，建议对表进行拆分",
+		Func:    checkTableRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckCompositeIndexDistinction,
+			Desc:       "建议在组合索引中将区分度高的字段靠前放",
+			Annotation: "将区分度高的字段靠前放置在组合索引中有助于提高索引的查询性能，因为它能更快地减小数据范围，提高检索效率。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议在组合索引中将区分度高的字段靠前放，%v",
+		Func:         checkCompositeIndexSelectivity,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -4805,7 +4844,9 @@ func checkExplain(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
-			addResult(input.Res, input.Rule, input.Rule.Name)
+			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
 		}
 
 	}
@@ -6184,6 +6225,133 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 				}
 			}
 		}
+	}
+	return nil
+}
+
+func checkTableRows(input *RuleHandlerInput) error {
+	limitRowsString := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	limitRowsInt, err := strconv.Atoi(limitRowsString)
+	if err != nil {
+		return err
+	}
+
+	stmt, ok := input.Node.(*ast.CreateTableStmt)
+	if !ok {
+		return nil
+	}
+
+	exist, err := input.Ctx.IsTableExist(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	rowsCount, err := input.Ctx.GetTableRowCount(stmt.Table)
+	if err != nil {
+		return err
+	}
+
+	if rowsCount > limitRowsInt*TenThousand {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
+	indexSlices := [][]string{}
+	table := &ast.TableName{}
+	switch stmt := input.Node.(type) {
+	case *ast.CreateIndexStmt:
+		singleIndexSlice := []string{}
+		if len(stmt.IndexPartSpecifications) == 1 {
+			return nil
+		}
+		for _, indexPart := range stmt.IndexPartSpecifications {
+			singleIndexSlice = append(singleIndexSlice, indexPart.Column.Name.O)
+		}
+		indexSlices = append(indexSlices, singleIndexSlice)
+		table = stmt.Table
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint == nil {
+				continue
+			}
+			if spec.Constraint.Tp != ast.ConstraintIndex && spec.Constraint.Tp != ast.ConstraintUniq {
+				continue
+			}
+			singleIndexSlice := []string{}
+			if len(spec.Constraint.Keys) == 1 {
+				continue
+			}
+			for _, key := range spec.Constraint.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
+		}
+		table = stmt.Table
+	case *ast.CreateTableStmt:
+		if stmt.Constraints == nil {
+			return nil
+		}
+		for _, con := range stmt.Constraints {
+			if con.Tp != ast.ConstraintIndex && con.Tp != ast.ConstraintUniq {
+				continue
+			}
+			singleIndexSlice := []string{}
+			if len(con.Keys) == 1 {
+				continue
+			}
+			for _, key := range con.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
+		}
+		table = stmt.Table
+	}
+	exist, err := input.Ctx.IsTableExist(table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	noticeInfos := []string{}
+	for _, singleIndexSlice := range indexSlices {
+		var indexSelectValueSlice []struct {
+			Index string
+			Value int
+		}
+		sortIndexes := make([]string, len(singleIndexSlice))
+		for _, indexColumn := range singleIndexSlice {
+			columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
+			if err != nil {
+				return err
+			}
+			selectivityValue := columnCardinality
+			indexSelectValueSlice = append(indexSelectValueSlice, struct {
+				Index string
+				Value int
+			}{indexColumn, selectivityValue})
+		}
+		sort.Slice(indexSelectValueSlice, func(i, j int) bool {
+			return indexSelectValueSlice[i].Value > indexSelectValueSlice[j].Value
+		})
+		for i, kv := range indexSelectValueSlice {
+			sortIndexes[i] = kv.Index
+		}
+		for ind, indexColumn := range singleIndexSlice {
+			if indexColumn != indexSelectValueSlice[ind].Index {
+				noticeInfos = append(noticeInfos, fmt.Sprintf("(%s)可调整为(%s)", strings.Join(singleIndexSlice, "，"), strings.Join(sortIndexes, "，")))
+				break
+			}
+		}
+	}
+	if len(noticeInfos) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(noticeInfos, "，"))
 	}
 	return nil
 }
