@@ -2551,6 +2551,58 @@ func TestDDLAvoidText(t *testing.T) {
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE IF NOT EXISTS tbl1(
 				id INT UNSIGNED PRIMARY KEY,
+				product_code VARCHAR(10),
+				title blob  NOT NULL
+			 );`,
+			newTestResult())
+	})
+
+	t.Run(`create table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE your_table_name (
+				username VARCHAR(50),
+				product_code VARCHAR(10),
+				title blob  NOT NULL,
+				title1 TINYBLOB,
+				title2 MEDIUMBLOB,
+				title3 LONGBLOB,
+				name VARCHAR(50),
+				PRIMARY KEY (username, product_code)
+			);
+			`,
+			newTestResult())
+	})
+
+	t.Run(`create table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE your_table_name (
+				username VARCHAR(50),
+				product_code VARCHAR(10),
+				blob_column blob  NOT NULL,
+				title text not null,
+				name VARCHAR(50),
+				PRIMARY KEY (username, product_code)
+			);
+			`,
+			newTestResult().addResult(rulepkg.DDLAvoidText, "title"))
+	})
+
+	t.Run(`create table with text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE IF NOT EXISTS tbl1(
+				id INT UNSIGNED PRIMARY KEY,
 				title text  NOT NULL
 			 );`,
 			newTestResult())
@@ -2614,12 +2666,36 @@ func TestDDLAvoidText(t *testing.T) {
 			rule,
 			t,
 			``,
-			DefaultMysqlInspectOffline(),
-			`ALTER TABLE t1
-			ADD new_column_name text,
-			DROP c;
+			DefaultMysqlInspect(),
+			`ALTER TABLE exist_db.exist_tb_1
+			ADD new_column_name text
 			`,
 			newTestResult().addResult(rulepkg.DDLAvoidText, "new_column_name"))
+	})
+
+	t.Run(`alter table with text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspect(),
+			`ALTER TABLE exist_db.exist_tb_1
+			ADD new_column_name blob
+			`,
+			newTestResult())
+	})
+
+	t.Run(`alter table with text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspect(),
+			`ALTER TABLE exist_db.exist_tb_1
+			ADD new_column_name blob,
+			ADD title text not null
+			`,
+			newTestResult().addResult(rulepkg.DDLAvoidText, "title"))
 	})
 
 	t.Run(`alter table without text field`, func(t *testing.T) {
