@@ -184,6 +184,7 @@ const (
 	DMLCheckAggregate                         = "dml_check_aggregate"
 	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
+	DMLCheckSelectRows                        = "dml_check_select_rows"
 )
 
 // inspector config code
@@ -2206,6 +2207,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
 		Func:         checkText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSelectRows,
+			Desc:       "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可提高查询性能和减少全表扫描的成本。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "查询数量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkExplain,
 	},
 }
 
@@ -4813,6 +4834,9 @@ func checkExplain(input *RuleHandlerInput) error {
 	default:
 		return nil
 	}
+	if _, ok := input.Node.(*ast.SelectStmt); !ok && input.Rule.Name == DMLCheckSelectRows {
+		return nil
+	}
 
 	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
 	if err != nil {
@@ -4820,6 +4844,7 @@ func checkExplain(input *RuleHandlerInput) error {
 		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 		return nil
 	}
+	affectCount := int64(-1)
 	for _, record := range epRecords {
 		if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingFilesort) {
 			addResult(input.Res, input.Rule, DMLCheckExplainExtraUsingFilesort)
@@ -4847,6 +4872,20 @@ func checkExplain(input *RuleHandlerInput) error {
 			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
+		}
+
+		if input.Rule.Name == DMLCheckSelectRows {
+			if affectCount < 0 {
+				affectCount, err = util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+				if err != nil {
+					return err
+				}
+			}
+			if affectCount > int64(max)*int64(TenThousand) && record.Key == "" {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+
 		}
 
 	}
@@ -6433,6 +6472,25 @@ func checkText(input *RuleHandlerInput) error {
 		if len(originPK) != len(originTableAllColumns) {
 			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
 		}
+	}
+	return nil
+}
+
+func checkSelectRows(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt:
+	default:
+		return nil
+	}
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+	affectCount, err := util.GetAffectedRowNum(
+		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+	if int64(max) > affectCount {
+		return nil
 	}
 	return nil
 }
