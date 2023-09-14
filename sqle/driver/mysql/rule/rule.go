@@ -184,6 +184,7 @@ const (
 	DMLCheckAggregate                         = "dml_check_aggregate"
 	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
+	DMLCheckSelectRows                        = "dml_check_select_rows"
 )
 
 // inspector config code
@@ -2206,6 +2207,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
 		Func:         checkText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSelectRows,
+			Desc:       "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可提高查询性能和减少全表扫描的成本。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "查询数据量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkSelectRows,
 	},
 }
 
@@ -6434,5 +6455,38 @@ func checkText(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
 		}
 	}
+	return nil
+}
+
+func checkSelectRows(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
+		return nil
+	}
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+
+	var notUseIndex bool
+	for _, record := range epRecords {
+		if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+			notUseIndex = true
+			break
+		}
+	}
+
+	if !notUseIndex {
+		return nil
+	}
+	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(max)*int64(TenThousand) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+
 	return nil
 }
