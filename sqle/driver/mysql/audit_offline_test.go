@@ -2550,9 +2550,42 @@ func TestDDLAvoidText(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE IF NOT EXISTS tbl1(
-				id INT UNSIGNED AUTO_INCREMENT,
-				title text NOT NULL
+				id INT UNSIGNED PRIMARY KEY,
+				title text  NOT NULL
 			 );`,
+			newTestResult())
+	})
+
+	t.Run(`create table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE your_table_name (
+				username VARCHAR(50),
+				product_code VARCHAR(10),
+				title text  NOT NULL,
+				PRIMARY KEY (username, product_code)
+			);
+			`,
+			newTestResult())
+	})
+
+	t.Run(`create table without text field`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`CREATE TABLE your_table_name (
+				username VARCHAR(50),
+				product_code VARCHAR(10),
+				title text  NOT NULL,
+				age int,
+				PRIMARY KEY (username, product_code)
+			);
+			`,
 			newTestResult().addResult(rulepkg.DDLAvoidText, "title"))
 	})
 
@@ -2562,10 +2595,18 @@ func TestDDLAvoidText(t *testing.T) {
 			t,
 			``,
 			DefaultMysqlInspectOffline(),
-			`CREATE TABLE IF NOT EXISTS tbl1(
-				id INT UNSIGNED AUTO_INCREMENT
-			 );`,
-			newTestResult())
+			`CREATE TABLE your_table_name (
+				username VARCHAR(50),
+				product_code VARCHAR(10),
+				title text  NOT NULL,
+				title1 TINYTEXT,
+				title2 MEDIUMTEXT,
+				title3 LONGTEXT,
+				name VARCHAR(50),
+				PRIMARY KEY (username, product_code)
+			);
+			`,
+			newTestResult().addResult(rulepkg.DDLAvoidText, "title，title1，title2，title3"))
 	})
 
 	t.Run(`alter table with text field`, func(t *testing.T) {
