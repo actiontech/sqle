@@ -116,6 +116,7 @@ const (
 	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
+	DDLAvoidText                                       = "ddl_avoid_text"
 )
 
 // inspector DML rules
@@ -2193,6 +2194,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "建议在组合索引中将区分度高的字段靠前放，%v",
 		Func:         checkCompositeIndexSelectivity,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidText,
+			Desc:       "使用TEXT 类型的字段建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+			Annotation: "将TEXT类型的字段与原表主键分拆成另一个表可以提高数据库性能和查询速度，减少不必要的 I/O 操作。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+		Func:         checkText,
 	},
 }
 
@@ -6339,6 +6352,87 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 	}
 	if len(noticeInfos) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(noticeInfos, "，"))
+	}
+	return nil
+}
+
+func judgeTextField(col *ast.ColumnDef) bool {
+	if col.Tp.Tp == mysql.TypeBlob || col.Tp.Tp == mysql.TypeTinyBlob || col.Tp.Tp == mysql.TypeMediumBlob || col.Tp.Tp == mysql.TypeLongBlob {
+		// mysql blob字段为二进制对象
+		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
+		if col.Tp.Flag != mysql.BinaryFlag {
+			return true
+		}
+	}
+	return false
+}
+
+func checkText(input *RuleHandlerInput) error {
+	textColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		var hasPk bool
+		columnsWithoutPkAndText := make(map[string]struct{})
+		for _, col := range stmt.Cols {
+			isText := judgeTextField(col)
+			if isText {
+				textColumns = append(textColumns, col.Name.Name.O)
+				continue
+			}
+			if util.IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				hasPk = true
+				continue
+			}
+			columnsWithoutPkAndText[col.Name.Name.O] = struct{}{}
+		}
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp != ast.ConstraintPrimaryKey {
+				continue
+			}
+			hasPk = true
+			// 移除columnsWithoutPkAndText中主键的字段
+			for _, key := range constraint.Keys {
+				columnName := key.Column.Name.O
+				delete(columnsWithoutPkAndText, columnName)
+			}
+		}
+		if hasPk && len(textColumns) > 0 && len(columnsWithoutPkAndText) > 0 {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
+		}
+	case *ast.AlterTableStmt:
+		for _, col := range stmt.Specs {
+			if col.Tp != ast.AlterTableAddColumns {
+				continue
+			}
+			for _, newColumn := range col.NewColumns {
+				isText := judgeTextField(newColumn)
+				if isText {
+					textColumns = append(textColumns, newColumn.Name.Name.O)
+				}
+			}
+		}
+		if len(textColumns) == 0 {
+			return nil
+		}
+		originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		originPK, hasPk := util.GetPrimaryKey(originTable)
+		if !hasPk {
+			return nil
+		}
+		originTableAllColumns := []string{}
+		for _, col := range originTable.Cols {
+			originTableAllColumns = append(originTableAllColumns, col.Name.Name.L)
+		}
+		// 判断原表是否只存在主键
+		if len(originPK) != len(originTableAllColumns) {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
+		}
 	}
 	return nil
 }
