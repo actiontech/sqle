@@ -14206,6 +14206,9 @@ var doc = `{
                 "remark": {
                     "type": "string"
                 },
+                "schema_name": {
+                    "type": "string"
+                },
                 "source": {
                     "type": "string"
                 },
