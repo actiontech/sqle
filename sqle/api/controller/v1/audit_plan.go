@@ -946,10 +946,26 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
 			server.AuditSchema:       reqSQL.Schema,
 		}
+		// 兼容老版本的Scannerd
+		// 老版本Scannerd不传输这两个字段，不记录到数据库中
+		// 并且这里避免记录0值到数据库中，导致后续计算出的平均时间出错
+		if reqSQL.QueryTimeAvg != nil {
+			info["query_time_avg"] = utils.Round(*reqSQL.QueryTimeAvg, 4)
+		}
+		if reqSQL.QueryTimeMax != nil {
+			info["query_time_max"] = utils.Round(*reqSQL.QueryTimeMax, 4)
+		}
+		if !reqSQL.FirstQueryAt.IsZero() {
+			info["first_query_at"] = reqSQL.FirstQueryAt
+		}
+		if reqSQL.DBUser != "" {
+			info["db_user"] = reqSQL.DBUser
+		}
 		sqls[i] = &auditplan.SQL{
 			Fingerprint: fp,
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
+			Schema:      reqSQL.Schema,
 		}
 	}
 	return sqls, nil
