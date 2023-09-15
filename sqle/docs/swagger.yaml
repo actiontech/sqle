@@ -8918,14 +8918,14 @@ paths:
       summary: 更新角色信息
       tags:
       - role
-  /v1/rule_knowledge/{rule_id}/:
+  /v1/rule_knowledge/{rule_name}/:
     get:
       description: get rule knowledge
       operationId: getRuleKnowledgeV1
       parameters:
       - description: rule id
         in: path
-        name: rule_id
+        name: rule_name
         required: true
         type: string
       responses:
@@ -8944,7 +8944,7 @@ paths:
       parameters:
       - description: rule id
         in: path
-        name: rule_id
+        name: rule_name
         required: true
         type: string
       - description: update rule knowledge
