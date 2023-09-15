@@ -1624,10 +1624,14 @@ func GetRuleTypeByDBType(c echo.Context) error {
 	return getRuleTypeByDBType(c)
 }
 
+type RuleInfo struct {
+	Desc       string `json:"desc" example:"this is test rule"`
+	Annotation string `json:"annotation" example:"this is test rule"`
+}
+
 type RuleKnowledgeResV1 struct {
-	Desc                string `json:"desc" example:"this is test rule"`
-	Annotation          string `json:"annotation" example:"this is test rule"`
-	CustomizedKnowledge string `json:"customized_knowledge"`
+	Rule             RuleInfo `json:"rule"`
+	KnowledgeContent string   `json:"knowledge_content"`
 }
 
 type GetRuleKnowledgeResV1 struct {
@@ -1649,7 +1653,7 @@ func GetRuleKnowledge(c echo.Context) error {
 }
 
 type UpdateRuleKnowledgeReq struct {
-	Knowledge *string `json:"knowledge" form:"knowledge"`
+	KnowledgeContent *string `json:"knowledge_content" form:"knowledge_content"`
 }
 
 // UpdateRuleKnowledgeV1

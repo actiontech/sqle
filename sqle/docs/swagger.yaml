@@ -2910,16 +2910,22 @@ definitions:
       role:
         type: string
     type: object
-  v1.RuleKnowledgeResV1:
+  v1.RuleInfo:
     properties:
       annotation:
         example: this is test rule
         type: string
-      customized_knowledge:
-        type: string
       desc:
         example: this is test rule
         type: string
+    type: object
+  v1.RuleKnowledgeResV1:
+    properties:
+      knowledge_content:
+        type: string
+      rule:
+        $ref: '#/definitions/v1.RuleInfo'
+        type: object
     type: object
   v1.RuleParamReqV1:
     properties:
@@ -3712,7 +3718,7 @@ definitions:
     type: object
   v1.UpdateRuleKnowledgeReq:
     properties:
-      knowledge:
+      knowledge_content:
         type: string
     type: object
   v1.UpdateRuleTemplateReqV1:
