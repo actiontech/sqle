@@ -185,6 +185,7 @@ const (
 	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 	DMLCheckSelectRows                        = "dml_check_select_rows"
+	DMLCheckScanRows                          = "dml_check_scan_rows"
 )
 
 // inspector config code
@@ -2227,6 +2228,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
 		Func:         checkSelectRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckScanRows,
+			Desc:       "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "扫描行数量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkScanRows,
 	},
 }
 
@@ -6489,5 +6510,29 @@ func checkSelectRows(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 
+	return nil
+}
+
+func checkScanRows(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		if record.Rows > int64(max)*int64(TenThousand) {
+			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+	}
 	return nil
 }
