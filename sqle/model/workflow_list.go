@@ -74,6 +74,9 @@ AND (
 w.create_user_id = :current_user_id 
 OR all_ws.assignees REGEXP  :current_user_id
 OR curr_ws.assignees REGEXP :current_user_id
+OR IF(wr.status = 'wait_for_execution'
+				, wir.users REGEXP :current_user_id
+				, '')
 
 {{- if .viewable_instance_ids }} 
 OR inst.id IN ( {{ .viewable_instance_ids }})
@@ -116,6 +119,9 @@ AND wr.status IN (:filter_status)
 
 {{- if .filter_current_step_assignee_user_name }}
 AND curr_ws.assignees REGEXP :filter_current_step_assignee_user_name
+OR IF(wr.status = 'wait_for_execution'
+                , wir.execution_assignees REGEXP :filter_current_step_assignee_user_name
+                , '')
 {{- end }}
 
 {{- if .filter_task_status }}

@@ -17,7 +17,6 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -226,17 +225,8 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	}
 	defer killConn.Db.Close()
 	killSQL := fmt.Sprintf("KILL %v", connID)
-	killFunc := func() error {
-		_, err := killConn.Db.Exec(killSQL)
-		return err
-	}
-	err = utils.AsyncCallTimeout(ctx, killFunc)
-	if err != nil {
-		err = fmt.Errorf("exec sql(%v) failed, err: %v", killSQL, err)
-		return err
-	}
-	logEntry.Infof("exec sql(%v) successfully", killSQL)
-	return nil
+	err = util.KillProcess(ctx, killSQL, killConn, logEntry)
+	return err
 }
 
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
@@ -542,6 +532,14 @@ func (i *MysqlDriverImpl) getDbConn() (*executor.Executor, error) {
 	return conn, err
 }
 
+func (i *MysqlDriverImpl) GetConn() *executor.Executor {
+	return i.dbConn
+}
+
+func (i *MysqlDriverImpl) GetDSN() *driverV2.DSN {
+	return i.inst
+}
+
 // closeDbConn close db conn and just close once.
 func (i *MysqlDriverImpl) closeDbConn() {
 	if i.isConnected {
@@ -597,6 +595,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleGetTableMeta,
 			driverV2.OptionalModuleExtractTableFromSQL,
 			driverV2.OptionalModuleEstimateSQLAffectRows,
+			driverV2.OptionalModuleKillProcess,
 		},
 	}, nil
 }

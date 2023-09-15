@@ -30,6 +30,7 @@ const (
 	TypeTiDBAuditLog         = "tidb_audit_log"
 	TypeAllAppExtract        = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
+	TypeSQLFile              = "sql_file"
 )
 
 const (
@@ -316,6 +317,12 @@ var Metas = []Meta{
 				Type:  params.ParamTypeInt,
 			},
 		},
+	},
+	{
+		Type:         TypeSQLFile,
+		Desc:         "SQL文件",
+		InstanceType: InstanceTypeAll,
+		CreateTask:   NewDefaultTask,
 	},
 }
 

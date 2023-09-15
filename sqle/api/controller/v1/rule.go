@@ -1432,7 +1432,7 @@ func GetCustomRules(c echo.Context) error {
 // @Id deleteCustomRuleV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_id query string true "rule id"
+// @Param rule_id path string true "rule id"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [delete]
 func DeleteCustomRule(c echo.Context) error {
@@ -1473,7 +1473,7 @@ type UpdateCustomRuleReqV1 struct {
 // @Id updateCustomRuleV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_id query string true "rule id"
+// @Param rule_id path string true "rule id"
 // @Param instance body v1.UpdateCustomRuleReqV1 true "update custom rule"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/custom_rules/{rule_id} [patch]
@@ -1491,7 +1491,7 @@ type GetCustomRuleResV1 struct {
 // @Id getCustomRuleV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_id query string true "rule id"
+// @Param rule_id path string true "rule id"
 // @Success 200 {object} v1.GetCustomRuleResV1
 // @router /v1/custom_rules/{rule_id} [get]
 func GetCustomRule(c echo.Context) error {
