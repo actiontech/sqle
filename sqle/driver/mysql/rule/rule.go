@@ -38,6 +38,7 @@ const (
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
 	RuleTypeIndexOptimization  = "索引优化"
+	RuleTypeIndexInvalidation  = "索引失效"
 )
 
 const (
@@ -2256,7 +2257,7 @@ var RuleHandlers = []RuleHandler{
 			Desc:       "禁止对索引列进行数学运算和使用函数",
 			Annotation: "对索引列进行数学运算和使用函数会导致索引失效，从而导致全表扫描，影响查询性能。",
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
 		Message:      "禁止对索引列进行数学运算和使用函数",
