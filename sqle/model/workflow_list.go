@@ -118,10 +118,11 @@ AND wr.status IN (:filter_status)
 {{- end }}
 
 {{- if .filter_current_step_assignee_user_name }}
-AND curr_ws.assignees REGEXP :filter_current_step_assignee_user_name
+AND (curr_ws.assignees REGEXP :filter_current_step_assignee_user_name
 OR IF(wr.status = 'wait_for_execution'
                 , wir.execution_assignees REGEXP :filter_current_step_assignee_user_name
                 , '')
+)
 {{- end }}
 
 {{- if .filter_task_status }}

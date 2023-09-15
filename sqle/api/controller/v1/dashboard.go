@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -27,7 +28,7 @@ type WorkflowStatisticsResV1 struct {
 }
 
 type GetDashboardReqV1 struct {
-	FilterProjectName string `json:"filter_project_name" query:"filter_project_name" form:"filter_project_name"`
+	FilterProjectName string `json:"filter_project_id" query:"filter_project_id" form:"filter_project_id"`
 }
 
 // @Summary 获取 dashboard 信息
@@ -44,6 +45,10 @@ func Dashboard(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.FilterProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
@@ -52,8 +57,8 @@ func Dashboard(c echo.Context) error {
 	s := model.GetStorage()
 
 	createdNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":     req.FilterProjectName,
-		"filter_create_user_name": user.Name,
+		"filter_project_id":       projectUid,
+		"filter_create_user_name": user.GetIDStr(),
 		"filter_status":           model.WorkflowStatusWaitForAudit,
 		"check_user_can_access":   false,
 	})
@@ -62,8 +67,8 @@ func Dashboard(c echo.Context) error {
 	}
 
 	rejectedNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":     req.FilterProjectName,
-		"filter_create_user_name": user.Name,
+		"filter_project_id":       projectUid,
+		"filter_create_user_name": user.GetIDStr(),
 		"filter_status":           model.WorkflowStatusReject,
 		"check_user_can_access":   false,
 	})
@@ -72,10 +77,10 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedReviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":      req.FilterProjectName,
+		"filter_project_id":        projectUid,
 		"filter_status":            model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
-		"filter_create_user_name":  user.Name,
+		"filter_create_user_name":  user.GetIDStr(),
 		"check_user_can_access":    false,
 	})
 	if err != nil {
@@ -83,10 +88,10 @@ func Dashboard(c echo.Context) error {
 	}
 
 	myNeedExecuteNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":      req.FilterProjectName,
+		"filter_project_id":        projectUid,
 		"filter_status":            model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
-		"filter_create_user_name":  user.Name,
+		"filter_create_user_name":  user.GetIDStr(),
 		"check_user_can_access":    false,
 	})
 	if err != nil {
@@ -94,10 +99,10 @@ func Dashboard(c echo.Context) error {
 	}
 
 	reviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":                    req.FilterProjectName,
+		"filter_project_id":                      projectUid,
 		"filter_status":                          model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
-		"filter_current_step_assignee_user_name": user.Name,
+		"filter_current_step_assignee_user_name": user.GetIDStr(),
 		"check_user_can_access":                  false,
 	})
 	if err != nil {
@@ -105,10 +110,10 @@ func Dashboard(c echo.Context) error {
 	}
 
 	executeNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_name":                    req.FilterProjectName,
+		"filter_project_id":                      projectUid,
 		"filter_status":                          model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
-		"filter_current_step_assignee_user_name": user.Name,
+		"filter_current_step_assignee_user_name": user.GetIDStr(),
 		"check_user_can_access":                  false,
 	})
 	if err != nil {
