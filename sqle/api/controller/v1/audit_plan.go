@@ -796,11 +796,15 @@ type FullSyncAuditPlanSQLsReqV1 struct {
 }
 
 type AuditPlanSQLReqV1 struct {
-	Fingerprint          string `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
-	Counter              string `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
-	LastReceiveText      string `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
-	LastReceiveTimestamp string `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
-	Schema               string `json:"audit_plan_sql_schema" from:"audit_plan_sql_schema" example:"db1"`
+	Fingerprint          string    `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
+	Counter              string    `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
+	LastReceiveText      string    `json:"audit_plan_sql_last_receive_text" form:"audit_plan_sql_last_receive_text" example:"select * from t1 where id = 1"`
+	LastReceiveTimestamp string    `json:"audit_plan_sql_last_receive_timestamp" form:"audit_plan_sql_last_receive_timestamp" example:"RFC3339"`
+	Schema               string    `json:"audit_plan_sql_schema" from:"audit_plan_sql_schema" example:"db1"`
+	QueryTimeAvg         *float64  `json:"query_time_avg" from:"query_time_avg" example:"3.22"`
+	QueryTimeMax         *float64  `json:"query_time_max" from:"query_time_max" example:"5.22"`
+	FirstQueryAt         time.Time `json:"first_query_at" from:"first_query_at" example:"2023-09-12T02:48:01.317880Z"`
+	DBUser               string    `json:"db_user" from:"db_user" example:"database_user001"`
 }
 
 // @Summary 全量同步SQL到扫描任务

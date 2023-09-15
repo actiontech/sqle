@@ -251,3 +251,16 @@ func TryClose(ch chan struct{}) {
 		close(ch)
 	}
 }
+
+// 对比两个float64中更大的并返回
+func MaxFloat64(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// 计算float64变量的增量平均值
+func IncrementalAverageFloat64(oldAverage, newValue float64, oldCount, newCount int) float64 {
+	return (oldAverage*float64(oldCount) + newValue) / (float64(oldCount) + float64(newCount))
+}

@@ -196,3 +196,24 @@ func Test_IsClosed(t *testing.T) {
 		t.Error("c2 is closed")
 	}
 }
+
+func TestIncrementalAverageFloat64(t *testing.T) {
+	give := []float64{1, 2, 3, 3, 2, 1}
+	want := []float64{1, 1.5, 2, 2.25, 2.2, 2}
+	var average float64 = 0
+	var count int = 0
+	for index := range give {
+		average = IncrementalAverageFloat64(average, give[index], count, 1)
+		assert.Equal(t, average, want[index])
+		count++
+	}
+}
+
+func TestMaxFloat64(t *testing.T) {
+	var lessThan [2]float64 = [2]float64{1.111, 2.222}
+	var moreThan [2]float64 = [2]float64{2.222, 1.111}
+	var equal [2]float64 = [2]float64{2.222, 2.222}
+	assert.Equal(t, float64(2.222), MaxFloat64(lessThan[0], lessThan[1]))
+	assert.Equal(t, float64(2.222), MaxFloat64(moreThan[0], moreThan[1]))
+	assert.Equal(t, float64(2.222), MaxFloat64(equal[0], equal[1]))
+}
