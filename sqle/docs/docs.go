@@ -6314,6 +6314,77 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_knowledge/{rule_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "查看规则知识库",
+                "operationId": "getRuleKnowledgeV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.RuleKnowledgeResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新规则知识库",
+                "operationId": "updateRuleKnowledge",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule id",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule knowledge",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateRuleKnowledgeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rule_template_tips": {
             "get": {
                 "security": [
@@ -13800,6 +13871,31 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleInfo": {
+            "type": "object",
+            "properties": {
+                "annotation": {
+                    "type": "string",
+                    "example": "this is test rule"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "this is test rule"
+                }
+            }
+        },
+        "v1.RuleKnowledgeResV1": {
+            "type": "object",
+            "properties": {
+                "knowledge_content": {
+                    "type": "string"
+                },
+                "rule": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleInfo"
+                }
+            }
+        },
         "v1.RuleParamReqV1": {
             "type": "object",
             "properties": {
@@ -14964,6 +15060,14 @@ var doc = `{
                     }
                 },
                 "role_desc": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.UpdateRuleKnowledgeReq": {
+            "type": "object",
+            "properties": {
+                "knowledge_content": {
                     "type": "string"
                 }
             }

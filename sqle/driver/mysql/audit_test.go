@@ -158,6 +158,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckCompositeIndexDistinction:           {},
 		rulepkg.DDLAvoidText:                                {},
 		rulepkg.DMLCheckSelectRows:                          {},
+		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5259,6 +5260,167 @@ func TestDMLCheckSubqueryLimit(t *testing.T) {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckSubqueryLimit].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
 
+}
+
+func TestDMLCheckMathComputationOrFuncOnIndex(t *testing.T) {
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where id + 1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where id - 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id * 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id / 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id % 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id MOD 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id DIV 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where -id = 12",
+
+		"select id,v1,v2 from exist_tb_1 where 1 + id = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where 1- id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 * id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 / id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 % id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 MOD id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 DIV id = 12",
+
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where -id = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id + 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id * 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id / 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id % 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id DIV 1 = 12 limit 1) = 1",
+		"select (SELECT id from exist_tb_1 where id DIV 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where id / 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where id * 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT (SELECT id from exist_tb_1 where id * 1 = 12 limit 1) from exist_tb_1 limit 1),v1,v2 from exist_tb_1",
+
+		"select id,v1,v2 from exist_tb_1 where year(id) = 1",
+		"select id,v1,v2 from exist_tb_1 where CONCAT(id, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where id + 1 = 1",
+		"update exist_tb_1 set id = 1 where id - 1 = 1",
+		"update exist_tb_1 set id = 1 where id * 1 = 1",
+		"update exist_tb_1 set id = 1 where id / 1 = 1",
+		"update exist_tb_1 set id = 1 where id % 1 = 1",
+		"update exist_tb_1 set id = 1 where id MOD 1 = 1",
+		"update exist_tb_1 set id = 1 where id DIV 1 = 1",
+		"update exist_tb_1 set id = 1 where -id = 1",
+		"update exist_tb_1 set id = 1 where year(id) = 1",
+		"update exist_tb_1 set id = 1 where CONCAT(id, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where 1 + id = 1",
+		"update exist_tb_1 set id = 1 where 1 - id = 1",
+		"update exist_tb_1 set id = 1 where 1 * id = 1",
+		"update exist_tb_1 set id = 1 where 1 / id = 1",
+		"update exist_tb_1 set id = 1 where 1 % id = 1",
+		"update exist_tb_1 set id = 1 where 1 MOD id = 1",
+		"update exist_tb_1 set id = 1 where 1 DIV id = 1",
+		"update exist_tb_1 set id = 1 where -id = 1",
+
+		"delete from exist_tb_1 where id + 1 = 1",
+		"delete from exist_tb_1 where id - 1 = 1",
+		"delete from exist_tb_1 where id * 1 = 1",
+		"delete from exist_tb_1 where id / 1 = 1",
+		"delete from exist_tb_1 where id % 1 = 1",
+		"delete from exist_tb_1 where id MOD 1 = 1",
+		"delete from exist_tb_1 where id DIV 1 = 1",
+		"delete from exist_tb_1 where -id = 1",
+
+		"delete from exist_tb_1 where 1 + id = 1",
+		"delete from exist_tb_1 where 1 - id = 1",
+		"delete from exist_tb_1 where 1 * id = 1",
+		"delete from exist_tb_1 where 1 / id = 1",
+		"delete from exist_tb_1 where 1 % id = 1",
+		"delete from exist_tb_1 where 1 MOD id = 1",
+		"delete from exist_tb_1 where 1 DIV id = 1",
+		"delete from exist_tb_1 where CONCAT(id, v1) = 1",
+		"delete from exist_tb_1 where year(id) = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckMathComputationOrFuncOnIndex].Rule, t, "", NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t), sql, newTestResult().addResult(rulepkg.DMLCheckMathComputationOrFuncOnIndex))
+	}
+
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1",
+		"select id,v1,v2 from exist_tb_1 where v1 + 1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 - 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 * 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 / 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 % 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 MOD 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 DIV 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where -v1 = 12",
+
+		"select id,v1,v2 from exist_tb_1 where 1 + v1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where 1- v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 * v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 / v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 % v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 MOD v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 DIV v1 = 12",
+
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where -v1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 + 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 / 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 % 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 DIV 1 = 12 limit 1) = 1",
+		"select (SELECT id from exist_tb_1 where v1 DIV 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where v1 / 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1) from exist_tb_1 limit 1),v1,v2 from exist_tb_1",
+
+		"select id,v1,v2 from exist_tb_1 where year(v1) = 1",
+		"select id,v1,v2 from exist_tb_1 where CONCAT(v2, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where v1 + 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 - 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 * 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 / 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 % 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 MOD 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 DIV 1 = 1",
+		"update exist_tb_1 set id = 1 where -v1 = 1",
+
+		"update exist_tb_1 set id = 1",
+		"update exist_tb_1 set id = 1 where 1 + v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 - v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 * v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 / v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 % v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 MOD v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 DIV v1 = 1",
+		"update exist_tb_1 set id = 1 where -v1 = 1",
+
+		"delete from exist_tb_1",
+		"delete from exist_tb_1 where v1 + 1 = 1",
+		"delete from exist_tb_1 where v1 - 1 = 1",
+		"delete from exist_tb_1 where v1 * 1 = 1",
+		"delete from exist_tb_1 where v1 / 1 = 1",
+		"delete from exist_tb_1 where v1 % 1 = 1",
+		"delete from exist_tb_1 where v1 MOD 1 = 1",
+		"delete from exist_tb_1 where v1 DIV 1 = 1",
+		"delete from exist_tb_1 where -v1 = 1",
+
+		"delete from exist_tb_1 where 1 + v1 = 1",
+		"delete from exist_tb_1 where 1 - v1 = 1",
+		"delete from exist_tb_1 where 1 * v1 = 1",
+		"delete from exist_tb_1 where 1 / v1 = 1",
+		"delete from exist_tb_1 where 1 % v1 = 1",
+		"delete from exist_tb_1 where 1 MOD v1 = 1",
+		"delete from exist_tb_1 where 1 DIV v1 = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckMathComputationOrFuncOnIndex].Rule, t, "", NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t), sql, newTestResult())
+	}
+}
+
+func NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t *testing.T) *MysqlDriverImpl {
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect := NewMockInspect(e)
+
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name"}).AddRow("id"))
+
+	return inspect
 }
 
 func TestDDLCheckAutoIncrement(t *testing.T) {
