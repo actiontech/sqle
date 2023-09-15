@@ -187,6 +187,7 @@ const (
 	DMLCheckSelectRows                        = "dml_check_select_rows"
 	DMLCheckScanRows                          = "dml_check_scan_rows"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
+	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
 )
 
 // inspector config code
@@ -2252,15 +2253,27 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name: DMLCheckJoinFieldUseIndex,
-			Desc: "JOIN字段必须包含索引	",
+			Name:       DMLCheckJoinFieldUseIndex,
+			Desc:       "JOIN字段必须包含索引",
 			Annotation: "JOIN字段包含索引可提高连接操作的性能和查询速度。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message: "JOIN字段必须包含索引",
-		Func: checkJoinFieldUseIndex,
+		Message:      "JOIN字段必须包含索引",
+		Func:         checkJoinFieldUseIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckJoinFieldCharacterSetAndCollation,
+			Desc:       "连接表字段的字符集和排序规则必须一致",
+			Annotation: "连接表字段的字符集和排序规则一致可避免数据不一致和查询错误，确保连接操作正确执行。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "连接表字段的字符集和排序规则必须一致",
+		Func:         checkJoinFieldCharacterSetAndCollation,
 	},
 }
 
@@ -2343,7 +2356,7 @@ func checkSubQueryNestNum(in *RuleHandlerInput) error {
 	return nil
 }
 
-func checkJoinFieldType(input *RuleHandlerInput) error {
+func getCreateTableAndOnCondition(input *RuleHandlerInput) (map[string]*ast.CreateTableStmt, []*ast.OnCondition) {
 	//nolint:staticcheck
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	//nolint:staticcheck
@@ -2352,23 +2365,31 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
 	case *ast.UpdateStmt:
 		if stmt.TableRefs == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	default:
+		return nil, nil
+	}
+	return tableNameCreateTableStmtMap, onConditions
+}
+
+func checkJoinFieldType(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil && onConditions == nil {
 		return nil
 	}
 
@@ -3071,17 +3092,28 @@ func checkEngine(input *RuleHandlerInput) error {
 	return nil
 }
 
+func getSingleColumnCSFromColumnsDef(column *ast.ColumnDef) (string, bool) {
+	// Just string data type and not binary can be set "character set".
+	if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		return "", false
+	}
+	if column.Tp.Charset == "" {
+		return "", true
+	}
+	return column.Tp.Charset, true
+}
+
 func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
 	columnCharacterSets := []string{}
 	for _, column := range columns {
-		// Just string data type and not binary can be set "character set".
-		if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		charset, hasCharSet := getSingleColumnCSFromColumnsDef(column)
+		if !hasCharSet {
 			continue
 		}
-		if column.Tp.Charset == "" {
+		if charset == "" {
 			continue
 		}
-		columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
+		columnCharacterSets = append(columnCharacterSets, charset)
 	}
 	return columnCharacterSets
 }
@@ -6550,32 +6582,6 @@ func checkScanRows(input *RuleHandlerInput) error {
 	return nil
 }
 
-// func judgeonConditionUseIndex(onCondition *ast.BinaryOperationExpr, tableNameIndexMap map[string][]*ast.ColumnName) bool {
-// 	judgeColumnIsIndex := func()
-
-// 	switch stmt := onCondition.L.(type) {
-// 	case *ast.BinaryOperationExpr:
-// 		judgeonConditionUseIndex(stmt, tableNameIndexMap)
-// 	case *ast.ColumnNameExpr:
-// 		isUseIndex = judgeColumnIsIndex(columnNameExpr, tableNameIndexMap)
-// 	}
-
-// 	switch stmt := onCondition.R.(type) {
-// 	case *ast.BinaryOperationExpr:
-// 		judgeonConditionUseIndex(stmt, tableNameIndexMap)
-// 	case *ast.ColumnNameExpr:
-// 	}
-
-// 	if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-// 		for _, column := range columnNames {
-// 			if column.Name.L == columnNameExpr.Name.Name.L {
-// 				return true
-// 			}
-// 		}
-// 	}
-// 	return false
-// }
-
 func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {
 	for _, column := range columnNames {
 		if column.Name.L == columnNameExpr.Name.Name.L {
@@ -6586,33 +6592,11 @@ func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.C
 }
 
 func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
-	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
-	//nolint:staticcheck
-	onConditions := make([]*ast.OnCondition, 0)
-	tableNameIndexMap := make(map[string][]*ast.ColumnName)
-
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			return nil
-		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
-		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
-	case *ast.UpdateStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
-		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
-	case *ast.DeleteStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
-		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
-	default:
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil && onConditions == nil {
 		return nil
 	}
+	tableNameIndexMap := make(map[string][]*ast.ColumnName)
 
 	for table, createTableStmt := range tableNameCreateTableStmtMap {
 		indexes := []*ast.ColumnName{}
@@ -6648,5 +6632,113 @@ func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
 			}
 		}
 	}
+	return nil
+}
+
+func getTableDefaultCharset(createTableStmt *ast.CreateTableStmt) string {
+	characterSet := ""
+	for _, op := range createTableStmt.Options {
+		switch op.Tp {
+		case ast.TableOptionCharset:
+			characterSet = op.StrValue
+		}
+	}
+	return characterSet
+}
+
+func getTableDefaultCollation(createTableStmt *ast.CreateTableStmt) string {
+	collation := ""
+	for _, op := range createTableStmt.Options {
+		switch op.Tp {
+		case ast.TableOptionCollate:
+			collation = op.StrValue
+		}
+	}
+	return collation
+}
+
+func getColumnCSCollation(columnName *ast.ColumnNameExpr, tableColumnCSCT map[string]map[string]columnCSCollation) columnCSCollation {
+	var cSCollation columnCSCollation
+	if columnCSCT, ok := tableColumnCSCT[columnName.Name.Table.L]; ok {
+		cSCollation = columnCSCT[columnName.Name.Name.L]
+	}
+
+	return cSCollation
+}
+
+func getOnConditionLeftAndRightCSCollation(onCondition *ast.OnCondition, tableColumnCSCT map[string]map[string]columnCSCollation) (columnCSCollation, columnCSCollation) {
+	var leftCSCollation, rightCSCollation columnCSCollation
+
+	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
+		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			leftCSCollation = getColumnCSCollation(columnName, tableColumnCSCT)
+		}
+
+		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			rightCSCollation = getColumnCSCollation(columnName, tableColumnCSCT)
+		}
+	}
+
+	return leftCSCollation, rightCSCollation
+}
+
+type columnCSCollation struct {
+	Charset   string
+	Collation string
+}
+
+func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil && onConditions == nil {
+		return nil
+	}
+
+	// 存储表名和列名的字符集排序规则映射关系, {tableName: {columnName: columnCSCollation}}
+	tableColumnCSCT := make(map[string]map[string]columnCSCollation)
+	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
+		tableDefaultCS := getTableDefaultCharset(createTableStmt)
+		tableDefaultCollation := getTableDefaultCollation(createTableStmt)
+		for _, col := range createTableStmt.Cols {
+			cSCollation := columnCSCollation{}
+			charset, hasCharset := getSingleColumnCSFromColumnsDef(col)
+			if !hasCharset {
+				continue
+			}
+			if charset == "" {
+				charset = tableDefaultCS
+			}
+			cSCollation.Charset = charset
+			for _, op := range col.Options {
+				if op.Tp == ast.ColumnOptionCollate {
+					cSCollation.Collation = op.StrValue
+					break
+				}
+			}
+			if cSCollation.Collation == "" {
+				cSCollation.Collation = tableDefaultCollation
+			}
+			if tableColumnCSCT[tableName] == nil {
+				tableColumnCSCT[tableName] = make(map[string]columnCSCollation)
+			}
+			tableColumnCSCT[tableName][col.Name.Name.L] = cSCollation
+		}
+	}
+
+	for _, ononCondition := range onConditions {
+		leftCSCollation, righCSCollation := getOnConditionLeftAndRightCSCollation(ononCondition, tableColumnCSCT)
+		if leftCSCollation.Charset == "" || righCSCollation.Charset == "" {
+			continue
+		}
+		if leftCSCollation.Charset != righCSCollation.Charset {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			break
+		}
+		if leftCSCollation.Collation != righCSCollation.Collation {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			break
+		}
+
+	}
+
 	return nil
 }
