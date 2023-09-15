@@ -6314,7 +6314,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/rule_knowledge/{rule_id}/": {
+        "/v1/rule_knowledge/{rule_name}/": {
             "get": {
                 "security": [
                     {
@@ -6331,7 +6331,7 @@ var doc = `{
                     {
                         "type": "string",
                         "description": "rule id",
-                        "name": "rule_id",
+                        "name": "rule_name",
                         "in": "path",
                         "required": true
                     }
@@ -6361,7 +6361,7 @@ var doc = `{
                     {
                         "type": "string",
                         "description": "rule id",
-                        "name": "rule_id",
+                        "name": "rule_name",
                         "in": "path",
                         "required": true
                     },
