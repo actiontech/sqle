@@ -434,3 +434,17 @@ func (d *DriverGrpcServer) EstimateSQLAffectRows(ctx context.Context, req *proto
 		ErrMessage: ar.ErrMessage,
 	}, nil
 }
+
+func (d *DriverGrpcServer) KillProcess(ctx context.Context, req *protoV2.KillProcessRequest) (*protoV2.KillProcessResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.KillProcessResponse{}, err
+	}
+	info, err := driver.KillProcess(ctx)
+	if err != nil {
+		return &protoV2.KillProcessResponse{}, err
+	}
+	return &protoV2.KillProcessResponse{
+		ErrMessage: info.ErrMessage,
+	}, nil
+}

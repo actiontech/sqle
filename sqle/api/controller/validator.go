@@ -39,9 +39,9 @@ func Validate(i interface{}) error {
 var defaultCustomValidator *CustomValidator
 
 var (
-	ValidNameTag           = "name"
-	ValidPortTag           = "port"
-	ValidCronTag           = "cron"
+	ValidNameTag = "name"
+	ValidPortTag = "port"
+	ValidCronTag = "cron"
 )
 
 func init() {
@@ -166,7 +166,7 @@ func (cv *CustomValidator) RegisterTranslation(tag, enText, zhText string, param
 	return err
 }
 
-var ValidateNameRegexpPattern = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9\u4e00-\u9fa5_-]{0,59}$"
+var ValidateNameRegexpPattern = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9\u4e00-\u9fa5_-]{0,119}$"
 var ValidateCustomRuleRegexpPattern = "^[a-zA-Z][a-zA-Z0-9_-]*$"
 
 // ValidateName implements validator.Func

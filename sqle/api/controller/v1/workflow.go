@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"database/sql"
+	e "errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -493,6 +494,31 @@ func PrepareForWorkflowExecution(c echo.Context, projectUid string, workflow *mo
 		return errors.New(errors.DataInvalid, err)
 	}
 	return nil
+}
+
+func PrepareForTaskExecution(c echo.Context, projectID string, workflow *model.Workflow, user *model.User, TaskId int) error {
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid, e.New("workflow need to be approved first"))
+	}
+
+	err := CheckCurrentUserCanOperateTasks(c, projectID, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow}, []uint{uint(TaskId)})
+	if err != nil {
+		return err
+	}
+
+	for _, record := range workflow.Record.InstanceRecords {
+		if record.TaskId != uint(TaskId) {
+			continue
+		}
+
+		for _, u := range strings.Split(record.ExecutionAssignees, ",") {
+			if u == user.GetIDStr() {
+				return nil
+			}
+		}
+	}
+
+	return e.New("you are not allow to execute the task")
 }
 
 type GetWorkflowTasksResV1 struct {
@@ -1111,8 +1137,8 @@ func checkBeforeTasksTermination(c echo.Context, projectId string, workflow *mod
 		return nil
 	}
 
-	err := CheckCurrentUserCanOperateWorkflow(c,
-		projectId, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+	err := CheckCurrentUserCanOperateTasks(c,
+		projectId, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow}, needTerminatedTaskIdList)
 	if err != nil {
 		return err
 	}
