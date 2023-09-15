@@ -186,6 +186,7 @@ const (
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 	DMLCheckSelectRows                        = "dml_check_select_rows"
 	DMLCheckScanRows                          = "dml_check_scan_rows"
+	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 )
 
 // inspector config code
@@ -2245,9 +2246,21 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		AllowOffline: true,
+		AllowOffline: false,
 		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
 		Func:         checkScanRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name: DMLCheckJoinFieldUseIndex,
+			Desc: "JOIN字段必须包含索引	",
+			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message: "JOIN字段必须包含索引	",
+		Func: checkJoinFieldUseIndex,
 	},
 }
 
@@ -6531,6 +6544,107 @@ func checkScanRows(input *RuleHandlerInput) error {
 			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
+			}
+		}
+	}
+	return nil
+}
+
+// func judgeonConditionUseIndex(onCondition *ast.BinaryOperationExpr, tableNameIndexMap map[string][]*ast.ColumnName) bool {
+// 	judgeColumnIsIndex := func()
+
+// 	switch stmt := onCondition.L.(type) {
+// 	case *ast.BinaryOperationExpr:
+// 		judgeonConditionUseIndex(stmt, tableNameIndexMap)
+// 	case *ast.ColumnNameExpr:
+// 		isUseIndex = judgeColumnIsIndex(columnNameExpr, tableNameIndexMap)
+// 	}
+
+// 	switch stmt := onCondition.R.(type) {
+// 	case *ast.BinaryOperationExpr:
+// 		judgeonConditionUseIndex(stmt, tableNameIndexMap)
+// 	case *ast.ColumnNameExpr:
+// 	}
+
+// 	if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+// 		for _, column := range columnNames {
+// 			if column.Name.L == columnNameExpr.Name.Name.L {
+// 				return true
+// 			}
+// 		}
+// 	}
+// 	return false
+// }
+
+func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {
+	for _, column := range columnNames {
+		if column.Name.L == columnNameExpr.Name.Name.L {
+			return true
+		}
+	}
+	return false
+}
+
+func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	//nolint:staticcheck
+	onConditions := make([]*ast.OnCondition, 0)
+	tableNameIndexMap := make(map[string][]*ast.ColumnName)
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
+	default:
+		return nil
+	}
+
+	for table, createTableStmt := range tableNameCreateTableStmtMap {
+		indexes := []*ast.ColumnName{}
+		for _, constraint := range createTableStmt.Constraints {
+			// 联合索引只取第一个字段
+			if len(constraint.Keys) > 0 {
+				indexes = append(indexes, constraint.Keys[0].Column)
+			}
+		}
+		tableNameIndexMap[table] = indexes
+	}
+	for _, onCondition := range onConditions {
+		var isUseIndex bool
+		if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
+			if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+				if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+					isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+					if !isUseIndex {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						break
+					}
+				}
+			}
+
+			if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+				if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+					isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+					if !isUseIndex {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						break
+					}
+				}
 			}
 		}
 	}
