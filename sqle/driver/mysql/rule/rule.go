@@ -6724,8 +6724,8 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 		}
 	}
 
-	for _, ononCondition := range onConditions {
-		leftCSCollation, righCSCollation := getOnConditionLeftAndRightCSCollation(ononCondition, tableColumnCSCT)
+	for _, onCondition := range onConditions {
+		leftCSCollation, righCSCollation := getOnConditionLeftAndRightCSCollation(onCondition, tableColumnCSCT)
 		if leftCSCollation.Charset == "" || righCSCollation.Charset == "" {
 			continue
 		}
