@@ -2414,6 +2414,7 @@ func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *a
 			if err != nil || !exist {
 				continue
 			}
+			// TODO: 跨库的 JOIN 无法区分
 			tableNameCreateTableStmtMap[tableName] = createTableStmt
 		}
 	}
