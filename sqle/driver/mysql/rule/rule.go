@@ -2254,12 +2254,12 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name: DMLCheckJoinFieldUseIndex,
 			Desc: "JOIN字段必须包含索引	",
-			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Annotation: "JOIN字段包含索引可提高连接操作的性能和查询速度。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message: "JOIN字段必须包含索引	",
+		Message: "JOIN字段必须包含索引",
 		Func: checkJoinFieldUseIndex,
 	},
 }
