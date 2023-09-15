@@ -11,6 +11,7 @@ import (
 )
 
 var errCommunityEditionNotSupportCustomRule = errors.New(errors.CustomRuleEditionNotSupported, e.New("custom rule community not supported"))
+var errCommunityEditionNotSupportRuleKnowledge = errors.New(errors.CustomRuleEditionNotSupported, e.New("community do not support rule knowledge"))
 
 func getCustomRules(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
@@ -34,4 +35,12 @@ func getCustomRule(c echo.Context) error {
 
 func getRuleTypeByDBType(c echo.Context) error {
 	return errCommunityEditionNotSupportCustomRule
+}
+
+func getRuleKnowledge(c echo.Context) error {
+	return errCommunityEditionNotSupportRuleKnowledge
+}
+
+func updateRuleKnowledge(c echo.Context) error {
+	return errCommunityEditionNotSupportRuleKnowledge
 }

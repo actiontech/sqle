@@ -2910,6 +2910,23 @@ definitions:
       role:
         type: string
     type: object
+  v1.RuleInfo:
+    properties:
+      annotation:
+        example: this is test rule
+        type: string
+      desc:
+        example: this is test rule
+        type: string
+    type: object
+  v1.RuleKnowledgeResV1:
+    properties:
+      knowledge_content:
+        type: string
+      rule:
+        $ref: '#/definitions/v1.RuleInfo'
+        type: object
+    type: object
   v1.RuleParamReqV1:
     properties:
       key:
@@ -3697,6 +3714,11 @@ definitions:
           type: integer
         type: array
       role_desc:
+        type: string
+    type: object
+  v1.UpdateRuleKnowledgeReq:
+    properties:
+      knowledge_content:
         type: string
     type: object
   v1.UpdateRuleTemplateReqV1:
@@ -8896,6 +8918,51 @@ paths:
       summary: 更新角色信息
       tags:
       - role
+  /v1/rule_knowledge/{rule_id}/:
+    get:
+      description: get rule knowledge
+      operationId: getRuleKnowledgeV1
+      parameters:
+      - description: rule id
+        in: path
+        name: rule_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.RuleKnowledgeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 查看规则知识库
+      tags:
+      - rule_template
+    patch:
+      description: update rule knowledge
+      operationId: updateRuleKnowledge
+      parameters:
+      - description: rule id
+        in: path
+        name: rule_id
+        required: true
+        type: string
+      - description: update rule knowledge
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateRuleKnowledgeReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新规则知识库
+      tags:
+      - rule_template
   /v1/rule_template_tips:
     get:
       description: get global rule template tips
