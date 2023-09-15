@@ -54,6 +54,7 @@ type Head struct {
 type SQL struct {
 	SQLContent  string
 	Fingerprint string
+	Schema      string
 	Info        map[string]interface{}
 }
 
@@ -281,6 +282,7 @@ func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
 		as[i] = &model.AuditPlanSQLV2{
 			Fingerprint: sql.Fingerprint,
 			SQLContent:  sql.SQLContent,
+			Schema:      sql.Schema,
 			Info:        data,
 		}
 	}
