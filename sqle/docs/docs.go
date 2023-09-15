@@ -13871,19 +13871,28 @@ var doc = `{
                 }
             }
         },
-        "v1.RuleKnowledgeResV1": {
+        "v1.RuleInfo": {
             "type": "object",
             "properties": {
                 "annotation": {
                     "type": "string",
                     "example": "this is test rule"
                 },
-                "customized_knowledge": {
-                    "type": "string"
-                },
                 "desc": {
                     "type": "string",
                     "example": "this is test rule"
+                }
+            }
+        },
+        "v1.RuleKnowledgeResV1": {
+            "type": "object",
+            "properties": {
+                "knowledge_content": {
+                    "type": "string"
+                },
+                "rule": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RuleInfo"
                 }
             }
         },
@@ -15058,7 +15067,7 @@ var doc = `{
         "v1.UpdateRuleKnowledgeReq": {
             "type": "object",
             "properties": {
-                "knowledge": {
+                "knowledge_content": {
                     "type": "string"
                 }
             }
