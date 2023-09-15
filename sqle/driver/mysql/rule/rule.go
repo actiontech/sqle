@@ -38,6 +38,7 @@ const (
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
 	RuleTypeIndexOptimization  = "索引优化"
+	RuleTypeIndexInvalidation  = "索引失效"
 )
 
 const (
@@ -186,6 +187,7 @@ const (
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 	DMLCheckSelectRows                        = "dml_check_select_rows"
 	DMLCheckScanRows                          = "dml_check_scan_rows"
+	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
 )
@@ -2275,6 +2277,125 @@ var RuleHandlers = []RuleHandler{
 		Message:      "连接表字段的字符集和排序规则必须一致",
 		Func:         checkJoinFieldCharacterSetAndCollation,
 	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckMathComputationOrFuncOnIndex,
+			Desc:       "禁止对索引列进行数学运算和使用函数",
+			Annotation: "对索引列进行数学运算和使用函数会导致索引失效，从而导致全表扫描，影响查询性能。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "禁止对索引列进行数学运算和使用函数",
+		Func:         checkMathComputationOrFuncOnIndex,
+	},
+}
+
+func checkMathComputationOrFuncOnIndex(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		selectStmtExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectStmtExtractor)
+
+		for _, selectStmt := range selectStmtExtractor.SelectStmts {
+			if ExistMathComputationOrFuncOnIndex(input, selectStmt, selectStmt.Where) {
+				addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+			}
+		}
+	case *ast.UpdateStmt:
+		if ExistMathComputationOrFuncOnIndex(input, stmt, stmt.Where) {
+			addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+		}
+	case *ast.DeleteStmt:
+		if ExistMathComputationOrFuncOnIndex(input, stmt, stmt.Where) {
+			addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+		}
+	default:
+		return nil
+	}
+
+	return nil
+}
+
+func ExistMathComputationOrFuncOnIndex(input *RuleHandlerInput, node ast.Node, whereClause ast.ExprNode) bool {
+	if whereClause == nil {
+		return false
+	}
+
+	tableNameExtractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+	node.Accept(&tableNameExtractor)
+
+	indexNameMap := make(map[string]struct{})
+	for _, tableName := range tableNameExtractor.TableNames {
+		schemaName := input.Ctx.GetSchemaName(tableName)
+		indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.String())
+		if err != nil {
+			continue
+		}
+
+		for _, indexInfo := range indexesInfo {
+			indexNameMap[indexInfo.ColumnName] = struct{}{}
+		}
+	}
+
+	computationOrFuncExtractor := mathComputationOrFuncExtractor{columnList: make([]*ast.ColumnName, 0)}
+	whereClause.Accept(&computationOrFuncExtractor)
+
+	for _, column := range computationOrFuncExtractor.columnList {
+		if _, ok := indexNameMap[column.Name.O]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+type mathComputationOrFuncExtractor struct {
+	columnList []*ast.ColumnName
+}
+
+func (mc *mathComputationOrFuncExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.FuncCallExpr:
+		for _, columnNameExpr := range stmt.Args {
+			col, ok := columnNameExpr.(*ast.ColumnNameExpr)
+			if !ok {
+				continue
+			}
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	case *ast.BinaryOperationExpr:
+		// https://dev.mysql.com/doc/refman/8.0/en/arithmetic-functions.html
+		if !IsMathComputation(stmt) {
+			return stmt, false
+		}
+
+		if col, ok := stmt.L.(*ast.ColumnNameExpr); ok {
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+
+		if col, ok := stmt.R.(*ast.ColumnNameExpr); ok {
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	case *ast.UnaryOperationExpr:
+		if stmt.Op == opcode.Minus {
+			col, ok := stmt.V.(*ast.ColumnNameExpr)
+			if !ok {
+				return stmt, false
+			}
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	}
+
+	return in, false
+}
+
+func IsMathComputation(stmt *ast.BinaryOperationExpr) bool {
+	return stmt.Op == opcode.Plus || stmt.Op == opcode.Minus || stmt.Op == opcode.Mul || stmt.Op == opcode.Div || stmt.Op == opcode.IntDiv || stmt.Op == opcode.Mod
+}
+
+func (mc *mathComputationOrFuncExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
 }
 
 func checkFieldNotNUllMustContainDefaultValue(input *RuleHandlerInput) error {
