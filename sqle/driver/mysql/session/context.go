@@ -52,6 +52,7 @@ type SchemaInfo struct {
 	characterLoad    bool
 	DefaultCollation string
 	collationLoad    bool
+	IsRealSchema     bool // issue #1832, 判断当前的 schema 是否真实存在于数据库中.
 	Tables           map[string]*TableInfo
 }
 
@@ -167,7 +168,9 @@ func (c *Context) loadSchemas(schemas []string) {
 		if isLowerCaseTableName {
 			schema = strings.ToLower(schema)
 		}
-		c.schemas[schema] = &SchemaInfo{}
+		c.schemas[schema] = &SchemaInfo{
+			IsRealSchema: true,
+		}
 	}
 	c.setSchemasLoad()
 }
@@ -321,9 +324,19 @@ func (c *Context) UpdateContext(node ast.Node) {
 	switch s := node.(type) {
 	case *ast.UseStmt:
 		// change current schema
-		if c.hasSchema(s.DBName) {
-			c.SetCurrentSchema(s.DBName)
+		schemaInfo, ok := c.getSchema(s.DBName)
+		if !ok {
+			return
 		}
+		if schemaInfo.IsRealSchema {
+			// issue #1832
+			err := c.UseSchema(s.DBName)
+			if err != nil {
+				log.Logger().Warnf("update sql context failed, error: %v", err)
+			}
+		}
+		c.SetCurrentSchema(s.DBName)
+
 	case *ast.CreateDatabaseStmt:
 		if c.hasLoadSchemas() {
 			c.addSchema(s.Name)
@@ -893,6 +906,14 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 	}
 
 	return *ti.columns[columnName].cardinality, nil
+}
+
+func (c *Context) UseSchema(schemaName string) error {
+	_, err := c.e.Db.Exec(fmt.Sprintf("use %s", schemaName))
+	if err != nil {
+		return errors.Wrap(err, "exec use schema")
+	}
+	return nil
 }
 
 func (c *Context) GetExecutor() *executor.Executor {
