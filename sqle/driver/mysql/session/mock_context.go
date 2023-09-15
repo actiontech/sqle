@@ -61,6 +61,18 @@ func NewMockContext(e *executor.Executor) *Context {
 						Size:          1,
 						OriginalTable: getTestCreateTableStmt6(),
 					},
+					"exist_tb_7": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt7(),
+					},
+					"exist_tb_8": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt8(),
+					},
 				},
 			},
 			"myisam_utf8_db": {
@@ -269,6 +281,48 @@ KEY idx_1 (v1),
 UNIQUE KEY uniq_1 (v1,v2),
 KEY idx_100 (v2,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`
+	node, err := util.ParseOneSql(baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+
+func getTestCreateTableStmt7() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_7 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) character SET utf8,
+v2 varchar(255) COMMENT "unit test" COLLATE utf8_bin,
+v3 varchar(255),
+PRIMARY KEY (id) USING BTREE,
+KEY idx_1 (v1),
+UNIQUE KEY uniq_1 (v1,v2),
+KEY idx_100 (v2,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`
+	node, err := util.ParseOneSql(baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+
+func getTestCreateTableStmt8() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_8 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 varchar(255) character SET utf8mb4 COLLATE utf8_bin,
+v2 varchar(255) character SET utf8mb4,
+v3 varchar(255),
+PRIMARY KEY (id) USING BTREE,
+KEY idx_1 (v1),
+UNIQUE KEY uniq_1 (v1,v2),
+KEY idx_100 (v2,v1)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
 `
 	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {

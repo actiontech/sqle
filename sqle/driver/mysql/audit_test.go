@@ -6024,3 +6024,114 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2 where t2.v2 = 'v1'`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex))
 }
+
+func TestDMLCheckJoinFieldCharacterSetAndCollation(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldCharacterSetAndCollation].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v3`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v1`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v2`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.id=exist_tb_7.id`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.id=exist_tb_7.v1`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v3`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v2`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v1`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v3 set exist_tb_2.id=1 where exist_tb_2.v1='1'`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v1 set exist_tb_2.id=1 where exist_tb_2.v1='1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_7  from exist_tb_1 t1 left join exist_tb_7 t7 on t1.id = t7.id where t1.v2 = 'v1'`,
+		newTestResult())
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_7  from exist_tb_1 t1 left join exist_tb_7 t7 on t1.v1=t7.v1 where t1.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation))
+
+}
