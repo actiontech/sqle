@@ -13,6 +13,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/percona/go-mysql/log"
 	"github.com/percona/go-mysql/query"
 	"github.com/percona/pmm-agent/agents/mysql/slowlog/parser"
