@@ -68,3 +68,11 @@ func directGetSQLAnalysis(c echo.Context) error {
 		Data:    resp,
 	})
 }
+
+func getRuleKnowledge(c echo.Context) error {
+	return nil
+}
+
+func updateRuleKnowledge(c echo.Context) error {
+	return nil
+}
