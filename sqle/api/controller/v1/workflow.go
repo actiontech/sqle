@@ -640,9 +640,9 @@ type GetWorkflowsReqV1 struct {
 	FilterWorkflowID                  string `json:"filter_workflow_id" query:"filter_workflow_id"`
 	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
+	FilterCreateUserID                string `json:"filter_create_user_id" query:"filter_create_user_id"`
 	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
+	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
 	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
 	FilterTaskExecuteStartTimeFrom    string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
@@ -707,11 +707,11 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
+		"filter_create_user_name":                req.FilterCreateUserID,
 		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
 		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
+		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserId,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"current_user_id":                        user.GetIDStr(),
 		"check_user_can_access":                  user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
@@ -765,7 +765,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
-// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
 // @Param filter_task_instance_name query string false "filter instance name"
@@ -803,11 +803,11 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_subject":                         req.FilterSubject,
 		"filter_create_time_from":                req.FilterCreateTimeFrom,
 		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
+		"filter_create_user_name":                req.FilterCreateUserID,
 		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
 		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
+		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserId,
 		"filter_task_instance_name":              req.FilterTaskInstanceName,
 		"filter_project_id":                      projectUid,
 		"current_user_id":                        user.ID,
