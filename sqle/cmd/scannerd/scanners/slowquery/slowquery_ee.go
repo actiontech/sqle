@@ -5,6 +5,7 @@ package slowquery
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"strconv"
 	"strings"
@@ -78,6 +79,12 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error)
 	return slowQuery, nil
 }
 
+// parser从sql string中解析出慢日志的时间度量值
+const (
+	QueryTime string = "Query_time" //执行时间
+	LockTime  string = "Lock_time"  //加锁时间
+)
+
 func (s *SlowQuery) Run(ctx context.Context) error {
 	reader, err := scanners.NewContinuousFileReader(s.logFilePath, logrus.WithField("filename", s.logFilePath), true)
 	if err != nil {
@@ -144,8 +151,12 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 			s.sqlCh <- scanners.SQL{
 				Fingerprint: query.Fingerprint(e.Query),
 				RawText:     e.Query,
-				Counter:     1}
-
+				Counter:     1,
+				QueryTime:   e.TimeMetrics[QueryTime],
+				QueryAt:     e.Ts,
+				DBUser:      e.User,
+				Schema:      e.Db,
+			}
 		}
 	}
 
@@ -155,17 +166,37 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 	return sq.sqlCh
 }
 
+// 使用fingerprint和schema区分相同fingerprint但不同schema的sql
+type sqlIdentity struct {
+	Fingerprint string
+	Schema      string
+}
+
+func (s sqlIdentity) jsonString() string {
+	keyByte, _ := json.Marshal(s)
+	return string(keyByte)
+}
+
 func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
 	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
+	var sqlIdentity sqlIdentity
 	for _, sql := range sqls {
-		if sqlReq, ok := auditPlanSqlMap[sql.Fingerprint]; ok {
+		sqlIdentity.Fingerprint = sql.Fingerprint
+		sqlIdentity.Schema = sql.Schema
+		key := sqlIdentity.jsonString()
+
+		if sqlReq, ok := auditPlanSqlMap[key]; ok {
 			atoi, err := strconv.Atoi(sqlReq.Counter)
 			if err != nil {
 				return err
 			}
 
+			tMax := utils.MaxFloat64(*sqlReq.QueryTimeMax, sql.QueryTime)
+			tAvg := utils.IncrementalAverageFloat64(*sqlReq.QueryTimeAvg, sql.QueryTime, atoi, 1)
+			sqlReq.QueryTimeMax = &tMax
+			sqlReq.QueryTimeAvg = &tAvg
 			sqlReq.Counter = strconv.Itoa(atoi + 1)
 			sqlReq.LastReceiveText = sql.RawText
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
@@ -175,8 +206,13 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 				LastReceiveText:      sql.RawText,
 				LastReceiveTimestamp: now.Format(time.RFC3339),
 				Counter:              "1",
+				QueryTimeAvg:         &sql.QueryTime,
+				QueryTimeMax:         &sql.QueryTime,
+				FirstQueryAt:         sql.QueryAt,
+				DBUser:               sql.DBUser,
+				Schema:               sql.Schema,
 			}
-			auditPlanSqlMap[sql.Fingerprint] = sqlReq
+			auditPlanSqlMap[key] = sqlReq
 			sqlListReq = append(sqlListReq, sqlReq)
 		}
 	}
