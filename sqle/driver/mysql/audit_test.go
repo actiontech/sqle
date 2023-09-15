@@ -6105,6 +6105,15 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 		t,
 		"success",
 		DefaultMysqlInspect(),
+		`select * from exist_tb_2`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
 		`select * from exist_tb_2 left join exist_tb_3 on exist_tb_2.v1=exist_tb_3.v2`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
@@ -6189,6 +6198,15 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 
 func TestDMLCheckJoinFieldCharacterSetAndCollation(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldCharacterSetAndCollation].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2`,
+		newTestResult(),
+	)
 
 	runSingleRuleInspectCase(
 		rule,

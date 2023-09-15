@@ -2259,7 +2259,7 @@ var RuleHandlers = []RuleHandler{
 			Desc:       "JOIN字段必须包含索引",
 			Annotation: "JOIN字段包含索引可提高连接操作的性能和查询速度。",
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
 		Message:      "JOIN字段必须包含索引",
@@ -2271,7 +2271,7 @@ var RuleHandlers = []RuleHandler{
 			Desc:       "连接表字段的字符集和排序规则必须一致",
 			Annotation: "连接表字段的字符集和排序规则一致可避免数据不一致和查询错误，确保连接操作正确执行。",
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
 		Message:      "连接表字段的字符集和排序规则必须一致",
@@ -6714,7 +6714,7 @@ func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.C
 
 func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
 	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
-	if tableNameCreateTableStmtMap == nil && onConditions == nil {
+	if tableNameCreateTableStmtMap == nil || onConditions == nil {
 		return nil
 	}
 	tableNameIndexMap := make(map[string][]*ast.ColumnName)
@@ -6731,24 +6731,26 @@ func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
 	}
 	for _, onCondition := range onConditions {
 		var isUseIndex bool
-		if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
-			if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
-				if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-					isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-					if !isUseIndex {
-						addResult(input.Res, input.Rule, input.Rule.Name)
-						break
-					}
+		binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr)
+		if !ok {
+			continue
+		}
+		if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+				if !isUseIndex {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
 				}
 			}
+		}
 
-			if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
-				if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-					isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-					if !isUseIndex {
-						addResult(input.Res, input.Rule, input.Rule.Name)
-						break
-					}
+		if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+				if !isUseIndex {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
 				}
 			}
 		}
@@ -6810,7 +6812,7 @@ type columnCSCollation struct {
 
 func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
-	if tableNameCreateTableStmtMap == nil && onConditions == nil {
+	if tableNameCreateTableStmtMap == nil || onConditions == nil {
 		return nil
 	}
 
@@ -6852,11 +6854,11 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 		}
 		if leftCSCollation.Charset != righCSCollation.Charset {
 			addResult(input.Res, input.Rule, input.Rule.Name)
-			break
+			return nil
 		}
 		if leftCSCollation.Collation != righCSCollation.Collation {
 			addResult(input.Res, input.Rule, input.Rule.Name)
-			break
+			return nil
 		}
 
 	}
