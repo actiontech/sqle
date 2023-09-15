@@ -9727,6 +9727,22 @@
                 "audit_plan_sql_schema": {
                     "type": "string",
                     "example": "db1"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "database_user001"
+                },
+                "first_query_at": {
+                    "type": "string",
+                    "example": "2023-09-12T02:48:01.317880Z"
+                },
+                "query_time_avg": {
+                    "type": "number",
+                    "example": 3.22
+                },
+                "query_time_max": {
+                    "type": "number",
+                    "example": 5.22
                 }
             }
         },
