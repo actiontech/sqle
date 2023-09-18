@@ -158,6 +158,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLCheckCompositeIndexDistinction:           {},
 		rulepkg.DDLAvoidText:                                {},
 		rulepkg.DMLCheckSelectRows:                          {},
+		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5261,6 +5262,167 @@ func TestDMLCheckSubqueryLimit(t *testing.T) {
 
 }
 
+func TestDMLCheckMathComputationOrFuncOnIndex(t *testing.T) {
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1 where id + 1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where id - 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id * 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id / 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id % 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id MOD 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where id DIV 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where -id = 12",
+
+		"select id,v1,v2 from exist_tb_1 where 1 + id = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where 1- id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 * id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 / id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 % id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 MOD id = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 DIV id = 12",
+
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where -id = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id + 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id * 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id / 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id % 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where id DIV 1 = 12 limit 1) = 1",
+		"select (SELECT id from exist_tb_1 where id DIV 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where id / 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where id * 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT (SELECT id from exist_tb_1 where id * 1 = 12 limit 1) from exist_tb_1 limit 1),v1,v2 from exist_tb_1",
+
+		"select id,v1,v2 from exist_tb_1 where year(id) = 1",
+		"select id,v1,v2 from exist_tb_1 where CONCAT(id, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where id + 1 = 1",
+		"update exist_tb_1 set id = 1 where id - 1 = 1",
+		"update exist_tb_1 set id = 1 where id * 1 = 1",
+		"update exist_tb_1 set id = 1 where id / 1 = 1",
+		"update exist_tb_1 set id = 1 where id % 1 = 1",
+		"update exist_tb_1 set id = 1 where id MOD 1 = 1",
+		"update exist_tb_1 set id = 1 where id DIV 1 = 1",
+		"update exist_tb_1 set id = 1 where -id = 1",
+		"update exist_tb_1 set id = 1 where year(id) = 1",
+		"update exist_tb_1 set id = 1 where CONCAT(id, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where 1 + id = 1",
+		"update exist_tb_1 set id = 1 where 1 - id = 1",
+		"update exist_tb_1 set id = 1 where 1 * id = 1",
+		"update exist_tb_1 set id = 1 where 1 / id = 1",
+		"update exist_tb_1 set id = 1 where 1 % id = 1",
+		"update exist_tb_1 set id = 1 where 1 MOD id = 1",
+		"update exist_tb_1 set id = 1 where 1 DIV id = 1",
+		"update exist_tb_1 set id = 1 where -id = 1",
+
+		"delete from exist_tb_1 where id + 1 = 1",
+		"delete from exist_tb_1 where id - 1 = 1",
+		"delete from exist_tb_1 where id * 1 = 1",
+		"delete from exist_tb_1 where id / 1 = 1",
+		"delete from exist_tb_1 where id % 1 = 1",
+		"delete from exist_tb_1 where id MOD 1 = 1",
+		"delete from exist_tb_1 where id DIV 1 = 1",
+		"delete from exist_tb_1 where -id = 1",
+
+		"delete from exist_tb_1 where 1 + id = 1",
+		"delete from exist_tb_1 where 1 - id = 1",
+		"delete from exist_tb_1 where 1 * id = 1",
+		"delete from exist_tb_1 where 1 / id = 1",
+		"delete from exist_tb_1 where 1 % id = 1",
+		"delete from exist_tb_1 where 1 MOD id = 1",
+		"delete from exist_tb_1 where 1 DIV id = 1",
+		"delete from exist_tb_1 where CONCAT(id, v1) = 1",
+		"delete from exist_tb_1 where year(id) = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckMathComputationOrFuncOnIndex].Rule, t, "", NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t), sql, newTestResult().addResult(rulepkg.DMLCheckMathComputationOrFuncOnIndex))
+	}
+
+	for _, sql := range []string{
+		"select id,v1,v2 from exist_tb_1",
+		"select id,v1,v2 from exist_tb_1 where v1 + 1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 - 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 * 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 / 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 % 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 MOD 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where v1 DIV 1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where -v1 = 12",
+
+		"select id,v1,v2 from exist_tb_1 where 1 + v1 = 1",
+		"SELECT id,v1,v2 from exist_tb_1 where 1- v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 * v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 / v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 % v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 MOD v1 = 12",
+		"SELECT id,v1,v2 from exist_tb_1 where 1 DIV v1 = 12",
+
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where -v1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 + 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 / 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 % 1 = 12 limit 1) = 1",
+		"select id,v1,v2 from exist_tb_1 where (SELECT id from exist_tb_1 where v1 DIV 1 = 12 limit 1) = 1",
+		"select (SELECT id from exist_tb_1 where v1 DIV 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where v1 / 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1),v1,v2 from exist_tb_1",
+		"select (SELECT (SELECT id from exist_tb_1 where v1 * 1 = 12 limit 1) from exist_tb_1 limit 1),v1,v2 from exist_tb_1",
+
+		"select id,v1,v2 from exist_tb_1 where year(v1) = 1",
+		"select id,v1,v2 from exist_tb_1 where CONCAT(v2, v1) = 1",
+
+		"update exist_tb_1 set id = 1 where v1 + 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 - 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 * 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 / 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 % 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 MOD 1 = 1",
+		"update exist_tb_1 set id = 1 where v1 DIV 1 = 1",
+		"update exist_tb_1 set id = 1 where -v1 = 1",
+
+		"update exist_tb_1 set id = 1",
+		"update exist_tb_1 set id = 1 where 1 + v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 - v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 * v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 / v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 % v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 MOD v1 = 1",
+		"update exist_tb_1 set id = 1 where 1 DIV v1 = 1",
+		"update exist_tb_1 set id = 1 where -v1 = 1",
+
+		"delete from exist_tb_1",
+		"delete from exist_tb_1 where v1 + 1 = 1",
+		"delete from exist_tb_1 where v1 - 1 = 1",
+		"delete from exist_tb_1 where v1 * 1 = 1",
+		"delete from exist_tb_1 where v1 / 1 = 1",
+		"delete from exist_tb_1 where v1 % 1 = 1",
+		"delete from exist_tb_1 where v1 MOD 1 = 1",
+		"delete from exist_tb_1 where v1 DIV 1 = 1",
+		"delete from exist_tb_1 where -v1 = 1",
+
+		"delete from exist_tb_1 where 1 + v1 = 1",
+		"delete from exist_tb_1 where 1 - v1 = 1",
+		"delete from exist_tb_1 where 1 * v1 = 1",
+		"delete from exist_tb_1 where 1 / v1 = 1",
+		"delete from exist_tb_1 where 1 % v1 = 1",
+		"delete from exist_tb_1 where 1 MOD v1 = 1",
+		"delete from exist_tb_1 where 1 DIV v1 = 1",
+	} {
+		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckMathComputationOrFuncOnIndex].Rule, t, "", NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t), sql, newTestResult())
+	}
+}
+
+func NewInspectOnRuleDMLCheckMathComputationOrFuncOnIndex(t *testing.T) *MysqlDriverImpl {
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect := NewMockInspect(e)
+
+	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"Column_name"}).AddRow("id"))
+
+	return inspect
+}
+
 func TestDDLCheckAutoIncrement(t *testing.T) {
 	for _, sql := range []string{
 		"CREATE TABLE `tb` ( `id` int(10)) AUTO_INCREMENT=1",
@@ -5933,4 +6095,223 @@ func TestDMLCheckScanRows(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_2 where v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", "range"))
 	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_2 where v1=1", newTestResult())
+}
+
+func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldUseIndex].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_3 on exist_tb_2.v1=exist_tb_3.v2`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_1 left join exist_tb_2 on exist_tb_1.v1=exist_tb_2.user_id`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3
+				on t3.v2 = t2.id where exist_tb_2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = id`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id
+		set t1.id = 1
+		where t2.id = 2;`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 on t2.id=t3.id
+		set t1.id = 1
+		where t2.id = 2;`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2
+		set t1.id = 1
+		where t2.id = 2;`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id where t2.v2 = 'v1'`,
+		newTestResult())
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2 where t2.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex))
+}
+
+func TestDMLCheckJoinFieldCharacterSetAndCollation(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldCharacterSetAndCollation].Rule
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v3`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v1`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v2`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.id=exist_tb_7.id`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_7 on exist_tb_2.id=exist_tb_7.v1`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v3`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v2`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`select * from exist_tb_2 left join exist_tb_8 on exist_tb_2.v1=exist_tb_8.v1`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v3 set exist_tb_2.id=1 where exist_tb_2.v1='1'`,
+		newTestResult(),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"success",
+		DefaultMysqlInspect(),
+		`update exist_tb_2 left join exist_tb_7 on exist_tb_2.v1=exist_tb_7.v1 set exist_tb_2.id=1 where exist_tb_2.v1='1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation),
+	)
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_7  from exist_tb_1 t1 left join exist_tb_7 t7 on t1.id = t7.id where t1.v2 = 'v1'`,
+		newTestResult())
+
+	runSingleRuleInspectCase(
+		rule,
+		t,
+		"",
+		DefaultMysqlInspect(),
+		`delete exist_tb_1 , exist_tb_7  from exist_tb_1 t1 left join exist_tb_7 t7 on t1.v1=t7.v1 where t1.v2 = 'v1'`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation))
+
 }
