@@ -9906,6 +9906,22 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditResult": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string",
+                    "example": "warn"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "避免使用不必要的内置函数md5()"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditSQLResV1": {
             "type": "object",
             "properties": {
@@ -14248,6 +14264,24 @@ var doc = `{
                 }
             }
         },
+        "v1.Source": {
+            "type": "object",
+            "properties": {
+                "audit_plan_name": {
+                    "type": "string"
+                },
+                "sql_audit_record_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "audit_plan",
+                        "sql_audit_record"
+                    ]
+                }
+            }
+        },
         "v1.SqlAnalysisResDataV1": {
             "type": "object",
             "properties": {
@@ -14297,11 +14331,17 @@ var doc = `{
                 "appear_num": {
                     "type": "integer"
                 },
-                "assignee": {
-                    "type": "string"
+                "assignees": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "audit_result": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditResult"
+                    }
                 },
                 "first_appear_time": {
                     "type": "string"
@@ -14322,7 +14362,8 @@ var doc = `{
                     "type": "string"
                 },
                 "source": {
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Source"
                 },
                 "sql": {
                     "type": "string"
@@ -14331,7 +14372,12 @@ var doc = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "unhandled",
+                        "solved",
+                        "ignored"
+                    ]
                 }
             }
         },
