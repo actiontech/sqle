@@ -27,19 +27,32 @@ type GetSqlManageListResp struct {
 }
 
 type SqlManage struct {
-	Id              uint64 `json:"id"`
-	SqlFingerprint  string `json:"sql_fingerprint"`
-	Sql             string `json:"sql"`
-	Source          string `json:"source"`
-	InstanceName    string `json:"instance_name"`
-	SchemaName      string `json:"schema_name"`
-	AuditResult     string `json:"audit_result"`
-	FirstAppearTime string `json:"first_appear_time"`
-	LastAppearTime  string `json:"last_appear_time"`
-	AppearNum       uint64 `json:"appear_num"`
-	Assignee        string `json:"assignee"`
-	Status          string `json:"status"`
-	Remark          string `json:"remark"`
+	Id              uint64         `json:"id"`
+	SqlFingerprint  string         `json:"sql_fingerprint"`
+	Sql             string         `json:"sql"`
+	Source          *Source        `json:"source"`
+	InstanceName    string         `json:"instance_name"`
+	SchemaName      string         `json:"schema_name"`
+	AuditResult     []*AuditResult `json:"audit_result"`
+	FirstAppearTime string         `json:"first_appear_time"`
+	LastAppearTime  string         `json:"last_appear_time"`
+	AppearNum       uint64         `json:"appear_num"`
+	Assignees       []string       `json:"assignees"`
+	Status          string         `json:"status" enums:"unhandled,solved,ignored"`
+	Remark          string         `json:"remark"`
+}
+
+// AuditResult 用于SQL全生命周期展示的AuditResult
+type AuditResult struct {
+	Level    string `json:"level" example:"warn"`
+	Message  string `json:"message" example:"避免使用不必要的内置函数md5()"`
+	RuleName string `json:"rule_name"`
+}
+
+type Source struct {
+	Type             string `json:"type" enums:"audit_plan,sql_audit_record"`
+	AuditPlanName    string `json:"audit_plan_name"`
+	SqlAuditRecordId string `json:"sql_audit_record_id"`
 }
 
 // GetSqlManageList

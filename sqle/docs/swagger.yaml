@@ -201,6 +201,17 @@ definitions:
           $ref: '#/definitions/v1.AuditSQLResV1'
         type: array
     type: object
+  v1.AuditResult:
+    properties:
+      level:
+        example: warn
+        type: string
+      message:
+        example: 避免使用不必要的内置函数md5()
+        type: string
+      rule_name:
+        type: string
+    type: object
   v1.AuditSQLResV1:
     properties:
       audit_level:
@@ -3167,6 +3178,18 @@ definitions:
       query_timeout_second:
         type: integer
     type: object
+  v1.Source:
+    properties:
+      audit_plan_name:
+        type: string
+      sql_audit_record_id:
+        type: string
+      type:
+        enum:
+        - audit_plan
+        - sql_audit_record
+        type: string
+    type: object
   v1.SqlAnalysisResDataV1:
     properties:
       sql_explain:
@@ -3199,10 +3222,14 @@ definitions:
     properties:
       appear_num:
         type: integer
-      assignee:
-        type: string
+      assignees:
+        items:
+          type: string
+        type: array
       audit_result:
-        type: string
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
       first_appear_time:
         type: string
       id:
@@ -3216,12 +3243,17 @@ definitions:
       schema_name:
         type: string
       source:
-        type: string
+        $ref: '#/definitions/v1.Source'
+        type: object
       sql:
         type: string
       sql_fingerprint:
         type: string
       status:
+        enum:
+        - unhandled
+        - solved
+        - ignored
         type: string
     type: object
   v1.StatisticAuditPlanResV1:
