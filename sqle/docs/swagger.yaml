@@ -7873,6 +7873,11 @@ paths:
       description: get sql manage list
       operationId: GetSqlManageList
       parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
       - description: fuzzy search sql fingerprint
         in: query
         name: fuzzy_search_sql_fingerprint
@@ -7888,7 +7893,7 @@ paths:
       - description: source
         enum:
         - audit_plan
-        - api_audit
+        - sql_audit_record
         in: query
         name: filter_source
         type: string
