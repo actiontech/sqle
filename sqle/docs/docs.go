@@ -4652,6 +4652,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "fuzzy search sql fingerprint",
                         "name": "fuzzy_search_sql_fingerprint",
                         "in": "query"
@@ -4671,7 +4678,7 @@ var doc = `{
                     {
                         "enum": [
                             "audit_plan",
-                            "api_audit"
+                            "sql_audit_record"
                         ],
                         "type": "string",
                         "description": "source",

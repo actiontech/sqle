@@ -61,10 +61,11 @@ type Source struct {
 // @Tags SqlManage
 // @Id GetSqlManageList
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_assignee query string false "assignee"
 // @Param filter_instance_name query string false "instance name"
-// @Param filter_source query string false "source" Enums(audit_plan,api_audit)
+// @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
