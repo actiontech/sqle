@@ -6890,10 +6890,12 @@ func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
 		}
 		createTable, exist, err := input.Ctx.GetCreateTableStmt(table)
 		if err != nil {
-			return fmt.Errorf("get create table statement failed: %v", err)
+			log.NewEntry().Errorf("get create table statement failed: %v", err)
+			return nil
 		}
 		if !exist {
-			return fmt.Errorf("table [%v] doesn't exist", table.Name.O)
+			log.NewEntry().Errorf("table [%v] doesn't exist", table.Name.O)
+			return nil
 		}
 
 		if input.Rule.Name == DMLMustMatchLeftMostPrefix {
