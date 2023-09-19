@@ -2132,7 +2132,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckAggregate,
 			Desc:       "禁止使用聚合函数",
 			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
@@ -2142,9 +2142,9 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckColumnNotNULL,
-			Desc:       "表字段必须有NOT NULL约束",
-			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
-			Level:      driverV2.RuleLevelWarn,
+			Desc:       "表字段建议有NOT NULL约束",
+			Annotation: "表字段建议有 NOT NULL 约束，可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
@@ -2156,7 +2156,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckIndexSelectivity,
 			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
 			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
-			Level:      driverV2.RuleLevelNotice,
+			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
