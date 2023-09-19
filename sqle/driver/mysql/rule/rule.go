@@ -6910,7 +6910,7 @@ func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
 }
 
 func isColumnMatchedALeftMostPrefix(allCols []string, colsWithEQ, colsWithOr []string, constraints []*ast.Constraint) bool {
-	var multiConstraints []*ast.Constraint
+	multiConstraints := make([]*ast.Constraint, 0)
 	for _, constraint := range constraints {
 		if len(constraint.Keys) == 1 {
 			continue
@@ -6942,7 +6942,7 @@ func isColumnMatchedALeftMostPrefix(allCols []string, colsWithEQ, colsWithOr []s
 }
 
 func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) bool {
-	var multiConstraints []*ast.Constraint
+	multiConstraints := make([]*ast.Constraint, 0)
 	for _, constraint := range constraints {
 		if len(constraint.Keys) == 1 {
 			continue
