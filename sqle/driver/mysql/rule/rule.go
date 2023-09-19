@@ -187,6 +187,8 @@ const (
 	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
 	DMLCheckSelectRows                        = "dml_check_select_rows"
 	DMLCheckScanRows                          = "dml_check_scan_rows"
+	DMLMustMatchLeftMostPrefix                = "dml_must_match_left_most_prefix"
+	DMLMustUseLeftMostPrefix                  = "dml_must_use_left_most_prefix"
 	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
@@ -2130,7 +2132,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckAggregate,
 			Desc:       "禁止使用聚合函数",
 			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
@@ -2140,9 +2142,9 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckColumnNotNULL,
-			Desc:       "表字段必须有NOT NULL约束",
-			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性。",
-			Level:      driverV2.RuleLevelWarn,
+			Desc:       "表字段建议有NOT NULL约束",
+			Annotation: "表字段建议有 NOT NULL 约束，可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
@@ -2154,7 +2156,7 @@ var RuleHandlers = []RuleHandler{
 			Name:       DMLCheckIndexSelectivity,
 			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
 			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
-			Level:      driverV2.RuleLevelNotice,
+			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
@@ -2252,6 +2254,30 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
 		Func:         checkScanRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLMustMatchLeftMostPrefix,
+			Desc:       "使用联合索引时，必须使用联合索引的首字段",
+			Annotation: "使用联合索引时，不包含首字段会导致联合索引失效",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "使用联合索引时，必须使用联合索引的首字段",
+		Func:         mustMatchLeftMostPrefix,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLMustUseLeftMostPrefix,
+			Desc:       "禁止对联合索引左侧字段进行IN 、OR等非等值查询",
+			Annotation: "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "使用联合索引时，必须使用联合索引的首字段",
+		Func:         mustMatchLeftMostPrefix,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -6701,6 +6727,253 @@ func checkScanRows(input *RuleHandlerInput) error {
 		}
 	}
 	return nil
+}
+
+func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
+	tables := []*ast.TableSource{}
+	type colSets struct {
+		AllCols    []string
+		ColsWithEq []string
+		ColsWithOr []string
+	}
+	tablesFromCondition := make(map[string]colSets)
+	defaultTable := ""
+	getTableName := func(tableName string) string {
+		if tableName == "" {
+			return defaultTable
+		}
+		return tableName
+	}
+
+	gatherColsWithOr := func(expr ast.ExprNode) {
+		var col *ast.ColumnNameExpr
+		var ok bool
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			col, ok = x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		case *ast.PatternInExpr:
+			col, ok = x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		case *ast.PatternLikeExpr:
+			col, ok = x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		}
+
+		if col == nil {
+			return
+		}
+		tableName := getTableName(col.Name.Table.L)
+		sets := tablesFromCondition[tableName]
+		sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+		sets.ColsWithOr = append(tablesFromCondition[tableName].ColsWithOr, col.Name.Name.L)
+		tablesFromCondition[tableName] = sets
+	}
+	var gatherColFromConditions func(expr ast.ExprNode) (skip bool)
+	gatherColFromConditions = func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			if x.Op == opcode.LogicOr || x.Op == opcode.LogicXor {
+				gatherColsWithOr(x.L)
+				gatherColsWithOr(x.R)
+				return false
+			}
+			// select * from tb1 where a > 1
+			// select * from tb1 where a = 1
+			col, ok := x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			tableName := getTableName(col.Name.Table.L)
+			if x.Op == opcode.EQ {
+				sets := tablesFromCondition[tableName]
+				sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+				sets.ColsWithEq = append(tablesFromCondition[tableName].ColsWithEq, col.Name.Name.L)
+				tablesFromCondition[tableName] = sets
+			} else {
+				sets := tablesFromCondition[tableName]
+				sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+				tablesFromCondition[tableName] = sets
+			}
+		case *ast.SubqueryExpr:
+			if selectStmt, ok := x.Query.(*ast.SelectStmt); ok && selectStmt != nil {
+				util.ScanWhereStmt(gatherColFromConditions, selectStmt.Where)
+			}
+		case *ast.PatternInExpr:
+			//select * from tb1 where a IN(1,2)
+			col, ok := x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			tableName := getTableName(col.Name.Table.L)
+			sets := tablesFromCondition[tableName]
+			sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+			tablesFromCondition[tableName] = sets
+		case *ast.PatternLikeExpr:
+			// select * from tb1 where a LIKE '%abc'
+			// todo issue1783
+			//col, ok := x.Expr.(*ast.ColumnNameExpr)
+			//if !ok {
+			//	return false
+			//}
+			//tableName := getTableName(col.Name.Table.L)
+			//tablesFromCondition[tableName] = colSets{
+			//	AllCols:    append(tablesFromCondition[tableName].AllCols, col.Name.Name.L),
+			//	ColsWithEq: tablesFromCondition[tableName].ColsWithEq,
+			//}
+		}
+		return false
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil || stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.From.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.From.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.UpdateStmt:
+		if stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.TableRefs.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.DeleteStmt:
+		if stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.TableRefs.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.UnionStmt:
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if selectStmt.Where == nil {
+				continue
+			}
+			tables = util.GetTableSources(selectStmt.From.TableRefs)
+			if t, ok := selectStmt.From.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+				if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+					defaultTable = name.Name.L
+				}
+			}
+			util.ScanWhereStmt(gatherColFromConditions, selectStmt.Where)
+		}
+	default:
+		return nil
+	}
+
+	for alias, cols := range tablesFromCondition {
+		table, err := util.ConvertAliasToTable(alias, tables)
+		if err != nil {
+			log.NewEntry().Errorf("convert table alias failed, sqle: %v, error: %v", input.Node.Text(), err)
+			return fmt.Errorf("convert table alias failed: %v", err)
+		}
+		createTable, exist, err := input.Ctx.GetCreateTableStmt(table)
+		if err != nil {
+			log.NewEntry().Errorf("get create table statement failed: %v", err)
+			return nil
+		}
+		if !exist {
+			log.NewEntry().Errorf("table [%v] doesn't exist", table.Name.O)
+			return nil
+		}
+
+		if input.Rule.Name == DMLMustMatchLeftMostPrefix {
+			if !isColumnMatchedALeftMostPrefix(cols.AllCols, cols.ColsWithEq, cols.ColsWithOr, createTable.Constraints) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		} else if input.Rule.Name == DMLMustUseLeftMostPrefix {
+			if !isColumnUseLeftMostPrefix(cols.AllCols, createTable.Constraints) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+	}
+	return nil
+}
+
+func isColumnMatchedALeftMostPrefix(allCols []string, colsWithEQ, colsWithOr []string, constraints []*ast.Constraint) bool {
+	multiConstraints := make([]*ast.Constraint, 0)
+	for _, constraint := range constraints {
+		if len(constraint.Keys) == 1 {
+			continue
+		}
+		multiConstraints = append(multiConstraints, constraint)
+	}
+	walkConstraint := func(constraint *ast.Constraint) bool {
+		for i, key := range constraint.Keys {
+			for _, col := range allCols {
+				if col != key.Column.Name.L {
+					// 不是这个索引字段，跳过
+					continue
+				}
+				if i == 0 && (!utils.StringsContains(colsWithEQ, col) || utils.StringsContains(colsWithOr, col)) {
+					// 1.是最左字段 2.该字段没有使用等值查询或使用了or
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	for _, constraint := range multiConstraints {
+		if !walkConstraint(constraint) {
+			return false
+		}
+	}
+	return true
+}
+
+func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) bool {
+	multiConstraints := make([]*ast.Constraint, 0)
+	for _, constraint := range constraints {
+		if len(constraint.Keys) == 1 {
+			continue
+		}
+		multiConstraints = append(multiConstraints, constraint)
+	}
+	walkConstraint := func(constraint *ast.Constraint) bool {
+		isCurrentIndexUsed := false
+		for i, key := range constraint.Keys {
+			for _, col := range allCols {
+				if col != key.Column.Name.L {
+					// 不是这个索引的字段，跳过
+					continue
+				}
+				isCurrentIndexUsed = true
+				if i == 0 {
+					return true
+				}
+			}
+		}
+		return !isCurrentIndexUsed
+	}
+
+	for _, constraint := range multiConstraints {
+		if !walkConstraint(constraint) {
+			return false
+		}
+	}
+	return true
 }
 
 func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {

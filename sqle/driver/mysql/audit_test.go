@@ -5768,7 +5768,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 			address VARCHAR(200),
 			PRIMARY KEY (id)
 		);`,
-		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(
@@ -5782,7 +5782,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 		ADD COLUMN new_column3 DATE,
 		ADD COLUMN new_column4 VARCHAR(100),
 		MODIFY COLUMN name varchar(500);`,
-		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(
@@ -5827,7 +5827,7 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
 			AddRow("50.0000"))
-	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
@@ -5837,7 +5837,7 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
 			AddRow("50.0000"))
-	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
@@ -6314,4 +6314,578 @@ func TestDMLCheckJoinFieldCharacterSetAndCollation(t *testing.T) {
 		`delete exist_tb_1 , exist_tb_7  from exist_tb_1 t1 left join exist_tb_7 t7 on t1.v1=t7.v1 where t1.v2 = 'v1'`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldCharacterSetAndCollation))
 
+}
+
+func TestMustMatchLeftMostPrefix(t *testing.T) {
+	//CREATE TABLE exist_db.exist_tb_8 (
+	//	id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	//	v1 varchar(255) character SET utf8mb4 COLLATE utf8_bin,
+	//	v2 varchar(255) character SET utf8mb4,
+	//	v3 varchar(255),
+	//	PRIMARY KEY (id) USING BTREE,
+	//	KEY idx_1 (v1),
+	//	UNIQUE KEY uniq_1 (v1,v2),
+	//	KEY idx_100 (v2,v1)
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+	//
+	//
+	//CREATE TABLE exist_db.exist_tb_9 (
+	//	id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	//	v1 int,
+	//	v2 varchar(255) character SET utf8mb4,
+	//	v3 int,
+	//	v4 int,
+	//	PRIMARY KEY (id) USING BTREE,
+	//	KEY idx_1 (v1,v2,v3),
+	//	UNIQUE KEY uniq_1 (v2,v3),
+	//	KEY idx_100 (v3)
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+
+	args := []struct {
+		Name        string
+		Sql         string
+		TriggerRule bool
+	}{
+		// select
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v4 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v3 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v1 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v3 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from exist_tb_9 where v1 = (select v1 from exist_tb_9 where v2 = 1)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from exist_tb_9 where v1 = (select v1 from exist_tb_9 where v2 > 1)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-or",
+			Sql:         `select * from exist_tb_9 where v1 = 1 or v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-or",
+			Sql:         `select * from exist_tb_9 where v1 = 1 or v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-or",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 or v3 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-or",
+			Sql:         `select * from exist_tb_9 where v1 like 1 or v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 join exist_tb_8 on exist_tb_9.id = exist_tb_8.id where exist_tb_9.v1 = 1 and exist_tb_9.v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 on t9.id = t8.id where t9.v1 = 1 and t9.v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 t8 on t9.id = t8.id where t9.v1 = 1 and t8.v2 > 1`,
+			TriggerRule: true,
+		},
+		// update
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 = 1 and v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 = 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v4 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v3 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v3 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		// delete
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 = 1 and v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 > 1 and v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 = 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v1 > 1 and v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v1 > 1 and v4 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v3 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v1 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v3 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		// select union
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 union select * from exist_tb_9 where v3 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 = 1 union select * from exist_tb_9 where v3 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 union select * from exist_tb_8 where v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v2 = 1 union select * from exist_tb_8 where v2 = 1`,
+			TriggerRule: false,
+		},
+	}
+
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Rule
+	for _, arg := range args {
+		e, _, err := executor.NewMockExecutor()
+		assert.NoError(t, err)
+		inspect := NewMockInspect(e)
+
+		t.Run(arg.Name, func(t *testing.T) {
+			res := newTestResult()
+			if arg.TriggerRule {
+				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Message)
+			}
+			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
+		})
+	}
+}
+
+func TestMustUseLeftMostPrefix(t *testing.T) {
+	//CREATE TABLE exist_db.exist_tb_8 (
+	//	id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	//	v1 varchar(255) character SET utf8mb4 COLLATE utf8_bin,
+	//	v2 varchar(255) character SET utf8mb4,
+	//	v3 varchar(255),
+	//	PRIMARY KEY (id) USING BTREE,
+	//	KEY idx_1 (v1),
+	//	UNIQUE KEY uniq_1 (v1,v2),
+	//	KEY idx_100 (v2,v1)
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+	//
+	//
+	//CREATE TABLE exist_db.exist_tb_9 (
+	//	id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+	//	v1 int,
+	//	v2 varchar(255) character SET utf8mb4,
+	//	v3 int,
+	//	v4 int,
+	//	PRIMARY KEY (id) USING BTREE,
+	//	KEY idx_1 (v1,v2,v3),
+	//	UNIQUE KEY uniq_1 (v2,v3),
+	//	KEY idx_100 (v3)
+	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+
+	args := []struct {
+		Name        string
+		Sql         string
+		TriggerRule bool
+	}{
+		// select
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v3 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v1 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v3 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from exist_tb_9 where v1 = (select v1 from exist_tb_9 where v2 = 1)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-with-or",
+			Sql:         `select * from exist_tb_9 where v1 = 1 or v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 join exist_tb_8 on exist_tb_9.id = exist_tb_8.id where exist_tb_9.v1 = 1 and exist_tb_9.v2 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 on t9.id = t8.id where t9.v1 = 1 and t9.v2 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 t8 on t9.id = t8.id where t9.v1 = 1 and t8.v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "join-with-equal",
+			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 t8 on t9.id = t8.id where t9.v1 = 1 and t8.id > 1`,
+			TriggerRule: false,
+		},
+		// update
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v3 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v2 in(1,2)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v3 in(1,2)`,
+			TriggerRule: true,
+		},
+		// delete
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v1 > 1 and v2 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v1 > 1 and v4 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v2 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v3 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v1 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v3 in(1,2)`,
+			TriggerRule: true,
+		},
+		// select union
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 union select * from exist_tb_9 where v3 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 = 1 union select * from exist_tb_9 where v3 = 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 union select * from exist_tb_8 where v2 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-union",
+			Sql:         `select * from exist_tb_9 where v2 = 1 union select * from exist_tb_8 where v2 = 1`,
+			TriggerRule: true,
+		},
+	}
+
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Rule
+	for _, arg := range args {
+		e, _, err := executor.NewMockExecutor()
+		assert.NoError(t, err)
+		inspect := NewMockInspect(e)
+
+		t.Run(arg.Name, func(t *testing.T) {
+			res := newTestResult()
+			if arg.TriggerRule {
+				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Message)
+			}
+			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
+		})
+	}
 }
