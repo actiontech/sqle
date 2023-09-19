@@ -4729,6 +4729,47 @@
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/batch": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch update sql manage",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "批量更新SQL管控",
+                "operationId": "BatchUpdateSqlManage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch update sql manage request",
+                        "name": "BatchUpdateSqlManageReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchUpdateSqlManageReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistic/audit_plans": {
             "get": {
                 "security": [
@@ -10147,6 +10188,30 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.BatchUpdateSqlManageReq": {
+            "type": "object",
+            "properties": {
+                "assignees": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sql_manage_id_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "solved",
+                        "ignored"
+                    ]
                 }
             }
         },
