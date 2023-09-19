@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -804,4 +805,21 @@ func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*i
 		}
 	}
 	return result
+}
+
+// match table name if input is table name
+func ConvertAliasToTable(alias string, tables []*ast.TableSource) (*ast.TableName, error) {
+	for _, table := range tables {
+		t, ok := table.Source.(*ast.TableName)
+		if !ok || t == nil {
+			continue
+		}
+
+		if strings.ToLower(alias) == table.AsName.L || alias == t.Name.L {
+			return t, nil
+		}
+
+		return t, nil
+	}
+	return nil, errors.New("can not find table")
 }
