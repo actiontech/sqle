@@ -7,8 +7,10 @@
 *.rpm.md5
 *.log
 /sqled
-/sqled.yml*
+/sqled.yml
+etc
 /swag
 bin/
 ui/
+static/
 .vscode/
