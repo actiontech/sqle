@@ -77,3 +77,23 @@ type Source struct {
 func GetSqlManageList(c echo.Context) error {
 	return nil
 }
+
+type BatchUpdateSqlManageReq struct {
+	SqlManageIdList []*uint64 `json:"sql_manage_id_list"`
+	Status          *string   `json:"status" enums:"solved,ignored"`
+	Assignees       []*string `json:"assignees"`
+}
+
+// BatchUpdateSqlManage batch update sql manage
+// @Summary 批量更新SQL管控
+// @Description batch update sql manage
+// @Tags SqlManage
+// @Id BatchUpdateSqlManage
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param BatchUpdateSqlManageReq body BatchUpdateSqlManageReq true "batch update sql manage request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/sql_manages/batch [PATCH]
+func BatchUpdateSqlManage(c echo.Context) error {
+	return nil
+}
