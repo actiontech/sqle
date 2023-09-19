@@ -5768,7 +5768,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 			address VARCHAR(200),
 			PRIMARY KEY (id)
 		);`,
-		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DDLCheckColumnNotNULL, "建议字段age,email,address设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(
@@ -5782,7 +5782,7 @@ func TestDDLCheckColumnNotNull(t *testing.T) {
 		ADD COLUMN new_column3 DATE,
 		ADD COLUMN new_column4 VARCHAR(100),
 		MODIFY COLUMN name varchar(500);`,
-		newTestResult().add(driverV2.RuleLevelWarn, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
+		newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DDLCheckColumnNotNULL, "建议字段new_column3,new_column4,name设置NOT NULL约束"),
 	)
 
 	runSingleRuleInspectCase(
@@ -5827,7 +5827,7 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
 			AddRow("50.0000"))
-	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
@@ -5837,7 +5837,7 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
 			AddRow("50.0000"))
-	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelNotice, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
