@@ -372,6 +372,22 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.BatchUpdateSqlManageReq:
+    properties:
+      assignees:
+        items:
+          type: string
+        type: array
+      sql_manage_id_list:
+        items:
+          type: integer
+        type: array
+      status:
+        enum:
+        - solved
+        - ignored
+        type: string
+    type: object
   v1.BindOauth2UserReqV1:
     properties:
       oauth2_token:
@@ -7940,6 +7956,32 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取管控sql列表
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/batch:
+    patch:
+      description: batch update sql manage
+      operationId: BatchUpdateSqlManage
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch update sql manage request
+        in: body
+        name: BatchUpdateSqlManageReq
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchUpdateSqlManageReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量更新SQL管控
       tags:
       - SqlManage
   /v1/projects/{project_name}/statistic/audit_plans:
