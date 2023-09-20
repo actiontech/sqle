@@ -110,6 +110,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		v1Router.DELETE("/custom_rules/:rule_id", v1.DeleteCustomRule, AdminUserAllowed())
 		v1Router.POST("/custom_rules", v1.CreateCustomRule, AdminUserAllowed())
 		v1Router.PATCH("/custom_rules/:rule_id", v1.UpdateCustomRule, AdminUserAllowed())
+		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge, AdminUserAllowed())
+		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, AdminUserAllowed())
 
 		// configurations
 		v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
