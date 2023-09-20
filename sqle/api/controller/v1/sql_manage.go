@@ -82,6 +82,7 @@ type BatchUpdateSqlManageReq struct {
 	SqlManageIdList []*uint64 `json:"sql_manage_id_list"`
 	Status          *string   `json:"status" enums:"solved,ignored"`
 	Assignees       []*string `json:"assignees"`
+	Remark          *string   `json:"remark"`
 }
 
 // BatchUpdateSqlManage batch update sql manage
