@@ -362,6 +362,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v2Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 	v1Router.GET("/projects/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/export", v1.ExportAuditPlanReportV1)
 
+	// sql manager
+	v1Router.GET("/projects/:project_name/sql_manages", v1.GetSqlManageList)
+
 	// sql audit record
 	v1Router.POST("/projects/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
 	v1Router.GET("/projects/:project_name/sql_audit_records", v1.GetSQLAuditRecordsV1)
