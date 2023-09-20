@@ -147,6 +147,14 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	go func() {
+		newSyncFromSqlAudit := auditplan.NewSyncFromSqlAudit(task, sqlFpMap, project.ID, record.ID)
+		if err := newSyncFromSqlAudit.SyncSqlManager(); err != nil {
+			log.NewEntry().Errorf("sync sql manager failed, error: %v", err)
+		}
+	}()
+
 	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SQLAuditRecordResData{
