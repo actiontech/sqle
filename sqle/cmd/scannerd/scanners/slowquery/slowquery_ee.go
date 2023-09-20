@@ -129,6 +129,10 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 			}
 			s.l.Debugf("parsed slowlog event: %+v.", e)
 
+			if strings.TrimSpace(e.Query) == "" {
+				continue
+			}
+
 			if len(s.includeUsers) > 0 {
 				if _, ok := s.includeUsers[e.User]; !ok {
 					continue
