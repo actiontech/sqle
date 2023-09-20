@@ -10216,6 +10216,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "remark": {
+                    "type": "string"
+                },
                 "sql_manage_id_list": {
                     "type": "array",
                     "items": {
