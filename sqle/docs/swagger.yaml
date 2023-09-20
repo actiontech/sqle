@@ -7762,6 +7762,9 @@ paths:
         2. file[input_sql_file]: it is a sql file;
         3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
         4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
+        5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
+        6. formData[git_user_name]:The name of the user who owns the repository read access.
+        7. formData[git_user_password]:The password corresponding to git_user_name.
       operationId: CreateSQLAuditRecordV1
       parameters:
       - description: project name
@@ -7797,6 +7800,18 @@ paths:
         in: formData
         name: input_zip_file
         type: file
+      - description: git repository url
+        in: formData
+        name: git_http_url
+        type: string
+      - description: the name of user to clone the repository
+        in: formData
+        name: git_user_name
+        type: string
+      - description: the password corresponding to git_user_name
+        in: formData
+        name: git_user_password
+        type: string
       produces:
       - application/json
       responses:

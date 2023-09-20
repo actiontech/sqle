@@ -52,6 +52,9 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Description 2. file[input_sql_file]: it is a sql file;
 // @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
 // @Description 4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
+// @Description 5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
+// @Description 6. formData[git_user_name]:The name of the user who owns the repository read access.
+// @Description 7. formData[git_user_password]:The password corresponding to git_user_name.
 // @Accept mpfd
 // @Produce json
 // @Tags sql_audit_record
@@ -64,6 +67,9 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
+// @Param git_http_url formData string false "git repository url"
+// @Param git_user_name formData string false "the name of user to clone the repository"
+// @Param git_user_password formData string false "the password corresponding to git_user_name"
 // @Success 200 {object} v1.CreateSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records [post]
 func CreateSQLAuditRecord(c echo.Context) error {
