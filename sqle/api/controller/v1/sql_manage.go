@@ -75,7 +75,7 @@ type Source struct {
 // @Success 200 {object} v1.GetSqlManageListResp
 // @Router /v1/projects/{project_name}/sql_manages [get]
 func GetSqlManageList(c echo.Context) error {
-	return nil
+	return getSqlManageList(c)
 }
 
 type BatchUpdateSqlManageReq struct {
