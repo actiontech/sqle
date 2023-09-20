@@ -6321,7 +6321,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/rule_knowledge/{rule_name}/": {
+        "/v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/": {
             "get": {
                 "security": [
                     {
@@ -6337,8 +6337,15 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "rule id",
+                        "description": "rule name",
                         "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
                         "in": "path",
                         "required": true
                     }
@@ -6367,8 +6374,15 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "rule id",
+                        "description": "rule name",
                         "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
                         "in": "path",
                         "required": true
                     },

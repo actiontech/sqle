@@ -8967,14 +8967,19 @@ paths:
       summary: 更新角色信息
       tags:
       - role
-  /v1/rule_knowledge/{rule_name}/:
+  /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/:
     get:
       description: get rule knowledge
       operationId: getRuleKnowledgeV1
       parameters:
-      - description: rule id
+      - description: rule name
         in: path
         name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
         required: true
         type: string
       responses:
@@ -8991,9 +8996,14 @@ paths:
       description: update rule knowledge
       operationId: updateRuleKnowledge
       parameters:
-      - description: rule id
+      - description: rule name
         in: path
         name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
         required: true
         type: string
       - description: update rule knowledge
