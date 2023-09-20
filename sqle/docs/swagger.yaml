@@ -378,6 +378,8 @@ definitions:
         items:
           type: string
         type: array
+      remark:
+        type: string
       sql_manage_id_list:
         items:
           type: integer
