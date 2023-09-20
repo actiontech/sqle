@@ -153,6 +153,7 @@ var autoMigrateList = []interface{}{
 	&CustomRule{},
 	&RuleTemplateCustomRule{},
 	&SQLAuditRecord{},
+	&RuleKnowledge{},
 }
 
 func (s *Storage) AutoMigrate() error {
