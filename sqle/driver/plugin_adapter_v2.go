@@ -5,10 +5,10 @@ import (
 	sqlDriver "database/sql/driver"
 	"fmt"
 	"sync"
+	"errors"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -174,7 +174,19 @@ func (s *PluginImplV2) Close(ctx context.Context) {
 }
 
 func (s *PluginImplV2) KillProcess(ctx context.Context) error {
-	return errors.NewNotImplementedError("KillProcess not support yet")
+	api := "Kill Process"
+	s.preLog(api)
+	rs, err := s.client.KillProcess(ctx, &protoV2.KillProcessRequest{
+		Session: s.Session,
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return err
+	}
+	if rs.ErrMessage != "" {
+		return errors.New(rs.ErrMessage)
+	}
+	return nil
 }
 
 // audit

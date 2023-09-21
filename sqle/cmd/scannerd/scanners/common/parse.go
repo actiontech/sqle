@@ -1,4 +1,4 @@
-package mybatis
+package common
 
 import (
 	"context"

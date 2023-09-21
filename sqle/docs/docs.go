@@ -25,6 +25,40 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/audit_files": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql from SQL files and MyBatis files",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件",
+                "operationId": "directAuditFilesV1",
+                "parameters": [
+                    {
+                        "description": "files that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditFileReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectAuditResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_plan_metas": {
             "get": {
                 "security": [
@@ -564,7 +598,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -594,7 +628,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -624,7 +658,7 @@ var doc = `{
                         "type": "string",
                         "description": "rule id",
                         "name": "rule_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -702,43 +736,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetDashboardProjectTipsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/instance_connection": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的 json 的子集",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "instance"
-                ],
-                "summary": "实例连通性测试（实例提交前）",
-                "operationId": "checkInstanceIsConnectableV1",
-                "parameters": [
-                    {
-                        "description": "instance info",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceConnectableReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceConnectableResV1"
                         }
                     }
                 }
@@ -4287,6 +4284,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -6047,6 +6045,7 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV2",
+                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -7036,6 +7035,46 @@ var doc = `{
                 }
             }
         },
+        "v1.DirectAuditFileReqV1": {
+            "type": "object",
+            "properties": {
+                "file_contents": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现\n每个数组元素是一个文件内容",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "select * from t1; select * from t2;"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
+                "instance_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "project1"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
+                }
+            }
+        },
         "v1.DirectAuditReqV1": {
             "type": "object",
             "properties": {
@@ -7545,37 +7584,6 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
-                }
-            }
-        },
-        "v1.GetInstanceConnectableReqV1": {
-            "type": "object",
-            "properties": {
-                "additional_params": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.InstanceAdditionalParamReqV1"
-                    }
-                },
-                "db_type": {
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "host": {
-                    "type": "string",
-                    "example": "10.10.10.10"
-                },
-                "password": {
-                    "type": "string",
-                    "example": "123456"
-                },
-                "port": {
-                    "type": "string",
-                    "example": "3306"
-                },
-                "user": {
-                    "type": "string",
-                    "example": "root"
                 }
             }
         },
@@ -8484,17 +8492,6 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
-                }
-            }
-        },
-        "v1.InstanceAdditionalParamReqV1": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
                 }
             }
         },
