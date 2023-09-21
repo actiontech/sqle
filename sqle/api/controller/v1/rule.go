@@ -1647,7 +1647,7 @@ type GetRuleKnowledgeResV1 struct {
 // @Security ApiKeyAuth
 // @Param rule_name path string true "rule name"
 // @Param db_type path string true "db type of rule"
-// @Success 200 {object} v1.RuleKnowledgeResV1
+// @Success 200 {object} v1.GetRuleKnowledgeResV1
 // @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [get]
 func GetRuleKnowledge(c echo.Context) error {
 	return getRuleKnowledge(c)
