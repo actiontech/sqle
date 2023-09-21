@@ -126,7 +126,7 @@ WHERE p.name = :project_name
   AND sm.deleted_at IS NULL
 
 {{- if .fuzzy_search_sql_fingerprint }}
-AND sm.sql_fingerprint = '%{{ .fuzzy_search_sql_fingerprint }}%'
+AND sm.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
 {{- end }}
 
 {{- if .filter_assignee }}
