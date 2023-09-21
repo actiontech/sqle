@@ -62,7 +62,13 @@ func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, 
 }
 
 func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartialSync bool) error {
-	// todo sync to sql manage
+	go func() {
+		err := SyncToSqlManage(sqls, ap)
+		if err != nil {
+			log.NewEntry().WithField("name", ap.Name).Errorf("schedule to save sql manage failed, error: %v", err)
+		}
+	}()
+
 	task := NewTask(entry, ap)
 	if isPartialSync {
 		return task.PartialSyncSQLs(sqls)
