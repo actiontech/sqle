@@ -217,3 +217,25 @@ func TestMaxFloat64(t *testing.T) {
 	assert.Equal(t, float64(2.222), MaxFloat64(moreThan[0], moreThan[1]))
 	assert.Equal(t, float64(2.222), MaxFloat64(equal[0], equal[1]))
 }
+
+func TestIsGitHttpURL(t *testing.T) {
+
+	trueCases := []string{
+		"https://github.com/golang/go.git",
+		"http://github.com/user/repo.git",
+	}
+
+	falseCases := []string{
+		"https://github.com/user/repo",
+		"ftp://github.com/user/repo.git",
+		"git@github.com:user/repo.git",
+	}
+
+	for _, tc := range trueCases {
+		assert.True(t, IsGitHttpURL(tc), "Expected %q to be a valid Git Http URL", tc)
+	}
+
+	for _, tc := range falseCases {
+		assert.False(t, IsGitHttpURL(tc), "Expected %q to be an invalid Git Http URL", tc)
+	}
+}

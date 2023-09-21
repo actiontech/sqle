@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -263,4 +264,19 @@ func MaxFloat64(a, b float64) float64 {
 // 计算float64变量的增量平均值
 func IncrementalAverageFloat64(oldAverage, newValue float64, oldCount, newCount int) float64 {
 	return (oldAverage*float64(oldCount) + newValue) / (float64(oldCount) + float64(newCount))
+}
+
+// 判断字符串是否是Git Http URL
+func IsGitHttpURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	if !strings.HasSuffix(u.Path, ".git") {
+		return false
+	}
+	return true
 }
