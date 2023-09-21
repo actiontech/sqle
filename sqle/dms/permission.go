@@ -37,7 +37,7 @@ func (p *UserPermission) IsAdmin() bool {
 
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
-		if userOpPermission.RangeType == v1.OpRangeTypeNamespace {
+		if userOpPermission.RangeType == v1.OpRangeTypeProject {
 			return true
 		}
 	}
@@ -46,7 +46,7 @@ func (p *UserPermission) IsProjectAdmin() bool {
 
 // dms-todo: 1. 判断用户是 namespace 成员的方式成本高，看是否可以优化. 2. 捕捉错误.
 func (p *UserPermission) IsProjectMember() bool {
-	members, _, err := dmsobject.ListMembersInNamespace(context.TODO(), controller.GetDMSServerAddress(), v1.ListMembersForInternalReq{PageSize: 999, PageIndex: 1, NamespaceUid: p.projectId})
+	members, _, err := dmsobject.ListMembersInProject(context.TODO(), controller.GetDMSServerAddress(), v1.ListMembersForInternalReq{PageSize: 999, PageIndex: 1, ProjectUid: p.projectId})
 	if err != nil {
 		log.NewEntry().WithField("project_id", p.projectId).Errorln("fail to list member in namespace from dms")
 		return false

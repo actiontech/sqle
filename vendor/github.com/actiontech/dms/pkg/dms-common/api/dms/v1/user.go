@@ -36,13 +36,13 @@ type GetUser struct {
 	// is admin
 	IsAdmin bool `json:"is_admin"`
 	// user bind name space
-	UserBindNamespaces []UserBindNamespace `json:"user_bind_namespaces"`
+	UserBindProjects []UserBindProject `json:"user_bind_projects"`
 }
 
-type UserBindNamespace struct {
-	NamespaceID   string `json:"namespace_id"`
-	NamespaceName string `json:"namespace_name"`
-	IsManager     bool   `json:"is_manager"`
+type UserBindProject struct {
+	ProjectID   string `json:"project_id"`
+	ProjectName string `json:"project_name"`
+	IsManager   bool   `json:"is_manager"`
 }
 
 // swagger:enum Stat
@@ -91,8 +91,8 @@ type GetUserOpPermissionReq struct {
 }
 
 type UserOpPermission struct {
-	// uesr namespace uid
-	NamespaceUid string `json:"namespace_uid" validate:"required"`
+	// uesr project uid
+	ProjectUid string `json:"project_uid" validate:"required"`
 }
 
 // swagger:model GetUserOpPermissionReply
@@ -125,9 +125,9 @@ const (
 	OpRangeTypeUnknown OpRangeType = "unknown"
 	// 全局权限: 该权限只能被用户使用
 	OpRangeTypeGlobal OpRangeType = "global"
-	// 空间权限: 该权限只能被成员使用
-	OpRangeTypeNamespace OpRangeType = "namespace"
-	// 空间内的数据源权限: 该权限只能被成员使用
+	// 项目权限: 该权限只能被成员使用
+	OpRangeTypeProject OpRangeType = "project"
+	// 项目内的数据源权限: 该权限只能被成员使用
 	OpRangeTypeDBService OpRangeType = "db_service"
 )
 
@@ -135,8 +135,8 @@ func ParseOpRangeType(typ string) (OpRangeType, error) {
 	switch typ {
 	case string(OpRangeTypeDBService):
 		return OpRangeTypeDBService, nil
-	case string(OpRangeTypeNamespace):
-		return OpRangeTypeNamespace, nil
+	case string(OpRangeTypeProject):
+		return OpRangeTypeProject, nil
 	case string(OpRangeTypeGlobal):
 		return OpRangeTypeGlobal, nil
 	default:
@@ -149,10 +149,10 @@ type OpPermissionType string
 
 const (
 	OpPermissionTypeUnknown OpPermissionType = "unknown"
-	// 创建空间；创建空间的用户自动拥有该空间管理权限
-	OpPermissionTypeCreateNamespace OpPermissionType = "create_namespace"
-	// 空间管理；拥有该权限的用户可以管理空间下的所有资源
-	OpPermissionTypeNamespaceAdmin OpPermissionType = "namespace_admin"
+	// 创建项目；创建项目的用户自动拥有该项目管理权限
+	OpPermissionTypeCreateProject OpPermissionType = "create_project"
+	// 项目管理；拥有该权限的用户可以管理项目下的所有资源
+	OpPermissionTypeProjectAdmin OpPermissionType = "project_admin"
 	// 创建/编辑工单；拥有该权限的用户可以创建/编辑工单
 	OpPermissionTypeCreateWorkflow OpPermissionType = "create_workflow"
 	// 审核/驳回工单；拥有该权限的用户可以审核/驳回工单
@@ -173,10 +173,10 @@ const (
 
 func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 	switch typ {
-	case string(OpPermissionTypeCreateNamespace):
-		return OpPermissionTypeCreateNamespace, nil
-	case string(OpPermissionTypeNamespaceAdmin):
-		return OpPermissionTypeNamespaceAdmin, nil
+	case string(OpPermissionTypeCreateProject):
+		return OpPermissionTypeCreateProject, nil
+	case string(OpPermissionTypeProjectAdmin):
+		return OpPermissionTypeProjectAdmin, nil
 	case string(OpPermissionTypeCreateWorkflow):
 		return OpPermissionTypeCreateWorkflow, nil
 	case string(OpPermissionTypeAuditWorkflow):
@@ -202,10 +202,10 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 	switch opType {
 	case OpPermissionTypeUnknown:
 		return "未知操作类型"
-	case OpPermissionTypeCreateNamespace:
-		return "创建空间"
-	case OpPermissionTypeNamespaceAdmin:
-		return "空间管理"
+	case OpPermissionTypeCreateProject:
+		return "创建项目"
+	case OpPermissionTypeProjectAdmin:
+		return "项目管理"
 	case OpPermissionTypeCreateWorkflow:
 		return "创建/编辑工单"
 	case OpPermissionTypeAuditWorkflow:

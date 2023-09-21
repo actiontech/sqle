@@ -734,10 +734,10 @@ func CreateWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	memberWithPermissions, _, err := dmsobject.ListMembersInNamespace(c.Request().Context(), controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
-		NamespaceUid: projectUid,
-		PageSize:     999,
-		PageIndex:    1,
+	memberWithPermissions, _, err := dmsobject.ListMembersInProject(c.Request().Context(), controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
+		ProjectUid: projectUid,
+		PageSize:   999,
+		PageIndex:  1,
 	})
 	if err != nil {
 		return err
