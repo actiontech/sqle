@@ -186,3 +186,53 @@ func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, proj
 
 	return sqlManage, nil
 }
+
+func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
+	var sqlManageList []*model.SqlManage
+	for _, sql := range sqls {
+		var firstQueryAtPtrFormat *time.Time
+		var err error
+		firstQueryAt, ok := sql.Info["first_query_at"]
+		if ok && firstQueryAt != nil {
+			firstQueryAtFormat, err := time.Parse("2006-01-02 15:04:05", firstQueryAt.(string))
+			if err != nil {
+				return fmt.Errorf("parse first query at failed, error: %v", err)
+			}
+			firstQueryAtPtrFormat = &firstQueryAtFormat
+		}
+
+		var lastReceiveAtPtrFormat *time.Time
+		lastReceiveAt, ok := sql.Info["last_receive_timestamp"]
+		if ok && lastReceiveAt != nil {
+			lastReceiveAtFormat, err := time.Parse("2006-01-02 15:04:05", lastReceiveAt.(string))
+			if err != nil {
+				return fmt.Errorf("parse last receive timestamp failed, error: %v", err)
+			}
+			lastReceiveAtPtrFormat = &lastReceiveAtFormat
+		}
+
+		var countFormat uint64
+		count, ok := sql.Info["counter"]
+		if ok && count != 0 {
+			countFormat = count.(uint64)
+		}
+
+		// todo: 更新审核等级
+		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, "", model.SQLManageSourceAuditPlan, "",
+			ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, 0,
+			uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
+		if err != nil {
+			return err
+		}
+
+		sqlManageList = append(sqlManageList, sqlManage)
+	}
+
+	s := model.GetStorage()
+	// todo 计算count值
+	if err := s.InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList); err != nil {
+		return fmt.Errorf("insert or update sql manage failed, error: %v", err)
+	}
+
+	return nil
+}
