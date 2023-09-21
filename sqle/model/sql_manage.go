@@ -98,7 +98,7 @@ SELECT
 	sm.schema_name,
 	sm.status,
 	sm.remark,
-	GROUP_CONCAT(u.login_name) as assignees,
+	GROUP_CONCAT(all_users.login_name) as assignees,
 	ap.name as ap_name,
 	sar.audit_record_id as sql_audit_record_id
 
@@ -121,6 +121,8 @@ FROM sql_manages sm
          LEFT JOIN projects p ON p.id = sm.project_id
          LEFT JOIN sql_manage_assignees sma ON sma.sql_manage_id = sm.id
          LEFT JOIN users u ON u.id = sma.user_id
+         LEFT JOIN sql_manage_assignees all_sma ON all_sma.sql_manage_id = sm.id
+         LEFT JOIN users all_users ON all_users.id = all_sma.user_id
 
 WHERE p.name = :project_name
   AND sm.deleted_at IS NULL
