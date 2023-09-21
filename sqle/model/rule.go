@@ -47,7 +47,7 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 
 type RuleKnowledge struct {
 	Model
-	Content string
+	Content string `gorm:"type:text"`
 }
 
 func (r *RuleKnowledge) TableName() string {
