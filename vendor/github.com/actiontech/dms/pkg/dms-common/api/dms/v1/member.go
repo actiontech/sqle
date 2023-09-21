@@ -11,9 +11,10 @@ type ListMembersForInternalReq struct {
 	// the offset of members to be returned, default is 0
 	// in:query
 	PageIndex uint32 `query:"page_index" json:"page_index"`
-	// the member namespace uid
-	// in:query
-	NamespaceUid string `query:"namespace_uid" json:"namespace_uid" validate:"required"`
+	// project id
+	// Required: true
+	// in:path
+	ProjectUid string `param:"project_uid" json:"project_uid" validate:"required"`
 }
 
 // swagger:enum MemberForInternalOrderByField
@@ -27,7 +28,7 @@ const (
 type ListMembersForInternalItem struct {
 	// member user
 	User UidWithName `json:"user"`
-	// is member namespace admin, admin has all permissions
+	// is member project admin, admin has all permissions
 	IsAdmin bool `json:"is_admin"`
 	// member op permissions
 	MemberOpPermissionList []OpPermissionItem `json:"member_op_permission_list"`

@@ -26,7 +26,7 @@ github.com/KyleBanks/depth
 github.com/Masterminds/semver/v3
 # github.com/StackExchange/wmi v1.2.1
 github.com/StackExchange/wmi
-# github.com/actiontech/dms v0.0.0-20230907030052-c3b5a7505949
+# github.com/actiontech/dms v0.0.0-20230920091027-7167530f157b
 ## explicit
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
 github.com/actiontech/dms/pkg/dms-common/api/dms/v1
@@ -34,7 +34,7 @@ github.com/actiontech/dms/pkg/dms-common/api/jwt
 github.com/actiontech/dms/pkg/dms-common/dmsobject
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
-# github.com/actiontech/mybatis-mapper-2-sql v0.3.0
+# github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 ## explicit
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast

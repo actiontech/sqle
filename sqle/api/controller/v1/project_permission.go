@@ -49,6 +49,41 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	return ErrWorkflowNoAccess
 }
 
+func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow *model.Workflow, ops []dmsV1.OpPermissionType, taskIdList []uint) error {
+	userId := controller.GetUserID(c)
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return err
+	}
+	if up.IsAdmin() {
+		return nil
+	}
+
+	s := model.GetStorage()
+
+	access, err := s.UserCanAccessWorkflow(userId, workflow)
+	if err != nil {
+		return err
+	}
+	if access {
+		return nil
+	}
+
+	if len(ops) > 0 {
+		instances, err := s.GetInstanceByTaskIDList(taskIdList)
+		if err != nil {
+			return err
+		}
+		for _, instance := range instances {
+			if up.CanOpInstanceNoAdmin(instance.GetIDStr(), ops...) {
+				return nil
+			}
+		}
+	}
+
+	return ErrWorkflowNoAccess
+}
+
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []dmsV1.OpPermissionType) error {
 	userId := controller.GetUserID(c)
 
@@ -208,7 +243,7 @@ func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, pro
 func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPermissionTypes []dmsV1.OpPermissionType, instance *model.Instance) bool {
 	for _, userOpPermission := range userOpPermissions {
 		// 对象权限(当前空间内所有对象)
-		if userOpPermission.RangeType == dmsV1.OpRangeTypeNamespace {
+		if userOpPermission.RangeType == dmsV1.OpRangeTypeProject {
 			return true
 		}
 

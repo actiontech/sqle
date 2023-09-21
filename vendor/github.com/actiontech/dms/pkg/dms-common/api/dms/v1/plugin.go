@@ -157,7 +157,7 @@ type DataResourceType string
 
 const (
 	DataResourceTypeDBService DataResourceType = "db_service"
-	DataResourceTypeNamespace DataResourceType = "namespace"
+	DataResourceTypeProject   DataResourceType = "project"
 	DataResourceTypeUser      DataResourceType = "user"
 	DataResourceTypeUserGroup DataResourceType = "user_group"
 )

@@ -240,10 +240,25 @@ type WorkflowInstanceRecord struct {
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
+	ExecutionAssignees string
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
+}
+
+func (s *Storage) GetInstanceByTaskIDList(taskIds []uint) (instances []*Instance, err error) {
+	var instanceRecords []*WorkflowInstanceRecord
+	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("Instance").Where("task_id in (?)", taskIds).Find(&instanceRecords).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, instanceRecord := range instanceRecords {
+		instances = append(instances, instanceRecord.Instance)
+	}
+
+	return instances, nil
 }
 
 const (
@@ -400,37 +415,41 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 	}
 
-	workflow := &Workflow{
-		Subject:      subject,
-		WorkflowId:   workflowId,
-		Desc:         desc,
-		ProjectId:    projectId,
-		CreateUserId: user.GetIDStr(),
-		Mode:         workflowMode,
-	}
+	tx := s.db.Begin()
 
-	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
-	for i, task := range tasks {
-		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
-		}
-	}
-
-	record := &WorkflowRecord{
-		InstanceRecords: instanceRecords,
-	}
-
+	record := new(WorkflowRecord)
 	if len(stepTemplates) == 1 {
 		record.Status = WorkflowStatusWaitForExecution
+	}
+
+	err := tx.Save(record).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
+	}
+
+	workflow := &Workflow{
+		Subject:          subject,
+		WorkflowId:       workflowId,
+		Desc:             desc,
+		ProjectId:        projectId,
+		CreateUserId:     user.GetIDStr(),
+		Mode:             workflowMode,
+		WorkflowRecordId: record.ID,
+	}
+
+	err = tx.Save(workflow).Error
+	if err != nil {
+		tx.Rollback()
+		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	allUsers, allExecutor := getOpExecUser(tasks)
 	canOptUsers := allUsers[0]
 	canExecUsers := allExecutor[0]
 	for i := 1; i < len(allUsers); i++ {
-		canOptUsers = getOverlapOfUsers(canOptUsers, allUsers[i])
-		canExecUsers = getOverlapOfUsers(canExecUsers, allExecutor[i])
+		canOptUsers = GetOverlapOfUsers(canOptUsers, allUsers[i])
+		canExecUsers = GetOverlapOfUsers(canExecUsers, allExecutor[i])
 	}
 
 	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
@@ -449,53 +468,68 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 	}
 
-	steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+	{
+		// 工单详情概览页面待操作人是流程模版执行上线step的待操作人加上该数据源待操作人
+		// 如果流程模版制定了待操作人,即指定待操作人上线
+		instanceRecords := UpdateInstanceRecord(stepTemplates, tasks, canExecUsers, allExecutor)
 
-	tx := s.db.Begin()
-
-	err := tx.Save(record).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
-	}
-
-	workflow.WorkflowRecordId = record.ID
-	err = tx.Save(workflow).Error
-	if err != nil {
-		tx.Rollback()
-		return errors.New(errors.ConnectStorageError, err)
-	}
-
-	for _, step := range steps {
-		currentStep := step
-		currentStep.WorkflowRecordId = record.ID
-		currentStep.WorkflowId = workflow.ID
-		err = tx.Save(currentStep).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
-	if len(steps) > 0 {
-		err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
-	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
-}
-
-func getOverlapOfUsers(users1, users2 []*User) []*User {
-	var res []*User
-	for _, user1 := range users1 {
-		for _, user2 := range users2 {
-			if user1.ID == user2.ID {
-				res = append(res, user1)
+		for _, instanceRecord := range instanceRecords {
+			instRecord := instanceRecord
+			instRecord.WorkflowRecordId = record.ID
+			err = tx.Save(instRecord).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
 			}
 		}
 	}
-	return res
+
+	{
+		steps := generateWorkflowStepByTemplate(stepTemplates, canOptUsers, canExecUsers)
+
+		for _, step := range steps {
+			currentStep := step
+			currentStep.WorkflowRecordId = record.ID
+			currentStep.WorkflowId = workflow.ID
+			err = tx.Save(currentStep).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
+		}
+
+		if len(steps) > 0 {
+			err = tx.Model(record).Update("current_workflow_step_id", steps[0].ID).Error
+			if err != nil {
+				tx.Rollback()
+				return errors.New(errors.ConnectStorageError, err)
+			}
+		}
+	}
+
+	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
+
+func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, stepExecUsers []*User, allExecutor [][]*User) []*WorkflowInstanceRecord {
+	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
+	executionStep := stepTemplates[len(stepTemplates)-1]
+	isExecuteByAuthorized := executionStep.ExecuteByAuthorized.Bool
+	stepTemplateAssignees := executionStep.Users
+	for i, task := range tasks {
+		instanceRecords[i] = &WorkflowInstanceRecord{
+			TaskId:     task.ID,
+			InstanceId: task.InstanceId,
+		}
+
+		if isExecuteByAuthorized {
+			distinctOfUsers := GetDistinctOfUsers(stepExecUsers, allExecutor[i])
+			instanceRecords[i].ExecutionAssignees = strings.Join(distinctOfUsers, ",")
+		} else {
+			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
+		}
+	}
+
+	return instanceRecords
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
@@ -1195,7 +1229,7 @@ type WorkflowTasksSummaryDetail struct {
 	CurrentStepAssigneeUserIds sql.NullString `json:"current_step_assignee_user_ids"`
 }
 
-var workflowTasksSummaryQueryTpl = `
+var workflowStepSummaryQueryTpl = `
 SELECT wr.status                                                     AS workflow_record_status,
        tasks.id                                                      AS task_id,
        tasks.exec_start_at                                           AS task_exec_start_at,
@@ -1217,18 +1251,15 @@ LIMIT 1
 {{- end }}
 `
 
-var workflowTasksSummaryQueryBodyTplV2 = `
+var workflowStepSummaryQueryBodyTplV2 = `
 {{ define "body" }}
 FROM workflow_instance_records AS wir
 LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
 LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
-{{- if .is_executing }}
-LEFT JOIN workflow_steps AS curr_ws ON wr.id = curr_ws.workflow_record_id
-{{- else}}
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id	
-{{- end }}
+
 
 WHERE
 w.deleted_at IS NULL
@@ -1238,16 +1269,58 @@ AND w.project_id = :project_id
 {{ end }}
 `
 
-func (s *Storage) GetWorkflowTasksSummaryByReqV2(data map[string]interface{}) (
+func (s *Storage) GetWorkflowStepSummaryByReqV2(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
 
 	if data["workflow_id"] == nil || data["project_id"] == nil {
 		return result, errors.New(errors.DataInvalid, fmt.Errorf("project id and workflow name must be specified"))
 	}
 
-	// 由于工单正在上线状态时（即工单处于正在状态且没有当前步骤），无法获取待操作人。为解决此问题，
-	// 我们增加一个名为 "is_executing" 的标识符，如果其值为 true，则直接获取工单流程的最后一个step的分配用户(工单流程最后一个step一定是执行上线step)。
-	err = s.getListResult(workflowTasksSummaryQueryBodyTplV2, workflowTasksSummaryQueryTpl, data, &result)
+	err = s.getListResult(workflowStepSummaryQueryBodyTplV2, workflowStepSummaryQueryTpl, data, &result)
+	if err != nil {
+		return result, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return result, nil
+}
+
+var workflowTaskSummaryQueryTpl = `
+SELECT wr.status                                                               AS workflow_record_status,
+       tasks.id                                                                AS task_id,
+       tasks.exec_start_at                                                     AS task_exec_start_at,
+       tasks.exec_end_at                                                       AS task_exec_end_at,
+       tasks.pass_rate                                                         AS task_pass_rate,
+       tasks.score                                                             AS task_score,
+       tasks.status                                                            AS task_status,
+       inst.name                                                               AS instance_name,
+       inst.deleted_at                                                         AS instance_deleted_at,
+       inst.maintenance_period                                                 AS instance_maintenance_period,
+       wir.scheduled_at                                                        AS instance_scheduled_at,
+	   wir.execution_user_id			                             AS execution_user_id,
+       IF(tasks.status = 'audited' || tasks.status = 'executing' ||
+          tasks.status = 'terminating', wir.execution_assignees, '') AS current_step_assignee_user_ids
+{{- template "body" . -}}
+`
+
+var workflowTaskSummaryQueryBodyTpl = `
+{{ define "body" }}
+FROM workflow_instance_records AS wir
+         LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
+         LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
+         LEFT JOIN tasks ON wir.task_id = tasks.id
+         LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
+		 WHERE w.deleted_at IS NULL
+			AND w.workflow_id = :workflow_id
+			AND w.project_id = :project_id
+{{ end }}
+`
+
+func (s *Storage) GetWorkflowTaskSummaryByReq(data map[string]interface{}) (result []*WorkflowTasksSummaryDetail, err error) {
+	if data["workflow_id"] == nil || data["project_id"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	}
+
+	err = s.getListResult(workflowTaskSummaryQueryBodyTpl, workflowTaskSummaryQueryTpl, data, &result)
 	if err != nil {
 		return result, errors.New(errors.ConnectStorageError, err)
 	}
