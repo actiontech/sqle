@@ -11,6 +11,7 @@ const (
 	TypeDB2TopSQL                = "db2_top_sql"
 	TypeDB2SchemaMeta            = "db2_schema_meta"
 	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
+	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
 )
 
 const (
@@ -108,6 +109,20 @@ var EEMetas = []Meta{
 				Desc:  "是否采集视图信息",
 				Value: "0",
 				Type:  params.ParamTypeBool,
+			},
+		},
+	},
+	{
+		Type:         TypeTDSQLSchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypeTDSQL,
+		CreateTask:   NewSchemaMetaTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
 			},
 		},
 	},
