@@ -38,10 +38,13 @@ Acitontech Sqle
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
 mkdir -p %{_builddir}/%{buildsubdir}/sqle/plugins
+mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/scripts
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
-cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.systemd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.systemd
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.initd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.initd
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/pt-online-schema-change.template $RPM_BUILD_ROOT/usr/local/sqle/scripts/pt-online-schema-change.template
 # cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
 
 ##########
