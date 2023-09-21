@@ -96,5 +96,5 @@ type BatchUpdateSqlManageReq struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_manages/batch [PATCH]
 func BatchUpdateSqlManage(c echo.Context) error {
-	return nil
+	return batchUpdateSqlManage(c)
 }

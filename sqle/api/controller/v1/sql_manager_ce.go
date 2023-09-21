@@ -15,3 +15,7 @@ var ErrCommunityEditionNotSupportSqlManage = errors.New(errors.EnterpriseEdition
 func getSqlManageList(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func batchUpdateSqlManage(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
