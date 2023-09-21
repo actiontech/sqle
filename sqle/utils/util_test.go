@@ -196,3 +196,25 @@ func Test_IsClosed(t *testing.T) {
 		t.Error("c2 is closed")
 	}
 }
+
+func TestIsGitHttpURL(t *testing.T) {
+
+	trueCases := []string{
+		"https://github.com/golang/go.git",
+		"http://github.com/user/repo.git",
+	}
+
+	falseCases := []string{
+		"https://github.com/user/repo",
+		"ftp://github.com/user/repo.git",
+		"git@github.com:user/repo.git",
+	}
+
+	for _, tc := range trueCases {
+		assert.True(t, IsGitHttpURL(tc), "Expected %q to be a valid Git Http URL", tc)
+	}
+
+	for _, tc := range falseCases {
+		assert.False(t, IsGitHttpURL(tc), "Expected %q to be an invalid Git Http URL", tc)
+	}
+}
