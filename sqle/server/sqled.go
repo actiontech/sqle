@@ -284,7 +284,7 @@ func (a *action) audit() (err error) {
 	}
 
 	// skip generate if audit is static
-	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
+	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.SQLSource == model.TaskSQLSourceFromZipFile || a.task.SQLSource == model.TaskSQLSourceFromGitRepository || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else if !driver.GetPluginManager().IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
 		a.entry.Infof("skip generate rollback SQLs, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGenRollbackSQL))

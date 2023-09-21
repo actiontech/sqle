@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -250,4 +251,19 @@ func TryClose(ch chan struct{}) {
 	if !IsClosed(ch) {
 		close(ch)
 	}
+}
+
+// 判断字符串是否是Git Http URL
+func IsGitHttpURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	if !strings.HasSuffix(u.Path, ".git") {
+		return false
+	}
+	return true
 }
