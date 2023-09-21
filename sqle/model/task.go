@@ -32,6 +32,7 @@ const (
 	TaskSQLSourceFromSQLFile        = "sql_file"
 	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
 	TaskSQLSourceFromZipFile        = "zip_file"
+	TaskSQLSourceFromGitRepository  = "git_repository"
 	TaskSQLSourceFromAuditPlan      = "audit_plan"
 )
 
