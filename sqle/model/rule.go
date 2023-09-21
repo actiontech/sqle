@@ -45,14 +45,32 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 	}
 }
 
+type RuleKnowledge struct {
+	Model
+	Content string
+}
+
+func (r *RuleKnowledge) TableName() string {
+	return "rule_knowledge"
+}
+
+func (r *RuleKnowledge) GetContent() string {
+	if r == nil {
+		return ""
+	}
+	return r.Content
+}
+
 type Rule struct {
-	Name       string        `json:"name" gorm:"primary_key; not null"`
-	DBType     string        `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc       string        `json:"desc"`
-	Annotation string        `json:"annotation" gorm:"column:annotation"`
-	Level      string        `json:"level" example:"error"` // notice, warn, error
-	Typ        string        `json:"type" gorm:"column:type; not null"`
-	Params     params.Params `json:"params" gorm:"type:varchar(1000)"`
+	Name        string         `json:"name" gorm:"primary_key; not null"`
+	DBType      string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc        string         `json:"desc"`
+	Annotation  string         `json:"annotation" gorm:"column:annotation"`
+	Level       string         `json:"level" example:"error"` // notice, warn, error
+	Typ         string         `json:"type" gorm:"column:type; not null"`
+	Params      params.Params  `json:"params" gorm:"type:varchar(1000)"`
+	KnowledgeId uint           `json:"knowledge_id"`
+	Knowledge   *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
 }
 
 func (r Rule) TableName() string {
