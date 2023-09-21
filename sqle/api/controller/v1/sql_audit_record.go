@@ -7,7 +7,10 @@ import (
 	e "errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,6 +24,8 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
+	goGit "github.com/go-git/go-git/v5"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -340,6 +345,75 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 		}
 	}
 
+	return sqlBuffer.String(), true, nil
+}
+
+func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
+	// make a temp dir and clean up befor return
+	dir, err := os.MkdirTemp("./", "git-repo-")
+	if err != nil {
+		return "", false, err
+	}
+	defer os.RemoveAll(dir)
+	// read http url from form and check if it's a git url
+	url := c.FormValue(GitHttpURL)
+	if !utils.IsGitHttpURL(url) {
+		return "", false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+	}
+	cloneOpts := &goGit.CloneOptions{
+		URL: url,
+	}
+	// public repository do not require an user name and password
+	userName := c.FormValue(GitUserName)
+	password := c.FormValue(GitPassword)
+	if userName != "" {
+		cloneOpts.Auth = &goGitTransport.BasicAuth{
+			Username: userName,
+			Password: password,
+		}
+	}
+	// clone from git
+	_, err = goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
+	if err != nil {
+		return "", false, err
+	}
+	// traverse the repository, parse and put SQL into sqlBuffer
+	var sqlBuffer strings.Builder
+	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			switch {
+			case strings.HasSuffix(path, ".xml"):
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return nil
+				}
+				ss, err := xmlParser.ParseXMLs([]string{string(content)}, false)
+				if err != nil {
+					return nil
+				}
+				if len(ss) == 0 {
+					return nil
+				}
+				_, err = sqlBuffer.WriteString(ss[0])
+				if err != nil {
+					return fmt.Errorf("gather sqls from xml file failed: %v", err)
+				}
+			case strings.HasSuffix(path, ".sql"):
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return nil
+				}
+				_, err = sqlBuffer.Write(content)
+				if err != nil {
+					return fmt.Errorf("gather sqls from sql file failed: %v", err)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", false, err
+	}
 	return sqlBuffer.String(), true, nil
 }
 
