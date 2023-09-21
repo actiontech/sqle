@@ -128,7 +128,7 @@ func (at *OBMySQLTopSQLTask) collect(p driver.Plugin, sql string) error {
 	return at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
-func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *OBMySQLTopSQLTask) Audit() (*AuditResultResp, error) {
 	var task *model.Task
 	if at.ap.InstanceName == "" {
 		task = &model.Task{
@@ -656,7 +656,7 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 // Before auditing sql, we need to insert a Schema switching statement.
 // And need to manually execute server.ReplenishTaskStatistics() to recalculate
 // real task object score
-func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *SlowLogTask) Audit() (*AuditResultResp, error) {
 	return auditWithSchema(at.logger, at.persist, at.ap)
 }
 
@@ -672,7 +672,7 @@ func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return task
 }
 
-func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *DB2TopSQLTask) Audit() (*AuditResultResp, error) {
 
 	task := &model.Task{DBType: at.ap.DBType}
 
@@ -886,7 +886,7 @@ func NewDB2SchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return task
 }
 
-func (at *DB2SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *DB2SchemaMetaTask) Audit() (*AuditResultResp, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
 	}
