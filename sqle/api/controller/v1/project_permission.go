@@ -243,7 +243,7 @@ func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, pro
 func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPermissionTypes []dmsV1.OpPermissionType, instance *model.Instance) bool {
 	for _, userOpPermission := range userOpPermissions {
 		// 对象权限(当前空间内所有对象)
-		if userOpPermission.RangeType == dmsV1.OpRangeTypeNamespace {
+		if userOpPermission.RangeType == dmsV1.OpRangeTypeProject {
 			return true
 		}
 

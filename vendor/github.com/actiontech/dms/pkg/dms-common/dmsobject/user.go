@@ -27,7 +27,7 @@ func GetUser(ctx context.Context, userUid string, dmsAddr string) (*dmsV1.GetUse
 	return reply.Payload.User, nil
 }
 
-func GetUserOpPermission(ctx context.Context, namespaceUid, userUid, dmsAddr string) (ret []dmsV1.OpPermissionItem, isAdmin bool, err error) {
+func GetUserOpPermission(ctx context.Context, projectUid, userUid, dmsAddr string) (ret []dmsV1.OpPermissionItem, isAdmin bool, err error) {
 	header := map[string]string{
 		"Authorization": pkgHttp.DefaultDMSToken,
 	}
@@ -35,7 +35,7 @@ func GetUserOpPermission(ctx context.Context, namespaceUid, userUid, dmsAddr str
 	reqBody := struct {
 		UserOpPermission *dmsV1.UserOpPermission `json:"user_op_permission"`
 	}{
-		UserOpPermission: &dmsV1.UserOpPermission{NamespaceUid: namespaceUid},
+		UserOpPermission: &dmsV1.UserOpPermission{ProjectUid: projectUid},
 	}
 
 	reply := &dmsV1.GetUserOpPermissionReply{}
@@ -53,15 +53,14 @@ func GetUserOpPermission(ctx context.Context, namespaceUid, userUid, dmsAddr str
 
 }
 
-func ListMembersInNamespace(ctx context.Context, dmsAddr string, req dmsV1.ListMembersForInternalReq) ([]*dmsV1.ListMembersForInternalItem, int64, error) {
+func ListMembersInProject(ctx context.Context, dmsAddr string, req dmsV1.ListMembersForInternalReq) ([]*dmsV1.ListMembersForInternalItem, int64, error) {
 	header := map[string]string{
 		"Authorization": pkgHttp.DefaultDMSToken,
 	}
 
 	reply := &dmsV1.ListMembersForInternalReply{}
 
-	url := fmt.Sprintf("%v%v?page_size=%v&page_index=%v&namespace_uid=%v",
-		dmsAddr, dmsV1.GetListMembersForInternalRouter(), req.PageSize, req.PageIndex, req.NamespaceUid)
+	url := fmt.Sprintf("%v%v?page_size=%v&page_index=%v", dmsAddr, dmsV1.GetListMembersForInternalRouter(req.ProjectUid), req.PageSize, req.PageIndex)
 
 	if err := pkgHttp.Get(ctx, url, header, nil, reply); err != nil {
 		return nil, 0, fmt.Errorf("failed to get member from %v: %v", url, err)
