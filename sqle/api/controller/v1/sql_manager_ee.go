@@ -100,3 +100,23 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 
 	return sqlManageRespList
 }
+
+func batchUpdateSqlManage(c echo.Context) error {
+	req := new(BatchUpdateSqlManageReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if len(req.SqlManageIdList) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
+
+	s := model.GetStorage()
+
+	err := s.BatchUpdateSqlManage(req.SqlManageIdList, req.Status, req.Remark, req.Assignees)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
