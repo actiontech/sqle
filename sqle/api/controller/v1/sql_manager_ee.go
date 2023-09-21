@@ -113,7 +113,16 @@ func batchUpdateSqlManage(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	err := s.BatchUpdateSqlManage(req.SqlManageIdList, req.Status, req.Remark, req.Assignees)
+	currentUserName := controller.GetUserName(c)
+	projectName := c.Param("project_name")
+	err := CheckIsProjectMember(currentUserName, projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// todo 检测id是否存在
+
+	err = s.BatchUpdateSqlManage(req.SqlManageIdList, req.Status, req.Remark, req.Assignees)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
