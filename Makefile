@@ -119,8 +119,9 @@ docker_check: docker_lint docker_scspell docker_test
 docker_clean:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make clean ${MAKEFLAGS}"
 
+# todo 升级golang版本后，git获取版本号失败，临时添加"git config --global --add safe.directory /universe"解决
 docker_install:
-	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install $(MAKEFLAGS)"
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "git config --global --add safe.directory /universe && cd /universe && make install $(MAKEFLAGS)"
 
 docker_install_sqled:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_sqled $(MAKEFLAGS)"
