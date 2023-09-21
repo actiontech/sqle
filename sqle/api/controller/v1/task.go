@@ -69,6 +69,9 @@ const (
 	InputSQLFileName        = "input_sql_file"
 	InputMyBatisXMLFileName = "input_mybatis_xml_file"
 	InputZipFileName        = "input_zip_file"
+	GitHttpURL              = "git_http_url"
+	GitUserName             = "git_user_name"
+	GitPassword             = "git_user_password"
 )
 
 func getSQLFromFile(c echo.Context) (string, string, error) {
@@ -99,10 +102,20 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 	if err != nil {
 		return "", model.TaskSQLSourceFromZipFile, err
 	}
+
+	if exist {
+		return sqls, model.TaskSQLSourceFromZipFile, nil
+	}
+	// If zip file is not exist, read it from git repository
+	sqls, exist, err = getSqlsFromGit(c)
+	if err != nil {
+		return "", model.TaskSQLSourceFromGitRepository, err
+	}
 	if !exist {
 		return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 	}
-	return sqls, model.TaskSQLSourceFromZipFile, nil
+	return sqls, model.TaskSQLSourceFromGitRepository, nil
+
 }
 
 // @Summary 创建Sql扫描任务并提交审核
