@@ -200,6 +200,35 @@ func (s *Storage) GetAllSqlManageList() ([]*SqlManage, error) {
 	return sqlManageList, nil
 }
 
+// todo 临时方案，后续移除
+func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*SqlManage) error {
+	args := make([]interface{}, 0, len(sqlManageList))
+	pattern := make([]string, 0, len(sqlManageList))
+	for _, sqlManage := range sqlManageList {
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
+			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
+			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Status, sqlManage.Remark,
+			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
+	}
+
+	raw := fmt.Sprintf(`
+INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
+                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name, status,
+                         remark, audit_plan_id, project_id, sql_audit_record_id)
+		VALUES %s
+		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
+                        audit_plan_id          = VALUES(audit_plan_id),
+                        sql_audit_record_id    = VALUES(sql_audit_record_id),
+                        audit_level            = VALUES(audit_level),
+                        audit_results          = VALUES(audit_results),
+                        first_appear_timestamp = VALUES(first_appear_timestamp),
+                        last_receive_timestamp = VALUES(last_receive_timestamp);`,
+		strings.Join(pattern, ", "))
+
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+}
+
 func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
 	args := make([]interface{}, 0, len(sqlManageList))
 	pattern := make([]string, 0, len(sqlManageList))
