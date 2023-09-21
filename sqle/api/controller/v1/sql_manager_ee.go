@@ -4,10 +4,13 @@
 package v1
 
 import (
+	e "errors"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -120,9 +123,17 @@ func batchUpdateSqlManage(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// todo 检测id是否存在
+	distinctSqlManageIDs := utils.RemoveDuplicatePtrUint64(req.SqlManageIdList)
+	sqlManages, err := s.GetSqlManageListByIDs(distinctSqlManageIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
-	err = s.BatchUpdateSqlManage(req.SqlManageIdList, req.Status, req.Remark, req.Assignees)
+	if len(sqlManages) != len(distinctSqlManageIDs) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("sql manage record not exist")))
+	}
+
+	err = s.BatchUpdateSqlManage(distinctSqlManageIDs, req.Status, req.Remark, req.Assignees)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
