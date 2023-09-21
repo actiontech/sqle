@@ -76,6 +76,20 @@ func RemoveDuplicate(c []string) []string {
 	return result
 }
 
+func RemoveDuplicatePtrUint64(c []*uint64) []*uint64 {
+	var tmpMap = map[uint64]struct{}{}
+	var result = []*uint64{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[*v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
 func RemoveDuplicateUint(c []uint) []uint {
 	var tmpMap = map[uint]struct{}{}
 	var result = []uint{}

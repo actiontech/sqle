@@ -239,7 +239,7 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 		}
 
 		if len(data) > 0 {
-			err := tx.Model(&SqlManage{}).Update(data).Where("id in (?)", idList).Error
+			err := tx.Model(&SqlManage{}).Where("id in (?)", idList).Update(data).Error
 			if err != nil {
 				return err
 			}
@@ -279,4 +279,13 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 
 		return nil
 	})
+}
+
+func (s *Storage) GetSqlManageListByIDs(ids []*uint64) ([]*SqlManage, error) {
+	sqlManageList := []*SqlManage{}
+	err := s.db.Model(SqlManage{}).Where("id IN (?)", ids).Find(&sqlManageList).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqlManageList, nil
 }
