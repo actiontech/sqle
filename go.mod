@@ -1,6 +1,6 @@
 module github.com/actiontech/sqle
 
-go 1.19.6
+go 1.19
 
 require (
 	github.com/99designs/gqlgen v0.17.20

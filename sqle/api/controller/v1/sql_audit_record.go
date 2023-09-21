@@ -24,8 +24,8 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
-	gogit "github.com/go-git/go-git/v5"
-	gogitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
+	goGit "github.com/go-git/go-git/v5"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -360,20 +360,20 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 	if !utils.IsGitHttpURL(url) {
 		return "", false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
-	cloneOpts := &gogit.CloneOptions{
+	cloneOpts := &goGit.CloneOptions{
 		URL: url,
 	}
 	// public repository do not require an user name and password
 	userName := c.FormValue(GitUserName)
 	password := c.FormValue(GitPassword)
 	if userName != "" {
-		cloneOpts.Auth = &gogitTransport.BasicAuth{
+		cloneOpts.Auth = &goGitTransport.BasicAuth{
 			Username: userName,
 			Password: password,
 		}
 	}
 	// clone from git
-	_, err = gogit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
+	_, err = goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
 	if err != nil {
 		return "", false, err
 	}
