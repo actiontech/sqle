@@ -226,3 +226,57 @@ INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_te
 
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
+
+func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark *string, assignees []*string) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		data := map[string]interface{}{}
+		if status != nil {
+			data["status"] = *status
+		}
+
+		if remark != nil {
+			data["remark"] = *remark
+		}
+
+		if len(data) > 0 {
+			err := tx.Model(&SqlManage{}).Update(data).Where("id in (?)", idList).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		if assignees != nil {
+			userList := []*User{}
+			err := tx.Where("login_name in (?)", assignees).Find(&userList).Error
+			if err != nil {
+				return err
+			}
+
+			if len(userList) > 0 {
+				err := tx.Exec("DELETE FROM sql_manage_assignees sma WHERE sma.sql_manage_id IN (?)", idList).Error
+				if err != nil {
+					return err
+				}
+
+				pattern := make([]string, 0, len(userList))
+				args := make([]interface{}, 0)
+				for _, id := range idList {
+					for _, user := range userList {
+						pattern = append(pattern, "(?,?)")
+						args = append(args, *id, user.ID)
+					}
+				}
+
+				raw := fmt.Sprintf("INSERT INTO `sql_manage_assignees` (`sql_manage_id`, `user_id`) VALUES %s",
+					strings.Join(pattern, ", "))
+
+				err = tx.Exec(raw, args...).Error
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+}
