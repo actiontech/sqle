@@ -102,20 +102,19 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 	if err != nil {
 		return "", model.TaskSQLSourceFromZipFile, err
 	}
-
 	if exist {
 		return sqls, model.TaskSQLSourceFromZipFile, nil
 	}
+
 	// If zip file is not exist, read it from git repository
 	sqls, exist, err = getSqlsFromGit(c)
 	if err != nil {
 		return "", model.TaskSQLSourceFromGitRepository, err
 	}
-	if !exist {
-		return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	if exist {
+		return sqls, model.TaskSQLSourceFromGitRepository, nil
 	}
-	return sqls, model.TaskSQLSourceFromGitRepository, nil
-
+	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
 // @Summary 创建Sql扫描任务并提交审核
