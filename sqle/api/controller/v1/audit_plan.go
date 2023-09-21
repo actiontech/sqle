@@ -797,7 +797,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	if project.Archived {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("project is archived"))
 	}
-	projectUid := project.NamespaceUid
+	projectUid := project.ProjectUid
 
 	ap, exist, err := s.GetAuditPlanFromProjectById(projectUid, apName)
 	if err != nil {
@@ -844,7 +844,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if project.Archived {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("project is archived"))
 	}
-	projectUid := project.NamespaceUid
+	projectUid := project.ProjectUid
 
 	ap, exist, err := s.GetAuditPlanFromProjectById(projectUid, apName)
 	if err != nil {

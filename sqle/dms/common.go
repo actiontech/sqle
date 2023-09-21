@@ -100,7 +100,7 @@ func GetUserNameWithDelTag(userId string) string {
 
 // dms-todo: 临时方案
 func GetPorjectUIDByName(ctx context.Context, projectName string) (projectUID string, err error) {
-	ret, total, err := dmsobject.ListNamespaces(ctx, controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
+	ret, total, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:     1,
 		PageIndex:    1,
 		FilterByName: projectName,
@@ -114,11 +114,11 @@ func GetPorjectUIDByName(ctx context.Context, projectName string) (projectUID st
 	if ret[0].Archived {
 		return "", fmt.Errorf("project is archived")
 	}
-	return ret[0].NamespaceUid, nil
+	return ret[0].ProjectUid, nil
 }
 
-func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.ListNamespace, err error) {
-	ret, total, err := dmsobject.ListNamespaces(ctx, controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
+func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.ListProject, err error) {
+	ret, total, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:     1,
 		PageIndex:    1,
 		FilterByName: projectName,
@@ -137,7 +137,7 @@ func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.L
 
 func GetProjects() ([]string, error) {
 	projectIds := make([]string, 0)
-	namespaces, _, err := dmsobject.ListNamespaces(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListNamespaceReq{
+	namespaces, _, err := dmsobject.ListProjects(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:  9999,
 		PageIndex: 1,
 	})
@@ -145,7 +145,7 @@ func GetProjects() ([]string, error) {
 		return nil, err
 	}
 	for _, namespce := range namespaces {
-		projectIds = append(projectIds, namespce.NamespaceUid)
+		projectIds = append(projectIds, namespce.ProjectUid)
 	}
 	return projectIds, nil
 }
