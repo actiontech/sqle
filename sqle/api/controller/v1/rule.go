@@ -1645,9 +1645,10 @@ type GetRuleKnowledgeResV1 struct {
 // @Id getRuleKnowledgeV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_name path string true "rule id"
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
 // @Success 200 {object} v1.RuleKnowledgeResV1
-// @router /v1/rule_knowledge/{rule_name}/ [get]
+// @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [get]
 func GetRuleKnowledge(c echo.Context) error {
 	return getRuleKnowledge(c)
 }
@@ -1662,10 +1663,11 @@ type UpdateRuleKnowledgeReq struct {
 // @Id updateRuleKnowledge
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param rule_name path string true "rule id"
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
 // @Param req body v1.UpdateRuleKnowledgeReq true "update rule knowledge"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/rule_knowledge/{rule_name}/ [patch]
+// @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [patch]
 func UpdateRuleKnowledgeV1(c echo.Context) error {
 	return updateRuleKnowledge(c)
 }
