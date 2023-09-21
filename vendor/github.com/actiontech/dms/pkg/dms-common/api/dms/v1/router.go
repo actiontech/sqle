@@ -14,11 +14,11 @@ var (
 var (
 	SessionRouterGroup            = "/dms/sessions"
 	UserRouterGroup               = "/dms/users"
-	DBServiceRouterGroup          = "/dms/db_services"
+	DBServiceRouterGroup          = "/dms/projects/:project_uid/db_services"
 	ProxyRouterGroup              = "/dms/proxys"
 	PluginRouterGroup             = "/dms/plugins"
-	MemberRouterGroup             = "/dms/members"
-	NamespaceRouterGroup          = "/dms/namespaces"
+	MemberRouterGroup             = "/dms/projects/:project_uid/members"
+	ProjectRouterGroup            = "/dms/projects"
 	NotificationRouterGroup       = "/dms/notifications"
 	WebHookRouterGroup            = "/dms/webhooks"
 	MemberForInternalRouterSuffix = "/internal"
@@ -40,8 +40,8 @@ func GetUserOpPermissionRouterWithoutPrefix(userUid string) string {
 	return strings.TrimPrefix(strings.TrimPrefix(router, CurrentGroupVersion), UserRouterGroup)
 }
 
-func GetDBServiceRouter() string {
-	return fmt.Sprintf("%s%s", CurrentGroupVersion, DBServiceRouterGroup)
+func GetDBServiceRouter(projectUid string) string {
+	return fmt.Sprintf("%s%s", CurrentGroupVersion, strings.Replace(DBServiceRouterGroup, ":project_uid", projectUid, 1))
 }
 
 func GetUserRouter(userUid string) string {
@@ -52,8 +52,8 @@ func GetUsersRouter() string {
 	return fmt.Sprintf("%s%s", CurrentGroupVersion, UserRouterGroup)
 }
 
-func GetListMembersForInternalRouter() string {
-	return fmt.Sprintf("%s%s%s", CurrentGroupVersion, MemberRouterGroup, MemberForInternalRouterSuffix)
+func GetListMembersForInternalRouter(projectUid string) string {
+	return fmt.Sprintf("%s%s%s", CurrentGroupVersion, strings.Replace(MemberRouterGroup, ":project_uid", projectUid, 1), MemberForInternalRouterSuffix)
 }
 
 func GetProxyRouter() string {
@@ -64,8 +64,8 @@ func GetPluginRouter() string {
 	return fmt.Sprintf("%s%s", CurrentGroupVersion, PluginRouterGroup)
 }
 
-func GetNamespacesRouter() string {
-	return fmt.Sprintf("%s%s", CurrentGroupVersion, NamespaceRouterGroup)
+func GetProjectsRouter() string {
+	return fmt.Sprintf("%s%s", CurrentGroupVersion, ProjectRouterGroup)
 }
 
 func GetNotificationRouter() string {
