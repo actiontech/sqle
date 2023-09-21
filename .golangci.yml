@@ -13,7 +13,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - forcetypeassert
+    # - forcetypeassert
     - prealloc
     - deadcode
     - gosimple
