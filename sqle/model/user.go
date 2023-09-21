@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"strings"
+
 	"github.com/actiontech/sqle/sqle/errors"
 )
 
@@ -39,7 +40,8 @@ type User struct {
 	Stat             uint   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
 	ThirdPartyUserID string `json:"third_party_user_id"`
 
-	WorkflowStepTemplates []*WorkflowStepTemplate `gorm:"many2many:workflow_step_template_user"`
+	WorkflowStepTemplates   []*WorkflowStepTemplate   `gorm:"many2many:workflow_step_template_user"`
+	WorkflowInstanceRecords []*WorkflowInstanceRecord `gorm:"many2many:workflow_instance_record_user"`
 }
 
 // // BeforeSave is a hook implement gorm model before exec create
@@ -350,4 +352,34 @@ func (s *Storage) GetUserRoleFromUserGroupByProjectName(projectName string) ([]*
 		Where("users.deleted_at IS NULL AND pg.name=? AND pg.deleted_at IS NULL AND r.id is not NULL", projectName).
 		Scan(&userRoles).Error
 	return userRoles, errors.ConnectStorageErrWrapper(err)
+}
+
+func GetDistinctOfUsers(users1, users2 []*User) []string {
+	resUsers := make([]string, 0)
+	m := make(map[uint]struct{})
+	for _, user := range users1 {
+		m[user.ID] = struct{}{}
+		resUsers = append(resUsers, user.GetIDStr())
+	}
+
+	for _, user := range users2 {
+		_, ok := m[user.ID]
+		if !ok {
+			resUsers = append(resUsers, user.GetIDStr())
+		}
+	}
+
+	return resUsers
+}
+
+func GetOverlapOfUsers(users1, users2 []*User) []*User {
+	var res []*User
+	for _, user1 := range users1 {
+		for _, user2 := range users2 {
+			if user1.ID == user2.ID {
+				res = append(res, user1)
+			}
+		}
+	}
+	return res
 }

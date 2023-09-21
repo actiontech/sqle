@@ -36,7 +36,7 @@ github.com/actiontech/dms/pkg/dms-common/api/jwt
 github.com/actiontech/dms/pkg/dms-common/dmsobject
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
-# github.com/actiontech/mybatis-mapper-2-sql v0.3.0
+# github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 ## explicit
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast

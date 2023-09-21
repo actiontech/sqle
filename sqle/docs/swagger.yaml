@@ -572,6 +572,37 @@ definitions:
       is_enable_ding_talk_notify:
         type: boolean
     type: object
+  v1.DirectAuditFileReqV1:
+    properties:
+      file_contents:
+        description: |-
+          调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
+          每个数组元素是一个文件内容
+        example:
+        - select * from t1; select * from t2;
+        items:
+          type: string
+        type: array
+      instance_name:
+        example: instance1
+        type: string
+      instance_type:
+        example: MySQL
+        type: string
+      project_name:
+        example: project1
+        type: string
+      schema_name:
+        example: schema1
+        type: string
+      sql_type:
+        enum:
+        - sql
+        - mybatis
+        - ""
+        example: sql
+        type: string
+    type: object
   v1.DirectAuditReqV1:
     properties:
       instance_name:
@@ -924,28 +955,6 @@ definitions:
         type: object
       message:
         example: ok
-        type: string
-    type: object
-  v1.GetInstanceConnectableReqV1:
-    properties:
-      additional_params:
-        items:
-          $ref: '#/definitions/v1.InstanceAdditionalParamReqV1'
-        type: array
-      db_type:
-        example: mysql
-        type: string
-      host:
-        example: 10.10.10.10
-        type: string
-      password:
-        example: "123456"
-        type: string
-      port:
-        example: "3306"
-        type: string
-      user:
-        example: root
         type: string
     type: object
   v1.GetInstanceConnectableResV1:
@@ -1575,13 +1584,6 @@ definitions:
         type: string
       total_nums:
         type: integer
-    type: object
-  v1.InstanceAdditionalParamReqV1:
-    properties:
-      name:
-        type: string
-      value:
-        type: string
     type: object
   v1.InstanceAdditionalParamResV1:
     properties:
@@ -3206,6 +3208,27 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/audit_files:
+    post:
+      description: Direct audit sql from SQL files and MyBatis files
+      operationId: directAuditFilesV1
+      parameters:
+      - description: files that should be audited
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.DirectAuditFileReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DirectAuditResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件
+      tags:
+      - sql_audit
   /v1/audit_plan_metas:
     get:
       description: get audit plan metas
@@ -3536,7 +3559,7 @@ paths:
       operationId: deleteCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
@@ -3555,7 +3578,7 @@ paths:
       operationId: getCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
@@ -3574,7 +3597,7 @@ paths:
       operationId: updateCustomRuleV1
       parameters:
       - description: rule id
-        in: query
+        in: path
         name: rule_id
         required: true
         type: string
@@ -3631,30 +3654,6 @@ paths:
       summary: 获取dashboard项目提示列表
       tags:
       - dashboard
-  /v1/instance_connection:
-    post:
-      consumes:
-      - application/json
-      description: test instance db connection 注：可直接提交创建实例接口的body，该接口的json 内容是创建实例的
-        json 的子集
-      operationId: checkInstanceIsConnectableV1
-      parameters:
-      - description: instance info
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.GetInstanceConnectableReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetInstanceConnectableResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 实例连通性测试（实例提交前）
-      tags:
-      - instance
   /v1/operation_records:
     get:
       description: Get operation record list
@@ -5943,6 +5942,7 @@ paths:
       - sql_analysis
   /v1/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV1
       parameters:
@@ -7083,6 +7083,7 @@ paths:
       - workflow
   /v2/sql_audit:
     post:
+      deprecated: true
       description: Direct audit sql
       operationId: directAuditV2
       parameters:
