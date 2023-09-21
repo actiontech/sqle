@@ -381,14 +381,17 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 	var sqlBuffer strings.Builder
 	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return nil
-			}
 			switch {
 			case strings.HasSuffix(path, ".xml"):
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return nil
+				}
 				ss, err := xmlParser.ParseXMLs([]string{string(content)}, false)
 				if err != nil {
+					return nil
+				}
+				if len(ss) == 0 {
 					return nil
 				}
 				_, err = sqlBuffer.WriteString(ss[0])
@@ -396,6 +399,10 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 					return fmt.Errorf("gather sqls from xml file failed: %v", err)
 				}
 			case strings.HasSuffix(path, ".sql"):
+				content, err := os.ReadFile(path)
+				if err != nil {
+					return nil
+				}
 				_, err = sqlBuffer.Write(content)
 				if err != nil {
 					return fmt.Errorf("gather sqls from sql file failed: %v", err)
