@@ -126,7 +126,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 	return nil
 }
 
-func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, source string) (string, error) {
+func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, source string, apID uint) (string, error) {
 	md5Json, err := json.Marshal(
 		struct {
 			ProjectId   uint
@@ -134,12 +134,14 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 			Schema      string
 			InstName    string
 			Source      string
+			ApID        uint
 		}{
 			ProjectId:   projectId,
 			Fingerprint: fp,
 			Schema:      schema,
 			InstName:    instName,
 			Source:      source,
+			ApID:        apID,
 		},
 	)
 	if err != nil {
@@ -150,7 +152,7 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 }
 
 func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId, apId uint, createAt, LastReceiveAt *time.Time, sqlAuditRecordID, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
-	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source)
+	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source, apId)
 	if err != nil {
 		return nil, fmt.Errorf("get sql manage md5 failed, error: %v", err)
 	}
