@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -412,7 +411,7 @@ func (i *IM) encryptAppSecret() error {
 	if i == nil {
 		return nil
 	}
-	data, err := utils.AesEncrypt(i.AppSecret)
+	data, err := dmsCommonAes.AesEncrypt(i.AppSecret)
 	if err != nil {
 		return err
 	}
@@ -434,7 +433,7 @@ func (i *IM) decryptAppSecret() error {
 		return nil
 	}
 	if i.AppSecret == "" {
-		data, err := utils.AesDecrypt(i.EncryptAppSecret)
+		data, err := dmsCommonAes.AesDecrypt(i.EncryptAppSecret)
 		if err != nil {
 			return err
 		}

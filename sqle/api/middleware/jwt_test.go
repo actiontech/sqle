@@ -9,8 +9,8 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -20,7 +20,6 @@ import (
 func TestScannerVerifier(t *testing.T) {
 	e := echo.New()
 
-	jwt := utils.NewJWT(utils.JWTSecretKey)
 	apName := "test_audit_plan"
 	projectName := "test_project"
 	testUser := "test_user"
@@ -42,7 +41,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan name don't match the token
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, fmt.Sprintf("%s_modified", apName))
 		err = mw(h)(ctx)
@@ -50,7 +49,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test unknown token
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix())
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, apName)
 		err = mw(h)(ctx)
@@ -58,7 +57,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan token incorrect
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -79,7 +78,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan not found
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -102,7 +101,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test check success
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -124,7 +123,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test default auth scheme success
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))

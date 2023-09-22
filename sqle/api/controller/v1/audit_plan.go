@@ -9,6 +9,7 @@ import (
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
@@ -21,8 +22,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/labstack/echo/v4"
 	dry "github.com/ungerik/go-dry"
 )
@@ -299,9 +298,7 @@ func CreateAuditPlan(c echo.Context) error {
 	// generate token
 	userId := controller.GetUserID(c)
 
-	j := utils.NewJWT(utils.JWTSecretKey)
-	t, err := j.CreateToken(userId, time.Now().Add(tokenExpire).Unix(),
-		utils.WithAuditPlanName(req.Name))
+	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserId(userId), dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(req.Name))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}

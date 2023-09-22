@@ -7,7 +7,7 @@ import (
 
 // login config
 var (
-	JwtSigningKey = []byte("actiontech dms secret")
+	JwtSigningKey = []byte("secret")
 )
 
 // router
@@ -30,6 +30,12 @@ var (
 	GroupV1             = "/v1"
 	CurrentGroupVersion = GroupV1
 )
+
+func ResetJWTSigningKey(val string) {
+	if val != "" {
+		JwtSigningKey = []byte(val)
+	}
+}
 
 func GetUserOpPermissionRouter(userUid string) string {
 	return fmt.Sprintf("%s%s/%s/op_permission", CurrentGroupVersion, UserRouterGroup, userUid)
