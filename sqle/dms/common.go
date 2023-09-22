@@ -170,10 +170,10 @@ func RegisterAsDMSTarget(sqleConfig config.SqleConfig) error {
 }
 
 func ListProjectUserTips(ctx context.Context, projectUid string) (users []*model.User, err error) {
-	dmsUsers, _, err := dmsobject.ListMembersInNamespace(ctx, controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
-		PageSize:     999,
-		PageIndex:    1,
-		NamespaceUid: projectUid,
+	dmsUsers, _, err := dmsobject.ListMembersInProject(ctx, controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
+		PageSize:   999,
+		PageIndex:  1,
+		ProjectUid: projectUid,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("get user from dms error: %v", err)
