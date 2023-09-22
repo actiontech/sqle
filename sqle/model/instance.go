@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -60,7 +61,7 @@ func (i *Instance) decryptPassword() error {
 		return nil
 	}
 	if i.Password == "" {
-		data, err := utils.AesDecrypt(i.SecretPassword)
+		data, err := dmsCommonAes.AesDecrypt(i.SecretPassword)
 		if err != nil {
 			return err
 		} else {
@@ -75,7 +76,7 @@ func (i *Instance) encryptPassword() error {
 		return nil
 	}
 	if i.SecretPassword == "" {
-		data, err := utils.AesEncrypt(i.Password)
+		data, err := dmsCommonAes.AesEncrypt(i.Password)
 		if err != nil {
 			return err
 		}

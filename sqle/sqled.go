@@ -6,8 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	"github.com/actiontech/dms/pkg/dms-common/pkg/http"
 	"github.com/actiontech/sqle/sqle/api"
-	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/dms"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
@@ -16,7 +18,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
-	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 )
@@ -36,8 +37,14 @@ func Run(config *config.Config) error {
 
 	secretKey := sqleCnf.SecretKey
 	if secretKey != "" {
-		if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
-			return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
+		// reset jwt singing key, default dms token
+		if err := http.ResetJWTSigningKeyAndDefaultToken(secretKey); err != nil {
+			return err
+		}
+
+		// reset aes secret key
+		if err := dmsCommonAes.ResetAesSecretKey(secretKey); err != nil {
+			return err
 		}
 	}
 
@@ -55,7 +62,7 @@ func Run(config *config.Config) error {
 	// but you can still use mysql_password to be compatible with older versions.
 	secretPassword := dbConfig.SecretPassword
 	if secretPassword != "" {
-		password, err := utils.AesDecrypt(secretPassword)
+		password, err := dmsCommonAes.AesDecrypt(secretPassword)
 		if err != nil {
 			return fmt.Errorf("read db info from config file error, %d", err)
 		}
