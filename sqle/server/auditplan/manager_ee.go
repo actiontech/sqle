@@ -47,9 +47,11 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 			LastReceiveTimestamp *string `json:"last_receive_timestamp"`
 			FirstQueryAt         *string `json:"first_query_at"`
 		}{}
-		err = json.Unmarshal(apInfo, &info)
-		if err != nil {
-			return fmt.Errorf("unmarshal info failed, error: %v", err)
+		if len(apInfo) > 0 { // not null
+			err = json.Unmarshal(apInfo, &info)
+			if err != nil {
+				return fmt.Errorf("unmarshal info failed, error: %v", err)
+			}
 		}
 
 		var fpCount uint
@@ -59,7 +61,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 
 		var firstAppearTime *time.Time
 		if info.FirstQueryAt != nil {
-			firstQueryAt, err := time.Parse("2006-01-02 15:04:05", *info.FirstQueryAt)
+			firstQueryAt, err := time.Parse("2006-01-02T15:04:05-07:00", *info.FirstQueryAt)
 			if err != nil {
 				return fmt.Errorf("parse first query at failed, error: %v", err)
 			}
@@ -68,7 +70,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 
 		var lastReceiveTime *time.Time
 		if info.LastReceiveTimestamp != nil {
-			lastReceiveTimeStamp, err := time.Parse("2006-01-02 15:04:05", *info.LastReceiveTimestamp)
+			lastReceiveTimeStamp, err := time.Parse("2006-01-02T15:04:05-07:00", *info.LastReceiveTimestamp)
 			if err != nil {
 				return fmt.Errorf("parse last receive timestamp failed, error: %v", err)
 			}
