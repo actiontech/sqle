@@ -388,6 +388,7 @@ definitions:
         enum:
         - solved
         - ignored
+        - manual_audited
         type: string
     type: object
   v1.BindOauth2UserReqV1:

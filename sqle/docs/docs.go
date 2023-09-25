@@ -10262,7 +10262,8 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "solved",
-                        "ignored"
+                        "ignored",
+                        "manual_audited"
                     ]
                 }
             }
