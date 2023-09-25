@@ -18,6 +18,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -115,7 +116,7 @@ func exportWorkflowV1(c echo.Context) error {
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
-				instanceRecord.Instance.Name,
+				utils.AddDelTag(instanceRecord.Instance.DeletedAt, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
 				model.WorkflowStatus[workflow.Record.Status],
@@ -187,4 +188,11 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
 	}
 	return auditNodeList
+}
+
+func addDelUserTag(user *model.User) string {
+	if user != nil {
+		return utils.AddDelTag(user.DeletedAt, user.Name)
+	}
+	return ""
 }
