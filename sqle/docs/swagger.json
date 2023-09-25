@@ -4715,7 +4715,8 @@
                         "enum": [
                             "unhandled",
                             "solved",
-                            "ignored"
+                            "ignored",
+                            "manual_audited"
                         ],
                         "type": "string",
                         "description": "status",
@@ -14484,7 +14485,8 @@
                     "enum": [
                         "unhandled",
                         "solved",
-                        "ignored"
+                        "ignored",
+                        "manual_audited"
                     ]
                 }
             }
