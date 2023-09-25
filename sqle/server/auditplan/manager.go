@@ -47,7 +47,7 @@ func audit(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
 	}
 
 	go func() {
-		syncFromAuditPlan := NewSyncFromAuditPlan(auditPlanReport, auditResultResp.FilteredSqls)
+		syncFromAuditPlan := NewSyncFromAuditPlan(auditPlanReport, auditResultResp.FilteredSqls, taskResp)
 		if err := syncFromAuditPlan.SyncSqlManager(); err != nil {
 			log.NewEntry().WithField("name", auditResultResp.AuditPlanID).Errorf("schedule to save sql manage failed, error: %v", err)
 		}
