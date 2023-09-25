@@ -31,11 +31,9 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 		return fmt.Errorf("audit plan %s not exist", ap.Name)
 	}
 
-	auditReport := sap.AuditReport
-
 	var sqlManageList []*model.SqlManage
-	for _, reportSQL := range auditReport.AuditPlanReportSQLs {
-		apSql := sqlApSqlMap[reportSQL.SQL]
+	for _, reportSQL := range sap.Task.ExecuteSQLs {
+		apSql := sqlApSqlMap[reportSQL.BaseSQL.Content]
 		fp := apSql.Fingerprint
 		instName := ap.InstanceName
 		schema := ap.InstanceDatabase
@@ -77,7 +75,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 			lastReceiveTime = &lastReceiveTimeStamp
 		}
 
-		sqlManage, err := NewSqlManage(fp, reportSQL.SQL, schema, instName, source, auditReport.AuditLevel, ap.ProjectId, ap.ID, firstAppearTime, lastReceiveTime, 0, fpCount, reportSQL.AuditResults, nil)
+		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, ap.ProjectId, ap.ID, firstAppearTime, lastReceiveTime, 0, fpCount, reportSQL.AuditResults, nil)
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
