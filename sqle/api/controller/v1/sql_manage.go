@@ -38,7 +38,7 @@ type SqlManage struct {
 	LastAppearTime  string         `json:"last_appear_time"`
 	AppearNum       uint64         `json:"appear_num"`
 	Assignees       []string       `json:"assignees"`
-	Status          string         `json:"status" enums:"unhandled,solved,ignored"`
+	Status          string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
 	Remark          string         `json:"remark"`
 }
 
@@ -69,7 +69,7 @@ type Source struct {
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
-// @Param filter_status query string false "status" Enums(unhandled,solved,ignored)
+// @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetSqlManageListResp

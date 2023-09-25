@@ -4731,7 +4731,8 @@ var doc = `{
                         "enum": [
                             "unhandled",
                             "solved",
-                            "ignored"
+                            "ignored",
+                            "manual_audited"
                         ],
                         "type": "string",
                         "description": "status",
@@ -14500,7 +14501,8 @@ var doc = `{
                     "enum": [
                         "unhandled",
                         "solved",
-                        "ignored"
+                        "ignored",
+                        "manual_audited"
                     ]
                 }
             }

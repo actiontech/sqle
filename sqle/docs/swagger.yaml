@@ -3284,6 +3284,7 @@ definitions:
         - unhandled
         - solved
         - ignored
+        - manual_audited
         type: string
     type: object
   v1.StatisticAuditPlanResV1:
@@ -7964,6 +7965,7 @@ paths:
         - unhandled
         - solved
         - ignored
+        - manual_audited
         in: query
         name: filter_status
         type: string
