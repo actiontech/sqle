@@ -7,11 +7,10 @@ import (
 	"net/http"
 	"strings"
 
+	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -60,7 +59,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				token = parts[1]
 			}
 
-			apnInToken, err := utils.ParseAuditPlanName(token)
+			apnInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
