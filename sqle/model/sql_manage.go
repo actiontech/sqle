@@ -167,7 +167,7 @@ AND sm.status = :filter_status
 
 {{- if .count_bad_sql }}
 AND sm.audit_level <> ''
-AND sm.status <> 'solved'
+AND sm.status = 'unhandled'
 {{- end }}
 
 {{- if .count_solved }}
