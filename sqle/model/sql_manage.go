@@ -83,6 +83,12 @@ type SqlManageDetail struct {
 	SqlAuditRecordID     *string      `json:"sql_audit_record_id"`
 }
 
+var sqlManageTotalCount = `
+SELECT COUNT(DISTINCT sm.id)
+
+{{- template "body" . -}}
+`
+
 var sqlManageQueryTpl = `
 SELECT 
 	sm.id,
@@ -159,6 +165,15 @@ AND sm.last_receive_timestamp <= :filter_last_audit_start_time_to
 AND sm.status = :filter_status
 {{- end }}
 
+{{- if .count_bad_sql }}
+AND sm.audit_level <> ''
+AND sm.status = 'unhandled'
+{{- end }}
+
+{{- if .count_solved }}
+AND sm.status = 'solved'
+{{- end }}
+
 {{ end }}
 `
 
@@ -169,23 +184,33 @@ func (s *Storage) GetSqlManageListByReq(data map[string]interface{}) (list *SqlM
 		return nil, err
 	}
 
-	totalCount := len(sqlManageList)
+	totalCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, data)
+	if err != nil {
+		return nil, err
+	}
 
-	var badSqlCount uint64
-	var solvedCount uint64
-	for _, sqlManage := range sqlManageList {
-		if sqlManage.AuditLevel != "" && sqlManage.Status != SQLManageStatusSolved {
-			badSqlCount += 1
+	fn := func(srcData map[string]interface{}, addSearchKey string) map[string]interface{} {
+		newData := make(map[string]interface{})
+		for k, v := range srcData {
+			newData[k] = v
 		}
+		newData[addSearchKey] = true
+		return newData
+	}
 
-		if sqlManage.Status == SQLManageStatusSolved {
-			solvedCount += 1
-		}
+	badSqlCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, fn(data, "count_bad_sql"))
+	if err != nil {
+		return nil, err
+	}
+
+	solvedCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, fn(data, "count_solved"))
+	if err != nil {
+		return nil, err
 	}
 
 	return &SqlManageResp{
 		SqlManageList:         sqlManageList,
-		SqlManageTotalNum:     uint64(totalCount),
+		SqlManageTotalNum:     totalCount,
 		SqlManageBadNum:       badSqlCount,
 		SqlManageOptimizedNum: solvedCount,
 	}, nil
@@ -233,16 +258,16 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
 	args := make([]interface{}, 0, len(sqlManageList))
 	pattern := make([]string, 0, len(sqlManageList))
 	for _, sqlManage := range sqlManageList {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
-			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Status, sqlManage.Remark,
+			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
 			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
 	}
 
 	raw := fmt.Sprintf(`
 INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
-                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name, status,
+                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
                          remark, audit_plan_id, project_id, sql_audit_record_id)
 		VALUES %s
 		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),

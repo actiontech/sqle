@@ -11,12 +11,14 @@ type SqlManager interface {
 type SyncFromAuditPlan struct {
 	AuditReport *model.AuditPlanReportV2
 	FilterSqls  []*model.AuditPlanSQLV2
+	Task        *model.Task
 }
 
-func NewSyncFromAuditPlan(auditReport *model.AuditPlanReportV2, filterSqls []*model.AuditPlanSQLV2) SqlManager {
+func NewSyncFromAuditPlan(auditReport *model.AuditPlanReportV2, filterSqls []*model.AuditPlanSQLV2, task *model.Task) SqlManager {
 	return &SyncFromAuditPlan{
 		AuditReport: auditReport,
 		FilterSqls:  filterSqls,
+		Task:        task,
 	}
 }
 
