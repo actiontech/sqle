@@ -217,7 +217,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		}
 
 		// todo: 更新审核等级
-		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, "", model.SQLManageSourceAuditPlan, "",
+		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "",
 			ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, 0,
 			uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
 		if err != nil {
