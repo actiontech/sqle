@@ -5,9 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/config"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -27,7 +26,7 @@ func genSecretPasswordCmd() *cobra.Command {
 
 			secretKey := cfg.Server.SqleCnf.SecretKey
 			if secretKey != "" {
-				if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
+				if err = dmsCommonAes.ResetAesSecretKey(secretKey); err != nil {
 					return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
 				}
 			}
@@ -36,7 +35,7 @@ func genSecretPasswordCmd() *cobra.Command {
 			if password == "" {
 				return fmt.Errorf("mysql_password is empty")
 			}
-			secretPassword, err := utils.AesEncrypt(password)
+			secretPassword, err := dmsCommonAes.AesEncrypt(password)
 			if err != nil {
 				return fmt.Errorf("gen secret password error, %d", err)
 			}

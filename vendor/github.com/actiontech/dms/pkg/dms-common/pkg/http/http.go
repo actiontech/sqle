@@ -8,10 +8,46 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/api/jwt"
 )
 
 // sys用户长有效期token，有限期至2073年
-var DefaultDMSToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiI3MDAyMDEiLCJleHAiOjMyNTkxMzU3ODIsImlzcyI6ImFjdGlvbnRlY2ggZG1zIn0.pdCLmGM-lZwcBsOnwfxM2m5xbUzGpEqAiRurkCj-8YY"
+
+var defaultDMSToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjMyNzI0MjEzNTMsImlzcyI6ImFjdGlvbnRlY2ggZG1zIiwidWlkIjoiNzAwMjAxIn0.45o27vHjHWslarkbovAim6oir3QlrvSDDuzfpGTn6Dk"
+var DefaultDMSToken = fmt.Sprintf("Bearer %s", defaultDMSToken)
+
+func ResetJWTSigningKeyAndDefaultToken(val string) error {
+	if val == "" {
+		return nil
+	}
+
+	uid, err := jwt.ParseUidFromJwtTokenStr(defaultDMSToken)
+	if err != nil {
+		return err
+	}
+
+	// reset jwt singing key
+	v1.ResetJWTSigningKey(val)
+
+	// expire time: 50 years later
+	token, err := jwt.GenJwtToken(jwt.WithUserId(uid), jwt.WithExpiredTime(time.Hour*24*365*50))
+	if err != nil {
+		return err
+	}
+
+	// reset default dms token
+	resetDefaultDMSToken(token)
+
+	return nil
+}
+
+func resetDefaultDMSToken(token string) {
+	if token != "" {
+		DefaultDMSToken = fmt.Sprintf("Bearer %s", token)
+	}
+}
 
 func Get(ctx context.Context, url string, headers map[string]string, body, out interface{}) error {
 	return Call(ctx, http.MethodGet, url, headers, body, out)
