@@ -8,11 +8,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
 func (sap *SyncFromAuditPlan) SyncSqlManager() error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.NewEntry().Errorf("sync audit plan recover err: %v", err)
+		}
+	}()
+
 	if sap.AuditReport == nil {
 		return fmt.Errorf("schedule to audit Task failed, audit report is nil")
 	}
@@ -91,6 +98,12 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 }
 
 func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.NewEntry().Errorf("sync sql audit recover err: %v", err)
+		}
+	}()
+
 	s := model.GetStorage()
 	sqlManageList, err := s.GetAllSqlManageList()
 	if err != nil {
@@ -187,6 +200,12 @@ func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, proj
 }
 
 func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.NewEntry().Errorf("upload to sql manage recover err: %v", err)
+		}
+	}()
+
 	var sqlManageList []*model.SqlManage
 	for _, sql := range sqls {
 		var firstQueryAtPtrFormat *time.Time
