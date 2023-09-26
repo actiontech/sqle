@@ -193,7 +193,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		var err error
 		firstQueryAt, ok := sql.Info["first_query_at"]
 		if ok && firstQueryAt != nil {
-			firstQueryAtFormat, err := time.Parse("2006-01-02 15:04:05", firstQueryAt.(string))
+			firstQueryAtFormat, err := time.Parse("2006-01-02T15:04:05-07:00", firstQueryAt.(string))
 			if err != nil {
 				return fmt.Errorf("parse first query at failed, error: %v", err)
 			}
@@ -203,7 +203,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		var lastReceiveAtPtrFormat *time.Time
 		lastReceiveAt, ok := sql.Info["last_receive_timestamp"]
 		if ok && lastReceiveAt != nil {
-			lastReceiveAtFormat, err := time.Parse("2006-01-02 15:04:05", lastReceiveAt.(string))
+			lastReceiveAtFormat, err := time.Parse("2006-01-02T15:04:05-07:00", lastReceiveAt.(string))
 			if err != nil {
 				return fmt.Errorf("parse last receive timestamp failed, error: %v", err)
 			}
