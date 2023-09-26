@@ -57,20 +57,20 @@ func Dashboard(c echo.Context) error {
 	s := model.GetStorage()
 
 	createdNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_id":       projectUid,
-		"filter_create_user_name": user.GetIDStr(),
-		"filter_status":           model.WorkflowStatusWaitForAudit,
-		"check_user_can_access":   false,
+		"filter_project_id":     projectUid,
+		"filter_create_user_id": user.GetIDStr(),
+		"filter_status":         model.WorkflowStatusWaitForAudit,
+		"check_user_can_access": false,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	rejectedNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_id":       projectUid,
-		"filter_create_user_name": user.GetIDStr(),
-		"filter_status":           model.WorkflowStatusReject,
-		"check_user_can_access":   false,
+		"filter_project_id":     projectUid,
+		"filter_create_user_id": user.GetIDStr(),
+		"filter_status":         model.WorkflowStatusReject,
+		"check_user_can_access": false,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -80,7 +80,7 @@ func Dashboard(c echo.Context) error {
 		"filter_project_id":        projectUid,
 		"filter_status":            model.WorkflowStatusWaitForAudit,
 		"filter_current_step_type": model.WorkflowStepTypeSQLReview,
-		"filter_create_user_name":  user.GetIDStr(),
+		"filter_create_user_id":    user.GetIDStr(),
 		"check_user_can_access":    false,
 	})
 	if err != nil {
@@ -91,7 +91,7 @@ func Dashboard(c echo.Context) error {
 		"filter_project_id":        projectUid,
 		"filter_status":            model.WorkflowStatusWaitForExecution,
 		"filter_current_step_type": model.WorkflowStepTypeSQLExecute,
-		"filter_create_user_name":  user.GetIDStr(),
+		"filter_create_user_id":    user.GetIDStr(),
 		"check_user_can_access":    false,
 	})
 	if err != nil {
@@ -99,22 +99,22 @@ func Dashboard(c echo.Context) error {
 	}
 
 	reviewNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_id":                      projectUid,
-		"filter_status":                          model.WorkflowStatusWaitForAudit,
-		"filter_current_step_type":               model.WorkflowStepTypeSQLReview,
-		"filter_current_step_assignee_user_name": user.GetIDStr(),
-		"check_user_can_access":                  false,
+		"filter_project_id":                    projectUid,
+		"filter_status":                        model.WorkflowStatusWaitForAudit,
+		"filter_current_step_type":             model.WorkflowStepTypeSQLReview,
+		"filter_current_step_assignee_user_id": user.GetIDStr(),
+		"check_user_can_access":                false,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	executeNumber, err := s.GetWorkflowCountByReq(map[string]interface{}{
-		"filter_project_id":                      projectUid,
-		"filter_status":                          model.WorkflowStatusWaitForExecution,
-		"filter_current_step_type":               model.WorkflowStepTypeSQLExecute,
-		"filter_current_step_assignee_user_name": user.GetIDStr(),
-		"check_user_can_access":                  false,
+		"filter_project_id":                    projectUid,
+		"filter_status":                        model.WorkflowStatusWaitForExecution,
+		"filter_current_step_type":             model.WorkflowStepTypeSQLExecute,
+		"filter_current_step_assignee_user_id": user.GetIDStr(),
+		"check_user_can_access":                false,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
