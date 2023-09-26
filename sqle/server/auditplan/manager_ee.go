@@ -91,8 +91,6 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 }
 
 func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
-	var sqlManageList []*model.SqlManage
-
 	s := model.GetStorage()
 	sqlManageList, err := s.GetAllSqlManageList()
 	if err != nil {
@@ -104,6 +102,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		md5SqlManageMap[sqlManage.ProjFpSourceInstSchemaMd5] = sqlManage
 	}
 
+	var newSqlManageList []*model.SqlManage
 	for _, executeSQL := range sa.Task.ExecuteSQLs {
 		sql := executeSQL.Content
 		fp := sa.SqlFpMap[sql]
@@ -116,10 +115,10 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
 
-		sqlManageList = append(sqlManageList, sqlManage)
+		newSqlManageList = append(newSqlManageList, sqlManage)
 	}
 
-	if err := s.InsertOrUpdateSqlManage(sqlManageList); err != nil {
+	if err := s.InsertOrUpdateSqlManage(newSqlManageList); err != nil {
 		return fmt.Errorf("insert or update sql manage failed, error: %v", err)
 	}
 
