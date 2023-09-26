@@ -255,32 +255,54 @@ INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_te
 }
 
 func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
-	args := make([]interface{}, 0, len(sqlManageList))
-	pattern := make([]string, 0, len(sqlManageList))
-	for _, sqlManage := range sqlManageList {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
-			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
-			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
-	}
+	return s.Tx(func(tx *gorm.DB) error {
+		batchSize := 50 // 每批处理的大小
+		total := len(sqlManageList)
+		start := 0
 
-	raw := fmt.Sprintf(`
-INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
-                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-                         remark, audit_plan_id, project_id, sql_audit_record_id)
-		VALUES %s
-		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
-                        audit_plan_id          = VALUES(audit_plan_id),
-                        sql_audit_record_id    = VALUES(sql_audit_record_id),
-                        audit_level            = VALUES(audit_level),
-                        audit_results          = VALUES(audit_results),
-                        fp_count 			   = VALUES(fp_count),
-                        first_appear_timestamp = VALUES(first_appear_timestamp),
-                        last_receive_timestamp = VALUES(last_receive_timestamp);`,
-		strings.Join(pattern, ", "))
+		for start < total {
+			end := start + batchSize
+			if end > total {
+				end = total
+			}
 
-	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+			batchSqlManageList := sqlManageList[start:end]
+
+			args := make([]interface{}, 0, len(batchSqlManageList))
+			pattern := make([]string, 0, len(batchSqlManageList))
+			for _, sqlManage := range batchSqlManageList {
+				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+				args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
+					sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
+					sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
+					sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
+			}
+
+			raw := fmt.Sprintf(`
+			INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
+			                        fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
+			                        remark, audit_plan_id, project_id, sql_audit_record_id)
+					VALUES %s
+					ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
+			                       audit_plan_id          = VALUES(audit_plan_id),
+			                       sql_audit_record_id    = VALUES(sql_audit_record_id),
+			                       audit_level            = VALUES(audit_level),
+			                       audit_results          = VALUES(audit_results),
+			                       fp_count 			   = VALUES(fp_count),
+			                       first_appear_timestamp = VALUES(first_appear_timestamp),
+			                       last_receive_timestamp = VALUES(last_receive_timestamp);`,
+				strings.Join(pattern, ", "))
+
+			err := tx.Exec(raw, args...).Error
+			if err != nil {
+				return err
+			}
+
+			start += batchSize
+		}
+
+		return nil
+	})
 }
 
 func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark *string, assignees []*string) error {
