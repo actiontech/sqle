@@ -88,21 +88,10 @@ func Run(config *config.Config) error {
 		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		projectIds, err := dms.GetProjects()
-		if err != nil {
-			return fmt.Errorf("get projects failed: %v", err)
+
+		if err := s.CreateDefaultTemplateIfNotExist(model.ProjectIdForGlobalRuleTemplate, driver.GetPluginManager().GetAllRules()); err != nil {
+			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
-		for _, projectId := range projectIds {
-			if err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(projectId), driver.GetPluginManager().GetAllRules()); err != nil {
-				return fmt.Errorf("create default template failed while auto migrating table: %v", err)
-			}
-		}
-		// if err := s.CreateDefaultProject(); err != nil {
-		// 	return fmt.Errorf("create default project failed while auto migrating table: %v", err)
-		// }
-		// if err := s.CreateDefaultRole(); err != nil {
-		// 	return fmt.Errorf("create default rule failed while auto migrating table: %v", err)
-		// }
 	}
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
