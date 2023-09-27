@@ -2257,7 +2257,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DMLMustMatchLeftMostPrefix,
+			Name:       DMLMustUseLeftMostPrefix,
 			Desc:       "使用联合索引时，必须使用联合索引的首字段",
 			Annotation: "使用联合索引时，不包含首字段会导致联合索引失效",
 			Level:      driverV2.RuleLevelError,
@@ -2269,7 +2269,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DMLMustUseLeftMostPrefix,
+			Name:       DMLMustMatchLeftMostPrefix,
 			Desc:       "禁止对联合索引左侧字段进行IN 、OR等非等值查询",
 			Annotation: "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
 			Level:      driverV2.RuleLevelError,
