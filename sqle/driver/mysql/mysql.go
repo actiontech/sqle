@@ -371,7 +371,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 
 		var buf strings.Builder
 		for _, advice := range advices {
-			buf.WriteString(fmt.Sprintf("建议从表 %s 的以下列中 [%s] 选取合适列的列添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
+			buf.WriteString(fmt.Sprintf("建议从表 %s 的以下列中 [%s] 选取合适的列添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
 		}
 		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigOptimizeIndexEnabled, buf.String())
 	}
