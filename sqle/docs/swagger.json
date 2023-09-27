@@ -4789,6 +4789,102 @@
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/exports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export sql manage",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "导出SQL管控",
+                "operationId": "exportSqlManageV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "sql_audit_record"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored",
+                            "manual_audited"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "export sql manage",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistic/audit_plans": {
             "get": {
                 "security": [
