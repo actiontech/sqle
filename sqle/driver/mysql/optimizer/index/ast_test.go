@@ -17,7 +17,7 @@ func Test_selectAST(t *testing.T) {
 		projection []string
 	}{
 		{"select id, a from t where a = 1 and b = 1 order by b", []string{"b"}, []string{"a", "b"}, []string{"id", "a"}},
-		{"select * from t order by a desc", []string{"a desc"}, nil, nil},
+		{"select * from t order by a desc", []string{"a"}, nil, nil},
 		{"select * from t", nil, nil, nil},
 		{"select t.id = 1 from t where a > 1", nil, nil, nil},
 	}
