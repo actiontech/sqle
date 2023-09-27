@@ -2936,11 +2936,23 @@ func checkSelectAll(input *RuleHandlerInput) error {
 	return nil
 }
 
+func isSelectCount(selectStmt *ast.SelectStmt) bool {
+	if len(selectStmt.Fields.Fields) == 1 {
+		if fu, ok := selectStmt.Fields.Fields[0].Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
+			return true
+		}
+	}
+	return false
+}
+
 func checkSelectWhere(input *RuleHandlerInput) error {
 
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		if input.Rule.Name == DMLCheckWhereIsInvalid && isSelectCount(stmt) { // 只做count()计数，不要求一定有有效的where条件
 			return nil
 		}
 		checkWhere(input.Rule, input.Res, stmt.Where)
@@ -4466,8 +4478,10 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 func checkSelectLimit(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+
 		// 类似 select 1 和 select sleep(1) 这种不是真正查询的SQL, 没有检查limit的必要
-		if stmt.From == nil {
+		// select count() 没有limit的必要
+		if stmt.From == nil || isSelectCount(stmt) {
 			return nil
 		}
 
