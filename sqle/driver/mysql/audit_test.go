@@ -6710,7 +6710,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-with-equal",
 			Sql:         `select * from exist_tb_9 where v4 = 1`,
-			TriggerRule: false,
+			TriggerRule: true,
 		},
 		{
 			Name:        "select-without-equal",
@@ -6776,7 +6776,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-with-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v4 = 1`,
-			TriggerRule: false,
+			TriggerRule: true,
 		},
 		{
 			Name:        "update-without-equal",
@@ -6822,7 +6822,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-with-equal",
 			Sql:         `delete from exist_tb_9 where v4 = 1`,
-			TriggerRule: false,
+			TriggerRule: true,
 		},
 		{
 			Name:        "delete-without-equal",
@@ -6842,7 +6842,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v4 > 1`,
-			TriggerRule: false,
+			TriggerRule: true,
 		},
 		{
 			Name:        "delete-without-equal",

@@ -347,7 +347,7 @@ v2 varchar(255) character SET utf8mb4,
 v3 int,
 v4 int,
 PRIMARY KEY (id) USING BTREE,
-KEY idx_1 (v1,v2,v3),
+KEY idx_1 (v1,v2,v3, v4),
 UNIQUE KEY uniq_1 (v2,v3),
 KEY idx_100 (v3)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
