@@ -5070,7 +5070,7 @@ func checkExplain(input *RuleHandlerInput) error {
 		}
 
 		if input.Rule.Name == DMLCheckExplainFullIndexScan &&
-			record.Type == executor.ExplainRecordAccessTypeIndex {
+			record.Type != executor.ExplainRecordAccessTypeIndex {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
 
