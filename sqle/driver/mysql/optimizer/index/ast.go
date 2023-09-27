@@ -59,7 +59,7 @@ func (sa *selectAST) ColumnsInOrderBy() []string {
 				// Before MySQL 8.0, they are parsed but ignored; index values are always
 				// stored in ascending order. It's OK to add sequence to column.
 				if item.Desc {
-					columns = append(columns, fmt.Sprintf("%s desc", col.Name.Name.L))
+					columns = append(columns, fmt.Sprintf("%s", col.Name.Name.L))
 				} else {
 					columns = append(columns, col.Name.Name.L)
 				}
@@ -84,4 +84,20 @@ func (sa *selectAST) ColumnsInProjection() []string {
 	}
 
 	return columns
+}
+
+// GetCreateTableSQLs only support single table now
+func (sa *selectAST) GetSelectedTables() []*ast.TableName {
+	if sa.selectStmt.From == nil {
+		return []*ast.TableName{}
+	}
+	tableSrc, ok := sa.selectStmt.From.TableRefs.Left.(*ast.TableSource)
+	if !ok || tableSrc == nil {
+		return []*ast.TableName{}
+	}
+	table, ok := tableSrc.Source.(*ast.TableName)
+	if !ok || table == nil {
+		return []*ast.TableName{}
+	}
+	return []*ast.TableName{table}
 }

@@ -45,15 +45,25 @@
 // contains all the columns required for an index-only access path.
 package index
 
-import "github.com/actiontech/sqle/sqle/utils"
+import (
+	"strings"
+
+	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/utils"
+)
 
 // Optimizer give best index advice for the single table query.
 type Optimizer struct {
+	*session.Context
 }
 
 // NewOptimizer creates a new optimizer.
-func NewOptimizer(opts ...optimizerOption) *Optimizer {
-	optimizer := &Optimizer{}
+func NewOptimizer(ctx *session.Context, opts ...optimizerOption) *Optimizer {
+	optimizer := &Optimizer{
+		ctx,
+	}
 
 	for _, opt := range opts {
 		opt.apply(optimizer)
@@ -66,9 +76,41 @@ func NewOptimizer(opts ...optimizerOption) *Optimizer {
 func (o *Optimizer) Optimize(ast SelectAST) (columns []string, err error) {
 	columns = append(ast.EqualPredicateColumnsInWhere(), ast.ColumnsInOrderBy()...)
 
-	columns = append(columns, ast.ColumnsInProjection()...)
+	// todo 由于涉及的场景较复杂，暂时不检查select的字段
+	//columns = append(columns, ast.ColumnsInProjection()...)
+	columns = utils.RemoveDuplicate(columns)
 
-	return utils.RemoveDuplicate(columns), nil
+	tables := ast.GetSelectedTables()
+	if len(tables) <= 0 {
+		return utils.RemoveDuplicate(columns), nil
+	}
+
+	createTableStmt, exist, err := o.Context.GetCreateTableStmt(tables[0])
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return utils.RemoveDuplicate(columns), nil
+	}
+
+	for _, column := range columns {
+		if isColumnHasIndex(column, createTableStmt.Constraints) {
+			return []string{}, nil
+		}
+	}
+	return columns, nil
+}
+
+func isColumnHasIndex(column string, constraints []*ast.Constraint) bool {
+	for _, constraint := range constraints {
+		for _, key := range constraint.Keys {
+			if key.Column.Name.L == strings.ToLower(column) {
+				// 有索引的列可以通过检查
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type optimizerOption func(*Optimizer)
