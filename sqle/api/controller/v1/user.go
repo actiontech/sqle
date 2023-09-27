@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 
 	"github.com/labstack/echo/v4"
 )
@@ -553,7 +554,8 @@ type UserTipsReqV1 struct {
 }
 
 type UserTipResV1 struct {
-	Name string `json:"user_name"`
+	UserID string `json:"user_id"`
+	Name   string `json:"user_name"`
 }
 
 type GetUserTipsResV1 struct {
@@ -570,27 +572,30 @@ type GetUserTipsResV1 struct {
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
-	// TODO DMS支持批量获取用户后实现
-	// req := new(UserTipsReqV1)
-	// if err := controller.BindAndValidateReq(c, req); err != nil {
-	// 	return err
-	// }
-	// s := model.GetStorage()
-	// users, err := s.GetUserTipsByProject(req.FilterProject)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// userTipsRes := make([]UserTipResV1, 0, len(users))
+	req := new(UserTipsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	users, err := dms.ListProjectUserTips(c.Request().Context(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
-	// for _, user := range users {
-	// 	userTipRes := UserTipResV1{
-	// 		Name: user.Name,
-	// 	}
-	// 	userTipsRes = append(userTipsRes, userTipRes)
-	// }
+	userTipsRes := make([]UserTipResV1, 0, len(users))
+	for _, user := range users {
+		userTipRes := UserTipResV1{
+			Name:   user.Name,
+			UserID: user.GetIDStr(),
+		}
+		userTipsRes = append(userTipsRes, userTipRes)
+	}
 	return c.JSON(http.StatusOK, &GetUserTipsResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    nil,
+		Data:    userTipsRes,
 	})
 }
 
