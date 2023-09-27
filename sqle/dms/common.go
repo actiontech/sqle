@@ -168,3 +168,27 @@ func RegisterAsDMSTarget(sqleConfig config.SqleConfig) error {
 
 	return nil
 }
+
+func ListProjectUserTips(ctx context.Context, projectUid string) (users []*model.User, err error) {
+	dmsUsers, _, err := dmsobject.ListMembersInProject(ctx, controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
+		PageSize:   999,
+		PageIndex:  1,
+		ProjectUid: projectUid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get user from dms error: %v", err)
+	}
+
+	for _, dmsUser := range dmsUsers {
+		id, err := strconv.Atoi(dmsUser.User.Uid)
+		if err != nil {
+			return nil, err
+		}
+		model_ := model.Model{ID: uint(id)}
+		users = append(users, &model.User{
+			Model: model_,
+			Name:  dmsUser.User.Name,
+		})
+	}
+	return users, nil
+}
