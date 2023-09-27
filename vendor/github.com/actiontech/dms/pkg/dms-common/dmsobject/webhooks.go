@@ -20,7 +20,7 @@ func WebHookSendMessage(ctx context.Context, dmsAddr string, req *dmsV1.WebHookS
 		return fmt.Errorf("failed to notify by %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
 	return nil

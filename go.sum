@@ -128,8 +128,8 @@ github.com/StackExchange/wmi v1.2.1/go.mod h1:rcmrprowKIVzvc+NUiLncP2uuArMWLCbu9
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/VividCortex/mysqlerr v0.0.0-20201215173831-4c396ae82aac/go.mod h1:f3HiCrHjHBdcm6E83vGaXh1KomZMA2P6aeo3hKx/wg0=
-github.com/actiontech/dms v0.0.0-20230926031642-e6290ccd9721 h1:B0UkAU3JOI4uhb5Kda451Ye6kXBw57+9j7HETaDDKcU=
-github.com/actiontech/dms v0.0.0-20230926031642-e6290ccd9721/go.mod h1:if3I+hLkXUusNgaWgHFhyjWDb4HSqZ9nmTDxO3XSmDA=
+github.com/actiontech/dms v0.0.0-20230927063747-ed5a6404982b h1:URTNM7lF0hgPKO8l/KZEEsxnuM4lYMI1ZeS4IvDSi9w=
+github.com/actiontech/dms v0.0.0-20230927063747-ed5a6404982b/go.mod h1:if3I+hLkXUusNgaWgHFhyjWDb4HSqZ9nmTDxO3XSmDA=
 github.com/actiontech/mybatis-mapper-2-sql v0.4.0 h1:FSzK3qnnD9/JjOUJMRcctGxQjK7cg1M01yRMq59TSZg=
 github.com/actiontech/mybatis-mapper-2-sql v0.4.0/go.mod h1:ZMmUEDfbjm8oWxSAZkejqeOzlXa1BWNCfhNIxCMu7lw=
 github.com/adam-hanna/arrayOperations v0.2.6/go.mod h1:iIzkSjP91FnE66cUFNAjjUJVmjyAwCH0SXnWsx2nbdk=

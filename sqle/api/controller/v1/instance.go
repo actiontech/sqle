@@ -774,9 +774,9 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	err := common.CheckInstanceIsConnectable(instance)
 	if err != nil {
 		l.Warnf("check instance is connectable failed: %v", err)
-		return c.JSON(http.StatusOK, baseV1.GenericResp{Code: http.StatusBadRequest, Msg: err.Error()})
+		return c.JSON(http.StatusOK, baseV1.GenericResp{Code: http.StatusBadRequest, Message: err.Error()})
 	}
-	return c.JSON(http.StatusOK, baseV1.GenericResp{Msg: "OK"})
+	return c.JSON(http.StatusOK, baseV1.GenericResp{Message: "OK"})
 }
 
 type GetInstanceSchemaResV1 struct {

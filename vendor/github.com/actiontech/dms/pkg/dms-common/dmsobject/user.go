@@ -21,10 +21,10 @@ func GetUser(ctx context.Context, userUid string, dmsAddr string) (*dmsV1.GetUse
 		return nil, fmt.Errorf("failed to get user from %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return nil, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return nil, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
-	return reply.Payload.User, nil
+	return reply.Data, nil
 }
 
 func GetUserOpPermission(ctx context.Context, projectUid, userUid, dmsAddr string) (ret []dmsV1.OpPermissionItem, isAdmin bool, err error) {
@@ -46,10 +46,10 @@ func GetUserOpPermission(ctx context.Context, projectUid, userUid, dmsAddr strin
 		return nil, false, fmt.Errorf("failed to get user op permission from %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return nil, false, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return nil, false, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
-	return reply.Payload.OpPermissionList, reply.Payload.IsAdmin, nil
+	return reply.Data.OpPermissionList, reply.Data.IsAdmin, nil
 
 }
 
@@ -66,10 +66,10 @@ func ListMembersInProject(ctx context.Context, dmsAddr string, req dmsV1.ListMem
 		return nil, 0, fmt.Errorf("failed to get member from %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
-	return reply.Payload.Members, reply.Payload.Total, nil
+	return reply.Data, reply.Total, nil
 }
 
 func ListUsers(ctx context.Context, dmsAddr string, req dmsV1.ListUserReq) (ret []*dmsV1.ListUser, total int64, err error) {
@@ -85,9 +85,9 @@ func ListUsers(ctx context.Context, dmsAddr string, req dmsV1.ListUserReq) (ret 
 		return nil, 0, fmt.Errorf("failed to list users from %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
-	return reply.Payload.Users, reply.Payload.Total, nil
+	return reply.Data, reply.Total, nil
 
 }

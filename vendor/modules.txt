@@ -28,7 +28,7 @@ github.com/PuerkitoBio/purell
 github.com/PuerkitoBio/urlesc
 # github.com/StackExchange/wmi v1.2.1
 github.com/StackExchange/wmi
-# github.com/actiontech/dms v0.0.0-20230926031642-e6290ccd9721
+# github.com/actiontech/dms v0.0.0-20230927063747-ed5a6404982b
 ## explicit
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
 github.com/actiontech/dms/pkg/dms-common/api/dms/v1
