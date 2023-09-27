@@ -4,8 +4,15 @@
 package v1
 
 import (
+	"bytes"
+	"encoding/csv"
 	e "errors"
+	"fmt"
+	"mime"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -139,4 +146,117 @@ func batchUpdateSqlManage(c echo.Context) error {
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func exportSqlManagesV1(c echo.Context) error {
+	req := new(ExportSqlManagesReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectName := c.Param("project_name")
+
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	data := map[string]interface{}{
+		"fuzzy_search_sql_fingerprint":      req.FuzzySearchSqlFingerprint,
+		"filter_assignee":                   req.FilterAssignee,
+		"filter_instance_name":              req.FilterInstanceName,
+		"filter_source":                     req.FilterSource,
+		"filter_audit_level":                req.FilterAuditLevel,
+		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
+		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
+		"filter_status":                     req.FilterStatus,
+		"project_name":                      projectName,
+	}
+
+	sqlManageResp, err := s.GetSqlManageListByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	buff := new(bytes.Buffer)
+	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
+	csvWriter := csv.NewWriter(buff)
+
+	err = csvWriter.WriteAll([][]string{
+		{"SQL总数", strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},
+		{"问题SQL数", strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},
+		{"已优化SQL数", strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := csvWriter.Write([]string{
+		"SQL指纹",
+		"SQL",
+		"来源",
+		"数据源",
+		"审核结果",
+		"初次出现时间",
+		"最后一次出现时间",
+		"出现数量",
+		"负责人",
+		"状态",
+		"备注",
+	}); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	for _, sqlManage := range sqlManageResp.SqlManageList {
+		var assignees []string
+		for _, assignee := range sqlManage.Assignees {
+			assignees = append(assignees, assignee)
+		}
+
+		var newRow []string
+		newRow = append(
+			newRow,
+			sqlManage.SqlFingerprint,
+			sqlManage.SqlText,
+			model.SqlManageSourceMap[sqlManage.Source],
+			sqlManage.InstanceName,
+			spliceAuditResults(sqlManage.AuditResults),
+			sqlManage.FirstAppearTime(),
+			sqlManage.LastReceiveTime(),
+			strconv.FormatUint(sqlManage.FpCount, 10),
+			strings.Join(assignees, ","),
+			model.SqlManageStatusMap[sqlManage.Status],
+			sqlManage.Remark,
+		)
+
+		if err := csvWriter.Write(newRow); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	csvWriter.Flush()
+
+	if err := csvWriter.Error(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	fileName := fmt.Sprintf("%s_SQL管控.csv", time.Now().Format("20060102150405"))
+	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
+		"filename": fileName,
+	}))
+
+	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
