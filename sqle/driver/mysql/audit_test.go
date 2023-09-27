@@ -2884,6 +2884,12 @@ func TestCheckMultiSelectWhereExistImplicitConversion(t *testing.T) {
 		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3;`,
 		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3 union select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = 3`,
 		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = 3 union select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3`,
+
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in ("3")`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 in ("3");`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in ("3", "1")`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in ("3", 1)`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in ("3", "2", 1)`,
 	} {
 		runSingleRuleInspectCase(rule, t, "multi select: passing the check where exist implicit conversion ", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion))
 	}
@@ -2895,6 +2901,10 @@ func TestCheckMultiSelectWhereExistImplicitConversion(t *testing.T) {
 		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_db.exist_tb_1.v1 = "3";`,
 		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_tb_1.v1 = "3";`,
 		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = "3";`,
+
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in (3)`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 in (3);`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 in (3, 2, 1);`,
 	} {
 		runSingleRuleInspectCase(rule, t, "multi select: check where exist implicit conversion", DefaultMysqlInspect(), sql, newTestResult())
 	}
