@@ -37,10 +37,8 @@ type ListMembersForInternalItem struct {
 // swagger:model ListMembersForInternalReply
 type ListMembersForInternalReply struct {
 	// List member reply
-	Payload struct {
-		Members []*ListMembersForInternalItem `json:"members"`
-		Total   int64                         `json:"total"`
-	} `json:"payload"`
+	Data  []*ListMembersForInternalItem `json:"data"`
+	Total int64                         `json:"total_nums"`
 
 	// Generic reply
 	base.GenericResp
