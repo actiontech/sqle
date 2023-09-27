@@ -11,13 +11,26 @@ import (
 )
 
 const (
-	SQLManageStatusUnhandled = "unhandled"
-	SQLManageStatusSolved    = "solved"
-	SQLManageStatusIgnored   = "ignored"
+	SQLManageStatusUnhandled     = "unhandled"
+	SQLManageStatusSolved        = "solved"
+	SQLManageStatusIgnored       = "ignored"
+	SQLManageStatusManualAudited = "manual_audited"
 
 	SQLManageSourceAuditPlan      = "audit_plan"
 	SQLManageSourceSqlAuditRecord = "sql_audit_record"
 )
+
+var SqlManageSourceMap = map[string]string{
+	SQLManageSourceSqlAuditRecord: "SQL审核",
+	SQLManageSourceAuditPlan:      "智能扫描",
+}
+
+var SqlManageStatusMap = map[string]string{
+	SQLManageStatusUnhandled:     "未处理",
+	SQLManageStatusSolved:        "已解决",
+	SQLManageStatusIgnored:       "已忽略",
+	SQLManageStatusManualAudited: "已人工审核",
+}
 
 type SqlManage struct {
 	Model
@@ -81,6 +94,20 @@ type SqlManageDetail struct {
 	Assignees            RowList      `json:"assignees"`
 	ApName               *string      `json:"ap_name"`
 	SqlAuditRecordID     *string      `json:"sql_audit_record_id"`
+}
+
+func (sm *SqlManageDetail) FirstAppearTime() string {
+	if sm.AppearTimestamp == nil {
+		return ""
+	}
+	return sm.AppearTimestamp.String()
+}
+
+func (sm *SqlManageDetail) LastReceiveTime() string {
+	if sm.LastReceiveTimestamp == nil {
+		return ""
+	}
+	return sm.LastReceiveTimestamp.String()
 }
 
 var sqlManageTotalCount = `
