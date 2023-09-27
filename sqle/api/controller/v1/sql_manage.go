@@ -98,3 +98,35 @@ type BatchUpdateSqlManageReq struct {
 func BatchUpdateSqlManage(c echo.Context) error {
 	return batchUpdateSqlManage(c)
 }
+
+type ExportSqlManagesReq struct {
+	FuzzySearchSqlFingerprint    *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
+	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
+	FilterInstanceName           *string `query:"filter_instance_name" json:"filter_instance_name,omitempty"`
+	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
+	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
+	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
+	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
+	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
+}
+
+// ExportSqlManagesV1
+// @Summary 导出SQL管控
+// @Description export sql manage
+// @Id exportSqlManageV1
+// @Tags SqlManage
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
+// @Param filter_assignee query string false "assignee"
+// @Param filter_instance_name query string false "instance name"
+// @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
+// @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
+// @Param filter_last_audit_start_time_from query string false "last audit start time from"
+// @Param filter_last_audit_start_time_to query string false "last audit start time to"
+// @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
+// @Success 200 {file} file "export sql manage"
+// @Router /v1/projects/{project_name}/sql_manages/exports [get]
+func ExportSqlManagesV1(c echo.Context) error {
+	return nil
+}
