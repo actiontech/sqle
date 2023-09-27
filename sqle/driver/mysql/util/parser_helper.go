@@ -361,6 +361,36 @@ func IsColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where a
 	return hasConversion
 }
 
+func ScanColumnValueFromExpr(where ast.ExprNode, fn func(*ast.ColumnName, []*driver.ValueExpr) bool) {
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			var values []*driver.ValueExpr
+			var columnNameExpr *ast.ColumnNameExpr
+			if colValue, checkValueExpr := x.L.(*driver.ValueExpr); checkValueExpr {
+				values = append(values, colValue)
+			} else if columnName, checkColumnNameExpr := x.L.(*ast.ColumnNameExpr); checkColumnNameExpr {
+				columnNameExpr = columnName
+			} else {
+				return false
+			}
+			if colValue, checkValueExpr := x.R.(*driver.ValueExpr); checkValueExpr {
+				values = append(values, colValue)
+			} else if columnName, checkColumnNameExpr := x.R.(*ast.ColumnNameExpr); checkColumnNameExpr {
+				columnNameExpr = columnName
+			} else {
+				return false
+			}
+			if len(values) == 0 || columnNameExpr == nil {
+				return false
+			}
+
+			return fn(columnNameExpr.Name, values)
+		}
+		return false
+	}, where)
+}
+
 func WhereStmtExistNot(where ast.ExprNode) bool {
 	existNOT := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -394,7 +424,7 @@ func WhereStmtExistNot(where ast.ExprNode) bool {
 	return existNOT
 }
 
-//Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
+// Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
 func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 	isExist := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {

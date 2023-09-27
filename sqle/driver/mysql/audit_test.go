@@ -2846,31 +2846,58 @@ select v1 from exist_db.exist_tb_1 where NOT EXISTS (select v1 from exist_db.exi
 
 func TestCheckWhereExistImplicitConversion(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereExistImplicitConversion].Rule
-	runSingleRuleInspectCase(rule, t, "select: check where exist implicit conversion", DefaultMysqlInspect(),
+	runSingleRuleInspectCase(rule, t, "select: check where exist implicit conversion 1", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 = 3;
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion),
 	)
-	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion", DefaultMysqlInspect(),
+	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion 1", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v1 = "3";
 `,
 		newTestResult(),
 	)
 
-	runSingleRuleInspectCase(rule, t, "select: check where exist implicit conversion", DefaultMysqlInspect(),
+	runSingleRuleInspectCase(rule, t, "select: check where exist implicit conversion 2", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where id = "3";
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion),
 	)
-	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion", DefaultMysqlInspect(),
+	runSingleRuleInspectCase(rule, t, "select: passing the check where exist implicit conversion 2", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where id = 3;
 `,
 		newTestResult(),
 	)
+}
+
+func TestCheckMultiSelectWhereExistImplicitConversion(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckWhereExistImplicitConversion].Rule
+	for _, sql := range []string{
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = "3"`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 = "3";`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_db.exist_tb_9.v1 = "3";`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_db.exist_tb_1.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_tb_1.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3 union select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = 3`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = 3 union select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = 3`,
+	} {
+		runSingleRuleInspectCase(rule, t, "multi select: passing the check where exist implicit conversion ", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion))
+	}
+
+	for _, sql := range []string{
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_db.exist_tb_9.v1 = 3;`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_db.exist_tb_1.v1 = "3";`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where exist_tb_1.v1 = "3";`,
+		`select t1.v1 from exist_db.exist_tb_1 t1 join exist_db.exist_tb_9 where t1.v1 = "3";`,
+	} {
+		runSingleRuleInspectCase(rule, t, "multi select: check where exist implicit conversion", DefaultMysqlInspect(), sql, newTestResult())
+	}
 }
 
 func TestCheckWhereExistImplicitConversion_FP(t *testing.T) {
