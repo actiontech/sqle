@@ -3980,8 +3980,8 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 		newTestResult().addResult(rulepkg.DMLCheckExplainAccessTypeAll, 100001), newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingFilesort), newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingTemporary))
 
 	inspect6 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
-		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select * from exist_tb_2")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeAll))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainFullIndexScan].Rule,
 		t, "", inspect6, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainFullIndexScan))
 
