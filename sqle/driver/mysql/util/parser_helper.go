@@ -363,10 +363,11 @@ func IsColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where a
 
 func ScanColumnValueFromExpr(where ast.ExprNode, fn func(*ast.ColumnName, []*driver.ValueExpr) bool) {
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		var values []*driver.ValueExpr
+		var columnNameExpr *ast.ColumnNameExpr
+
 		switch x := expr.(type) {
 		case *ast.BinaryOperationExpr:
-			var values []*driver.ValueExpr
-			var columnNameExpr *ast.ColumnNameExpr
 			if colValue, checkValueExpr := x.L.(*driver.ValueExpr); checkValueExpr {
 				values = append(values, colValue)
 			} else if columnName, checkColumnNameExpr := x.L.(*ast.ColumnNameExpr); checkColumnNameExpr {
@@ -380,6 +381,22 @@ func ScanColumnValueFromExpr(where ast.ExprNode, fn func(*ast.ColumnName, []*dri
 				columnNameExpr = columnName
 			} else {
 				return false
+			}
+			if len(values) == 0 || columnNameExpr == nil {
+				return false
+			}
+
+			return fn(columnNameExpr.Name, values)
+		case *ast.PatternInExpr:
+			c, ok := x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			columnNameExpr = c
+			for _, expr := range x.List {
+				if v, ok := expr.(*driver.ValueExpr); ok {
+					values = append(values, v)
+				}
 			}
 			if len(values) == 0 || columnNameExpr == nil {
 				return false
