@@ -128,5 +128,5 @@ type ExportSqlManagesReq struct {
 // @Success 200 {file} file "export sql manage"
 // @Router /v1/projects/{project_name}/sql_manages/exports [get]
 func ExportSqlManagesV1(c echo.Context) error {
-	return nil
+	return exportSqlManagesV1(c)
 }

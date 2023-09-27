@@ -19,3 +19,7 @@ func getSqlManageList(c echo.Context) error {
 func batchUpdateSqlManage(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func exportSqlManagesV1(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
