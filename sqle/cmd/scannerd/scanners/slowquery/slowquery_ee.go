@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/percona/go-mysql/log"
@@ -186,9 +188,28 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
 	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
+
+	var nodes []driverV2.Node
 	var sqlIdentity sqlIdentity
+	var processedRawText, processedFingerPrint string
+
 	for _, sql := range sqls {
-		sqlIdentity.Fingerprint = sql.Fingerprint
+		// 在聚合之前对sql.Fingerprint和sql.RawText进行预处理，去除SQL中的脏数据
+		processedFingerPrint = sql.Fingerprint
+		processedRawText = sql.RawText
+
+		// 当解析结果中有多个node的时候，说明该SQL带有冗余的脏数据
+		// 这里把第一个node作为fingerprint，并且使用node.Text作为最后匹配到该指纹的SQL
+		// 为了和其他SQL一致，这里还需要去除node.Text字符串结尾的';'
+		// 若解析失败则nodes为nil len(nil)=0 此时Fingerprint和RawText保持解析前的状态
+		nodes, _ = common.Parse(ctx, sql.RawText)
+		if len(nodes) > 1 {
+			processedFingerPrint = nodes[0].Fingerprint
+			processedRawText = strings.Trim(nodes[0].Text, ";")
+		}
+
+		// 使用指纹和Schema的JSON String作为SQL的唯一标识符
+		sqlIdentity.Fingerprint = processedFingerPrint
 		sqlIdentity.Schema = sql.Schema
 		key := sqlIdentity.jsonString()
 
@@ -207,8 +228,8 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
 		} else {
 			sqlReq := &scanner.AuditPlanSQLReq{
-				Fingerprint:          sql.Fingerprint,
-				LastReceiveText:      sql.RawText,
+				Fingerprint:          processedFingerPrint,
+				LastReceiveText:      processedRawText,
 				LastReceiveTimestamp: now.Format(time.RFC3339),
 				Counter:              "1",
 				QueryTimeAvg:         &sql.QueryTime,
