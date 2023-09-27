@@ -1499,6 +1499,12 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// Add a split line between report information and sql audit information
+	err = csvWriter.Write([]string{})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	err = csvWriter.Write([]string{"编号", "SQL", "审核结果"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
