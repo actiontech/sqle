@@ -14,7 +14,6 @@ import (
 	_model "github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
-	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -315,50 +314,6 @@ func IsFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode)
 		return false
 	}, where)
 	return usedFunc
-}
-
-func IsColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where ast.ExprNode) bool {
-	hasConversion := false
-	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-		switch x := expr.(type) {
-		case *ast.BinaryOperationExpr:
-			var valueExpr *driver.ValueExpr
-			var columnNameExpr *ast.ColumnNameExpr
-			if colValue, checkValueExpr := x.L.(*driver.ValueExpr); checkValueExpr {
-				valueExpr = colValue
-			} else if columnName, checkColumnNameExpr := x.L.(*ast.ColumnNameExpr); checkColumnNameExpr {
-				columnNameExpr = columnName
-			} else {
-				return false
-			}
-			if colValue, checkValueExpr := x.R.(*driver.ValueExpr); checkValueExpr {
-				valueExpr = colValue
-			} else if columnName, checkColumnNameExpr := x.R.(*ast.ColumnNameExpr); checkColumnNameExpr {
-				columnNameExpr = columnName
-			} else {
-				return false
-			}
-			if valueExpr == nil || columnNameExpr == nil {
-				return false
-			}
-			if colType, ok := colTypeMap[columnNameExpr.Name.String()]; ok {
-				switch valueExpr.Datum.GetValue().(type) {
-				case string:
-					if colType != "string" {
-						hasConversion = true
-						return true
-					}
-				case int, int8, int16, int32, int64, *types.MyDecimal:
-					if colType != "int" {
-						hasConversion = true
-						return true
-					}
-				}
-			}
-		}
-		return false
-	}, where)
-	return hasConversion
 }
 
 func ScanColumnValueFromExpr(where ast.ExprNode, fn func(*ast.ColumnName, []*driver.ValueExpr) bool) {
