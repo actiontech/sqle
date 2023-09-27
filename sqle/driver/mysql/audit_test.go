@@ -1076,6 +1076,16 @@ func TestCheckSelectAll(t *testing.T) {
 }
 
 func TestCheckWhereInvalid(t *testing.T) {
+	runDefaultRulesInspectCase(t, "select_count: has where condition", DefaultMysqlInspect(),
+		"select count(*) from exist_db.exist_tb_1 where id = 1",
+		newTestResult(),
+	)
+
+	runDefaultRulesInspectCase(t, "select_count: has no where condition", DefaultMysqlInspect(),
+		"select count(*) from exist_db.exist_tb_1",
+		newTestResult(),
+	)
+
 	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id > 1 limit 1;",
 		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
