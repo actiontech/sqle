@@ -7,17 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
 func (h AfterCreateNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
-	s := model.GetStorage()
-	err := s.CreateDefaultTemplateIfNotExist(model.ProjectUID(dataResourceId), driver.GetPluginManager().GetAllRules())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 func (h BeforeDeleteNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
