@@ -104,7 +104,7 @@ SELECT
 	sm.schema_name,
 	sm.status,
 	sm.remark,
-	GROUP_CONCAT(all_users.login_name) as assignees,
+	GROUP_CONCAT(DISTINCT all_users.login_name) as assignees,
 	ap.name as ap_name,
 	sar.audit_record_id as sql_audit_record_id
 
