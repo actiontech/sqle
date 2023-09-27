@@ -192,7 +192,7 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	var nodes []driverV2.Node
 	var sqlIdentity sqlIdentity
 	var processedRawText, processedFingerPrint string
-	var err error
+
 	for _, sql := range sqls {
 		// 在聚合之前对sql.Fingerprint和sql.RawText进行预处理，去除SQL中的脏数据
 		processedFingerPrint = sql.Fingerprint
@@ -201,10 +201,8 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		// 当解析结果中有多个node的时候，说明该SQL带有冗余的脏数据
 		// 这里把第一个node作为fingerprint，并且使用node.Text作为最后匹配到该指纹的SQL
 		// 为了和其他SQL一致，这里还需要去除node.Text字符串结尾的';'
-		nodes, err = common.Parse(ctx, sql.RawText)
-		if err != nil {
-			return err
-		}
+		// 若解析失败则nodes为nil len(nil)=0 此时Fingerprint和RawText保持解析前的状态
+		nodes, _ = common.Parse(ctx, sql.RawText)
 		if len(nodes) > 1 {
 			processedFingerPrint = nodes[0].Fingerprint
 			processedRawText = strings.Trim(nodes[0].Text, ";")
