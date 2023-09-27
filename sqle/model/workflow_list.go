@@ -105,8 +105,8 @@ AND tasks.exec_start_at > :filter_task_execute_start_time_from
 AND tasks.exec_start_at < :filter_task_execute_start_time_to
 {{- end }}
 
-{{- if .filter_create_user_name }}
-AND w.create_user_id = :filter_create_user_name
+{{- if .filter_create_user_id }}
+AND w.create_user_id = :filter_create_user_id
 {{- end }}
 
 {{- if .filter_current_step_type }}
@@ -117,11 +117,12 @@ AND curr_wst.type = :filter_current_step_type
 AND wr.status IN (:filter_status)
 {{- end }}
 
-{{- if .filter_current_step_assignee_user_name }}
-AND curr_ws.assignees REGEXP :filter_current_step_assignee_user_name
+{{- if .filter_current_step_assignee_user_id }}
+AND (curr_ws.assignees REGEXP :filter_current_step_assignee_user_id
 OR IF(wr.status = 'wait_for_execution'
-                , wir.execution_assignees REGEXP :filter_current_step_assignee_user_name
+                , wir.execution_assignees REGEXP :filter_current_step_assignee_user_id
                 , '')
+)
 {{- end }}
 
 {{- if .filter_task_status }}

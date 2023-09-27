@@ -13,11 +13,10 @@ import (
 type RuleTemplate struct {
 	Model
 	// global rule-template has no ProjectId
-	ProjectId ProjectUID `gorm:"index"`
-	Name      string     `json:"name"`
-	Desc      string     `json:"desc"`
-	DBType    string     `json:"db_type"`
-	// Instances []Instance         `json:"instance_list" gorm:"many2many:instance_rule_template"`
+	ProjectId      ProjectUID               `gorm:"index"`
+	Name           string                   `json:"name"`
+	Desc           string                   `json:"desc"`
+	DBType         string                   `json:"db_type"`
 	RuleList       []RuleTemplateRule       `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 	CustomRuleList []RuleTemplateCustomRule `json:"custom_rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -222,20 +221,13 @@ func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, 
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
 	t := &RuleTemplate{Name: name}
-	// 无法使用gorm关联关系预加载读取数据源,因为数据源数据存在视图内,不是通过gorm创建
-	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule"). // .Preload("Instances").Preload("CustomRuleList.CustomRule").
-										Where(t).
-										Where("project_id IN (?)", projectIds).
-										First(t).Error
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("CustomRuleList.CustomRule").
+		Where(t).
+		Where("project_id IN (?)", projectIds).
+		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
-	// i := make([]Instance, 0)
-	// err = s.db.Raw("select instances.* from instances left join instance_rule_template on instance_rule_template.instance_id = instances.id where instance_rule_template.rule_template_id = ?;", t.ID).Scan(&i).Error
-	// if err == gorm.ErrRecordNotFound {
-	// 	return t, false, nil
-	// }
-	// t.Instances = i
 	return t, true, errors.New(errors.ConnectStorageError, err)
 }
 

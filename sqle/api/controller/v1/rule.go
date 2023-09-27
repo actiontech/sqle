@@ -166,9 +166,10 @@ func CreateRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: req.DBType,
+		ProjectId: model.ProjectIdForGlobalRuleTemplate,
+		Name:      req.Name,
+		Desc:      req.Desc,
+		DBType:    req.DBType,
 	}
 	templateRules := []model.RuleTemplateRule{}
 	templateCustomRules := []model.RuleTemplateCustomRule{}
@@ -267,14 +268,8 @@ type RuleTemplateDetailResV1 struct {
 	RuleList []RuleResV1 `json:"rule_list,omitempty"`
 }
 
-func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectName map[uint]model.ProjectAndInstance) *RuleTemplateDetailResV1 {
-	// instances := make([]*GlobalRuleTemplateInstance, 0, len(template.Instances))
-	// for _, instance := range template.Instances {
-	// 	instances = append(instances, &GlobalRuleTemplateInstance{
-	// 		ProjectName:  instNameToProjectName[instance.ID].ProjectName,
-	// 		InstanceName: instance.Name,
-	// 	})
-	// }
+func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailResV1 {
+
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
 		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
@@ -283,10 +278,9 @@ func convertRuleTemplateToRes(template *model.RuleTemplate, instNameToProjectNam
 		ruleList = append(ruleList, convertCustomRuleToRuleResV1(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:   template.Name,
-		Desc:   template.Desc,
-		DBType: template.DBType,
-		// Instances: instances,
+		Name:     template.Name,
+		Desc:     template.Desc,
+		DBType:   template.DBType,
 		RuleList: ruleList,
 	}
 }
@@ -311,18 +305,9 @@ func GetRuleTemplate(c echo.Context) error {
 			fmt.Errorf("rule template is not exist"))))
 	}
 
-	// instanceIds := make([]uint, len(template.Instances))
-	// for i, inst := range template.Instances {
-	// 	instanceIds[i] = inst.ID
-	// }
-	// instanceNameToProjectName, err := s.GetProjectNamesByInstanceIds(instanceIds)
-	// if err != nil {
-	// 	return c.JSON(200, controller.NewBaseReq(err))
-	// }
-
 	return c.JSON(http.StatusOK, &GetRuleTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertRuleTemplateToRes(template, nil),
+		Data:    convertRuleTemplateToRes(template),
 	})
 }
 
@@ -396,11 +381,6 @@ type RuleTemplateResV1 struct {
 	DBType string `json:"db_type"`
 }
 
-type GlobalRuleTemplateInstance struct {
-	ProjectName  string `json:"project_name"`
-	InstanceName string `json:"instance_name"`
-}
-
 // @Summary 全局规则模板列表
 // @Description get all global rule template
 // @Id getRuleTemplateListV1
@@ -423,32 +403,9 @@ func GetRuleTemplates(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// // get project name and instance name
-	// var instanceIds []uint
-	// templateNameToInstanceIds := make(map[string][]uint)
-	// for _, template := range ruleTemplates {
-	// 	for _, instIdStr := range template.InstanceIds {
-	// 		if instIdStr == "" {
-	// 			continue
-	// 		}
-	// 		instId, err := strconv.Atoi(instIdStr)
-	// 		if err != nil {
-	// 			log.Logger().Errorf("unexpected instance id. id=%v", instIdStr)
-	// 			continue
-	// 		}
-	// 		instanceIds = append(instanceIds, uint(instId))
-	// 		templateNameToInstanceIds[template.Name] = append(templateNameToInstanceIds[template.Name], uint(instId))
-	// 	}
-	// }
-
-	// instanceIdToProjectName, err := s.GetProjectNamesByInstanceIds(instanceIds)
-	// if err != nil {
-	// 	return c.JSON(200, controller.NewBaseReq(err))
-	// }
-
 	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      convertRuleTemplatesToRes(nil, nil, ruleTemplates),
+		Data:      convertRuleTemplatesToRes(ruleTemplates),
 		TotalNums: count,
 	})
 }
@@ -466,24 +423,14 @@ func getRuleTemplatesByReq(s *model.Storage, limit, offset uint32, projectId str
 	return
 }
 
-func convertRuleTemplatesToRes(templateNameToInstanceIds map[string][]uint,
-	instanceIdToProjectName map[uint] /*instance id*/ model.ProjectAndInstance,
-	ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
+func convertRuleTemplatesToRes(ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
 
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
-		// instances := make([]*GlobalRuleTemplateInstance, len(templateNameToInstanceIds[ruleTemplate.Name]))
-		// for i, instId := range templateNameToInstanceIds[ruleTemplate.Name] {
-		// 	instances[i] = &GlobalRuleTemplateInstance{
-		// 		ProjectName:  instanceIdToProjectName[instId].ProjectName,
-		// 		InstanceName: instanceIdToProjectName[instId].InstanceName,
-		// 	}
-		// }
 		ruleTemplateReq := RuleTemplateResV1{
 			Name:   ruleTemplate.Name,
 			Desc:   ruleTemplate.Desc,
 			DBType: ruleTemplate.DBType,
-			// Instances: instances,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
@@ -723,9 +670,10 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		Name:   req.Name,
-		Desc:   req.Desc,
-		DBType: sourceTpl.DBType,
+		ProjectId: model.ProjectIdForGlobalRuleTemplate,
+		Name:      req.Name,
+		Desc:      req.Desc,
+		DBType:    sourceTpl.DBType,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
