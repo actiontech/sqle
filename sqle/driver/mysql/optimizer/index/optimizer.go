@@ -401,7 +401,7 @@ func (o *Optimizer) optimizeOnFunctionCallExpression(tbl string, fce *ast.FuncCa
 
 // doGeneralOptimization optimize single table select.
 func (o *Optimizer) doGeneralOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
-	generalOptimizer := indexoptimizer.NewOptimizer()
+	generalOptimizer := indexoptimizer.NewOptimizer(o.Context)
 
 	restoredSQL, err := restoreSelectStmt(selectStmt)
 	if err != nil {

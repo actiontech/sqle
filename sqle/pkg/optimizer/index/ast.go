@@ -1,5 +1,7 @@
 package index
 
+import "github.com/pingcap/parser/ast"
+
 // SelectAST contain an abstract syntax tree of a single table SQL. It
 // abstracts the syntax differences between different database.
 type SelectAST interface {
@@ -22,4 +24,9 @@ type SelectAST interface {
 	//
 	// If projection returns all columns, it returns nil.
 	ColumnsInProjection() []string
+
+	// GetCreateTableStmt get create table SQLs of the used table in select stmt
+	// For example, the SQL: select a, b from t;
+	// it returns []*ast.TableName{/* table info of t */}
+	GetSelectedTables() []*ast.TableName
 }
