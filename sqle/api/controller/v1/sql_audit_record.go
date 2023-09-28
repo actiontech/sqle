@@ -394,9 +394,16 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 				if len(ss) == 0 {
 					return nil
 				}
-				_, err = sqlBuffer.WriteString(ss[0])
-				if err != nil {
-					return fmt.Errorf("gather sqls from xml file failed: %v", err)
+				if sqlBuffer.Len() > 0 && !strings.HasSuffix(sqlBuffer.String(), ";") {
+					if _, err = sqlBuffer.WriteString(";"); err != nil {
+						return fmt.Errorf("gather sqls from xml file failed: %v", err)
+					}
+				}
+				for i := range ss {
+					_, err = sqlBuffer.WriteString(ss[i] + ";")
+					if err != nil {
+						return fmt.Errorf("gather sqls from xml file failed: %v", err)
+					}
 				}
 			case strings.HasSuffix(path, ".sql"):
 				content, err := os.ReadFile(path)
