@@ -154,19 +154,13 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 					continue
 				}
 			}
-			var fp string
-			nodes, _ := common.Parse(ctx, e.Query)
-			if len(nodes) > 0 {
-				fp = nodes[0].Fingerprint
-			}
 			s.sqlCh <- scanners.SQL{
-				Fingerprint: fp,
-				RawText:     e.Query,
-				Counter:     1,
-				QueryTime:   e.TimeMetrics[QueryTime],
-				QueryAt:     e.Ts,
-				DBUser:      e.User,
-				Schema:      e.Db,
+				RawText:   e.Query,
+				Counter:   1,
+				QueryTime: e.TimeMetrics[QueryTime],
+				QueryAt:   e.Ts,
+				DBUser:    e.User,
+				Schema:    e.Db,
 			}
 		}
 	}
@@ -199,17 +193,17 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 
 	for _, sql := range sqls {
 		// 在聚合之前对sql.Fingerprint和sql.RawText进行预处理，去除SQL中的脏数据
-		processedFingerPrint = sql.Fingerprint
-		processedRawText = sql.RawText
-
 		// 当解析结果中有多个node的时候，说明该SQL带有冗余的脏数据
-		// 这里把第一个node作为fingerprint，并且使用node.Text作为最后匹配到该指纹的SQL
-		// 为了和其他SQL一致，这里还需要去除node.Text字符串结尾的';'
-		// 若解析失败则nodes为nil len(nil)=0 此时Fingerprint和RawText保持解析前的状态
+		// 这里把第一个node作为RawText解析出的SQL
+		// 为了在显示上和其他SQL一致，这里还需要去除node.Text字符串结尾的';'
+		// 若解析失败则nodes为nil len(nil)=0 此时Fingerprint和RawText都为sql.RawText
 		nodes, _ = common.Parse(ctx, sql.RawText)
-		if len(nodes) > 1 {
+		if len(nodes) > 0 {
 			processedFingerPrint = nodes[0].Fingerprint
 			processedRawText = strings.Trim(nodes[0].Text, ";")
+		} else {
+			processedRawText = sql.RawText
+			processedFingerPrint = sql.RawText
 		}
 
 		// 使用指纹和Schema的JSON String作为SQL的唯一标识符
