@@ -16,6 +16,23 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
+func GetAllUsers(ctx context.Context, dmsAddr string) ([]*model.User, error) {
+	ret := make([]*model.User, 0)
+	for pageIndex, pageSize := 1, 10; ; pageIndex++ {
+		users, _, err := dmsobject.ListUsers(ctx, controller.GetDMSServerAddress(), dmsV1.ListUserReq{PageSize: uint32(pageSize), PageIndex: uint32(pageIndex), FilterDeletedUser: true})
+		if err != nil {
+			return nil, err
+		}
+		for _, user := range users {
+			ret = append(ret, convertListUserToModel(user))
+		}
+		if len(users) < pageSize {
+			break
+		}
+	}
+	return ret, nil
+}
+
 func GetMapUsers(ctx context.Context, userUid []string, dmsAddr string) (map[string] /*user_id*/ *model.User, error) {
 	users, _, err := dmsobject.ListUsers(ctx, controller.GetDMSServerAddress(), dmsV1.ListUserReq{PageSize: 999, PageIndex: 1, FilterDeletedUser: true, FilterByUids: strings.Join(userUid, ",")})
 	if err != nil {
