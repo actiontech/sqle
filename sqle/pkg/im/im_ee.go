@@ -58,6 +58,9 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	if err != nil {
 		return err
 	}
+	if len(originUser) == 0 {
+		return nil
+	}
 
 	assignUserIDs, err := client.GetFeishuUserIdList(assignUsers, larkContact.UserIdTypeOpenId)
 	if err != nil {
