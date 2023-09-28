@@ -21,8 +21,8 @@ func ListProjects(ctx context.Context, dmsAddr string, req dmsV1.ListProjectReq)
 		return nil, 0, fmt.Errorf("failed to list project from %v: %v", url, err)
 	}
 	if reply.Code != 0 {
-		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
-	return reply.Payload.Projects, reply.Payload.Total, nil
+	return reply.Data, reply.Total, nil
 }
