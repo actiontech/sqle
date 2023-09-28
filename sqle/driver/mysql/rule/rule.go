@@ -2276,7 +2276,7 @@ var RuleHandlers = []RuleHandler{
 			Category:   RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "使用联合索引时，必须使用联合索引的首字段",
+		Message:      "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
 		Func:         mustMatchLeftMostPrefix,
 	},
 	{
