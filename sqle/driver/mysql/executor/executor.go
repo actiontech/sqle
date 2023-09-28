@@ -303,9 +303,9 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 
 	switch {
 	case ignoreSysDatabase && c.IsLowerCaseTableNames():
-		query = "show databases where lower(`Database`) not in ('information_schema','performance_schema','mysql','sys')"
+		query = "show databases where lower(`Database`) not in ('information_schema','performance_schema','mysql','sys', 'query_rewrite')"
 	case ignoreSysDatabase && !c.IsLowerCaseTableNames():
-		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys')"
+		query = "show databases where `Database` not in ('information_schema','performance_schema','mysql','sys', 'query_rewrite')"
 	default:
 		query = "show databases"
 	}
@@ -428,7 +428,7 @@ const (
 	ExplainRecordExtraUsingFilesort         = "Using filesort"
 	ExplainRecordExtraUsingTemporary        = "Using temporary"
 	ExplainRecordExtraUsingIndexForSkipScan = "Using index for skip scan"
-	ExplainRecordExtraUsingWhere = "Using where"
+	ExplainRecordExtraUsingWhere            = "Using where"
 
 	ExplainRecordAccessTypeAll   = "ALL"
 	ExplainRecordAccessTypeIndex = "index"
