@@ -2936,11 +2936,23 @@ func checkSelectAll(input *RuleHandlerInput) error {
 	return nil
 }
 
+func isSelectCount(selectStmt *ast.SelectStmt) bool {
+	if len(selectStmt.Fields.Fields) == 1 {
+		if fu, ok := selectStmt.Fields.Fields[0].Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
+			return true
+		}
+	}
+	return false
+}
+
 func checkSelectWhere(input *RuleHandlerInput) error {
 
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		if input.Rule.Name == DMLCheckWhereIsInvalid && isSelectCount(stmt) { // 只做count()计数，不要求一定有有效的where条件
 			return nil
 		}
 		checkWhere(input.Rule, input.Res, stmt.Where)
@@ -4466,8 +4478,10 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 func checkSelectLimit(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+
 		// 类似 select 1 和 select sleep(1) 这种不是真正查询的SQL, 没有检查limit的必要
-		if stmt.From == nil {
+		// select count() 没有limit的必要
+		if stmt.From == nil || isSelectCount(stmt) {
 			return nil
 		}
 
@@ -4629,7 +4643,6 @@ func checkExistFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.Audi
 }
 
 func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
-	tables := []*ast.TableName{}
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
@@ -4638,28 +4651,17 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			if len(tableSources) < 1 {
 				break
 			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
 			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
@@ -4667,13 +4669,7 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			if len(tableSources) < 1 {
 				continue
 			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, ss.Where) {
+			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, ss.Where) {
 				break
 			}
 		}
@@ -4682,39 +4678,87 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 	}
 	return nil
 }
-func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.AuditResults, tables []*ast.TableName, where ast.ExprNode) bool {
-	if where == nil {
-		return false
-	}
-	var cols []*ast.ColumnDef
-	for _, tableName := range tables {
-		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
-		if exist && err == nil {
-			cols = append(cols, createTableStmt.Cols...)
-		}
-	}
-	colMap := make(map[string]string)
-	for _, col := range cols {
-		colType := ""
-		if col.Tp == nil {
-			continue
-		}
-		switch col.Tp.Tp {
-		case mysql.TypeVarchar, mysql.TypeString:
-			colType = "string"
-		case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeFloat, mysql.TypeNewDecimal:
-			colType = "int"
-		}
-		if colType != "" {
-			colMap[col.Name.String()] = colType
-		}
 
+func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.AuditResults, tableSources []*ast.TableSource, where ast.ExprNode) bool {
+	var hasImplicitConversionColumn bool
+	if where == nil {
+		return hasImplicitConversionColumn
 	}
-	if util.IsColumnImplicitConversionInWhereStmt(colMap, where) {
-		addResult(res, rule, DMLCheckWhereExistImplicitConversion)
-		return true
+
+	util.ScanColumnValueFromExpr(where, func(cn *ast.ColumnName, values []*parserdriver.ValueExpr) bool {
+		ts := getTableSourceByColumnName(ctx, tableSources, cn)
+		if ts == nil {
+			return false
+		}
+		// 暂时不处理子查询的情况
+		switch source := ts.Source.(type) {
+		case *ast.TableName:
+			createTableStmt, exist, err := ctx.GetCreateTableStmt(source)
+			if err != nil {
+				return false
+			}
+			if !exist {
+				return false
+			}
+
+			for _, col := range createTableStmt.Cols {
+				if col.Name.Name.L != cn.Name.L {
+					continue
+				}
+				for _, v := range values {
+					if !checkColumnTypeIsMatch(v, col.Tp.Tp) {
+						addResult(res, rule, DMLCheckWhereExistImplicitConversion)
+						hasImplicitConversionColumn = true
+						return true
+					}
+				}
+			}
+		}
+		return false
+	})
+	return hasImplicitConversionColumn
+}
+
+func getTableSourceByColumnName(ctx *session.Context, tableSources []*ast.TableSource, columnName *ast.ColumnName) *ast.TableSource {
+	for _, ts := range tableSources {
+		switch source := ts.Source.(type) {
+		case *ast.TableName:
+			if ts.AsName.L == columnName.Table.L {
+				return ts
+			}
+			columnTableName := &ast.TableName{
+				Schema: columnName.Schema,
+				Name:   columnName.Table,
+			}
+			if ctx.GetSchemaName(source) == ctx.GetSchemaName(columnTableName) && source.Name.L == columnTableName.Name.L {
+				return ts
+			}
+		}
 	}
-	return false
+	return nil
+}
+
+func checkColumnTypeIsMatch(value *parserdriver.ValueExpr, ColumnType byte) bool {
+	var columnTypeStr string
+	switch ColumnType {
+	case mysql.TypeVarchar, mysql.TypeString:
+		columnTypeStr = "string"
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeFloat, mysql.TypeNewDecimal:
+		columnTypeStr = "int"
+	default:
+		columnTypeStr = "unknown"
+	}
+
+	var valueTypeStr string
+	switch value.Datum.GetValue().(type) {
+	case string:
+		valueTypeStr = "string"
+	case int, int8, int16, int32, int64, *tidbTypes.MyDecimal:
+		valueTypeStr = "int"
+	default:
+		valueTypeStr = "unknown"
+	}
+	return valueTypeStr == columnTypeStr
 }
 
 func checkDMLSelectForUpdate(input *RuleHandlerInput) error {
