@@ -49,11 +49,9 @@ type ListProject struct {
 
 // swagger:model ListProjectReply
 type ListProjectReply struct {
-	// List Project reply
-	Payload struct {
-		Projects []*ListProject `json:"projects"`
-		Total    int64          `json:"total"`
-	} `json:"payload"`
+	// List project reply
+	Data  []*ListProject `json:"data"`
+	Total int64            `json:"total_nums"`
 
 	// Generic reply
 	base.GenericResp

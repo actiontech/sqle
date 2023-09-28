@@ -25,10 +25,10 @@ func OperateDataResourceHandle(c echo.Context) error {
 	if ok {
 		err := h.Hanle(c.Request().Context(), "", req.DataResourceUid)
 		if err != nil {
-			return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Code: http.StatusBadRequest, Msg: err.Error()}})
+			return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Code: http.StatusBadRequest, Message: err.Error()}})
 		}
 	}
-	return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Msg: "OK"}})
+	return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Message: "OK"}})
 }
 
 type AfterDeleteNamespace struct {
