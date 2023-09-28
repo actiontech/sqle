@@ -141,10 +141,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		// v1Router.POST("/configurations/webhook/test", v1.TestWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
-		// v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, AdminUserAllowed())
-		// v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetSqlAverageExecutionTimeV1, AdminUserAllowed())
-		// v1Router.GET("/statistic/instances/sql_execution_fail_percent", v1.GetSqlExecutionFailPercentV1, AdminUserAllowed())
-		// v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, AdminUserAllowed())
+		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetSqlAverageExecutionTimeV1, sqleMiddleware.AdminUserAllowed())
+		// v1Router.GET("/statistic/instances/sql_execution_fail_percent", v1.GetSqlExecutionFailPercentV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/rejected_percent_group_by_creator", v1.GetWorkflowRejectedPercentGroupByCreatorV1, sqleMiddleware.AdminUserAllowed())
 		//v1Router.GET("/statistic/workflows/rejected_percent_group_by_instance", v1.GetWorkflowRejectedPercentGroupByInstanceV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/counts", v1.GetWorkflowCountsV1, sqleMiddleware.AdminUserAllowed())
