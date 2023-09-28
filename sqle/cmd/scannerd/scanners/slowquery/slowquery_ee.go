@@ -17,7 +17,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/percona/go-mysql/log"
-	"github.com/percona/go-mysql/query"
 	"github.com/percona/pmm-agent/agents/mysql/slowlog/parser"
 	"github.com/sirupsen/logrus"
 )
@@ -155,8 +154,13 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 					continue
 				}
 			}
+			var fp string
+			nodes, _ := common.Parse(ctx, e.Query)
+			if len(nodes) > 0 {
+				fp = nodes[0].Fingerprint
+			}
 			s.sqlCh <- scanners.SQL{
-				Fingerprint: query.Fingerprint(e.Query),
+				Fingerprint: fp,
 				RawText:     e.Query,
 				Counter:     1,
 				QueryTime:   e.TimeMetrics[QueryTime],
