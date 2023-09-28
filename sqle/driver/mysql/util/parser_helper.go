@@ -14,7 +14,6 @@ import (
 	_model "github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
-	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -317,48 +316,51 @@ func IsFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode)
 	return usedFunc
 }
 
-func IsColumnImplicitConversionInWhereStmt(colTypeMap map[string]string, where ast.ExprNode) bool {
-	hasConversion := false
+func ScanColumnValueFromExpr(where ast.ExprNode, fn func(*ast.ColumnName, []*driver.ValueExpr) bool) {
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		var values []*driver.ValueExpr
+		var columnNameExpr *ast.ColumnNameExpr
+
 		switch x := expr.(type) {
 		case *ast.BinaryOperationExpr:
-			var valueExpr *driver.ValueExpr
-			var columnNameExpr *ast.ColumnNameExpr
 			if colValue, checkValueExpr := x.L.(*driver.ValueExpr); checkValueExpr {
-				valueExpr = colValue
+				values = append(values, colValue)
 			} else if columnName, checkColumnNameExpr := x.L.(*ast.ColumnNameExpr); checkColumnNameExpr {
 				columnNameExpr = columnName
 			} else {
 				return false
 			}
 			if colValue, checkValueExpr := x.R.(*driver.ValueExpr); checkValueExpr {
-				valueExpr = colValue
+				values = append(values, colValue)
 			} else if columnName, checkColumnNameExpr := x.R.(*ast.ColumnNameExpr); checkColumnNameExpr {
 				columnNameExpr = columnName
 			} else {
 				return false
 			}
-			if valueExpr == nil || columnNameExpr == nil {
+			if len(values) == 0 || columnNameExpr == nil {
 				return false
 			}
-			if colType, ok := colTypeMap[columnNameExpr.Name.String()]; ok {
-				switch valueExpr.Datum.GetValue().(type) {
-				case string:
-					if colType != "string" {
-						hasConversion = true
-						return true
-					}
-				case int, int8, int16, int32, int64, *types.MyDecimal:
-					if colType != "int" {
-						hasConversion = true
-						return true
-					}
+
+			return fn(columnNameExpr.Name, values)
+		case *ast.PatternInExpr:
+			c, ok := x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			columnNameExpr = c
+			for _, expr := range x.List {
+				if v, ok := expr.(*driver.ValueExpr); ok {
+					values = append(values, v)
 				}
 			}
+			if len(values) == 0 || columnNameExpr == nil {
+				return false
+			}
+
+			return fn(columnNameExpr.Name, values)
 		}
 		return false
 	}, where)
-	return hasConversion
 }
 
 func WhereStmtExistNot(where ast.ExprNode) bool {
@@ -394,7 +396,7 @@ func WhereStmtExistNot(where ast.ExprNode) bool {
 	return existNOT
 }
 
-//Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
+// Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
 func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 	isExist := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
