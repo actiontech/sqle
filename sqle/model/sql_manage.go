@@ -358,7 +358,7 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 			}
 
 			if len(userList) > 0 {
-				err := tx.Exec("DELETE FROM sql_manage_assignees sma WHERE sma.sql_manage_id IN (?)", idList).Error
+				err := tx.Exec("DELETE FROM sql_manage_assignees WHERE sql_manage_id IN (?)", idList).Error
 				if err != nil {
 					return err
 				}
