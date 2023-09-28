@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 
@@ -20,7 +21,10 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 	reportId := c.Param("audit_plan_report_id")
 	sqlNumber := c.Param("number")
 	apName := c.Param("audit_plan_name")
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	var schema string
 
@@ -34,7 +38,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
 	}
 
-	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectName, apName, reportIdInt, sqlNumberInt)
+	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectUid, apName, reportIdInt, sqlNumberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
