@@ -6,7 +6,7 @@ type GenericResp struct {
 	// code
 	Code int `json:"code"`
 	// message
-	Msg string `json:"msg"`
+	Message string `json:"message"`
 }
 
 func (r *GenericResp) SetCode(code int) {
@@ -14,7 +14,7 @@ func (r *GenericResp) SetCode(code int) {
 }
 
 func (r *GenericResp) SetMsg(msg string) {
-	r.Msg = msg
+	r.Message = msg
 }
 
 type GenericResper interface {

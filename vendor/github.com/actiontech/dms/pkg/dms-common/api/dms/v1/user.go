@@ -72,9 +72,7 @@ const (
 // swagger:model GetUserReply
 type GetUserReply struct {
 	// Get user reply
-	Payload struct {
-		User *GetUser `json:"user"`
-	} `json:"payload"`
+	Data *GetUser `json:"data"`
 
 	// Generic reply
 	base.GenericResp
@@ -98,13 +96,12 @@ type UserOpPermission struct {
 // swagger:model GetUserOpPermissionReply
 type GetUserOpPermissionReply struct {
 	// user op permission reply
-	Payload struct {
-		// is user admin, admin has all permissions
+	// is user admin, admin has all permissions
+	Data struct {
 		IsAdmin bool `json:"is_admin"`
 		// user op permissions
 		OpPermissionList []OpPermissionItem `json:"op_permission_list"`
-	} `json:"payload"`
-
+	} `json:"data"`
 	// Generic reply
 	base.GenericResp
 }
@@ -284,10 +281,8 @@ type ListUser struct {
 // swagger:model ListUserReply
 type ListUserReply struct {
 	// List user reply
-	Payload struct {
-		Users []*ListUser `json:"users"`
-		Total int64       `json:"total"`
-	} `json:"payload"`
+	Data  []*ListUser `json:"data"`
+	Total int64       `json:"total_nums"`
 
 	// Generic reply
 	base.GenericResp

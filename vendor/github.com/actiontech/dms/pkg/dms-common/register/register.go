@@ -33,7 +33,7 @@ func RegisterDMSProxyTarget(ctx context.Context, dmsAddr, targetName, targetAddr
 		return fmt.Errorf("failed to register dms proxy target %v: %v", dmsUrl, err)
 	}
 	if reply.Code != 0 {
-		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func RegisterDMSPlugin(ctx context.Context, dmsAddr string, plugin *dmsV1.Plugin
 		return fmt.Errorf("failed to register dms plugin %v: %v", dmsUrl, err)
 	}
 	if reply.Code != 0 {
-		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Msg)
+		return fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
 	}
 
 	return nil
