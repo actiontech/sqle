@@ -9,7 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 )
 
-func (r *MutationResolverImpl) AsyncSQLExecuteQuery(ctx context.Context, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) (*model.AsyncTaskInfo, error) {
+func (r *MutationResolverImpl) AsyncSQLExecuteQuery(ctx context.Context, projectID *string, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat, readLogs *bool) (*model.AsyncTaskInfo, error) {
 	success, result, err := service.AuditSQL(sql, connectionID)
 	if err != nil {
 		return nil, err

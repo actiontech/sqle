@@ -303,7 +303,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AsyncReadDataFromContainer         func(childComplexity int, connectionID string, contextID string, containerNodePath string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) int
-		AsyncSQLExecuteQuery               func(childComplexity int, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) int
+		AsyncSQLExecuteQuery               func(childComplexity int, projectID *string, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat, readLogs *bool) int
 		AsyncSQLExecuteResults             func(childComplexity int, taskID string) int
 		AsyncSQLExplainExecutionPlan       func(childComplexity int, connectionID string, contextID string, query string, configuration interface{}) int
 		AsyncSQLExplainExecutionPlanResult func(childComplexity int, taskID string) int
@@ -721,6 +721,7 @@ type ComplexityRoot struct {
 	}
 
 	UserInfo struct {
+		AuthRole                func(childComplexity int) int
 		AuthTokens              func(childComplexity int) int
 		ConfigurationParameters func(childComplexity int) int
 		DisplayName             func(childComplexity int) int
@@ -778,7 +779,7 @@ type MutationResolver interface {
 	SQLContextCreate(ctx context.Context, connectionID string, defaultCatalog *string, defaultSchema *string) (*model.SQLContextInfo, error)
 	SQLContextSetDefaults(ctx context.Context, connectionID string, contextID string, defaultCatalog *string, defaultSchema *string) (bool, error)
 	SQLContextDestroy(ctx context.Context, connectionID string, contextID string) (bool, error)
-	AsyncSQLExecuteQuery(ctx context.Context, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) (*model.AsyncTaskInfo, error)
+	AsyncSQLExecuteQuery(ctx context.Context, projectID *string, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat, readLogs *bool) (*model.AsyncTaskInfo, error)
 	AsyncReadDataFromContainer(ctx context.Context, connectionID string, contextID string, containerNodePath string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) (*model.AsyncTaskInfo, error)
 	SQLResultClose(ctx context.Context, connectionID string, contextID string, resultID string) (bool, error)
 	UpdateResultsDataBatch(ctx context.Context, connectionID string, contextID string, resultsID string, updatedRows []*model.SQLResultRow, deletedRows []*model.SQLResultRow, addedRows []*model.SQLResultRow) (*model.SQLExecuteInfo, error)
@@ -2216,7 +2217,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AsyncSQLExecuteQuery(childComplexity, args["connectionId"].(string), args["contextId"].(string), args["sql"].(string), args["resultId"].(*string), args["filter"].(*model.SQLDataFilter), args["dataFormat"].(*model.ResultDataFormat)), true
+		return e.complexity.Mutation.AsyncSQLExecuteQuery(childComplexity, args["projectId"].(*string), args["connectionId"].(string), args["contextId"].(string), args["sql"].(string), args["resultId"].(*string), args["filter"].(*model.SQLDataFilter), args["dataFormat"].(*model.ResultDataFormat), args["readLogs"].(*bool)), true
 
 	case "Mutation.asyncSqlExecuteResults":
 		if e.complexity.Mutation.AsyncSQLExecuteResults == nil {
@@ -4950,6 +4951,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserAuthToken.UserID(childComplexity), true
 
+	case "UserInfo.authRole":
+		if e.complexity.UserInfo.AuthRole == nil {
+			break
+		}
+
+		return e.complexity.UserInfo.AuthRole(childComplexity), true
+
 	case "UserInfo.authTokens":
 		if e.complexity.UserInfo.AuthTokens == nil {
 			break
@@ -5438,17 +5446,21 @@ type UserInfo {
 
     # Human readable display name. It is taken from the first auth provider which was used for user login.
     displayName: String
+    # User auth role ID. Optional.
+    authRole: ID
 
+    # All authentication tokens used during current session
     authTokens: [UserAuthToken!]!
 
     linkedAuthProviders: [String!]!
 
     # User profile properties map
     metaParameters: Object!
-
-    # USer configuiraiton parameters
+    # User configuration parameters
     configurationParameters: Object!
+
 }
+
 
 extend type Query {
 
@@ -6539,12 +6551,14 @@ extend type Mutation {
 
     # Execute SQL and return results
     asyncSqlExecuteQuery(
+        projectId: ID,
         connectionId: ID!,
         contextId: ID!,
         sql: String!,
         resultId: ID,
         filter: SQLDataFilter,
-        dataFormat: ResultDataFormat    # requested data format. May be ignored by server
+        dataFormat: ResultDataFormat,   # requested data format. May be ignored by server
+        readLogs: Boolean               # added 23.2.1
     ): AsyncTaskInfo!
 
     # Read data from table
@@ -6692,60 +6706,78 @@ func (ec *executionContext) field_Mutation_asyncReadDataFromContainer_args(ctx c
 func (ec *executionContext) field_Mutation_asyncSqlExecuteQuery_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["connectionId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("connectionId"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+	var arg0 *string
+	if tmp, ok := rawArgs["projectId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("projectId"))
+		arg0, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["connectionId"] = arg0
+	args["projectId"] = arg0
 	var arg1 string
-	if tmp, ok := rawArgs["contextId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextId"))
+	if tmp, ok := rawArgs["connectionId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("connectionId"))
 		arg1, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["contextId"] = arg1
+	args["connectionId"] = arg1
 	var arg2 string
+	if tmp, ok := rawArgs["contextId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextId"))
+		arg2, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["contextId"] = arg2
+	var arg3 string
 	if tmp, ok := rawArgs["sql"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sql"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		arg3, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["sql"] = arg2
-	var arg3 *string
+	args["sql"] = arg3
+	var arg4 *string
 	if tmp, ok := rawArgs["resultId"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resultId"))
-		arg3, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
+		arg4, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["resultId"] = arg3
-	var arg4 *model.SQLDataFilter
+	args["resultId"] = arg4
+	var arg5 *model.SQLDataFilter
 	if tmp, ok := rawArgs["filter"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg4, err = ec.unmarshalOSQLDataFilter2ᚖgithubᚗcomᚋactiontechᚋsqleᚋsqleᚋapiᚋcloudbeaver_wrapperᚋgraphᚋmodelᚐSQLDataFilter(ctx, tmp)
+		arg5, err = ec.unmarshalOSQLDataFilter2ᚖgithubᚗcomᚋactiontechᚋsqleᚋsqleᚋapiᚋcloudbeaver_wrapperᚋgraphᚋmodelᚐSQLDataFilter(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["filter"] = arg4
-	var arg5 *model.ResultDataFormat
+	args["filter"] = arg5
+	var arg6 *model.ResultDataFormat
 	if tmp, ok := rawArgs["dataFormat"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("dataFormat"))
-		arg5, err = ec.unmarshalOResultDataFormat2ᚖgithubᚗcomᚋactiontechᚋsqleᚋsqleᚋapiᚋcloudbeaver_wrapperᚋgraphᚋmodelᚐResultDataFormat(ctx, tmp)
+		arg6, err = ec.unmarshalOResultDataFormat2ᚖgithubᚗcomᚋactiontechᚋsqleᚋsqleᚋapiᚋcloudbeaver_wrapperᚋgraphᚋmodelᚐResultDataFormat(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["dataFormat"] = arg5
+	args["dataFormat"] = arg6
+	var arg7 *bool
+	if tmp, ok := rawArgs["readLogs"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("readLogs"))
+		arg7, err = ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["readLogs"] = arg7
 	return args, nil
 }
 
@@ -19942,7 +19974,7 @@ func (ec *executionContext) _Mutation_asyncSqlExecuteQuery(ctx context.Context, 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AsyncSQLExecuteQuery(rctx, fc.Args["connectionId"].(string), fc.Args["contextId"].(string), fc.Args["sql"].(string), fc.Args["resultId"].(*string), fc.Args["filter"].(*model.SQLDataFilter), fc.Args["dataFormat"].(*model.ResultDataFormat))
+		return ec.resolvers.Mutation().AsyncSQLExecuteQuery(rctx, fc.Args["projectId"].(*string), fc.Args["connectionId"].(string), fc.Args["contextId"].(string), fc.Args["sql"].(string), fc.Args["resultId"].(*string), fc.Args["filter"].(*model.SQLDataFilter), fc.Args["dataFormat"].(*model.ResultDataFormat), fc.Args["readLogs"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -26186,6 +26218,8 @@ func (ec *executionContext) fieldContext_Query_activeUser(ctx context.Context, f
 				return ec.fieldContext_UserInfo_userId(ctx, field)
 			case "displayName":
 				return ec.fieldContext_UserInfo_displayName(ctx, field)
+			case "authRole":
+				return ec.fieldContext_UserInfo_authRole(ctx, field)
 			case "authTokens":
 				return ec.fieldContext_UserInfo_authTokens(ctx, field)
 			case "linkedAuthProviders":
@@ -35095,6 +35129,47 @@ func (ec *executionContext) fieldContext_UserInfo_displayName(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _UserInfo_authRole(ctx context.Context, field graphql.CollectedField, obj *model.UserInfo) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_UserInfo_authRole(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AuthRole, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOID2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_UserInfo_authRole(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "UserInfo",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserInfo_authTokens(ctx context.Context, field graphql.CollectedField, obj *model.UserInfo) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserInfo_authTokens(ctx, field)
 	if err != nil {
@@ -43556,6 +43631,10 @@ func (ec *executionContext) _UserInfo(ctx context.Context, sel ast.SelectionSet,
 		case "displayName":
 
 			out.Values[i] = ec._UserInfo_displayName(ctx, field, obj)
+
+		case "authRole":
+
+			out.Values[i] = ec._UserInfo_authRole(ctx, field, obj)
 
 		case "authTokens":
 
