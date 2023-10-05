@@ -26,7 +26,7 @@ func (r *mutationResolver) SQLContextDestroy(ctx context.Context, connectionID s
 }
 
 // AsyncSQLExecuteQuery is the resolver for the asyncSqlExecuteQuery field.
-func (r *mutationResolver) AsyncSQLExecuteQuery(ctx context.Context, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat) (*model.AsyncTaskInfo, error) {
+func (r *mutationResolver) AsyncSQLExecuteQuery(ctx context.Context, projectID *string, connectionID string, contextID string, sql string, resultID *string, filter *model.SQLDataFilter, dataFormat *model.ResultDataFormat, readLogs *bool) (*model.AsyncTaskInfo, error) {
 	panic(fmt.Errorf("not implemented: AsyncSQLExecuteQuery - asyncSqlExecuteQuery"))
 }
 
