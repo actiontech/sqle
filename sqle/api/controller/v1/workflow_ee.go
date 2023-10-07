@@ -44,18 +44,18 @@ func exportWorkflowV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"filter_subject":                         req.FilterSubject,
-		"filter_create_time_from":                req.FilterCreateTimeFrom,
-		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"filter_project_id":                      projectUid,
-		"current_user_id":                        user.ID,
-		"check_user_can_access":                  !up.IsAdmin(),
+		"filter_subject":                       req.FilterSubject,
+		"filter_create_time_from":              req.FilterCreateTimeFrom,
+		"filter_create_time_to":                req.FilterCreateTimeTo,
+		"filter_create_user_id":                req.FilterCreateUserID,
+		"filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
+		"filter_status":                        req.FilterStatus,
+		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
+		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_project_id":                    projectUid,
+		"current_user_id":                      user.ID,
+		"check_user_can_access":                !up.IsAdmin(),
 	}
 
 	if !up.IsAdmin() {
