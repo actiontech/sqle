@@ -6385,8 +6385,9 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 	//	v2 varchar(255) character SET utf8mb4,
 	//	v3 int,
 	//	v4 int,
+	//  v5 int,
 	//	PRIMARY KEY (id) USING BTREE,
-	//	KEY idx_1 (v1,v2,v3),
+	//	KEY idx_1 (v1,v2,v3,v4),
 	//	UNIQUE KEY uniq_1 (v2,v3),
 	//	KEY idx_100 (v3)
 	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
@@ -6428,6 +6429,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6454,6 +6460,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		},
 		{
 			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v1 in(1,2)`,
 			TriggerRule: true,
 		},
@@ -6470,6 +6481,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		{
@@ -6549,6 +6565,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6556,6 +6577,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v4 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v5 = 1`,
 			TriggerRule: true,
 		},
 		{
@@ -6571,6 +6597,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 > 1`,
 			TriggerRule: false,
 		},
 		{
@@ -6591,6 +6622,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		// delete
@@ -6625,6 +6661,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6651,6 +6692,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		},
 		{
 			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 in(1,2)`,
 			TriggerRule: true,
 		},
@@ -6667,6 +6713,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		// select union
@@ -6727,8 +6778,9 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 	//	v2 varchar(255) character SET utf8mb4,
 	//	v3 int,
 	//	v4 int,
+	//  v5 int,
 	//	PRIMARY KEY (id) USING BTREE,
-	//	KEY idx_1 (v1,v2,v3),
+	//	KEY idx_1 (v1,v2,v3, v4),
 	//	UNIQUE KEY uniq_1 (v2,v3),
 	//	KEY idx_100 (v3)
 	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
@@ -6758,6 +6810,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			Name:        "select-with-equal",
 			Sql:         `select * from exist_tb_9 where v4 = 1`,
 			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-without-equal",
@@ -6826,6 +6883,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			TriggerRule: true,
 		},
 		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
 			TriggerRule: false,
@@ -6872,6 +6934,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			TriggerRule: true,
 		},
 		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 > 1 and v4 = 1`,
 			TriggerRule: false,
@@ -6890,6 +6957,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v4 > 1`,
 			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-without-equal",
