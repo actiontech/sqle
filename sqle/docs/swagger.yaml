@@ -4056,6 +4056,8 @@ definitions:
     type: object
   v1.UserTipResV1:
     properties:
+      user_id:
+        type: string
       user_name:
         type: string
     type: object
@@ -8497,9 +8499,9 @@ paths:
         in: query
         name: filter_task_execute_start_time_to
         type: string
-      - description: filter create user name
+      - description: filter create user id
         in: query
-        name: filter_create_user_name
+        name: filter_create_user_id
         type: string
       - description: filter workflow status
         enum:
@@ -8513,9 +8515,9 @@ paths:
         in: query
         name: filter_status
         type: string
-      - description: filter current step assignee user name
+      - description: filter current step assignee user id
         in: query
-        name: filter_current_step_assignee_user_name
+        name: filter_current_step_assignee_user_id
         type: string
       - description: filter instance name
         in: query
@@ -8994,9 +8996,9 @@ paths:
         in: query
         name: filter_task_execute_start_time_to
         type: string
-      - description: filter create user name
+      - description: filter create user id
         in: query
-        name: filter_create_user_name
+        name: filter_create_user_id
         type: string
       - description: filter workflow status
         enum:
@@ -9010,9 +9012,9 @@ paths:
         in: query
         name: filter_status
         type: string
-      - description: filter current step assignee user name
+      - description: filter current step assignee user id
         in: query
-        name: filter_current_step_assignee_user_name
+        name: filter_current_step_assignee_user_id
         type: string
       - description: filter instance name
         in: query
@@ -10578,9 +10580,9 @@ paths:
         in: query
         name: filter_task_execute_start_time_to
         type: string
-      - description: filter create user name
+      - description: filter create user id
         in: query
-        name: filter_create_user_name
+        name: filter_create_user_id
         type: string
       - description: filter workflow status
         enum:
@@ -10594,11 +10596,11 @@ paths:
         in: query
         name: filter_status
         type: string
-      - description: filter current step assignee user name
+      - description: filter current step assignee user id
         in: query
-        name: filter_current_step_assignee_user_name
+        name: filter_current_step_assignee_user_id
         type: string
-      - description: filter instance name
+      - description: filter instance id
         in: query
         name: filter_task_instance_name
         type: string

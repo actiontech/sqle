@@ -5484,8 +5484,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
                         "in": "query"
                     },
                     {
@@ -5505,8 +5505,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     },
                     {
@@ -5729,8 +5729,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
                         "in": "query"
                     },
                     {
@@ -5750,8 +5750,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     },
                     {
@@ -8719,8 +8719,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter create user name",
-                        "name": "filter_create_user_name",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
                         "in": "query"
                     },
                     {
@@ -8740,13 +8740,13 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter current step assignee user name",
-                        "name": "filter_current_step_assignee_user_name",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "filter instance name",
+                        "description": "filter instance id",
                         "name": "filter_task_instance_name",
                         "in": "query"
                     },
@@ -15870,6 +15870,9 @@ var doc = `{
         "v1.UserTipResV1": {
             "type": "object",
             "properties": {
+                "user_id": {
+                    "type": "string"
+                },
                 "user_name": {
                     "type": "string"
                 }
