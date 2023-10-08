@@ -227,3 +227,19 @@ func (v *SelectVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 func (v *SelectVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
+
+type ColumeNameVisitor struct {
+	ColumeNameList []*ast.ColumnNameExpr
+}
+
+func (v *ColumeNameVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.ColumnNameExpr:
+		v.ColumeNameList = append(v.ColumeNameList, stmt)
+	}
+	return in, false
+}
+
+func (v *ColumeNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
