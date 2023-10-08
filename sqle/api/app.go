@@ -73,11 +73,11 @@ func addCustomApis(e *echo.Group, apis []restApi) error {
 // @in header
 // @name Authorization
 // @BasePath /
-func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfig) {
+func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOptions) {
 	defer close(exitChan)
 
 	e := echo.New()
-	output := log.NewRotateFile(config.LogPath, "/api.log", config.LogMaxSizeMB /*MB*/, config.LogMaxBackupNumber)
+	output := log.NewRotateFile(config.Service.LogPath, "/api.log", config.Service.LogMaxSizeMB /*MB*/, config.Service.LogMaxBackupNumber)
 	defer output.Close()
 
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -441,7 +441,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		return c.File("ui/index.html")
 	})
 
-	address := fmt.Sprintf(":%v", config.SqleServerPort)
+	address := fmt.Sprintf(":%v", config.APIServiceOpts.Port)
 	log.Logger().Infof("starting http server on %s", address)
 
 	// start http server
@@ -450,16 +450,17 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		log.Logger().Fatal(err)
 		return
 	}
-	if config.EnableHttps {
+
+	if config.APIServiceOpts.EnableHttps {
 		// Usually, it is easier to create an tls server using echo#StartTLS;
 		// but I need create a graceful listener.
-		if config.CertFilePath == "" || config.KeyFilePath == "" {
+		if config.APIServiceOpts.CertFilePath == "" || config.APIServiceOpts.KeyFilePath == "" {
 			log.Logger().Fatal("invalid tls configuration")
 			return
 		}
 		tlsConfig := new(tls.Config)
 		tlsConfig.Certificates = make([]tls.Certificate, 1)
-		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.CertFilePath, config.KeyFilePath)
+		tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(config.APIServiceOpts.CertFilePath, config.APIServiceOpts.KeyFilePath)
 		if err != nil {
 			log.Logger().Fatal("load x509 key pair failed, error:", err)
 			return
