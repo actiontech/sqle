@@ -85,8 +85,8 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 		if sqlManage.ApName != nil {
 			source.AuditPlanName = *sqlManage.ApName
 		}
-		if sqlManage.SqlAuditRecordID != nil {
-			source.SqlAuditRecordId = *sqlManage.SqlAuditRecordID
+		if len(sqlManage.SqlAuditRecordIDs) > 0 {
+			source.SqlAuditRecordIds = sqlManage.SqlAuditRecordIDs
 		}
 		sqlMgr.Source = source
 
