@@ -3213,8 +3213,10 @@ definitions:
     properties:
       audit_plan_name:
         type: string
-      sql_audit_record_id:
-        type: string
+      sql_audit_record_ids:
+        items:
+          type: string
+        type: array
       type:
         enum:
         - audit_plan
@@ -7742,6 +7744,12 @@ paths:
         in: query
         name: filter_create_time_to
         type: string
+      - description: filter sql audit record ids
+        in: query
+        items:
+          type: string
+        name: filter_sql_audit_record_ids
+        type: array
       - description: page index
         in: query
         name: page_index

@@ -4407,6 +4407,15 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter sql audit record ids",
+                        "name": "filter_sql_audit_record_ids",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -14492,8 +14501,11 @@ var doc = `{
                 "audit_plan_name": {
                     "type": "string"
                 },
-                "sql_audit_record_id": {
-                    "type": "string"
+                "sql_audit_record_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "type": {
                     "type": "string",
