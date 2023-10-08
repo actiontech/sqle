@@ -2606,18 +2606,21 @@ func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *a
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	tableSources := util.GetTableSources(joinStmt)
 	for _, tableSource := range tableSources {
-		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
-			tableName := tableNameStmt.Name.L
-			if tableSource.AsName.L != "" {
-				tableName = tableSource.AsName.L
-			}
-
+		tableNameExtractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+		tableSource.Source.Accept(&tableNameExtractor)
+		for tableName, tableNameStmt := range tableNameExtractor.TableNames {
 			createTableStmt, exist, err := sessionContext.GetCreateTableStmt(tableNameStmt)
 			if err != nil || !exist {
 				continue
 			}
-			// TODO: 跨库的 JOIN 无法区分
+
 			tableNameCreateTableStmtMap[tableName] = createTableStmt
+			// !临时方案：只支持别名对应的临时表只含有一个表，如果有多表会覆盖为最后一个表
+			// TODO AS语句中的别名作为表的别名时，表别名所对应的表可能是数据库的库表，也有可能是语句中构建的临时表。其中，临时表的可能性有很多种，例如：子查询的结果作为表，JOIN得到的表，其中还可能存在层层嵌套的关系。如果要获取到ON语句块中列的实际表名称，需要递归地构建别名:列名:表名(这个表名可能还是别名)的映射关系
+			if tableSource.AsName.String() != "" {
+				tableNameCreateTableStmtMap[tableSource.AsName.String()] = createTableStmt
+			}
+			// TODO: 跨库的 JOIN 无法区分
 		}
 	}
 	return tableNameCreateTableStmtMap
@@ -2625,14 +2628,18 @@ func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *a
 
 func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStmtMap map[string]*ast.CreateTableStmt) (byte, byte) {
 	var leftType, rightType byte
-
+	// onCondition在中的ColumnNameExpr.Refer为nil无法索引到原表名和表别名
 	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
-		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
-			leftType = getColumnType(columnName, createTableStmtMap)
+		lVisitor := util.ColumeNameVisitor{}
+		binaryOperation.L.Accept(&lVisitor)
+		if len(lVisitor.ColumeNameList) > 0 {
+			leftType = getColumnType(lVisitor.ColumeNameList[0], createTableStmtMap)
 		}
 
-		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
-			rightType = getColumnType(columnName, createTableStmtMap)
+		rVisitor := util.ColumeNameVisitor{}
+		binaryOperation.R.Accept(&rVisitor)
+		if len(rVisitor.ColumeNameList) > 0 {
+			rightType = getColumnType(rVisitor.ColumeNameList[0], createTableStmtMap)
 		}
 	}
 
