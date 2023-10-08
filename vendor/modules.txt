@@ -26,11 +26,12 @@ github.com/KyleBanks/depth
 github.com/Masterminds/semver/v3
 # github.com/StackExchange/wmi v1.2.1
 github.com/StackExchange/wmi
-# github.com/actiontech/dms v0.0.0-20230927063747-ed5a6404982b
+# github.com/actiontech/dms v0.0.0-20231007161733-b73230560d6c
 ## explicit
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
 github.com/actiontech/dms/pkg/dms-common/api/dms/v1
 github.com/actiontech/dms/pkg/dms-common/api/jwt
+github.com/actiontech/dms/pkg/dms-common/conf
 github.com/actiontech/dms/pkg/dms-common/dmsobject
 github.com/actiontech/dms/pkg/dms-common/pkg/aes
 github.com/actiontech/dms/pkg/dms-common/pkg/http
