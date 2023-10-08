@@ -1671,3 +1671,33 @@ type UpdateRuleKnowledgeReq struct {
 func UpdateRuleKnowledgeV1(c echo.Context) error {
 	return updateRuleKnowledge(c)
 }
+
+
+// GetCustomRuleKnowledge
+// @Summary 查看自定义规则知识库
+// @Description get custom rule knowledge
+// @Id getCustomRuleKnowledgeV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Success 200 {object} v1.GetRuleKnowledgeResV1
+// @router /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/ [get]
+func GetCustomRuleKnowledge(c echo.Context) error {
+	return getCustomRuleKnowledge(c)
+}
+
+// UpdateCustomRuleKnowledgeV1
+// @Summary 更新自定义规则知识库
+// @Description update custom rule knowledge
+// @Id updateCustomRuleKnowledge
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Param req body v1.UpdateRuleKnowledgeReq true "update rule knowledge"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/ [patch]
+func UpdateCustomRuleKnowledgeV1(c echo.Context) error {
+	return updateCustomRuleKnowledge(c)
+}

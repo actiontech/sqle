@@ -6461,6 +6461,91 @@
                 }
             }
         },
+        "/v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get custom rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "查看自定义规则知识库",
+                "operationId": "getCustomRuleKnowledgeV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleKnowledgeResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update custom rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新自定义规则知识库",
+                "operationId": "updateCustomRuleKnowledge",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule knowledge",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateRuleKnowledgeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/": {
             "get": {
                 "security": [

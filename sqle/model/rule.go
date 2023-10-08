@@ -443,14 +443,16 @@ func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
 
 type CustomRule struct {
 	Model
-	RuleId     string `json:"rule_id" gorm:"unique; not null"`
-	Desc       string `json:"desc" gorm:"not null"`
-	Annotation string `json:"annotation"`
-	DBType     string `json:"db_type" gorm:"not null; default:\"mysql\""`
-	Level      string `json:"level" example:"error"` // notice, warn, error
-	Typ        string `json:"type" gorm:"column:type; not null"`
-	RuleScript string `json:"rule_script" gorm:"type:text"`
-	ScriptType string `json:"script_type" gorm:"not null; default:\"regular\""`
+	RuleId      string         `json:"rule_id" gorm:"unique; not null"`
+	Desc        string         `json:"desc" gorm:"not null"`
+	Annotation  string         `json:"annotation"`
+	DBType      string         `json:"db_type" gorm:"not null; default:\"mysql\""`
+	Level       string         `json:"level" example:"error"` // notice, warn, error
+	Typ         string         `json:"type" gorm:"column:type; not null"`
+	RuleScript  string         `json:"rule_script" gorm:"type:text"`
+	ScriptType  string         `json:"script_type" gorm:"not null; default:\"regular\""`
+	KnowledgeId uint           `json:"knowledge_id"`
+	Knowledge   *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
 }
 
 func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
