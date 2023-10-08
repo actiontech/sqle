@@ -22,20 +22,20 @@ import (
 	"github.com/facebookgo/grace/gracenet"
 )
 
-func Run(config *config.Config) error {
+func Run(options *config.SqleOptions) error {
 	// init logger
-	sqleCnf := config.Server.SqleCnf
+	sqleCnf := options.Service
 	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSizeMB, sqleCnf.LogMaxBackupNumber)
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")
 	defer log.Logger().Info("stop sqled server")
 
-	if sqleCnf.EnableClusterMode && sqleCnf.ServerId == "" {
+	if sqleCnf.EnableClusterMode && options.ID == 0 {
 		return fmt.Errorf("server id is required on cluster mode")
 	}
 
-	secretKey := sqleCnf.SecretKey
+	secretKey := options.SecretKey
 	if secretKey != "" {
 		// reset jwt singing key, default dms token
 		if err := http.ResetJWTSigningKeyAndDefaultToken(secretKey); err != nil {
@@ -49,13 +49,13 @@ func Run(config *config.Config) error {
 	}
 
 	defer driver.GetPluginManager().Stop()
-	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath, config.Server.PluginConfig); err != nil {
+	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath, options.Service.PluginConfig); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 
 	// service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
-	dbConfig := config.Server.DBCnf.MysqlCnf
+	dbConfig := options.Service.Database
 
 	dbPassword := dbConfig.Password
 	// Support using secret mysql password in sqled config, read secret_mysql_password first,
@@ -76,7 +76,7 @@ func Run(config *config.Config) error {
 	}
 	model.InitStorage(s)
 
-	err = dms.RegisterAsDMSTarget(config.Server.SqleCnf)
+	err = dms.RegisterAsDMSTarget(options)
 	if err != nil {
 		return fmt.Errorf("register to dms failed :%v", err)
 	}
@@ -101,7 +101,7 @@ func Run(config *config.Config) error {
 		cluster.IsClusterMode = true
 		log.Logger().Infoln("running sqled server on cluster mode")
 		node = cluster.DefaultNode
-		node.Join(sqleCnf.ServerId)
+		node.Join(fmt.Sprintf("%v", options.ID))
 		defer node.Leave()
 	} else {
 		node = &cluster.NoClusterNode{}
@@ -112,7 +112,7 @@ func Run(config *config.Config) error {
 	defer jm.Stop()
 
 	net := &gracenet.Net{}
-	go api.StartApi(net, exitChan, sqleCnf)
+	go api.StartApi(net, exitChan, options)
 
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught
