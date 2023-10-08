@@ -48,7 +48,7 @@ type SqlManage struct {
 
 	Assignees []*User `gorm:"many2many:sql_manage_assignees;"`
 	Status    string  `json:"status" gorm:"default:\"unhandled\""`
-	Remark    string  `json:"remark" gorm:"type:varchar(512)"`
+	Remark    string  `json:"remark" gorm:"type:varchar(4000)"`
 
 	ProjectId uint     `json:"project_id"`
 	Project   *Project `gorm:"foreignkey:ProjectId"`
