@@ -9,7 +9,7 @@ import (
 	gqlClient "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/graph/client"
 )
 
-var QueryGQL GetQueryGQL = CloudBeaverV2223{}
+var QueryGQL GetQueryGQL = CloudBeaverV2321{}
 
 var (
 	Version2215 = CBVersion{
@@ -22,6 +22,9 @@ var (
 
 	Version2223 = CBVersion{
 		version: []int{22, 2, 3},
+	}
+	Version2321 = CBVersion{
+		version: []int{23, 2, 1},
 	}
 )
 
@@ -50,6 +53,9 @@ func InitGQLVersion() error {
 		return err
 	}
 	// QueryGQL 默认值是 CloudBeaverV2223{}
+	if version.LessThan(Version2321) {
+		QueryGQL = CloudBeaverV2223{}
+	}
 	if version.LessThan(Version2223) {
 		QueryGQL = CloudBeaverV2221{}
 	}
@@ -111,7 +117,7 @@ type GetQueryGQL interface {
 	UpdateConnectionQuery() string
 	GetUserConnectionsQuery() string
 	SetUserConnectionsQuery() string
-	IsUserExistQuery() string
+	IsUserExistQuery(userId string) (string, map[string]interface{})
 	UpdatePasswordQuery() string
 	CreateUserQuery() string
 	GrantUserRoleQuery() string
@@ -181,7 +187,7 @@ query setConnections($userId: ID!, $connections: [ID!]!) {
 `
 }
 
-func (CloudBeaverV2215) IsUserExistQuery() string {
+func (CloudBeaverV2215) IsUserExistQuery(userId string) (string, map[string]interface{}) {
 	return `
 query getUserList(
 	$userId: ID
@@ -192,8 +198,7 @@ query getUserList(
 }
 fragment adminUserInfo on AdminUserInfo {
 	userId
-}
-`
+}`, map[string]interface{}{"userId": userId}
 }
 
 func (CloudBeaverV2215) UpdatePasswordQuery() string {
@@ -303,4 +308,38 @@ func (CloudBeaverV2223) GrantUserRoleQuery() string {
 query grantUserTeam($userId: ID!, $teamId: ID!) {
   grantUserTeam(userId: $userId, teamId: $teamId)
 }`
+}
+
+type CloudBeaverV2321 struct {
+	CloudBeaverV2221
+}
+
+func (CloudBeaverV2321) IsUserExistQuery(userId string) (string, map[string]interface{}) {
+
+	return `
+query getUserList(
+	$page: PageInput!
+	$filter: AdminUserFilterInput!
+){
+	listUsers(page: $page, filter: $filter) {
+		...adminUserInfo
+	}
+}
+fragment adminUserInfo on AdminUserInfo {
+	userId
+}
+`, map[string]interface{}{
+			"page":   map[string]interface{}{"offset": 0, "limit": 100},
+			"filter": map[string]interface{}{"userIdMask": userId, "enabledState": true},
+		}
+}
+
+func (CloudBeaverV2321) GetActiveUserQuery() string {
+	return `
+	query getActiveUser {
+  		user: activeUser {
+    		userId
+  		}
+	}
+`
 }

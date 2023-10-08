@@ -263,12 +263,14 @@ extend type Mutation {
 
     # Execute SQL and return results
     asyncSqlExecuteQuery(
+        projectId: ID,
         connectionId: ID!,
         contextId: ID!,
         sql: String!,
         resultId: ID,
         filter: SQLDataFilter,
-        dataFormat: ResultDataFormat    # requested data format. May be ignored by server
+        dataFormat: ResultDataFormat,   # requested data format. May be ignored by server
+        readLogs: Boolean               # added 23.2.1
     ): AsyncTaskInfo!
 
     # Read data from table
