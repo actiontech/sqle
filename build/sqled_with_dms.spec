@@ -104,24 +104,30 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 
 
 cat >> $RPM_INSTALL_PREFIX/etc/config.yaml<<EOF
-server:
-  sqle_config:
-    server_host: 127.0.0.1
-    server_port: 10000
-    auto_migrate_table: true
-    debug_log: true
+sqle:
+  id: 1
+  dms_server_address: http://127.0.0.1:7601
+  api:
+    addr: 127.0.0.1
+    port: 10000
+    enable_https: false
+    cert_file_path: './etc/cert.pem'
+    key_file_path: './etc/key.pem'  
+  secret_key:     
+  service:
+    auto_migrate_table: true   
+    debug_log: false
     log_path: './logs'
-    dms_server_address: http://127.0.0.1:7601
-  db_config:
-    mysql_cnf:
+    log_max_size_mb: 1024
+    log_max_backup_number: 2
+    plugin_path: './plugins'    
+    enable_cluster_mode:
+    database:
       mysql_host: '127.0.0.1'
       mysql_port: '3306'
       mysql_user: 'root'
-      mysql_password: '123'
+      mysql_password: 'pass'
       mysql_schema: 'sqle'
-    sql_server_cnf:
-      sql_server_host: '127.0.0.1'
-      sql_server_port: '10001'
 EOF
 
 

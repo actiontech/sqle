@@ -13,7 +13,7 @@ import (
 
 func genSecretPasswordCmd() *cobra.Command {
 	run := func() error {
-		var cfg = &config.Config{}
+		var cfg = &config.SqleOptions{}
 		if configPath != "" {
 			b, err := ioutil.ReadFile(configPath)
 			if err != nil {
@@ -24,14 +24,14 @@ func genSecretPasswordCmd() *cobra.Command {
 				return fmt.Errorf("unmarshal config file error %v", err)
 			}
 
-			secretKey := cfg.Server.SqleCnf.SecretKey
+			secretKey := cfg.SecretKey
 			if secretKey != "" {
 				if err = dmsCommonAes.ResetAesSecretKey(secretKey); err != nil {
 					return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
 				}
 			}
 
-			password := cfg.Server.DBCnf.MysqlCnf.Password
+			password := cfg.Service.Database.Password
 			if password == "" {
 				return fmt.Errorf("mysql_password is empty")
 			}
@@ -39,8 +39,8 @@ func genSecretPasswordCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("gen secret password error, %d", err)
 			}
-			cfg.Server.DBCnf.MysqlCnf.SecretPassword = secretPassword
-			cfg.Server.DBCnf.MysqlCnf.Password = ""
+			cfg.Service.Database.SecretPassword = secretPassword
+			cfg.Service.Database.Password = ""
 		} else {
 			return fmt.Errorf("--config is required")
 		}
