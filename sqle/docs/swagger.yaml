@@ -9114,6 +9114,61 @@ paths:
       summary: 更新角色信息
       tags:
       - role
+  /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/:
+    get:
+      description: get custom rule knowledge
+      operationId: getCustomRuleKnowledgeV1
+      parameters:
+      - description: rule name
+        in: path
+        name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleKnowledgeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 查看自定义规则知识库
+      tags:
+      - rule_template
+    patch:
+      description: update custom rule knowledge
+      operationId: updateCustomRuleKnowledge
+      parameters:
+      - description: rule name
+        in: path
+        name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
+        required: true
+        type: string
+      - description: update rule knowledge
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateRuleKnowledgeReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新自定义规则知识库
+      tags:
+      - rule_template
   /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/:
     get:
       description: get rule knowledge
