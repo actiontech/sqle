@@ -7746,10 +7746,8 @@ paths:
         type: string
       - description: filter sql audit record ids
         in: query
-        items:
-          type: string
         name: filter_sql_audit_record_ids
-        type: array
+        type: string
       - description: page index
         in: query
         name: page_index
