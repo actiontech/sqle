@@ -479,14 +479,14 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 }
 
 type GetSQLAuditRecordsReqV1 struct {
-	FuzzySearchTags         string   `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
-	FilterSQLAuditStatus    string   `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterInstanceName      string   `json:"filter_instance_name" query:"filter_instance_name"`
-	FilterCreateTimeFrom    string   `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo      string   `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterSqlAuditRecordIDs []string `json:"filter_sql_audit_record_ids" query:"filter_sql_audit_record_ids"`
-	PageIndex               uint32   `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                uint32   `json:"page_size" query:"page_size" valid:"required"`
+	FuzzySearchTags         string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
+	FilterSQLAuditStatus    string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
+	FilterInstanceName      string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterCreateTimeFrom    string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo      string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterSqlAuditRecordIDs string `json:"filter_sql_audit_record_ids" query:"filter_sql_audit_record_ids" example:"1711247438821462016,1711246967037759488"`
+	PageIndex               uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type SQLAuditRecord struct {
@@ -526,7 +526,7 @@ const (
 // @Param filter_instance_name query string false "filter instance name"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
-// @Param filter_sql_audit_record_ids query []string false "filter sql audit record ids"
+// @Param filter_sql_audit_record_ids query string false "filter sql audit record ids"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
@@ -570,7 +570,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"check_user_can_access":   !isManager,
-		"filter_audit_record_ids": strings.Join(req.FilterSqlAuditRecordIDs, ","),
+		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
 	}
