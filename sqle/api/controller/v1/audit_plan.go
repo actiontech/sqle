@@ -916,8 +916,11 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		}
 	}()
 
-	sqls := make([]*auditplan.SQL, len(reqSQLs))
-	for i, reqSQL := range reqSQLs {
+	sqls := make([]*auditplan.SQL, 0, len(reqSQLs))
+	for _, reqSQL := range reqSQLs {
+		if reqSQL.LastReceiveText == "" {
+			continue
+		}
 		fp := reqSQL.Fingerprint
 		// the caller may be written in a different language, such as (Java, Bash, Python), so the fingerprint is
 		// generated in different ways. In order to maintain th same fingerprint generation logic, we provide a way to
@@ -961,12 +964,12 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		if reqSQL.DBUser != "" {
 			info["db_user"] = reqSQL.DBUser
 		}
-		sqls[i] = &auditplan.SQL{
+		sqls = append(sqls, &auditplan.SQL{
 			Fingerprint: fp,
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
 			Schema:      reqSQL.Schema,
-		}
+		})
 	}
 	return sqls, nil
 }
