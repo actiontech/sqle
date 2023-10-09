@@ -4407,10 +4407,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
+                        "type": "string",
                         "description": "filter sql audit record ids",
                         "name": "filter_sql_audit_record_ids",
                         "in": "query"
