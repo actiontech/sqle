@@ -106,7 +106,7 @@ func TestSelectFieldExtractor(t *testing.T) {
 	}
 }
 
-func TestColumeNameVisitor(t *testing.T) {
+func TestColumnNameVisitor(t *testing.T) {
 	tests := []struct {
 		input       string
 		columnCount uint
@@ -130,10 +130,10 @@ func TestColumeNameVisitor(t *testing.T) {
 			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
 			assert.NoError(t, err)
 
-			visitor := &ColumeNameVisitor{}
+			visitor := &ColumnNameVisitor{}
 			stmt.Accept(visitor)
 
-			assert.Equal(t, tt.columnCount, uint(len(visitor.ColumeNameList)))
+			assert.Equal(t, tt.columnCount, uint(len(visitor.ColumnNameList)))
 		})
 	}
 }
