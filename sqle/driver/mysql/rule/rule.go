@@ -2687,13 +2687,13 @@ func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStm
 			leftType = node.Tp.Tp
 		default:
 			// 默认获取子树的所有列 对应等号一侧 一般连接键只会有一个 不支持多个列的组合
-			lVisitor := util.ColumeNameVisitor{}
+			lVisitor := util.ColumnNameVisitor{}
 			binaryOperation.L.Accept(&lVisitor)
-			if len(lVisitor.ColumeNameList) > 1 {
+			if len(lVisitor.ColumnNameList) > 1 {
 				log.Logger().Warn("规则:建议JOIN字段类型保持一致,连接键不支持多个列的组合")
 			}
-			if len(lVisitor.ColumeNameList) == 1 {
-				leftType = getColumnType(lVisitor.ColumeNameList[0], createTableStmtMap)
+			if len(lVisitor.ColumnNameList) == 1 {
+				leftType = getColumnType(lVisitor.ColumnNameList[0], createTableStmtMap)
 			}
 		}
 
@@ -2701,13 +2701,13 @@ func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStm
 		case *ast.FuncCastExpr:
 			rightType = node.Tp.Tp
 		default:
-			rVisitor := util.ColumeNameVisitor{}
+			rVisitor := util.ColumnNameVisitor{}
 			binaryOperation.R.Accept(&rVisitor)
-			if len(rVisitor.ColumeNameList) > 1 {
+			if len(rVisitor.ColumnNameList) > 1 {
 				log.Logger().Warn("规则:建议JOIN字段类型保持一致,连接键不支持多个列的组合")
 			}
-			if len(rVisitor.ColumeNameList) > 0 {
-				rightType = getColumnType(rVisitor.ColumeNameList[0], createTableStmtMap)
+			if len(rVisitor.ColumnNameList) > 0 {
+				rightType = getColumnType(rVisitor.ColumnNameList[0], createTableStmtMap)
 			}
 		}
 
