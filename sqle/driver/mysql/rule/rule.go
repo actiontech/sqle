@@ -2534,8 +2534,35 @@ func getCreateTableAndOnCondition(input *RuleHandlerInput) (map[string]*ast.Crea
 	return tableNameCreateTableStmtMap, onConditions
 }
 
+func getCreateTableAndOnConditionForJoinType(input *RuleHandlerInput) (map[string]*ast.CreateTableStmt, []*ast.OnCondition) {
+	var ctx *session.Context = input.Ctx
+	var joinStmt *ast.Join
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil, nil
+		}
+		joinStmt = stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil, nil
+		}
+		joinStmt = stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil, nil
+		}
+		joinStmt = stmt.TableRefs.TableRefs
+	default:
+		return nil, nil
+	}
+	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMapForJoinType(ctx, joinStmt)
+	onConditions := util.GetTableFromOnCondition(joinStmt)
+	return tableNameCreateTableStmtMap, onConditions
+}
+
 func checkJoinFieldType(input *RuleHandlerInput) error {
-	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnConditionForJoinType(input)
 	if tableNameCreateTableStmtMap == nil && onConditions == nil {
 		return nil
 	}
@@ -2602,6 +2629,33 @@ func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, conti
 	return true, true
 }
 
+func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	tableSources := util.GetTableSources(joinStmt)
+	for _, tableSource := range tableSources {
+		tableNameExtractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+		tableSource.Source.Accept(&tableNameExtractor)
+		if len(tableNameExtractor.TableNames) > 1 {
+			log.Logger().Warn("规则:建议JOIN字段类型保持一致,不支持JOIN的表由多表构成")
+			continue
+		}
+		for tableName, tableNameStmt := range tableNameExtractor.TableNames {
+			createTableStmt, exist, err := sessionContext.GetCreateTableStmt(tableNameStmt)
+			if err != nil || !exist {
+				continue
+			}
+			tableNameCreateTableStmtMap[tableName] = createTableStmt
+			// !临时方案：只支持别名对应的临时表只含有一个表，不支持JOIN的表由多表构成
+			// TODO AS语句中的别名作为表的别名时，表别名所对应的表可能是数据库的库表，也有可能是语句中构建的临时表。其中，临时表的可能性有很多种，例如：子查询的结果作为表，JOIN得到的表，其中还可能存在层层嵌套的关系。如果要获取到ON语句块中列的实际表名称，需要递归地构建别名:列名:表名(这个表名可能还是别名)的映射关系
+			if tableSource.AsName.String() != "" {
+				tableNameCreateTableStmtMap[tableSource.AsName.String()] = createTableStmt
+			}
+			// TODO: 跨库的 JOIN 无法区分
+		}
+	}
+	return tableNameCreateTableStmtMap
+}
+
 func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	tableSources := util.GetTableSources(joinStmt)
@@ -2625,15 +2679,38 @@ func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *a
 
 func getOnConditionLeftAndRightType(onCondition *ast.OnCondition, createTableStmtMap map[string]*ast.CreateTableStmt) (byte, byte) {
 	var leftType, rightType byte
-
+	// onCondition在中的ColumnNameExpr.Refer为nil无法索引到原表名和表别名
 	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
-		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
-			leftType = getColumnType(columnName, createTableStmtMap)
+		switch node := binaryOperation.L.(type) {
+		// 当使用类型转换时 列的类型被显式转化为对应类型 支持CAST和CONVERT函数
+		case *ast.FuncCastExpr:
+			leftType = node.Tp.Tp
+		default:
+			// 默认获取子树的所有列 对应等号一侧 一般连接键只会有一个 不支持多个列的组合
+			lVisitor := util.ColumeNameVisitor{}
+			binaryOperation.L.Accept(&lVisitor)
+			if len(lVisitor.ColumeNameList) > 1 {
+				log.Logger().Warn("规则:建议JOIN字段类型保持一致,连接键不支持多个列的组合")
+			}
+			if len(lVisitor.ColumeNameList) == 1 {
+				leftType = getColumnType(lVisitor.ColumeNameList[0], createTableStmtMap)
+			}
 		}
 
-		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
-			rightType = getColumnType(columnName, createTableStmtMap)
+		switch node := binaryOperation.R.(type) {
+		case *ast.FuncCastExpr:
+			rightType = node.Tp.Tp
+		default:
+			rVisitor := util.ColumeNameVisitor{}
+			binaryOperation.R.Accept(&rVisitor)
+			if len(rVisitor.ColumeNameList) > 1 {
+				log.Logger().Warn("规则:建议JOIN字段类型保持一致,连接键不支持多个列的组合")
+			}
+			if len(rVisitor.ColumeNameList) > 0 {
+				rightType = getColumnType(rVisitor.ColumeNameList[0], createTableStmtMap)
+			}
 		}
+
 	}
 
 	return leftType, rightType

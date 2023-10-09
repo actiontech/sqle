@@ -3825,6 +3825,35 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 
 func Test_DMLCheckJoinFieldType(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldType].Rule
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON t1.id = t2.id`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON CAST(t1.id AS FLOAT) = t2.id`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON CAST(t1.id AS FLOAT) = CONVERT(t2.id, FLOAT)`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1 LEFT JOIN 
+		(SELECT id FROM exist_tb_2 t2 JOIN exist_tb_1 t1 ON t2.id = t1.id WHERE t2.id < 100 ) t3 
+		ON CAST(t1.id AS FLOAT) = t3.id`,
+		newTestResult()) // 不支持子查询涉及多表作为临时表的来源,不会触发
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON (t1.id,t1.v1) = (t2.v2,t2.id)`,
+		newTestResult()) // 连接键中包含多列,不会触发
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
