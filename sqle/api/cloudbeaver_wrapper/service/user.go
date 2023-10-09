@@ -47,9 +47,7 @@ func SyncCurrentUser(cloudBeaverUser string) error {
 		return err
 	}
 
-	checkExistReq := gqlClient.NewRequest(QueryGQL.IsUserExistQuery(), map[string]interface{}{
-		"userId": cloudBeaverUser,
-	})
+	checkExistReq := gqlClient.NewRequest(QueryGQL.IsUserExistQuery(cloudBeaverUser))
 
 	type UserList struct {
 		ListUsers []struct {

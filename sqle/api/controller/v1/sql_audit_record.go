@@ -570,6 +570,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"check_user_can_access":   !isManager,
+		"filter_audit_record_ids": strings.Join(req.FilterSqlAuditRecordIDs, ","),
 		"limit":                   req.PageSize,
 		"offset":                  offset,
 	}
