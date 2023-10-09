@@ -57,13 +57,13 @@ type SqlManage struct {
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`
 }
 
-type SqlManageSqlAuditRecordRel struct {
+type SqlManageSqlAuditRecord struct {
 	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:md5_sql_audit_record"`
 	SqlAuditRecordId          uint   `json:"sql_audit_record_id" gorm:"unique_index:md5_sql_audit_record"`
 }
 
-func (sm SqlManageSqlAuditRecordRel) TableName() string {
-	return "sql_manage_sql_audit_records_rel"
+func (sm SqlManageSqlAuditRecord) TableName() string {
+	return "sql_manage_sql_audit_records"
 }
 
 func (s *Storage) GetSqlManageByFingerprintSourceInstNameSchemaMd5(projFpSourceInstSchemaMd5 string) (*SqlManage, bool, error) {
@@ -155,7 +155,7 @@ var sqlManageBodyTpl = `
 {{ define "body" }}
 
 FROM sql_manages sm
-         LEFT JOIN sql_manage_sql_audit_records_rel msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
+         LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
          LEFT JOIN projects p ON p.id = sm.project_id
@@ -340,7 +340,7 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 				}
 
 				rawSql := fmt.Sprintf(`
-				INSERT INTO sql_manage_sql_audit_records_rel (proj_fp_source_inst_schema_md5, sql_audit_record_id) 
+				INSERT INTO sql_manage_sql_audit_records (proj_fp_source_inst_schema_md5, sql_audit_record_id) 
 				 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
 
 				err := tx.Exec(rawSql, sqlAuditArgs...).Error
