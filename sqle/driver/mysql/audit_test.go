@@ -3852,7 +3852,7 @@ func Test_DMLCheckJoinFieldType(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`SELECT * FROM exist_tb_1 t1
 			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
-			ON (t1.id,t1.v1) = (t2.id,t2.v2)`,
+			ON (t1.id,t1.v1) = (t2.v2,t2.id)`,
 		newTestResult()) // 连接键中包含多列,不会触发
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
