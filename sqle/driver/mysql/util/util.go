@@ -26,7 +26,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	var newNode ast.Node
 	var affectRowSql string
-	var hasGroupByOrGroupByAndHavingBoth bool
+	var hasGroupByOrGroupByAndHavingBothOrLimit bool
 
 	// 语法规则文档
 	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
@@ -37,8 +37,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	case *ast.SelectStmt:
 		isGroupByAndHavingBothExist := stmt.GroupBy != nil && stmt.Having != nil
 		// 包含group by或者group by和having都存在的select语句
-		if stmt.GroupBy != nil || isGroupByAndHavingBothExist {
-			hasGroupByOrGroupByAndHavingBoth = true
+		if stmt.GroupBy != nil || isGroupByAndHavingBothExist || stmt.Limit != nil {
+			hasGroupByOrGroupByAndHavingBothOrLimit = true
 		}
 
 		newNode = getSelectNodeFromSelect(stmt)
@@ -64,7 +64,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	// 存在group by或者group by和having都存在的select语句，无法转换为select count语句
 	// 使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
-	if hasGroupByOrGroupByAndHavingBoth {
+	if hasGroupByOrGroupByAndHavingBothOrLimit {
 		// 移除后缀分号，避免sql语法错误
 		trimSuffix := strings.TrimRight(originSql, ";")
 		affectRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
