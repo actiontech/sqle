@@ -27,7 +27,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	var newNode ast.Node
 	var affectRowSql string
-	var hasGroupByOrGroupByAndHavingBothOrLimit bool
+	var cannotConvert bool
 
 	// 语法规则文档
 	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
@@ -37,9 +37,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		isGroupByAndHavingBothExist := stmt.GroupBy != nil && stmt.Having != nil
-		// 包含group by或者group by和having都存在的select语句
 		if stmt.GroupBy != nil || isGroupByAndHavingBothExist || stmt.Limit != nil {
-			hasGroupByOrGroupByAndHavingBothOrLimit = true
+			cannotConvert = true
 		}
 
 		newNode = getSelectNodeFromSelect(stmt)
@@ -63,9 +62,10 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, ErrUnsupportedSqlType
 	}
 
-	// 存在group by或者group by和having都存在的select语句，无法转换为select count语句
-	// 使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
-	if hasGroupByOrGroupByAndHavingBothOrLimit {
+	// 1. 存在group by或者group by和having都存在的select语句，无法转换为select count语句
+	// 2. SELECT COUNT(1) FROM test LIMIT 10,10 类型的SQL结果集为空
+	// 已上两种情况,使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
+	if cannotConvert {
 		// 移除后缀分号，避免sql语法错误
 		trimSuffix := strings.TrimRight(originSql, ";")
 		affectRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
