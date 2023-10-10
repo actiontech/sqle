@@ -69,7 +69,7 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField(c.Path(), "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType)
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
