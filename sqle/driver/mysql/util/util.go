@@ -90,6 +90,13 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, err
 	}
 
+	// 如果下发的 SELECT COUNT(1) 的SQL，返回的结果集为空, 则返回0
+	// 例: SELECT COUNT(1) FROM test LIMIT 10,10 结果集为空
+	if len(row) == 0 {
+		log.NewEntry().Errorf("affected row sql(%v) result row count is 0", affectRowSql)
+		return 0, nil
+	}
+
 	if len(row) != 1 {
 		return 0, errors.New("affectRowSql error")
 	}
