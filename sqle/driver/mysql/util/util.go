@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -82,7 +83,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	// 避免在客户机器上执行不符合预期的sql语句
 	err = checkSql(affectRowSql)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("check sql(%v) failed, origin sql(%v), err: %v", affectRowSql, originSql, err)
 	}
 
 	_, row, err := conn.Db.QueryWithContext(ctx, affectRowSql)
@@ -98,7 +99,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	}
 
 	if len(row) != 1 {
-		return 0, errors.New("affectRowSql error")
+		return 0, fmt.Errorf("affected row sql(%v) result row count(%v) is not 1", affectRowSql, len(row))
 	}
 
 	affectCount, err := strconv.ParseInt(row[0][0].String, 10, 64)
