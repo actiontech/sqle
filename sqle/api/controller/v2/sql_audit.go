@@ -87,6 +87,7 @@ func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 				Level:    sql.AuditResults[j].Level,
 				Message:  sql.AuditResults[j].Message,
 				RuleName: sql.AuditResults[j].RuleName,
+				DbType:   task.DBType,
 			}
 		}
 
