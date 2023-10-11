@@ -1,6 +1,10 @@
 package model
 
-import "github.com/actiontech/sqle/sqle/errors"
+import (
+	"strings"
+
+	"github.com/actiontech/sqle/sqle/errors"
+)
 
 type RuleTemplateDetail struct {
 	Name          string  `json:"name"`
@@ -68,4 +72,47 @@ func (s *Storage) GetRuleTemplateTotalByProjectName(projectName string) (uint64,
 		Count(&count).
 		Error
 	return count, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetRulesByReq(data map[string]interface{}) (
+	result []*Rule, err error) {
+	db := s.db
+	if data["filter_global_rule_template_name"] != "" {
+		db = db.Joins("LEFT JOIN rule_template_rule ON rules.name = rule_template_rule.rule_name AND rules.db_type = rule_template_rule.db_type").
+			Joins("LEFT JOIN rule_templates ON rule_template_rule.rule_template_id = rule_templates.id").
+			Where("rule_templates.project_id = 0").
+			Where("rule_templates.name = ?", data["filter_global_rule_template_name"].(string))
+	}
+	if data["filter_db_type"] != "" {
+		db = db.Where("rules.db_type = ?", data["filter_db_type"])
+	}
+	if data["filter_rule_names"] != "" {
+		if namesStr, yes := data["filter_rule_names"].(string); yes {
+			db = db.Where("rules.name in (?)", strings.Split(namesStr, ","))
+		}
+	}
+	err = db.Find(&result).Error
+	return result, err
+}
+
+func (s *Storage) GetCustomRulesByReq(data map[string]interface{}) (
+	result []*CustomRule, err error) {
+	db := s.db
+	if data["filter_global_rule_template_name"] != "" {
+		db = db.Joins("LEFT JOIN rule_template_custom_rules ON custom_rules.rule_id = rule_template_custom_rules.rule_id").
+			Joins("LEFT JOIN rule_templates ON rule_template_custom_rules.rule_template_id = rule_templates.id").
+			Where("rule_templates.project_id = 0").
+			Where("rule_templates.deleted_at is null").
+			Where("rule_templates.name = ?", data["filter_global_rule_template_name"])
+	}
+	if data["filter_db_type"] != "" {
+		db = db.Where("custom_rules.db_type = ?", data["filter_db_type"])
+	}
+	if data["filter_rule_names"] != "" {
+		if namesStr, yes := data["filter_rule_names"].(string); yes {
+			db = db.Where("custom_rules.rule_id in (?)", strings.Split(namesStr, ","))
+		}
+	}
+	err = db.Find(&result).Error
+	return result, err
 }
