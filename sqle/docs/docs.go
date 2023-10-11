@@ -16377,6 +16377,9 @@ var doc = `{
         "v2.AuditResult": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "level": {
                     "type": "string",
                     "example": "warn"
