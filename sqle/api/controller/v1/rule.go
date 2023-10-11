@@ -593,35 +593,23 @@ func GetRules(c echo.Context) error {
 	var rules []*model.Rule
 	var customRules []*model.CustomRule
 	var err error
-	if req.FilterGlobalRuleTemplateName != "" {
-		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetAllCustomRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
-	} else if req.FilterDBType != "" {
-		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRulesByDBType(req.FilterDBType)
-	} else if len(req.FilterRuleNames) != 0 {
-		ruleNames := strings.Split(req.FilterRuleNames, ",")
-		rules, err = s.GetRulesByNames(ruleNames)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRulesByIds(ruleNames)
-	} else {
-		rules, err = s.GetAllRule()
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRules("*")
-	}
+	rules, err = s.GetRulesByReq(map[string]interface{}{
+		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
+		"filter_db_type":                   req.FilterDBType,
+		"filter_rule_names":                req.FilterRuleNames,
+	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	customRules, err = s.GetCustomRulesByReq(map[string]interface{}{
+		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
+		"filter_db_type":                   req.FilterDBType,
+		"filter_rule_names":                req.FilterRuleNames,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	ruleRes := convertRulesToRes(rules)
 	customRuleRes := convertRulesToRes(customRules)
 	ruleRes = append(ruleRes, customRuleRes...)
@@ -1671,7 +1659,6 @@ type UpdateRuleKnowledgeReq struct {
 func UpdateRuleKnowledgeV1(c echo.Context) error {
 	return updateRuleKnowledge(c)
 }
-
 
 // GetCustomRuleKnowledge
 // @Summary 查看自定义规则知识库
