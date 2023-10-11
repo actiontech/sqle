@@ -4421,6 +4421,8 @@ definitions:
     type: object
   v2.AuditResult:
     properties:
+      db_type:
+        type: string
       level:
         example: warn
         type: string

@@ -226,6 +226,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 				Level:    ar.Level,
 				Message:  ar.Message,
 				RuleName: ar.RuleName,
+				DbType:   ap.DBType,
 			})
 		}
 	}
