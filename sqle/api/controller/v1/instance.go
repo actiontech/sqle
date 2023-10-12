@@ -685,7 +685,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
