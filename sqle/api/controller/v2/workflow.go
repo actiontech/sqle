@@ -49,7 +49,7 @@ type WorkflowStepResV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflowV2(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -134,7 +134,7 @@ func RejectWorkflowV2(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -209,7 +209,7 @@ func RejectWorkflowV2(c echo.Context) error {
 func CancelWorkflowV2(c echo.Context) error {
 	s := model.GetStorage()
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -297,7 +297,7 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -341,7 +341,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -427,7 +427,7 @@ func checkCanCompleteWorkflow(projectId, workflowID string) (*model.Workflow, er
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/execute [post]
 func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -622,7 +622,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -825,7 +825,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -962,7 +962,7 @@ type UpdateWorkflowScheduleReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/schedule [put]
 func UpdateWorkflowScheduleV2(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1072,7 +1072,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/tasks/execute [post]
 func ExecuteTasksOnWorkflowV2(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

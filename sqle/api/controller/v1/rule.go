@@ -730,7 +730,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -821,7 +821,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -951,7 +951,7 @@ func convertProjectRuleTemplateToRes(template *model.RuleTemplate) *RuleProjectT
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [delete]
 func DeleteProjectRuleTemplate(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1090,7 +1090,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
