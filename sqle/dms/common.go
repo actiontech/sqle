@@ -116,22 +116,16 @@ func GetUserNameWithDelTag(userId string) string {
 }
 
 // dms-todo: 临时方案
-func GetPorjectUIDByName(ctx context.Context, projectName string) (projectUID string, err error) {
-	ret, total, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
-		PageSize:     1,
-		PageIndex:    1,
-		FilterByName: projectName,
-	})
+func GetPorjectUIDByName(ctx context.Context, projectName string, needActive ...bool) (projectUID string, err error) {
+	project, err := GetPorjectByName(ctx, projectName)
 	if err != nil {
 		return "", err
 	}
-	if total == 0 || len(ret) == 0 {
-		return "", fmt.Errorf("namespace %s not found", projectName)
-	}
-	if ret[0].Archived {
+
+	if len(needActive) == 1 && needActive[0] && project.Archived {
 		return "", fmt.Errorf("project is archived")
 	}
-	return ret[0].ProjectUid, nil
+	return project.ProjectUid, nil
 }
 
 func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.ListProject, err error) {
@@ -146,9 +140,7 @@ func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.L
 	if total == 0 || len(ret) == 0 {
 		return nil, fmt.Errorf("namespace %s not found", projectName)
 	}
-	if ret[0].Archived {
-		return nil, fmt.Errorf("project is archived")
-	}
+
 	return ret[0], nil
 }
 
