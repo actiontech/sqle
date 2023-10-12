@@ -10,5 +10,5 @@ import (
 )
 
 func init() {
-	loadRestApi(http.MethodGet, "/projects/names", v1.GetProjectNamesByIds) // 浙农信定制
+	LoadRestApi(http.MethodGet, "/projects/names", v1.GetProjectNamesByIds) // 浙农信定制
 }
