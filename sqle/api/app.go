@@ -60,7 +60,6 @@ func addCustomApis(e *echo.Group, apis []restApi) error {
 		case http.MethodPut:
 			e.PUT(api.path, api.handlerFn, api.middleWareFns...)
 		default:
-			log.Logger().Error("failed to register custom api, unsupported http method")
 			return fmt.Errorf("unsupported http method")
 		}
 	}
@@ -428,8 +427,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
 	// enterprise customized apis
-	addCustomApis(v1Router, restApis)
-
+	err := addCustomApis(v1Router, restApis)
+	if err != nil {
+		log.Logger().Fatalf("failed to register custom api, %v", err)
+		return
+	}
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")
