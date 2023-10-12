@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -94,7 +95,11 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                          offset,
 	}
 	if !up.IsAdmin() {
-		data["accessible_instances_id"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan), ",")
+		instanceNames, err := dms.GetInstanceNameByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan))
+		if err != nil {
+			return err
+		}
+		data["accessible_instances_name"] = fmt.Sprintf("\"%s\"", strings.Join(instanceNames, "\",\""))
 	}
 
 	auditPlans, count, err := s.GetAuditPlansByReq(data)

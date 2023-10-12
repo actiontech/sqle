@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 
@@ -955,11 +955,20 @@ func GetInstanceHealthV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(projectUid, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	instances, err := dms.GetInstances(c.Request().Context(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid)
+	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(instances, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceNames, err := dms.GetInstanceNamesInProject(c.Request().Context(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid, instanceNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -553,6 +553,17 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		}
 	}
 
+	for i, detail := range taskDetails {
+		instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, detail.InstanceId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			taskDetails[i].InstanceName = instance.Name
+			taskDetails[i].InstanceMaintenancePeriod = instance.MaintenancePeriod
+		}
+	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
@@ -1041,7 +1052,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 			"task has been executed")))
 	}
 
-	instance, exist, err := s.GetInstanceById(fmt.Sprintf("%v", curTaskRecord.InstanceId))
+	instance, exist, err := dms.GetInstanceById(c.Request().Context(), projectUid, curTaskRecord.InstanceId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1104,7 +1115,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	needExecTaskIds, err := v1.GetNeedExecTaskIds(s, workflow, user)
+	needExecTaskIds, err := v1.GetNeedExecTaskIds(c.Request().Context(), s, workflow, user)
 	if err != nil {
 		return err
 	}

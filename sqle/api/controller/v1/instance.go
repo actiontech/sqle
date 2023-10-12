@@ -615,15 +615,13 @@ func newInstanceConnectableResV1(err error) InstanceConnectableResV1 {
 // @Success 200 {object} v1.GetInstanceConnectableResV1
 // @router /v1/projects/{project_name}/instances/{instance_name}/connection [get]
 func CheckInstanceIsConnectableByName(c echo.Context) error {
-	s := model.GetStorage()
-
 	instanceName := c.Param("instance_name")
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instance, exist, err := s.GetInstanceByNameAndProjectID(instanceName, projectUid)
+	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -697,8 +695,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instanceNames)
 
-	s := model.GetStorage()
-	instances, err := s.GetInstancesByNamesAndProjectId(distinctInstNames, projectUid)
+	instances, err := dms.GetInstancesByNames(c.Request().Context(), projectUid, distinctInstNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -799,15 +796,13 @@ type InstanceSchemaResV1 struct {
 // @Success 200 {object} v1.GetInstanceSchemaResV1
 // @router /v1/projects/{project_name}/instances/{instance_name}/schemas [get]
 func GetInstanceSchemas(c echo.Context) error {
-	s := model.GetStorage()
-
 	instanceName := c.Param("instance_name")
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instance, exist, err := s.GetInstanceByNameAndProjectID(instanceName, projectUid)
+	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -943,7 +938,7 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instance, exist, err := s.GetInstanceByNameAndProjectID(instanceName, projectUid)
+	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -959,7 +954,7 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	rules, _, err := s.GetAllRulesByInstanceId(fmt.Sprintf("%d", instance.ID))
+	rules, _, err := s.GetAllRulesByInstance(instance)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

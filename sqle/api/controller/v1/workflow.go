@@ -445,8 +445,13 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 	return true, nil
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
-	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+func GetNeedExecTaskIds(ctx context.Context, s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
+	instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	instances, err := dms.GetInstancesInProjectByIds(ctx, string(workflow.ProjectId), instanceIds)
 	if err != nil {
 		return nil, err
 	}

@@ -38,15 +38,14 @@ SELECT COUNT(*)
 var auditPlanBodyTpl = `
 {{ define "body" }}
 FROM audit_plans 
-LEFT JOIN instances ON audit_plans.instance_name = instances.name
 
 WHERE audit_plans.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
 AND ( 
 audit_plans.create_user_id = :current_user_id
-{{- if .accessible_instances_id }}
-OR instances.id IN ( {{ .accessible_instances_id }} ) 
+{{- if .accessible_instances_name }}
+OR instance_name IN ( {{ .accessible_instances_name }} ) 
 {{- end }}
 )
 {{- end }}
