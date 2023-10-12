@@ -28,6 +28,44 @@ const (
 	apiV2 = "v2"
 )
 
+type restApi struct {
+	method        string
+	path          string
+	handlerFn     echo.HandlerFunc
+	middleWareFns []echo.MiddlewareFunc
+}
+
+var restApis []restApi
+
+func LoadRestApi(method string, path string, handlerFn echo.HandlerFunc, middleWareFns ...echo.MiddlewareFunc) {
+	restApis = append(restApis, restApi{
+		method:        method,
+		path:          path,
+		handlerFn:     handlerFn,
+		middleWareFns: middleWareFns,
+	})
+}
+
+func addCustomApis(e *echo.Group, apis []restApi) error {
+	for _, api := range apis {
+		switch api.method {
+		case http.MethodGet:
+			e.GET(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPost:
+			e.POST(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPatch:
+			e.PATCH(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodDelete:
+			e.DELETE(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPut:
+			e.PUT(api.path, api.handlerFn, api.middleWareFns...)
+		default:
+			return fmt.Errorf("unsupported http method")
+		}
+	}
+	return nil
+}
+
 // @title Sqle API Docs
 // @version 1.0
 // @description This is a sample server for dev.
@@ -388,6 +426,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.POST("/audit_files", v1.DirectAuditFiles)
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
+	// enterprise customized apis
+	err := addCustomApis(v1Router, restApis)
+	if err != nil {
+		log.Logger().Fatalf("failed to register custom api, %v", err)
+		return
+	}
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")
