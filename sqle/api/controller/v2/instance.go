@@ -305,14 +305,13 @@ type GetInstanceResV2 struct {
 // @Success 200 {object} v2.GetInstanceResV2
 // @router /v2/projects/{project_name}/instances/{instance_name}/ [get]
 func GetInstance(c echo.Context) error {
-	s := model.GetStorage()
 	instanceName := c.Param("instance_name")
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instance, exist, err := s.GetInstanceDetailByNameAndProjectId(instanceName, projectUid)
+	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
