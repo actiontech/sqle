@@ -35,10 +35,16 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	}
 
 	if len(ops) > 0 {
-		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
+		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
 		if err != nil {
 			return err
 		}
+
+		instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			return err
+		}
+
 		for _, instance := range instances {
 			if !up.CanOpInstanceNoAdmin(instance.GetIDStr(), ops...) {
 				return ErrWorkflowNoAccess
@@ -215,10 +221,8 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, namespaceUID string, user 
 
 // 根据用户权限获取能访问/操作的实例列表
 func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, projectUid string, operationType v1.OpPermissionType) ([]*model.Instance, error) {
-	s := model.GetStorage()
-
 	// 获取当前项目下指定数据库类型的全部实例
-	instances, err := s.GetInstanceTipsByTypeAndTempID(dbType, 0, projectUid)
+	instances, err := dms.GetInstancesByType(ctx, projectUid, dbType)
 	if err != nil {
 		return nil, err
 	}

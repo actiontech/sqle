@@ -169,6 +169,7 @@ func GetProjects() ([]string, error) {
 
 func RegisterAsDMSTarget(sqleConfig *config.SqleOptions) error {
 	controller.InitDMSServerAddress(sqleConfig.DMSServerAddress)
+	InitDMSServerAddress(sqleConfig.DMSServerAddress)
 	ctx := context.Background()
 
 	// 向DMS注册反向代理
