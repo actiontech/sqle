@@ -12,7 +12,7 @@ import (
 )
 
 type GetProjectNameQuery struct {
-	Ids []int64 `query:"id"` // 浙农信系统中的项目id
+	Ids []int64 `query:"ids"` // 浙农信系统中的项目id
 }
 
 type GetProjectNameResV1 struct {
