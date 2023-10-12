@@ -37,7 +37,7 @@ type restApi struct {
 
 var restApis []restApi
 
-func loadRestApi(method string, path string, handlerFn echo.HandlerFunc, middleWareFns ...echo.MiddlewareFunc) {
+func LoadRestApi(method string, path string, handlerFn echo.HandlerFunc, middleWareFns ...echo.MiddlewareFunc) {
 	restApis = append(restApis, restApi{
 		method:        method,
 		path:          path,
