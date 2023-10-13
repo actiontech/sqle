@@ -8538,6 +8538,10 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: fuzzy matching subject/workflow_id
+        in: query
+        name: fuzzy_keyword
+        type: string
       responses:
         "200":
           description: OK
@@ -9024,6 +9028,10 @@ paths:
         in: path
         name: project_name
         required: true
+        type: string
+      - description: fuzzy matching subject/workflow_id/desc
+        in: query
+        name: fuzzy_keyword
         type: string
       responses:
         "200":

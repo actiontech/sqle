@@ -5535,6 +5535,12 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy matching subject/workflow_id",
+                        "name": "fuzzy_keyword",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5766,6 +5772,12 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy matching subject/workflow_id/desc",
+                        "name": "fuzzy_keyword",
+                        "in": "query"
                     }
                 ],
                 "responses": {
