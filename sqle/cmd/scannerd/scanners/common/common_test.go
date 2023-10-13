@@ -13,11 +13,11 @@ func TestParse(t *testing.T) {
 		expectedFingerPrint string
 	}{
 		{
-			` /*asdassa*/  ROLLBACK        TO/*asdassa*//*asdassa*/ SAVEPOINT/*asdassa*/ sp `,
-			`ROLLBACK TO SAVEPOINT sp`,
+			` /*some comments*/  ROLLBACK        TO/*some comments*//*some comments*/ savePoint/*some comments*/ sp `,
+			`ROLLBACK TO savePoint sp`,
 		}, // 未能解析 带有注释
 		{
-			`/*2:4536734829-293874657380*/update sa_sdas_das_dsas set value=12128921313213213213,/*2:4536734829-293874657380*/ dt = current_timestamp() /*2:4536734829-293874657380*/where code = 'qq_sdhaidgs_dsaihdisagdias' and/*2:4536734829-293874657380*/name = 'dsadsadsafasd' and/*2:4536734829-293874657380*/value = 345678945678444444444444567`, "UPDATE `sa_sdas_das_dsas` SET `value`=?, `dt`=CURRENT_TIMESTAMP() WHERE `code`=? AND `name`=? AND `value`=?",
+			`/*2:4536734829-293874657380*/update some_value set value=12128921313213213213,/*2:4536734829-293874657380*/ dt = current_timestamp() /*2:4536734829-293874657380*/where code = 'some_value' and/*2:4536734829-293874657380*/name = 'some_value' and/*2:4536734829-293874657380*/value = 345678945678444444444444567`, "UPDATE `some_value` SET `value`=?, `dt`=CURRENT_TIMESTAMP() WHERE `code`=? AND `name`=? AND `value`=?",
 		}, // 能够解析 带有注释
 		{
 			`/*3456789-:56789*/  /*231456789-2786"@@@*/`,
@@ -28,25 +28,25 @@ func TestParse(t *testing.T) {
 			"SELECT * FROM table",
 		}, // 能够解析 带有多行注释
 		{
-			" /*asdassa*/  ROLLBACK    /*multiline\ncomment*/    TO/*asdassa*//*asdassa*/ SAVEPOINT/*asdassa*/ sp ;",
-			`ROLLBACK TO SAVEPOINT sp`,
+			" /*some comments*/  ROLLBACK    /*multiline\ncomment*/    TO/*some comments*//*some comments*/ savePoint/*some comments*/ sp ;",
+			`ROLLBACK TO savePoint sp`,
 		}, // 未能解析 带有多行注释
 		{
 			"SELECT /**/ * FROM table",
 			"SELECT * FROM table",
 		}, // 能够解析 带有空注释
 		{
-			" /*asdassa*/  ROLLBACK    /**/    TO/*asdassa*//*asdassa*/ SAVEPOINT /*asdassa*/sp ;",
-			`ROLLBACK TO SAVEPOINT sp`,
+			" /*some comments*/  ROLLBACK    /**/    TO/*some comments*//*some comments*/ savePoint /*some comments*/sp ;",
+			`ROLLBACK TO savePoint sp`,
 		}, // 未能解析 带有空注释
 
 		{
-			"/*comments1 */ select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,UNIONCODE, COLLASTION(CUST_NO), COLLATION(UNIONCODE) from `ndfs`.`com_cust_risk_info` group by CUST_NO,UNIONCODE order by CUST)NO , UNIONCODE",
-			"select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,UNIONCODE, COLLASTION(CUST_NO), COLLATION(UNIONCODE) from `ndfs`.`com_cust_risk_info` group by CUST_NO,UNIONCODE order by CUST)NO , UNIONCODE",
+			"/*comments1 */ select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,some_code, COLLATION(CUST_NO), COLLATION(some_code) from `table1`.`com_cust_risk_info` group by CUST_NO,some_code order by CUST)NO , some_code",
+			"select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,some_code, COLLATION(CUST_NO), COLLATION(some_code) from `table1`.`com_cust_risk_info` group by CUST_NO,some_code order by CUST)NO , some_code",
 		}, // 未能解析 带有注释1
 		{
-			"/*comments2 */ select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,UNIONCODE, COLLASTION(CUST_NO), COLLATION(UNIONCODE) from `ndfs`.`com_cust_risk_info` group by CUST_NO,UNIONCODE order by CUST)NO , UNIONCODE",
-			"select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,UNIONCODE, COLLASTION(CUST_NO), COLLATION(UNIONCODE) from `ndfs`.`com_cust_risk_info` group by CUST_NO,UNIONCODE order by CUST)NO , UNIONCODE",
+			"/*comments2 */ select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,some_code, COLLATION(CUST_NO), COLLATION(some_code) from `table1`.`com_cust_risk_info` group by CUST_NO,some_code order by CUST)NO , some_code",
+			"select CUST_NO,count(CUST_NO) as `count(CUST_NO)`,some_code, COLLATION(CUST_NO), COLLATION(some_code) from `table1`.`com_cust_risk_info` group by CUST_NO,some_code order by CUST)NO , some_code",
 		}, // 未能解析 带有注释2
 	}
 
