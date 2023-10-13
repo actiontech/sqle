@@ -215,7 +215,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -358,7 +358,7 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	s := model.GetStorage()
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -402,7 +402,7 @@ func UpdateAuditPlan(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -787,14 +787,10 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	project, err := dms.GetPorjectByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if project.Archived {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project is archived"))
-	}
-	projectUid := project.ProjectUid
 
 	ap, exist, err := s.GetAuditPlanFromProjectById(projectUid, apName)
 	if err != nil {
@@ -834,14 +830,10 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
-	project, err := dms.GetPorjectByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if project.Archived {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("project is archived"))
-	}
-	projectUid := project.ProjectUid
 
 	ap, exist, err := s.GetAuditPlanFromProjectById(projectUid, apName)
 	if err != nil {
@@ -932,7 +924,7 @@ type TriggerAuditPlanResV1 struct {
 // @Success 200 {object} v1.TriggerAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1025,7 +1017,7 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

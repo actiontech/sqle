@@ -44,7 +44,7 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 	if err != nil {
 		return nil, err
 	}
-	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType,  rules)
+	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, instance.DbType, rules)
 	if err != nil {
 		return nil, err
 	}
@@ -59,13 +59,13 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 	return task, audit(l, task, plugin, customRules)
 }
 
-func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId *model.ProjectUID, ruleTemplateName string) (*model.Task, error) {
+func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string) (*model.Task, error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, string(*projectId), nil, dbType)
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", nil, dbType)
 	if err != nil {
 		return nil, err
 	}
-	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType,  rules)
+	plugin, err := newDriverManagerWithAudit(l, nil, "", dbType, rules)
 	if err != nil {
 		return nil, err
 	}
