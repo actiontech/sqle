@@ -155,6 +155,10 @@ AND w.desc LIKE '%{{ .fuzzy_search_workflow_desc }}%'
 AND p.name = :filter_project_name
 {{- end }}
 
+{{- if .fuzzy_keyword }}
+AND (w.subject like :filter_subject or w.workflow_id like :fuzzy_keyword or w.desc like :fuzzy_keyword)
+{{- end }}
+
 {{ end }}
 
 `
