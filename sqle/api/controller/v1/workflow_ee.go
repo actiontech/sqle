@@ -58,6 +58,9 @@ func exportWorkflowV1(c echo.Context) error {
 		"check_user_can_access":                !up.IsAdmin(),
 	}
 
+	if req.FuzzyKeyword != "" {
+		data["fuzzy_keyword"] = fmt.Sprintf("%%%s%%", req.FuzzyKeyword)
+	}
 	if !up.IsAdmin() {
 		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersWorkflow), ",")
 	}
