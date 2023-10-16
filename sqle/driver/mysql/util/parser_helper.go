@@ -409,6 +409,19 @@ func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 					isExist = true
 					return true
 				}
+			case *ast.FuncCallExpr:
+				if pattern.FnName.L == "concat" {
+					if len(pattern.Args) > 0 {
+						switch pattern := pattern.Args[0].(type) {
+						case *driver.ValueExpr:
+							datum := pattern.Datum.GetString()
+							if strings.HasPrefix(datum, "%") || strings.HasPrefix(datum, "_") {
+								isExist = true
+								return true
+							}
+						}
+					}
+				}
 			}
 		}
 		return false
