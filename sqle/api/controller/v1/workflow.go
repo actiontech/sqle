@@ -648,6 +648,7 @@ type GetWorkflowsReqV1 struct {
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                        uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 type GetWorkflowsResV1 struct {
@@ -772,6 +773,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
+// @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id"
 // @Success 200 {object} v1.GetWorkflowsResV1
 // @router /v1/projects/{project_name}/workflows [get]
 func GetWorkflowsV1(c echo.Context) error {
@@ -814,6 +816,9 @@ func GetWorkflowsV1(c echo.Context) error {
 		"check_user_can_access":                !up.IsAdmin(),
 		"limit":                                req.PageSize,
 		"offset":                               offset,
+	}
+	if req.FuzzyKeyword != "" {
+		data["fuzzy_keyword"] = fmt.Sprintf("%%%s%%", req.FuzzyKeyword)
 	}
 
 	if !up.IsAdmin() {
@@ -967,6 +972,7 @@ type ExportWorkflowReqV1 struct {
 	FilterTaskInstanceName          string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 // ExportWorkflowV1
@@ -985,6 +991,7 @@ type ExportWorkflowReqV1 struct {
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param project_name path string true "project name"
+// @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id/desc"
 // @Success 200 {file} file "export workflow"
 // @Router /v1/projects/{project_name}/workflows/exports [get]
 func ExportWorkflowV1(c echo.Context) error {
@@ -1003,7 +1010,7 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

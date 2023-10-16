@@ -141,6 +141,10 @@ AND w.workflow_id = :filter_workflow_id
 AND w.project_id = :filter_project_id
 {{- end }}
 
+{{- if .fuzzy_keyword }}
+AND (w.subject like :filter_subject or w.workflow_id like :fuzzy_keyword or w.desc like :fuzzy_keyword)
+{{- end }}
+
 {{ end }}
 
 `
