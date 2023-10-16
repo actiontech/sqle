@@ -284,7 +284,7 @@ func GenerateCloudBeaverInstanceParams(sqleInst *sqleModel.Instance, project *sq
 	config := generateCommonCloudBeaverConfigParams(sqleInst, project)
 
 	switch sqleInst.DbType {
-	case driverV2.DriverTypeMySQL:
+	case driverV2.DriverTypeMySQL, driverV2.DriverTypeTDSQLForInnoDB:
 		err = fillMySQLParams(config)
 	case driverV2.DriverTypeTiDB:
 		err = fillTiDBParams(config)
