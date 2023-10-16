@@ -3954,6 +3954,35 @@ func Test_DMLCheckInQueryLimit(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		"update exist_tb_1 set v1 = 'v1_next' where id in (1,2,3,4,5,6,7)",
 		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c'))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
 }
 
 func TestCheckIndexOption(t *testing.T) {

@@ -243,3 +243,19 @@ func (v *ColumnNameVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool)
 func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
+
+type PatternInVisitor struct {
+	PatternInList []*ast.PatternInExpr
+}
+
+func (v *PatternInVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.PatternInExpr:
+		v.PatternInList = append(v.PatternInList, stmt)
+	}
+	return in, false
+}
+
+func (v *PatternInVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
