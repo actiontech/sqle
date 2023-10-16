@@ -46,6 +46,7 @@ type WorkflowTemplateDetailResV1 struct {
 	Desc                          string                       `json:"desc,omitempty"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
+	UpdateTime                    time.Time                    `json:"update_time"`
 }
 
 type WorkFlowStepTemplateResV1 struct {
@@ -54,7 +55,7 @@ type WorkFlowStepTemplateResV1 struct {
 	Desc                 string   `json:"desc,omitempty"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
-	Users                []string `json:"assignee_user_name_list"`
+	Users                []string `json:"assignee_user_id_list"`
 }
 
 // @Summary 获取审批流程模板详情
@@ -113,6 +114,7 @@ func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTem
 		Name:                          template.Name,
 		Desc:                          template.Desc,
 		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
+		UpdateTime:                    template.UpdatedAt,
 	}
 	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
 	for _, step := range template.Steps {
@@ -143,7 +145,7 @@ type WorkFlowStepTemplateReqV1 struct {
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
-	Users                []string `json:"assignee_user_name_list" form:"assignee_user_name_list"`
+	Users                []string `json:"assignee_user_id_list" form:"assignee_user_id_list"`
 }
 
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
