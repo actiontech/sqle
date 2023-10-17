@@ -232,7 +232,7 @@ func CreateAuditPlan(c echo.Context) error {
 	// check instance
 	var instanceType string
 	if req.InstanceName != "" {
-		inst, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, req.InstanceName)
+		inst, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
 		if !exist {
 			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 		} else if err != nil {
@@ -532,7 +532,7 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                          offset,
 	}
 	if !up.IsAdmin() {
-		instanceNames, err := dms.GetInstanceNameByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(v1.OpPermissionTypeViewOtherAuditPlan))
+		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(v1.OpPermissionTypeViewOtherAuditPlan))
 		if err != nil {
 			return err
 		}

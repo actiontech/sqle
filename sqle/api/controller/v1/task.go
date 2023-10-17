@@ -140,7 +140,7 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, req.InstanceName)
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -654,7 +654,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	instances, err := dms.GetInstancesByNames(c.Request().Context(), projectUid, distinctInstNames)
+	instances, err := dms.GetInstancesInProjectByNames(c.Request().Context(), projectUid, distinctInstNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -662,7 +662,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
 	for _, inst := range instances {
 		// https://github.com/actiontech/sqle/issues/1673
-		inst, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, inst.Name)
+		inst, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, inst.Name)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

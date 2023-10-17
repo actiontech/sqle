@@ -101,7 +101,7 @@ func DirectAudit(c echo.Context) error {
 	var instance *model.Instance
 	var exist bool
 	if req.ProjectName != nil && req.InstanceName != nil {
-		instance, exist, err = dms.GetInstanceByName(c.Request().Context(), projectUid, *req.InstanceName)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -209,7 +209,7 @@ func DirectAuditFiles(c echo.Context) error {
 	var instance *model.Instance
 	var exist bool
 	if req.InstanceName != nil {
-		instance, exist, err = dms.GetInstanceByName(c.Request().Context(), projectUid, *req.InstanceName)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
