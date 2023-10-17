@@ -197,12 +197,24 @@ func (s *Storage) AutoMigrate() error {
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
+	isRuleExistInDB := func(rulesInDB []*Rule, targetRuleName, dbType string) (*Rule, bool) {
+		for i := range rulesInDB {
+			rule := rulesInDB[i]
+			if rule.DBType != dbType || rule.Name != targetRuleName {
+				continue
+			}
+			return rule, true
+		}
+		return nil, false
+	}
+
+	rulesInDB, err := s.GetAllRules()
+	if err != nil {
+		return err
+	}
 	for dbType, rules := range rules {
 		for _, rule := range rules {
-			existedRule, exist, err := s.GetRule(rule.Name, dbType)
-			if err != nil {
-				return err
-			}
+			existedRule, exist := isRuleExistInDB(rulesInDB, rule.Name, dbType)
 			// rule will be created or update if:
 			// 1. rule not exist;
 			if !exist {
