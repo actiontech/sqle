@@ -238,6 +238,10 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
 				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame {
+					if existedRule.Knowledge.Content != "" {
+						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
+						rule.Knowledge.Content = existedRule.Knowledge.Content
+					}
 					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
 					if err != nil {
 						return err
