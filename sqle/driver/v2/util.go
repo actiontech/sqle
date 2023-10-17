@@ -97,6 +97,7 @@ func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
 		Annotation: rule.Annotation,
 		Level:      RuleLevel(rule.Level),
 		Params:     ps,
+		Knowledge:  RuleKnowledge{Content: rule.Knowledge.GetContent()},
 	}
 }
 

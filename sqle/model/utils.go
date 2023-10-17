@@ -197,12 +197,24 @@ func (s *Storage) AutoMigrate() error {
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
+	isRuleExistInDB := func(rulesInDB []*Rule, targetRuleName, dbType string) (*Rule, bool) {
+		for i := range rulesInDB {
+			rule := rulesInDB[i]
+			if rule.DBType != dbType || rule.Name != targetRuleName {
+				continue
+			}
+			return rule, true
+		}
+		return nil, false
+	}
+
+	rulesInDB, err := s.GetAllRules()
+	if err != nil {
+		return err
+	}
 	for dbType, rules := range rules {
 		for _, rule := range rules {
-			existedRule, exist, err := s.GetRule(rule.Name, dbType)
-			if err != nil {
-				return err
-			}
+			existedRule, exist := isRuleExistInDB(rulesInDB, rule.Name, dbType)
 			// rule will be created or update if:
 			// 1. rule not exist;
 			if !exist {
@@ -226,6 +238,10 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
 				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame {
+					if existedRule.Knowledge.Content != "" {
+						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
+						rule.Knowledge.Content = existedRule.Knowledge.Content
+					}
 					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
 					if err != nil {
 						return err

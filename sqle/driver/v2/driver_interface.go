@@ -297,3 +297,7 @@ func NewKillProcessInfo(errorMessage string) *KillProcessInfo {
 		ErrMessage: errorMessage,
 	}
 }
+
+type RuleKnowledge struct {
+	Content string
+}
