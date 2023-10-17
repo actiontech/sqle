@@ -71,9 +71,8 @@ type ListDBServiceReq struct {
 	// Multiple of ["MySQL","OceanBaseMySQL"], default is [""]
 	FilterByDBType string `query:"filter_by_db_type" json:"filter_by_db_type"`
 	// project id
-	// Required: true
 	// in:path
-	ProjectUid string `param:"project_uid" json:"project_uid" validate:"required"`
+	ProjectUid string `param:"project_uid" json:"project_uid"`
 }
 
 // swagger:enum DBServiceOrderByField
