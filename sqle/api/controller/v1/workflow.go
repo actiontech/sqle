@@ -125,6 +125,7 @@ func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTem
 			Typ:                  step.Typ,
 			Desc:                 step.Desc,
 		}
+		stepRes.Users = make([]string, 0)
 		if step.Users != "" {
 			stepRes.Users = strings.Split(step.Users, ",")
 		}
