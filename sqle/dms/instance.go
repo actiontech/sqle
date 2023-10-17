@@ -139,6 +139,11 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		}
 	}
 
+	var ruleTemplates []model.RuleTemplate
+	if instance.SQLEConfig.RuleTemplateID != "" {
+		ruleTemplates = []model.RuleTemplate{{ProjectId: model.ProjectUID(instance.ProjectUID), Name: instance.SQLEConfig.RuleTemplateName}}
+	}
+
 	return &model.Instance{
 		ID:                uint64(instanceId),
 		Name:              instance.Name,
@@ -154,6 +159,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		Desc:              instance.Desc,
 		AdditionalParams:  additionalParams,
 		SqlQueryConfig:    sqlQueryConfig,
+		RuleTemplates:     ruleTemplates,
 	}, nil
 }
 
