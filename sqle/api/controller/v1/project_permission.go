@@ -222,7 +222,7 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, namespaceUID string, user 
 // 根据用户权限获取能访问/操作的实例列表
 func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, projectUid string, operationType v1.OpPermissionType) ([]*model.Instance, error) {
 	// 获取当前项目下指定数据库类型的全部实例
-	instances, err := dms.GetInstancesByType(ctx, projectUid, dbType)
+	instances, err := dms.GetInstancesInProjectByType(ctx, projectUid, dbType)
 	if err != nil {
 		return nil, err
 	}

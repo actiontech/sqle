@@ -311,7 +311,7 @@ func GetInstance(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instance, exist, err := dms.GetInstanceByName(c.Request().Context(), projectUid, instanceName)
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

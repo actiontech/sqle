@@ -1052,7 +1052,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 			"task has been executed")))
 	}
 
-	instance, exist, err := dms.GetInstanceById(c.Request().Context(), projectUid, curTaskRecord.InstanceId)
+	instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, curTaskRecord.InstanceId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

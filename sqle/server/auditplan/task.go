@@ -276,7 +276,7 @@ func (at *DefaultTask) Audit() (*model.AuditPlanReportV2, error) {
 	} else {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
-		instance, _, err := dms.GetInstanceByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+		instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -395,7 +395,7 @@ func (at *SchemaMetaTask) collectorDo() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	instance, _, err := dms.GetInstanceByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		return
 	}
@@ -515,7 +515,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	inst, _, err := dms.GetInstanceByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
@@ -652,7 +652,7 @@ func (at *TiDBAuditLogTask) Audit() (*model.AuditPlanReportV2, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
 
-		instance, _, err := dms.GetInstanceByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+		instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -1269,7 +1269,7 @@ func (at *MySQLProcesslistTask) collectorDo() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	instance, _, err := dms.GetInstanceByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 
 	if err != nil {
 		return
