@@ -346,7 +346,7 @@ func DeleteRuleTemplate(c echo.Context) error {
 
 	// check instance
 	{
-		instanceNames, err := dms.GetAllInstancesNameByRuleTemplateName(c.Request().Context(), templateName)
+		instanceNames, err := dms.GetInstancesNameByRuleTemplateName(c.Request().Context(), templateName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -975,7 +975,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 
 	// check instance
 	{
-		instanceNames, err := dms.GetInstancesNameByRuleTemplateName(c.Request().Context(), projectUid, templateName)
+		instanceNames, err := dms.GetInstancesNameInProjectByRuleTemplateName(c.Request().Context(), projectUid, templateName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

@@ -95,7 +95,7 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                          offset,
 	}
 	if !up.IsAdmin() {
-		instanceNames, err := dms.GetInstanceNameByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan))
+		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan))
 		if err != nil {
 			return err
 		}

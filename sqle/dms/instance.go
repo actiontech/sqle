@@ -44,53 +44,23 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 	return ret, nil
 }
 
-func GetInstances(ctx context.Context, projectUid string) ([]*model.Instance, error) {
-	return getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid: projectUid,
-	})
-}
-
-func GetInstancesByType(ctx context.Context, projectUid, dbType string) ([]*model.Instance, error) {
-	return getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid:     projectUid,
-		FilterByDBType: dbType,
-	})
-}
-
-func GetInstancesNameByRuleTemplateName(ctx context.Context, projectUid, ruleTemplateName string) ([]string, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid: projectUid,
-	})
+func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instance, bool, error) {
+	dbServices, total, err := dmsobject.ListDbServices(ctx, GetDMSServerAddress(), req)
 
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("get instances from dms error: %v", err)
 	}
 
-	ret := make([]string, 0)
-	for _, instance := range instances {
-		if instance.RuleTemplateName == ruleTemplateName {
-			ret = append(ret, instance.Name)
-		}
+	if total == 0 {
+		return nil, false, nil
 	}
 
-	return ret, nil
-}
-
-func GetAllInstancesNameByRuleTemplateName(ctx context.Context, ruleTemplateName string) ([]string, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
-
+	instance, err := convertInstance(dbServices[0])
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("convert instance error: %v", err)
 	}
 
-	ret := make([]string, 0)
-	for _, instance := range instances {
-		if instance.RuleTemplateName == ruleTemplateName {
-			ret = append(ret, instance.Name)
-		}
-	}
-
-	return ret, nil
+	return instance, true, nil
 }
 
 func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
@@ -163,34 +133,56 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 	}, nil
 }
 
-func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instance, bool, error) {
-	dbServices, total, err := dmsobject.ListDbServices(ctx, GetDMSServerAddress(), req)
-
-	if err != nil {
-		return nil, false, fmt.Errorf("get instances from dms error: %v", err)
-	}
-
-	if total == 0 {
-		return nil, false, nil
-	}
-
-	instance, err := convertInstance(dbServices[0])
-	if err != nil {
-		return nil, false, fmt.Errorf("convert instance error: %v", err)
-	}
-
-	return instance, true, nil
-}
-
-func GetInstanceById(ctx context.Context, projectUid string, instanceId uint64) (*model.Instance, bool, error) {
-	return getInstance(ctx, dmsV1.ListDBServiceReq{
-		PageSize:    1,
-		FilterByUID: strconv.FormatUint(instanceId, 10),
-		ProjectUid:  projectUid,
+func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Instance, error) {
+	return getInstances(ctx, dmsV1.ListDBServiceReq{
+		ProjectUid: projectUid,
 	})
 }
 
-func GetInstanceByName(ctx context.Context, projectUid, name string) (*model.Instance, bool, error) {
+func GetInstancesInProjectByType(ctx context.Context, projectUid, dbType string) ([]*model.Instance, error) {
+	return getInstances(ctx, dmsV1.ListDBServiceReq{
+		ProjectUid:     projectUid,
+		FilterByDBType: dbType,
+	})
+}
+
+func GetInstancesNameInProjectByRuleTemplateName(ctx context.Context, projectUid, ruleTemplateName string) ([]string, error) {
+	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{
+		ProjectUid: projectUid,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]string, 0)
+	for _, instance := range instances {
+		if instance.RuleTemplateName == ruleTemplateName {
+			ret = append(ret, instance.Name)
+		}
+	}
+
+	return ret, nil
+}
+
+func GetInstancesNameByRuleTemplateName(ctx context.Context, ruleTemplateName string) ([]string, error) {
+	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]string, 0)
+	for _, instance := range instances {
+		if instance.RuleTemplateName == ruleTemplateName {
+			ret = append(ret, instance.Name)
+		}
+	}
+
+	return ret, nil
+}
+
+func GetInstanceInProjectByName(ctx context.Context, projectUid, name string) (*model.Instance, bool, error) {
 	return getInstance(ctx, dmsV1.ListDBServiceReq{
 		PageSize:     1,
 		FilterByName: name,
@@ -198,7 +190,7 @@ func GetInstanceByName(ctx context.Context, projectUid, name string) (*model.Ins
 	})
 }
 
-func GetInstancesByNames(ctx context.Context, projectUid string, names []string) (instances []*model.Instance, err error) {
+func GetInstancesInProjectByNames(ctx context.Context, projectUid string, names []string) (instances []*model.Instance, err error) {
 	for _, name := range names {
 		instance, isExist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
 			PageSize:     1,
@@ -218,7 +210,7 @@ func GetInstancesByNames(ctx context.Context, projectUid string, names []string)
 	return instances, err
 }
 
-func GetInstanceNameByIds(ctx context.Context, projectUid string, instanceIds []string) ([]string, error) {
+func GetInstanceNamesInProjectByIds(ctx context.Context, projectUid string, instanceIds []string) ([]string, error) {
 	ret := make([]string, 0)
 	for _, instanceId := range instanceIds {
 		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
@@ -288,23 +280,6 @@ func GetInstanceInProjectById(ctx context.Context, projectUid string, instanceId
 		FilterByUID: strconv.FormatUint(instanceId, 10),
 		ProjectUid:  projectUid,
 	})
-}
-
-func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Instance, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid: projectUid,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	ret := make([]*model.Instance, 0, len(instances))
-	for _, instance := range instances {
-		ret = append(ret, instance)
-	}
-
-	return ret, nil
 }
 
 func GetInstancesInProjectByIds(ctx context.Context, projectUid string, instanceIds []uint64) ([]*model.Instance, error) {

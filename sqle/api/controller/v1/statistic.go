@@ -955,7 +955,7 @@ func GetInstanceHealthV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	instances, err := dms.GetInstances(c.Request().Context(), projectUid)
+	instances, err := dms.GetInstancesInProject(c.Request().Context(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
