@@ -223,7 +223,7 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			sqlReq.QueryTimeMax = &tMax
 			sqlReq.QueryTimeAvg = &tAvg
 			sqlReq.Counter = strconv.Itoa(atoi + 1)
-			sqlReq.LastReceiveText = sql.RawText
+			sqlReq.LastReceiveText = processedRawText
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
 		} else {
 			sqlReq := &scanner.AuditPlanSQLReq{
