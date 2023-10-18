@@ -2409,7 +2409,7 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 }
 
 func TestDMLCheckJoinHasOn(t *testing.T) {
-	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinHasOn].Rule
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckHasJoinCondition].Rule
 	t.Run(`select join with on`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
@@ -2434,7 +2434,7 @@ SELECT * FROM t1
 JOIN t2 ON t2.a = t1.a 
 JOIN t3 
 JOIN t4 ON t4.a = t1.a`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+			newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition))
 	})
 	t.Run(`select join without on`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -2443,7 +2443,7 @@ JOIN t4 ON t4.a = t1.a`,
 			``,
 			DefaultMysqlInspectOffline(),
 			`SELECT * FROM t1 JOIN t2`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+			newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition))
 	})
 	t.Run(`update join with on`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -2471,7 +2471,7 @@ UPDATE employees
     merits 
 SET 
     salary = salary + salary * 0.015`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
+			newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition))
 	})
 }
 

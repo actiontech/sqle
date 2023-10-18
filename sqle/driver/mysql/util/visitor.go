@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/opcode"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -241,5 +242,23 @@ func (v *ColumnNameVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool)
 }
 
 func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type EqualConditionVisitor struct {
+	ConditionList []*ast.BinaryOperationExpr
+}
+
+func (v *EqualConditionVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.BinaryOperationExpr:
+		if stmt.Op == opcode.EQ {
+			v.ConditionList = append(v.ConditionList, stmt)
+		}
+	}
+	return in, false
+}
+
+func (v *EqualConditionVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
