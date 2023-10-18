@@ -2806,16 +2806,23 @@ func checkInQueryLimit(input *RuleHandlerInput) error {
 		return nil
 	}
 
-	inVisitor := &util.PatternInVisitor{}
-	dmlNode.Accept(inVisitor)
+	whereVisitor := &util.WhereVisitor{}
+	dmlNode.Accept(whereVisitor)
 	paramThresholdNumber := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 
-	for _, inExpr := range inVisitor.PatternInList {
-		inQueryParamActualNumber := len(inExpr.List)
-		if inQueryParamActualNumber > paramThresholdNumber {
-			addResult(input.Res, input.Rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
-			return nil
-		}
+	for _, whereExpr := range whereVisitor.WhereList {
+		util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+			switch stmt := expr.(type) {
+			case *ast.PatternInExpr:
+				inQueryParamActualNumber := len(stmt.List)
+				if inQueryParamActualNumber > paramThresholdNumber {
+					addResult(input.Res, input.Rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
+				}
+				return true
+			}
+
+			return false
+		}, whereExpr)
 	}
 
 	return nil

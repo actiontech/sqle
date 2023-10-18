@@ -244,18 +244,31 @@ func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
 
-type PatternInVisitor struct {
-	PatternInList []*ast.PatternInExpr
+type WhereVisitor struct {
+	WhereList []ast.ExprNode
 }
 
-func (v *PatternInVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+func (v *WhereVisitor) append(where ast.ExprNode) {
+	if where != nil {
+		v.WhereList = append(v.WhereList, where)
+	}
+}
+
+func (v *WhereVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
-	case *ast.PatternInExpr:
-		v.PatternInList = append(v.PatternInList, stmt)
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return in, false
+		}
+		v.append(stmt.Where)
+	case *ast.UpdateStmt:
+		v.append(stmt.Where)
+	case *ast.DeleteStmt:
+		v.append(stmt.Where)
 	}
 	return in, false
 }
 
-func (v *PatternInVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+func (v *WhereVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
