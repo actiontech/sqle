@@ -1,11 +1,15 @@
 package v2
 
 import (
+	e "errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -28,10 +32,10 @@ type AuditResDataV2 struct {
 }
 
 type AuditSQLResV2 struct {
-	Number      uint           `json:"number"`
-	ExecSQL     string         `json:"exec_sql"`
-	AuditResult []*AuditResult `json:"audit_result"`
-	AuditLevel  string         `json:"audit_level"`
+	Number      uint               `json:"number"`
+	ExecSQL     string             `json:"exec_sql"`
+	AuditResult model.AuditResults `json:"audit_result"`
+	AuditLevel  string             `json:"audit_level"`
 }
 
 type DirectAuditResV2 struct {
@@ -94,7 +98,112 @@ func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		results[i] = AuditSQLResV2{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: ar,
+			AuditResult: sql.AuditResults,
+			AuditLevel:  sql.AuditLevel,
+		}
+
+	}
+	return &AuditResDataV2{
+		AuditLevel: task.AuditLevel,
+		Score:      task.Score,
+		PassRate:   task.PassRate,
+		SQLResults: results,
+	}
+}
+
+type DirectAuditFileReqV2 struct {
+	InstanceType string `json:"instance_type" form:"instance_type" example:"MySQL" valid:"required"`
+	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
+	// 每个数组元素是一个文件内容
+	FileContents []string `json:"file_contents" form:"file_contents" example:"select * from t1; select * from t2;"`
+	SQLType      string   `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
+	ProjectName  string   `json:"project_name" form:"project_name" example:"project1" valid:"required"`
+	InstanceName *string  `json:"instance_name" form:"instance_name" example:"instance1"`
+	SchemaName   *string  `json:"schema_name" form:"schema_name" example:"schema1"`
+}
+
+// @Summary 直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件
+// @Description Direct audit sql from SQL files and MyBatis files
+// @Id directAuditFilesV2
+// @Tags sql_audit
+// @Security ApiKeyAuth
+// @Param req body v2.DirectAuditFileReqV2 true "files that should be audited"
+// @Success 200 {object} v2.DirectAuditResV2
+// @router /v2/audit_files [post]
+func DirectAuditFiles(c echo.Context) error {
+	req := new(DirectAuditFileReqV2)
+	err := controller.BindAndValidateReq(c, req)
+	if err != nil {
+		return err
+	}
+
+	user := controller.GetUserName(c)
+	s := model.GetStorage()
+	if yes, err := s.IsProjectMember(user, req.ProjectName); err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+	} else if !yes {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
+	}
+
+	if len(req.FileContents) <= 0 {
+		return controller.JSONBaseErrorReq(c, e.New("file_contents is required"))
+	}
+
+	sqls := ""
+	if req.SQLType == v1.SQLTypeMyBatis {
+		ss, err := parser.ParseXMLs(req.FileContents, false)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		sqls = strings.Join(ss, ";")
+	} else {
+		// sql文件暂时只支持一次解析一个文件
+		sqls = req.FileContents[0]
+	}
+
+	l := log.NewEntry().WithField("api", "[post]/v2/audit_files")
+
+	var instance *model.Instance
+	var exist bool
+	if req.InstanceName != nil {
+		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, req.ProjectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, v1.ErrInstanceNotExist)
+		}
+	}
+
+	var schemaName string
+	if req.SchemaName != nil {
+		schemaName = *req.SchemaName
+	}
+
+	var task *model.Task
+	if instance != nil && schemaName != "" {
+		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
+	} else {
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, nil, "")
+	}
+	if err != nil {
+		l.Errorf("audit sqls failed: %v", err)
+		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
+	}
+
+	return c.JSON(http.StatusOK, DirectAuditResV2{
+		BaseRes: controller.BaseRes{},
+		Data:    convertFileAuditTaskResultToAuditResV2(task),
+	})
+}
+
+func convertFileAuditTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
+	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
+	for i, sql := range task.ExecuteSQLs {
+		results[i] = AuditSQLResV2{
+			Number:      sql.Number,
+			ExecSQL:     sql.Content,
+			AuditResult: sql.AuditResults,
 			AuditLevel:  sql.AuditLevel,
 		}
 
