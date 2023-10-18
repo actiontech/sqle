@@ -75,7 +75,7 @@ w.create_user_id = :current_user_id
 OR all_ws.assignees REGEXP  :current_user_id
 OR curr_ws.assignees REGEXP :current_user_id
 OR IF(wr.status = 'wait_for_execution'
-				, wir.users REGEXP :current_user_id
+				, wir.execution_assignees REGEXP :current_user_id
 				, '')
 
 {{- if .viewable_instance_ids }} 
@@ -142,7 +142,7 @@ AND w.project_id = :filter_project_id
 {{- end }}
 
 {{- if .fuzzy_keyword }}
-AND (w.subject like :filter_subject or w.workflow_id like :fuzzy_keyword or w.desc like :fuzzy_keyword)
+AND (w.subject like :fuzzy_keyword or w.workflow_id like :fuzzy_keyword or w.desc like :fuzzy_keyword)
 {{- end }}
 
 {{ end }}

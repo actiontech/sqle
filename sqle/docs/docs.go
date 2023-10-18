@@ -9718,7 +9718,7 @@ var doc = `{
                 "approved_by_authorized": {
                     "type": "boolean"
                 },
-                "assignee_user_name_list": {
+                "assignee_user_id_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -9745,7 +9745,7 @@ var doc = `{
                 "approved_by_authorized": {
                     "type": "boolean"
                 },
-                "assignee_user_name_list": {
+                "assignee_user_id_list": {
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -10112,6 +10112,9 @@ var doc = `{
                     ]
                 },
                 "desc": {
+                    "type": "string"
+                },
+                "update_time": {
                     "type": "string"
                 },
                 "workflow_step_template_list": {
