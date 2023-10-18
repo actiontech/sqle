@@ -6563,6 +6563,9 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 			continue
 		}
 		for _, selectNode := range selectVisitor.SelectList {
+			if selectNode.From == nil || selectNode.From.TableRefs == nil {
+				continue
+			}
 			tables := util.GetTables(selectNode.From.TableRefs)
 			for _, tableName := range tables {
 				if tableName.Name.L != recordTable {
