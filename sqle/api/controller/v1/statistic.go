@@ -1,10 +1,11 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 
@@ -603,11 +604,21 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 
 	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
 	for i, info := range projectWorkflowStatusDetails {
+		user, err := func() (*model.User, error) {
+			ctx, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
+			defer cancel()
+
+			return dms.GetUser(ctx, info.CreateUserId, controller.GetDMSServerAddress())
+		}()
+
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
 			WorkflowID: info.WorkflowId,
 			Status:     info.Status,
-			CreateUser: info.LoginName,
+			CreateUser: user.Name,
 			UpdateTime: info.UpdatedAt,
 		}
 	}
@@ -955,11 +966,20 @@ func GetInstanceHealthV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(projectUid, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	instances, err := dms.GetInstancesInProject(c.Request().Context(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid)
+	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(instances, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceNames, err := dms.GetInstanceNamesInProject(c.Request().Context(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid, instanceNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -562,15 +562,6 @@ func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
 	return taskGroup, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByGroupId(groupId uint) ([]*Instance, error) {
-	instances := make([]*Instance, 0)
-	err := s.db.Raw(`select instances.* from instances 
-		LEFT JOIN tasks on tasks.instance_id = instances.id
-		LEFT JOIN task_groups on tasks.group_id = task_groups.id
-		where task_groups.id= ?;`, groupId).Scan(&instances).Error
-	return instances, errors.New(errors.ConnectStorageError, err)
-}
-
 type SqlExecuteStatistic struct {
 	InstanceID       uint `json:"instance_id"`
 	AvgExecutionTime uint `json:"avg_execution_time"`
@@ -600,46 +591,4 @@ func (s *Storage) GetSqlAvgExecutionTimeStatistic(limit uint) ([]*SqlExecuteStat
 type SqlExecutionCount struct {
 	InstanceName string `json:"instance_name"`
 	Count        uint   `json:"count"`
-}
-
-// GetSqlExecutionFailCount 获取sql上线失败统计
-func (s *Storage) GetSqlExecutionFailCount() ([]SqlExecutionCount, error) {
-	var sqlExecutionFailCount []SqlExecutionCount
-
-	err := s.db.Model(&Workflow{}).Select("i.name as instance_name, count(*) as count").
-		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
-		Joins("left join tasks t on wir.task_id = t.id").
-		Joins("left join instances i on t.instance_id = i.id").
-		Where("t.status = ?", TaskStatusExecuteFailed).
-		Where("t.exec_start_at is not null").
-		Where("t.exec_end_at is not null").
-		Group("t.instance_id").
-		Scan(&sqlExecutionFailCount).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	return sqlExecutionFailCount, nil
-}
-
-// GetSqlExecutionTotalCount 获取sql上线总数统计
-// 上线总数(根据数据源划分)是指：正在上线,上线成功,上线失败 task的总数
-func (s *Storage) GetSqlExecutionTotalCount() ([]SqlExecutionCount, error) {
-	var sqlExecutionTotalCount []SqlExecutionCount
-
-	err := s.db.Model(&Workflow{}).Select("i.name as instance_name, count(*) as count").
-		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
-		Joins("left join tasks t on wir.task_id = t.id").
-		Joins("left join instances i on t.instance_id = i.id").
-		Where("t.status not in (?)", []string{TaskStatusInit, TaskStatusAudited}).
-		Where("t.exec_start_at is not null").
-		Group("t.instance_id").
-		Scan(&sqlExecutionTotalCount).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	return sqlExecutionTotalCount, nil
 }
