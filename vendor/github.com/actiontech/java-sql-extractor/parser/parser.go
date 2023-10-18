@@ -97,3 +97,14 @@ func CreateJavaParser(file string) (*javaAntlr.JavaParser, error) {
 	p.BuildParseTrees = true
 	return p, nil
 }
+
+func GetSqlFromJavaFile(file string) (sqls []string, err error) {
+	p, err := CreateJavaParser(file)
+	if err != nil {
+		return
+	}
+	visitor := NewJavaVisitor()
+	p.CompilationUnit().Accept(visitor)
+	sqls = GetSqlsFromVisitor(visitor)
+	return
+}

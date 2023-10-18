@@ -416,13 +416,10 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 					return fmt.Errorf("gather sqls from sql file failed: %v", err)
 				}
 			case strings.HasSuffix(path, ".java"):
-				p, err := javaParser.CreateJavaParser(path)
+				sqls, err := javaParser.GetSqlFromJavaFile(path)
 				if err != nil {
 					return nil
 				}
-				visitor := javaParser.NewJavaVisitor()
-				p.CompilationUnit().Accept(visitor)
-				sqls := javaParser.GetSqlsFromVisitor(visitor)
 				for _, sql := range sqls {
 					if !strings.HasSuffix(sql, ";") {
 						sql += ";"
