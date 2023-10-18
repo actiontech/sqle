@@ -63,21 +63,25 @@ type LatestAuditPlanReportScore struct {
 }
 
 // 使用子查询获取最新的report的生成时间，再去获取report相关信息
-func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid string) ([]*LatestAuditPlanReportScore, error) {
+func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid string, instanceNames []string) ([]*LatestAuditPlanReportScore, error) {
+	if len(instanceNames) == 0 {
+		return nil, errors.ConnectStorageErrWrapper(gorm.ErrRecordNotFound)
+	}
+
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore
 	subQuery := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Where("audit_plans.project_id=?", projectUid).
+		Where("audit_plans.instance_name in (?)", instanceNames).
 		Group("audit_plans.db_type, audit_plans.instance_name").
 		SubQuery()
 
 	err := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, audit_plan_reports_v2.score").
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
-		Joins("left join instances on audit_plans.instance_name=instances.name").
 		Joins("join (?) as sq on audit_plans.db_type=sq.db_type and audit_plans.instance_name=sq.instance_name and audit_plan_reports_v2.created_at=sq.latest_created_at", subQuery).
-		Where("audit_plans.project_id=? and instances.deleted_at is null and audit_plans.deleted_at is null and instances.id is not null", projectUid).
+		Where("audit_plans.project_id=? and audit_plans.deleted_at is null", projectUid).
 		Scan(&latestAuditPlanReportScore).Error
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)

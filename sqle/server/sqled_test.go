@@ -25,6 +25,7 @@ func getAction(sqls []string, typ int, p driver.Plugin) *action {
 		Model:      model.Model{ID: 1},
 		SQLSource:  model.TaskSQLSourceFromMyBatisXMLFile,
 		InstanceId: 1,
+		Instance:   &model.Instance{},
 	}
 
 	for _, sql := range sqls {
@@ -35,11 +36,12 @@ func getAction(sqls []string, typ int, p driver.Plugin) *action {
 
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	return &action{
-		task:   task,
-		plugin: p,
-		typ:    typ,
-		entry:  entry,
-		done:   make(chan struct{}),
+		task:        task,
+		plugin:      p,
+		typ:         typ,
+		entry:       entry,
+		done:        make(chan struct{}),
+		customRules: []*model.CustomRule{},
 	}
 }
 
@@ -164,7 +166,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT `sql_whitelist`.* FROM `sql_whitelist` LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((instances.id = ?))")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT `sql_whitelist`.* FROM `sql_whitelist` WHERE `sql_whitelist`.`deleted_at` IS NULL")).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 

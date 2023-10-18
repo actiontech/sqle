@@ -98,11 +98,10 @@ func DirectAudit(c echo.Context) error {
 	}
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	s := model.GetStorage()
 	var instance *model.Instance
 	var exist bool
 	if req.ProjectName != nil && req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectID(*req.InstanceName, projectUid)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -208,13 +207,15 @@ func DirectAuditFiles(c echo.Context) error {
 	l := log.NewEntry().WithField("/v2/audit_files", "direct audit files failed")
 
 	var instance *model.Instance
+	var exist bool
 	if req.InstanceName != nil {
-		s := model.GetStorage()
-		instances, err := s.GetAndCheckInstanceExist([]string{*req.InstanceName}, projectUid)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		instance = instances[0]
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+		}
 	}
 
 	var schemaName string

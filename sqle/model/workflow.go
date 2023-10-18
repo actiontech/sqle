@@ -1054,13 +1054,12 @@ func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByWorkflowID(workflowID uint) ([]*Instance, error) {
+func (s *Storage) GetInstanceIdsByWorkflowID(workflowID uint) ([]uint64, error) {
 	query := `
-SELECT instances.id ,instances.maintenance_period
+SELECT wir.instance_id
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
 LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
-LEFT JOIN instances ON instances.id = wir.instance_id
 WHERE 
 w.id = ?`
 	instances := []*Instance{}
@@ -1068,7 +1067,13 @@ w.id = ?`
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return instances, err
+
+	instanceIds := make([]uint64, 0, len(instances))
+	for _, instance := range instances {
+		instanceIds = append(instanceIds, instance.ID)
+	}
+
+	return instanceIds, err
 }
 
 // GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id
@@ -1221,6 +1226,7 @@ type WorkflowTasksSummaryDetail struct {
 	TaskPassRate               float64        `json:"task_pass_rate"`
 	TaskScore                  int32          `json:"task_score"`
 	TaskStatus                 string         `json:"task_status"`
+	InstanceId                 uint64         `json:"instance_id"`
 	InstanceName               string         `json:"instance_name"`
 	InstanceDeletedAt          *time.Time     `json:"instance_deleted_at"`
 	InstanceMaintenancePeriod  Periods        `json:"instance_maintenance_period" gorm:"text"`
@@ -1237,9 +1243,7 @@ SELECT wr.status                                                     AS workflow
        tasks.pass_rate                                               AS task_pass_rate,
        tasks.score                                                   AS task_score,
        tasks.status                                                  AS task_status,
-       inst.name                                                     AS instance_name,
-       inst.deleted_at                                               AS instance_deleted_at,
-       inst.maintenance_period                                       AS instance_maintenance_period,
+       tasks.instance_id                                             AS instance_id,
        wir.scheduled_at                                              AS instance_scheduled_at,
        wir.execution_user_id			                             AS execution_user_id,
        curr_ws.assignees											 AS current_step_assignee_user_ids
@@ -1257,7 +1261,6 @@ FROM workflow_instance_records AS wir
 LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
 LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
-LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id	
 
 
@@ -1292,9 +1295,7 @@ SELECT wr.status                                                               A
        tasks.pass_rate                                                         AS task_pass_rate,
        tasks.score                                                             AS task_score,
        tasks.status                                                            AS task_status,
-       inst.name                                                               AS instance_name,
-       inst.deleted_at                                                         AS instance_deleted_at,
-       inst.maintenance_period                                                 AS instance_maintenance_period,
+       tasks.instance_id                                             		   AS instance_id,
        wir.scheduled_at                                                        AS instance_scheduled_at,
 	   wir.execution_user_id			                             AS execution_user_id,
        IF(tasks.status = 'audited' || tasks.status = 'executing' ||
@@ -1308,7 +1309,6 @@ FROM workflow_instance_records AS wir
          LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
          LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
          LEFT JOIN tasks ON wir.task_id = tasks.id
-         LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 		 WHERE w.deleted_at IS NULL
 			AND w.workflow_id = :workflow_id
 			AND w.project_id = :project_id

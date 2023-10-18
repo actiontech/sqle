@@ -174,29 +174,8 @@ func (s *Storage) AutoMigrate() error {
 			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-	for _, createView := range createViews {
-		if err = s.db.Exec(createView).Error; err != nil {
-			return errors.New(errors.ConnectStorageError, err)
-		}
-	}
 
 	return nil
-}
-
-var createViews []string = []string{
-	// instance_rule_template
-	"CREATE OR REPLACE VIEW instance_rule_template AS \n" +
-		"SELECT rule_templates.id AS rule_template_id, CAST(`dms`.`db_services`.`uid` AS UNSIGNED) AS  instance_id \n" +
-		"FROM dms.db_services \n" +
-		"JOIN rule_templates ON json_extract(`dms`.`db_services`.`extra_parameters`, '$.sqle_config.rule_template_id') = rule_templates.id;",
-	// instances
-	"CREATE OR REPLACE VIEW instances AS\n" +
-		"select CAST(`uid` AS UNSIGNED) as id,`created_at`,`updated_at`,CAST(\"\" AS DATETIME) as `deleted_at`,CAST(`project_uid` AS UNSIGNED) as project_id,`name`,`db_type`,`db_host`,`db_port`, \n" +
-		"`db_user`,`db_password`,`desc`,1 as workflow_template_id ,`additional_params`,`maintenance_period`,\n" +
-		"json_extract(`dms`.`db_services`.`extra_parameters`, '$.sqle_config.sql_query_config') as sql_query_config,\n" +
-		"`source`,1 as sync_instance_task_id\n" +
-		"from `dms`.`db_services` \n" +
-		"WHERE json_extract(`dms`.`db_services`.`extra_parameters`, '$.sqle_config.sql_query_config') is not null;",
 }
 
 func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
