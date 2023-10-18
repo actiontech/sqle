@@ -70,6 +70,11 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
+# github.com/actiontech/java-sql-extractor v0.0.0-20231018064543-df1ea61a36cd
+## explicit; go 1.19
+github.com/actiontech/java-sql-extractor
+github.com/actiontech/java-sql-extractor/java_antlr
+github.com/actiontech/java-sql-extractor/parser
 # github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 ## explicit; go 1.14
 github.com/actiontech/mybatis-mapper-2-sql
@@ -129,6 +134,9 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
+# github.com/antlr4-go/antlr/v4 v4.13.0
+## explicit; go 1.20
+github.com/antlr4-go/antlr/v4
 # github.com/baidubce/bce-sdk-go v0.9.151
 ## explicit; go 1.11
 github.com/baidubce/bce-sdk-go/auth
@@ -683,6 +691,10 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
+# golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
+## explicit; go 1.20
+golang.org/x/exp/constraints
+golang.org/x/exp/slices
 # golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
