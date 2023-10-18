@@ -70,7 +70,7 @@ func convertListUserToModel(user *dmsV1.ListUser) *model.User {
 }
 
 func GetUser(ctx context.Context, userUid string, dmsAddr string) (*model.User, error) {
-	dmsUser, err := dmsobject.GetUser(ctx, userUid, controller.GetDMSServerAddress())
+	dmsUser, err := dmsobject.GetUser(ctx, userUid, dmsAddr)
 	if err != nil {
 		return nil, err
 	}
