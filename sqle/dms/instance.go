@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -21,7 +22,13 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 	for ; ; pageIndex++ {
 		req.PageIndex = pageIndex
 		req.PageSize = limit
-		dbServices, _, err := dmsobject.ListDbServices(ctx, GetDMSServerAddress(), req)
+
+		dbServices, _, err := func() ([]*dmsV1.ListDBService, int64, error) {
+			newCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			defer cancel()
+
+			return dmsobject.ListDbServices(newCtx, GetDMSServerAddress(), req)
+		}()
 
 		if err != nil {
 			return nil, fmt.Errorf("get instances from dms error: %v", err)
@@ -45,7 +52,10 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 }
 
 func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instance, bool, error) {
-	dbServices, total, err := dmsobject.ListDbServices(ctx, GetDMSServerAddress(), req)
+	newCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	dbServices, total, err := dmsobject.ListDbServices(newCtx, GetDMSServerAddress(), req)
 
 	if err != nil {
 		return nil, false, fmt.Errorf("get instances from dms error: %v", err)
