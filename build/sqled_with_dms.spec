@@ -39,13 +39,14 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
-cp %{_builddir}/%{buildsubdir}/%{name}/etc/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
+cp %{_builddir}/%{buildsubdir}/dms/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
 cp %{_builddir}/%{buildsubdir}/dms/database_driver_option.yaml $RPM_BUILD_ROOT/usr/local/%{name}/database_driver_option.yaml
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{name}/bin/sqled
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/dms $RPM_BUILD_ROOT/usr/local/%{name}/bin/dms
 cp -R %{_builddir}/%{buildsubdir}/%{name}/plugins $RPM_BUILD_ROOT/usr/local/%{name}/plugins
 cp -R %{_builddir}/%{buildsubdir}/%{name}/scripts $RPM_BUILD_ROOT/usr/local/%{name}/scripts
+cp %{_builddir}/%{buildsubdir}/dms/build/service-file-template/dms.systemd $RPM_BUILD_ROOT/usr/local/%{name}/scripts/dms.systemd
 cp -R %{_builddir}/%{buildsubdir}/%{name}/static $RPM_BUILD_ROOT/usr/local/%{name}/static
 
 
@@ -104,6 +105,7 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 
 
 cat >> $RPM_INSTALL_PREFIX/etc/config.yaml<<EOF
+
 sqle:
   id: 1
   dms_server_address: http://127.0.0.1:7601
