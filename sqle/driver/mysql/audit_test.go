@@ -3983,6 +3983,9 @@ func Test_DMLCheckInQueryLimit(t *testing.T) {
 		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c'))",
 		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
 
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select 1 in (1,2,3,4,5,6);",
+		newTestResult())
 }
 
 func TestCheckIndexOption(t *testing.T) {
