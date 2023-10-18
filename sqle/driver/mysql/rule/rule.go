@@ -2801,24 +2801,29 @@ func hasDefaultValueCurrentTimeStamp(options []*ast.ColumnOption) bool {
 }
 
 func checkInQueryLimit(input *RuleHandlerInput) error {
-	where := getWhereExpr(input.Node)
-	if where == nil {
+	dmlNode, ok := input.Node.(ast.DMLNode)
+	if !ok {
 		return nil
 	}
 
+	whereVisitor := &util.WhereVisitor{}
+	dmlNode.Accept(whereVisitor)
 	paramThresholdNumber := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-	util.ScanWhereStmt(func(expr ast.ExprNode) bool {
-		switch stmt := expr.(type) {
-		case *ast.PatternInExpr:
-			inQueryParamActualNumber := len(stmt.List)
-			if inQueryParamActualNumber > paramThresholdNumber {
-				addResult(input.Res, input.Rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
-			}
-			return true
-		}
 
-		return false
-	}, where)
+	for _, whereExpr := range whereVisitor.WhereList {
+		util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+			switch stmt := expr.(type) {
+			case *ast.PatternInExpr:
+				inQueryParamActualNumber := len(stmt.List)
+				if inQueryParamActualNumber > paramThresholdNumber {
+					addResult(input.Res, input.Rule, DMLCheckInQueryNumber, inQueryParamActualNumber, paramThresholdNumber)
+				}
+				return true
+			}
+
+			return false
+		}, whereExpr)
+	}
 
 	return nil
 }
