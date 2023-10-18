@@ -39,7 +39,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
-cp %{_builddir}/%{buildsubdir}/%{name}/etc/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
+cp %{_builddir}/%{buildsubdir}/dms/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
 cp %{_builddir}/%{buildsubdir}/dms/database_driver_option.yaml $RPM_BUILD_ROOT/usr/local/%{name}/database_driver_option.yaml
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{name}/bin/sqled
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
