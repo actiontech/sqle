@@ -147,7 +147,7 @@ const (
 	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                         = "dml_check_table_size"
 	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
-	DMLCheckJoinHasOn                         = "dml_check_join_has_on"
+	DMLCheckHasJoinCondition                  = "dml_check_join_has_on"
 	DMLCheckAlias                             = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
@@ -554,7 +554,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DMLCheckJoinHasOn,
+			Name:       DMLCheckHasJoinCondition,
 			Desc:       "连接操作必须指定连接条件",
 			Annotation: "指定连接条件可以确保连接操作的正确性和可靠性，如果没有指定连接条件，可能会导致连接失败或连接不正确的情况。",
 			Level:      driverV2.RuleLevelWarn,
@@ -562,7 +562,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "连接操作必须指定连接条件，JOIN字段后必须有ON条件",
 		AllowOffline: true,
-		Func:         checkJoinHasOn,
+		Func:         checkHasJoinCondition,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -2581,52 +2581,170 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkJoinHasOn(input *RuleHandlerInput) error {
-	var tableRefs *ast.Join
+func checkHasJoinCondition(input *RuleHandlerInput) error {
+	var joinNode *ast.Join
+	var whereStmt ast.ExprNode
+
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
 			return nil
 		}
-		tableRefs = stmt.From.TableRefs
+		joinNode = stmt.From.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	case *ast.UpdateStmt:
 		if stmt.TableRefs == nil {
 			return nil
 		}
-		tableRefs = stmt.TableRefs.TableRefs
+		joinNode = stmt.TableRefs.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil {
 			return nil
 		}
-		tableRefs = stmt.TableRefs.TableRefs
+		joinNode = stmt.TableRefs.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	default:
+		// 不检查JOIN不会存在的语句
 		return nil
 	}
-	checkSuccessfully, _ := checkOnCondition(tableRefs)
-	if !checkSuccessfully {
+
+	if doesNotJoinTables(joinNode) {
+		// 不检查没有JOIN两表或多表的语句
+		return nil
+	}
+	// uncheckedNodes用于存储在From语句块中，没有显式声明连接键的JOIN两表对应的JOIN节点
+	var uncheckedNodes []ast.Join
+	checkJoinConditionInJoinNode(joinNode, &uncheckedNodes)
+	if len(uncheckedNodes) == 0 {
+		// 若JOIN语句中，需要连接的表，都有对应的ON语句或者USING语句，则uncheckedNodes为空，不需要进一步检查
+		return nil
+	}
+	checkJoinConditionInWhereStmt(whereStmt, &uncheckedNodes)
+	if len(uncheckedNodes) > 0 {
+		// 若JOIN语句中，存在需要显式声明连接键，但未在From语句中显式声明连接键的两表
+		// 在检查过WHERE语句中是否有对应连接键时后，仍无，则添加规则警告
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
-
 	return nil
 }
 
-func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, continueCheck bool) {
-	if resultSetNode == nil {
-		return true, false
-	}
-	switch t := resultSetNode.(type) {
-	case *ast.Join:
-		_, rightIsTableSource := t.Right.(*ast.TableSource)
-		if t.On == nil && rightIsTableSource {
-			return false, false
-		}
+func doesNotJoinTables(tableRefs *ast.Join) bool {
+	return tableRefs.Left == nil || tableRefs.Right == nil
+}
 
-		if hasOnCondition, c := checkOnCondition(t.Left); !c {
-			return hasOnCondition, c
-		}
-		return checkOnCondition(t.Right)
+func checkJoinConditionInJoinNode(joinNode *ast.Join, uncheckedNodes *[]ast.Join) {
+	if joinNode == nil {
+		return
 	}
-	return true, true
+
+	if doesNotJoinTables(joinNode) {
+		// 非JOIN两表的JOIN节点 一般是叶子节点 不检查
+		return
+	}
+	// 深度遍历子树类型为ast.Join的节点
+	if l, ok := joinNode.Left.(*ast.Join); ok {
+		checkJoinConditionInJoinNode(l, uncheckedNodes)
+	}
+	if r, ok := joinNode.Right.(*ast.Join); ok {
+		checkJoinConditionInJoinNode(r, uncheckedNodes)
+	}
+	// 判断该节点是否有显式声明连接条件
+	if isJoinConditionInOnClause(joinNode) {
+		return
+	}
+	if isJoinConditionInUsingClause(joinNode) {
+		return
+	}
+	*uncheckedNodes = append(*uncheckedNodes, *joinNode)
+}
+
+func isJoinConditionInOnClause(joinCondition *ast.Join) bool {
+	return joinCondition.On != nil
+}
+
+func isJoinConditionInUsingClause(joinCondition *ast.Join) bool {
+	return len(joinCondition.Using) > 0
+}
+
+func checkJoinConditionInWhereStmt(stmt ast.ExprNode, uncheckedNodes *[]ast.Join) {
+	if stmt == nil {
+		return
+	}
+	equalConditionVisitor := util.EqualConditionVisitor{}
+	stmt.Accept(&equalConditionVisitor)
+
+	for _, stmt := range equalConditionVisitor.ConditionList {
+		tableNameL, tableNameR := getTableNameFromBinaryOperation(stmt)
+		if tableNameL == "" || tableNameR == "" || tableNameL == tableNameR {
+			// 表名为空或者表名相同都不属于两表连接条件
+			continue
+		}
+		for i, node := range *uncheckedNodes {
+			if isTableInJoinNode(tableNameL, node) && isTableInJoinNode(tableNameR, node) {
+				// 若两表都在JOIN节点中，则说明WHERE语句中包含了JOIN两表的连接条件，移除该节点
+				*uncheckedNodes = removeNode(*uncheckedNodes, i)
+				break
+			}
+		}
+	}
+}
+
+func getTableNameFromBinaryOperation(stmt *ast.BinaryOperationExpr) (tableNameL, tableNameR string) {
+	switch t := stmt.L.(type) {
+	case *ast.ColumnNameExpr:
+		tableNameL = t.Name.Table.L
+	}
+	switch t := stmt.R.(type) {
+	case *ast.ColumnNameExpr:
+		tableNameR = t.Name.Table.L
+	}
+	return
+}
+
+func removeNode(nodes []ast.Join, index int) []ast.Join {
+	return append(nodes[:index], nodes[index+1:]...)
+}
+
+func isTableInJoinNode(tableName string, node ast.Join) bool {
+	return isTableInNode(tableName, node.Right) || isTableInNode(tableName, node.Left)
+}
+
+// 只检查该节点为根节点的树中，最上面一层类型为TableSource的节点的表名和表别名
+func isTableInNode(tableName string, node ast.ResultSetNode) bool {
+	switch t := node.(type) {
+	case *ast.TableSource:
+		return isNameInTableSource(tableName, t)
+	case *ast.Join:
+		switch tRight := t.Right.(type) {
+		case *ast.TableSource:
+			return isNameInTableSource(tableName, tRight)
+		}
+		switch tLeft := t.Left.(type) {
+		case *ast.TableSource:
+			return isNameInTableSource(tableName, tLeft)
+		}
+	}
+	return false
+}
+
+func isNameInTableSource(tableName string, tSource *ast.TableSource) bool {
+	if tSource.AsName.L == "" {
+		tableNameNode := tSource.Source.(*ast.TableName)
+		if tableNameNode.Name.L == tableName {
+			return true
+		}
+	}
+	if tSource.AsName.L == tableName {
+		return true
+	}
+	return false
 }
 
 func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {

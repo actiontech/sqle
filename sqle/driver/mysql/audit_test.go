@@ -925,7 +925,7 @@ update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -946,63 +946,63 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 }
 
