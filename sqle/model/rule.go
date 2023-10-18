@@ -175,18 +175,19 @@ func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []string, name strin
 	return rules, customRules, nil
 }
 
-func (s *Storage) GetAllRulesByInstanceId(instanceId string) ([]*Rule, []*CustomRule, error) {
-	instance, _, err := s.GetInstanceById(instanceId)
-	if err != nil {
-		return nil, nil, errors.New(errors.ConnectStorageError, err)
+func (s *Storage) GetAllRulesByInstance(instance *Instance) ([]*Rule, []*CustomRule, error) {
+	var template RuleTemplate
+
+	if err := s.db.Where("id = ? ", instance.RuleTemplateId).First(&template).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, nil, errors.New(errors.ConnectStorageError, err)
+		} else {
+			return nil, nil, nil
+		}
 	}
-	templates := instance.RuleTemplates
-	if len(templates) <= 0 {
-		return nil, nil, nil
-	}
-	tplName := templates[0].Name
+
 	// 数据源可以绑定全局模板和项目模板
-	return s.GetRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, tplName)
+	return s.GetRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
 }
 
 func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId, name string) (*RuleTemplate, bool, error) {
@@ -249,11 +250,6 @@ func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTempla
 		return nil
 	})
 
-	return errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) UpdateRuleTemplateInstances(tpl *RuleTemplate, instances ...*Instance) error {
-	err := s.db.Model(tpl).Association("Instances").Replace(instances).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -581,7 +577,7 @@ func (s *Storage) GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateNam
 		rules, customRules, err = s.GetRulesFromRuleTemplateByName([]string{projectId, ProjectIdForGlobalRuleTemplate}, ruleTemplateName)
 	} else {
 		if inst != nil {
-			rules, customRules, err = s.GetAllRulesByInstanceId(fmt.Sprintf("%v", inst.ID))
+			rules, customRules, err = s.GetAllRulesByInstance(inst)
 		} else {
 			templateName := s.GetDefaultRuleTemplateName(dbType)
 			// 默认规则模板从全局模板里拿

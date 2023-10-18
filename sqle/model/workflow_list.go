@@ -30,8 +30,7 @@ SELECT
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
        curr_ws.assignees											 AS current_step_assignee_user_id_list,
-       wr.status,
-       GROUP_CONCAT(inst.db_type)                                    AS task_instance_type
+       wr.status
 {{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC
@@ -58,7 +57,6 @@ FROM workflows w
 LEFT JOIN workflow_records AS wr ON w.workflow_record_id = wr.id
 LEFT JOIN workflow_instance_records wir on wir.workflow_record_id = wr.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
-LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
 
