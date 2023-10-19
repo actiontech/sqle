@@ -238,6 +238,9 @@ func GetTask(c echo.Context) error {
 		Data:    convertTaskToRes(task),
 	})
 }
+func GetTaskById(ctx context.Context, taskId string) (*model.Task, error) {
+	return getTaskById(ctx, taskId)
+}
 
 func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 	s := model.GetStorage()
