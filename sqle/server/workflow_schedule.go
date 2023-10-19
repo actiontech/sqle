@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -45,6 +47,26 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 		if !exist {
 			entry.Errorf("workflow %s not found", workflow.Subject)
 			return
+		}
+
+		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+		for _, item := range workflow.Record.InstanceRecords {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			entry.Errorf("notify workflow error, %v", err)
+			return
+		}
+		instanceMap := map[uint64]*model.Instance{}
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
+		for i, item := range workflow.Record.InstanceRecords {
+			if instance, ok := instanceMap[item.InstanceId]; ok {
+				workflow.Record.InstanceRecords[i].Instance = instance
+			}
 		}
 
 		currentStep := w.CurrentStep()
@@ -89,6 +111,14 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		if !exist {
 			return errors.New(errors.DataNotExist, fmt.Errorf("task is not exist. taskID=%v", taskId))
 		}
+		instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. instanceId=%v", task.InstanceId))
+		}
+		task.Instance = instance
 		if task.Instance == nil {
 			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 		}

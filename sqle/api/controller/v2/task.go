@@ -5,6 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -73,6 +74,15 @@ func GetTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+	task.Instance = instance
+
 	err = v1.CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

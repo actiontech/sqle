@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
@@ -67,6 +69,26 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 						continue
 					}
 
+					instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+					for _, item := range workflow.Record.InstanceRecords {
+						instanceIds = append(instanceIds, item.InstanceId)
+					}
+
+					instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+					if err != nil {
+						entry.Errorf("get instance error, %v", err)
+						continue
+					}
+					instanceMap := map[uint64]*model.Instance{}
+					for _, instance := range instances {
+						instanceMap[instance.ID] = instance
+					}
+					for i, item := range workflow.Record.InstanceRecords {
+						if instance, ok := instanceMap[item.InstanceId]; ok {
+							workflow.Record.InstanceRecords[i].Instance = instance
+						}
+					}
+
 					nextStep := workflow.NextStep()
 
 					userId := *approval.OperationRecords[1].UserId
@@ -104,6 +126,26 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					if workflow.Record.Status == model.WorkflowStatusCancel {
 						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
 						continue
+					}
+
+					instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+					for _, item := range workflow.Record.InstanceRecords {
+						instanceIds = append(instanceIds, item.InstanceId)
+					}
+
+					instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+					if err != nil {
+						entry.Errorf("notify workflow error, %v", err)
+						continue
+					}
+					instanceMap := map[uint64]*model.Instance{}
+					for _, instance := range instances {
+						instanceMap[instance.ID] = instance
+					}
+					for i, item := range workflow.Record.InstanceRecords {
+						if instance, ok := instanceMap[item.InstanceId]; ok {
+							workflow.Record.InstanceRecords[i].Instance = instance
+						}
 					}
 
 					var reason string
