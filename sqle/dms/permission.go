@@ -44,11 +44,11 @@ func (p *UserPermission) IsProjectAdmin() bool {
 	return false
 }
 
-// dms-todo: 1. 判断用户是 namespace 成员的方式成本高，看是否可以优化. 2. 捕捉错误.
+// dms-todo: 1. 判断用户是 project 成员的方式成本高，看是否可以优化. 2. 捕捉错误.
 func (p *UserPermission) IsProjectMember() bool {
 	members, _, err := dmsobject.ListMembersInProject(context.TODO(), controller.GetDMSServerAddress(), v1.ListMembersForInternalReq{PageSize: 999, PageIndex: 1, ProjectUid: p.projectId})
 	if err != nil {
-		log.NewEntry().WithField("project_id", p.projectId).Errorln("fail to list member in namespace from dms")
+		log.NewEntry().WithField("project_id", p.projectId).Errorln("fail to list member in project from dms")
 		return false
 	}
 	for _, member := range members {
