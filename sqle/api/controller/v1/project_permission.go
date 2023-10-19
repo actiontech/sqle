@@ -76,7 +76,17 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 	}
 
 	if len(ops) > 0 {
-		instances, err := s.GetInstanceByTaskIDList(taskIdList)
+		workflowInstances, err := s.GetWorkInstanceRecordByTaskIds(taskIdList)
+		if err != nil {
+			return err
+		}
+
+		instanceIds := make([]uint64, 0, len(workflowInstances))
+		for _, item := range workflowInstances {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -247,18 +246,14 @@ func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord Workf
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
 }
 
-func (s *Storage) GetInstanceByTaskIDList(taskIds []uint) (instances []*Instance, err error) {
-	var instanceRecords []*WorkflowInstanceRecord
-	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("Instance").Where("task_id in (?)", taskIds).Find(&instanceRecords).Error
+func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowInstanceRecord, error) {
+	var workflowInstanceRecords []*WorkflowInstanceRecord
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("task_id in (?)", taskIds).Find(&workflowInstanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 
-	for _, instanceRecord := range instanceRecords {
-		instances = append(instances, instanceRecord.Instance)
-	}
-
-	return instances, nil
+	return workflowInstanceRecords, nil
 }
 
 const (
@@ -737,32 +732,12 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 
 func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
 	instanceRecords := []*WorkflowInstanceRecord{}
-	err := s.db.Preload("Instance").Preload("Task").Where("workflow_record_id = ?", id).
+	err := s.db.Preload("Task").Where("workflow_record_id = ?", id).
 		Find(&instanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 	return instanceRecords, nil
-}
-
-func (s *Storage) GetWorkflowDetailByTaskID(taskID uint) (*Workflow, error) {
-	workflow, exist, err := s.GetWorkflowByTaskId(taskID)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, fmt.Errorf("workflow not exist by task_id(%v)", taskID)
-	}
-
-	workflow, exist, err = s.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, fmt.Errorf("workflow not exist by workflow.id(%v)", workflow.ID)
-	}
-
-	return workflow, nil
 }
 
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
@@ -812,7 +787,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	}
 
 	instanceRecordList := make([]*WorkflowInstanceRecord, 0)
-	err = s.db.Preload("Instance").Preload("Task").
+	err = s.db.Preload("Task").
 		Where("workflow_record_id = ?", w.Record.ID).
 		Find(&instanceRecordList).Error
 	if err != nil {
@@ -836,40 +811,6 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	w.Record.Steps = steps
 
 	return w, true, nil
-}
-
-func (s *Storage) GetWorkflowDetailBySubject(projectId, workflowName string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).
-		Preload("Record").Where("subject = ?", workflowName).Where("project_id = ?", projectId).
-		First(workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	if workflow.Record == nil {
-		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
-	}
-
-	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.InstanceRecords = instanceRecords
-
-	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.Steps = steps
-	for _, step := range steps {
-		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
-		}
-	}
-	return workflow, true, nil
 }
 
 func (s *Storage) GetWorkflowDetailByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {

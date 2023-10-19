@@ -51,7 +51,7 @@ type ListProject struct {
 type ListProjectReply struct {
 	// List project reply
 	Data  []*ListProject `json:"data"`
-	Total int64            `json:"total_nums"`
+	Total int64          `json:"total_nums"`
 
 	// Generic reply
 	base.GenericResp

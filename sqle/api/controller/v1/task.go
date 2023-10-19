@@ -222,15 +222,12 @@ func CreateAndAuditTask(c echo.Context) error {
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/tasks/audits/{task_id}/ [get]
 func GetTask(c echo.Context) error {
-	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -240,6 +237,28 @@ func GetTask(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
+}
+
+func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
+	s := model.GetStorage()
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.NewTaskNoExistOrNoAccessErr()
+	}
+
+	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.NewTaskNoExistOrNoAccessErr()
+	}
+	task.Instance = instance
+
+	return task, nil
 }
 
 type GetAuditTaskSQLsReqV1 struct {
@@ -290,13 +309,11 @@ func GetTaskSQLs(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTaskDMS(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -364,13 +381,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -430,13 +445,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 func DownloadTaskSQLFile(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -473,13 +486,12 @@ type AuditTaskSQLContentResV1 struct {
 func GetAuditTaskSQLContent(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -521,13 +533,11 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	number := c.Param("number")
 
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
