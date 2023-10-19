@@ -276,7 +276,7 @@ func (s *Storage) GetTaskStatusByID(id string) (string, error) {
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Where("id = ?", taskId).Preload("Instance").First(task).Error
+	err := s.db.Where("id = ?", taskId).First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -285,7 +285,7 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 
 func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool, err error) {
 	taskIds = utils.RemoveDuplicateUint(taskIds)
-	err = s.db.Where("id IN (?)", taskIds).Preload("Instance").Find(&tasks).Error
+	err = s.db.Where("id IN (?)", taskIds).Find(&tasks).Error
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
@@ -297,7 +297,7 @@ func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool
 
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Where("id = ?", taskId).Preload("Instance").
+	err := s.db.Where("id = ?", taskId).
 		Preload("ExecuteSQLs").Preload("RollbackSQLs").First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
@@ -421,7 +421,7 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		Schema:     task.Schema,
 		PassRate:   1,
 		Status:     TaskStatusAudited,
-	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
+	}).Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -589,6 +589,6 @@ func (s *Storage) GetSqlAvgExecutionTimeStatistic(limit uint) ([]*SqlExecuteStat
 }
 
 type SqlExecutionCount struct {
-	InstanceName string `json:"instance_name"`
-	Count        uint   `json:"count"`
+	Count      uint   `json:"count"`
+	InstanceId uint64 `json:"instance_id"`
 }

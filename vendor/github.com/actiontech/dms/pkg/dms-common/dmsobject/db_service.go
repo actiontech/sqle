@@ -13,8 +13,8 @@ func ListDbServices(ctx context.Context, dmsAddr string, req dmsV1.ListDBService
 		"Authorization": pkgHttp.DefaultDMSToken,
 	}
 
-	placeholder := "%s%s?page_size=%d&page_index=%d&order_by=%v&filter_by_business=%s&filter_by_host=%s&filter_by_uid=%s&filter_by_port=%s&filter_by_db_type=%s"
-	url := fmt.Sprintf(placeholder, dmsAddr, dmsV1.GetDBServiceRouter(req.ProjectUid), req.PageSize, req.PageIndex, req.OrderBy, req.FilterByBusiness, req.FilterByHost, req.FilterByUID, req.FilterByPort, req.FilterByDBType)
+	placeholder := "%s%s?page_size=%d&page_index=%d&order_by=%v&filter_by_business=%s&filter_by_host=%s&filter_by_uid=%s&filter_by_port=%s&filter_by_db_type=%s&filter_by_name=%s"
+	url := fmt.Sprintf(placeholder, dmsAddr, dmsV1.GetDBServiceRouter(req.ProjectUid), req.PageSize, req.PageIndex, req.OrderBy, req.FilterByBusiness, req.FilterByHost, req.FilterByUID, req.FilterByPort, req.FilterByDBType, req.FilterByName)
 
 	reply := &dmsV1.ListDBServiceReply{}
 

@@ -65,7 +65,7 @@ type LatestAuditPlanReportScore struct {
 // 使用子查询获取最新的report的生成时间，再去获取report相关信息
 func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid string, instanceNames []string) ([]*LatestAuditPlanReportScore, error) {
 	if len(instanceNames) == 0 {
-		return nil, errors.ConnectStorageErrWrapper(gorm.ErrRecordNotFound)
+		return nil, nil
 	}
 
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore

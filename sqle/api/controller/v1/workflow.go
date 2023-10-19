@@ -421,12 +421,9 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 }
 
 func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(context.Background(), taskId)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskId=%v err=%v", taskId, err)
-	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskId=%v", taskId)
 	}
 
 	if task.Instance == nil {
@@ -1042,6 +1039,25 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 		if !exist {
 			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 		}
+
+		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+		for _, item := range workflow.Record.InstanceRecords {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instanceMap := map[uint64]*model.Instance{}
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
+		for i, item := range workflow.Record.InstanceRecords {
+			if instance, ok := instanceMap[item.InstanceId]; ok {
+				workflow.Record.InstanceRecords[i].Instance = instance
+			}
+		}
 	}
 
 	terminatingTaskIDs := getTerminatingTaskIDs(workflow)
@@ -1099,6 +1115,25 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		}
 		if !exist {
 			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
+		}
+
+		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+		for _, item := range workflow.Record.InstanceRecords {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instanceMap := map[uint64]*model.Instance{}
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
+		for i, item := range workflow.Record.InstanceRecords {
+			if instance, ok := instanceMap[item.InstanceId]; ok {
+				workflow.Record.InstanceRecords[i].Instance = instance
+			}
 		}
 	}
 
@@ -1164,13 +1199,11 @@ func checkBeforeTasksTermination(c echo.Context, projectId string, workflow *mod
 }
 
 func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskID)
+	task, err := getTaskById(context.Background(), taskID)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
 	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskID=%v", taskID)
-	}
+
 	if task.Instance == nil {
 		return false, fmt.Errorf("task instance is nil. taskID=%v", taskID)
 	}
