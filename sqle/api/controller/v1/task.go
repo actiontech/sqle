@@ -231,6 +231,17 @@ func GetTask(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -297,6 +308,15 @@ func GetTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
 	err = CheckCurrentUserCanViewTaskDMS(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -371,6 +391,15 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -437,6 +466,15 @@ func DownloadTaskSQLFile(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -480,6 +518,15 @@ func GetAuditTaskSQLContent(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -528,6 +575,15 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+	task.Instance = instance
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-sql-driver/mysql"
@@ -65,6 +66,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	var p driver.Plugin
 	var rules []*model.Rule
 	var customRules []*model.CustomRule
+	var instance *model.Instance
 	st := model.GetStorage()
 	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
@@ -92,6 +94,17 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 		err = errors.New(errors.TaskNotExist, fmt.Errorf("task not exist"))
 		goto Error
 	}
+
+	instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
+	if err != nil {
+		goto Error
+	}
+	if !exist {
+		err = errors.New(errors.DataNotExist, fmt.Errorf("instance not exist"))
+		goto Error
+	}
+
+	task.Instance = instance
 
 	if err = action.validation(task); err != nil {
 		goto Error
@@ -602,7 +615,7 @@ ExecSQLs:
 	return execErr
 }
 
-func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string,  modelRules []*model.Rule) (driver.Plugin, error) {
+func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database string, dbType string, modelRules []*model.Rule) (driver.Plugin, error) {
 	if inst == nil && dbType == "" {
 		return nil, xerrors.Errorf("instance is nil and dbType is nil")
 	}
