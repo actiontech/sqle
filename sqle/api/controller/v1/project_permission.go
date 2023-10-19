@@ -166,8 +166,8 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
 }
 
-func CheckCurrentUserCanAccessInstances(ctx context.Context, namespaceUID string, userId string, instances []*model.Instance) (bool, error) {
-	up, err := dms.NewUserPermission(userId, namespaceUID)
+func CheckCurrentUserCanAccessInstances(ctx context.Context, projectUID string, userId string, instances []*model.Instance) (bool, error) {
+	up, err := dms.NewUserPermission(userId, projectUID)
 	if err != nil {
 		return false, fmt.Errorf("get user op permission from dms error: %v", err)
 	}
@@ -182,8 +182,8 @@ func CheckCurrentUserCanAccessInstances(ctx context.Context, namespaceUID string
 	return true, nil
 }
 
-func CheckCurrentUserCanCreateWorkflow(ctx context.Context, namespaceUID string, user *model.User, tasks []*model.Task) (bool, error) {
-	up, err := dms.NewUserPermission(user.GetIDStr(), namespaceUID)
+func CheckCurrentUserCanCreateWorkflow(ctx context.Context, projectUID string, user *model.User, tasks []*model.Task) (bool, error) {
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUID)
 	if err != nil {
 		return false, err
 	}
@@ -203,8 +203,8 @@ func CheckCurrentUserCanCreateWorkflow(ctx context.Context, namespaceUID string,
 	return true, nil
 }
 
-func CheckUserCanCreateAuditPlan(ctx context.Context, namespaceUID string, user *model.User, instances []*model.Instance) (bool, error) {
-	up, err := dms.NewUserPermission(user.GetIDStr(), namespaceUID)
+func CheckUserCanCreateAuditPlan(ctx context.Context, projectUID string, user *model.User, instances []*model.Instance) (bool, error) {
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUID)
 	if err != nil {
 		return false, err
 	}
