@@ -148,7 +148,27 @@ func (w *WorkflowNotification) NotificationBody() string {
 		buf.WriteString("\n- 工单链接: 请在系统设置-全局配置中补充全局url")
 	}
 
+	instanceIds := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIds = append(instanceIds, task.InstanceId)
+	}
+
+	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(w.workflow.ProjectId), instanceIds)
+	if err != nil {
+		buf.WriteString(fmt.Sprintf("\n 获取数据源实例失败: %v\n", err))
+		return buf.String()
+	}
+
+	instanceMap := map[uint64]*model.Instance{}
+	for _, instance := range instances {
+		instanceMap[instance.ID] = instance
+	}
+
 	for _, t := range tasks {
+		if instance, ok := instanceMap[t.InstanceId]; ok {
+			t.Instance = instance
+		}
+
 		buf.WriteString("\n--------------\n")
 		buf.WriteString(w.buildNotifyBody(t))
 	}
@@ -271,6 +291,27 @@ func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
 		return
 	}
+
+	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instanceIds = append(instanceIds, item.InstanceId)
+	}
+
+	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+	if err != nil {
+		log.NewEntry().Errorf("get instance error, %v", err)
+		return
+	}
+	instanceMap := map[uint64]*model.Instance{}
+	for _, instance := range instances {
+		instanceMap[instance.ID] = instance
+	}
+	for i, item := range workflow.Record.InstanceRecords {
+		if instance, ok := instanceMap[item.InstanceId]; ok {
+			workflow.Record.InstanceRecords[i].Instance = instance
+		}
+	}
+
 	go func() { notifyWorkflowWebhook(workflow, wt) }()
 
 	sqleUrl, err := s.GetSqleUrl()
