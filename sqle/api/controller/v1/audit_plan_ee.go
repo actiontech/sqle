@@ -219,7 +219,7 @@ func GetAuditPlantReportAndInstance(c echo.Context, projectId, auditPlanName str
 	if !exist {
 		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report sql v2 not exist")
 	}
-	instance, exist, err = s.GetInstanceByNameAndProjectID(auditPlanReport.AuditPlan.InstanceName, projectId)
+	instance, exist, err = dms.GetInstanceInProjectByName(context.Background(), projectId, auditPlanReport.AuditPlan.InstanceName)
 	if err != nil {
 		return nil, nil, nil, err
 	}

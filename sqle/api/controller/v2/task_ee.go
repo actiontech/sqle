@@ -26,12 +26,9 @@ func getTaskAnalysisData(c echo.Context) error {
 	sqlNumber := c.Param("number")
 
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskID)
+	task, err := v1.GetTaskById(c.Request().Context(), taskID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 
 	if err := v1.CheckCurrentUserCanViewTask(c, task); err != nil {

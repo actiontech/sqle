@@ -113,13 +113,33 @@ func exportWorkflowV1(c echo.Context) error {
 			log.NewEntry().Errorf("workflow not exist, id: %s", id)
 			continue
 		}
+
+		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+		for _, item := range workflow.Record.InstanceRecords {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instanceMap := map[uint64]*model.Instance{}
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
+		for i, item := range workflow.Record.InstanceRecords {
+			if instance, ok := instanceMap[item.InstanceId]; ok {
+				workflow.Record.InstanceRecords[i].Instance = instance
+			}
+		}
+
 		var exportWorkflowRecord []string
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
 			exportWorkflowRecord = []string{
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
-				utils.AddDelTag(instanceRecord.Instance.DeletedAt, instanceRecord.Instance.Name),
+				utils.AddDelTag(nil, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
 				model.WorkflowStatus[workflow.Record.Status],
