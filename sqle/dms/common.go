@@ -138,7 +138,7 @@ func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.L
 		return nil, err
 	}
 	if total == 0 || len(ret) == 0 {
-		return nil, fmt.Errorf("namespace %s not found", projectName)
+		return nil, fmt.Errorf("project %s not found", projectName)
 	}
 
 	return ret[0], nil
@@ -146,14 +146,14 @@ func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.L
 
 func GetProjects() ([]string, error) {
 	projectIds := make([]string, 0)
-	namespaces, _, err := dmsobject.ListProjects(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
+	projects, _, err := dmsobject.ListProjects(context.Background(), controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:  9999,
 		PageIndex: 1,
 	})
 	if err != nil {
 		return nil, err
 	}
-	for _, namespce := range namespaces {
+	for _, namespce := range projects {
 		projectIds = append(projectIds, namespce.ProjectUid)
 	}
 	return projectIds, nil
