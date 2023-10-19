@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	dmsobject.InitOperateHandlers([]dmsobject.OperationHanler{AfterDeleteNamespace{}, BeforeDeleteNamespace{}, BeforeArvhiveNamespace{}, AfterCreateNamespace{}})
+	dmsobject.InitOperateHandlers([]dmsobject.OperationHanler{AfterDeleteProject{}, BeforeDeleteProject{}, BeforeArvhiveProject{}, AfterCreateProject{}})
 }
 
 // 内部接口
@@ -31,13 +31,13 @@ func OperateDataResourceHandle(c echo.Context) error {
 	return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Message: "OK"}})
 }
 
-type AfterDeleteNamespace struct {
+type AfterDeleteProject struct {
 }
 
-type BeforeArvhiveNamespace struct {
+type BeforeArvhiveProject struct {
 }
 
-type BeforeDeleteNamespace struct {
+type BeforeDeleteProject struct {
 }
-type AfterCreateNamespace struct {
+type AfterCreateProject struct {
 }
