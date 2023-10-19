@@ -318,7 +318,7 @@ func (s *Storage) GetRule(name, dbType string) (*Rule, bool, error) {
 
 func (s *Storage) GetAllRules() ([]*Rule, error) {
 	rules := []*Rule{}
-	err := s.db.Preload("RuleKnowledge").Find(&rules).Error
+	err := s.db.Preload("Knowledge").Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
