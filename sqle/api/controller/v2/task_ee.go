@@ -10,7 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -27,22 +26,10 @@ func getTaskAnalysisData(c echo.Context) error {
 	sqlNumber := c.Param("number")
 
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskID)
+	task, err := v1.GetTaskById(c.Request().Context(), taskID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
-
-	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
-	task.Instance = instance
 
 	if err := v1.CheckCurrentUserCanViewTask(c, task); err != nil {
 		return controller.JSONBaseErrorReq(c, err)

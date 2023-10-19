@@ -15,7 +15,6 @@ import (
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -106,21 +105,10 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string,
 	}
 
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return "", "", fmt.Errorf("get task failed: %v", err)
 	}
-	if !exist {
-		return "", "", errors.NewTaskNoExistOrNoAccessErr()
-	}
-	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		return "", "", fmt.Errorf("get instance failed: %v", err)
-	}
-	if !exist {
-		return "", "", errors.NewTaskNoExistOrNoAccessErr()
-	}
-	task.Instance = instance
 
 	req := new(UpdateWorkflowScheduleReqV2)
 	err = marshalRequestBody(c, req)
@@ -182,21 +170,10 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, 
 	}
 
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := v1.GetTaskById(context.Background(), taskId)
 	if err != nil {
 		return "", "", fmt.Errorf("get task failed: %v", err)
 	}
-	if !exist {
-		return "", "", errors.NewTaskNoExistOrNoAccessErr()
-	}
-	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		return "", "", fmt.Errorf("get instance failed: %v", err)
-	}
-	if !exist {
-		return "", "", errors.NewTaskNoExistOrNoAccessErr()
-	}
-	task.Instance = instance
 
 	return projectName, fmt.Sprintf("上线工单的单个数据源, 工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
 }
