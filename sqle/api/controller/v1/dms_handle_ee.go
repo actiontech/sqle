@@ -11,10 +11,10 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-func (h AfterCreateNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterCreateProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	return nil
 }
-func (h BeforeDeleteNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
 	if err != nil {
@@ -26,12 +26,12 @@ func (h BeforeDeleteNamespace) Hanle(ctx context.Context, currentUserId string, 
 	return nil
 }
 
-func (h AfterDeleteNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	return s.RemoveProjectRelateData(model.ProjectUID(dataResourceId))
 }
 
-func (h BeforeArvhiveNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeArvhiveProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
 	if err != nil {
