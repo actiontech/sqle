@@ -9,6 +9,19 @@ definitions:
         example: ok
         type: string
     type: object
+  model.AuditResult:
+    properties:
+      level:
+        type: string
+      message:
+        type: string
+      rule_name:
+        type: string
+    type: object
+  model.AuditResults:
+    items:
+      $ref: '#/definitions/model.AuditResult'
+    type: array
   v1.AuditPlanCount:
     properties:
       audit_plan_count:
@@ -4437,9 +4450,8 @@ definitions:
       audit_level:
         type: string
       audit_result:
-        items:
-          $ref: '#/definitions/v2.AuditResult'
-        type: array
+        $ref: '#/definitions/model.AuditResults'
+        type: object
       exec_sql:
         type: string
       number:
@@ -4545,6 +4557,37 @@ definitions:
   v2.CreateWorkflowResV2Data:
     properties:
       workflow_id:
+        type: string
+    type: object
+  v2.DirectAuditFileReqV2:
+    properties:
+      file_contents:
+        description: |-
+          调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
+          每个数组元素是一个文件内容
+        example:
+        - select * from t1; select * from t2;
+        items:
+          type: string
+        type: array
+      instance_name:
+        example: instance1
+        type: string
+      instance_type:
+        example: MySQL
+        type: string
+      project_name:
+        example: project1
+        type: string
+      schema_name:
+        example: schema1
+        type: string
+      sql_type:
+        enum:
+        - sql
+        - mybatis
+        - ""
+        example: sql
         type: string
     type: object
   v2.DirectAuditReqV2:
@@ -10579,6 +10622,27 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
+  /v2/audit_files:
+    post:
+      description: Direct audit sql from SQL files and MyBatis files
+      operationId: directAuditFilesV2
+      parameters:
+      - description: files that should be audited
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v2.DirectAuditFileReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.DirectAuditResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件
+      tags:
+      - sql_audit
   /v2/configurations/drivers:
     get:
       description: get drivers
