@@ -7,15 +7,15 @@ import (
 	"context"
 )
 
-func (h BeforeArvhiveNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeArvhiveProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	return nil
 }
-func (h AfterDeleteNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	return nil
 }
-func (h BeforeDeleteNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	return nil
 }
-func (h AfterCreateNamespace) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterCreateProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	return nil
 }
