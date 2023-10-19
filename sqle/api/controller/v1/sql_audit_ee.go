@@ -24,8 +24,7 @@ func directGetSQLAnalysis(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	s := model.GetStorage()
-	inst, exist, err := s.GetInstanceByNameAndProjectID(req.InstanceName, projectUid)
+	inst, exist, err := dms.GetInstanceInProjectByName(context.Background(), projectUid, req.InstanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

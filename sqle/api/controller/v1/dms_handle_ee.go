@@ -12,7 +12,9 @@ import (
 )
 
 func (h AfterCreateProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
-	return nil
+	s := model.GetStorage()
+	td := model.DefaultWorkflowTemplate(dataResourceId)
+	return s.SaveWorkflowTemplate(td)
 }
 func (h BeforeDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()

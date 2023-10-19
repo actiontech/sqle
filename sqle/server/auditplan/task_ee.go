@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -54,7 +55,7 @@ func (at *OBMySQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+	inst, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -135,7 +136,7 @@ func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -407,7 +408,7 @@ func (at *SlowLogTask) collectorDo() {
 		return
 	}
 
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		return
 	}
@@ -654,7 +655,7 @@ func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
 	task := &model.Task{DBType: at.ap.DBType}
 
 	if at.ap.InstanceName != "" {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -728,8 +729,7 @@ func (at *DB2TopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.
-		GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+	inst, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -868,7 +868,7 @@ func (at *DB2SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
 		DBType: at.ap.DBType,
 	}
 	if at.ap.InstanceName != "" {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -904,7 +904,7 @@ func (at *DB2SchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, string(at.ap.ProjectId))
+	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		return
 	}

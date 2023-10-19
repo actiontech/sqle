@@ -113,6 +113,14 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string,
 	if !exist {
 		return "", "", errors.NewTaskNoExistOrNoAccessErr()
 	}
+	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
+	if err != nil {
+		return "", "", fmt.Errorf("get instance failed: %v", err)
+	}
+	if !exist {
+		return "", "", errors.NewTaskNoExistOrNoAccessErr()
+	}
+	task.Instance = instance
 
 	req := new(UpdateWorkflowScheduleReqV2)
 	err = marshalRequestBody(c, req)
@@ -181,6 +189,14 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, string, 
 	if !exist {
 		return "", "", errors.NewTaskNoExistOrNoAccessErr()
 	}
+	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
+	if err != nil {
+		return "", "", fmt.Errorf("get instance failed: %v", err)
+	}
+	if !exist {
+		return "", "", errors.NewTaskNoExistOrNoAccessErr()
+	}
+	task.Instance = instance
 
 	return projectName, fmt.Sprintf("上线工单的单个数据源, 工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
 }
