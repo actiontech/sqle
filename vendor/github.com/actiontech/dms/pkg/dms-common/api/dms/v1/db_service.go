@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"fmt"
-
 	base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 )
 
@@ -68,7 +66,6 @@ type ListDBServiceReq struct {
 	FilterByPort string `query:"filter_by_port" json:"filter_by_port"`
 	// the db service db type
 	// in:query
-	// Multiple of ["MySQL","OceanBaseMySQL"], default is [""]
 	FilterByDBType string `query:"filter_by_db_type" json:"filter_by_db_type"`
 	// project id
 	// in:path
@@ -92,34 +89,14 @@ type Time struct {
 	Minute int `json:"minute"`
 }
 
-// swagger:enum DBType
-type DBType string
-
-const (
-	DBTypeMySQL          DBType = "MySQL"
-	DBTypeOceanBaseMySQL DBType = "OceanBaseMySQL"
-)
-
-func ParseDBType(s string) (DBType, error) {
-	switch s {
-	case string(DBTypeMySQL):
-		return DBTypeMySQL, nil
-	case string(DBTypeOceanBaseMySQL):
-		return DBTypeOceanBaseMySQL, nil
-	default:
-		return "", fmt.Errorf("invalid db type: %s", s)
-	}
-}
-
 // A dms db Service
 type ListDBService struct {
 	// db service uid
 	DBServiceUid string `json:"uid"`
 	// db service name
 	Name string `json:"name"`
-	// Multiple of ["MySQL"], default is ["MySQL"]
 	// db service DB type
-	DBType DBType `json:"db_type"`
+	DBType string `json:"db_type"`
 	// db service host
 	Host string `json:"host"`
 	// db service port

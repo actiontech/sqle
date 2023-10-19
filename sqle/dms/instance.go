@@ -260,6 +260,13 @@ func GetInstanceNamesInProject(ctx context.Context, projectUid string) ([]string
 	return ret, nil
 }
 
+func GetInstancesById(ctx context.Context, instanceId uint64) (*model.Instance, bool, error) {
+	return getInstance(ctx, dmsV1.ListDBServiceReq{
+		PageSize:    1,
+		FilterByUID: strconv.FormatUint(instanceId, 10),
+	})
+}
+
 func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Instance, error) {
 	if len(instanceIds) == 0 {
 		return nil, gorm.ErrRecordNotFound
@@ -278,6 +285,27 @@ func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Inst
 
 		if exist {
 			ret = append(ret, instance)
+		}
+	}
+
+	return ret, nil
+}
+
+func GetInstanceIdNameMapByIds(ctx context.Context, instanceIds []uint64) (map[uint64]string, error) {
+	// todo: remove duplicate instance id
+	ret := make(map[uint64]string, 0)
+	for _, instanceId := range instanceIds {
+		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+			PageSize:    1,
+			FilterByUID: strconv.FormatUint(instanceId, 10),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		if exist {
+			ret[instance.ID] = instance.Name
 		}
 	}
 
@@ -308,6 +336,35 @@ func GetInstancesInProjectByIds(ctx context.Context, projectUid string, instance
 		if exist {
 			ret = append(ret, instance)
 		}
+	}
+
+	return ret, nil
+}
+
+type InstanceTypeCount struct {
+	DBType string `json:"db_type"`
+	Count  int64  `json:"count"`
+}
+
+func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error) {
+	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var typeCountMap = map[string]int64{}
+
+	for _, instance := range instances {
+		typeCountMap[instance.DbType]++
+	}
+
+	ret := make([]InstanceTypeCount, 0, len(typeCountMap))
+	for dbType, count := range typeCountMap {
+		ret = append(ret, InstanceTypeCount{
+			DBType: dbType,
+			Count:  count,
+		})
 	}
 
 	return ret, nil
