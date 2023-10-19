@@ -27,7 +27,7 @@ func ParseIPluginDBType(s string) (IPluginDBType, error) {
 
 type IPluginDBService struct {
 	Name                 string
-	DBType               IPluginDBType
+	DBType               string
 	Host                 string
 	Port                 string
 	User                 string
