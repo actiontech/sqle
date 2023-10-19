@@ -880,11 +880,11 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 		}, {
 			Name: "select mix with where and on condition, does not trigger rule",
 			SQL: `
-				SELECT DISTINCT exist_tb_2.v2, exist_tb_4.v3  
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
 				FROM exist_db.exist_tb_2  
-				JOIN exist_db.exist_tb_4 ON exist_tb_2.v1 = exist_tb_4.v1
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
 				JOIN exist_db.exist_tb_3 t3
-				WHERE exist_tb_4.user_id = t3.v1;
+				WHERE exist_tb_1.user_id = t3.v1;
 			`,
 			ExpectResult: newTestResult().
 				addResult(rulepkg.DMLCheckSelectLimit, 1000),
@@ -892,9 +892,9 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 		{
 			Name: "select with where condition but mismatch, trigger rule",
 			SQL: `
-				SELECT DISTINCT exist_tb_2.v2, exist_tb_4.v3  
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
 				FROM exist_db.exist_tb_2  
-				JOIN exist_db.exist_tb_4 ON exist_tb_2.v1 = exist_tb_4.v1
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
 				JOIN exist_db.exist_tb_3 t3
 				WHERE exist_tb_2.user_id = t3.v1;
 			`,
@@ -905,10 +905,10 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 		{
 			Name: "select mix with where on using condition, does not trigger rule",
 			SQL: `
-				SELECT exist_tb_2.id, exist_tb_2.v2, exist_tb_4.v3  
+				SELECT exist_tb_2.id, exist_tb_2.v2, exist_tb_1.v3  
 				FROM exist_db.exist_tb_2  
-				JOIN exist_db.exist_tb_4 t4 USING(v1)
-				JOIN exist_db.exist_tb_3 t3 ON t4.id = t3.id
+				JOIN exist_db.exist_tb_1 t1 USING(v1)
+				JOIN exist_db.exist_tb_3 t3 ON t1.id = t3.id
 				WHERE exist_tb_2.user_id = t3.v1;
 			`,
 			ExpectResult: newTestResult().
@@ -930,7 +930,7 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 			Name: "update without any join condition, trigger rule",
 			SQL: `
 				UPDATE exist_db.exist_tb_1 t1
-				JOIN exist_db.exist_tb_4 
+				JOIN exist_db.exist_tb_1 
 				SET t1.v1 = 'new_value'  
 				WHERE t1.id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
 			`,
