@@ -421,22 +421,10 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 }
 
 func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(context.Background(), taskId)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskId=%v err=%v", taskId, err)
 	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskId=%v", taskId)
-	}
-	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		return false, fmt.Errorf("get instance by id failed. instanceId=%v err=%v", task.InstanceId, err)
-	}
-	if !exist {
-		return false, fmt.Errorf("instance not exist. instanceId=%v", task.InstanceId)
-	}
-
-	task.Instance = instance
 
 	if task.Instance == nil {
 		return false, fmt.Errorf("task instance is nil. taskId=%v", taskId)
@@ -1211,21 +1199,11 @@ func checkBeforeTasksTermination(c echo.Context, projectId string, workflow *mod
 }
 
 func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskID)
+	task, err := getTaskById(context.Background(), taskID)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
 	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskID=%v", taskID)
-	}
-	instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		return false, fmt.Errorf("get instance by id failed. instanceId=%v err=%v", task.InstanceId, err)
-	}
-	if !exist {
-		return false, fmt.Errorf("instance not exist. instanceId=%v", task.InstanceId)
-	}
-	task.Instance = instance
+
 	if task.Instance == nil {
 		return false, fmt.Errorf("task instance is nil. taskID=%v", taskID)
 	}
