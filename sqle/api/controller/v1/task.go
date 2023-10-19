@@ -242,6 +242,9 @@ func GetTask(c echo.Context) error {
 		Data:    convertTaskToRes(task),
 	})
 }
+func GetTaskById(ctx context.Context, taskId string) (*model.Task, error) {
+	return getTaskById(ctx, taskId)
+}
 
 type GetAuditTaskSQLsReqV1 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
