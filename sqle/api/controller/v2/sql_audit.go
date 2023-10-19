@@ -32,10 +32,10 @@ type AuditResDataV2 struct {
 }
 
 type AuditSQLResV2 struct {
-	Number      uint               `json:"number"`
-	ExecSQL     string             `json:"exec_sql"`
-	AuditResult model.AuditResults `json:"audit_result"`
-	AuditLevel  string             `json:"audit_level"`
+	Number      uint          `json:"number"`
+	ExecSQL     string        `json:"exec_sql"`
+	AuditResult []AuditResult `json:"audit_result"`
+	AuditLevel  string        `json:"audit_level"`
 }
 
 type DirectAuditResV2 struct {
@@ -98,7 +98,7 @@ func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		results[i] = AuditSQLResV2{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: sql.AuditResults,
+			AuditResult: convertAuditResultToAuditResV2(sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
 		}
 
@@ -203,7 +203,7 @@ func convertFileAuditTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		results[i] = AuditSQLResV2{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: sql.AuditResults,
+			AuditResult: convertAuditResultToAuditResV2(sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
 		}
 
@@ -214,4 +214,16 @@ func convertFileAuditTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		PassRate:   task.PassRate,
 		SQLResults: results,
 	}
+}
+
+func convertAuditResultToAuditResV2(auditResults model.AuditResults) []AuditResult {
+	ar := make([]AuditResult, len(auditResults))
+	for i := range auditResults {
+		ar[i] = AuditResult{
+			Level:    auditResults[i].Level,
+			Message:  auditResults[i].Message,
+			RuleName: auditResults[i].RuleName,
+		}
+	}
+	return ar
 }
