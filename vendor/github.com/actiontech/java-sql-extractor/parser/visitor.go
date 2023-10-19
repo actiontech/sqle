@@ -151,7 +151,7 @@ func (v *JavaVisitor) VisitVariableDeclarator(ctx *javaAntlr.VariableDeclaratorC
 	if expr.Content == nil {
 		return nil
 	}
-	variable.Value = expr.Content.Value
+	variable.Value = expr.Content
 	switch v.currentNode.(type) {
 	case *ClassBlock:
 		if v.isStatic {
@@ -304,7 +304,7 @@ func (v *JavaVisitor) VisitExpression(ctx *javaAntlr.ExpressionContext) interfac
 			}
 			varName := expressionList[0].Content.Value
 			if expressionList[1].Content != nil {
-				varValue := expressionList[1].Content.Value
+				varValue := expressionList[1].Content
 
 				newVar := &Variable{Name: varName, Value: varValue}
 				if v.currentClass != nil {
