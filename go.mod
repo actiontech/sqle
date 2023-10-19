@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/java-sql-extractor v0.0.0-20231018101450-d857eee6947f
+	github.com/actiontech/java-sql-extractor v0.0.0-20231019025645-418760361a3b
 	github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751

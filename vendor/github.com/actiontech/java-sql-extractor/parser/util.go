@@ -11,8 +11,12 @@ func getValueFromVariables(variableName string, variables []*Variable) (string, 
 	var ok bool
 	for _, vari := range variables {
 		if vari.Name == variableName {
-			result = vari.Value
-			ok = true
+			if vari.Value.RuleIndex == javaAntlr.JavaParserRULE_identifier {
+				result, ok = getValueFromVariables(vari.Value.Value, variables)
+			} else if vari.Value.RuleIndex == javaAntlr.JavaParserRULE_literal {
+				result = vari.Value.Value
+				ok = true
+			}
 		}
 	}
 	return result, ok
