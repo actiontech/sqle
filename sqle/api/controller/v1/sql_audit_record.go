@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -413,6 +414,20 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 				_, err = sqlBuffer.Write(content)
 				if err != nil {
 					return fmt.Errorf("gather sqls from sql file failed: %v", err)
+				}
+			case strings.HasSuffix(path, ".java"):
+				sqls, err := javaParser.GetSqlFromJavaFile(path)
+				if err != nil {
+					return nil
+				}
+				for _, sql := range sqls {
+					if !strings.HasSuffix(sql, ";") {
+						sql += ";"
+					}
+					_, err = sqlBuffer.WriteString(sql)
+					if err != nil {
+						return fmt.Errorf("gather sqls from java file failed: %v", err)
+					}
 				}
 			}
 		}
