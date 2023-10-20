@@ -683,7 +683,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -890,7 +890,7 @@ func GetInstanceTips(c echo.Context) error {
 	var operationType v1.OpPermissionType
 	switch req.FunctionalModule {
 	case create_audit_plan:
-		operationType = v1.OpPermissionTypeAuditWorkflow
+		operationType = v1.OpPermissionTypeSaveAuditPlan
 	case create_workflow:
 		operationType = v1.OpPermissionTypeCreateWorkflow
 	default:
