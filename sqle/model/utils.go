@@ -249,6 +249,22 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 // 	return nil
 // }
 
+const DefaultProjectUid string = "700300"
+
+func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
+	_, exist, err := s.GetWorkflowTemplateByProjectId(ProjectUID(DefaultProjectUid))
+	if err != nil {
+		return err
+	}
+	if !exist {
+		td := DefaultWorkflowTemplate(DefaultProjectUid)
+		err = s.SaveWorkflowTemplate(td)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)

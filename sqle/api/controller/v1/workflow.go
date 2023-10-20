@@ -79,7 +79,6 @@ func GetWorkflowTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// dms-todo: 不存在时采用默认的模版并临时创建，需要考虑是否在初始化project资源时提前创建
 	if !exist {
 		td = model.DefaultWorkflowTemplate(projectUid)
 		err = s.SaveWorkflowTemplate(td)
