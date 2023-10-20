@@ -706,8 +706,7 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 	for _, col := range columnNames {
 		queryValues = append(queryValues, queryValue(schemaName, stmt.Name.L, col))
 	}
-	query := indexSelectivity(queryValues)
-	result, err := c.e.Db.Query(query)
+	result, err := c.e.Db.Query(indexSelectivity(queryValues))
 	if err != nil {
 		return -1, fmt.Errorf("query max index option for table error: %v", err)
 	}
