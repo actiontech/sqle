@@ -174,6 +174,6 @@ require (
 
 replace (
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
