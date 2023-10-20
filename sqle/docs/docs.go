@@ -8775,6 +8775,40 @@ var doc = `{
                 }
             }
         },
+        "/v2/audit_files": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql from SQL files and MyBatis files",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件",
+                "operationId": "directAuditFilesV2",
+                "parameters": [
+                    {
+                        "description": "files that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditFileReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/configurations/drivers": {
             "get": {
                 "security": [
@@ -9896,6 +9930,26 @@ var doc = `{
                     "type": "string",
                     "example": "ok"
                 }
+            }
+        },
+        "model.AuditResult": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AuditResults": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/model.AuditResult"
             }
         },
         "v1.AuditPlanCount": {
@@ -16400,10 +16454,8 @@ var doc = `{
                     "type": "string"
                 },
                 "audit_result": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.AuditResult"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/model.AuditResults"
                 },
                 "exec_sql": {
                     "type": "string"
@@ -16561,6 +16613,46 @@ var doc = `{
             "properties": {
                 "workflow_id": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.DirectAuditFileReqV2": {
+            "type": "object",
+            "properties": {
+                "file_contents": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现\n每个数组元素是一个文件内容",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "select * from t1; select * from t2;"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
+                "instance_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "project1"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
                 }
             }
         },
