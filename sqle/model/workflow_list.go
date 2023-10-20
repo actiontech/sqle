@@ -77,7 +77,7 @@ OR IF(wr.status = 'wait_for_execution'
 				, '')
 
 {{- if .viewable_instance_ids }} 
-OR inst.id IN ( {{ .viewable_instance_ids }})
+OR tasks.instance_id IN ( {{ .viewable_instance_ids }})
 {{- end }}
 
 )
