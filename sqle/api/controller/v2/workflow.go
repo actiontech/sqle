@@ -1075,7 +1075,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	template, exist, err := s.GetWorkflowTemplateById(tasks[0].Instance.WorkflowTemplateId)
+	template, exist, err := s.GetWorkflowTemplateByProjectId(workflow.ProjectId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
