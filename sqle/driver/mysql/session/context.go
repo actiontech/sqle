@@ -664,6 +664,17 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 	return collation, nil
 }
 
+func queryValue(schema, table, index string) string {
+	return fmt.Sprintf("('%s', '%s', '%s')", schema, table, index)
+}
+
+func indexSelectivity(queryValues []string) string {
+	return fmt.Sprintf(
+		`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
+		strings.Join(queryValues, ","),
+	)
+}
+
 // GetMaxIndexOptionForTable get max index option column of table.
 func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (float64, error) {
 	ti, exist := c.GetTableInfo(stmt)
@@ -690,12 +701,13 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 		return -1, nil
 	}
 
-	sqls := make([]string, 0, len(columnNames))
+	queryValues := make([]string, 0, len(columnNames))
+	schemaName := c.GetSchemaName(stmt)
 	for _, col := range columnNames {
-		sqls = append(sqls, fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", col, col))
+		queryValues = append(queryValues, queryValue(schemaName, stmt.Name.L, col))
 	}
-
-	result, err := c.e.Db.Query(fmt.Sprintf("SELECT %v FROM %v", strings.Join(sqls, ","), stmt.Name))
+	query := indexSelectivity(queryValues)
+	result, err := c.e.Db.Query(query)
 	if err != nil {
 		return -1, fmt.Errorf("query max index option for table error: %v", err)
 	}
