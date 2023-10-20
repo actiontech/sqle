@@ -11,7 +11,6 @@ import (
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/jinzhu/gorm"
 )
 
 func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Instance, error) {
@@ -269,7 +268,7 @@ func GetInstancesById(ctx context.Context, instanceId uint64) (*model.Instance, 
 
 func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Instance, error) {
 	if len(instanceIds) == 0 {
-		return nil, gorm.ErrRecordNotFound
+		return nil, nil
 	}
 
 	ret := make([]*model.Instance, 0)
