@@ -512,7 +512,7 @@ github.com/pingcap/errors
 # github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4 => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 ## explicit; go 1.13
 github.com/pingcap/log
-# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
+# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 ## explicit; go 1.13
 github.com/pingcap/parser
 github.com/pingcap/parser/ast
@@ -887,5 +887,5 @@ vitess.io/vitess/go/vt/sysvars
 vitess.io/vitess/go/vt/vterrors
 vitess.io/vitess/go/vt/vtgate/evalengine
 # github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-# github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
+# github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0
