@@ -281,7 +281,7 @@ func CreateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template does not exist")))
 		}
 	}
-	ruleTemplateName, err := autoSelectRuleTemplate(req.RuleTemplateName, req.InstanceName, req.InstanceType, projectUid)
+	ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), req.RuleTemplateName, req.InstanceName, req.InstanceType, projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -326,7 +326,7 @@ func CreateAuditPlan(c echo.Context) error {
 
 // customRuleTemplateName如果为空, 将返回instanceName绑定的规则模板, 如果customRuleTemplateName,和instanceName都为空, 将返回dbType对应默认模板, dbType不能为空, 函数不做参数校验
 // 规则模板选择规则: 指定规则模板 -- > 数据源绑定的规则模板 -- > 数据库类型默认模板
-func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, dbType string, projectId string) (ruleTemplateName string, err error) {
+func autoSelectRuleTemplate(ctx context.Context, customRuleTemplateName string, instanceName string, dbType string, projectId string) (ruleTemplateName string, err error) {
 	s := model.GetStorage()
 
 	if customRuleTemplateName != "" {
@@ -334,13 +334,14 @@ func autoSelectRuleTemplate(customRuleTemplateName string, instanceName string, 
 	}
 
 	if instanceName != "" {
-		ruleTemplate, exist, err := s.GetRuleTemplatesByInstanceNameAndProjectId(instanceName, projectId)
+		instance, exist, err := dms.GetInstanceInProjectByName(ctx, projectId, instanceName)
 		if err != nil {
 			return "", err
 		}
 		if exist {
-			return ruleTemplate.Name, nil
+			return instance.RuleTemplateName, nil
 		}
+
 	}
 
 	return s.GetDefaultRuleTemplateName(dbType), nil
