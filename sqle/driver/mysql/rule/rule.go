@@ -3982,7 +3982,7 @@ func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redun
 		if ind.ColumnString() == lastIndex.ColumnString() &&
 			(len(repeat) == 0 || repeat[len(repeat)-1] != ind.String()) {
 			repeat = append(repeat, ind.String())
-		} else if strings.HasPrefix(lastNormalIndex.ColumnString(), ind.ColumnString()) {
+		} else if isExistRedundancyIndex(lastIndex, ind) {
 			redundancy[ind.String()] = lastNormalIndex.String()
 		} else {
 			lastNormalIndex = ind
@@ -3991,6 +3991,10 @@ func checkRedundantIndex(indexs []index) (repeat []string /*column name*/, redun
 	}
 
 	return
+}
+
+func isExistRedundancyIndex(lastIndex index, ind index) bool {
+	return utils.IsPrefixSubStrArray(lastIndex.Column, ind.Column)
 }
 
 func checkAlterTableRedundantIndex(newIndexs, tableIndexs []index) (repeat []string /*column name*/, redundancy map[string] /* redundancy index's column name or index name*/ string /*source column name or index name*/) {
