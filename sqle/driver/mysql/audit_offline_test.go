@@ -2468,6 +2468,9 @@ func TestDMLCheckJoinHasOn(t *testing.T) {
 			AND t3.id = 1`,
 	}
 	caseWithoutResult := map[string] /*case name*/ string{
+		"not join": `
+			SELECT t1.id,t1.name FROM t1
+		`,
 		"on condition": `
 			SELECT * FROM t1
 			JOIN t2 ON t2.a = t1.a

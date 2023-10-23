@@ -890,7 +890,7 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 				addResult(rulepkg.DMLCheckSelectLimit, 1000),
 		},
 		{
-			Name: "select with where condition but mismatch, trigger rule",
+			Name: "select with where condition match another table, trigger rule",
 			SQL: `
 				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
 				FROM exist_db.exist_tb_2  
@@ -899,7 +899,6 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 				WHERE exist_tb_2.user_id = t3.v1;
 			`,
 			ExpectResult: newTestResult().
-				addResult(rulepkg.DMLCheckHasJoinCondition).
 				addResult(rulepkg.DMLCheckSelectLimit, 1000),
 		},
 		{
