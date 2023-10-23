@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/dms"
@@ -92,7 +93,8 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					nextStep := workflow.NextStep()
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, nil /* TODO workflow.CurrentStep().Assignees*/)
+
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
 						entry.Errorf("get user by user id error: %v", err)
 						continue
@@ -156,7 +158,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 					userId := *approval.OperationRecords[1].UserId
-					user, err := getUserByUserId(d, userId, nil /*TODO workflow.CurrentStep().Assignees*/)
+					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
 						entry.Errorf("get user by user id error: %v", err)
 						continue
@@ -180,15 +182,19 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 	}
 }
 
-func getUserByUserId(d *dingding.DingTalk, userId string, assignees []*model.User) (*model.User, error) {
+func getUserByUserId(d *dingding.DingTalk, userId string, assigneesUsers string) (*model.User, error) {
+	userMaps, err := dms.GetMapUsers(context.TODO(), strings.Split(assigneesUsers, ","), dms.GetDMSServerAddress())
+	if err != nil {
+		return nil, err
+	}
 	phone, err := d.GetMobileByUserID(userId)
 	if err != nil {
 		return nil, fmt.Errorf("get user mobile error: %v", err)
 	}
 
-	for _, assignee := range assignees {
-		if assignee.Phone == phone {
-			return assignee, nil
+	for _, assigneeUser := range userMaps {
+		if assigneeUser.Phone == phone {
+			return assigneeUser, nil
 		}
 	}
 
