@@ -1635,6 +1635,20 @@ INDEX idx_1 (v1,id)
 		newTestResult(),
 	)
 
+	// 相关issue:https://github.com/actiontech/sqle/issues/1936
+	runSingleRuleInspectCase(rule, t, "create_table: String prefix error", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+id_num varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id_num,v2)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
 	runSingleRuleInspectCase(rule, t, "create_table: has repeat index", DefaultMysqlInspect(),
 		`
 CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
