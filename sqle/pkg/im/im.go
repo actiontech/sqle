@@ -107,7 +107,7 @@ func CreateApprove(id string) {
 		return
 	}
 
-	workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, "")
+	workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
 	if err != nil {
 		newLog.Errorf("get user error: %v", err)
 		return
@@ -169,25 +169,14 @@ func CreateApprove(id string) {
 			}
 
 			sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
-			// dms-todo: 从 dms 获取 project name
-			// workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.WorkflowId)
-			// if sqleUrl == "" {
-			// 	newLog.Errorf("sqle url is empty")
-			// 	workflowUrl = ""
-			// }
 
-			// if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
-			// 	newLog.Errorf("create dingtalk approval instance error: %v", err)
-			// 	continue
-			// }
-
-			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, "todo", workflow.WorkflowId)
+			workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
 			if sqleUrl == "" {
 				newLog.Errorf("sqle url is empty")
 				workflowUrl = ""
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, "todo", workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
