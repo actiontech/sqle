@@ -2614,22 +2614,8 @@ func checkHasJoinCondition(input *RuleHandlerInput) error {
 		// 不检查JOIN不会存在的语句
 		return nil
 	}
-
-	if doesNotJoinTables(joinNode) {
-		// 不检查没有JOIN两表或多表的语句
-		return nil
-	}
-	// uncheckedNodes用于存储在From语句块中，没有显式声明连接键的JOIN两表对应的JOIN节点
-	var uncheckedNodes []ast.Join
-	checkJoinConditionInJoinNode(joinNode, &uncheckedNodes)
-	if len(uncheckedNodes) == 0 {
-		// 若JOIN语句中，需要连接的表，都有对应的ON语句或者USING语句，则uncheckedNodes为空，不需要进一步检查
-		return nil
-	}
-	checkJoinConditionInWhereStmt(whereStmt, &uncheckedNodes)
-	if len(uncheckedNodes) > 0 {
-		// 若JOIN语句中，存在需要显式声明连接键，但未在From语句中显式声明连接键的两表
-		// 在检查过WHERE语句中是否有对应连接键时后，仍无，则添加规则警告
+	joinTables, hasCondition := checkJoinConditionInJoinNode(whereStmt, joinNode)
+	if joinTables && !hasCondition {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
@@ -2639,43 +2625,47 @@ func doesNotJoinTables(tableRefs *ast.Join) bool {
 	return tableRefs.Left == nil || tableRefs.Right == nil
 }
 
-func checkJoinConditionInJoinNode(joinNode *ast.Join, uncheckedNodes *[]ast.Join) {
+func checkJoinConditionInJoinNode(whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
 	if joinNode == nil {
-		return
+		return false, false
 	}
-
 	if doesNotJoinTables(joinNode) {
 		// 非JOIN两表的JOIN节点 一般是叶子节点 不检查
-		return
+		return false, false
 	}
-	// 深度遍历子树类型为ast.Join的节点
+
+	// 深度遍历左子树类型为ast.Join的节点 一旦有节点是JOIN两表的节点，并且没有连接条件，则返回
 	if l, ok := joinNode.Left.(*ast.Join); ok {
-		checkJoinConditionInJoinNode(l, uncheckedNodes)
+		joinTables, hasCondition = checkJoinConditionInJoinNode(whereStmt, l)
+		if joinTables && !hasCondition {
+			return joinTables, hasCondition
+		}
 	}
-	if r, ok := joinNode.Right.(*ast.Join); ok {
-		checkJoinConditionInJoinNode(r, uncheckedNodes)
-	}
+
 	// 判断该节点是否有显式声明连接条件
 	if isJoinConditionInOnClause(joinNode) {
-		return
+		return true, true
 	}
 	if isJoinConditionInUsingClause(joinNode) {
-		return
+		return true, true
 	}
-	*uncheckedNodes = append(*uncheckedNodes, *joinNode)
+	if isJoinConditionInWhereStmt(whereStmt, joinNode) {
+		return true, true
+	}
+	return true, false
 }
 
-func isJoinConditionInOnClause(joinCondition *ast.Join) bool {
-	return joinCondition.On != nil
+func isJoinConditionInOnClause(joinNode *ast.Join) bool {
+	return joinNode.On != nil
 }
 
-func isJoinConditionInUsingClause(joinCondition *ast.Join) bool {
-	return len(joinCondition.Using) > 0
+func isJoinConditionInUsingClause(joinNode *ast.Join) bool {
+	return len(joinNode.Using) > 0
 }
 
-func checkJoinConditionInWhereStmt(stmt ast.ExprNode, uncheckedNodes *[]ast.Join) {
+func isJoinConditionInWhereStmt(stmt ast.ExprNode, node *ast.Join) bool {
 	if stmt == nil {
-		return
+		return false
 	}
 	equalConditionVisitor := util.EqualConditionVisitor{}
 	stmt.Accept(&equalConditionVisitor)
@@ -2686,49 +2676,57 @@ func checkJoinConditionInWhereStmt(stmt ast.ExprNode, uncheckedNodes *[]ast.Join
 			// 表名为空或者表名相同都不属于两表连接条件
 			continue
 		}
-		for i, node := range *uncheckedNodes {
-			if isTableInJoinNode(tableNameL, node) && isTableInJoinNode(tableNameR, node) {
-				// 若两表都在JOIN节点中，则说明WHERE语句中包含了JOIN两表的连接条件，移除该节点
-				*uncheckedNodes = removeNode(*uncheckedNodes, i)
-				break
-			}
+		// 右子树的tableSource在where的等值条件中出现，等值条件的另一个表名是否在左子树中的tableSource出现
+		if isTableMatcheNode(node.Right, tableNameL) && isTableInNode(node.Left, tableNameR) {
+			return true
+		}
+		if isTableMatcheNode(node.Right, tableNameR) && isTableInNode(node.Left, tableNameL) {
+			return true
 		}
 	}
+	return false
 }
 
-func getTableNameFromBinaryOperation(stmt *ast.BinaryOperationExpr) (tableNameL, tableNameR string) {
-	switch t := stmt.L.(type) {
+func getTableNameFromBinaryOperation(expr *ast.BinaryOperationExpr) (tableNameL, tableNameR string) {
+	if expr == nil {
+		return
+	}
+	switch t := expr.L.(type) {
 	case *ast.ColumnNameExpr:
 		tableNameL = t.Name.Table.L
 	}
-	switch t := stmt.R.(type) {
+	switch t := expr.R.(type) {
 	case *ast.ColumnNameExpr:
 		tableNameR = t.Name.Table.L
 	}
 	return
 }
 
-func removeNode(nodes []ast.Join, index int) []ast.Join {
-	return append(nodes[:index], nodes[index+1:]...)
+func isTableMatcheNode(node ast.ResultSetNode, tableName string) bool {
+	if node == nil {
+		return false
+	}
+	switch t := node.(type) {
+	case *ast.TableSource:
+		return isNameInTableSource(tableName, t)
+	}
+	return false
 }
 
-func isTableInJoinNode(tableName string, node ast.Join) bool {
-	return isTableInNode(tableName, node.Right) || isTableInNode(tableName, node.Left)
-}
-
-// 只检查该节点为根节点的树中，最上面一层类型为TableSource的节点的表名和表别名
-func isTableInNode(tableName string, node ast.ResultSetNode) bool {
+// 迭代检查表名称是否与JOIN节点中的tableSource的表名或表别名匹配
+func isTableInNode(node ast.ResultSetNode, tableName string) bool {
+	if node == nil {
+		return false
+	}
 	switch t := node.(type) {
 	case *ast.TableSource:
 		return isNameInTableSource(tableName, t)
 	case *ast.Join:
-		switch tRight := t.Right.(type) {
-		case *ast.TableSource:
-			return isNameInTableSource(tableName, tRight)
+		if isTableInNode(t.Right, tableName) {
+			return true
 		}
-		switch tLeft := t.Left.(type) {
-		case *ast.TableSource:
-			return isNameInTableSource(tableName, tLeft)
+		if isTableInNode(t.Left, tableName) {
+			return true
 		}
 	}
 	return false
