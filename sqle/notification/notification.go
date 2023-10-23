@@ -141,7 +141,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 	if w.config.SQLEUrl != nil {
 		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
 			strings.TrimRight(*w.config.SQLEUrl, "/"),
-			// w.workflow.Project.Name,
+			w.workflow.ProjectId,
 			w.workflow.WorkflowId,
 		))
 	} else {
@@ -366,10 +366,10 @@ func (a *AuditPlanNotification) NotificationBody() string {
 		a.report.AuditLevel,
 	))
 
-	if a.config.SQLEUrl != nil && a.config.ProjectName != nil {
+	if a.config.SQLEUrl != nil && a.auditPlan.ProjectId != "" {
 		builder.WriteString(fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
 			strings.TrimRight(*a.config.SQLEUrl, "/"),
-			*a.config.ProjectName,
+			a.auditPlan.ProjectId,
 			a.auditPlan.Name,
 			a.report.ID,
 		))
