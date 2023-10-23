@@ -900,7 +900,14 @@ func GetInstanceTips(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	s := model.GetStorage()
+	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("current project doesn't has workflow template"))
+	}
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 	for _, inst := range instances {
 		instanceTipRes := InstanceTipResV1{
@@ -908,7 +915,7 @@ func GetInstanceTips(c echo.Context) error {
 			Type:               inst.DbType,
 			Host:               inst.Host,
 			Port:               inst.Port,
-			WorkflowTemplateId: uint32(inst.WorkflowTemplateId),
+			WorkflowTemplateId: uint32(template.ID),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}
