@@ -143,9 +143,9 @@ docker_rpm: docker_install
 
 override SQLE_DOCKER_IMAGE ?= actiontech/$(PROJECT_NAME)-$(EDITION):$(PROJECT_VERSION)
 
-docker_image: fill_ui_dir docker_rpm
+docker_image:
 	cp $(shell pwd)/$(RPM_NAME) $(shell pwd)/sqle.rpm
-	$(DOCKER) build -t $(SQLE_DOCKER_IMAGE) -f ./docker-images/sqle/Dockerfile .
+	$(DOCKER) build  -t $(SQLE_DOCKER_IMAGE) -f ./docker-images/sqle/Dockerfile .
 
 docker_start:
 	cd ./docker-images/sqle && SQLE_IMAGE=$(SQLE_DOCKER_IMAGE) docker-compose up -d
