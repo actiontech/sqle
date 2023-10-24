@@ -4006,34 +4006,40 @@ func TestCheckIndexOption(t *testing.T) {
 	assert.NoError(t, err)
 
 	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).AddRow("100.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_3 add primary key (v1);", newTestResult())
 
 	inspect2 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).AddRow("100.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect2, "alter table exist_tb_3 add unique(v1);", newTestResult())
 
 	inspect3 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v2'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v2"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v2'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).AddRow("30.0000", "v2"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect3, "alter table exist_tb_3 add index idx_c2(v2);",
 		newTestResult().addResult(rulepkg.DDLCheckIndexOption, "v2", 70))
 
 	inspect4 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v3'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v3"}).
-			AddRow("70.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v3'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).AddRow("70.0000", "v3"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect4, "alter table exist_tb_3 add fulltext(v3);", newTestResult())
 
 	inspect5 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'),('exist_db', 'exist_tb_3', 'v2'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1", "v2"}).
-			AddRow("100.0000", "30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_3', 'v1'),('exist_db', 'exist_tb_3', 'v2'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).
+				AddRow("30.0000", "v2").AddRow("100.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect5, "alter table exist_tb_3 add index idx_c1_c2(v1,v2);", newTestResult())
 
 }
@@ -5947,9 +5953,10 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).AddRow("50.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect2 := NewMockInspect(e)
@@ -5957,9 +5964,9 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1").AddRow("primary", "id"))
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).
+			AddRow("50.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect3 := NewMockInspect(e)
@@ -5967,9 +5974,9 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_6 where v1='10'", newTestResult())
 
 	inspect4 := NewMockInspect(e)
@@ -5977,14 +5984,14 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).
+			AddRow("80.0000", "v1"))
 	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "COLUMN_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
