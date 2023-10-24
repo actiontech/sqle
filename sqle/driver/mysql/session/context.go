@@ -676,6 +676,7 @@ type columnSelectivity struct {
 }
 
 func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity, error) {
+	// 首先使用系统视图的统计信息计算列的选择性
 	values := make([]string, 0, len(columns))
 	for _, col := range columns {
 		values = append(
@@ -685,7 +686,7 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 	}
 	results, err := c.e.Db.Query(
 		fmt.Sprintf(
-			`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
+			`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
 			strings.Join(values, ","),
 		),
 	)
@@ -696,22 +697,69 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 	var selectivity float64
 	var indexSelectivity, columnName sql.NullString
 	var selectivityOfColumns = make([]columnSelectivity, 0, len(results))
+	var hasSelectivity = make(map[string]bool)
 	for _, resultMap := range results {
 		indexSelectivity = resultMap["INDEX_SELECTIVITY"]
 		columnName = resultMap["COLUMN_NAME"]
 		if indexSelectivity.String == "" {
-			selectivity = 0
+			// 跳过选择性为空的列
+			continue
 		} else {
 			selectivity, err = strconv.ParseFloat(indexSelectivity.String, 64)
 			if err != nil {
 				return nil, err
 			}
 		}
-
+		hasSelectivity[columnName.String] = true
 		selectivityOfColumns = append(selectivityOfColumns, columnSelectivity{
 			columnName:  columnName.String,
 			selectivity: selectivity},
 		)
+	}
+
+	if len(selectivityOfColumns) == len(columns) {
+		return selectivityOfColumns, nil
+	}
+	// 若存在列没有选择性 则通过采样统计的计算列的选择性
+	sqls := []string{}
+	selectColumns := []string{}
+	for _, v := range columns {
+		if _, ok := hasSelectivity[v.ColumnName]; !ok {
+			sqls = append(
+				sqls,
+				fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", v.ColumnName, v.ColumnName),
+			)
+			selectColumns = append(selectColumns, v.ColumnName)
+		}
+	}
+
+	results1, err := c.e.Db.Query(
+		fmt.Sprintf(
+			"SELECT %v FROM (SELECT %v FROM employees LIMIT 50000) t",
+			strings.Join(sqls, ","),
+			strings.Join(selectColumns, ","),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+	for _, resultMap := range results1 {
+		for k, v := range resultMap {
+			if v.String == "" {
+				selectivity = -1
+			} else {
+				selectivity, err = strconv.ParseFloat(v.String, 64)
+				if err != nil {
+					return nil, err
+				}
+			}
+			selectivityOfColumns = append(selectivityOfColumns,
+				columnSelectivity{
+					columnName:  k,
+					selectivity: selectivity,
+				},
+			)
+		}
 	}
 	return selectivityOfColumns, nil
 }
