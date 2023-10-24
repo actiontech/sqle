@@ -58,7 +58,7 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
 
   提供 SQL 全流程的管控视角，帮助您统一管理SQL质量。您可以追踪问题SQL的解决进度，并提供快捷的优化功能，以提升 SQL 的效率。
 
-查看更多[社区版与企业版对比](http://localhost:3000/sqle-docs/docs/support/compare)。
+查看更多[社区版与企业版对比](https://actiontech.github.io/sqle-docs/)。
 
 # 💡 使用场景
 
