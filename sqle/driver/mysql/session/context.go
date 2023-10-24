@@ -1,6 +1,7 @@
 package session
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -664,19 +665,57 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 	return collation, nil
 }
 
-func queryValue(schema, table, index string) string {
-	return fmt.Sprintf("('%s', '%s', '%s')", schema, table, index)
+type Column struct {
+	SchemaName string
+	TableName  string
+	ColumnName string
+}
+type columnSelectivity struct {
+	columnName  string
+	selectivity float64
 }
 
-func indexSelectivity(queryValues []string) string {
-	return fmt.Sprintf(
-		`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS index_selectivity FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
-		strings.Join(queryValues, ","),
+func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity, error) {
+	values := make([]string, 0, len(columns))
+	for _, col := range columns {
+		values = append(
+			values,
+			fmt.Sprintf("('%s', '%s', '%s')", col.SchemaName, col.TableName, col.ColumnName),
+		)
+	}
+	results, err := c.e.Db.Query(
+		fmt.Sprintf(
+			`SELECT (s.CARDINALITY / t.TABLE_ROWS) AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
+			strings.Join(values, ","),
+		),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	var selectivity float64
+	var indexSelectivity, columnName sql.NullString
+	var selectivityOfColumns = make([]columnSelectivity, 0, len(results))
+	for _, resultMap := range results {
+		indexSelectivity = resultMap["INDEX_SELECTIVITY"]
+		columnName = resultMap["COLUMN_NAME"]
+		if indexSelectivity.String == "" {
+			selectivity = 0
+		} else {
+			selectivity, _ = strconv.ParseFloat(indexSelectivity.String, 64)
+		}
+
+		selectivityOfColumns = append(selectivityOfColumns, columnSelectivity{
+			columnName:  columnName.String,
+			selectivity: selectivity},
+		)
+	}
+	return selectivityOfColumns, nil
 }
 
 // GetMaxIndexOptionForTable get max index option column of table.
 func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (float64, error) {
+	// check if table exist
 	ti, exist := c.GetTableInfo(stmt)
 	if !exist || !ti.isLoad {
 		return -1, nil
@@ -691,44 +730,34 @@ func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []s
 		}
 		ti.OriginalTable = originalTable
 	}
+	// check if column belongs to table
 	for _, columnName := range columnNames {
 		if !util.TableExistCol(ti.OriginalTable, columnName) {
 			return -1, nil
 		}
 	}
-
 	if c.e == nil {
 		return -1, nil
 	}
-
-	queryValues := make([]string, 0, len(columnNames))
+	// get selectivity of columns
 	schemaName := c.GetSchemaName(stmt)
+	columns := make([]Column, 0, len(columnNames))
 	for _, col := range columnNames {
-		queryValues = append(queryValues, queryValue(schemaName, stmt.Name.L, col))
+		columns = append(columns, Column{
+			SchemaName: schemaName,
+			TableName:  stmt.Name.L,
+			ColumnName: col,
+		})
 	}
-	result, err := c.e.Db.Query(indexSelectivity(queryValues))
+	columnSelectivity, err := c.GetSelectivityOfColumns(columns)
 	if err != nil {
-		return -1, fmt.Errorf("query max index option for table error: %v", err)
+		return -1, fmt.Errorf("get selectivity of columns error: %v", err)
 	}
-	maxIndexOption := -1.0
-	for _, r := range result {
-		for _, value := range r {
-			// 当表里没数据时上面的SQL查出来的结果为Null
-			if value.String == "" {
-				value.String = "0"
-			}
-			v, err := strconv.ParseFloat(value.String, 64)
-			if err != nil {
-				return -1, err
-			}
-			if maxIndexOption == -1 {
-				maxIndexOption = v
-				continue
-			}
-
-			if v > maxIndexOption {
-				maxIndexOption = v
-			}
+	// return max selectivity among selectivity of columns
+	var maxIndexOption float64 = -1
+	for _, cs := range columnSelectivity {
+		if cs.selectivity > maxIndexOption && cs.selectivity > 0 {
+			maxIndexOption = cs.selectivity
 		}
 	}
 	return maxIndexOption, nil
