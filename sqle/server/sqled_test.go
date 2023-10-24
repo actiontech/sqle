@@ -25,7 +25,6 @@ func getAction(sqls []string, typ int, p driver.Plugin) *action {
 		Model:      model.Model{ID: 1},
 		SQLSource:  model.TaskSQLSourceFromMyBatisXMLFile,
 		InstanceId: 1,
-		Instance:   &model.Instance{},
 	}
 
 	for _, sql := range sqls {
@@ -36,12 +35,11 @@ func getAction(sqls []string, typ int, p driver.Plugin) *action {
 
 	entry := log.NewEntry().WithField("task_id", task.ID)
 	return &action{
-		task:        task,
-		plugin:      p,
-		typ:         typ,
-		entry:       entry,
-		done:        make(chan struct{}),
-		customRules: []*model.CustomRule{},
+		task:   task,
+		plugin: p,
+		typ:    typ,
+		entry:  entry,
+		done:   make(chan struct{}),
 	}
 }
 
@@ -166,8 +164,8 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT `sql_whitelist`.* FROM `sql_whitelist` WHERE `sql_whitelist`.`deleted_at` IS NULL")).
-		WithArgs(1).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist` WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((sql_whitelist.project_id = ?))")).
+		WithArgs("").
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 
 	mock.ExpectBegin()
@@ -210,7 +208,7 @@ func Test_action_execute(t *testing.T) {
 			return nil
 		})
 
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ []uint, _ string) ([]*model.Rule, []*model.CustomRule, error) {
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "GetRulesFromRuleTemplateByName", func(_ *model.Storage, _ []string, _ string) ([]*model.Rule, []*model.CustomRule, error) {
 			return nil, nil, nil
 		})
 	}
