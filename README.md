@@ -58,7 +58,7 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
 
   提供 SQL 全流程的管控视角，帮助您统一管理SQL质量。您可以追踪问题SQL的解决进度，并提供快捷的优化功能，以提升 SQL 的效率。
 
-查看更多社区版与企业版对比【缺链接】。
+查看更多[社区版与企业版对比](http://localhost:3000/sqle-docs/docs/support/compare)。
 
 # 💡 使用场景
 
@@ -136,21 +136,23 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
  我们同时提供了 SQLE 社区版 和  SQLE 企业版 的线上 DEMO 环境，登录后您可以轻松体验 SQLE 的丰富功能。
  
 - [SQLE 社区版](http://demo.sqle.actionsky.com/)
-  - 账户: admin
-  - 密码: admin
-  
 - [SQLE 企业版](http://demo.sqle.actionsky.com:8889/)
-  - 账户: admin
-  - 密码: admin
   
 【demo需要替换】
 
-您可以连接MySQL实例，进行测试
+**登录信息**
+|user|password|
+|---|---|
+|admin|admin|
 
-- 地址: 20.20.20.3
-- 端口: 3306
-- 用户: root
-- 密码: test
+**您可以连接MySQL实例，进行测试**
+
+|variable|value|
+|---|---|
+|地址| 20.20.20.3|
+|端口| 3306|
+|用户| root|
+|密码| test|
 
 > 注意事项
 > 1. 该服务仅用于在线功能体验，请勿在生产环境使用；
@@ -162,10 +164,12 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 
 部署方式：
 
-1. 源码安装【链接】
-2. RPM 部署【链接】
-3. Docker 部署 （推荐）【链接】
-4. Docker Compsoe 部署【链接】
+1. [源码安装]()
+2. [RPM 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/rpm)
+3. [Docker 部署（推荐）]()
+4. [Docker Compsoe 部署]()
+
+【部署方式的链接需要更新】
 
 ## 插件开发
 目前支持其他种类数据库的审核插件:
@@ -180,10 +184,12 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 # 🧑🏻‍💻社区支持
 我们感谢您的关注与贡献，社区将引导您了解如何使用和贡献。欢迎以下方式加入社区：
 * [官方网站](https://opensource.actionsky.com/sqle/)
-* 文档手册【需要链接】
+* [文档手册](https://actiontech.github.io/sqle-docs/)
 * 微信交流群：请添加管理员微信 ActionOpenSource
-* 微信公众号：
-  * ![QR_code](./QR_code.png) 
+* 微信公众号：爱可生开源社区
+  
+  ![QR_code](./QR_code.png)
+  
 * 其他媒体 [Gitee](https://gitee.com/mirrors/SQLE?_from=gitee_search) | [思否](https://segmentfault.com/blog/sqle) | [开源中国](https://www.oschina.net/p/sqle) | [墨天轮](https://www.modb.pro/wiki/2759) | [CSDN](https://blog.csdn.net/ActionTech) | [稀土掘金](https://juejin.cn/column/7241238544252829753) | [知乎](https://www.zhihu.com/people/Actionsky-86-50/columns)
 
 🤗 欢迎将体验中产生的 Bug、问题和需求提交到 [SQLE GitHub Issue](https://github.com/actiontech/sqle/issues)。
