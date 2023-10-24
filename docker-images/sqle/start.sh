@@ -10,28 +10,28 @@ dms:
   id: 1
   api:
     addr: 0.0.0.0
-    port: 7601
+    port: 10000
   service:
     database:
       username: ${MYSQL_USER}
       password: ${MYSQL_PASSWORD}
       host: ${MYSQL_HOST}
       port: ${MYSQL_PORT}
-      database: dms
-      debug: true
+      database: ${MYSQL_DMS_SCHEMA}
+      debug: ${DEBUG}
   cloudbeaver:
-    enable_https: false
-    host: 127.0.0.1
-    port: 8978
-    admin_user: administrator
-    admin_password: 123456      
+    enable_https: 
+    host: 
+    port: 
+    admin_user: 
+    admin_password: 
   secret_key:  
 sqle:
   id: 1
-  dms_server_address: http://127.0.0.1:7601
+  dms_server_address: http://127.0.0.1:10000
   api:
     addr: 127.0.0.1
-    port: 10000
+    port: 10001
     enable_https: false
     cert_file_path: './etc/cert.pem'
     key_file_path: './etc/key.pem'
@@ -48,7 +48,7 @@ sqle:
       mysql_port:  ${MYSQL_PORT}
       mysql_user: '${MYSQL_USER}'
       mysql_password: '${MYSQL_PASSWORD}'
-      mysql_schema: '${MYSQL_SCHEMA}'
+      mysql_schema: '${MYSQL_SQLE_SCHEMA}'
 EOF
 fi
 
