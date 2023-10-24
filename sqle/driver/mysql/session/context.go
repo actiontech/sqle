@@ -702,7 +702,10 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 		if indexSelectivity.String == "" {
 			selectivity = 0
 		} else {
-			selectivity, _ = strconv.ParseFloat(indexSelectivity.String, 64)
+			selectivity, err = strconv.ParseFloat(indexSelectivity.String, 64)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		selectivityOfColumns = append(selectivityOfColumns, columnSelectivity{
