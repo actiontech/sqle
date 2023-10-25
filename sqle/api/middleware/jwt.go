@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
-	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -66,7 +65,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 
 			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			apnInParam := c.Param("audit_plan_name")
 			if apnInToken != apnInParam {
