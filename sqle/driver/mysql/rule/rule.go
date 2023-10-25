@@ -1425,7 +1425,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "索引字段 %v 未超过区分度阈值 百分之%v, 不建议选为索引字段",
+		Message:      "索引 %v 未超过区分度阈值 百分之%v, 不建议选为索引",
 		AllowOffline: false,
 		Func:         checkIndexOption,
 	},
@@ -5157,10 +5157,14 @@ func checkIndexOption(input *RuleHandlerInput) error {
 	}
 
 	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-	for columnName, selectivity := range columnSelectivityMap {
-		if selectivity > 0 && selectivity < float64(max) {
-			addResult(input.Res, input.Rule, input.Rule.Name, columnName, max)
+	var maxSelectivity float64 = -1
+	for _, selectivity := range columnSelectivityMap {
+		if selectivity > maxSelectivity {
+			maxSelectivity = selectivity
 		}
+	}
+	if maxSelectivity > 0 && maxSelectivity < float64(max) {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(indexColumns, ", "), max)
 	}
 	return nil
 }
