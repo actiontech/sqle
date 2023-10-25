@@ -2,14 +2,18 @@ package middleware
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	dmsCommon "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
@@ -17,11 +21,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func mockServer() *httptest.Server {
+	f := func(w http.ResponseWriter, r *http.Request) {
+		response := dmsCommon.ListProjectReply{
+			Data: []*dmsCommon.ListProject{{
+				ProjectUid: "700300",
+				Name:       "default",
+				Archived:   false,
+			}},
+			Total: 1,
+		}
+		res, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("reponse err ")
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		_, err = w.Write(res)
+		if err != nil {
+			log.Printf("reponse err ")
+		}
+	}
+	return httptest.NewServer(http.HandlerFunc(f))
+}
+
 func TestScannerVerifier(t *testing.T) {
+	server := mockServer()
+	defer server.Close()
+	controller.InitDMSServerAddress(server.URL)
+
 	e := echo.New()
 
 	apName := "test_audit_plan"
-	projectName := "test_project"
+	projectUID := "700300"
 	testUser := "test_user"
 
 	h := func(c echo.Context) error {
@@ -36,7 +71,7 @@ func TestScannerVerifier(t *testing.T) {
 		res := httptest.NewRecorder()
 		ctx := e.NewContext(req, res)
 		ctx.SetParamNames("audit_plan_name", "project_name")
-		ctx.SetParamValues(apName, projectName)
+		ctx.SetParamValues(apName, projectUID)
 		return ctx, res
 	}
 
@@ -63,8 +98,8 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(driver.Value(testUser), "test-token"))
 		mock.ExpectClose()
 
@@ -84,8 +119,8 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnError(gorm.ErrRecordNotFound)
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
@@ -107,8 +142,8 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
 
@@ -129,8 +164,8 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
 

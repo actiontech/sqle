@@ -12,14 +12,11 @@ import (
 func TestStorage_GetAuditPlansByReq(t *testing.T) {
 	// 1. test for common user
 	tableAndRowOfSQL := `
-	FROM audit_plans
-	LEFT JOIN users ON audit_plans.create_user_id = users.id
-	LEFT JOIN projects ON audit_plans.project_id = projects.id
-	WHERE audit_plans.deleted_at IS NULL
-	AND users.deleted_at IS NULL
-	AND (
-	users.login_name = ?
-	)
+	FROM
+	audit_plans 
+WHERE
+	audit_plans.deleted_at IS NULL 
+	AND ( audit_plans.create_user_id = ? ) 
 	AND audit_plans.db_type = ?
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
@@ -47,11 +44,10 @@ func TestStorage_GetAuditPlansByReq(t *testing.T) {
 
 	// 2. test for admin user
 	tableAndRowOfSQL1 := `
-	FROM audit_plans
-	LEFT JOIN users ON audit_plans.create_user_id = users.id
-	LEFT JOIN projects ON audit_plans.project_id = projects.id
-	WHERE audit_plans.deleted_at IS NULL
-	AND users.deleted_at IS NULL
+	FROM
+	audit_plans 
+WHERE
+	audit_plans.deleted_at IS NULL 
 	`
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
@@ -120,29 +116,32 @@ func TestStorage_GetAuditPlanSQLsByReq(t *testing.T) {
 
 func TestStorage_GetAuditPlanReportsByReq(t *testing.T) {
 	tableAndRowOfSQL := `
-	FROM audit_plan_reports_v2 AS reports
-	JOIN audit_plans ON audit_plans.id = reports.audit_plan_id
-	JOIN projects ON projects.id = audit_plans.project_id
-	WHERE reports.deleted_at IS NULL
-	AND audit_plans.deleted_at IS NULL
-	AND audit_plans.name = ?
-	AND projects.name = ?
-	ORDER BY reports.created_at DESC , reports.id DESC
+	FROM
+	audit_plan_reports_v2 AS reports
+	JOIN audit_plans ON audit_plans.id = reports.audit_plan_id 
+WHERE
+	reports.deleted_at IS NULL 
+	AND audit_plans.deleted_at IS NULL 
+	AND audit_plans.name = ? 
+	AND audit_plans.project_id = ? 
+ORDER BY
+	reports.created_at DESC ,
+	reports.id DESC 
 	`
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
 	InitMockStorage(mockDB)
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT reports.id, reports.score , reports.pass_rate, reports.audit_level, reports.created_at %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "project_1", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
+		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "1", 100, 10).WillReturnRows(sqlmock.NewRows([]string{
 		"id", "score", "pass_rate", "audit_level", "created_at"}).
 		AddRow("1", 100, 1, "normal", "2021-09-01T13:46:13+08:00"))
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT COUNT(*) %v`, tableAndRowOfSQL)).
-		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "project_1").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
+		ExpectQuery().WithArgs("audit_plan_for_jave_repo", "1").WillReturnRows(sqlmock.NewRows([]string{"COUNT(*)"}).AddRow("2"))
 	nameFields := map[string]interface{}{
 		"audit_plan_name": "audit_plan_for_jave_repo",
-		"project_name":    "project_1",
+		"project_id":      "1",
 		"limit":           100,
 		"offset":          10}
 	result, count, err := GetStorage().GetAuditPlanReportsByReq(nameFields)
