@@ -128,6 +128,7 @@ func getClientConfig(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig {
 		Cmd:              exec.Command(cmdBase, cmdArgs...),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		GRPCDialOptions:  common.GRPCDialOptions,
+		StartTimeout:     10,
 	}
 }
 
