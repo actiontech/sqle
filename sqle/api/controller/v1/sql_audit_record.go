@@ -23,7 +23,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
 	goGit "github.com/go-git/go-git/v5"
 	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -121,14 +120,13 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 
 	var task *model.Task
-	var sqlFpMap map[string]string
 	if req.InstanceName != "" {
-		task, sqlFpMap, err = buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sqls)
+		task, err = buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
-		task, sqlFpMap, err = buildOfflineTaskForAudit(user.ID, req.DbType, source, sqls)
+		task, err = buildOfflineTaskForAudit(user.ID, req.DbType, source, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -154,13 +152,6 @@ func CreateSQLAuditRecord(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go func() {
-		newSyncFromSqlAudit := auditplan.NewSyncFromSqlAudit(task, sqlFpMap, project.ID, record.ID)
-		if err := newSyncFromSqlAudit.SyncSqlManager(); err != nil {
-			log.NewEntry().Errorf("sync sql manager failed, error: %v", err)
-		}
-	}()
-
 	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SQLAuditRecordResData{
@@ -182,30 +173,30 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	})
 }
 
-func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, instanceName, instanceSchema, projectName, sourceType, sqls string) (*model.Task, map[string]string, error) {
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, instanceName, instanceSchema, projectName, sourceType, sqls string) (*model.Task, error) {
 	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !exist {
-		return nil, nil, ErrInstanceNoAccess
+		return nil, ErrInstanceNoAccess
 	}
 	can, err := checkCurrentUserCanAccessInstance(c, instance)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	if !can {
-		return nil, nil, ErrInstanceNoAccess
+		return nil, ErrInstanceNoAccess
 	}
 
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer plugin.Close(context.TODO())
 
 	if err := plugin.Ping(context.TODO()); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	task := &model.Task{
@@ -220,10 +211,9 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, inst
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	sqlFpMap := make(map[string]string, len(task.ExecuteSQLs))
 	nodes, err := plugin.Parse(context.TODO(), sqls)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	for n, node := range nodes {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
@@ -232,13 +222,12 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, inst
 				Content: node.Text,
 			},
 		})
-		sqlFpMap[node.Text] = node.Fingerprint
 	}
 
-	return task, sqlFpMap, nil
+	return task, nil
 }
 
-func buildOfflineTaskForAudit(userId uint, dbType, sourceType, sqls string) (*model.Task, map[string]string, error) {
+func buildOfflineTaskForAudit(userId uint, dbType, sourceType, sqls string) (*model.Task, error) {
 	task := &model.Task{
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
@@ -249,19 +238,18 @@ func buildOfflineTaskForAudit(userId uint, dbType, sourceType, sqls string) (*mo
 	var nodes []driverV2.Node
 	plugin, err := common.NewDriverManagerWithoutCfg(log.NewEntry(), dbType)
 	if err != nil {
-		return nil, nil, fmt.Errorf("open plugin failed: %v", err)
+		return nil, fmt.Errorf("open plugin failed: %v", err)
 	}
 	defer plugin.Close(context.TODO())
 
 	nodes, err = plugin.Parse(context.TODO(), sqls)
 	if err != nil {
-		return nil, nil, fmt.Errorf("parse sqls failed: %v", err)
+		return nil, fmt.Errorf("parse sqls failed: %v", err)
 	}
 
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	sqlFpMap := make(map[string]string, len(task.ExecuteSQLs))
 	for n, node := range nodes {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
@@ -269,10 +257,9 @@ func buildOfflineTaskForAudit(userId uint, dbType, sourceType, sqls string) (*mo
 				Content: node.Text,
 			},
 		})
-		sqlFpMap[node.Text] = node.Fingerprint
 	}
 
-	return task, sqlFpMap, nil
+	return task, nil
 }
 
 func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
@@ -477,6 +464,14 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, fmt.Errorf("sql audit record id %v not exist", auditRecordId)))
+	}
+
 	if req.Tags != nil {
 		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
@@ -488,6 +483,13 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 		if err = s.UpdateSQLAuditRecordById(auditRecordId, data); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+
+		go func() {
+			err = syncSqlManage(record, req.Tags)
+			if err != nil {
+				log.NewEntry().WithField("sync_sql_audit_record", auditRecordId).Errorf("sync sql manager failed: %v", err)
+			}
+		}()
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
