@@ -16,7 +16,7 @@
 [![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/actiontech/sqle.svg)](https://github.com/actiontech/sqle/issues?q=is%3Aissue+is%3Aclosed)
 [![Docker Pulls](https://img.shields.io/docker/pulls/actiontech/sqle-ce.svg)](https://hub.docker.com/r/actiontech/sqle-ce)
 
-![image](https://github.com/actiontech/sqle-ee/assets/113898890/db69f484-86f4-470f-beac-5b500baca0f0)
+<img src="./image.png">
 
 
 </div>
@@ -45,20 +45,12 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
 ### 更便捷的 SQL 数据操作
 
   集成了在线数据库客户端 CloudBeaver，无需安装，通过可视化界面进行数据库管理和查询，提升了数据操作的易用性和效率。
-    
-### 更安全的数据访问控制策略
-  
-  通过自定义授权清单，我们实现了精细化的权限控制，确保被授权用户仅能在权限范围内进行数据操作，从而增强了数据操作的安全性。
-  
-### 更灵活的数据源巡检策略
-
-  针对服务器和数据库的状态及性能提供多维度的巡检指标。您可以自由配置监控指标，自动发现性能瓶颈和异常情况，从而降低了人工排查的压力。
   
 ### 全生命周期的 SQL 管控
 
   提供 SQL 全流程的管控视角，帮助您统一管理SQL质量。您可以追踪问题SQL的解决进度，并提供快捷的优化功能，以提升 SQL 的效率。
 
-查看更多[社区版与企业版对比](http://localhost:3000/sqle-docs/docs/support/compare)。
+查看更多[社区版与企业版对比](https://actiontech.github.io/sqle-docs/docs/support/compare)。
 
 # 💡 使用场景
 
@@ -137,8 +129,6 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
  
 - [SQLE 社区版](http://demo.sqle.actionsky.com/)
 - [SQLE 企业版](http://demo.sqle.actionsky.com:8889/)
-  
-【demo需要替换】
 
 **登录信息**
 |user|password|
@@ -164,12 +154,10 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 
 部署方式：
 
-1. [源码安装]()
+1. 源码安装(更新中)
 2. [RPM 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/rpm)
-3. [Docker 部署（推荐）]()
-4. [Docker Compsoe 部署]()
-
-【部署方式的链接需要更新】
+3. Docker 部署(更新中)
+4. Docker Compsoe 部署(更新中)
 
 ## 插件开发
 目前支持其他种类数据库的审核插件:
