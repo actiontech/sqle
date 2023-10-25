@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -791,6 +792,29 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
+func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankListAduitPlanSQL) []*AuditPlanSQLReqV1 {
+	fileredSQLs := []*AuditPlanSQLReqV1{}
+	l := log.NewEntry()
+	for _, sql := range sqls {
+		var match bool
+		for _, blankSQL := range blankList {
+			regex, err := regexp.Compile(blankSQL.FilterSQL)
+			if err != nil {
+				l.Errorf("blanklist regexp compile failed:%v", err)
+				continue
+			}
+			match = regex.MatchString(sql.LastReceiveText)
+			if match {
+				break
+			}
+		}
+		if !match {
+			fileredSQLs = append(fileredSQLs, sql)
+		}
+	}
+	return fileredSQLs
+}
+
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
@@ -842,7 +866,13 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	reqSQLs := req.SQLs
+	blankList, err := s.GetBlankListAduitPlanSQLs()
+	if err == nil {
+		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -889,7 +919,13 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	reqSQLs := req.SQLs
+	blankList, err := s.GetBlankListAduitPlanSQLs()
+	if err == nil {
+		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
