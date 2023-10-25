@@ -695,25 +695,26 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 	}
 
 	var selectivity float64
-	var indexSelectivity, columnName sql.NullString
-	var selectivityOfColumns = make([]columnSelectivity, 0, len(results))
+	var selectivityOfColumns = make([]columnSelectivity, 0, len(columns))
 	var hasSelectivity = make(map[string]bool)
+	var indexSelectivity, columnName sql.NullString
 	for _, resultMap := range results {
 		indexSelectivity = resultMap["INDEX_SELECTIVITY"]
 		columnName = resultMap["COLUMN_NAME"]
 		if indexSelectivity.String == "" {
 			// 跳过选择性为空的列
 			continue
-		} else {
-			selectivity, err = strconv.ParseFloat(indexSelectivity.String, 64)
-			if err != nil {
-				return nil, err
-			}
+		}
+		selectivity, err = strconv.ParseFloat(indexSelectivity.String, 64)
+		if err != nil {
+			return nil, err
 		}
 		hasSelectivity[columnName.String] = true
-		selectivityOfColumns = append(selectivityOfColumns, columnSelectivity{
-			columnName:  columnName.String,
-			selectivity: selectivity},
+		selectivityOfColumns = append(selectivityOfColumns,
+			columnSelectivity{
+				columnName:  columnName.String,
+				selectivity: selectivity,
+			},
 		)
 	}
 
@@ -721,8 +722,8 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 		return selectivityOfColumns, nil
 	}
 	// 若存在列没有选择性 则通过采样统计的计算列的选择性
-	sqls := []string{}
-	selectColumns := []string{}
+	sqls := make([]string, 0, len(columns)-len(selectivityOfColumns))
+	selectColumns := make([]string, 0, len(columns)-len(selectivityOfColumns))
 	for _, v := range columns {
 		if _, ok := hasSelectivity[v.ColumnName]; !ok {
 			sqls = append(
@@ -733,7 +734,7 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 		}
 	}
 
-	results1, err := c.e.Db.Query(
+	results, err = c.e.Db.Query(
 		fmt.Sprintf(
 			"SELECT %v FROM (SELECT %v FROM employees LIMIT 50000) t",
 			strings.Join(sqls, ","),
@@ -743,7 +744,7 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 	if err != nil {
 		return nil, err
 	}
-	for _, resultMap := range results1 {
+	for _, resultMap := range results {
 		for k, v := range resultMap {
 			if v.String == "" {
 				selectivity = -1
