@@ -143,14 +143,14 @@ func TestEqualConditionVisitor(t *testing.T) {
 		input          string
 		conditionCount int
 	}{
-		{"SELECT * FROM t1 WHERE id1 = id2", 1},
-		{"SELECT * FROM t1 WHERE id1 = 1 OR id2 = 2", 2},
-		{"SELECT * FROM t JOIN t2 ON t.id = t2.id WHERE t.name = ? AND t2.age = ?", 3},
-		{"DELETE FROM t1 WHERE id1 = 1", 1},
+		{"SELECT * FROM t1 WHERE t1.id1 = t2.id2", 1},
+		{"SELECT * FROM t1 WHERE t1.id1 = t3.id3 OR t2.id2 = t1.id1", 2},
+		{"SELECT * FROM t JOIN t2 ON t.id = t2.id2 WHERE t.name = ? AND t2.age = ?", 1},
+		{"DELETE FROM t1 WHERE t1.id1 = t1.id2", 0},
 		{"UPDATE t1 SET id2 = 2 WHERE id1 > 1", 0},
 		{"INSERT INTO t1 (id1, id2) VALUES (1, 2)", 0},
 		{"DELETE FROM t1 WHERE id2 > 2", 0},
-		{"UPDATE t1 SET id1 = 2 WHERE id2 = 2", 1}, //SET id1 = 2不是BinaryOperation，而是Assignment
+		{"UPDATE t1 SET id1 = 2 WHERE t2.id2 = t3.id3", 1}, //SET id1 = 2不是BinaryOperation，而是Assignment
 		{"INSERT INTO t1 (id1, id2) VALUES (2, 1)", 0},
 	}
 
