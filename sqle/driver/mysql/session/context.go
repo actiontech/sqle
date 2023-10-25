@@ -665,28 +665,26 @@ func (c *Context) GetCollationDatabase(stmt *ast.TableName, schemaName string) (
 	return collation, nil
 }
 
-type Column struct {
+type index struct {
 	SchemaName string
 	TableName  string
-	ColumnName string
-}
-type columnSelectivity struct {
-	columnName  string
-	selectivity float64
+	IndexName  string
 }
 
-func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity, error) {
-	// 首先使用系统视图的统计信息计算列的选择性
-	values := make([]string, 0, len(columns))
-	for _, col := range columns {
+func (c *Context) getSelectivityByIndex(indexes []index) (map[string] /*index name*/ float64, error) {
+	if c.e == nil {
+		return nil, nil
+	}
+	values := make([]string, 0, len(indexes))
+	for _, index := range indexes {
 		values = append(
 			values,
-			fmt.Sprintf("('%s', '%s', '%s')", col.SchemaName, col.TableName, col.ColumnName),
+			fmt.Sprintf("('%s', '%s', '%s')", index.SchemaName, index.TableName, index.IndexName),
 		)
 	}
 	results, err := c.e.Db.Query(
 		fmt.Sprintf(
-			`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.COLUMN_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.COLUMN_NAME) IN (%s);`,
+			`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (%s);`,
 			strings.Join(values, ","),
 		),
 	)
@@ -694,51 +692,74 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 		return nil, err
 	}
 
-	var selectivity float64
-	var selectivityOfColumns = make([]columnSelectivity, 0, len(columns))
-	var hasSelectivity = make(map[string]bool)
-	var indexSelectivity, columnName sql.NullString
+	var selectivityValue float64
+	var indexSelectivityMap = make(map[string]float64, len(indexes))
+	var indexSelectivity, indexName sql.NullString
 	for _, resultMap := range results {
 		indexSelectivity = resultMap["INDEX_SELECTIVITY"]
-		columnName = resultMap["COLUMN_NAME"]
+		indexName = resultMap["INDEX_NAME"]
 		if indexSelectivity.String == "" {
 			// 跳过选择性为空的列
 			continue
 		}
-		selectivity, err = strconv.ParseFloat(indexSelectivity.String, 64)
+		selectivityValue, err = strconv.ParseFloat(indexSelectivity.String, 64)
 		if err != nil {
 			return nil, err
 		}
-		hasSelectivity[columnName.String] = true
-		selectivityOfColumns = append(selectivityOfColumns,
-			columnSelectivity{
-				columnName:  columnName.String,
-				selectivity: selectivity,
-			},
+		indexSelectivityMap[indexName.String] = selectivityValue
+	}
+	return indexSelectivityMap, nil
+}
+
+func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string) (map[string]float64, error) {
+	if len(indexNames) == 0 || stmt == nil {
+		return nil, nil
+	}
+	schemaName := c.GetSchemaName(stmt)
+	indexes := make([]index, 0, len(indexNames))
+	for _, indexName := range indexNames {
+		indexes = append(indexes, index{
+			SchemaName: schemaName,
+			TableName:  stmt.Name.L,
+			IndexName:  indexName,
+		})
+	}
+	indexSelectivity, err := c.getSelectivityByIndex(indexes)
+	if err != nil {
+		return nil, fmt.Errorf("get selectivity by index error: %v", err)
+	}
+	return indexSelectivity, nil
+}
+
+type column struct {
+	SchemaName string
+	TableName  string
+	ColumnName string
+}
+
+func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index name*/ float64, error) {
+	if c.e == nil {
+		return nil, nil
+	}
+	var selectivityValue float64
+	var columnSelectivityMap = make(map[string]float64, len(columns))
+
+	sqls := make([]string, 0, len(columns))
+	selectColumns := make([]string, 0, len(columns))
+	for _, column := range columns {
+		sqls = append(
+			sqls,
+			fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", column.ColumnName, column.ColumnName),
 		)
+		selectColumns = append(selectColumns, column.ColumnName)
 	}
 
-	if len(selectivityOfColumns) == len(columns) {
-		return selectivityOfColumns, nil
-	}
-	// 若存在列没有选择性 则通过采样统计的计算列的选择性
-	sqls := make([]string, 0, len(columns)-len(selectivityOfColumns))
-	selectColumns := make([]string, 0, len(columns)-len(selectivityOfColumns))
-	for _, v := range columns {
-		if _, ok := hasSelectivity[v.ColumnName]; !ok {
-			sqls = append(
-				sqls,
-				fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", v.ColumnName, v.ColumnName),
-			)
-			selectColumns = append(selectColumns, v.ColumnName)
-		}
-	}
-
-	results, err = c.e.Db.Query(
+	results, err := c.e.Db.Query(
 		fmt.Sprintf(
-			"SELECT %v FROM (SELECT %v FROM employees LIMIT 50000) t",
+			"SELECT %v FROM (SELECT %v FROM %v.%v LIMIT 50000) t;",
 			strings.Join(sqls, ","),
 			strings.Join(selectColumns, ","),
+			columns[0].SchemaName, columns[0].TableName,
 		),
 	)
 	if err != nil {
@@ -747,72 +768,37 @@ func (c *Context) GetSelectivityOfColumns(columns []Column) ([]columnSelectivity
 	for _, resultMap := range results {
 		for k, v := range resultMap {
 			if v.String == "" {
-				selectivity = -1
+				selectivityValue = -1
 			} else {
-				selectivity, err = strconv.ParseFloat(v.String, 64)
+				selectivityValue, err = strconv.ParseFloat(v.String, 64)
 				if err != nil {
 					return nil, err
 				}
 			}
-			selectivityOfColumns = append(selectivityOfColumns,
-				columnSelectivity{
-					columnName:  k,
-					selectivity: selectivity,
-				},
-			)
+			columnSelectivityMap[k] = selectivityValue
 		}
 	}
-	return selectivityOfColumns, nil
+	return columnSelectivityMap, nil
 }
 
-// GetMaxIndexOptionForTable get max index option column of table.
-func (c *Context) GetMaxIndexOptionForTable(stmt *ast.TableName, columnNames []string) (float64, error) {
-	// check if table exist
-	ti, exist := c.GetTableInfo(stmt)
-	if !exist || !ti.isLoad {
-		return -1, nil
+func (c *Context) GetSelectivityOfColumns(tableName *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+	if tableName == nil || len(indexColumns) == 0 {
+		return nil, nil
 	}
-	if ti.OriginalTable == nil {
-		originalTable, exist, err := c.GetCreateTableStmt(stmt)
-		if !exist {
-			return -1, nil
-		}
-		if err != nil {
-			return -1, err
-		}
-		ti.OriginalTable = originalTable
-	}
-	// check if column belongs to table
-	for _, columnName := range columnNames {
-		if !util.TableExistCol(ti.OriginalTable, columnName) {
-			return -1, nil
-		}
-	}
-	if c.e == nil {
-		return -1, nil
-	}
-	// get selectivity of columns
-	schemaName := c.GetSchemaName(stmt)
-	columns := make([]Column, 0, len(columnNames))
-	for _, col := range columnNames {
-		columns = append(columns, Column{
+	schemaName := c.GetSchemaName(tableName)
+	columns := make([]column, 0, len(indexColumns))
+	for _, indexColumn := range indexColumns {
+		columns = append(columns, column{
 			SchemaName: schemaName,
-			TableName:  stmt.Name.L,
-			ColumnName: col,
+			TableName:  tableName.Name.L,
+			ColumnName: indexColumn,
 		})
 	}
-	columnSelectivity, err := c.GetSelectivityOfColumns(columns)
+	columnSelectivityMap, err := c.getSelectivityByColumn(columns)
 	if err != nil {
-		return -1, fmt.Errorf("get selectivity of columns error: %v", err)
+		return nil, fmt.Errorf("get selectivity by index error: %v", err)
 	}
-	// return max selectivity among selectivity of columns
-	var maxIndexOption float64 = -1
-	for _, cs := range columnSelectivity {
-		if cs.selectivity > maxIndexOption && cs.selectivity > 0 {
-			maxIndexOption = cs.selectivity
-		}
-	}
-	return maxIndexOption, nil
+	return columnSelectivityMap, nil
 }
 
 // GetSchemaCharacter get schema default character.
