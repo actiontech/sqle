@@ -1425,7 +1425,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "索引 %v 未超过区分度阈值 百分之%v, 不建议选为索引",
+		Message:      "索引字段 %v 未超过区分度阈值 百分之%v, 不建议选为索引字段",
 		AllowOffline: false,
 		Func:         checkIndexOption,
 	},
@@ -5150,15 +5150,17 @@ func checkIndexOption(input *RuleHandlerInput) error {
 	if len(indexColumns) == 0 {
 		return nil
 	}
-	maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+
+	columnSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(tableName, indexColumns)
 	if err != nil {
 		return err
 	}
-	// todo: using number compare, don't use string compare
-	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 
-	if maxIndexOption > 0 && float64(max) > maxIndexOption {
-		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(indexColumns, ", "), max)
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	for columnName, selectivity := range columnSelectivityMap {
+		if selectivity > 0 && selectivity < float64(max) {
+			addResult(input.Res, input.Rule, input.Rule.Name, columnName, max)
+		}
 	}
 	return nil
 }
@@ -6535,31 +6537,22 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
-func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
-	indexColumns := []string{}
-	for _, info := range indexesInfo {
-		if info.KeyName == indexName {
-			indexColumns = append(indexColumns, info.ColumnName)
-		}
-	}
-	return indexColumns
-}
-
 func checkIndexSelectivity(input *RuleHandlerInput) error {
 	if _, ok := input.Node.(*ast.SelectStmt); !ok {
 		return nil
 	}
 	selectVisitor := &util.SelectVisitor{}
 	input.Node.Accept(selectVisitor)
-	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	explainRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
 	if err != nil {
 		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 		return nil
 	}
-	for _, record := range epRecords {
-		recordKey := record.Key
+	for _, record := range explainRecords {
+		indexes := strings.Split(record.Key, ",")
 		recordTable := record.Table
-		if recordKey == "" || recordTable == "" {
+		if len(indexes) == 0 || recordTable == "" {
+			// 若执行计划没有使用索引 则跳过
 			continue
 		}
 		for _, selectNode := range selectVisitor.SelectList {
@@ -6569,23 +6562,19 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 			tables := util.GetTables(selectNode.From.TableRefs)
 			for _, tableName := range tables {
 				if tableName.Name.L != recordTable {
+					// 只检查 使用索引对应的表
 					continue
 				}
-				schemaName := input.Ctx.GetSchemaName(tableName)
-				indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.O)
-				if err != nil {
-					continue
-				}
-				indexColumns := getColumnFromIndexesInfoByIndexName(indexesInfo, recordKey)
-				maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+				indexSelectivityMap, err := input.Ctx.GetSelectivityOfIndex(tableName, indexes)
 				if err != nil {
 					continue
 				}
 				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-
-				if maxIndexOption > 0 && float64(max) > maxIndexOption {
-					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
-					return nil
+				for indexName, selectivity := range indexSelectivityMap {
+					if selectivity > 0 && selectivity < float64(max) {
+						addResult(input.Res, input.Rule, input.Rule.Name, indexName, max)
+						return nil
+					}
 				}
 			}
 		}
