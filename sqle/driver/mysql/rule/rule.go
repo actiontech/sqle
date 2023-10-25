@@ -2614,7 +2614,7 @@ func checkHasJoinCondition(input *RuleHandlerInput) error {
 		// 不检查JOIN不会存在的语句
 		return nil
 	}
-	joinTables, hasCondition := checkJoinConditionInJoinNode(whereStmt, joinNode)
+	joinTables, hasCondition := checkJoinConditionInJoinNode(input.Ctx, whereStmt, joinNode)
 	if joinTables && !hasCondition {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
@@ -2625,7 +2625,7 @@ func doesNotJoinTables(tableRefs *ast.Join) bool {
 	return tableRefs.Left == nil || tableRefs.Right == nil
 }
 
-func checkJoinConditionInJoinNode(whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
+func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
 	if joinNode == nil {
 		return false, false
 	}
@@ -2636,7 +2636,7 @@ func checkJoinConditionInJoinNode(whereStmt ast.ExprNode, joinNode *ast.Join) (j
 
 	// 深度遍历左子树类型为ast.Join的节点 一旦有节点是JOIN两表的节点，并且没有连接条件，则返回
 	if l, ok := joinNode.Left.(*ast.Join); ok {
-		joinTables, hasCondition = checkJoinConditionInJoinNode(whereStmt, l)
+		joinTables, hasCondition = checkJoinConditionInJoinNode(ctx, whereStmt, l)
 		if joinTables && !hasCondition {
 			return joinTables, hasCondition
 		}
@@ -2649,7 +2649,7 @@ func checkJoinConditionInJoinNode(whereStmt ast.ExprNode, joinNode *ast.Join) (j
 	if isJoinConditionInUsingClause(joinNode) {
 		return true, true
 	}
-	if isJoinConditionInWhereStmt(whereStmt, joinNode) {
+	if isJoinConditionInWhereStmt(ctx, whereStmt, joinNode) {
 		return true, true
 	}
 	return true, false
@@ -2663,84 +2663,52 @@ func isJoinConditionInUsingClause(joinNode *ast.Join) bool {
 	return len(joinNode.Using) > 0
 }
 
-func isJoinConditionInWhereStmt(stmt ast.ExprNode, node *ast.Join) bool {
+func isJoinConditionInWhereStmt(ctx *session.Context, stmt ast.ExprNode, node *ast.Join) bool {
 	if stmt == nil {
 		return false
 	}
+
 	equalConditionVisitor := util.EqualConditionVisitor{}
 	stmt.Accept(&equalConditionVisitor)
 
-	for _, stmt := range equalConditionVisitor.ConditionList {
-		tableNameL, tableNameR := getTableNameFromBinaryOperation(stmt)
-		if tableNameL == "" || tableNameR == "" || tableNameL == tableNameR {
-			// 表名为空或者表名相同都不属于两表连接条件
-			continue
-		}
+	for _, column := range equalConditionVisitor.ConditionList {
 		// 右子树的tableSource在where的等值条件中出现，等值条件的另一个表名是否在左子树中的tableSource出现
-		if isTableMatcheNode(node.Right, tableNameL) && isTableInNode(node.Left, tableNameR) {
+		if isTableMatcheNode(ctx, node.Right, column.Left) && isTableInNode(ctx, node.Left, column.Right) {
 			return true
 		}
-		if isTableMatcheNode(node.Right, tableNameR) && isTableInNode(node.Left, tableNameL) {
+		if isTableMatcheNode(ctx, node.Right, column.Right) && isTableInNode(ctx, node.Left, column.Left) {
 			return true
 		}
 	}
 	return false
 }
 
-func getTableNameFromBinaryOperation(expr *ast.BinaryOperationExpr) (tableNameL, tableNameR string) {
-	if expr == nil {
-		return
-	}
-	switch t := expr.L.(type) {
-	case *ast.ColumnNameExpr:
-		tableNameL = t.Name.Table.L
-	}
-	switch t := expr.R.(type) {
-	case *ast.ColumnNameExpr:
-		tableNameR = t.Name.Table.L
-	}
-	return
-}
-
-func isTableMatcheNode(node ast.ResultSetNode, tableName string) bool {
+func isTableMatcheNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
 	if node == nil {
 		return false
 	}
 	switch t := node.(type) {
 	case *ast.TableSource:
-		return isNameInTableSource(tableName, t)
+		return getTableSourceByColumnName(ctx, []*ast.TableSource{t}, columnName) != nil
 	}
 	return false
 }
 
 // 迭代检查表名称是否与JOIN节点中的tableSource的表名或表别名匹配
-func isTableInNode(node ast.ResultSetNode, tableName string) bool {
+func isTableInNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
 	if node == nil {
 		return false
 	}
 	switch t := node.(type) {
 	case *ast.TableSource:
-		return isNameInTableSource(tableName, t)
+		return getTableSourceByColumnName(ctx, []*ast.TableSource{t}, columnName) != nil
 	case *ast.Join:
-		if isTableInNode(t.Right, tableName) {
+		if isTableInNode(ctx, t.Right, columnName) {
 			return true
 		}
-		if isTableInNode(t.Left, tableName) {
+		if isTableInNode(ctx, t.Left, columnName) {
 			return true
 		}
-	}
-	return false
-}
-
-func isNameInTableSource(tableName string, tSource *ast.TableSource) bool {
-	if tSource.AsName.L == "" {
-		tableNameNode := tSource.Source.(*ast.TableName)
-		if tableNameNode.Name.L == tableName {
-			return true
-		}
-	}
-	if tSource.AsName.L == tableName {
-		return true
 	}
 	return false
 }
