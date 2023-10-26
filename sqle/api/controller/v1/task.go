@@ -171,7 +171,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	task := &model.Task{
 		Schema:       req.InstanceSchema,
-		InstanceId:   uint64(instance.ID),
+		InstanceId:   instance.ID,
 		Instance:     instance,
 		CreateUserId: uint64(user.ID),
 		ExecuteSQLs:  []*model.ExecuteSQL{},
@@ -702,7 +702,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	for i, reqInstance := range req.Instances {
 		tasks[i] = &model.Task{
 			Schema:       reqInstance.InstanceSchema,
-			InstanceId:   uint64(nameInstanceMap[reqInstance.InstanceName].ID),
+			InstanceId:   nameInstanceMap[reqInstance.InstanceName].ID,
 			CreateUserId: uint64(user.ID),
 			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
 		}
@@ -720,15 +720,6 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			TaskGroupId: taskGroup.ID,
 		},
 	})
-}
-
-func getDistinctInstNameList(instList []*InstanceForCreatingTask) []string {
-	instNames := make([]string, len(instList))
-	for i, inst := range instList {
-		instNames[i] = inst.InstanceName
-	}
-
-	return utils.RemoveDuplicate(instNames)
 }
 
 type AuditTaskGroupReqV1 struct {
