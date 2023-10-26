@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"mime"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -794,16 +793,11 @@ func GetAuditPlanReport(c echo.Context) error {
 
 func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV1 {
 	filteredSQLs := []*AuditPlanSQLReqV1{}
-	l := log.NewEntry()
 	for _, sql := range sqls {
 		var match bool
 		for _, blackSQL := range blackList {
-			regex, err := regexp.Compile(blackSQL.FilterSQL)
-			if err != nil {
-				l.Errorf("blacklist regexp compile failed:%v, regexp:%s", err, blackSQL.FilterSQL)
-				continue
-			}
-			match = regex.MatchString(sql.LastReceiveText)
+			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
+			match = strings.Contains(sql.LastReceiveText, blackSQL.FilterSQL)
 			if match {
 				break
 			}
