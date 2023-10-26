@@ -126,7 +126,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 	return &model.Instance{
 		ID:                uint64(instanceId),
 		Name:              instance.Name,
-		DbType:            string(instance.DBType),
+		DbType:            instance.DBType,
 		RuleTemplateId:    uint64(ruleTemplateId),
 		RuleTemplateName:  instance.SQLEConfig.RuleTemplateName,
 		ProjectId:         instance.ProjectUID,
@@ -292,7 +292,7 @@ func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Inst
 
 func GetInstanceIdNameMapByIds(ctx context.Context, instanceIds []uint64) (map[uint64]string, error) {
 	// todo: remove duplicate instance id
-	ret := make(map[uint64]string, 0)
+	ret := make(map[uint64]string)
 	for _, instanceId := range instanceIds {
 		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
 			PageSize:    1,
