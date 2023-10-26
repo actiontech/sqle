@@ -94,7 +94,7 @@ func CreateApprove(id string) {
 
 	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
 	if err != nil {
-		newLog.Error("get user phone failed err: %v", err)
+		newLog.Errorf("get user phone failed err: %v", err)
 		return
 	}
 	if user.Phone == "" {

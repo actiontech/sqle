@@ -63,8 +63,8 @@ vet: swagger
 	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
 
 ## Unit Test
-test: swagger
-	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./...
+test: 
+	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./... -count 1
 
 clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
