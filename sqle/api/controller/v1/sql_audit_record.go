@@ -507,13 +507,13 @@ type GetSQLAuditRecordsReqV1 struct {
 }
 
 type SQLAuditRecord struct {
-	Creator          string                 `json:"creator"`
-	SQLAuditRecordId string                 `json:"sql_audit_record_id"`
-	SQLAuditStatus   string                 `json:"sql_audit_status"`
-	Tags             []string               `json:"tags"`
-	Instance         SQLAuditRecordInstance `json:"instance"`
-	Task             AuditTaskResV1         `json:"task"`
-	CreatedAt        *time.Time             `json:"created_at"`
+	Creator          string                  `json:"creator"`
+	SQLAuditRecordId string                  `json:"sql_audit_record_id"`
+	SQLAuditStatus   string                  `json:"sql_audit_status"`
+	Tags             []string                `json:"tags"`
+	Instance         *SQLAuditRecordInstance `json:"instance,omitempty"`
+	Task             *AuditTaskResV1         `json:"task,omitempty"`
+	CreatedAt        *time.Time              `json:"created_at,omitempty"`
 }
 
 type SQLAuditRecordInstance struct {
@@ -619,11 +619,11 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 			SQLAuditStatus:   status,
 			Tags:             tags,
 			CreatedAt:        record.RecordCreatedAt,
-			Instance: SQLAuditRecordInstance{
+			Instance: &SQLAuditRecordInstance{
 				Host: record.InstanceHost.String,
 				Port: record.InstancePort.String,
 			},
-			Task: AuditTaskResV1{
+			Task: &AuditTaskResV1{
 				Id:             record.TaskId,
 				InstanceName:   record.InstanceName.String,
 				InstanceDbType: record.DbType,
@@ -690,10 +690,10 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
 	}
 
-	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
+	return c.JSON(http.StatusOK, &GetSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: &SQLAuditRecordResData{
-			Id: auditRecordId,
+		Data: SQLAuditRecord{
+			SQLAuditRecordId: auditRecordId,
 			Task: &AuditTaskResV1{
 				Id:             record.Task.ID,
 				InstanceName:   record.Task.InstanceName(),
