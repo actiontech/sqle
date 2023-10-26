@@ -31,6 +31,8 @@ const (
 	TaskSQLSourceFromFormData       = "form_data"
 	TaskSQLSourceFromSQLFile        = "sql_file"
 	TaskSQLSourceFromMyBatisXMLFile = "mybatis_xml_file"
+	TaskSQLSourceFromZipFile        = "zip_file"
+	TaskSQLSourceFromGitRepository  = "git_repository"
 	TaskSQLSourceFromAuditPlan      = "audit_plan"
 )
 
@@ -529,8 +531,10 @@ func (s *Storage) GetExpiredTasks(start time.Time) ([]*Task, error) {
 	tasks := []*Task{}
 	err := s.db.Model(&Task{}).Select("tasks.id").
 		Joins("LEFT JOIN workflow_instance_records ON tasks.id = workflow_instance_records.task_id").
+		Joins("LEFT JOIN sql_audit_records ON tasks.id = sql_audit_records.task_id").
 		Where("tasks.created_at < ?", start).
 		Where("workflow_instance_records.id is NULL").
+		Where("sql_audit_records.id is NULL").
 		Scan(&tasks).Error
 
 	return tasks, errors.New(errors.ConnectStorageError, err)

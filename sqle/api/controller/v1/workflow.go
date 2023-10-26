@@ -16,6 +16,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -273,24 +274,6 @@ type WorkflowStepResV1 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
-func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId int) error {
-	if workflow.Record.Status != model.WorkflowStatusWaitForAudit && workflow.Record.Status != model.WorkflowStatusWaitForExecution {
-		return fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)
-	}
-	currentStep := workflow.CurrentStep()
-	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
-	}
-	if uint(stepId) != workflow.CurrentStep().ID {
-		return fmt.Errorf("workflow current step is not %d", stepId)
-	}
-
-	if !workflow.IsOperationUser(user) {
-		return fmt.Errorf("you are not allow to operate the workflow")
-	}
-	return nil
-}
-
 // @Deprecated
 // @Summary 审批通过
 // @Description approve workflow
@@ -495,7 +478,7 @@ func PrepareForWorkflowExecution(c echo.Context, projectUid string, workflow *mo
 			fmt.Errorf("workflow need to be approved first"))
 	}
 
-	err = CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	err = server.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
 	if err != nil {
 		return errors.New(errors.DataInvalid, err)
 	}
@@ -768,6 +751,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
 // @Param filter_workflow_id query string false "filter by workflow_id"
+// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
@@ -988,6 +972,7 @@ type ExportWorkflowReqV1 struct {
 // @Tags workflow
 // @Security ApiKeyAuth
 // @Param filter_subject query string false "filter subject"
+// @Param fuzzy_search_workflow_desc query string false "fuzzy search by workflow description"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"

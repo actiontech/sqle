@@ -17,6 +17,7 @@ import (
 var (
 	errCommunityEditionNotSupportCostumeLogo             = errors.New(errors.EnterpriseEditionFeatures, e.New("costume logo is enterprise version feature"))
 	errCommunityEditionNotSupportUpdatePersonaliseConfig = errors.New(errors.EnterpriseEditionFeatures, e.New("update personalise config is enterprise version feature"))
+	errCommunityEditionNotSupportFeishuAudit             = errors.New(errors.EnterpriseEditionFeatures, e.New("feishu audit is enterprise version feature"))
 )
 
 const (
@@ -49,4 +50,16 @@ func getSQLEInfo(c echo.Context) error {
 			Title:   Title,
 		},
 	})
+}
+
+func updateFeishuAuditConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportFeishuAudit)
+}
+
+func getFeishuAuditConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportFeishuAudit)
+}
+
+func testFeishuAuditConfigV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportFeishuAudit)
 }
