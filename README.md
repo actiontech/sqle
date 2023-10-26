@@ -154,10 +154,10 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 
 部署方式：
 
-1. 源码安装(更新中)
+1. [源码安装](https://actiontech.github.io/sqle-docs/docs/deploy-manual/source)
 2. [RPM 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/rpm)
-3. Docker 部署(更新中)
-4. Docker Compsoe 部署(更新中)
+3. [Docker 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/Docker)
+4. [Docker Compose部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/DockerCompose)
 
 ## 插件开发
 目前支持其他种类数据库的审核插件:
