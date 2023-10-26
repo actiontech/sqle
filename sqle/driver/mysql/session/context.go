@@ -44,6 +44,8 @@ type TableInfo struct {
 
 	// save alter table parse object from input sql;
 	AlterTables []*ast.AlterTableStmt
+
+	Selectivity map[string] /*column name or index name*/ float64 /*selectivity*/
 }
 
 type SchemaInfo struct {
@@ -712,15 +714,45 @@ func (c *Context) getSelectivityByIndex(indexes []index) (map[string] /*index na
 }
 
 func (c *Context) getCachedSelectivity(schema, table, name string) (float64, bool) {
-	if value, ok := c.sysVars[strings.Join([]string{schema, table, name}, ".")]; ok {
-		selectivity, _ := strconv.ParseFloat(value, 64)
+	if !c.schemaHasLoad {
+		// context does not load schema
+		return -1, false
+	}
+	if c.schemas[schema] == nil {
+		// schema not exist
+		return -1, false
+	}
+	if c.schemas[schema].Tables[table] == nil {
+		// table not exist
+		return -1, false
+	}
+	if c.schemas[schema].Tables[table].Selectivity == nil {
+		// selectivity not cached
+		return -1, false
+	}
+	if selectivity, ok := c.schemas[schema].Tables[table].Selectivity[name]; ok {
 		return selectivity, true
 	}
 	return -1, false
 }
 
 func (c *Context) cacheSelectivity(schema, table, name string, selectivity float64) {
-	c.AddSystemVariable(strings.Join([]string{schema, table, name}, "."), fmt.Sprint(selectivity))
+	if !c.schemaHasLoad {
+		// context does not load schema
+		return
+	}
+	if c.schemas[schema] == nil {
+		// schema not exist
+		return
+	}
+	if c.schemas[schema].Tables[table] == nil {
+		// table not exist
+		return
+	}
+	if c.schemas[schema].Tables[table].Selectivity == nil {
+		c.schemas[schema].Tables[table].Selectivity = make(map[string]float64)
+	}
+	c.schemas[schema].Tables[table].Selectivity[name] = selectivity
 }
 
 func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string) (map[string]float64, error) {
