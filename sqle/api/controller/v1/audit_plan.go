@@ -792,7 +792,7 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
-func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankListAduitPlanSQL) []*AuditPlanSQLReqV1 {
+func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankListAuditPlanSQL) []*AuditPlanSQLReqV1 {
 	fileredSQLs := []*AuditPlanSQLReqV1{}
 	l := log.NewEntry()
 	for _, sql := range sqls {
@@ -800,7 +800,7 @@ func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankLi
 		for _, blankSQL := range blankList {
 			regex, err := regexp.Compile(blankSQL.FilterSQL)
 			if err != nil {
-				l.Errorf("blanklist regexp compile failed:%v", err)
+				l.Errorf("blanklist regexp compile failed:%v, regexp:%s", err, blankSQL.FilterSQL)
 				continue
 			}
 			match = regex.MatchString(sql.LastReceiveText)
@@ -866,10 +866,13 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
+	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blankList, err := s.GetBlankListAduitPlanSQLs()
+	blankList, err := s.GetBlankListAuditPlanSQLs()
 	if err == nil {
 		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+	} else {
+		l.Infoln("blanklist is not used")
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
@@ -877,7 +880,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, false))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -919,17 +922,20 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
+	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blankList, err := s.GetBlankListAduitPlanSQLs()
+	blankList, err := s.GetBlankListAuditPlanSQLs()
 	if err == nil {
 		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+	} else {
+		l.Infoln("blanklist is not used")
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, true))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, true))
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
