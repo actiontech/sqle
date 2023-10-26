@@ -17,10 +17,6 @@ func getInstancesTypePercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
 
-func getLicenseUsageV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
-}
-
 func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
