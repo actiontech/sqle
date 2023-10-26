@@ -2409,70 +2409,139 @@ func TestDMLCheckUpdateOrDeleteHasWhere(t *testing.T) {
 }
 
 func TestDMLCheckJoinHasOn(t *testing.T) {
-	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinHasOn].Rule
-	t.Run(`select join with on`, func(t *testing.T) {
-		runSingleRuleInspectCase(
-			rule,
-			t,
-			``,
-			DefaultMysqlInspectOffline(),
-			`
-SELECT * FROM t1 
-JOIN t2 ON t2.a = t1.a 
-JOIN t3 ON t3.b = t2.b
-JOIN t4 ON t4.a = t1.a`,
-			newTestResult())
-	})
-	t.Run(`select join without on`, func(t *testing.T) {
-		runSingleRuleInspectCase(
-			rule,
-			t,
-			``,
-			DefaultMysqlInspectOffline(),
-			`
-SELECT * FROM t1 
-JOIN t2 ON t2.a = t1.a 
-JOIN t3 
-JOIN t4 ON t4.a = t1.a`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
-	})
-	t.Run(`select join without on`, func(t *testing.T) {
-		runSingleRuleInspectCase(
-			rule,
-			t,
-			``,
-			DefaultMysqlInspectOffline(),
-			`SELECT * FROM t1 JOIN t2`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
-	})
-	t.Run(`update join with on`, func(t *testing.T) {
-		runSingleRuleInspectCase(
-			rule,
-			t,
-			``,
-			DefaultMysqlInspectOffline(),
-			`
-UPDATE employees
-        JOIN
-    merits ON employees.performance = merits.performance 
-SET 
-    salary = salary + salary * 0.015`,
-			newTestResult())
-	})
-	t.Run(`update join without on`, func(t *testing.T) {
-		runSingleRuleInspectCase(
-			rule,
-			t,
-			``,
-			DefaultMysqlInspectOffline(),
-			`
-UPDATE employees
-        JOIN
-    merits 
-SET 
-    salary = salary + salary * 0.015`,
-			newTestResult().addResult(rulepkg.DMLCheckJoinHasOn))
-	})
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckHasJoinCondition].Rule
+	// this rule cover ON USING WHERE clause
+	caseWithResult := map[string] /*case name*/ string{
+		"no condition at all": `
+			SELECT * 
+			FROM t1 
+			JOIN t2`,
+		"no condition at all 2": `
+			UPDATE employees
+			JOIN merits
+			SET salary = salary + salary * 0.015`,
+		"on condition": `
+			SELECT * 
+			FROM t1
+			JOIN t2 ON t2.a = t1.a
+			JOIN t3
+			JOIN t4 ON t4.a = t1.a`,
+		"using condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 USING(id)
+			INNER JOIN table3 t3`,
+		"where condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2
+			INNER JOIN table3 t3
+			WHERE t1.id = t2.id`,
+		"mix where and using condition": `
+			SELECT *
+			FROM table1 t1 
+			JOIN table2 t2 USING(id)
+			JOIN table3 t3
+			WHERE t2.id = t1.id
+			AND t3.id = 1`,
+		"mix where and using condition2": `
+			SELECT *
+			FROM table1 t1 
+			JOIN table2 t2 
+			JOIN table3 t3 USING(id)
+			WHERE t2.id = t2.id
+			AND t3.id = 1`,
+		"mix where and on condition": `
+			SELECT *
+			FROM table1 t1 
+			JOIN table2 t2 ON t1.id = t2.id
+			JOIN table3 t3
+			WHERE t2.id = t2.id
+			AND t3.id = 1`,
+		"mix using and on condition": `
+			SELECT *
+			FROM table1 t1 
+			JOIN table2 t2 ON t1.id = t2.id
+			JOIN table3 t3 USING(id)
+			JOIN table4 t4
+			WHERE t2.id = t2.id
+			AND t3.id = 1`,
+	}
+	caseWithoutResult := map[string] /*case name*/ string{
+		"not join": `
+			SELECT t1.id,t1.name FROM t1
+		`,
+		"on condition": `
+			SELECT * FROM t1
+			JOIN t2 ON t2.a = t1.a
+			JOIN t3 ON t3.b = t2.b
+			JOIN t4 ON t4.a = t1.a`,
+		"on condition 2": `
+			UPDATE employees
+		    JOIN  merits ON employees.performance = merits.performance
+			SET salary = salary + salary * 0.015`,
+		"using condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 USING(id)
+			INNER JOIN table3 t3 USING(id)`,
+		"where condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2
+			INNER JOIN table3 t3
+			WHERE t1.id = t2.id
+			AND t2.id = t3.id`,
+		"mix using and where condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 USING(id)
+			INNER JOIN table3 t3
+			WHERE t2.id = t3.id`,
+		"mix using and on condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 USING(id)
+			INNER JOIN table3 t3 ON t2.id = t3.id`,
+		"mix where and on condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 ON t1.id=t2.id
+			INNER JOIN table3 t3 
+			WHERE t2.id = t3.id`,
+		"mix where,using and on condition": `
+			SELECT *
+			FROM table1 t1 
+			INNER JOIN table2 t2 ON t1.id=t2.id
+			INNER JOIN table3 t3 
+			INNER JOIN table4 t4 USING(id)
+			WHERE t2.id = t3.id`,
+	}
+	for name, sql := range caseWithoutResult {
+		t.Run(name, func(t *testing.T) {
+			runSingleRuleInspectCase(
+				rule,
+				t,
+				name,
+				DefaultMysqlInspectOffline(),
+				sql,
+				newTestResult(),
+			)
+		})
+	}
+	for name, sql := range caseWithResult {
+		t.Run(name, func(t *testing.T) {
+			runSingleRuleInspectCase(
+				rule,
+				t,
+				name,
+				DefaultMysqlInspectOffline(),
+				sql,
+				newTestResult().addResult(rulepkg.DMLCheckHasJoinCondition),
+			)
+		})
+	}
+
 }
 
 func TestDMLHintCountFuncWithCol(t *testing.T) {
