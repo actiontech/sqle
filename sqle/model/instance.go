@@ -324,7 +324,7 @@ type InstanceWorkFlowStatusCount struct {
 func (s *Storage) GetInstanceWorkFlowStatusCountByProject(instances []*Instance, queryStatus []string) ([]*InstanceWorkFlowStatusCount, error) {
 	var instanceWorkFlowStatusCount []*InstanceWorkFlowStatusCount
 
-	var instanceIds []uint64
+	instanceIds := make([]uint64, 0)
 	var instanceMap = make(map[uint64]InstanceWorkFlowStatusCount)
 	for _, instance := range instances {
 		instanceMap[instance.ID] = InstanceWorkFlowStatusCount{

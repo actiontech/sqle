@@ -34,7 +34,7 @@ func mockServer() *httptest.Server {
 		res, err := json.Marshal(response)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Printf("reponse err ")
+			log.Printf("response err %v", err)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -42,7 +42,7 @@ func mockServer() *httptest.Server {
 
 		_, err = w.Write(res)
 		if err != nil {
-			log.Printf("reponse err ")
+			log.Printf("response err %v ", err)
 		}
 	}
 	return httptest.NewServer(http.HandlerFunc(f))
