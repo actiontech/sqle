@@ -2672,18 +2672,22 @@ func isJoinConditionInWhereStmt(ctx *session.Context, stmt ast.ExprNode, node *a
 	stmt.Accept(&equalConditionVisitor)
 
 	for _, column := range equalConditionVisitor.ConditionList {
-		// 右子树的tableSource在where的等值条件中出现，等值条件的另一个表名是否在左子树中的tableSource出现
-		if isTableMatcheNode(ctx, node.Right, column.Left) && isTableInNode(ctx, node.Left, column.Right) {
+		/*
+			当一个Join节点没有ON或者Using的连接条件时，需要检查Where语句中是否包含连接条件
+			Where语句中包含连接条件的判断依据是：
+			Where语句中等值条件两侧的不同表的两列，其中一列属于Join右子节点对应的表，另一列属于Join左子树中任意一张表
+		*/
+		if columnInTable(ctx, node.Right, column.Left) && columnInNode(ctx, node.Left, column.Right) {
 			return true
 		}
-		if isTableMatcheNode(ctx, node.Right, column.Right) && isTableInNode(ctx, node.Left, column.Left) {
+		if columnInTable(ctx, node.Right, column.Right) && columnInNode(ctx, node.Left, column.Left) {
 			return true
 		}
 	}
 	return false
 }
 
-func isTableMatcheNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
+func columnInTable(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
 	if node == nil {
 		return false
 	}
@@ -2695,7 +2699,7 @@ func isTableMatcheNode(ctx *session.Context, node ast.ResultSetNode, columnName 
 }
 
 // 迭代检查表名称是否与JOIN节点中的tableSource的表名或表别名匹配
-func isTableInNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
+func columnInNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
 	if node == nil {
 		return false
 	}
@@ -2703,10 +2707,10 @@ func isTableInNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast
 	case *ast.TableSource:
 		return getTableSourceByColumnName(ctx, []*ast.TableSource{t}, columnName) != nil
 	case *ast.Join:
-		if isTableInNode(ctx, t.Right, columnName) {
+		if columnInNode(ctx, t.Right, columnName) {
 			return true
 		}
-		if isTableInNode(ctx, t.Left, columnName) {
+		if columnInNode(ctx, t.Left, columnName) {
 			return true
 		}
 	}
