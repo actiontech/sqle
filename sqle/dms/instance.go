@@ -34,6 +34,10 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 		}
 
 		for _, item := range dbServices {
+			if item.SQLEConfig == nil || item.SQLEConfig.RuleTemplateID == "" {
+				continue
+			}
+
 			instance, err := convertInstance(item)
 			if err != nil {
 				return nil, fmt.Errorf("convert instance error: %v", err)
