@@ -720,7 +720,7 @@ func (c *Context) getCachedSelectivity(schema, table, name string) (float64, boo
 }
 
 func (c *Context) cacheSelectivity(schema, table, name string, selectivity float64) {
-	c.sysVars[strings.Join([]string{schema, table, name}, ".")] = fmt.Sprint(selectivity)
+	c.AddSystemVariable(strings.Join([]string{schema, table, name}, "."), fmt.Sprint(selectivity))
 }
 
 func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string) (map[string]float64, error) {
@@ -750,8 +750,8 @@ func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string
 	for indexName, selectivity := range indexSelectivity {
 		c.cacheSelectivity(schemaName, tableName, indexName, selectivity)
 	}
-	for index, selectivity := range cachedIndexSelectivity {
-		indexSelectivity[index] = selectivity
+	for indexName, selectivity := range cachedIndexSelectivity {
+		indexSelectivity[indexName] = selectivity
 	}
 	return indexSelectivity, nil
 }
@@ -806,26 +806,36 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	return columnSelectivityMap, nil
 }
 
-func (c *Context) GetSelectivityOfColumns(tableName *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
-	if tableName == nil || len(indexColumns) == 0 {
+func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+	if stmt == nil || len(indexColumns) == 0 {
 		return nil, nil
 	}
-	schemaName := c.GetSchemaName(tableName)
-	// TODO get cache if exist
+	schemaName := c.GetSchemaName(stmt)
+	tableName := stmt.Name.L
+	cachedIndexSelectivity := make(map[string]float64)
 	columns := make([]column, 0, len(indexColumns))
-	for _, indexColumn := range indexColumns {
-		columns = append(columns, column{
-			SchemaName: schemaName,
-			TableName:  tableName.Name.L,
-			ColumnName: indexColumn,
-		})
+	for _, columnName := range indexColumns {
+		if selectivity, ok := c.getCachedSelectivity(schemaName, tableName, columnName); ok {
+			cachedIndexSelectivity[columnName] = selectivity
+		} else {
+			columns = append(columns, column{
+				SchemaName: schemaName,
+				TableName:  tableName,
+				ColumnName: columnName,
+			})
+		}
 	}
-	columnSelectivityMap, err := c.getSelectivityByColumn(columns)
+	columnSelectivity, err := c.getSelectivityByColumn(columns)
 	if err != nil {
 		return nil, fmt.Errorf("get selectivity by index error: %v", err)
 	}
-	// TODO cache column selectivity
-	return columnSelectivityMap, nil
+	for indexName, selectivity := range columnSelectivity {
+		c.cacheSelectivity(schemaName, tableName, indexName, selectivity)
+	}
+	for indexName, selectivity := range cachedIndexSelectivity {
+		columnSelectivity[indexName] = selectivity
+	}
+	return columnSelectivity, nil
 }
 
 // GetSchemaCharacter get schema default character.
