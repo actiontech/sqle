@@ -792,15 +792,15 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
-func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankListAuditPlanSQL) []*AuditPlanSQLReqV1 {
-	fileredSQLs := []*AuditPlanSQLReqV1{}
+func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV1 {
+	filteredSQLs := []*AuditPlanSQLReqV1{}
 	l := log.NewEntry()
 	for _, sql := range sqls {
 		var match bool
-		for _, blankSQL := range blankList {
-			regex, err := regexp.Compile(blankSQL.FilterSQL)
+		for _, blackSQL := range blackList {
+			regex, err := regexp.Compile(blackSQL.FilterSQL)
 			if err != nil {
-				l.Errorf("blanklist regexp compile failed:%v, regexp:%s", err, blankSQL.FilterSQL)
+				l.Errorf("blacklist regexp compile failed:%v, regexp:%s", err, blackSQL.FilterSQL)
 				continue
 			}
 			match = regex.MatchString(sql.LastReceiveText)
@@ -809,10 +809,10 @@ func filterSQLsByBlankList(sqls []*AuditPlanSQLReqV1, blankList []*model.BlankLi
 			}
 		}
 		if !match {
-			fileredSQLs = append(fileredSQLs, sql)
+			filteredSQLs = append(filteredSQLs, sql)
 		}
 	}
-	return fileredSQLs
+	return filteredSQLs
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
@@ -868,11 +868,11 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blankList, err := s.GetBlankListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLs()
 	if err == nil {
-		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
-		l.Warnf("blanklist is not used, err:%v", err)
+		l.Warnf("blacklist is not used, err:%v", err)
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
@@ -924,11 +924,11 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blankList, err := s.GetBlankListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLs()
 	if err == nil {
-		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
+		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
-		l.Warnf("blanklist is not used, err:%v", err)
+		l.Warnf("blacklist is not used, err:%v", err)
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
