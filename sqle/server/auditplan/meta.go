@@ -89,7 +89,7 @@ var Metas = []Meta{
 	{
 		Type:         TypeMySQLMybatis,
 		Desc:         "Mybatis 扫描",
-		InstanceType: InstanceTypeMySQL,
+		InstanceType: InstanceTypeAll,
 		CreateTask:   NewDefaultTask,
 	},
 	{

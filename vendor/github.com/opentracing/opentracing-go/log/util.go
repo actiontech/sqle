@@ -1,9 +1,6 @@
 package log
 
-import (
-	"fmt"
-	"reflect"
-)
+import "fmt"
 
 // InterleavedKVToFields converts keyValues a la Span.LogKV() to a Field slice
 // a la Span.LogFields().
@@ -49,10 +46,6 @@ func InterleavedKVToFields(keyValues ...interface{}) ([]Field, error) {
 		case float64:
 			fields[i] = Float64(key, typedVal)
 		default:
-			if typedVal == nil || (reflect.ValueOf(typedVal).Kind() == reflect.Ptr && reflect.ValueOf(typedVal).IsNil()) {
-				fields[i] = String(key, "nil")
-				continue
-			}
 			// When in doubt, coerce to a string
 			fields[i] = String(key, fmt.Sprint(typedVal))
 		}

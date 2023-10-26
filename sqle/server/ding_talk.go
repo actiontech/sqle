@@ -65,6 +65,10 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
 						continue
 					}
+					if workflow.Record.Status == model.WorkflowStatusCancel {
+						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						continue
+					}
 
 					instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
 					for _, item := range workflow.Record.InstanceRecords {
@@ -119,6 +123,10 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 					if !exist {
 						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
+						continue
+					}
+					if workflow.Record.Status == model.WorkflowStatusCancel {
+						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
 						continue
 					}
 

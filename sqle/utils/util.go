@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -68,6 +69,20 @@ func RemoveDuplicate(c []string) []string {
 	for _, v := range c {
 		beforeLen := len(tmpMap)
 		tmpMap[v] = struct{}{}
+		AfterLen := len(tmpMap)
+		if beforeLen != AfterLen {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+func RemoveDuplicatePtrUint64(c []*uint64) []*uint64 {
+	var tmpMap = map[uint64]struct{}{}
+	var result = []*uint64{}
+	for _, v := range c {
+		beforeLen := len(tmpMap)
+		tmpMap[*v] = struct{}{}
 		AfterLen := len(tmpMap)
 		if beforeLen != AfterLen {
 			result = append(result, v)
@@ -250,4 +265,32 @@ func TryClose(ch chan struct{}) {
 	if !IsClosed(ch) {
 		close(ch)
 	}
+}
+
+// 对比两个float64中更大的并返回
+func MaxFloat64(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// 计算float64变量的增量平均值
+func IncrementalAverageFloat64(oldAverage, newValue float64, oldCount, newCount int) float64 {
+	return (oldAverage*float64(oldCount) + newValue) / (float64(oldCount) + float64(newCount))
+}
+
+// 判断字符串是否是Git Http URL
+func IsGitHttpURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return false
+	}
+	if !strings.HasSuffix(u.Path, ".git") {
+		return false
+	}
+	return true
 }
