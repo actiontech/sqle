@@ -711,22 +711,47 @@ func (c *Context) getSelectivityByIndex(indexes []index) (map[string] /*index na
 	return indexSelectivityMap, nil
 }
 
+func (c *Context) getCachedSelectivity(schema, table, name string) (float64, bool) {
+	if value, ok := c.sysVars[strings.Join([]string{schema, table, name}, ".")]; ok {
+		selectivity, _ := strconv.ParseFloat(value, 64)
+		return selectivity, true
+	}
+	return -1, false
+}
+
+func (c *Context) cacheSelectivity(schema, table, name string, selectivity float64) {
+	c.sysVars[strings.Join([]string{schema, table, name}, ".")] = fmt.Sprint(selectivity)
+}
+
 func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string) (map[string]float64, error) {
 	if len(indexNames) == 0 || stmt == nil {
 		return nil, nil
 	}
 	schemaName := c.GetSchemaName(stmt)
+	tableName := stmt.Name.L
+	cachedIndexSelectivity := make(map[string]float64)
 	indexes := make([]index, 0, len(indexNames))
 	for _, indexName := range indexNames {
-		indexes = append(indexes, index{
-			SchemaName: schemaName,
-			TableName:  stmt.Name.L,
-			IndexName:  indexName,
-		})
+		if selectivity, ok := c.getCachedSelectivity(schemaName, tableName, indexName); ok {
+			cachedIndexSelectivity[indexName] = selectivity
+		} else {
+			indexes = append(indexes, index{
+				SchemaName: schemaName,
+				TableName:  tableName,
+				IndexName:  indexName,
+			})
+		}
 	}
 	indexSelectivity, err := c.getSelectivityByIndex(indexes)
 	if err != nil {
 		return nil, fmt.Errorf("get selectivity by index error: %v", err)
+	}
+
+	for indexName, selectivity := range indexSelectivity {
+		c.cacheSelectivity(schemaName, tableName, indexName, selectivity)
+	}
+	for index, selectivity := range cachedIndexSelectivity {
+		indexSelectivity[index] = selectivity
 	}
 	return indexSelectivity, nil
 }
@@ -786,6 +811,7 @@ func (c *Context) GetSelectivityOfColumns(tableName *ast.TableName, indexColumns
 		return nil, nil
 	}
 	schemaName := c.GetSchemaName(tableName)
+	// TODO get cache if exist
 	columns := make([]column, 0, len(indexColumns))
 	for _, indexColumn := range indexColumns {
 		columns = append(columns, column{
@@ -798,6 +824,7 @@ func (c *Context) GetSelectivityOfColumns(tableName *ast.TableName, indexColumns
 	if err != nil {
 		return nil, fmt.Errorf("get selectivity by index error: %v", err)
 	}
+	// TODO cache column selectivity
 	return columnSelectivityMap, nil
 }
 
