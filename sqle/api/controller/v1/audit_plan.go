@@ -872,7 +872,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	if err == nil {
 		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
 	} else {
-		l.Infoln("blanklist is not used")
+		l.Infof("blanklist is not used, err:%v", err)
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
@@ -928,7 +928,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if err == nil {
 		reqSQLs = filterSQLsByBlankList(reqSQLs, blankList)
 	} else {
-		l.Infoln("blanklist is not used")
+		l.Infof("blanklist is not used, err:%v", err)
 	}
 
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
