@@ -844,6 +844,115 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 	)
 }
 
+type testCase struct {
+	Name         string
+	SQL          string
+	ExpectResult *testResult
+}
+
+func TestDMLCheckHasJoinCondition(t *testing.T) {
+
+	casesWithResult := []testCase{
+		{
+			Name: "select with no join condition, trigger rule",
+			SQL: `
+				SELECT exist_tb_1.id, exist_tb_1.v1, exist_tb_2.v1    
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_2  
+				WHERE exist_tb_1.id > 10 
+				ORDER BY exist_tb_1.id
+				LIMIT 10;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckHasJoinCondition).
+				addResult(rulepkg.DMLCheckSelectWithOrderBy),
+		},
+		{
+			Name: "select with using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_1.v1, exist_tb_3.v3  
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_3 USING(id)
+				WHERE exist_tb_3.v3 > 5;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		}, {
+			Name: "select mix with where and on condition, does not trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_1.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select with where condition match another table, trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select mix with where on using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_2.id, exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 t1 USING(v1)
+				JOIN exist_db.exist_tb_3 t3 ON t1.id = t3.id
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex).
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "update, does not trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1  
+				SET v1 = 'new_value'  
+				WHERE id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+		{
+			Name: "update without any join condition, trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1 t1
+				JOIN exist_db.exist_tb_1 
+				SET t1.v1 = 'new_value'  
+				WHERE t1.id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery).
+				addResult(rulepkg.DMLCheckHasJoinCondition),
+		},
+		{
+			Name: "delete, does not trigger rule",
+			SQL: `
+				DELETE FROM exist_db.exist_tb_3 t3
+				WHERE t3.id IN (SELECT id FROM exist_db.exist_tb_1 WHERE v1 = 'some_value');
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+	}
+	for _, c := range casesWithResult {
+		runDefaultRulesInspectCase(t, c.Name, DefaultMysqlInspect(), c.SQL, c.ExpectResult)
+	}
+}
 func TestCheckInvalidUpdate(t *testing.T) {
 	runDefaultRulesInspectCase(t, "update: ok", DefaultMysqlInspect(),
 		`
@@ -925,7 +1034,7 @@ update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -946,63 +1055,63 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 }
 

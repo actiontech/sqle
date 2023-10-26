@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/opcode"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -270,5 +271,41 @@ func (v *WhereVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 }
 
 func (v *WhereVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type EqualColumns struct {
+	Left  *ast.ColumnName
+	Right *ast.ColumnName
+}
+type EqualConditionVisitor struct {
+	ConditionList []EqualColumns
+}
+
+func (v *EqualConditionVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.BinaryOperationExpr:
+		var tableNameL, tableNameR string
+		var equalColumns EqualColumns
+		if stmt.Op == opcode.EQ {
+			switch t := stmt.L.(type) {
+			case *ast.ColumnNameExpr:
+				tableNameL = t.Name.Table.L
+				equalColumns.Left = t.Name
+			}
+			switch t := stmt.R.(type) {
+			case *ast.ColumnNameExpr:
+				tableNameR = t.Name.Table.L
+				equalColumns.Right = t.Name
+			}
+			if tableNameL != "" && tableNameR != "" && tableNameL != tableNameR {
+				v.ConditionList = append(v.ConditionList, equalColumns)
+			}
+		}
+	}
+	return in, false
+}
+
+func (v *EqualConditionVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
