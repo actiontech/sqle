@@ -5,19 +5,6 @@ package rule
 
 import driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 
-func init() {
-	loadDefaultRuleKnowledge()
-}
-
-func loadDefaultRuleKnowledge() {
-	for i, handler := range RuleHandlers {
-		if knowledge, ok := defaultRuleKnowledgeMap[handler.Rule.Name]; ok {
-			handler.Rule.Knowledge = knowledge
-			RuleHandlers[i] = handler
-		}
-	}
-}
-
 var defaultRuleKnowledgeMap = map[string]driverV2.RuleKnowledge{
 	DDLCheckTableSize: {
 		Content: "不建议操作：\n\n`ALTER TABLE -- 修改表结构`\n\n`DROP TABLE -- 删除表`\n\n`TRUNCATE TABLE -- 清空表数据`\n\n`RENAME TABLE -- 重命名表`\n",
