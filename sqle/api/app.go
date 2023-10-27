@@ -272,16 +272,16 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 
 		// sql manager
-		v1ProjectRouter.GET("/projects/:project_name/sql_manages", v1.GetSqlManageList)
-		v1ProjectRouter.PATCH("/projects/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
-		v1ProjectRouter.GET("/projects/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
+		v1ProjectRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
+		v1ProjectRouter.PATCH("/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
+		v1ProjectRouter.GET("/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
 
 		// sql audit record
-		v1ProjectRouter.POST("/projects/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
-		v1ProjectRouter.GET("/projects/:project_name/sql_audit_records", v1.GetSQLAuditRecordsV1)
-		v1ProjectRouter.GET("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.GetSQLAuditRecordV1)
-		v1ProjectRouter.PATCH("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
-		v1ProjectRouter.GET("/projects/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
+		v1ProjectRouter.POST("/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records", v1.GetSQLAuditRecordsV1)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.GetSQLAuditRecordV1)
+		v1ProjectRouter.PATCH("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
 
 	}
 
@@ -371,7 +371,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
 
 	// task
-	v1ProjectRouter.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
+	v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
