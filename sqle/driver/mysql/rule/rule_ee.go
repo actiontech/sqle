@@ -25,7 +25,7 @@ var defaultRuleKnowledgeMap = map[string]driverV2.RuleKnowledge{
 		Content: "样例说明：\n```\nCREATE TABLE IF NOT EXISTS table_a (  --建议使用 IF NOT EXISTS避免重复\n    id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',\n    column_a INT NOT NULL DEFAULT 0 COMMENT 'column_a',\n    PRIMARY KEY (id)\n) ENGINE=InnoDB AUTO_INCREMENT=0 COMMENT 'table_a';\n```",
 	},
 	DDLCheckObjectNameLength: {
-		Content: "样例说明：\n\n```\nCREATE TABLE this_is_a_64_character_table_name_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (\n    this_is_a_64_character_column_name_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx INT,\n    INDEX this_is_a_64_character_index_name_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx (this_is_a_64_character_column_name_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n);-- 不能超过阈值\n```",
+		Content: "样例说明：\n\n```\nCREATE TABLE this_is_a_64_character_table_name_000000000000000000000000000000 (\n    this_is_a_64_character_column_name_00000000000000000000000000000 INT,\n    INDEX this_is_a_64_character_index_name_000000000000000000000000000000 (this_is_a_64_character_column_name_00000000000000000000000000000)\n);-- 不能超过阈值\n```",
 	},
 	DDLCheckPKNotExist: {
 		Content: "样例说明：\n```\nCREATE TABLE table_a (\n    id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',\n    column_a INT NOT NULL DEFAULT 0 COMMENT 'column_a',\n    column_b VARCHAR(10) DEFAULT NULL COMMENT 'column_b',\n    PRIMARY KEY (id)    --建表语句中需使用主键\n) ENGINE=InnoDB AUTO_INCREMENT=0 COMMENT 'table_a';\n```",
