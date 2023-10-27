@@ -39,7 +39,7 @@ var defaultRuleKnowledgeMap = map[string]driverV2.RuleKnowledge{
 	DMLCheckJoinFieldType: {
 		Content: "样例说明：\n```\nSELECT \n  t_a.column_a,t_b.column_b\nFROM \n  table_a AS t_a\nJOIN\n  table_b AS t_b ON t_a.column_a=t_b.column_b  -- 例：column_a INT、column_b INT，建议匹配的字段类型一致，避免隐式转换\n```\n",
 	},
-	DMLCheckJoinHasOn: {
+	DMLCheckHasJoinCondition: {
 		Content: "样例说明：\n```\nSELECT \n  t_a.column_a,t_b.column_b\nFROM \n  table_a AS t_a\nJOIN\n  table_b AS t_b ON t_a.column_a=t_b.column_b  -- 如果没有关联条件，那JOIN就没意义，只是查询2张无关联表。\n```\n",
 	},
 	DDLCheckColumnCharLength: {
