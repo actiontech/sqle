@@ -298,7 +298,7 @@ func TestOptimizer_Optimize(t *testing.T) {
 				{"select count(distinct `v2`)", [][]string{cardinalityHead, {"1000"}}},
 			},
 			nil,
-			[]*OptimizeResult{{"EXIST_TB_5", []string{"v2","v1"}, ""}},
+			[]*OptimizeResult{{"EXIST_TB_5", []string{"v2", "v1"}, ""}},
 		},
 		{
 			"select v2 from EXIST_TB_5 as tb5 where v1 = '1'",
@@ -362,9 +362,11 @@ func TestOptimizer_Optimize(t *testing.T) {
 			optimizeResults, err := o.Optimize(context.TODO(), ss.(*ast.SelectStmt))
 			assert.NoError(t, err)
 			assert.Equal(t, len(tt.output), len(optimizeResults))
-			for i, want := range tt.output {
-				assert.Equal(t, want.TableName, optimizeResults[i].TableName)
-				assert.Equal(t, want.IndexedColumns, optimizeResults[i].IndexedColumns)
+			if len(tt.output) == len(optimizeResults) {
+				for i, want := range tt.output {
+					assert.Equal(t, want.TableName, optimizeResults[i].TableName)
+					assert.Equal(t, want.IndexedColumns, optimizeResults[i].IndexedColumns)
+				}
 			}
 			mocker.MatchExpectationsInOrder(true)
 			assert.NoError(t, mocker.ExpectationsWereMet())
@@ -376,18 +378,18 @@ func TestOptimizer_parseSelectStmt(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		input string
-		sel   map[string] /*table name*/ string /*select SQL*/
-		join  map[string] /*table name*/ string /*join on column*/
+		sel   map[string] /*table name*/ string          /*select SQL*/
+		join  map[string] /*table name*/ map[string]bool /*join on column*/
 	}{
 		// single select(single table)
 		{"select 1", nil, nil},
 		{"select * from t1", map[string]string{"t1": "SELECT * FROM t1"}, nil},
 		{"select * from t1 as t2", map[string]string{"t2": "SELECT * FROM t1 AS t2", "t1": "SELECT * FROM t1 AS t2"}, nil},
 		// single select(multi table/join)
-		{"select * from t1 join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
-		{"select * from t1 left join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
-		{"select * from t1 right join t2 on t1.id = t2.id", nil, map[string]string{"t1": "id", "t2": "id"}},
-		{"select * from t1 as t1_alias join t2 as t2_alias on t1_alias.id = t2_alias.id", nil, map[string]string{"t1_alias": "id", "t2_alias": "id"}},
+		{"select * from t1 join t2 on t1.id = t2.id", nil, map[string]map[string]bool{"t1": {"id": true}, "t2": {"id": true}}},
+		{"select * from t1 left join t2 on t1.id = t2.id", nil, map[string]map[string]bool{"t1": {"id": true}, "t2": {"id": true}}},
+		{"select * from t1 right join t2 on t1.id = t2.id", nil, map[string]map[string]bool{"t1": {"id": true}, "t2": {"id": true}}},
+		{"select * from t1 as t1_alias join t2 as t2_alias on t1_alias.id = t2_alias.id", nil, map[string]map[string]bool{"t1_alias": {"id": true}, "t2_alias": {"id": true}}},
 		// multi select
 		{"select * from (select * from t1) as t2", map[string]string{"t2": "SELECT * FROM (SELECT * FROM (t1)) AS t2", "t1": "SELECT * FROM t1"}, nil},
 		{"select * from t1 where id = (select * from t2)", map[string]string{"t1": "SELECT * FROM t1 WHERE id=(SELECT * FROM t2)", "t2": "SELECT * FROM t2"}, nil},
@@ -398,7 +400,7 @@ func TestOptimizer_parseSelectStmt(t *testing.T) {
 			assert.NoError(t, err)
 
 			o := Optimizer{tables: map[string]*tableInSelect{}}
-			o.parseSelectStmt(stmt.(*ast.SelectStmt))
+			o.parseTableFromSelectStmt(stmt.(*ast.SelectStmt))
 			for n, tbl := range o.tables {
 				if tbl.singleTableSel == nil {
 					c, ok := tt.join[n]
