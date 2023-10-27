@@ -184,18 +184,6 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 
 # 📞 商业支持
 如果您想获得 SQLE 的商业支持, 您可以联系我们：
-|渠道 | 链接 |
-| -- | -- |
-| 代码库 | [github.com/actiontech/sqle](https://github.com/actiontech/sqle) |
-| UI 库 | [github.com/actiontech/sqle-ui](https://github.com/actiontech/sqle-ui) |
-| 文档库 | [github.com/actiontech/sqle-docs](https://github.com/actiontech/sqle-docs) |
-| 文档主页 | [actiontech.github.io/sqle-docs](https://actiontech.github.io/sqle-docs/) |
-| 社区网站 | [opensource.actionsky.com](https://opensource.actionsky.com) |
-| 微信技术交流群 | 添加管理员：ActionOpenSource |
-| 开源社区微信公众号 | ![QR_code](./QR_code.png) |
-
-## 联系我们
-如果想获得 SQLE 的商业支持, 您可以联系我们：
 * 全国支持: 400-820-6580
 * 华北地区: 86-13910506562, 汪先生
 * 华南地区: 86-18503063188, 曹先生
