@@ -31,6 +31,9 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 		Typ:        dr.Category,
 		DBType:     dbType,
 		Params:     dr.Params,
+		Knowledge: &RuleKnowledge{
+			Content: dr.Knowledge.Content,
+		},
 	}
 }
 
