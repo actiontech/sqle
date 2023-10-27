@@ -838,3 +838,44 @@ func ConvertAliasToTable(alias string, tables []*ast.TableSource) (*ast.TableNam
 	}
 	return nil, errors.New("can not find table")
 }
+
+func DoesNotJoinTables(tableRefs *ast.Join) bool {
+	return tableRefs.Left == nil || tableRefs.Right == nil
+}
+
+func IsJoinConditionInOnClause(joinNode *ast.Join) bool {
+	return joinNode.On != nil
+}
+
+func IsJoinConditionInUsingClause(joinNode *ast.Join) bool {
+	return len(joinNode.Using) > 0
+}
+
+func GetJoinedTableName(joinNode *ast.Join) (*ast.TableName, *ast.TableName) {
+	var leftTableName, rightTableName *ast.TableName
+	if tableSource, ok := joinNode.Right.(*ast.TableSource); ok {
+		rightTableName, _ = tableSource.Source.(*ast.TableName)
+	}
+	if tableSource, ok := joinNode.Left.(*ast.TableSource); ok {
+		leftTableName, _ = tableSource.Source.(*ast.TableName)
+	}
+	if leftTableName == nil || rightTableName == nil {
+		return nil, nil
+	}
+	return leftTableName, rightTableName
+}
+
+// Support ON Clause like
+// ON (column_1, column_2)
+// ON table_1.column_1 = COALESCE(table_1.column_1, table_2.column_1)
+// ON (table_1.column_1,table_1.column_2 = table_2.column_1,table_2.column_2)
+// ON table_1.column_1=table_2.column_2
+// ON table_1.column_1=table_2.column_2 AND table_2.column_1=table_3.column_2
+func GetJoinedColumnNameExprInOnClause(joinNode *ast.Join) []*ast.ColumnNameExpr {
+	if !IsJoinConditionInOnClause(joinNode) {
+		return nil
+	}
+	visitor := ColumnNameVisitor{}
+	joinNode.On.Accept(&visitor)
+	return visitor.ColumnNameList
+}

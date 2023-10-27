@@ -2621,15 +2621,11 @@ func checkHasJoinCondition(input *RuleHandlerInput) error {
 	return nil
 }
 
-func doesNotJoinTables(tableRefs *ast.Join) bool {
-	return tableRefs.Left == nil || tableRefs.Right == nil
-}
-
 func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
 	if joinNode == nil {
 		return false, false
 	}
-	if doesNotJoinTables(joinNode) {
+	if util.DoesNotJoinTables(joinNode) {
 		// 非JOIN两表的JOIN节点 一般是叶子节点 不检查
 		return false, false
 	}
@@ -2643,24 +2639,16 @@ func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, 
 	}
 
 	// 判断该节点是否有显式声明连接条件
-	if isJoinConditionInOnClause(joinNode) {
+	if util.IsJoinConditionInOnClause(joinNode) {
 		return true, true
 	}
-	if isJoinConditionInUsingClause(joinNode) {
+	if util.IsJoinConditionInUsingClause(joinNode) {
 		return true, true
 	}
 	if isJoinConditionInWhereStmt(ctx, whereStmt, joinNode) {
 		return true, true
 	}
 	return true, false
-}
-
-func isJoinConditionInOnClause(joinNode *ast.Join) bool {
-	return joinNode.On != nil
-}
-
-func isJoinConditionInUsingClause(joinNode *ast.Join) bool {
-	return len(joinNode.Using) > 0
 }
 
 func isJoinConditionInWhereStmt(ctx *session.Context, stmt ast.ExprNode, node *ast.Join) bool {

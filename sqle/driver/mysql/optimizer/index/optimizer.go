@@ -63,7 +63,7 @@ type Optimizer struct {
 	l *logrus.Entry
 
 	// tables key is table name, use to match in execution plan.
-	tables map[string]*tableInSelect
+	tables map[string] /*table name*/ *tableInSelect
 
 	// optimizer options:
 	calculateCardinalityMaxRow int
@@ -101,7 +101,7 @@ type OptimizeResult struct {
 // 1. when we find a table in single table select statement, we will store the select statement.
 // 2. when we find a table in join statement, we will store the join on condition.
 type tableInSelect struct {
-	joinOnColumn   string
+	joinOnColumn   map[string]bool
 	singleTableSel *ast.SelectStmt
 }
 
@@ -112,7 +112,7 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 		return nil, nil
 	}
 
-	o.parseSelectStmt(selectStmt)
+	o.parseTableFromSelectStmt(selectStmt)
 
 	restoredSQL, err := restoreSelectStmt(selectStmt)
 	if err != nil {
@@ -142,21 +142,21 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 	o.l.Infof("need optimize tables: %v", needOptimizedTables)
 
 	var results []*OptimizeResult
-	for _, tbl := range needOptimizedTables {
-		table, ok := o.tables[tbl]
+	for _, tableName := range needOptimizedTables {
+		table, ok := o.tables[tableName]
 		if !ok {
 			// given SQL: select * from t1 join t2, there is no join on condition,
 			continue
 		}
 
 		var result *OptimizeResult
-		if table.joinOnColumn == "" {
-			result, err = o.optimizeSingleTable(ctx, tbl, table.singleTableSel)
-			if err != nil {
-				return nil, errors.Wrapf(err, "optimize single table %s", tbl)
-			}
+		if len(table.joinOnColumn) > 0 {
+			result = o.optimizeJoinTable(tableName)
 		} else {
-			result = o.optimizeJoinTable(tbl)
+			result, err = o.optimizeSingleTable(ctx, tableName, table.singleTableSel)
+			if err != nil {
+				return nil, errors.Wrapf(err, "optimize single table %s", tableName)
+			}
 		}
 		if result != nil {
 			results = append(results, result)
@@ -166,63 +166,96 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 	return results, nil
 }
 
-// SelectStmt:
-//  1. single select on single table
-//  2. single select on multiple tables, such join
-//  3. multi select on multiple tables, such subqueries
-func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
-	visitor := util.SelectStmtExtractor{}
-	ss.Accept(&visitor)
-
-	for _, ss := range visitor.SelectStmts {
-		if ss.From == nil {
-			continue
+func (o *Optimizer) parseTableFromSelectNode(stmt *ast.SelectStmt) {
+	if stmt.From == nil {
+		return
+	}
+	joinNode := stmt.From.TableRefs
+	if util.DoesNotJoinTables(joinNode) {
+		// cache single table
+		if joinNode.Left == nil {
+			return
 		}
+		if table, ok := joinNode.Left.(*ast.TableSource); ok {
+			// var name string := table.AsName.O
+			if tableName, ok := table.Source.(*ast.TableName); ok {
+				if tableName.Name.O != "" {
+					tableInSelect := o.getTableInSelect(tableName.Name.O)
+					tableInSelect.singleTableSel = stmt
+				}
+			}
+			if table.AsName.O != "" {
+				tableInSelect := o.getTableInSelect(table.AsName.O)
+				tableInSelect.singleTableSel = stmt
+			}
+		}
+	}
+	o.parseTableFromJoinNode(joinNode)
+}
 
-		left := ss.From.TableRefs.Left
-		right := ss.From.TableRefs.Right
+func (o *Optimizer) parseTableFromJoinNode(joinNode *ast.Join) {
+	// 深度遍历左子树类型为ast.Join的节点 一旦有节点是JOIN两表的节点，并且没有连接条件，则返回
+	if leftNode, ok := joinNode.Left.(*ast.Join); ok {
+		o.parseTableFromJoinNode(leftNode)
+	}
 
-		if right == nil { // means single table select
-			leftTable, ok := left.(*ast.TableSource)
-			if !ok {
+	if util.IsJoinConditionInOnClause(joinNode) {
+		columnNames := util.GetJoinedColumnNameExprInOnClause(joinNode)
+		for _, columnName := range columnNames {
+			if columnName.Name.Table.O == "" {
+				/*
+					unsupport sqls like
+					ON (column_1 = column_2) should check column belongs to which table
+				*/
 				continue
-			}
-
-			if leftTable.AsName.L != "" {
-				o.tables[leftTable.AsName.O] = &tableInSelect{singleTableSel: ss}
-			}
-			// may appear: select * from (select v1,v2 from t1 where v1 = 2) as t1
-			if source, ok := leftTable.Source.(*ast.TableName); ok {
-				o.tables[source.Name.O] = &tableInSelect{singleTableSel: ss}
-			}
-		} else {
-			if ss.From.TableRefs.On != nil {
-				boe, ok := ss.From.TableRefs.On.Expr.(*ast.BinaryOperationExpr)
-				if !ok {
-					continue
-				}
-
-				leftCNE, ok := boe.L.(*ast.ColumnNameExpr)
-				if !ok {
-					continue
-				}
-				rightCNE, ok := boe.R.(*ast.ColumnNameExpr)
-				if !ok {
-					continue
-				}
-				o.tables[leftCNE.Name.Table.O] = &tableInSelect{joinOnColumn: leftCNE.Name.Name.L}
-				o.tables[rightCNE.Name.Table.O] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
-
-			} else if ss.From.TableRefs.Using != nil {
-				//FIXME  Panic Here by SQL SELECT * FROM table_1 JOIN table_2 on table_1.id = table_2.id JOIN table_3 USING (column_name); USING在最后并且是多表JOIN的最后
-				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.O
-				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.O
-				for _, col := range ss.From.TableRefs.Using {
-					o.tables[leftTableName] = &tableInSelect{joinOnColumn: col.Name.L}
-					o.tables[rightTableName] = &tableInSelect{joinOnColumn: col.Name.L}
-				}
+			} else {
+				/*
+					support sqls like
+					ON table_1.column_1=table_2.column_1
+					ON t1.column_1 = COALESCE(a.c1, b.c1)
+					ON (t1.column_1,t1.column_2 = t2.column_1,t2.column_2)
+					ON table_1.column_1=table_2.column_1 AND table_1.column_2=table_2.column_2
+				*/
+				tableInSelect := o.getTableInSelect(columnName.Name.Table.O)
+				tableInSelect.joinOnColumn[columnName.Name.Name.O] = true
 			}
 		}
+
+	}
+	if util.IsJoinConditionInUsingClause(joinNode) {
+		left, right := util.GetJoinedTableName(joinNode)
+		if left == nil || right == nil {
+			return
+		}
+		leftInSelect := o.getTableInSelect(left.Name.O)
+		rightInSelect := o.getTableInSelect(right.Name.O)
+		for _, columnInUsing := range joinNode.Using {
+			leftInSelect.joinOnColumn[columnInUsing.Name.O] = true
+			rightInSelect.joinOnColumn[columnInUsing.Name.O] = true
+		}
+	}
+
+}
+
+func (o *Optimizer) getTableInSelect(tableName string) *tableInSelect {
+	if o.tables[tableName] == nil {
+		// if not exist, initialize it
+		o.tables[tableName] = &tableInSelect{joinOnColumn: make(map[string]bool)}
+	}
+	return o.tables[tableName]
+}
+
+/*
+traverse from select stmt and extract tables in it
+1. if node is not a join node that join two tables, cache table into tableInSelect.singleTableSel do not fill the joinOnColumn.
+2. if node is a join node that join two tables(using ON condition or Using condition) , cache join condition and only fill tableInSelect.joinOnColumn
+*/
+func (o *Optimizer) parseTableFromSelectStmt(selectStmt *ast.SelectStmt) {
+	visitor := util.SelectStmtExtractor{}
+	selectStmt.Accept(&visitor)
+
+	for _, stmt := range visitor.SelectStmts {
+		o.parseTableFromSelectNode(stmt)
 	}
 }
 
@@ -286,10 +319,15 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 }
 
 func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
+	table := o.getTableInSelect(tbl)
+	indexColumns := make([]string, 0, len(table.joinOnColumn))
+	for columnName := range table.joinOnColumn {
+		indexColumns = append(indexColumns, columnName)
+	}
 	return &OptimizeResult{
 		TableName:      tbl,
-		IndexedColumns: []string{o.tables[tbl].joinOnColumn},
-		Reason:         fmt.Sprintf("字段 %s 为被驱动表 %s 上的关联字段", o.tables[tbl].joinOnColumn, tbl),
+		IndexedColumns: indexColumns,
+		Reason:         fmt.Sprintf("字段 %s 为被驱动表 %s 上的关联字段", indexColumns, tbl),
 	}
 }
 
