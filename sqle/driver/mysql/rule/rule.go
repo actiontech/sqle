@@ -147,7 +147,7 @@ const (
 	DMLCheckExplainExtraUsingTemporary        = "dml_check_explain_extra_using_temporary"
 	DMLCheckTableSize                         = "dml_check_table_size"
 	DMLCheckJoinFieldType                     = "dml_check_join_field_type"
-	DMLCheckJoinHasOn                         = "dml_check_join_has_on"
+	DMLCheckHasJoinCondition                  = "dml_check_join_has_on"
 	DMLCheckAlias                             = "dml_check_alias"
 	DMLNotRecommendNotWildcardLike            = "dml_not_recommend_not_wildcard_like"
 	DMLHintInNullOnlyFalse                    = "dml_hint_in_null_only_false"
@@ -554,7 +554,7 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DMLCheckJoinHasOn,
+			Name:       DMLCheckHasJoinCondition,
 			Desc:       "连接操作必须指定连接条件",
 			Annotation: "指定连接条件可以确保连接操作的正确性和可靠性，如果没有指定连接条件，可能会导致连接失败或连接不正确的情况。",
 			Level:      driverV2.RuleLevelWarn,
@@ -562,7 +562,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		Message:      "连接操作必须指定连接条件，JOIN字段后必须有ON条件",
 		AllowOffline: true,
-		Func:         checkJoinHasOn,
+		Func:         checkHasJoinCondition,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -2581,52 +2581,140 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkJoinHasOn(input *RuleHandlerInput) error {
-	var tableRefs *ast.Join
+func checkHasJoinCondition(input *RuleHandlerInput) error {
+	var joinNode *ast.Join
+	var whereStmt ast.ExprNode
+
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
 			return nil
 		}
-		tableRefs = stmt.From.TableRefs
+		joinNode = stmt.From.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	case *ast.UpdateStmt:
 		if stmt.TableRefs == nil {
 			return nil
 		}
-		tableRefs = stmt.TableRefs.TableRefs
+		joinNode = stmt.TableRefs.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil {
 			return nil
 		}
-		tableRefs = stmt.TableRefs.TableRefs
+		joinNode = stmt.TableRefs.TableRefs
+		if stmt.Where != nil {
+			whereStmt = stmt.Where
+		}
 	default:
+		// 不检查JOIN不会存在的语句
 		return nil
 	}
-	checkSuccessfully, _ := checkOnCondition(tableRefs)
-	if !checkSuccessfully {
+	joinTables, hasCondition := checkJoinConditionInJoinNode(input.Ctx, whereStmt, joinNode)
+	if joinTables && !hasCondition {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
-
 	return nil
 }
 
-func checkOnCondition(resultSetNode ast.ResultSetNode) (checkSuccessfully, continueCheck bool) {
-	if resultSetNode == nil {
-		return true, false
-	}
-	switch t := resultSetNode.(type) {
-	case *ast.Join:
-		_, rightIsTableSource := t.Right.(*ast.TableSource)
-		if t.On == nil && rightIsTableSource {
-			return false, false
-		}
+func doesNotJoinTables(tableRefs *ast.Join) bool {
+	return tableRefs.Left == nil || tableRefs.Right == nil
+}
 
-		if hasOnCondition, c := checkOnCondition(t.Left); !c {
-			return hasOnCondition, c
-		}
-		return checkOnCondition(t.Right)
+func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
+	if joinNode == nil {
+		return false, false
 	}
-	return true, true
+	if doesNotJoinTables(joinNode) {
+		// 非JOIN两表的JOIN节点 一般是叶子节点 不检查
+		return false, false
+	}
+
+	// 深度遍历左子树类型为ast.Join的节点 一旦有节点是JOIN两表的节点，并且没有连接条件，则返回
+	if l, ok := joinNode.Left.(*ast.Join); ok {
+		joinTables, hasCondition = checkJoinConditionInJoinNode(ctx, whereStmt, l)
+		if joinTables && !hasCondition {
+			return joinTables, hasCondition
+		}
+	}
+
+	// 判断该节点是否有显式声明连接条件
+	if isJoinConditionInOnClause(joinNode) {
+		return true, true
+	}
+	if isJoinConditionInUsingClause(joinNode) {
+		return true, true
+	}
+	if isJoinConditionInWhereStmt(ctx, whereStmt, joinNode) {
+		return true, true
+	}
+	return true, false
+}
+
+func isJoinConditionInOnClause(joinNode *ast.Join) bool {
+	return joinNode.On != nil
+}
+
+func isJoinConditionInUsingClause(joinNode *ast.Join) bool {
+	return len(joinNode.Using) > 0
+}
+
+func isJoinConditionInWhereStmt(ctx *session.Context, stmt ast.ExprNode, node *ast.Join) bool {
+	if stmt == nil {
+		return false
+	}
+
+	equalConditionVisitor := util.EqualConditionVisitor{}
+	stmt.Accept(&equalConditionVisitor)
+
+	for _, column := range equalConditionVisitor.ConditionList {
+		/*
+			当一个Join节点没有ON或者Using的连接条件时，需要检查Where语句中是否包含连接条件
+			Where语句中包含连接条件的判断依据是：
+			Where语句中等值条件两侧的不同表的两列，其中一列属于Join右子节点对应的表，另一列属于Join左子树中任意一张表
+		*/
+		if columnInTable(ctx, node.Right, column.Left) && columnInNode(ctx, node.Left, column.Right) {
+			return true
+		}
+		if columnInTable(ctx, node.Right, column.Right) && columnInNode(ctx, node.Left, column.Left) {
+			return true
+		}
+	}
+	return false
+}
+
+func columnInTable(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
+	if node == nil {
+		return false
+	}
+	switch t := node.(type) {
+	case *ast.TableSource:
+		return getTableSourceByColumnName(ctx, []*ast.TableSource{t}, columnName) != nil
+	}
+	return false
+}
+
+// 迭代检查表名称是否与JOIN节点中的tableSource的表名或表别名匹配
+func columnInNode(ctx *session.Context, node ast.ResultSetNode, columnName *ast.ColumnName) bool {
+	if node == nil {
+		return false
+	}
+	switch t := node.(type) {
+	case *ast.TableSource:
+		return getTableSourceByColumnName(ctx, []*ast.TableSource{t}, columnName) != nil
+	case *ast.Join:
+		if columnInNode(ctx, t.Right, columnName) {
+			return true
+		}
+		if columnInNode(ctx, t.Left, columnName) {
+			return true
+		}
+	}
+	return false
 }
 
 func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
@@ -5154,14 +5242,20 @@ func checkIndexOption(input *RuleHandlerInput) error {
 	if len(indexColumns) == 0 {
 		return nil
 	}
-	maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+
+	columnSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(tableName, indexColumns)
 	if err != nil {
 		return err
 	}
-	// todo: using number compare, don't use string compare
-	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
 
-	if maxIndexOption > 0 && float64(max) > maxIndexOption {
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	var maxSelectivity float64 = -1
+	for _, selectivity := range columnSelectivityMap {
+		if selectivity > maxSelectivity {
+			maxSelectivity = selectivity
+		}
+	}
+	if maxSelectivity > 0 && maxSelectivity < float64(max) {
 		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(indexColumns, ", "), max)
 	}
 	return nil
@@ -6539,31 +6633,22 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	return nil
 }
 
-func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
-	indexColumns := []string{}
-	for _, info := range indexesInfo {
-		if info.KeyName == indexName {
-			indexColumns = append(indexColumns, info.ColumnName)
-		}
-	}
-	return indexColumns
-}
-
 func checkIndexSelectivity(input *RuleHandlerInput) error {
 	if _, ok := input.Node.(*ast.SelectStmt); !ok {
 		return nil
 	}
 	selectVisitor := &util.SelectVisitor{}
 	input.Node.Accept(selectVisitor)
-	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	explainRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
 	if err != nil {
 		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 		return nil
 	}
-	for _, record := range epRecords {
-		recordKey := record.Key
+	for _, record := range explainRecords {
+		indexes := strings.Split(record.Key, ",")
 		recordTable := record.Table
-		if recordKey == "" || recordTable == "" {
+		if len(indexes) == 0 || recordTable == "" {
+			// 若执行计划没有使用索引 则跳过
 			continue
 		}
 		for _, selectNode := range selectVisitor.SelectList {
@@ -6573,23 +6658,19 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 			tables := util.GetTables(selectNode.From.TableRefs)
 			for _, tableName := range tables {
 				if tableName.Name.L != recordTable {
+					// 只检查 使用索引对应的表
 					continue
 				}
-				schemaName := input.Ctx.GetSchemaName(tableName)
-				indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.O)
-				if err != nil {
-					continue
-				}
-				indexColumns := getColumnFromIndexesInfoByIndexName(indexesInfo, recordKey)
-				maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+				indexSelectivityMap, err := input.Ctx.GetSelectivityOfIndex(tableName, indexes)
 				if err != nil {
 					continue
 				}
 				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
-
-				if maxIndexOption > 0 && float64(max) > maxIndexOption {
-					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
-					return nil
+				for indexName, selectivity := range indexSelectivityMap {
+					if selectivity > 0 && selectivity < float64(max) {
+						addResult(input.Res, input.Rule, input.Rule.Name, indexName, max)
+						return nil
+					}
 				}
 			}
 		}

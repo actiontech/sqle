@@ -844,6 +844,115 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 	)
 }
 
+type testCase struct {
+	Name         string
+	SQL          string
+	ExpectResult *testResult
+}
+
+func TestDMLCheckHasJoinCondition(t *testing.T) {
+
+	casesWithResult := []testCase{
+		{
+			Name: "select with no join condition, trigger rule",
+			SQL: `
+				SELECT exist_tb_1.id, exist_tb_1.v1, exist_tb_2.v1    
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_2  
+				WHERE exist_tb_1.id > 10 
+				ORDER BY exist_tb_1.id
+				LIMIT 10;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckHasJoinCondition).
+				addResult(rulepkg.DMLCheckSelectWithOrderBy),
+		},
+		{
+			Name: "select with using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_1.v1, exist_tb_3.v3  
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_3 USING(id)
+				WHERE exist_tb_3.v3 > 5;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		}, {
+			Name: "select mix with where and on condition, does not trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_1.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select with where condition match another table, trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select mix with where on using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_2.id, exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 t1 USING(v1)
+				JOIN exist_db.exist_tb_3 t3 ON t1.id = t3.id
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex).
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "update, does not trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1  
+				SET v1 = 'new_value'  
+				WHERE id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+		{
+			Name: "update without any join condition, trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1 t1
+				JOIN exist_db.exist_tb_1 
+				SET t1.v1 = 'new_value'  
+				WHERE t1.id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery).
+				addResult(rulepkg.DMLCheckHasJoinCondition),
+		},
+		{
+			Name: "delete, does not trigger rule",
+			SQL: `
+				DELETE FROM exist_db.exist_tb_3 t3
+				WHERE t3.id IN (SELECT id FROM exist_db.exist_tb_1 WHERE v1 = 'some_value');
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+	}
+	for _, c := range casesWithResult {
+		runDefaultRulesInspectCase(t, c.Name, DefaultMysqlInspect(), c.SQL, c.ExpectResult)
+	}
+}
 func TestCheckInvalidUpdate(t *testing.T) {
 	runDefaultRulesInspectCase(t, "update: ok", DefaultMysqlInspect(),
 		`
@@ -925,7 +1034,7 @@ update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -946,63 +1055,63 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 }
 
@@ -4020,34 +4129,39 @@ func TestCheckIndexOption(t *testing.T) {
 	assert.NoError(t, err)
 
 	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM (SELECT v1 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_3 add primary key (v1);", newTestResult())
 
 	inspect2 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM (SELECT v1 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect2, "alter table exist_tb_3 add unique(v1);", newTestResult())
 
 	inspect3 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v2"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM (SELECT v2 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v2"}).AddRow("30.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect3, "alter table exist_tb_3 add index idx_c2(v2);",
 		newTestResult().addResult(rulepkg.DDLCheckIndexOption, "v2", 70))
 
 	inspect4 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v3 ) ) / COUNT( * ) * 100 AS v3 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v3"}).
-			AddRow("70.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v3 ) ) / COUNT( * ) * 100 AS v3 FROM (SELECT v3 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v3"}).AddRow("70.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect4, "alter table exist_tb_3 add fulltext(v3);", newTestResult())
 
 	inspect5 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1,COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1", "v2"}).
-			AddRow("100.0000", "30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1,COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM (SELECT v1,v2 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect5, "alter table exist_tb_3 add index idx_c1_c2(v1,v2);", newTestResult())
 
 }
@@ -5959,46 +6073,38 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect1 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).AddRow("50.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1").AddRow("primary", "id"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("50.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_6 where v1='10'", newTestResult())
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
+
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
