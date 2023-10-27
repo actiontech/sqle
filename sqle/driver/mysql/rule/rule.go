@@ -230,6 +230,16 @@ type RuleHandler struct {
 	NotSupportExecutedSQLAuditStmts []ast.Node
 }
 
+func init() {
+	for i, rh := range RuleHandlers {
+		if knowledge, ok := defaultRuleKnowledgeMap[rh.Rule.Name]; ok {
+			rh.Rule.Knowledge = knowledge
+			RuleHandlers[i] = rh
+		}
+		RuleHandlerMap[rh.Rule.Name] = rh
+	}
+}
+
 // In order to reuse some code, some rules use the same rule handler.
 // Then following code is the side effect of the purpose.
 //
@@ -3083,12 +3093,6 @@ func disableAlterUseFirstAndAfter(input *RuleHandlerInput) error {
 	}
 
 	return nil
-}
-
-func init() {
-	for _, rh := range RuleHandlers {
-		RuleHandlerMap[rh.Rule.Name] = rh
-	}
 }
 
 func checkSelectAll(input *RuleHandlerInput) error {
