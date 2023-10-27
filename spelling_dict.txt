@@ -434,3 +434,7 @@ unhandled
 mkdir
 msar
 recv
+XtraBackup
+mysqldump
+datediff
+xxx
