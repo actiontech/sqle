@@ -50,7 +50,7 @@ type SqlManage struct {
 	Status    string  `json:"status" gorm:"default:\"unhandled\""`
 	Remark    string  `json:"remark" gorm:"type:varchar(512)"`
 
-	ProjectId uint `json:"project_id"`
+	ProjectId string `json:"project_id"`
 
 	AuditPlanId uint       `json:"audit_plan_id"`
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`
