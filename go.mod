@@ -52,7 +52,7 @@ require (
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.18
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/moby/sys/mountinfo v0.6.2
-	github.com/nxadm/tail v1.4.8
+	github.com/nxadm/tail v1.4.11
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/percona/go-mysql v0.0.0-20210427141028-73d29c6da78c
 	github.com/percona/pmm-agent v2.15.1+incompatible
@@ -112,7 +112,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
