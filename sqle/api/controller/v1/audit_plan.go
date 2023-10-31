@@ -797,7 +797,7 @@ func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackLi
 		var match bool
 		for _, blackSQL := range blackList {
 			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
-			match = strings.Contains(sql.LastReceiveText, blackSQL.FilterSQL)
+			match = strings.Contains(strings.ToUpper(sql.LastReceiveText), strings.ToUpper(blackSQL.FilterSQL))
 			if match {
 				break
 			}
