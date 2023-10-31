@@ -14,6 +14,7 @@ type GetSqlManageListReq struct {
 	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
 	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
+	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
 	PageSize                     uint32  `query:"page_size" valid:"required" json:"page_size"`
 }
@@ -70,6 +71,7 @@ type Source struct {
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
+// @Param filter_rule_name query string false "rule name"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetSqlManageListResp
