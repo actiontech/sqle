@@ -429,16 +429,12 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 	return true, nil
 }
 
-func GetNeedExecTaskIds(ctx context.Context, s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
-	instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
-	if err != nil {
-		return nil, err
+func GetNeedExecTaskIds(workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
+	instances := make([]*model.Instance, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instances = append(instances, item.Instance)
 	}
 
-	instances, err := dms.GetInstancesInProjectByIds(ctx, string(workflow.ProjectId), instanceIds)
-	if err != nil {
-		return nil, err
-	}
 	// 有不在运维时间内的instances报错
 	var cannotExecuteInstanceNames []string
 	for _, inst := range instances {
@@ -1024,23 +1020,9 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 		}
 
-		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-		for _, item := range workflow.Record.InstanceRecords {
-			instanceIds = append(instanceIds, item.InstanceId)
-		}
-
-		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		workflow, err = dms.BuildWorkflowInstances(workflow)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
-		}
-		instanceMap := map[uint64]*model.Instance{}
-		for _, instance := range instances {
-			instanceMap[instance.ID] = instance
-		}
-		for i, item := range workflow.Record.InstanceRecords {
-			if instance, ok := instanceMap[item.InstanceId]; ok {
-				workflow.Record.InstanceRecords[i].Instance = instance
-			}
 		}
 	}
 
@@ -1101,23 +1083,9 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 		}
 
-		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-		for _, item := range workflow.Record.InstanceRecords {
-			instanceIds = append(instanceIds, item.InstanceId)
-		}
-
-		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		workflow, err = dms.BuildWorkflowInstances(workflow)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
-		}
-		instanceMap := map[uint64]*model.Instance{}
-		for _, instance := range instances {
-			instanceMap[instance.ID] = instance
-		}
-		for i, item := range workflow.Record.InstanceRecords {
-			if instance, ok := instanceMap[item.InstanceId]; ok {
-				workflow.Record.InstanceRecords[i].Instance = instance
-			}
 		}
 	}
 

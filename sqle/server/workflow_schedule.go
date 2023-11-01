@@ -50,24 +50,10 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 			return
 		}
 
-		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-		for _, item := range workflow.Record.InstanceRecords {
-			instanceIds = append(instanceIds, item.InstanceId)
-		}
-
-		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		w, err = dms.BuildWorkflowInstances(w)
 		if err != nil {
 			entry.Errorf("notify workflow error, %v", err)
 			return
-		}
-		instanceMap := map[uint64]*model.Instance{}
-		for _, instance := range instances {
-			instanceMap[instance.ID] = instance
-		}
-		for i, item := range workflow.Record.InstanceRecords {
-			if instance, ok := instanceMap[item.InstanceId]; ok {
-				workflow.Record.InstanceRecords[i].Instance = instance
-			}
 		}
 
 		currentStep := w.CurrentStep()

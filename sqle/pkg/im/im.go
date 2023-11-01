@@ -72,24 +72,10 @@ func CreateApprove(id string) {
 		return
 	}
 
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+	workflow, err = dms.BuildWorkflowInstances(workflow)
 	if err != nil {
 		log.NewEntry().Errorf("get instance error, %v", err)
 		return
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
