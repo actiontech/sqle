@@ -372,3 +372,30 @@ func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error)
 
 	return ret, nil
 }
+
+func BuildWorkflowInstances(workflow *model.Workflow) (*model.Workflow, error) {
+	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instanceIds = append(instanceIds, item.InstanceId)
+	}
+
+	if len(instanceIds) == 0 {
+		return workflow, nil
+	}
+
+	instances, err := GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+	if err != nil {
+		return nil, err
+	}
+	instanceMap := map[uint64]*model.Instance{}
+	for _, instance := range instances {
+		instanceMap[instance.ID] = instance
+	}
+	for i, item := range workflow.Record.InstanceRecords {
+		if instance, ok := instanceMap[item.InstanceId]; ok {
+			workflow.Record.InstanceRecords[i].Instance = instance
+		}
+	}
+
+	return workflow, nil
+}

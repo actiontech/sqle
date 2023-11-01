@@ -742,7 +742,7 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 
 func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("Record").Where("id = ?", id).First(workflow).Error
+	err := s.db.Preload("Record.InstanceRecords").Where("id = ?", id).First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -774,7 +774,7 @@ func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
 
 func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	w := new(Workflow)
-	err := s.db.Preload("Record").Where("id = ?", id).First(&w).Error
+	err := s.db.Preload("Record.InstanceRecords").Where("id = ?", id).First(&w).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -816,7 +816,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 func (s *Storage) GetWorkflowDetailByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	err := s.db.Model(&Workflow{}).
-		Preload("Record").Where("workflow_id = ?", workflowID).Where("project_id = ?", projectId).
+		Preload("Record.InstanceRecords").Where("workflow_id = ?", workflowID).Where("project_id = ?", projectId).
 		First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
@@ -997,7 +997,7 @@ func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error
 
 func (s *Storage) GetInstanceIdsByWorkflowID(workflowID uint) ([]uint64, error) {
 	query := `
-SELECT wir.instance_id
+SELECT wir.instance_id id
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
 LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
@@ -1295,7 +1295,7 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectId, workflowName st
 
 func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Preload("Record").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
+	err := s.db.Preload("Record.InstanceRecords").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil
