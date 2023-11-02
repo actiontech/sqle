@@ -112,7 +112,7 @@ func ApproveWorkflowV2(c echo.Context) error {
 
 	nextStep := workflow.NextStep()
 
-	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	err = server.CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -121,9 +121,9 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
 
-	if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
+	if nextStep != nil {
 		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
 	}
 
@@ -212,7 +212,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		}
 	}
 
-	err = v1.CheckUserCanOperateStep(user, workflow, stepId)
+	err = server.CheckUserCanOperateStep(user, workflow, stepId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -230,7 +230,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user.Phone, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -271,8 +271,6 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowStatus := workflow.Record.Status
-
 	up, err := dms.NewUserPermission(controller.GetUserID(c), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -291,9 +289,11 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if workflowStatus == model.WorkflowStatusWaitForAudit {
-		go im.CancelApprove(workflow.ID)
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
+	go im.BatchCancelApprove([]uint{workflow.ID}, user)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -361,13 +361,14 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	}
 
 	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
+	workflowIds := make([]uint, 0, len(req.WorkflowIDList))
 	for i, workflowID := range req.WorkflowIDList {
 		workflow, err := checkCancelWorkflow(projectUid, workflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		workflows[i] = workflow
-
+		workflowIds = append(workflowIds, workflow.ID)
 		workflow.Record.Status = model.WorkflowStatusCancel
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
@@ -375,6 +376,11 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	go im.BatchCancelApprove(workflowIds, user)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
@@ -1195,7 +1201,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 			fmt.Errorf("workflow need to be approved first")))
 	}
 
-	err = v1.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	err = server.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
@@ -1302,15 +1308,12 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	needExecTaskIds, err := v1.GetNeedExecTaskIds(c.Request().Context(), s, workflow, user)
-	if err != nil {
-		return err
-	}
-
-	err = server.ExecuteWorkflow(workflow, needExecTaskIds)
+	err = server.ExecuteTasksProcess(workflowId, projectUid, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }

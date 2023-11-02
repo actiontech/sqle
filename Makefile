@@ -47,9 +47,9 @@ endif
 DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
-GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.43.0
+GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.45.2
 SCSPELL_IMAGE ?=gerrywastaken/scspell
-GO_COMPILER_IMAGE ?= golang:1.16
+GO_COMPILER_IMAGE ?= golang:1.19.6
 RPM_BUILD_IMAGE ?= rpmbuild/centos7
 
 ## Static Parameter, should not be overwrite
@@ -63,8 +63,8 @@ vet: swagger
 	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
 
 ## Unit Test
-test: swagger
-	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./...
+test: 
+	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./... -count 1
 
 clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
@@ -121,8 +121,9 @@ docker_check: docker_lint docker_scspell docker_test
 docker_clean:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make clean ${MAKEFLAGS}"
 
+# todo 升级golang版本后，git获取版本号失败，临时添加"git config --global --add safe.directory /universe"解决
 docker_install:
-	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install $(MAKEFLAGS)"
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "git config --global --add safe.directory /universe && cd /universe && make install $(MAKEFLAGS)"
 
 docker_install_sqled:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_sqled $(MAKEFLAGS)"

@@ -1468,3 +1468,51 @@ type GetRuleTypeByDBTypeResV1 struct {
 func GetRuleTypeByDBType(c echo.Context) error {
 	return getRuleTypeByDBType(c)
 }
+
+type RuleInfo struct {
+	Desc       string `json:"desc" example:"this is test rule"`
+	Annotation string `json:"annotation" example:"this is test rule"`
+}
+
+type RuleKnowledgeResV1 struct {
+	Rule             RuleInfo `json:"rule"`
+	KnowledgeContent string   `json:"knowledge_content"`
+}
+
+type GetRuleKnowledgeResV1 struct {
+	controller.BaseRes
+	Data RuleKnowledgeResV1 `json:"data"`
+}
+
+// GetRuleKnowledge
+// @Summary 查看规则知识库
+// @Description get rule knowledge
+// @Id getRuleKnowledgeV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Success 200 {object} v1.GetRuleKnowledgeResV1
+// @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [get]
+func GetRuleKnowledge(c echo.Context) error {
+	return getRuleKnowledge(c)
+}
+
+type UpdateRuleKnowledgeReq struct {
+	KnowledgeContent *string `json:"knowledge_content" form:"knowledge_content"`
+}
+
+// UpdateRuleKnowledgeV1
+// @Summary 更新规则知识库
+// @Description update rule knowledge
+// @Id updateRuleKnowledge
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Param req body v1.UpdateRuleKnowledgeReq true "update rule knowledge"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [patch]
+func UpdateRuleKnowledgeV1(c echo.Context) error {
+	return updateRuleKnowledge(c)
+}

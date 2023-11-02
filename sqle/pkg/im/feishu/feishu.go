@@ -3,7 +3,10 @@ package feishu
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	lark "github.com/larksuite/oapi-sdk-go/v3"
@@ -18,7 +21,7 @@ type FeishuClient struct {
 }
 
 func NewFeishuClient(appId, appSecret string) *FeishuClient {
-	return &FeishuClient{client: lark.NewClient(appId, appSecret)}
+	return &FeishuClient{client: lark.NewClient(appId, appSecret, lark.WithReqTimeout(30*time.Second))}
 }
 
 type UserContactInfo struct {
@@ -30,7 +33,7 @@ const MaxCountOfIdThatUsedToFindUser = 50
 
 // 查询限制每次最多50条emails和mobiles，https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/batch_get_id
 // 每次最多查询50个邮箱和50个手机号，如果超出50个，只查询前50个
-func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []string) (map[string]*UserContactInfo, error) {
+func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []string, userType string) (map[string]*UserContactInfo, error) {
 	tempEmails, tempMobiles := emails, mobiles
 	if len(emails) > MaxCountOfIdThatUsedToFindUser {
 		tempEmails = emails[:MaxCountOfIdThatUsedToFindUser]
@@ -40,7 +43,7 @@ func (f *FeishuClient) GetUsersByEmailOrMobileWithLimitation(emails, mobiles []s
 	}
 
 	req := larkContact.NewBatchGetIdUserReqBuilder().
-		UserIdType(`user_id`).
+		UserIdType(userType).
 		Body(larkContact.NewBatchGetIdUserReqBodyBuilder().
 			Emails(tempEmails).
 			Mobiles(tempMobiles).
@@ -111,4 +114,55 @@ func (f FeishuClient) SendMessage(receiveIdType, receiveId, msgType, content str
 	}
 
 	return nil
+}
+
+func (f FeishuClient) GetFeishuUserIdList(users []*model.User, userType string) ([]string, error) {
+	var emails, mobiles []string
+	userCount := 0
+	for _, u := range users {
+		if u.Email == "" && u.Phone == "" {
+			continue
+		}
+		if u.Email != "" {
+			emails = append(emails, u.Email)
+		}
+		if u.Phone != "" {
+			mobiles = append(mobiles, u.Phone)
+		}
+		userCount++
+		if userCount == MaxCountOfIdThatUsedToFindUser {
+			log.NewEntry().Infof("user %v exceed max count %v", u.Name, MaxCountOfIdThatUsedToFindUser)
+			break
+		}
+	}
+
+	feishuUserMap, err := f.GetUsersByEmailOrMobileWithLimitation(emails, mobiles, userType)
+	if err != nil {
+		return nil, err
+	}
+
+	userIDs := make([]string, 0, len(feishuUserMap))
+	for feishuUserID := range feishuUserMap {
+		userIDs = append(userIDs, feishuUserID)
+	}
+
+	return userIDs, nil
+}
+
+func (f FeishuClient) GetFeishuUserInfo(userID string, userType string) (*larkContact.User, error) {
+	req := larkContact.NewGetUserReqBuilder().
+		UserId(userID).
+		UserIdType(userType).
+		Build()
+
+	resp, err := f.client.Contact.User.Get(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	if !resp.Success() {
+		return nil, fmt.Errorf("get user failed: respCode=%v, respMsg=%v", resp.Code, resp.Msg)
+	}
+
+	return resp.Data.User, nil
 }
