@@ -89,6 +89,7 @@ func (s *Storage) GetAuditPlansByReq(data map[string]interface{}) (
 type AuditPlanSQLListDetail struct {
 	Fingerprint string `json:"fingerprint"`
 	SQLContent  string `json:"sql_content"`
+	Schema      string `json:"schema"`
 	Info        JSON   `json:"info"`
 }
 
@@ -96,6 +97,7 @@ var auditPlanSQLQueryTpl = `
 SELECT
 audit_plan_sqls.fingerprint,
 audit_plan_sqls.sql_content,
+audit_plan_sqls.schema,
 audit_plan_sqls.info
 
 {{- template "body" . -}} 

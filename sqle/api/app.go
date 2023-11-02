@@ -140,6 +140,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// v1Router.GET("/configurations/webhook", v1.GetWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 		// v1Router.POST("/configurations/webhook/test", v1.TestWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 
+		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge, sqleMiddleware.AdminUserAllowed())
+		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
+
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetSqlAverageExecutionTimeV1, sqleMiddleware.AdminUserAllowed())
@@ -268,6 +271,20 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 
+		// sql manager
+		v1ProjectRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
+		v1ProjectRouter.PATCH("/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
+		v1ProjectRouter.GET("/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
+
+		// sql audit record
+		v1ProjectRouter.POST("/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records", v1.GetSQLAuditRecordsV1)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.GetSQLAuditRecordV1)
+		v1ProjectRouter.PATCH("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
+		v1ProjectRouter.GET("/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
+
+		// task
+		v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	}
 
 	// project member router
@@ -292,7 +309,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 	}
 
-	
 	// project
 	// v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
 	// v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
@@ -357,7 +373,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
 
 	// task
-	v1Router.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
@@ -385,7 +400,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
-	v2Router.POST("/sql_audit", v2.DirectAudit)
 	v1Router.POST("/audit_files", v1.DirectAuditFiles)
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 

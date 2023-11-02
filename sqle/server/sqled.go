@@ -94,17 +94,18 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 		err = errors.New(errors.TaskNotExist, fmt.Errorf("task not exist"))
 		goto Error
 	}
+	if task.InstanceId != 0 {
+		instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
+		if err != nil {
+			goto Error
+		}
+		if !exist {
+			err = errors.New(errors.DataNotExist, fmt.Errorf("instance not exist"))
+			goto Error
+		}
 
-	instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		goto Error
+		task.Instance = instance
 	}
-	if !exist {
-		err = errors.New(errors.DataNotExist, fmt.Errorf("instance not exist"))
-		goto Error
-	}
-
-	task.Instance = instance
 
 	if err = action.validation(task); err != nil {
 		goto Error
@@ -297,7 +298,7 @@ func (a *action) audit() (err error) {
 	}
 
 	// skip generate if audit is static
-	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.InstanceId == 0 {
+	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.SQLSource == model.TaskSQLSourceFromZipFile || a.task.SQLSource == model.TaskSQLSourceFromGitRepository || a.task.InstanceId == 0 {
 		a.entry.Warn("skip generate rollback SQLs")
 	} else if !driver.GetPluginManager().IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
 		a.entry.Infof("skip generate rollback SQLs, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGenRollbackSQL))

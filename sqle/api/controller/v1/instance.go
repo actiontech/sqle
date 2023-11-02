@@ -844,10 +844,11 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 type InstanceTipReqV1 struct {
 	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
-	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow" valid:"omitempty,oneof=create_audit_plan create_workflow"`
+	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage"`
 }
 
 type InstanceTipResV1 struct {
+	ID                 string `json:"instance_id"`
 	Name               string `json:"instance_name"`
 	Type               string `json:"instance_type"`
 	WorkflowTemplateId uint32 `json:"workflow_template_id"`
@@ -869,7 +870,7 @@ type GetInstanceTipsResV1 struct {
 // @Param project_name path string true "project name"
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_workflow_template_id query string false "filter workflow template id"
-// @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow)
+// @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow,sql_manage)
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/projects/{project_name}/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
@@ -911,6 +912,7 @@ func GetInstanceTips(c echo.Context) error {
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 	for _, inst := range instances {
 		instanceTipRes := InstanceTipResV1{
+			ID:                 inst.GetIDStr(),
 			Name:               inst.Name,
 			Type:               inst.DbType,
 			Host:               inst.Host,

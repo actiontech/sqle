@@ -156,6 +156,9 @@ var autoMigrateList = []interface{}{
 	// &WebHookConfig{},
 	&CustomRule{},
 	&RuleTemplateCustomRule{},
+	&SQLAuditRecord{},
+	&RuleKnowledge{},
+	&SqlManage{},
 }
 
 func (s *Storage) AutoMigrate() error {

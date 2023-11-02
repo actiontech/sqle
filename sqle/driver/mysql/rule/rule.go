@@ -38,6 +38,7 @@ const (
 	RuleTypeDMLConvention      = "DML规范"
 	RuleTypeUsageSuggestion    = "使用建议"
 	RuleTypeIndexOptimization  = "索引优化"
+	RuleTypeIndexInvalidation  = "索引失效"
 )
 
 const (
@@ -113,6 +114,10 @@ const (
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckAutoIncrementFieldNum                      = "ddl_check_auto_increment_field_num"
 	DDLCheckAllIndexNotNullConstraint                  = "ddl_check_all_index_not_null_constraint"
+	DDLCheckColumnNotNULL                              = "ddl_check_column_not_null"
+	DDLCheckTableRows                                  = "ddl_check_table_rows"
+	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
+	DDLAvoidText                                       = "ddl_avoid_text"
 )
 
 // inspector DML rules
@@ -176,6 +181,17 @@ const (
 	DMLCheckUpdateOrDeleteHasWhere            = "dml_check_update_or_delete_has_where"
 	DMLCheckSortColumnLength                  = "dml_check_order_by_field_length"
 	DMLCheckSameTableJoinedMultipleTimes      = "dml_check_same_table_joined_multiple_times"
+	DMLCheckInsertSelect                      = "dml_check_insert_select"
+	DMLCheckAggregate                         = "dml_check_aggregate"
+	DMLCheckExplainUsingIndex                 = "dml_check_using_index"
+	DMLCheckIndexSelectivity                  = "dml_check_index_selectivity"
+	DMLCheckSelectRows                        = "dml_check_select_rows"
+	DMLCheckScanRows                          = "dml_check_scan_rows"
+	DMLMustMatchLeftMostPrefix                = "dml_must_match_left_most_prefix"
+	DMLMustUseLeftMostPrefix                  = "dml_must_use_left_most_prefix"
+	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
+	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
+	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
 )
 
 // inspector config code
@@ -186,6 +202,11 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+)
+
+// 计算单位
+const (
+	TenThousand = 10000
 )
 
 type RuleHandlerInput struct {
@@ -2082,6 +2103,325 @@ var RuleHandlers = []RuleHandler{
 		Message:      "表%v被连接多次",
 		Func:         checkSameTableJoinedMultipleTimes,
 	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckExplainUsingIndex,
+			Desc:       "SQL查询条件必须走索引",
+			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议使用索引以优化 SQL 查询性能",
+		Func:         checkExplain,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckInsertSelect,
+			Desc:       "禁止INSERT ... SELECT",
+			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止 INSERT ... SELECT",
+		Func:         checkInsertSelect,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckAggregate,
+			Desc:       "禁止使用聚合函数",
+			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用聚合函数计算",
+		Func:         checkAggregateFunc,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckColumnNotNULL,
+			Desc:       "表字段建议有NOT NULL约束",
+			Annotation: "表字段建议有 NOT NULL 约束，可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议字段%v设置NOT NULL约束",
+		Func:         checkColumnNotNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckIndexSelectivity,
+			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
+			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "70",
+					Desc:  "可选择性（百分比）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
+		Func:         checkIndexSelectivity,
+	},
+	{
+		// 该规则只适用于库表元数据扫描并且需要与停用上线审核模式规则一起使用
+		Rule: driverV2.Rule{
+			Name:       DDLCheckTableRows,
+			Desc:       "表行数超过阈值，建议对表进行拆分",
+			Annotation: "当表行数超过阈值时，对表进行拆分有助于提高数据库性能和查询速度。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "表行数（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		Message: "表行数超过阈值，建议对表进行拆分",
+		Func:    checkTableRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckCompositeIndexDistinction,
+			Desc:       "建议在组合索引中将区分度高的字段靠前放",
+			Annotation: "将区分度高的字段靠前放置在组合索引中有助于提高索引的查询性能，因为它能更快地减小数据范围，提高检索效率。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: false,
+		Message:      "建议在组合索引中将区分度高的字段靠前放，%v",
+		Func:         checkCompositeIndexSelectivity,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidText,
+			Desc:       "使用TEXT 类型的字段建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+			Annotation: "将TEXT类型的字段与原表主键分拆成另一个表可以提高数据库性能和查询速度，减少不必要的 I/O 操作。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   RuleTypeDDLConvention,
+		},
+		AllowOffline: true,
+		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+		Func:         checkText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckSelectRows,
+			Desc:       "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可提高查询性能和减少全表扫描的成本。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "查询数据量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkSelectRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckScanRows,
+			Desc:       "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "10",
+					Desc:  "扫描行数量（万）",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+		Func:         checkScanRows,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLMustUseLeftMostPrefix,
+			Desc:       "使用联合索引时，必须使用联合索引的首字段",
+			Annotation: "使用联合索引时，不包含首字段会导致联合索引失效",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "使用联合索引时，必须使用联合索引的首字段",
+		Func:         mustMatchLeftMostPrefix,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLMustMatchLeftMostPrefix,
+			Desc:       "禁止对联合索引左侧字段进行IN 、OR等非等值查询",
+			Annotation: "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
+		Func:         mustMatchLeftMostPrefix,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckJoinFieldUseIndex,
+			Desc:       "JOIN字段必须包含索引",
+			Annotation: "JOIN字段包含索引可提高连接操作的性能和查询速度。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "JOIN字段必须包含索引",
+		Func:         checkJoinFieldUseIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckJoinFieldCharacterSetAndCollation,
+			Desc:       "连接表字段的字符集和排序规则必须一致",
+			Annotation: "连接表字段的字符集和排序规则一致可避免数据不一致和查询错误，确保连接操作正确执行。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "连接表字段的字符集和排序规则必须一致",
+		Func:         checkJoinFieldCharacterSetAndCollation,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLCheckMathComputationOrFuncOnIndex,
+			Desc:       "禁止对索引列进行数学运算和使用函数",
+			Annotation: "对索引列进行数学运算和使用函数会导致索引失效，从而导致全表扫描，影响查询性能。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeIndexInvalidation,
+		},
+		AllowOffline: false,
+		Message:      "禁止对索引列进行数学运算和使用函数",
+		Func:         checkMathComputationOrFuncOnIndex,
+	},
+}
+
+func checkMathComputationOrFuncOnIndex(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		selectStmtExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectStmtExtractor)
+
+		for _, selectStmt := range selectStmtExtractor.SelectStmts {
+			if ExistMathComputationOrFuncOnIndex(input, selectStmt, selectStmt.Where) {
+				addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+			}
+		}
+	case *ast.UpdateStmt:
+		if ExistMathComputationOrFuncOnIndex(input, stmt, stmt.Where) {
+			addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+		}
+	case *ast.DeleteStmt:
+		if ExistMathComputationOrFuncOnIndex(input, stmt, stmt.Where) {
+			addResult(input.Res, input.Rule, DMLCheckMathComputationOrFuncOnIndex)
+		}
+	default:
+		return nil
+	}
+
+	return nil
+}
+
+func ExistMathComputationOrFuncOnIndex(input *RuleHandlerInput, node ast.Node, whereClause ast.ExprNode) bool {
+	if whereClause == nil {
+		return false
+	}
+
+	tableNameExtractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+	node.Accept(&tableNameExtractor)
+
+	indexNameMap := make(map[string]struct{})
+	for _, tableName := range tableNameExtractor.TableNames {
+		schemaName := input.Ctx.GetSchemaName(tableName)
+		indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.String())
+		if err != nil {
+			continue
+		}
+
+		for _, indexInfo := range indexesInfo {
+			indexNameMap[indexInfo.ColumnName] = struct{}{}
+		}
+	}
+
+	computationOrFuncExtractor := mathComputationOrFuncExtractor{columnList: make([]*ast.ColumnName, 0)}
+	whereClause.Accept(&computationOrFuncExtractor)
+
+	for _, column := range computationOrFuncExtractor.columnList {
+		if _, ok := indexNameMap[column.Name.O]; ok {
+			return true
+		}
+	}
+
+	return false
+}
+
+type mathComputationOrFuncExtractor struct {
+	columnList []*ast.ColumnName
+}
+
+func (mc *mathComputationOrFuncExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.FuncCallExpr:
+		for _, columnNameExpr := range stmt.Args {
+			col, ok := columnNameExpr.(*ast.ColumnNameExpr)
+			if !ok {
+				continue
+			}
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	case *ast.BinaryOperationExpr:
+		// https://dev.mysql.com/doc/refman/8.0/en/arithmetic-functions.html
+		if !IsMathComputation(stmt) {
+			return stmt, false
+		}
+
+		if col, ok := stmt.L.(*ast.ColumnNameExpr); ok {
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+
+		if col, ok := stmt.R.(*ast.ColumnNameExpr); ok {
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	case *ast.UnaryOperationExpr:
+		if stmt.Op == opcode.Minus {
+			col, ok := stmt.V.(*ast.ColumnNameExpr)
+			if !ok {
+				return stmt, false
+			}
+			mc.columnList = append(mc.columnList, col.Name)
+		}
+	}
+
+	return in, false
+}
+
+func IsMathComputation(stmt *ast.BinaryOperationExpr) bool {
+	return stmt.Op == opcode.Plus || stmt.Op == opcode.Minus || stmt.Op == opcode.Mul || stmt.Op == opcode.Div || stmt.Op == opcode.IntDiv || stmt.Op == opcode.Mod
+}
+
+func (mc *mathComputationOrFuncExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
 }
 
 func checkFieldNotNUllMustContainDefaultValue(input *RuleHandlerInput) error {
@@ -2163,7 +2503,7 @@ func checkSubQueryNestNum(in *RuleHandlerInput) error {
 	return nil
 }
 
-func checkJoinFieldType(input *RuleHandlerInput) error {
+func getCreateTableAndOnCondition(input *RuleHandlerInput) (map[string]*ast.CreateTableStmt, []*ast.OnCondition) {
 	//nolint:staticcheck
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	//nolint:staticcheck
@@ -2172,23 +2512,31 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
 	case *ast.UpdateStmt:
 		if stmt.TableRefs == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil {
-			return nil
+			return nil, nil
 		}
 		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	default:
+		return nil, nil
+	}
+	return tableNameCreateTableStmtMap, onConditions
+}
+
+func checkJoinFieldType(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil && onConditions == nil {
 		return nil
 	}
 
@@ -2268,6 +2616,7 @@ func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *a
 			if err != nil || !exist {
 				continue
 			}
+			// TODO: 跨库的 JOIN 无法区分
 			tableNameCreateTableStmtMap[tableName] = createTableStmt
 		}
 	}
@@ -2587,11 +2936,23 @@ func checkSelectAll(input *RuleHandlerInput) error {
 	return nil
 }
 
+func isSelectCount(selectStmt *ast.SelectStmt) bool {
+	if len(selectStmt.Fields.Fields) == 1 {
+		if fu, ok := selectStmt.Fields.Fields[0].Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
+			return true
+		}
+	}
+	return false
+}
+
 func checkSelectWhere(input *RuleHandlerInput) error {
 
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return nil
+		}
+		if input.Rule.Name == DMLCheckWhereIsInvalid && isSelectCount(stmt) { // 只做count()计数，不要求一定有有效的where条件
 			return nil
 		}
 		checkWhere(input.Rule, input.Res, stmt.Where)
@@ -2890,17 +3251,28 @@ func checkEngine(input *RuleHandlerInput) error {
 	return nil
 }
 
+func getSingleColumnCSFromColumnsDef(column *ast.ColumnDef) (string, bool) {
+	// Just string data type and not binary can be set "character set".
+	if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		return "", false
+	}
+	if column.Tp.Charset == "" {
+		return "", true
+	}
+	return column.Tp.Charset, true
+}
+
 func getColumnCSFromColumnsDef(columns []*ast.ColumnDef) []string {
 	columnCharacterSets := []string{}
 	for _, column := range columns {
-		// Just string data type and not binary can be set "character set".
-		if column.Tp == nil || column.Tp.EvalType() != types.ETString || mysql.HasBinaryFlag(column.Tp.Flag) {
+		charset, hasCharSet := getSingleColumnCSFromColumnsDef(column)
+		if !hasCharSet {
 			continue
 		}
-		if column.Tp.Charset == "" {
+		if charset == "" {
 			continue
 		}
-		columnCharacterSets = append(columnCharacterSets, column.Tp.Charset)
+		columnCharacterSets = append(columnCharacterSets, charset)
 	}
 	return columnCharacterSets
 }
@@ -4106,8 +4478,10 @@ func checkDMLWithLimit(input *RuleHandlerInput) error {
 func checkSelectLimit(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
+
 		// 类似 select 1 和 select sleep(1) 这种不是真正查询的SQL, 没有检查limit的必要
-		if stmt.From == nil {
+		// select count() 没有limit的必要
+		if stmt.From == nil || isSelectCount(stmt) {
 			return nil
 		}
 
@@ -4269,7 +4643,6 @@ func checkExistFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.Audi
 }
 
 func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
-	tables := []*ast.TableName{}
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.Where != nil {
@@ -4278,28 +4651,17 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			if len(tableSources) < 1 {
 				break
 			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
 			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, stmt.Where)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.DeleteStmt:
 		if stmt.Where != nil {
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
+			tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
+			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UnionStmt:
 		for _, ss := range stmt.SelectList.Selects {
@@ -4307,13 +4669,7 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			if len(tableSources) < 1 {
 				continue
 			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tables, ss.Where) {
+			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, ss.Where) {
 				break
 			}
 		}
@@ -4322,39 +4678,87 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 	}
 	return nil
 }
-func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.AuditResults, tables []*ast.TableName, where ast.ExprNode) bool {
-	if where == nil {
-		return false
-	}
-	var cols []*ast.ColumnDef
-	for _, tableName := range tables {
-		createTableStmt, exist, err := ctx.GetCreateTableStmt(tableName)
-		if exist && err == nil {
-			cols = append(cols, createTableStmt.Cols...)
-		}
-	}
-	colMap := make(map[string]string)
-	for _, col := range cols {
-		colType := ""
-		if col.Tp == nil {
-			continue
-		}
-		switch col.Tp.Tp {
-		case mysql.TypeVarchar, mysql.TypeString:
-			colType = "string"
-		case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeFloat, mysql.TypeNewDecimal:
-			colType = "int"
-		}
-		if colType != "" {
-			colMap[col.Name.String()] = colType
-		}
 
+func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.AuditResults, tableSources []*ast.TableSource, where ast.ExprNode) bool {
+	var hasImplicitConversionColumn bool
+	if where == nil {
+		return hasImplicitConversionColumn
 	}
-	if util.IsColumnImplicitConversionInWhereStmt(colMap, where) {
-		addResult(res, rule, DMLCheckWhereExistImplicitConversion)
-		return true
+
+	util.ScanColumnValueFromExpr(where, func(cn *ast.ColumnName, values []*parserdriver.ValueExpr) bool {
+		ts := getTableSourceByColumnName(ctx, tableSources, cn)
+		if ts == nil {
+			return false
+		}
+		// 暂时不处理子查询的情况
+		switch source := ts.Source.(type) {
+		case *ast.TableName:
+			createTableStmt, exist, err := ctx.GetCreateTableStmt(source)
+			if err != nil {
+				return false
+			}
+			if !exist {
+				return false
+			}
+
+			for _, col := range createTableStmt.Cols {
+				if col.Name.Name.L != cn.Name.L {
+					continue
+				}
+				for _, v := range values {
+					if !checkColumnTypeIsMatch(v, col.Tp.Tp) {
+						addResult(res, rule, DMLCheckWhereExistImplicitConversion)
+						hasImplicitConversionColumn = true
+						return true
+					}
+				}
+			}
+		}
+		return false
+	})
+	return hasImplicitConversionColumn
+}
+
+func getTableSourceByColumnName(ctx *session.Context, tableSources []*ast.TableSource, columnName *ast.ColumnName) *ast.TableSource {
+	for _, ts := range tableSources {
+		switch source := ts.Source.(type) {
+		case *ast.TableName:
+			if ts.AsName.L == columnName.Table.L {
+				return ts
+			}
+			columnTableName := &ast.TableName{
+				Schema: columnName.Schema,
+				Name:   columnName.Table,
+			}
+			if ctx.GetSchemaName(source) == ctx.GetSchemaName(columnTableName) && source.Name.L == columnTableName.Name.L {
+				return ts
+			}
+		}
 	}
-	return false
+	return nil
+}
+
+func checkColumnTypeIsMatch(value *parserdriver.ValueExpr, ColumnType byte) bool {
+	var columnTypeStr string
+	switch ColumnType {
+	case mysql.TypeVarchar, mysql.TypeString:
+		columnTypeStr = "string"
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong, mysql.TypeDouble, mysql.TypeFloat, mysql.TypeNewDecimal:
+		columnTypeStr = "int"
+	default:
+		columnTypeStr = "unknown"
+	}
+
+	var valueTypeStr string
+	switch value.Datum.GetValue().(type) {
+	case string:
+		valueTypeStr = "string"
+	case int, int8, int16, int32, int64, *tidbTypes.MyDecimal:
+		valueTypeStr = "int"
+	default:
+		valueTypeStr = "unknown"
+	}
+	return valueTypeStr == columnTypeStr
 }
 
 func checkDMLSelectForUpdate(input *RuleHandlerInput) error {
@@ -4718,6 +5122,11 @@ func checkExplain(input *RuleHandlerInput) error {
 			strings.Contains(record.Extra, executor.ExplainRecordExtraUsingIndexForSkipScan) {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 		}
+		if input.Rule.Name == DMLCheckExplainUsingIndex && record.Key == "" {
+			if strings.Contains(record.Extra, executor.ExplainRecordExtraUsingWhere) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
 
 	}
 	return nil
@@ -4731,8 +5140,8 @@ func checkCreateView(input *RuleHandlerInput) error {
 	return nil
 }
 
-var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+before|after`)
-var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`)
+var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+(before|after)+`)
+var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+(before|after)+`)
 
 // CREATE
 //
@@ -5971,5 +6380,805 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 	if len(idxColsWithoutNotNull) == len(indexCols) && len(indexCols) > 0 {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
+	return nil
+}
+
+func checkInsertSelect(input *RuleHandlerInput) error {
+	if stmt, ok := input.Node.(*ast.InsertStmt); ok {
+		if stmt.Select != nil {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func checkAggregateFunc(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(ast.DMLNode); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	for _, selectNode := range selectVisitor.SelectList {
+		if selectNode.Having != nil {
+			isHavingUseFunc := false
+			util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+				switch expr.(type) {
+				case *ast.AggregateFuncExpr:
+					isHavingUseFunc = true
+					return true
+				}
+				return false
+			}, selectNode.Having.Expr)
+
+			if isHavingUseFunc {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+		for _, field := range selectNode.Fields.Fields {
+			if _, ok := field.Expr.(*ast.AggregateFuncExpr); ok {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func checkColumnNotNull(input *RuleHandlerInput) error {
+	notNullColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			for _, newColumn := range spec.NewColumns {
+				ok := util.IsAllInOptions(newColumn.Options, ast.ColumnOptionNotNull)
+				if !ok {
+					notNullColumns = append(notNullColumns, newColumn.Name.OrigColName())
+				}
+			}
+		}
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			ok := util.IsAllInOptions(col.Options, ast.ColumnOptionNotNull)
+			if !ok {
+				notNullColumns = append(notNullColumns, col.Name.OrigColName())
+			}
+		}
+	}
+	if len(notNullColumns) > 0 {
+		notNullColString := strings.Join(notNullColumns, ",")
+		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
+	}
+	return nil
+}
+
+func getColumnFromIndexesInfoByIndexName(indexesInfo []*executor.TableIndexesInfo, indexName string) []string {
+	indexColumns := []string{}
+	for _, info := range indexesInfo {
+		if info.KeyName == indexName {
+			indexColumns = append(indexColumns, info.ColumnName)
+		}
+	}
+	return indexColumns
+}
+
+func checkIndexSelectivity(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
+		return nil
+	}
+	selectVisitor := &util.SelectVisitor{}
+	input.Node.Accept(selectVisitor)
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		recordKey := record.Key
+		recordTable := record.Table
+		if recordKey == "" || recordTable == "" {
+			continue
+		}
+		for _, selectNode := range selectVisitor.SelectList {
+			tables := util.GetTables(selectNode.From.TableRefs)
+			for _, tableName := range tables {
+				if tableName.Name.L != recordTable {
+					continue
+				}
+				schemaName := input.Ctx.GetSchemaName(tableName)
+				indexesInfo, err := input.Ctx.GetTableIndexesInfo(schemaName, tableName.Name.O)
+				if err != nil {
+					continue
+				}
+				indexColumns := getColumnFromIndexesInfoByIndexName(indexesInfo, recordKey)
+				maxIndexOption, err := input.Ctx.GetMaxIndexOptionForTable(tableName, indexColumns)
+				if err != nil {
+					continue
+				}
+				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+
+				if maxIndexOption > 0 && float64(max) > maxIndexOption {
+					addResult(input.Res, input.Rule, input.Rule.Name, recordKey, max)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func checkTableRows(input *RuleHandlerInput) error {
+	limitRowsString := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	limitRowsInt, err := strconv.Atoi(limitRowsString)
+	if err != nil {
+		return err
+	}
+
+	stmt, ok := input.Node.(*ast.CreateTableStmt)
+	if !ok {
+		return nil
+	}
+
+	exist, err := input.Ctx.IsTableExist(stmt.Table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	rowsCount, err := input.Ctx.GetTableRowCount(stmt.Table)
+	if err != nil {
+		return err
+	}
+
+	if rowsCount > limitRowsInt*TenThousand {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
+	indexSlices := [][]string{}
+	table := &ast.TableName{}
+	switch stmt := input.Node.(type) {
+	case *ast.CreateIndexStmt:
+		singleIndexSlice := []string{}
+		if len(stmt.IndexPartSpecifications) == 1 {
+			return nil
+		}
+		for _, indexPart := range stmt.IndexPartSpecifications {
+			singleIndexSlice = append(singleIndexSlice, indexPart.Column.Name.O)
+		}
+		indexSlices = append(indexSlices, singleIndexSlice)
+		table = stmt.Table
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Constraint == nil {
+				continue
+			}
+			if spec.Constraint.Tp != ast.ConstraintIndex && spec.Constraint.Tp != ast.ConstraintUniq {
+				continue
+			}
+			singleIndexSlice := []string{}
+			if len(spec.Constraint.Keys) == 1 {
+				continue
+			}
+			for _, key := range spec.Constraint.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
+		}
+		table = stmt.Table
+	case *ast.CreateTableStmt:
+		if stmt.Constraints == nil {
+			return nil
+		}
+		for _, con := range stmt.Constraints {
+			if con.Tp != ast.ConstraintIndex && con.Tp != ast.ConstraintUniq {
+				continue
+			}
+			singleIndexSlice := []string{}
+			if len(con.Keys) == 1 {
+				continue
+			}
+			for _, key := range con.Keys {
+				singleIndexSlice = append(singleIndexSlice, key.Column.Name.O)
+			}
+			indexSlices = append(indexSlices, singleIndexSlice)
+		}
+		table = stmt.Table
+	}
+	exist, err := input.Ctx.IsTableExist(table)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return nil
+	}
+
+	noticeInfos := []string{}
+	for _, singleIndexSlice := range indexSlices {
+		var indexSelectValueSlice []struct {
+			Index string
+			Value int
+		}
+		sortIndexes := make([]string, len(singleIndexSlice))
+		for _, indexColumn := range singleIndexSlice {
+			columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
+			if err != nil {
+				return err
+			}
+			selectivityValue := columnCardinality
+			indexSelectValueSlice = append(indexSelectValueSlice, struct {
+				Index string
+				Value int
+			}{indexColumn, selectivityValue})
+		}
+		sort.Slice(indexSelectValueSlice, func(i, j int) bool {
+			return indexSelectValueSlice[i].Value > indexSelectValueSlice[j].Value
+		})
+		for i, kv := range indexSelectValueSlice {
+			sortIndexes[i] = kv.Index
+		}
+		for ind, indexColumn := range singleIndexSlice {
+			if indexColumn != indexSelectValueSlice[ind].Index {
+				noticeInfos = append(noticeInfos, fmt.Sprintf("(%s)可调整为(%s)", strings.Join(singleIndexSlice, "，"), strings.Join(sortIndexes, "，")))
+				break
+			}
+		}
+	}
+	if len(noticeInfos) > 0 {
+		addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(noticeInfos, "，"))
+	}
+	return nil
+}
+
+func judgeTextField(col *ast.ColumnDef) bool {
+	if col.Tp.Tp == mysql.TypeBlob || col.Tp.Tp == mysql.TypeTinyBlob || col.Tp.Tp == mysql.TypeMediumBlob || col.Tp.Tp == mysql.TypeLongBlob {
+		// mysql blob字段为二进制对象
+		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
+		if col.Tp.Flag != mysql.BinaryFlag {
+			return true
+		}
+	}
+	return false
+}
+
+func checkText(input *RuleHandlerInput) error {
+	textColumns := []string{}
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		var hasPk bool
+		columnsWithoutPkAndText := make(map[string]struct{})
+		for _, col := range stmt.Cols {
+			isText := judgeTextField(col)
+			if isText {
+				textColumns = append(textColumns, col.Name.Name.O)
+				continue
+			}
+			if util.IsAllInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
+				hasPk = true
+				continue
+			}
+			columnsWithoutPkAndText[col.Name.Name.O] = struct{}{}
+		}
+		for _, constraint := range stmt.Constraints {
+			if constraint.Tp != ast.ConstraintPrimaryKey {
+				continue
+			}
+			hasPk = true
+			// 移除columnsWithoutPkAndText中主键的字段
+			for _, key := range constraint.Keys {
+				columnName := key.Column.Name.O
+				delete(columnsWithoutPkAndText, columnName)
+			}
+		}
+		if hasPk && len(textColumns) > 0 && len(columnsWithoutPkAndText) > 0 {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
+		}
+	case *ast.AlterTableStmt:
+		for _, col := range stmt.Specs {
+			if col.Tp != ast.AlterTableAddColumns {
+				continue
+			}
+			for _, newColumn := range col.NewColumns {
+				isText := judgeTextField(newColumn)
+				if isText {
+					textColumns = append(textColumns, newColumn.Name.Name.O)
+				}
+			}
+		}
+		if len(textColumns) == 0 {
+			return nil
+		}
+		originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return nil
+		}
+		originPK, hasPk := util.GetPrimaryKey(originTable)
+		if !hasPk {
+			return nil
+		}
+		originTableAllColumns := []string{}
+		for _, col := range originTable.Cols {
+			originTableAllColumns = append(originTableAllColumns, col.Name.Name.L)
+		}
+		// 判断原表是否只存在主键
+		if len(originPK) != len(originTableAllColumns) {
+			addResult(input.Res, input.Rule, input.Rule.Name, strings.Join(textColumns, "，"))
+		}
+	}
+	return nil
+}
+
+func checkSelectRows(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.SelectStmt); !ok {
+		return nil
+	}
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+
+	var notUseIndex bool
+	for _, record := range epRecords {
+		if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+			notUseIndex = true
+			break
+		}
+	}
+
+	if !notUseIndex {
+		return nil
+	}
+	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	if err != nil {
+		return err
+	}
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	if affectCount > int64(max)*int64(TenThousand) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+
+	return nil
+}
+
+func checkScanRows(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		if record.Rows > int64(max)*int64(TenThousand) {
+			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+	}
+	return nil
+}
+
+func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
+	tables := []*ast.TableSource{}
+	type colSets struct {
+		AllCols    []string
+		ColsWithEq []string
+		ColsWithOr []string
+	}
+	tablesFromCondition := make(map[string]colSets)
+	defaultTable := ""
+	getTableName := func(tableName string) string {
+		if tableName == "" {
+			return defaultTable
+		}
+		return tableName
+	}
+
+	gatherColsWithOr := func(expr ast.ExprNode) {
+		var col *ast.ColumnNameExpr
+		var ok bool
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			col, ok = x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		case *ast.PatternInExpr:
+			col, ok = x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		case *ast.PatternLikeExpr:
+			col, ok = x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return
+			}
+		}
+
+		if col == nil {
+			return
+		}
+		tableName := getTableName(col.Name.Table.L)
+		sets := tablesFromCondition[tableName]
+		sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+		sets.ColsWithOr = append(tablesFromCondition[tableName].ColsWithOr, col.Name.Name.L)
+		tablesFromCondition[tableName] = sets
+	}
+	var gatherColFromConditions func(expr ast.ExprNode) (skip bool)
+	gatherColFromConditions = func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			if x.Op == opcode.LogicOr || x.Op == opcode.LogicXor {
+				gatherColsWithOr(x.L)
+				gatherColsWithOr(x.R)
+				return false
+			}
+			// select * from tb1 where a > 1
+			// select * from tb1 where a = 1
+			col, ok := x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			tableName := getTableName(col.Name.Table.L)
+			if x.Op == opcode.EQ {
+				sets := tablesFromCondition[tableName]
+				sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+				sets.ColsWithEq = append(tablesFromCondition[tableName].ColsWithEq, col.Name.Name.L)
+				tablesFromCondition[tableName] = sets
+			} else {
+				sets := tablesFromCondition[tableName]
+				sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+				tablesFromCondition[tableName] = sets
+			}
+		case *ast.SubqueryExpr:
+			if selectStmt, ok := x.Query.(*ast.SelectStmt); ok && selectStmt != nil {
+				util.ScanWhereStmt(gatherColFromConditions, selectStmt.Where)
+			}
+		case *ast.PatternInExpr:
+			//select * from tb1 where a IN(1,2)
+			col, ok := x.Expr.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			tableName := getTableName(col.Name.Table.L)
+			sets := tablesFromCondition[tableName]
+			sets.AllCols = append(tablesFromCondition[tableName].AllCols, col.Name.Name.L)
+			tablesFromCondition[tableName] = sets
+		case *ast.PatternLikeExpr:
+			// select * from tb1 where a LIKE '%abc'
+			// todo issue1783
+			//col, ok := x.Expr.(*ast.ColumnNameExpr)
+			//if !ok {
+			//	return false
+			//}
+			//tableName := getTableName(col.Name.Table.L)
+			//tablesFromCondition[tableName] = colSets{
+			//	AllCols:    append(tablesFromCondition[tableName].AllCols, col.Name.Name.L),
+			//	ColsWithEq: tablesFromCondition[tableName].ColsWithEq,
+			//}
+		}
+		return false
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil || stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.From.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.From.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.UpdateStmt:
+		if stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.TableRefs.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.DeleteStmt:
+		if stmt.Where == nil {
+			return nil
+		}
+		if t, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+			if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+				defaultTable = name.Name.L
+			}
+		}
+		tables = util.GetTableSources(stmt.TableRefs.TableRefs)
+		util.ScanWhereStmt(gatherColFromConditions, stmt.Where)
+	case *ast.UnionStmt:
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if selectStmt.Where == nil {
+				continue
+			}
+			tables = util.GetTableSources(selectStmt.From.TableRefs)
+			if t, ok := selectStmt.From.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+				if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+					defaultTable = name.Name.L
+				}
+			}
+			util.ScanWhereStmt(gatherColFromConditions, selectStmt.Where)
+		}
+	default:
+		return nil
+	}
+
+	for alias, cols := range tablesFromCondition {
+		table, err := util.ConvertAliasToTable(alias, tables)
+		if err != nil {
+			log.NewEntry().Errorf("convert table alias failed, sqle: %v, error: %v", input.Node.Text(), err)
+			return fmt.Errorf("convert table alias failed: %v", err)
+		}
+		createTable, exist, err := input.Ctx.GetCreateTableStmt(table)
+		if err != nil {
+			log.NewEntry().Errorf("get create table statement failed: %v", err)
+			return nil
+		}
+		if !exist {
+			log.NewEntry().Errorf("table [%v] doesn't exist", table.Name.O)
+			return nil
+		}
+
+		if input.Rule.Name == DMLMustMatchLeftMostPrefix {
+			if !isColumnMatchedALeftMostPrefix(cols.AllCols, cols.ColsWithEq, cols.ColsWithOr, createTable.Constraints) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		} else if input.Rule.Name == DMLMustUseLeftMostPrefix {
+			if !isColumnUseLeftMostPrefix(cols.AllCols, createTable.Constraints) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+			}
+		}
+	}
+	return nil
+}
+
+func isColumnMatchedALeftMostPrefix(allCols []string, colsWithEQ, colsWithOr []string, constraints []*ast.Constraint) bool {
+	multiConstraints := make([]*ast.Constraint, 0)
+	for _, constraint := range constraints {
+		if len(constraint.Keys) == 1 {
+			continue
+		}
+		multiConstraints = append(multiConstraints, constraint)
+	}
+	walkConstraint := func(constraint *ast.Constraint) bool {
+		for i, key := range constraint.Keys {
+			for _, col := range allCols {
+				if col != key.Column.Name.L {
+					// 不是这个索引字段，跳过
+					continue
+				}
+				if i == 0 && (!utils.StringsContains(colsWithEQ, col) || utils.StringsContains(colsWithOr, col)) {
+					// 1.是最左字段 2.该字段没有使用等值查询或使用了or
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	for _, constraint := range multiConstraints {
+		if !walkConstraint(constraint) {
+			return false
+		}
+	}
+	return true
+}
+
+func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) bool {
+	multiConstraints := make([]*ast.Constraint, 0)
+	for _, constraint := range constraints {
+		if len(constraint.Keys) == 1 {
+			continue
+		}
+		multiConstraints = append(multiConstraints, constraint)
+	}
+	walkConstraint := func(constraint *ast.Constraint) bool {
+		isCurrentIndexUsed := false
+		for i, key := range constraint.Keys {
+			for _, col := range allCols {
+				if col != key.Column.Name.L {
+					// 不是这个索引的字段，跳过
+					continue
+				}
+				isCurrentIndexUsed = true
+				if i == 0 {
+					return true
+				}
+			}
+		}
+		return !isCurrentIndexUsed
+	}
+
+	for _, constraint := range multiConstraints {
+		if !walkConstraint(constraint) {
+			return false
+		}
+	}
+	return true
+}
+
+func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {
+	for _, column := range columnNames {
+		if column.Name.L == columnNameExpr.Name.Name.L {
+			return true
+		}
+	}
+	return false
+}
+
+func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil || onConditions == nil {
+		return nil
+	}
+	tableNameIndexMap := make(map[string][]*ast.ColumnName)
+
+	for table, createTableStmt := range tableNameCreateTableStmtMap {
+		indexes := []*ast.ColumnName{}
+		for _, constraint := range createTableStmt.Constraints {
+			// 联合索引只取第一个字段
+			if len(constraint.Keys) > 0 {
+				indexes = append(indexes, constraint.Keys[0].Column)
+			}
+		}
+		tableNameIndexMap[table] = indexes
+	}
+	for _, onCondition := range onConditions {
+		var isUseIndex bool
+		binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr)
+		if !ok {
+			continue
+		}
+		if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+				if !isUseIndex {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
+			}
+		}
+
+		if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
+				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
+				if !isUseIndex {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func getTableDefaultCharset(createTableStmt *ast.CreateTableStmt) string {
+	characterSet := ""
+	for _, op := range createTableStmt.Options {
+		switch op.Tp {
+		case ast.TableOptionCharset:
+			characterSet = op.StrValue
+		}
+	}
+	return characterSet
+}
+
+func getTableDefaultCollation(createTableStmt *ast.CreateTableStmt) string {
+	collation := ""
+	for _, op := range createTableStmt.Options {
+		switch op.Tp {
+		case ast.TableOptionCollate:
+			collation = op.StrValue
+		}
+	}
+	return collation
+}
+
+func getColumnCSCollation(columnName *ast.ColumnNameExpr, tableColumnCSCT map[string]map[string]columnCSCollation) columnCSCollation {
+	var cSCollation columnCSCollation
+	if columnCSCT, ok := tableColumnCSCT[columnName.Name.Table.L]; ok {
+		cSCollation = columnCSCT[columnName.Name.Name.L]
+	}
+
+	return cSCollation
+}
+
+func getOnConditionLeftAndRightCSCollation(onCondition *ast.OnCondition, tableColumnCSCT map[string]map[string]columnCSCollation) (columnCSCollation, columnCSCollation) {
+	var leftCSCollation, rightCSCollation columnCSCollation
+
+	if binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr); ok {
+		if columnName, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
+			leftCSCollation = getColumnCSCollation(columnName, tableColumnCSCT)
+		}
+
+		if columnName, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
+			rightCSCollation = getColumnCSCollation(columnName, tableColumnCSCT)
+		}
+	}
+
+	return leftCSCollation, rightCSCollation
+}
+
+type columnCSCollation struct {
+	Charset   string
+	Collation string
+}
+
+func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
+	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
+	if tableNameCreateTableStmtMap == nil || onConditions == nil {
+		return nil
+	}
+
+	// 存储表名和列名的字符集排序规则映射关系, {tableName: {columnName: columnCSCollation}}
+	tableColumnCSCT := make(map[string]map[string]columnCSCollation)
+	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
+		tableDefaultCS := getTableDefaultCharset(createTableStmt)
+		tableDefaultCollation := getTableDefaultCollation(createTableStmt)
+		for _, col := range createTableStmt.Cols {
+			cSCollation := columnCSCollation{}
+			charset, hasCharset := getSingleColumnCSFromColumnsDef(col)
+			if !hasCharset {
+				continue
+			}
+			if charset == "" {
+				charset = tableDefaultCS
+			}
+			cSCollation.Charset = charset
+			for _, op := range col.Options {
+				if op.Tp == ast.ColumnOptionCollate {
+					cSCollation.Collation = op.StrValue
+					break
+				}
+			}
+			if cSCollation.Collation == "" {
+				cSCollation.Collation = tableDefaultCollation
+			}
+			if tableColumnCSCT[tableName] == nil {
+				tableColumnCSCT[tableName] = make(map[string]columnCSCollation)
+			}
+			tableColumnCSCT[tableName][col.Name.Name.L] = cSCollation
+		}
+	}
+
+	for _, onCondition := range onConditions {
+		leftCSCollation, righCSCollation := getOnConditionLeftAndRightCSCollation(onCondition, tableColumnCSCT)
+		if leftCSCollation.Charset == "" || righCSCollation.Charset == "" {
+			continue
+		}
+		if leftCSCollation.Charset != righCSCollation.Charset {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+		if leftCSCollation.Collation != righCSCollation.Collation {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+
+	}
+
 	return nil
 }
