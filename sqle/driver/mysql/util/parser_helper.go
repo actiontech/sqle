@@ -410,18 +410,13 @@ func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 					return true
 				}
 			case *ast.FuncCallExpr:
-				if pattern.FnName.L == "concat" {
-					if len(pattern.Args) > 0 {
-						switch pattern := pattern.Args[0].(type) {
-						case *driver.ValueExpr:
-							datum := pattern.Datum.GetString()
-							if strings.HasPrefix(datum, "%") || strings.HasPrefix(datum, "_") {
-								isExist = true
-								return true
-							}
-						}
-					}
+				result := NewFuncCallStringResultGenerator(pattern).GenerateResult()
+				if strings.HasPrefix(result, "%") || strings.HasPrefix(result, "_") {
+					isExist = true
+					return true
 				}
+				// unsupport subquery result as value of like
+				// example (select '%' 'any_string' '%')
 			}
 		}
 		return false
