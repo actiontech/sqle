@@ -10,11 +10,9 @@ import (
 type SQLAuditRecordListItem struct {
 	AuditRecordId   string          `json:"audit_record_id"`
 	RecordCreatedAt *time.Time      `json:"record_created_at"`
-	CreatorName     string          `json:"creator_name"`
+	CreatorId       string          `json:"creator_id"`
 	Tags            sql.NullString  `json:"tags"`
-	InstanceName    sql.NullString  `json:"instance_name"`
-	InstanceHost    sql.NullString  `json:"instance_host"`
-	InstancePort    sql.NullString  `json:"instance_port"`
+	InstanceId      uint64          `json:"instance_id"`
 	TaskId          uint            `json:"task_id"`
 	DbType          string          `json:"db_type"`
 	InstanceSchema  string          `json:"instance_schema"`
@@ -29,12 +27,10 @@ var sqlAuditRecordQueryTpl = `
 SELECT sql_audit_records.audit_record_id AS audit_record_id,
        sql_audit_records.created_at      AS record_created_at,
        sql_audit_records.tags            AS tags,
-       create_user.login_name            AS creator_name,
-       instances.name                    AS instance_name,
-       instances.db_host                 AS instance_host,
-       instances.db_port                 AS instance_port,
+			 sql_audit_records.creator_id      AS creator_id,
        tasks.id                          AS task_id,
        tasks.db_type                     AS db_type,
+			 tasks.instance_id      		       AS instance_id,
        tasks.instance_schema             AS instance_schema,
        tasks.audit_level                 AS audit_level,
        tasks.status                      AS task_status,
@@ -58,17 +54,14 @@ SELECT COUNT(*)
 var sqlAuditRecordQueryBodyTpl = `
 {{ define "body" }}
 FROM sql_audit_records
-LEFT JOIN projects AS p ON sql_audit_records.project_id = p.id
-LEFT JOIN users AS create_user ON sql_audit_records.creator_id = create_user.id
 LEFT JOIN tasks ON sql_audit_records.task_id = tasks.id
-LEFT JOIN instances ON tasks.instance_id = instances.id
 
 WHERE
 sql_audit_records.deleted_at IS NULL
-AND p.name = :filter_project_name
+AND sql_audit_records.project_id = :filter_project_id
 
 {{- if .check_user_can_access }}
-AND create_user.id = :filter_creator_id
+AND sql_audit_records.creator_id = :filter_creator_id
 {{- end }}
 
 {{- if .fuzzy_search_tags }}
@@ -83,8 +76,8 @@ AND tasks.status = :filter_task_status
 AND tasks.status <> :filter_task_status_exclude
 {{- end }}
 
-{{- if .filter_instance_name }}
-AND instances.name = :filter_instance_name
+{{- if .filter_instance_id }}
+AND  tasks.instance_id = :filter_instance_id
 {{- end }}
 
 {{- if .filter_create_time_from }}

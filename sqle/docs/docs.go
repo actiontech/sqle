@@ -2607,9 +2607,9 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_instance_name",
+                        "type": "integer",
+                        "description": "filter instance id",
+                        "name": "filter_instance_id",
                         "in": "query"
                     },
                     {

@@ -53,7 +53,7 @@ type Task struct {
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
 
-	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
+	Instance     *Instance
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 }

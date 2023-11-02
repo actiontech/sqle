@@ -94,17 +94,18 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 		err = errors.New(errors.TaskNotExist, fmt.Errorf("task not exist"))
 		goto Error
 	}
+	if task.InstanceId != 0 {
+		instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
+		if err != nil {
+			goto Error
+		}
+		if !exist {
+			err = errors.New(errors.DataNotExist, fmt.Errorf("instance not exist"))
+			goto Error
+		}
 
-	instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
-	if err != nil {
-		goto Error
+		task.Instance = instance
 	}
-	if !exist {
-		err = errors.New(errors.DataNotExist, fmt.Errorf("instance not exist"))
-		goto Error
-	}
-
-	task.Instance = instance
 
 	if err = action.validation(task); err != nil {
 		goto Error

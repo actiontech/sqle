@@ -371,7 +371,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
 
 	// task
-	v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
+	v1ProjectRouter.POST("/projects/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 	v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)

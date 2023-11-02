@@ -46,9 +46,9 @@ type SqlManage struct {
 	InstanceName              string       `json:"instance_name"`
 	SchemaName                string       `json:"schema_name"`
 
-	Assignees []*User `gorm:"many2many:sql_manage_assignees;"`
-	Status    string  `json:"status" gorm:"default:\"unhandled\""`
-	Remark    string  `json:"remark" gorm:"type:varchar(512)"`
+	Assignees string `json:"assignees"`
+	Status    string `json:"status" gorm:"default:\"unhandled\""`
+	Remark    string `json:"remark" gorm:"type:varchar(512)"`
 
 	ProjectId string `json:"project_id"`
 
@@ -90,7 +90,7 @@ type SqlManageDetail struct {
 	SchemaName           string       `json:"schema_name"`
 	Status               string       `json:"status"`
 	Remark               string       `json:"remark"`
-	Assignees            RowList      `json:"assignees"`
+	Assignees            *string      `json:"assignees"`
 	ApName               *string      `json:"ap_name"`
 	SqlAuditRecordID     *string      `json:"sql_audit_record_id"`
 }
@@ -130,7 +130,7 @@ SELECT
 	sm.schema_name,
 	sm.status,
 	sm.remark,
-	GROUP_CONCAT(DISTINCT all_users.login_name) as assignees,
+	sm.assignees as assignees,
 	ap.name as ap_name,
 	sar.audit_record_id as sql_audit_record_id
 
@@ -150,13 +150,8 @@ var sqlManageBodyTpl = `
 FROM sql_manages sm
          LEFT JOIN sql_audit_records sar ON sm.sql_audit_record_id = sar.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
-         LEFT JOIN projects p ON p.id = sm.project_id
-         LEFT JOIN sql_manage_assignees sma ON sma.sql_manage_id = sm.id
-         LEFT JOIN users u ON u.id = sma.user_id
-         LEFT JOIN sql_manage_assignees all_sma ON all_sma.sql_manage_id = sm.id
-         LEFT JOIN users all_users ON all_users.id = all_sma.user_id
 
-WHERE p.name = :project_name
+WHERE sm.project_id = :project_id
   AND sm.deleted_at IS NULL
 
 {{- if .fuzzy_search_sql_fingerprint }}
@@ -164,7 +159,7 @@ AND sm.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
 {{- end }}
 
 {{- if .filter_assignee }}
-AND u.login_name = :filter_assignee
+AND sm.assignees REGEXP :filter_assignee
 {{- end }}
 
 {{- if .filter_instance_name }}
@@ -331,7 +326,7 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
 	})
 }
 
-func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark *string, assignees []*string) error {
+func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark *string, assignees []string) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		data := map[string]interface{}{}
 		if status != nil {
@@ -342,6 +337,9 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 			data["remark"] = *remark
 		}
 
+		if len(assignees) != 0 {
+			data["assignees"] = strings.Join(assignees, ",")
+		}
 		if len(data) > 0 {
 			err := tx.Model(&SqlManage{}).Where("id in (?)", idList).Update(data).Error
 			if err != nil {
@@ -349,37 +347,24 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 			}
 		}
 
-		if assignees != nil {
-			userList := []*User{}
-			err := tx.Where("login_name in (?)", assignees).Find(&userList).Error
-			if err != nil {
-				return err
-			}
+		// if len(assignees) > 0 {
+		// 	pattern := make([]string, 0, len(idList))
+		// 	args := make([]interface{}, 0)
+		// 	for _, id := range idList {
+		// 		for _, userId := range assignees {
+		// 			pattern = append(pattern, " WHEN ? THEN ?\n ")
+		// 			args = append(args, *id, userId)
+		// 		}
+		// 	}
+		// 	args = append(args, idList)
+		// 	raw := fmt.Sprintf("UPDATE `sql_manages` SET assignees = CASE id  %s END WHERE id IN (?)",
+		// 		strings.Join(pattern, " "))
 
-			if len(userList) > 0 {
-				err := tx.Exec("DELETE FROM sql_manage_assignees WHERE sql_manage_id IN (?)", idList).Error
-				if err != nil {
-					return err
-				}
-
-				pattern := make([]string, 0, len(userList))
-				args := make([]interface{}, 0)
-				for _, id := range idList {
-					for _, user := range userList {
-						pattern = append(pattern, "(?,?)")
-						args = append(args, *id, user.ID)
-					}
-				}
-
-				raw := fmt.Sprintf("INSERT INTO `sql_manage_assignees` (`sql_manage_id`, `user_id`) VALUES %s",
-					strings.Join(pattern, ", "))
-
-				err = tx.Exec(raw, args...).Error
-				if err != nil {
-					return err
-				}
-			}
-		}
+		// 	err := tx.Exec(raw, args...).Error
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		return nil
 	})
