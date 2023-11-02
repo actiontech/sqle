@@ -5105,10 +5105,10 @@ paths:
         in: query
         name: filter_sql_audit_status
         type: string
-      - description: filter instance name
+      - description: filter instance id
         in: query
-        name: filter_instance_name
-        type: string
+        name: filter_instance_id
+        type: integer
       - description: filter create time from
         in: query
         name: filter_create_time_from

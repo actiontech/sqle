@@ -205,31 +205,12 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
-
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	task := &model.Task{
-		Schema:       req.InstanceSchema,
-		InstanceId:   instance.ID,
-		Instance:     instance,
-		CreateUserId: uint64(user.ID),
-		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    source,
-		DBType:       instance.DbType,
-	}
-	createAt := time.Now()
-	task.CreatedAt = createAt
 
-	task, _, err = buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
+	task, _, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

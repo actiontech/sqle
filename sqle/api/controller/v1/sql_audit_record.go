@@ -98,14 +98,6 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if !up.IsProjectMember() {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("user is not project member"))
-	}
 	var sqls string
 	var source string
 	if req.Sqls != "" {
@@ -130,6 +122,8 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+	// if task instance is not nil, gorm will update instance when save task.
+	task.Instance = nil
 
 	recordId, err := utils.GenUid()
 	if err != nil {
@@ -137,7 +131,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 	record := model.SQLAuditRecord{
 		ProjectId:     projectUid,
-		CreatorId:     user.ID,
+		CreatorId:     user.GetIDStr(),
 		AuditRecordId: recordId,
 		TaskId:        task.ID,
 		Task:          task,
@@ -485,7 +479,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 type GetSQLAuditRecordsReqV1 struct {
 	FuzzySearchTags      string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
 	FilterSQLAuditStatus string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterInstanceName   string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterInstanceId     uint64 `json:"filter_instance_id" query:"filter_instance_id"`
 	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	PageIndex            uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -526,7 +520,7 @@ const (
 // @Security ApiKeyAuth
 // @Param fuzzy_search_tags query string false "fuzzy search tags"
 // @Param filter_sql_audit_status query string false "filter sql audit status" Enums(auditing,successfully)
-// @Param filter_instance_name query string false "filter instance name"
+// @Param filter_instance_id query uint64 false "filter instance id"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param page_index query uint32 true "page index"
@@ -556,9 +550,6 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
 	}
-	if !up.IsProjectAdmin() {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("user is not project manager: %v", err))
-	}
 
 	var offset uint32
 	if req.PageIndex > 0 {
@@ -566,13 +557,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"filter_project_name":     projectUid,
+		"filter_project_id":       projectUid,
 		"filter_creator_id":       user.ID,
 		"fuzzy_search_tags":       req.FuzzySearchTags,
-		"filter_instance_name":    req.FilterInstanceName,
+		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   up.IsProjectAdmin(),
+		"check_user_can_access":   !up.IsProjectAdmin(),
 		"limit":                   req.PageSize,
 		"offset":                  offset,
 	}
@@ -587,6 +578,20 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// batch get instance info
+	instanceIds := make([]uint64, 0)
+	for _, record := range records {
+		instanceIds = append(instanceIds, record.InstanceId)
+	}
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	idInstMap := make(map[uint64] /*instance id*/ *model.Instance /*instance */, 0)
+	for _, instance := range instances {
+		idInstMap[instance.ID] = instance
+	}
+
 	resData := make([]SQLAuditRecord, len(records))
 	for i := range records {
 		record := records[i]
@@ -598,19 +603,15 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		if err := json.Unmarshal([]byte(record.Tags.String), &tags); err != nil {
 			log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
 		}
+
 		resData[i] = SQLAuditRecord{
-			Creator:          record.CreatorName,
+			Creator:          dms.GetUserNameWithDelTag(record.CreatorId),
 			SQLAuditRecordId: record.AuditRecordId,
 			SQLAuditStatus:   status,
 			Tags:             tags,
 			CreatedAt:        record.RecordCreatedAt,
-			Instance: SQLAuditRecordInstance{
-				Host: record.InstanceHost.String,
-				Port: record.InstancePort.String,
-			},
 			Task: AuditTaskResV1{
 				Id:             record.TaskId,
-				InstanceName:   record.InstanceName.String,
 				InstanceDbType: record.DbType,
 				InstanceSchema: record.InstanceSchema,
 				AuditLevel:     record.AuditLevel.String,
@@ -619,6 +620,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 				Status:         record.TaskStatus,
 				SQLSource:      record.SQLSource,
 			},
+		}
+		if inst, ok := idInstMap[record.InstanceId]; ok {
+			resData[i].Instance = SQLAuditRecordInstance{
+				Host: inst.Host,
+				Port: inst.Port,
+			}
+			resData[i].Task.InstanceName = idInstMap[record.InstanceId].Name
 		}
 	}
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordsResV1{
