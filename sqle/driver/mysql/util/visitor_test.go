@@ -166,3 +166,27 @@ func TestEqualConditionVisitor(t *testing.T) {
 		})
 	}
 }
+
+func TestFuncCallVisitor(t *testing.T) {
+	tests := []struct {
+		input          string
+		conditionCount int
+	}{
+		{"SELECT * FROM t1 WHERE t1.id1 = t3.id3 OR t2.id2 = t1.id1", 0},
+		{"SELECT UPPER(CONCAT(CONCAT('a_',UPPER('b'),'_c'),'_','a_',UPPER('b'),'_c'));", 5},
+		{"SELECT UPPER('a');", 1},
+		{"SELECT UPPER(CONCAT('a_',UPPER('b'),'_c'));", 3},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+
+			visitor := &FuncCallExprVisitor{}
+			stmt.Accept(visitor)
+
+			assert.Equal(t, tt.conditionCount, len(visitor.FuncCallList))
+		})
+	}
+}
