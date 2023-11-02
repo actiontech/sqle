@@ -631,8 +631,8 @@ func updateWorkflowStatus(tx *gorm.DB, w *Workflow) error {
 
 func updateWorkflowStep(tx *gorm.DB, operateStep *WorkflowStep) error {
 	// 必须保证更新前的操作用户未填写，通过数据库的特性保证数据不会重复写
-	db := tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ? AND operation_user_id = 0",
-		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
+	db := tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ? AND operation_user_id = ?",
+		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID, "")
 	if db.Error != nil {
 		return db.Error
 	}

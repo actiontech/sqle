@@ -141,6 +141,18 @@ definitions:
       audit_plan_sql_schema:
         example: db1
         type: string
+      db_user:
+        example: database_user001
+        type: string
+      first_query_at:
+        example: "2023-09-12T02:48:01.317880Z"
+        type: string
+      query_time_avg:
+        example: 3.22
+        type: number
+      query_time_max:
+        example: 5.22
+        type: number
     type: object
   v1.AuditPlanSQLResV1:
     properties:
@@ -188,6 +200,17 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditSQLResV1'
         type: array
+    type: object
+  v1.AuditResult:
+    properties:
+      level:
+        example: warn
+        type: string
+      message:
+        example: 避免使用不必要的内置函数md5()
+        type: string
+      rule_name:
+        type: string
     type: object
   v1.AuditSQLResV1:
     properties:
@@ -349,6 +372,25 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.BatchUpdateSqlManageReq:
+    properties:
+      assignees:
+        items:
+          type: string
+        type: array
+      remark:
+        type: string
+      sql_manage_id_list:
+        items:
+          type: integer
+        type: array
+      status:
+        enum:
+        - solved
+        - ignored
+        - manual_audited
+        type: string
+    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -489,6 +531,18 @@ definitions:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
+        type: string
+    type: object
+  v1.CreateSQLAuditRecordResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SQLAuditRecordResData'
+        type: object
+      message:
+        example: ok
         type: string
     type: object
   v1.CreateWorkflowReqV1:
@@ -1192,6 +1246,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetRuleKnowledgeResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RuleKnowledgeResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRuleTemplateResV1:
     properties:
       code:
@@ -1268,6 +1334,46 @@ definitions:
           $ref: '#/definitions/v1.TableMeta'
         type: array
     type: object
+  v1.GetSQLAuditRecordResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SQLAuditRecord'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSQLAuditRecordTagTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          type: string
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSQLAuditRecordsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SQLAuditRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetSQLEInfoResDataV1:
     properties:
       logo_url:
@@ -1314,6 +1420,25 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetSqlManageListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlManage'
+        type: array
+      message:
+        example: ok
+        type: string
+      sql_manage_bad_num:
+        type: integer
+      sql_manage_optimized_num:
+        type: integer
+      sql_manage_total_num:
+        type: integer
     type: object
   v1.GetSystemVariablesResV1:
     properties:
@@ -1877,6 +2002,23 @@ definitions:
       role:
         type: string
     type: object
+  v1.RuleInfo:
+    properties:
+      annotation:
+        example: this is test rule
+        type: string
+      desc:
+        example: this is test rule
+        type: string
+    type: object
+  v1.RuleKnowledgeResV1:
+    properties:
+      knowledge_content:
+        type: string
+      rule:
+        $ref: '#/definitions/v1.RuleInfo'
+        type: object
+    type: object
   v1.RuleParamReqV1:
     properties:
       key:
@@ -1997,6 +2139,44 @@ definitions:
       rule_type:
         type: string
     type: object
+  v1.SQLAuditRecord:
+    properties:
+      created_at:
+        type: string
+      creator:
+        type: string
+      instance:
+        $ref: '#/definitions/v1.SQLAuditRecordInstance'
+        type: object
+      sql_audit_record_id:
+        type: string
+      sql_audit_status:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      task:
+        $ref: '#/definitions/v1.AuditTaskResV1'
+        type: object
+    type: object
+  v1.SQLAuditRecordInstance:
+    properties:
+      db_host:
+        example: 10.10.10.10
+        type: string
+      db_port:
+        example: "3306"
+        type: string
+    type: object
+  v1.SQLAuditRecordResData:
+    properties:
+      sql_audit_record_id:
+        type: string
+      task:
+        $ref: '#/definitions/v1.AuditTaskResV1'
+        type: object
+    type: object
   v1.SQLExplain:
     properties:
       classic_result:
@@ -2023,6 +2203,18 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
+    type: object
+  v1.Source:
+    properties:
+      audit_plan_name:
+        type: string
+      sql_audit_record_id:
+        type: string
+      type:
+        enum:
+        - audit_plan
+        - sql_audit_record
+        type: string
     type: object
   v1.SqlAnalysisResDataV1:
     properties:
@@ -2051,6 +2243,45 @@ definitions:
         type: string
       percent:
         type: number
+    type: object
+  v1.SqlManage:
+    properties:
+      appear_num:
+        type: integer
+      assignees:
+        items:
+          type: string
+        type: array
+      audit_result:
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
+      first_appear_time:
+        type: string
+      id:
+        type: integer
+      instance_name:
+        type: string
+      last_appear_time:
+        type: string
+      remark:
+        type: string
+      schema_name:
+        type: string
+      source:
+        $ref: '#/definitions/v1.Source'
+        type: object
+      sql:
+        type: string
+      sql_fingerprint:
+        type: string
+      status:
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        type: string
     type: object
   v1.StatisticAuditPlanResV1:
     properties:
@@ -2318,6 +2549,11 @@ definitions:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
     type: object
+  v1.UpdateRuleKnowledgeReq:
+    properties:
+      knowledge_content:
+        type: string
+    type: object
   v1.UpdateRuleTemplateReqV1:
     properties:
       desc:
@@ -2325,6 +2561,13 @@ definitions:
       rule_list:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
+        type: array
+    type: object
+  v1.UpdateSQLAuditRecordReqV1:
+    properties:
+      tags:
+        items:
+          type: string
         type: array
     type: object
   v1.UpdateSystemVariablesReqV1:
@@ -4085,6 +4328,36 @@ paths:
       summary: 获取指定扫描任务的SQL扫描记录统计信息
       tags:
       - audit_plan
+  /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export:
+    get:
+      description: export audit plan report as csv
+      operationId: exportAuditPlanReportV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: audit plan report id
+        in: path
+        name: audit_plan_report_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: get export audit plan report
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 以csv的形式导出扫描报告
+      tags:
+      - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
     get:
       description: get audit plan report SQLs
@@ -4418,6 +4691,7 @@ paths:
         enum:
         - create_audit_plan
         - create_workflow
+        - sql_manage
         in: query
         name: functional_module
         type: string
@@ -4815,6 +5089,373 @@ paths:
       summary: 导出项目规则模板
       tags:
       - rule_template
+  /v1/projects/{project_name}/sql_audit_records:
+    get:
+      description: get sql audit records
+      operationId: getSQLAuditRecordsV1
+      parameters:
+      - description: fuzzy search tags
+        in: query
+        name: fuzzy_search_tags
+        type: string
+      - description: filter sql audit status
+        enum:
+        - auditing
+        - successfully
+        in: query
+        name: filter_sql_audit_status
+        type: string
+      - description: filter instance id
+        in: query
+        name: filter_instance_id
+        type: integer
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLAuditRecordsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL审核记录列表
+      tags:
+      - sql_audit_record
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        SQL audit
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+        4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
+        5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
+        6. formData[git_user_name]:The name of the user who owns the repository read access.
+        7. formData[git_user_password]:The password corresponding to git_user_name.
+      operationId: CreateSQLAuditRecordV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: formData
+        name: instance_name
+        type: string
+      - description: schema of instance
+        in: formData
+        name: instance_schema
+        type: string
+      - description: db type of instance
+        in: formData
+        name: db_type
+        type: string
+      - description: sqls for audit
+        in: formData
+        name: sqls
+        type: string
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
+        type: file
+      - description: git repository url
+        in: formData
+        name: git_http_url
+        type: string
+      - description: the name of user to clone the repository
+        in: formData
+        name: git_user_name
+        type: string
+      - description: the password corresponding to git_user_name
+        in: formData
+        name: git_user_password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreateSQLAuditRecordResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: SQL审核
+      tags:
+      - sql_audit_record
+  /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/:
+    get:
+      description: get sql audit record info
+      operationId: getSQLAuditRecordV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql audit record id
+        in: path
+        name: sql_audit_record_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLAuditRecordResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL审核记录信息
+      tags:
+      - sql_audit_record
+    patch:
+      consumes:
+      - application/json
+      description: update SQL audit record
+      operationId: updateSQLAuditRecordV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql audit record id
+        in: path
+        name: sql_audit_record_id
+        required: true
+        type: string
+      - description: update SQL audit record
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSQLAuditRecordReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新SQL审核记录
+      tags:
+      - sql_audit_record
+  /v1/projects/{project_name}/sql_audit_records/tag_tips:
+    get:
+      description: get sql audit record tag tips
+      operationId: GetSQLAuditRecordTagTipsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLAuditRecordTagTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL审核记录标签列表
+      tags:
+      - sql_audit_record
+  /v1/projects/{project_name}/sql_manages:
+    get:
+      description: get sql manage list
+      operationId: GetSqlManageList
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        in: query
+        name: filter_status
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控sql列表
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/batch:
+    patch:
+      description: batch update sql manage
+      operationId: BatchUpdateSqlManage
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch update sql manage request
+        in: body
+        name: BatchUpdateSqlManageReq
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchUpdateSqlManageReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量更新SQL管控
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/exports:
+    get:
+      description: export sql manage
+      operationId: exportSqlManageV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        in: query
+        name: filter_status
+        type: string
+      responses:
+        "200":
+          description: export sql manage
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出SQL管控
+      tags:
+      - SqlManage
   /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
@@ -5135,6 +5776,10 @@ paths:
       - description: filter by workflow_id
         in: query
         name: filter_workflow_id
+        type: string
+      - description: fuzzy search by workflow description
+        in: query
+        name: fuzzy_search_workflow_desc
         type: string
       - description: filter create time from
         in: query
@@ -5633,6 +6278,10 @@ paths:
         in: query
         name: filter_subject
         type: string
+      - description: fuzzy search by workflow description
+        in: query
+        name: fuzzy_search_workflow_desc
+        type: string
       - description: filter create time from
         in: query
         name: filter_create_time_from
@@ -5692,6 +6341,61 @@ paths:
       summary: 导出工单
       tags:
       - workflow
+  /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/:
+    get:
+      description: get rule knowledge
+      operationId: getRuleKnowledgeV1
+      parameters:
+      - description: rule name
+        in: path
+        name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleKnowledgeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 查看规则知识库
+      tags:
+      - rule_template
+    patch:
+      description: update rule knowledge
+      operationId: updateRuleKnowledge
+      parameters:
+      - description: rule name
+        in: path
+        name: rule_name
+        required: true
+        type: string
+      - description: db type of rule
+        in: path
+        name: db_type
+        required: true
+        type: string
+      - description: update rule knowledge
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateRuleKnowledgeReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新规则知识库
+      tags:
+      - rule_template
   /v1/rule_template_tips:
     get:
       description: get global rule template tips

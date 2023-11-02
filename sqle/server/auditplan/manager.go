@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server"
@@ -17,11 +18,42 @@ var ErrAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit pla
 var ErrAuditPlanExisted = errors.New(errors.DataExist, fmt.Errorf("audit plan existed"))
 
 func audit(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
-	report, err := task.Audit()
+	auditResultResp, err := task.Audit()
 	if err != nil {
 		return nil, err
 	}
-	return report, notification.NotifyAuditPlan(auditPlanId, report)
+
+	taskResp := auditResultResp.Task
+	auditPlanReport := &model.AuditPlanReportV2{
+		AuditPlanID: uint(auditResultResp.AuditPlanID),
+		PassRate:    taskResp.PassRate,
+		Score:       taskResp.Score,
+		AuditLevel:  taskResp.AuditLevel,
+	}
+
+	for i, executeSQL := range taskResp.ExecuteSQLs {
+		auditPlanReport.AuditPlanReportSQLs = append(auditPlanReport.AuditPlanReportSQLs, &model.AuditPlanReportSQLV2{
+			SQL:          executeSQL.Content,
+			Number:       uint(i + 1),
+			AuditResults: executeSQL.AuditResults,
+			Schema:       executeSQL.Schema,
+		})
+	}
+
+	s := model.GetStorage()
+	err = s.Save(auditPlanReport)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		syncFromAuditPlan := NewSyncFromAuditPlan(auditPlanReport, auditResultResp.FilteredSqls, taskResp)
+		if err := syncFromAuditPlan.SyncSqlManager(); err != nil {
+			log.NewEntry().WithField("name", auditResultResp.AuditPlanID).Errorf("schedule to save sql manage failed, error: %v", err)
+		}
+	}()
+
+	return auditPlanReport, notification.NotifyAuditPlan(auditPlanId, auditPlanReport)
 }
 
 func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, error) {
@@ -30,6 +62,13 @@ func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, 
 }
 
 func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartialSync bool) error {
+	go func() {
+		err := SyncToSqlManage(sqls, ap)
+		if err != nil {
+			log.NewEntry().WithField("name", ap.Name).Errorf("schedule to save sql manage failed, error: %v", err)
+		}
+	}()
+
 	task := NewTask(entry, ap)
 	if isPartialSync {
 		return task.PartialSyncSQLs(sqls)
