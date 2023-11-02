@@ -1,5 +1,5 @@
-// //go:build !release && enterprise
-// // +build !release,enterprise
+//go:build !release && enterprise
+// +build !release,enterprise
 
 package v1
 
