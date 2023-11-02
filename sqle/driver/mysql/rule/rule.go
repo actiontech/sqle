@@ -3121,53 +3121,57 @@ func isSelectCount(selectStmt *ast.SelectStmt) bool {
 
 func checkSelectWhere(input *RuleHandlerInput) error {
 
+	visitor := util.WhereVisitor{}
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
-		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+		if stmt.From == nil {
+			//If from is null skip check. EX: select 1;select version
 			return nil
 		}
-		if input.Rule.Name == DMLCheckWhereIsInvalid && isSelectCount(stmt) { // 只做count()计数，不要求一定有有效的where条件
+		if input.Rule.Name == DMLCheckWhereIsInvalid && isSelectCount(stmt) {
+			// 只做count()计数，不要求一定有有效的where条件
 			return nil
 		}
-		checkWhere(input.Rule, input.Res, stmt.Where)
-
-	case *ast.UpdateStmt:
-		checkWhere(input.Rule, input.Res, stmt.Where)
-	case *ast.DeleteStmt:
-		checkWhere(input.Rule, input.Res, stmt.Where)
-	case *ast.UnionStmt:
-		for _, ss := range stmt.SelectList.Selects {
-			if checkWhere(input.Rule, input.Res, ss.Where) {
-				break
-			}
-		}
+		stmt.Accept(&visitor)
+	case *ast.UpdateStmt, *ast.DeleteStmt, *ast.UnionStmt:
+		stmt.Accept(&visitor)
 	default:
 		return nil
 	}
+	checkWhere(input.Rule, input.Res, visitor.WhereList)
 
 	return nil
 }
 
-func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, where ast.ExprNode) bool {
-	isAddResult := false
-
-	if where == nil || !util.WhereStmtHasOneColumn(where) {
+func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, whereList []ast.ExprNode) {
+	if len(whereList) == 0 {
 		addResult(res, rule, DMLCheckWhereIsInvalid)
-		isAddResult = true
 	}
-	if where != nil && util.WhereStmtExistNot(where) {
-		addResult(res, rule, DMLCheckWhereExistNot)
-		isAddResult = true
+	for _, where := range whereList {
+		if !util.WhereStmtHasOneColumn(where) {
+			addResult(res, rule, DMLCheckWhereIsInvalid)
+			break
+		}
 	}
-	if where != nil && util.WhereStmtExistScalarSubQueries(where) {
-		addResult(res, rule, DMLCheckWhereExistScalarSubquery)
-		isAddResult = true
+	for _, where := range whereList {
+		if util.WhereStmtExistNot(where) {
+			addResult(res, rule, DMLCheckWhereExistNot)
+			break
+		}
 	}
-	if where != nil && util.CheckWhereFuzzySearch(where) {
-		addResult(res, rule, DMLCheckFuzzySearch)
-		isAddResult = true
+	for _, where := range whereList {
+		if util.WhereStmtExistScalarSubQueries(where) {
+			addResult(res, rule, DMLCheckWhereExistScalarSubquery)
+			break
+		}
 	}
-	return isAddResult
+	for _, where := range whereList {
+		if util.CheckWhereFuzzySearch(where) {
+			addResult(res, rule, DMLCheckFuzzySearch)
+			break
+		}
+	}
+
 }
 func checkWhereExistNull(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
