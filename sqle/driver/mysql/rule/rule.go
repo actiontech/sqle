@@ -3144,34 +3144,39 @@ func checkSelectWhere(input *RuleHandlerInput) error {
 }
 
 func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, whereList []ast.ExprNode) {
-	if len(whereList) == 0 {
-		addResult(res, rule, DMLCheckWhereIsInvalid)
-	}
-	for _, where := range whereList {
-		if !util.WhereStmtHasOneColumn(where) {
+	switch rule.Name {
+	case DMLCheckWhereIsInvalid:
+		if len(whereList) == 0 {
 			addResult(res, rule, DMLCheckWhereIsInvalid)
-			break
+		}
+		for _, where := range whereList {
+			if !util.WhereStmtHasOneColumn(where) {
+				addResult(res, rule, DMLCheckWhereIsInvalid)
+				break
+			}
+		}
+	case DMLCheckWhereExistNot:
+		for _, where := range whereList {
+			if util.WhereStmtExistNot(where) {
+				addResult(res, rule, DMLCheckWhereExistNot)
+				break
+			}
+		}
+	case DMLCheckWhereExistScalarSubquery:
+		for _, where := range whereList {
+			if util.WhereStmtExistScalarSubQueries(where) {
+				addResult(res, rule, DMLCheckWhereExistScalarSubquery)
+				break
+			}
+		}
+	case DMLCheckFuzzySearch:
+		for _, where := range whereList {
+			if util.CheckWhereFuzzySearch(where) {
+				addResult(res, rule, DMLCheckFuzzySearch)
+				break
+			}
 		}
 	}
-	for _, where := range whereList {
-		if util.WhereStmtExistNot(where) {
-			addResult(res, rule, DMLCheckWhereExistNot)
-			break
-		}
-	}
-	for _, where := range whereList {
-		if util.WhereStmtExistScalarSubQueries(where) {
-			addResult(res, rule, DMLCheckWhereExistScalarSubquery)
-			break
-		}
-	}
-	for _, where := range whereList {
-		if util.CheckWhereFuzzySearch(where) {
-			addResult(res, rule, DMLCheckFuzzySearch)
-			break
-		}
-	}
-
 }
 func checkWhereExistNull(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
