@@ -57,11 +57,19 @@ func GetSqlsFromVisitor(ctx *JavaVisitor) []string {
 				if !ok {
 					continue
 				}
+				sql = strings.Trim(sql, "\"")
+				if sql == "null" || sql == "" {
+					continue
+				}
 				// anltr为了区分字符串和其他变量，会为字符串的值左右添加双引号，获取sql时需要去除左右的双引号
-				sqls = append(sqls, strings.Trim(sql, "\""))
+				sqls = append(sqls, sql)
 			// 参数为字符串
 			} else if arg.Content.RuleIndex == javaAntlr.JavaParserRULE_literal {
-				sqls = append(sqls, strings.Trim(arg.Content.Value, "\""))
+				sql := strings.Trim(arg.Content.Value, "\"")
+				if sql == "null" || sql == "" {
+					continue
+				}
+				sqls = append(sqls, sql)
 			}
 
 		}
