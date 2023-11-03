@@ -5458,6 +5458,12 @@ var doc = `{
                         "description": "input mybatis XML file",
                         "name": "input_mybatis_xml_file",
                         "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {

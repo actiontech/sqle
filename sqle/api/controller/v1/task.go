@@ -111,6 +111,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
+// @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
