@@ -309,3 +309,19 @@ func (v *EqualConditionVisitor) Enter(in ast.Node) (out ast.Node, skipChildren b
 func (v *EqualConditionVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
+
+type FuncCallExprVisitor struct {
+	FuncCallList []*ast.FuncCallExpr
+}
+
+func (v *FuncCallExprVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.FuncCallExpr:
+		v.FuncCallList = append(v.FuncCallList, stmt)
+	}
+	return in, false
+}
+
+func (v *FuncCallExprVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
