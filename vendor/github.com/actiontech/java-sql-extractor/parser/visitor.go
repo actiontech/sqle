@@ -71,6 +71,7 @@ func (v *JavaVisitor) VisitClassBodyDeclaration(ctx *javaAntlr.ClassBodyDeclarat
 	for _, child := range ctx.GetChildren() {
 		switch node := child.(type) {
 		case *javaAntlr.MemberDeclarationContext:
+			v.currentNode = v.currentClass
 			v.VisitMemberDeclaration(node)
 		case *javaAntlr.ModifierContext:
 			if node.GetText() == STATIC {
@@ -83,7 +84,7 @@ func (v *JavaVisitor) VisitClassBodyDeclaration(ctx *javaAntlr.ClassBodyDeclarat
 }
 
 func (v *JavaVisitor) VisitMemberDeclaration(ctx *javaAntlr.MemberDeclarationContext) interface{} {
-	classBlock := v.currentNode.(*ClassBlock)
+	classBlock := v.currentClass
 	for _, child := range ctx.GetChildren() {
 		switch node := child.(type) {
 		case *javaAntlr.FieldDeclarationContext:
