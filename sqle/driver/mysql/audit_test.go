@@ -1190,12 +1190,22 @@ func TestCheckWhereInvalid(t *testing.T) {
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "select_count: has no where condition", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "select_count: has where condition(1)", DefaultMysqlInspect(),
+		"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id) t LIMIT 999;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
+	)
+
+	runDefaultRulesInspectCase(t, "select_count: has where condition(2)", DefaultMysqlInspect(),
+		"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id>1) t LIMIT 999;",
+		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
+	)
+
+	runDefaultRulesInspectCase(t, "select_count: has no where condition(3)", DefaultMysqlInspect(),
 		"select count(*) from exist_db.exist_tb_1",
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "select_from: has where condition(4)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id > 1 limit 1;",
 		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
 	)
@@ -1223,10 +1233,17 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where id = 1;",
 		newTestResult())
+	runDefaultRulesInspectCase(t, "update: has where condition(1)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1=v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1=1)/100 where id = 1;",
+		newTestResult())
 
 	runDefaultRulesInspectCase(t, "update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1';",
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+
+	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1=v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE exist_tb_1.id=exist_tb_1.id)/100 where id = 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
@@ -1243,6 +1260,10 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
 		newTestResult())
+	// FIXME 这里有WHERE条件 并且条件并非恒为TRUE但结果会触发DMLCheckWhereIsInvalid
+	runDefaultRulesInspectCase(t, "delete: has where condition(5)", DefaultMysqlInspect(),
+		"DELETE FROM exist_db.exist_tb_1 WHERE EXISTS (SELECT id FROM exist_db.exist_tb_2 WHERE v1='v1' AND exist_tb_1.id < 10);",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckWhereExistScalarSubquery).addResult(rulepkg.DMLNotRecommendSubquery))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1;",
@@ -2941,6 +2962,12 @@ select v1 from exist_db.exist_tb_1 where v2 <> "3";
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
 	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist <> ", DefaultMysqlInspect(),
+		`
+		select v1 from (select * from exist_db.exist_tb_1 where v2 <> "3") t;
+		`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
+	)
 	runSingleRuleInspectCase(rule, t, "select: check where exist not like ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 not like "%3%";
@@ -3113,6 +3140,18 @@ select v1 from exist_db.exist_tb_1 where v1 in (select v1 from  exist_db.exist_t
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
 	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (select v1 from  exist_db.exist_tb_2)) t;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
+	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+select v1 from (select v1 from exist_db.exist_tb_1 a, exist_db.exist_tb_2 b  where a.v1 = b.v1) t;
+`,
+		newTestResult(),
+	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
 select a.v1 from exist_db.exist_tb_1 a, exist_db.exist_tb_2 b  where a.v1 = b.v1 ;
@@ -3129,10 +3168,22 @@ select v1 from exist_db.exist_tb_1 where v1 in (select v1 from exist_db.exist_tb
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
 	)
+	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+	select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (select v1 from exist_db.exist_tb_2 where v1 = ?)) t;
+		`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
+	)
+	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+		select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (?)) t;
+	`,
+		newTestResult(),
+	)
 	runSingleRuleInspectCase(rule, t, "[fp]select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
-select v1 from exist_db.exist_tb_1 where v1 in (?);
-`,
+		select v1 from exist_db.exist_tb_1 where v1 in (?);
+	`,
 		newTestResult(),
 	)
 }
@@ -3566,6 +3617,8 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a') t;`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a') t;`,
 
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a';`,
@@ -3573,6 +3626,8 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '_a';`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a')/100;`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a')/100;`,
 
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
@@ -3580,6 +3635,7 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
+		`DELETE FROM exist_db.exist_tb_1 USING (SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%') t WHERE t.id = exist_db.exist_tb_1.id;`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckFuzzySearch))
 	}
@@ -3587,12 +3643,15 @@ func TestCheckFuzzySearch(t *testing.T) {
 	for _, sql := range []string{
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a___';`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE 'a_') t;`,
 
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a___';`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE 'a_')/100;`,
 
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a____';`,
+		`DELETE FROM exist_db.exist_tb_1 USING (SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%') t WHERE t.id = exist_db.exist_tb_1.id;`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
