@@ -5299,6 +5299,12 @@ var doc = `{
                         "description": "input mybatis XML file",
                         "name": "input_mybatis_xml_file",
                         "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -9930,26 +9936,6 @@ var doc = `{
                     "type": "string",
                     "example": "ok"
                 }
-            }
-        },
-        "model.AuditResult": {
-            "type": "object",
-            "properties": {
-                "level": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "rule_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AuditResults": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/model.AuditResult"
             }
         },
         "v1.AuditPlanCount": {
@@ -16454,8 +16440,10 @@ var doc = `{
                     "type": "string"
                 },
                 "audit_result": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.AuditResults"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
                 },
                 "exec_sql": {
                     "type": "string"
