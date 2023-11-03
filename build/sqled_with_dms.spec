@@ -40,7 +40,7 @@ mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
 cp %{_builddir}/%{buildsubdir}/dms/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
-cp %{_builddir}/%{buildsubdir}/dms/database_driver_option.yaml $RPM_BUILD_ROOT/usr/local/%{name}/database_driver_option.yaml
+cp -r %{_builddir}/%{buildsubdir}/dms/build/logo $RPM_BUILD_ROOT/usr/local/%{name}/static/
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{name}/bin/sqled
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/dms $RPM_BUILD_ROOT/usr/local/%{name}/bin/dms
@@ -252,4 +252,3 @@ fi
 /usr/local/%{name}/scripts/*
 /usr/local/%{name}/static/* 
 /usr/local/%{name}/etc/config.yaml
-/usr/local/%{name}/database_driver_option.yaml
