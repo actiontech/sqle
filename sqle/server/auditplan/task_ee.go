@@ -129,7 +129,7 @@ func (at *OBMySQLTopSQLTask) collect(p driver.Plugin, sql string) error {
 	return at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
-func (at *OBMySQLTopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *OBMySQLTopSQLTask) Audit() (*AuditResultResp, error) {
 	var task *model.Task
 	if at.ap.InstanceName == "" {
 		task = &model.Task{
@@ -394,7 +394,7 @@ func (at *SlowLogTask) PartialSyncSQLs(sqls []*SQL) error {
 	if at.ap.Params.GetParam(paramKeySlowLogCollectInput).Int() == slowlogCollectInputTable {
 		return at.sqlCollector.PartialSyncSQLs(sqls)
 	}
-	return at.baseTask.PartialSyncSQLs(sqls)
+	return at.persist.UpdateSlowLogAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(sqls))
 }
 
 func (at *SlowLogTask) collectorDo() {
@@ -592,40 +592,63 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 		},
 		{
 			Name: "sql",
-			Desc: "最后一次匹配到该指纹的语句",
+			Desc: "SQL",
 			Type: "sql",
 		},
 		{
 			Name: "counter",
-			Desc: "匹配到该指纹的语句数量",
+			Desc: "数量",
 		},
 		{
 			Name: "last_receive_timestamp",
-			Desc: "最后一次匹配到该指纹的时间",
+			Desc: "最后匹配时间",
 		},
 		{
 			Name: "average_query_time",
-			Desc: "平均执行时间（秒）",
+			Desc: "平均执行时间",
+		},
+		{
+			Name: "max_query_time",
+			Desc: "最长执行时间",
+		},
+		{
+			Name: "db_user",
+			Desc: "用户",
+		},
+		{
+			Name: "schema",
+			Desc: "Schema",
 		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
 		var info = struct {
-			Counter              uint64 `json:"counter"`
-			LastReceiveTimestamp string `json:"last_receive_timestamp"`
-			AverageQueryTime     int    `json:"average_query_time"`
+			Counter              uint64   `json:"counter"`
+			LastReceiveTimestamp string   `json:"last_receive_timestamp"`
+			AverageQueryTime     *float64 `json:"query_time_avg"`
+			MaxQueryTime         *float64 `json:"query_time_max"`
+			DBUser               string   `json:"db_user"`
 		}{}
 		err := json.Unmarshal(sql.Info, &info)
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		rows = append(rows, map[string]string{
+		row := map[string]string{
 			"sql":                    sql.SQLContent,
 			"fingerprint":            sql.Fingerprint,
 			"counter":                strconv.FormatUint(info.Counter, 10),
 			"last_receive_timestamp": info.LastReceiveTimestamp,
-			"average_query_time":     strconv.Itoa(info.AverageQueryTime),
-		})
+			"db_user":                info.DBUser,
+			"schema":                 sql.Schema,
+		}
+		// 兼容之前没有平均执行时间和最长执行时间的数据，没有数据的时候不会在前端显示0.00000导致误解
+		if info.AverageQueryTime != nil {
+			row["average_query_time"] = fmt.Sprintf("%.6f", *info.AverageQueryTime)
+		}
+		if info.MaxQueryTime != nil {
+			row["max_query_time"] = fmt.Sprintf("%.6f", *info.MaxQueryTime)
+		}
+		rows = append(rows, row)
 	}
 	return head, rows, count, nil
 }
@@ -634,7 +657,7 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 // Before auditing sql, we need to insert a Schema switching statement.
 // And need to manually execute server.ReplenishTaskStatistics() to recalculate
 // real task object score
-func (at *SlowLogTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *SlowLogTask) Audit() (*AuditResultResp, error) {
 	return auditWithSchema(at.logger, at.persist, at.ap)
 }
 
@@ -650,7 +673,7 @@ func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return task
 }
 
-func (at *DB2TopSQLTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *DB2TopSQLTask) Audit() (*AuditResultResp, error) {
 
 	task := &model.Task{DBType: at.ap.DBType}
 
@@ -863,7 +886,7 @@ func NewDB2SchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 	return task
 }
 
-func (at *DB2SchemaMetaTask) Audit() (*model.AuditPlanReportV2, error) {
+func (at *DB2SchemaMetaTask) Audit() (*AuditResultResp, error) {
 	task := &model.Task{
 		DBType: at.ap.DBType,
 	}
