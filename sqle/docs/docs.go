@@ -9478,6 +9478,9 @@ var doc = `{
                 "host": {
                     "type": "string"
                 },
+                "instance_id": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string"
                 },

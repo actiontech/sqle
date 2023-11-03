@@ -10,11 +10,14 @@ const (
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
 	TypeDB2TopSQL                = "db2_top_sql"
 	TypeDB2SchemaMeta            = "db2_schema_meta"
+	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
+	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
 )
 
 const (
 	InstanceTypeOceanBaseForMySQL = "OceanBase For MySQL"
 	InstanceTypeDB2               = "DB2"
+	InstanceTypeTDSQL             = "TDSQL For InnoDB"
 )
 
 const (
@@ -24,10 +27,18 @@ const (
 
 var EEMetas = []Meta{
 	{
-		Type:         TypeOceanBaseForMySQLMybatis,
-		Desc:         "Mybatis 扫描",
-		InstanceType: InstanceTypeOceanBaseForMySQL,
-		CreateTask:   NewDefaultTask,
+		Type:         TypeTDSQLSlowLog,
+		Desc:         "慢日志",
+		InstanceType: InstanceTypeTDSQL,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
+		CreateTask: NewSlowLogTask,
 	},
 	{
 		Type:         TypeOceanBaseForMySQLTopSQL,
@@ -98,6 +109,20 @@ var EEMetas = []Meta{
 				Desc:  "是否采集视图信息",
 				Value: "0",
 				Type:  params.ParamTypeBool,
+			},
+		},
+	},
+	{
+		Type:         TypeTDSQLSchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypeTDSQL,
+		CreateTask:   NewSchemaMetaTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
 			},
 		},
 	},

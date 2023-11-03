@@ -165,3 +165,147 @@ func getDefaultBaseInfo() (GetSQLEInfoResDataV1, error) {
 		Title:   Title,
 	}, nil
 }
+
+// dms-todo 当前飞书配置已经迁移，需要迁移对应代码
+// func updateFeishuAuditConfigurationV1(c echo.Context) error {
+// 	req := new(UpdateFeishuConfigurationReqV1)
+// 	if err := controller.BindAndValidateReq(c, req); err != nil {
+// 		return err
+// 	}
+// 	s := model.GetStorage()
+// 	feishuCfg, _, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
+// 	if err != nil {
+// 		return controller.JSONBaseErrorReq(c, err)
+// 	}
+
+// 	{ // disable
+// 		if req.IsFeishuNotificationEnabled != nil && !(*req.IsFeishuNotificationEnabled) {
+// 			feishuCfg.IsEnable = false
+// 			return controller.JSONBaseErrorReq(c, s.Save(feishuCfg))
+// 		}
+// 	}
+
+// 	if req.AppID != nil {
+// 		feishuCfg.AppKey = *req.AppID
+// 	}
+// 	if req.AppSecret != nil {
+// 		feishuCfg.AppSecret = *req.AppSecret
+// 	}
+// 	if req.IsFeishuNotificationEnabled != nil {
+// 		feishuCfg.IsEnable = *req.IsFeishuNotificationEnabled
+// 	}
+
+// 	// 如果是新创建的飞书审批配置，需要设置type
+// 	feishuCfg.Type = model.ImTypeFeishuAudit
+
+// 	if err := s.Save(feishuCfg); err != nil {
+// 		return controller.JSONBaseErrorReq(c, err)
+// 	}
+
+// 	go im.CreateApprovalTemplate(model.ImTypeFeishuAudit)
+
+// 	return controller.JSONBaseErrorReq(c, nil)
+// }
+
+// func getFeishuAuditConfigurationV1(c echo.Context) error {
+// 	s := model.GetStorage()
+// 	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
+// 	if err != nil {
+// 		return controller.JSONBaseErrorReq(c, err)
+// 	}
+// 	if !exist {
+// 		return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+// 			BaseRes: controller.NewBaseReq(nil),
+// 			Data:    FeishuConfigurationV1{},
+// 		})
+// 	}
+
+// 	return c.JSON(http.StatusOK, &GetFeishuConfigurationResV1{
+// 		BaseRes: controller.NewBaseReq(nil),
+// 		Data: FeishuConfigurationV1{
+// 			AppID:                       feishuCfg.AppKey,
+// 			IsFeishuNotificationEnabled: feishuCfg.IsEnable,
+// 		},
+// 	})
+// }
+
+// func testFeishuAuditConfigV1(c echo.Context) error {
+// 	req := new(TestFeishuConfigurationReqV1)
+// 	if err := controller.BindAndValidateReq(c, req); err != nil {
+// 		return controller.JSONBaseErrorReq(c, err)
+// 	}
+
+// 	var email, phone string
+// 	switch req.AccountType {
+// 	case FeishuAccountTypeEmail:
+// 		err := controller.Validate(struct {
+// 			Email string `valid:"email"`
+// 		}{req.Account})
+// 		if err != nil {
+// 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+// 		}
+// 		email = req.Account
+// 	case FeishuAccountTypePhone:
+// 		phone = req.Account
+// 	default:
+// 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("unknown account type: %v", req.AccountType)))
+// 	}
+
+// 	s := model.GetStorage()
+// 	feishuCfg, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
+// 	if err != nil {
+// 		return controller.JSONBaseErrorReq(c, err)
+// 	}
+// 	if !exist {
+// 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+// 			BaseRes: controller.NewBaseReq(nil),
+// 			Data: TestFeishuConfigResDataV1{
+// 				IsMessageSentNormally: false,
+// 				ErrorMessage:          "feishu configuration doesn't exist",
+// 			},
+// 		})
+// 	}
+
+// 	client := feishu.NewFeishuClient(feishuCfg.AppKey, feishuCfg.AppSecret)
+// 	feishuUsers, err := client.GetUsersByEmailOrMobileWithLimitation([]string{email}, []string{phone}, larkContact.UserIdTypeOpenId)
+// 	if err != nil {
+// 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+// 			BaseRes: controller.NewBaseReq(nil),
+// 			Data: TestFeishuConfigResDataV1{
+// 				IsMessageSentNormally: false,
+// 				ErrorMessage:          fmt.Sprintf("get user_ids failed: %v", err),
+// 			},
+// 		})
+// 	}
+
+// 	if len(feishuUsers) == 0 {
+// 		return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+// 			BaseRes: controller.NewBaseReq(nil),
+// 			Data: TestFeishuConfigResDataV1{
+// 				IsMessageSentNormally: false,
+// 				ErrorMessage:          "no user found in feishu",
+// 			},
+// 		})
+// 	}
+
+// 	for uid := range feishuUsers {
+// 		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, "测试审批", uid,
+// 			[]string{uid}, "", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", "")
+// 		if err != nil {
+// 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+// 				BaseRes: controller.NewBaseReq(nil),
+// 				Data: TestFeishuConfigResDataV1{
+// 					IsMessageSentNormally: false,
+// 					ErrorMessage:          fmt.Sprintf("send approval failed: %v", err),
+// 				},
+// 			})
+// 		}
+// 	}
+
+// 	return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
+// 		BaseRes: controller.NewBaseReq(nil),
+// 		Data: TestFeishuConfigResDataV1{
+// 			IsMessageSentNormally: true,
+// 		},
+// 	})
+// }

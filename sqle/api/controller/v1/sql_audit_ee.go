@@ -71,3 +71,41 @@ func directGetSQLAnalysis(c echo.Context) error {
 		Data:    resp,
 	})
 }
+
+func getRuleKnowledge(c echo.Context) error {
+	ruleName := c.Param("rule_name")
+	dbType := c.Param("db_type")
+	s := model.GetStorage()
+	rule, err := s.GetRuleWithKnowledge(ruleName, dbType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, GetRuleKnowledgeResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: RuleKnowledgeResV1{
+			Rule: RuleInfo{
+				Desc:       rule.Desc,
+				Annotation: rule.Annotation,
+			},
+			KnowledgeContent: rule.Knowledge.GetContent(),
+		},
+	})
+}
+
+func updateRuleKnowledge(c echo.Context) error {
+	req := new(UpdateRuleKnowledgeReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ruleName := c.Param("rule_name")
+	dbType := c.Param("db_type")
+	if req.KnowledgeContent == nil {
+		return c.JSON(http.StatusOK, controller.JSONBaseErrorReq(c, nil))
+	}
+
+	s := model.GetStorage()
+	if err := s.CreateOrUpdateRuleKnowledgeContent(ruleName, dbType, *req.KnowledgeContent); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
