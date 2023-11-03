@@ -64,7 +64,7 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
+# github.com/actiontech/java-sql-extractor v0.0.0-20231102080001-4b0bb44c0219
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
 github.com/actiontech/java-sql-extractor/parser
