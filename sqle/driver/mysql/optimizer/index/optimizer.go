@@ -167,9 +167,9 @@ func (o *Optimizer) Optimize(ctx context.Context, selectStmt *ast.SelectStmt) ([
 }
 
 // SelectStmt:
-//   1. single select on single table
-//   2. single select on multiple tables, such join
-//   3. multi select on multiple tables, such subqueries
+//  1. single select on single table
+//  2. single select on multiple tables, such join
+//  3. multi select on multiple tables, such subqueries
 func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 	visitor := util.SelectStmtExtractor{}
 	ss.Accept(&visitor)
@@ -214,7 +214,7 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 				o.tables[rightCNE.Name.Table.O] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
 
 			} else if ss.From.TableRefs.Using != nil {
-
+				//FIXME  Panic Here by SQL SELECT * FROM table_1 JOIN table_2 on table_1.id = table_2.id JOIN table_3 USING (column_name); USING在最后并且是多表JOIN的最后
 				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.O
 				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.O
 				for _, col := range ss.From.TableRefs.Using {
