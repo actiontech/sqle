@@ -23,3 +23,7 @@ func batchUpdateSqlManage(c echo.Context) error {
 func exportSqlManagesV1(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func getSqlManageRuleTips(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
