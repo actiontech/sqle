@@ -2692,7 +2692,7 @@ func TestDMLHintCountFuncWithCol(t *testing.T) {
 			`SELECT a, b, COUNT(distinct col) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
 			newTestResult())
 	})
-	t.Run(`select fileds contain different count(1) trigger rule`, func(t *testing.T) {
+	t.Run(`select fields contain different count(1) trigger rule`, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,
@@ -2701,7 +2701,7 @@ func TestDMLHintCountFuncWithCol(t *testing.T) {
 			`SELECT a, b,COUNT(distinct(col)),COUNT(distinct col), COUNT(col) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
 			newTestResult().addResult(rulepkg.DMLHintCountFuncWithCol))
 	})
-	t.Run(`select fileds contain different count(2) `, func(t *testing.T) {
+	t.Run(`select fields contain different count(2) `, func(t *testing.T) {
 		runSingleRuleInspectCase(
 			rule,
 			t,

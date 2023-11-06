@@ -157,6 +157,7 @@ var sqlManageBodyTpl = `
 FROM sql_manages sm
          LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
+		 LEFT JOIN tasks t ON sar.task_id = t.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
          LEFT JOIN projects p ON p.id = sm.project_id
          LEFT JOIN sql_manage_assignees sma ON sma.sql_manage_id = sm.id
@@ -185,6 +186,14 @@ AND sm.source = :filter_source
 
 {{- if .filter_audit_level }}
 AND sm.audit_level = :filter_audit_level
+{{- end }}
+
+{{- if .filter_db_type }}
+AND (ap.db_type = :filter_db_type OR t.db_type = :filter_db_type)
+{{- end }}
+
+{{- if .filter_rule_name }}
+AND JSON_CONTAINS(JSON_EXTRACT(sm.audit_results,'$[*].rule_name'), '"{{ .filter_rule_name }}"') > 0 
 {{- end }}
 
 {{- if .filter_last_audit_start_time_from }}
