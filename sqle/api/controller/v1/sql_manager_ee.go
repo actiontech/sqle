@@ -43,6 +43,8 @@ func getSqlManageList(c echo.Context) error {
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
 		"project_name":                      projectName,
+		"filter_db_type":                    req.FilterDbType,
+		"filter_rule_name":                  req.FilterRuleName,
 		"limit":                             req.PageSize,
 		"offset":                            offset,
 	}
@@ -184,6 +186,8 @@ func exportSqlManagesV1(c echo.Context) error {
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
 		"project_name":                      projectName,
+		"filter_db_type":                    req.FilterDbType,
+		"filter_rule_name":                  req.FilterRuleName,
 	}
 
 	sqlManageResp, err := s.GetSqlManageListByReq(data)
@@ -259,4 +263,55 @@ func exportSqlManagesV1(c echo.Context) error {
 	}))
 
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+}
+
+func getSqlManageRuleTips(c echo.Context) error {
+	projectName := c.Param("project_name")
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+	}
+
+	user, err := controller.GetCurrentUser(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	sqlManageRuleTips, err := s.GetSqlManageRuleTips(project.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetSqlManageRuleTipsResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertRuleTipsToResp(sqlManageRuleTips),
+	})
+}
+
+func convertRuleTipsToResp(tips []*model.SqlManageRuleTips) []RuleTips {
+	m := make(map[string] /*数据库类型*/ []RuleRespV1)
+	for _, tip := range tips {
+		m[tip.DbType] = append(m[tip.DbType], RuleRespV1{
+			RuleName: tip.RuleName,
+			Desc:     tip.Desc,
+		})
+	}
+
+	var ruleResp []RuleTips
+	for dbType, rule := range m {
+		ruleResp = append(ruleResp, RuleTips{
+			DbType: dbType,
+			Rule:   rule,
+		})
+	}
+
+	return ruleResp
 }
