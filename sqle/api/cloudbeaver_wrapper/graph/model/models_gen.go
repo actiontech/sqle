@@ -665,6 +665,7 @@ type UserAuthToken struct {
 type UserInfo struct {
 	UserID                  string           `json:"userId"`
 	DisplayName             *string          `json:"displayName"`
+	AuthRole                *string          `json:"authRole"`
 	AuthTokens              []*UserAuthToken `json:"authTokens"`
 	LinkedAuthProviders     []string         `json:"linkedAuthProviders"`
 	MetaParameters          interface{}      `json:"metaParameters"`

@@ -210,7 +210,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task, _, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
+	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -2625,6 +2625,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter sql audit record ids",
+                        "name": "filter_sql_audit_record_ids",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -4474,6 +4480,91 @@ var doc = `{
                 }
             }
         },
+        "/v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get custom rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "查看自定义规则知识库",
+                "operationId": "getCustomRuleKnowledgeV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleKnowledgeResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update custom rule knowledge",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "更新自定义规则知识库",
+                "operationId": "updateCustomRuleKnowledge",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "rule_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of rule",
+                        "name": "db_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update rule knowledge",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateRuleKnowledgeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/": {
             "get": {
                 "security": [
@@ -5936,6 +6027,40 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/audit_files": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Direct audit sql from SQL files and MyBatis files",
+                "tags": [
+                    "sql_audit"
+                ],
+                "summary": "直接从文件内容提取SQL并审核，SQL文件暂时只支持一次解析一个文件",
+                "operationId": "directAuditFilesV2",
+                "parameters": [
+                    {
+                        "description": "files that should be audited",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditFileReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.DirectAuditResV2"
                         }
                     }
                 }
@@ -9478,6 +9603,9 @@ var doc = `{
                 "host": {
                     "type": "string"
                 },
+                "instance_id": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string"
                 },
@@ -10124,8 +10252,11 @@ var doc = `{
                 "audit_plan_name": {
                     "type": "string"
                 },
-                "sql_audit_record_id": {
-                    "type": "string"
+                "sql_audit_record_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "type": {
                     "type": "string",
@@ -11267,6 +11398,9 @@ var doc = `{
         "v2.AuditResult": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string"
+                },
                 "level": {
                     "type": "string",
                     "example": "warn"
@@ -11396,6 +11530,46 @@ var doc = `{
             "properties": {
                 "workflow_id": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.DirectAuditFileReqV2": {
+            "type": "object",
+            "properties": {
+                "file_contents": {
+                    "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现\n每个数组元素是一个文件内容",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "select * from t1; select * from t2;"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
+                "instance_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "project_name": {
+                    "type": "string",
+                    "example": "project1"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
+                },
+                "sql_type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis",
+                        ""
+                    ],
+                    "example": "sql"
                 }
             }
         },
