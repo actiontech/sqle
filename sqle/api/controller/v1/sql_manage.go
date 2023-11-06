@@ -14,6 +14,8 @@ type GetSqlManageListReq struct {
 	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
 	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
+	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
+	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
 	PageSize                     uint32  `query:"page_size" valid:"required" json:"page_size"`
 }
@@ -70,6 +72,8 @@ type Source struct {
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
+// @Param filter_rule_name query string false "rule name"
+// @Param filter_db_type query string false "db type"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetSqlManageListResp
@@ -108,6 +112,8 @@ type ExportSqlManagesReq struct {
 	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
 	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
+	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
+	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 }
 
 // ExportSqlManagesV1
@@ -125,8 +131,38 @@ type ExportSqlManagesReq struct {
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
+// @Param filter_db_type query string false "db type"
+// @Param filter_rule_name query string false "rule name"
 // @Success 200 {file} file "export sql manage"
 // @Router /v1/projects/{project_name}/sql_manages/exports [get]
 func ExportSqlManagesV1(c echo.Context) error {
 	return exportSqlManagesV1(c)
+}
+
+type RuleRespV1 struct {
+	RuleName string `json:"rule_name"`
+	Desc     string `json:"desc"`
+}
+
+type RuleTips struct {
+	DbType string       `json:"db_type"`
+	Rule   []RuleRespV1 `json:"rule"`
+}
+
+type GetSqlManageRuleTipsResp struct {
+	controller.BaseRes
+	Data []RuleTips `json:"data"`
+}
+
+// GetSqlManageRuleTips
+// @Summary 获取管控规则tips
+// @Description get sql manage rule tips
+// @Id GetSqlManageRuleTips
+// @Tags SqlManage
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetSqlManageRuleTipsResp
+// @Router /v1/projects/{project_name}/sql_manages/rule_tips [get]
+func GetSqlManageRuleTips(c echo.Context) error {
+	return getSqlManageRuleTips(c)
 }
