@@ -217,6 +217,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 		// other
 		v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
 
+		// 企业公告
+		v1Router.PATCH("/company_notice", v1.UpdateCompanyNotice, AdminUserAllowed())
 	}
 
 	// auth
@@ -413,6 +415,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.GET("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.GetSQLAuditRecordV1)
 	v1Router.PATCH("/projects/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
 	v1Router.GET("/projects/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
+
+	// 企业公告
+	v1Router.GET("/company_notice", v1.GetCompanyNotice)
 
 	// sql query
 	if err := cloudbeaver_wrapper.StartApp(e); err != nil {
