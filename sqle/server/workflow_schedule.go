@@ -40,19 +40,9 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 	now := time.Now()
 	for _, workflow := range workflows {
-		w, exist, err := st.GetWorkflowDetailByWorkflowID(string(workflow.ProjectId), workflow.WorkflowId)
+		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailByWorkflowID)
 		if err != nil {
 			entry.Errorf("get workflow from storage error: %v", err)
-			return
-		}
-		if !exist {
-			entry.Errorf("workflow %s not found", workflow.Subject)
-			return
-		}
-
-		w, err = dms.BuildWorkflowInstances(w)
-		if err != nil {
-			entry.Errorf("notify workflow error, %v", err)
 			return
 		}
 
@@ -330,7 +320,7 @@ func PrepareForWorkflowExecution(projectUid string, workflow *model.Workflow, us
 }
 
 func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
-	instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
+	instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.WorkflowId)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +375,7 @@ func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid strin
 		return nil
 	}
 	if len(ops) > 0 {
-		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
+		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.WorkflowId)
 		if err != nil {
 			return err
 		}

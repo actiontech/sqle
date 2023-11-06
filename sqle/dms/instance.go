@@ -9,6 +9,7 @@ import (
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
@@ -349,31 +350,15 @@ type InstanceTypeCount struct {
 	Count  int64  `json:"count"`
 }
 
-func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
-
+func GetWorkflowDetailByWorkflowId(projectId, workflowId string, fn func(projectId, workflowId string) (*model.Workflow, bool, error)) (*model.Workflow, error) {
+	workflow, exist, err := fn(projectId, workflowId)
 	if err != nil {
 		return nil, err
 	}
-
-	var typeCountMap = map[string]int64{}
-
-	for _, instance := range instances {
-		typeCountMap[instance.DbType]++
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
 	}
 
-	ret := make([]InstanceTypeCount, 0, len(typeCountMap))
-	for dbType, count := range typeCountMap {
-		ret = append(ret, InstanceTypeCount{
-			DBType: dbType,
-			Count:  count,
-		})
-	}
-
-	return ret, nil
-}
-
-func BuildWorkflowInstances(workflow *model.Workflow) (*model.Workflow, error) {
 	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
 	for _, item := range workflow.Record.InstanceRecords {
 		instanceIds = append(instanceIds, item.InstanceId)

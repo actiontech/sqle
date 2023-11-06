@@ -35,7 +35,7 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	}
 
 	if len(ops) > 0 {
-		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
+		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.WorkflowId)
 		if err != nil {
 			return err
 		}

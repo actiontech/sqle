@@ -1011,16 +1011,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	var workflow *model.Workflow
 	{
-		var exist bool
-		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectUid, workflowID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-		}
-
-		workflow, err = dms.BuildWorkflowInstances(workflow)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1074,16 +1065,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	var workflow *model.Workflow
 	{
-		var exist bool
-		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectUid, workflowID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
-		}
-
-		workflow, err = dms.BuildWorkflowInstances(workflow)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
