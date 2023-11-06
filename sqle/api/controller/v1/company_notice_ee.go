@@ -32,6 +32,10 @@ func updateCompanyNotice(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if req.NoticeStr == nil {
+		return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	}
+
 	s := model.GetStorage()
 	notice, err := s.GetCompanyNotice()
 	if err != nil {
@@ -42,9 +46,5 @@ func updateCompanyNotice(c echo.Context) error {
 		notice.NoticeStr = *req.NoticeStr
 	}
 
-	if err := s.Save(&notice); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return controller.JSONBaseErrorReq(c, s.Save(&notice))
 }
