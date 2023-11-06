@@ -2674,6 +2674,24 @@ func TestDMLHintCountFuncWithCol(t *testing.T) {
 			`SELECT a, b, COUNT(1) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
 			newTestResult())
 	})
+	t.Run(`select count(distinct(col))`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(distinct(col)) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
+	t.Run(`select count(distinct col)`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT a, b, COUNT(distinct col) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
+			newTestResult())
+	})
 }
 
 func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {
