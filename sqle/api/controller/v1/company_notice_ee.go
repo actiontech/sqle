@@ -42,9 +42,7 @@ func updateCompanyNotice(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if req.NoticeStr != nil {
-		notice.NoticeStr = *req.NoticeStr
-	}
+	notice.NoticeStr = *req.NoticeStr
 
 	return controller.JSONBaseErrorReq(c, s.Save(&notice))
 }
