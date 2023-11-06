@@ -740,36 +740,15 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 	return instanceRecords, nil
 }
 
-func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("Record.InstanceRecords").Where("id = ?", id).First(workflow).Error
+	err := s.db.Preload("Record.InstanceRecords").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
+		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	if workflow.Record == nil {
-		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
+		return workflow, false, nil
 	}
 
-	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.InstanceRecords = instanceRecords
-
-	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.Steps = steps
-	for _, step := range steps {
-		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
-		}
-	}
-	return workflow, true, nil
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
@@ -1285,17 +1264,6 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectId, workflowName st
 	workflow := &Workflow{}
 	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectId).
 		Where("subject = ?", workflowName).
-		First(&workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return workflow, false, nil
-	}
-
-	return workflow, true, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Preload("Record.InstanceRecords").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil

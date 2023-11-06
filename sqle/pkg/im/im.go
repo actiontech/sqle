@@ -59,10 +59,10 @@ func CreateApprovalTemplate(imType string) {
 	}
 }
 
-func CreateApprove(id string) {
+func CreateApprove(projectId, workflowId string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(id)
+	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectId, workflowId)
 	if err != nil {
 		newLog.Error("get workflow detail error: ", err)
 		return
@@ -182,7 +182,7 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.WorkflowId, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
@@ -197,7 +197,7 @@ func CreateApprove(id string) {
 	}
 }
 
-func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
+func UpdateApprove(workflowId string, user *model.User, status, reason string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -238,7 +238,7 @@ func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
 	}
 }
 
-func BatchCancelApprove(workflowIds []uint, user *model.User) {
+func BatchCancelApprove(workflowIds []string, user *model.User) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 	ims, err := s.GetAllIMConfig()

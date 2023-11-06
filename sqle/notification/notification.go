@@ -280,9 +280,9 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 	}
 }
 
-func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
+func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectId, workflowId)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 		return

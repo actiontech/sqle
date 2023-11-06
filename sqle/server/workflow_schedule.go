@@ -40,7 +40,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 	now := time.Now()
 	for _, workflow := range workflows {
-		w, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
+		w, exist, err := st.GetWorkflowDetailByWorkflowID(string(workflow.ProjectId), workflow.WorkflowId)
 		if err != nil {
 			entry.Errorf("get workflow from storage error: %v", err)
 			return
@@ -169,9 +169,9 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 			}
 
 			if err != nil || task.Status == model.TaskStatusExecuteFailed {
-				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteFail)
+				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
 			} else {
-				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
+				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
 			}
 
 		}()
@@ -254,7 +254,7 @@ func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model
 		return fmt.Errorf("update workflow status failed, %v", err)
 	}
 
-	go notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeApprove)
 
 	return nil
 }
@@ -274,14 +274,14 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 		return fmt.Errorf("update workflow status failed, %v", err)
 	}
 
-	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeReject)
 
 	return nil
 }
 
 func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) error {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectUid, workflowId)
 	if err != nil {
 		return err
 	}

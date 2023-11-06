@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -56,17 +55,17 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 
 				switch *approval.Result {
 				case model.ApproveStatusAgree:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, exist, err := st.GetWorkflowDetailByWorkflowID("", dingTalkInstance.WorkflowId)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
 					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow not exist, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 
@@ -98,17 +97,17 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
+						imPkg.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 					}
 
 				case model.ApproveStatusRefuse:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, exist, err := st.GetWorkflowDetailByWorkflowID("", dingTalkInstance.WorkflowId)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
 					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow not exist, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 					if workflow.Record.Status == model.WorkflowStatusCancel {
