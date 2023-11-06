@@ -742,7 +742,7 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 
 func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("Record.InstanceRecords").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
+	err := s.db.Preload("Record").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil
@@ -751,9 +751,9 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowExportById(workflowId string) (*Workflow, bool, error) {
 	w := new(Workflow)
-	err := s.db.Preload("Record.InstanceRecords").Where("id = ?", id).First(&w).Error
+	err := s.db.Preload("Record").Where("workflow_id = ?", workflowId).First(&w).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -794,9 +794,11 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 
 func (s *Storage) GetWorkflowDetailByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).
-		Preload("Record.InstanceRecords").Where("workflow_id = ?", workflowID).Where("project_id = ?", projectId).
-		First(workflow).Error
+	db := s.db.Model(&Workflow{}).Preload("Record").Where("workflow_id = ?", workflowID)
+	if projectId != "" {
+		db = db.Where("project_id = ?", projectId)
+	}
+	err := db.First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
