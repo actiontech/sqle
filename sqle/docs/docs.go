@@ -4746,6 +4746,18 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -4895,6 +4907,18 @@ var doc = `{
                         "description": "status",
                         "name": "filter_status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4902,6 +4926,38 @@ var doc = `{
                         "description": "export sql manage",
                         "schema": {
                             "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages/rule_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage rule tips",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控规则tips",
+                "operationId": "GetSqlManageRuleTips",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageRuleTipsResp"
                         }
                     }
                 }
@@ -12820,6 +12876,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageRuleTipsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTips"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSyncInstanceTaskListResV1": {
             "type": "object",
             "properties": {
@@ -14410,6 +14485,17 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleRespV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RuleTemplateDetailResV1": {
             "type": "object",
             "properties": {
@@ -14464,6 +14550,20 @@ var doc = `{
                 },
                 "rule_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.RuleTips": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "rule": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleRespV1"
+                    }
                 }
             }
         },

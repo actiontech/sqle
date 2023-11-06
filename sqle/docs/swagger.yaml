@@ -1989,6 +1989,19 @@ definitions:
       sql_manage_total_num:
         type: integer
     type: object
+  v1.GetSqlManageRuleTipsResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTips'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSyncInstanceTaskListResV1:
     properties:
       code:
@@ -3065,6 +3078,13 @@ definitions:
         example: 全局配置
         type: string
     type: object
+  v1.RuleRespV1:
+    properties:
+      desc:
+        type: string
+      rule_name:
+        type: string
+    type: object
   v1.RuleTemplateDetailResV1:
     properties:
       db_type:
@@ -3101,6 +3121,15 @@ definitions:
         type: string
       rule_template_name:
         type: string
+    type: object
+  v1.RuleTips:
+    properties:
+      db_type:
+        type: string
+      rule:
+        items:
+          $ref: '#/definitions/v1.RuleRespV1'
+        type: array
     type: object
   v1.RuleTypeV1:
     properties:
@@ -8011,6 +8040,14 @@ paths:
         in: query
         name: filter_status
         type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -8112,6 +8149,14 @@ paths:
         in: query
         name: filter_status
         type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
       responses:
         "200":
           description: export sql manage
@@ -8120,6 +8165,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 导出SQL管控
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/rule_tips:
+    get:
+      description: get sql manage rule tips
+      operationId: GetSqlManageRuleTips
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageRuleTipsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控规则tips
       tags:
       - SqlManage
   /v1/projects/{project_name}/statistic/audit_plans:
