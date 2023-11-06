@@ -5947,14 +5947,14 @@ func hintCountFuncWithCol(input *RuleHandlerInput) error {
 		for _, f := range stmt.Fields.Fields {
 			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
 				if fu.Distinct {
-					return nil
+					continue
 				}
 				for _, arg := range fu.Args {
 					if _, ok := arg.(*ast.ColumnNameExpr); ok {
 						addResult(input.Res, input.Rule, input.Rule.Name)
+						return nil
 					}
 				}
-				return nil
 			}
 		}
 	default:
