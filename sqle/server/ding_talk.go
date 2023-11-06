@@ -55,23 +55,14 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 
 				switch *approval.Result {
 				case model.ApproveStatusAgree:
-					workflow, exist, err := st.GetWorkflowDetailByWorkflowID("", dingTalkInstance.WorkflowId)
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %s", dingTalkInstance.WorkflowId)
-						continue
-					}
+
 					if workflow.Record.Status == model.WorkflowStatusCancel {
 						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
-						continue
-					}
-
-					workflow, err = dms.BuildWorkflowInstances(workflow)
-					if err != nil {
-						entry.Errorf("get instance error, %v", err)
 						continue
 					}
 
@@ -101,23 +92,14 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 				case model.ApproveStatusRefuse:
-					workflow, exist, err := st.GetWorkflowDetailByWorkflowID("", dingTalkInstance.WorkflowId)
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %s", dingTalkInstance.WorkflowId)
-						continue
-					}
-					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
 
-					workflow, err = dms.BuildWorkflowInstances(workflow)
-					if err != nil {
-						entry.Errorf("notify workflow error, %v", err)
+					if workflow.Record.Status == model.WorkflowStatusCancel {
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 

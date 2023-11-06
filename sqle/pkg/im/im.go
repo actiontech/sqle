@@ -62,19 +62,9 @@ func CreateApprovalTemplate(imType string) {
 func CreateApprove(projectId, workflowId string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectId, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailByWorkflowID)
 	if err != nil {
-		newLog.Error("get workflow detail error: ", err)
-		return
-	}
-	if !exist {
 		newLog.Error("workflow not exist")
-		return
-	}
-
-	workflow, err = dms.BuildWorkflowInstances(workflow)
-	if err != nil {
-		log.NewEntry().Errorf("get instance error, %v", err)
 		return
 	}
 
@@ -88,11 +78,11 @@ func CreateApprove(projectId, workflowId string) {
 		return
 	}
 	if workflow.CurrentStep() == nil {
-		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.ID)
+		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.WorkflowId)
 	}
 
 	if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
-		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.ID)
+		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.WorkflowId)
 		return
 	}
 
@@ -130,7 +120,7 @@ func CreateApprove(projectId, workflowId string) {
 		switch im.Type {
 		case model.ImTypeDingTalk:
 			if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
-				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.ID)
+				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.WorkflowId)
 				return
 			}
 

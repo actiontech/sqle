@@ -282,19 +282,9 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 
 func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectId, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailByWorkflowID)
 	if err != nil {
-		log.NewEntry().Errorf("notify workflow error, %v", err)
-		return
-	}
-	if !exist {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
-		return
-	}
-
-	workflow, err = dms.BuildWorkflowInstances(workflow)
-	if err != nil {
-		log.NewEntry().Errorf("get instance error, %v", err)
 		return
 	}
 
