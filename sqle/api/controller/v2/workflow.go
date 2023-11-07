@@ -63,7 +63,7 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -128,7 +128,7 @@ func RejectWorkflowV2(c echo.Context) error {
 	}
 
 	workflowID := c.Param("workflow_id")
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -237,7 +237,7 @@ func CancelWorkflowV2(c echo.Context) error {
 }
 
 func checkCancelWorkflow(projectId, workflowID string) (*model.Workflow, error) {
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return nil, err
 	}
@@ -381,7 +381,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 }
 
 func checkCanCompleteWorkflow(projectId, workflowID string) (*model.Workflow, error) {
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 	workflowID := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -820,7 +820,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -963,7 +963,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1060,7 +1060,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1128,7 +1128,7 @@ func GetWorkflowV2(c echo.Context) error {
 	workflowID := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

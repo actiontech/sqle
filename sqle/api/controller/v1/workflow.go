@@ -1011,7 +1011,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	var workflow *model.Workflow
 	{
-		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1065,7 +1065,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 
 	var workflow *model.Workflow
 	{
-		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailByWorkflowID)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

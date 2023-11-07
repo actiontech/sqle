@@ -55,7 +55,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 
 				switch *approval.Result {
 				case model.ApproveStatusAgree:
-					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailByWorkflowID)
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
@@ -92,7 +92,7 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 				case model.ApproveStatusRefuse:
-					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailByWorkflowID)
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue

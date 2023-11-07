@@ -40,7 +40,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 	now := time.Now()
 	for _, workflow := range workflows {
-		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailByWorkflowID)
+		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			entry.Errorf("get workflow from storage error: %v", err)
 			return
@@ -271,7 +271,7 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 
 func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) error {
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return err
 	}

@@ -62,7 +62,7 @@ func CreateApprovalTemplate(imType string) {
 func CreateApprove(projectId, workflowId string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		newLog.Error("workflow not exist")
 		return
