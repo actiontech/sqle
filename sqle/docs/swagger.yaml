@@ -8110,9 +8110,9 @@ paths:
         type: string
       - description: sort field
         enum:
-        - first_appear_time
-        - last_appear_time
-        - appear_count
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
         in: query
         name: sort_field
         type: string
@@ -8234,9 +8234,9 @@ paths:
         type: string
       - description: sort field
         enum:
-        - first_appear_time
-        - last_appear_time
-        - appear_count
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
         in: query
         name: sort_field
         type: string
