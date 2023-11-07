@@ -709,13 +709,21 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
 	}
 
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
+	}
+
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SQLAuditRecord{
 			SQLAuditRecordId: auditRecordId,
 			Task: &AuditTaskResV1{
 				Id:             record.Task.ID,
-				InstanceName:   record.Task.InstanceName(),
+				InstanceName:   instance.Name,
 				InstanceDbType: record.Task.DBType,
 				InstanceSchema: record.Task.Schema,
 				AuditLevel:     record.Task.AuditLevel,
