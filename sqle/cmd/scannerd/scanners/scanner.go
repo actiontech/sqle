@@ -8,6 +8,7 @@ import (
 const (
 	MybatisFileSuffix = "xml"
 	SQLFileSuffix     = "sql"
+	LOGFileSuffix     = "log"
 )
 
 type SQL struct {

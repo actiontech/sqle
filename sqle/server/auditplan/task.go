@@ -3,8 +3,10 @@ package auditplan
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/dm"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1517,4 +1519,134 @@ func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task 
 	b.baiduRdsMySQLTask = task
 
 	return b
+}
+
+// DmSlowLogTask :DM慢日志
+type DmSlowLogTask struct {
+	*baseTask
+}
+
+func NewDmSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	return &DmSlowLogTask{newBaseTask(entry, ap)}
+}
+
+func (at *DmSlowLogTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *DmSlowLogTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string]string, uint64, error) {
+	head, rows, count := make([]Head, 0), make([]map[string]string, 0), 0
+	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	if err != nil {
+		at.logger.Warnf("get instance fail, error: %v", err)
+		return head, rows, uint64(count), err
+	}
+	dsn := &dm.DSN{
+		Host:     inst.Host,
+		Port:     inst.Port,
+		User:     inst.User,
+		Password: inst.Password,
+	}
+	db, err := dm.NewDB(dsn)
+	if err != nil {
+		at.logger.Errorf("connect to dm fail, error: %v", err)
+		return head, rows, uint64(count), err
+	}
+	defer func(db *sql.DB) {
+		err := dm.Close(db)
+		if err != nil {
+			at.logger.Errorf("close dm fail, error: %v", err)
+		}
+	}(db)
+	return dmSlowLogGetSQLs(args, at.persist, db)
+}
+
+// 获取达梦慢日志sql，用于前端页面展示
+func dmSlowLogGetSQLs(args map[string]interface{}, persist *model.Storage, dmDb *sql.DB) ([]Head, []map[string]string, uint64, error) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	schema := ""
+	go func() {
+		// 获取schema
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		schema, _ = dm.QueryCurrentSchema(ctx, dmDb)
+		wg.Done()
+	}()
+
+	auditPlanSQLs, count, err := persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		wg.Done()
+		return nil, nil, count, err
+	}
+	wg.Done()
+	wg.Wait()
+
+	head := []Head{
+		{
+			Name: "fingerprint",
+			Desc: "SQL指纹",
+			Type: "sql",
+		},
+		{
+			Name: "sql",
+			Desc: "SQL",
+			Type: "sql",
+		},
+		{
+			Name: "counter",
+			Desc: "数量",
+		},
+		{
+			Name: "last_receive_timestamp",
+			Desc: "最后匹配时间",
+		},
+		{
+			Name: "query_time_avg",
+			Desc: "平均执行时间",
+		},
+		{
+			Name: "query_time_max",
+			Desc: "最长执行时间",
+		},
+		{
+			Name: "db_user",
+			Desc: "用户",
+		},
+		{
+			Name: "schema",
+			Desc: "Schema",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		var info = struct {
+			Counter              uint64  `json:"counter"`
+			LastReceiveTimestamp string  `json:"last_receive_timestamp"`
+			QueryTimeAvg         float64 `json:"query_time_avg"`
+			QueryTimeMax         float64 `json:"query_time_max"`
+			DbUser               string  `json:"db_user"`
+			Schema               string  `json:"schema"`
+		}{}
+		err := json.Unmarshal(sql.Info, &info)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		info.Schema = schema
+
+		rows = append(rows, map[string]string{
+			"sql":                    sql.SQLContent,
+			"fingerprint":            sql.Fingerprint,
+			"counter":                strconv.FormatUint(info.Counter, 10),
+			"last_receive_timestamp": info.LastReceiveTimestamp,
+			"query_time_avg":         strconv.FormatFloat(info.QueryTimeAvg, 'f', -1, 64),
+			"query_time_max":         strconv.FormatFloat(info.QueryTimeMax, 'f', -1, 64),
+			"db_user":                info.DbUser,
+			"schema":                 info.Schema,
+		})
+	}
+	return head, rows, count, nil
 }

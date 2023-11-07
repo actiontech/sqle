@@ -63,6 +63,9 @@ func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, 
 
 func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartialSync bool) error {
 	go func() {
+		if ap.DBType == "DM" {
+			return
+		}
 		err := SyncToSqlManage(sqls, ap)
 		if err != nil {
 			log.NewEntry().WithField("name", ap.Name).Errorf("schedule to save sql manage failed, error: %v", err)
