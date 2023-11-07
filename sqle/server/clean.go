@@ -50,10 +50,10 @@ func (j *CleanJob) CleanExpiredWorkflows(entry *logrus.Entry) {
 	for _, workflow := range workflows {
 		err := st.DeleteWorkflow(workflow)
 		if err != nil {
-			entry.Errorf("clean workflow %d error: %s", workflow.ID, err)
+			entry.Errorf("clean workflow %s error: %s", workflow.WorkflowId, err)
 			break
 		}
-		hasDeletedWorkflowIds = append(hasDeletedWorkflowIds, strconv.FormatUint(uint64(workflow.ID), 10))
+		hasDeletedWorkflowIds = append(hasDeletedWorkflowIds, workflow.WorkflowId)
 	}
 	if len(hasDeletedWorkflowIds) > 0 {
 		entry.Infof("clean workflow [%s] success", strings.Join(hasDeletedWorkflowIds, ", "))

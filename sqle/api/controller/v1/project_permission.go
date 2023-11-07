@@ -35,18 +35,8 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	}
 
 	if len(ops) > 0 {
-		instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.ID)
-		if err != nil {
-			return err
-		}
-
-		instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), string(workflow.ProjectId), instanceIds)
-		if err != nil {
-			return err
-		}
-
-		for _, instance := range instances {
-			if !up.CanOpInstanceNoAdmin(instance.GetIDStr(), ops...) {
+		for _, item := range workflow.Record.InstanceRecords {
+			if !up.CanOpInstanceNoAdmin(item.Instance.GetIDStr(), ops...) {
 				return ErrWorkflowNoAccess
 			}
 		}

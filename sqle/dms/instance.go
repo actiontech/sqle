@@ -9,6 +9,7 @@ import (
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
@@ -34,6 +35,10 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 		}
 
 		for _, item := range dbServices {
+			if item.SQLEConfig == nil || item.SQLEConfig.RuleTemplateID == "" {
+				continue
+			}
+
 			instance, err := convertInstance(item)
 			if err != nil {
 				return nil, fmt.Errorf("convert instance error: %v", err)
@@ -345,26 +350,37 @@ type InstanceTypeCount struct {
 	Count  int64  `json:"count"`
 }
 
-func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
-
+func GetWorkflowDetailByWorkflowId(projectId, workflowId string, fn func(projectId, workflowId string) (*model.Workflow, bool, error)) (*model.Workflow, error) {
+	workflow, exist, err := fn(projectId, workflowId)
 	if err != nil {
 		return nil, err
 	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("workflow is not exist or you can't access it"))
+	}
 
-	var typeCountMap = map[string]int64{}
+	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instanceIds = append(instanceIds, item.InstanceId)
+	}
 
+	if len(instanceIds) == 0 {
+		return workflow, nil
+	}
+
+	instances, err := GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+	if err != nil {
+		return nil, err
+	}
+	instanceMap := map[uint64]*model.Instance{}
 	for _, instance := range instances {
-		typeCountMap[instance.DbType]++
+		instanceMap[instance.ID] = instance
+	}
+	for i, item := range workflow.Record.InstanceRecords {
+		if instance, ok := instanceMap[item.InstanceId]; ok {
+			workflow.Record.InstanceRecords[i].Instance = instance
+		}
 	}
 
-	ret := make([]InstanceTypeCount, 0, len(typeCountMap))
-	for dbType, count := range typeCountMap {
-		ret = append(ret, InstanceTypeCount{
-			DBType: dbType,
-			Count:  count,
-		})
-	}
-
-	return ret, nil
+	return workflow, nil
 }
