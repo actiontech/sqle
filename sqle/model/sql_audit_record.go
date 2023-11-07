@@ -57,7 +57,7 @@ func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId string, 
 
 func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId string) (record *SQLAuditRecord, exist bool, err error) {
 	record = &SQLAuditRecord{}
-	if err = s.db.Preload("Task").Preload("Task.Instance").Preload("Task.ExecuteSQLs").
+	if err = s.db.Preload("Task").Preload("Task.ExecuteSQLs").
 		Where("project_id = ?", projectId).Where("audit_record_id = ?", SQLAuditRecordId).
 		Find(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
 		return nil, false, nil

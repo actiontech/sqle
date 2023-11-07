@@ -2,8 +2,6 @@ package model
 
 import (
 	"strings"
-
-	"github.com/actiontech/sqle/sqle/errors"
 )
 
 type RuleTemplateDetail struct {
@@ -45,18 +43,6 @@ func (s *Storage) GetRuleTemplatesByReq(data map[string]interface{}) (
 	}
 	count, err = s.getCountResult(ruleTemplatesQueryBodyTpl, ruleTemplatesCountTpl, data)
 	return result, count, err
-}
-
-func (s *Storage) GetRuleTemplateTotalByProjectName(projectName string) (uint64, error) {
-	var count uint64
-	err := s.db.
-		Table("rule_templates").
-		Joins("LEFT JOIN projects ON rule_templates.project_id = projects.id").
-		Where("projects.name = ?", projectName).
-		Where("rule_templates.deleted_at IS NULL").
-		Count(&count).
-		Error
-	return count, errors.ConnectStorageErrWrapper(err)
 }
 
 func (s *Storage) GetRulesByReq(data map[string]interface{}) (
