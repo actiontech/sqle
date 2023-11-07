@@ -131,6 +131,67 @@ var doc = `{
                 }
             }
         },
+        "/v1/company_notice": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get company notice info",
+                "tags": [
+                    "companyNotice"
+                ],
+                "summary": "获取企业公告",
+                "operationId": "getCompanyNotice",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCompanyNoticeResp"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update company notice info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "companyNotice"
+                ],
+                "summary": "更新企业公告",
+                "operationId": "updateCompanyNotice",
+                "parameters": [
+                    {
+                        "description": "company notice",
+                        "name": "companyNotice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCompanyNoticeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/ding_talk": {
             "get": {
                 "security": [
@@ -4758,6 +4819,27 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "first_appear_time",
+                            "last_appear_time",
+                            "appear_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -4918,6 +5000,27 @@ var doc = `{
                         "type": "string",
                         "description": "rule name",
                         "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_time",
+                            "last_appear_time",
+                            "appear_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
                         "in": "query"
                     }
                 ],
@@ -10648,6 +10751,14 @@ var doc = `{
                 }
             }
         },
+        "v1.CompanyNotice": {
+            "type": "object",
+            "properties": {
+                "notice_str": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateAuditPlanReqV1": {
             "type": "object",
             "properties": {
@@ -11611,6 +11722,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetCompanyNoticeResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CompanyNotice"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -15351,6 +15479,14 @@ var doc = `{
                 "value": {
                     "type": "string",
                     "example": "create table"
+                }
+            }
+        },
+        "v1.UpdateCompanyNoticeReq": {
+            "type": "object",
+            "properties": {
+                "notice_str": {
+                    "type": "string"
                 }
             }
         },
