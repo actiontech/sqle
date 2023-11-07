@@ -185,7 +185,12 @@ SELECT
 {{- template "body" . -}} 
 
 GROUP BY sm.id
-ORDER BY sm.id desc
+ORDER BY 
+{{- if and .sort_field .sort_order }}
+	{{ .sort_field }} {{ .sort_order }}
+{{- else }}
+	sm.id desc
+{{- end }}
 
 {{- if .limit }}
 LIMIT :limit OFFSET :offset

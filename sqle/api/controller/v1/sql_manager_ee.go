@@ -45,6 +45,8 @@ func getSqlManageList(c echo.Context) error {
 		"project_name":                      projectName,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"sort_field":                        req.SortField,
+		"sort_order":                        req.SortOrder,
 		"limit":                             req.PageSize,
 		"offset":                            offset,
 	}
@@ -188,6 +190,8 @@ func exportSqlManagesV1(c echo.Context) error {
 		"project_name":                      projectName,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"sort_field":                        req.SortField,
+		"sort_order":                        req.SortOrder,
 	}
 
 	sqlManageResp, err := s.GetSqlManageListByReq(data)
