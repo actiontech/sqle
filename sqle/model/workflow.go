@@ -792,7 +792,7 @@ func (s *Storage) GetWorkflowExportById(workflowId string) (*Workflow, bool, err
 	return w, true, nil
 }
 
-func (s *Storage) GetWorkflowDetailByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowDetailWithoutInstancesByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
 	db := s.db.Model(&Workflow{}).Preload("Record").Where("workflow_id = ?", workflowID)
 	if projectId != "" {

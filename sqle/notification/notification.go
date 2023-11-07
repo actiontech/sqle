@@ -282,7 +282,7 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 
 func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 	s := model.GetStorage()
-	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailByWorkflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
 		return
