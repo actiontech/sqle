@@ -271,19 +271,16 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 
 func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) error {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailByWorkflowID(projectUid, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailByWorkflowID)
 	if err != nil {
 		return err
 	}
-	if !exist {
+
+	if err = PrepareForWorkflowExecution(projectUid, workflow, user); err != nil {
 		return err
 	}
 
-	if err := PrepareForWorkflowExecution(projectUid, workflow, user); err != nil {
-		return err
-	}
-
-	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
+	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
 	if err != nil {
 		return err
 	}
@@ -319,15 +316,10 @@ func PrepareForWorkflowExecution(projectUid string, workflow *model.Workflow, us
 	return nil
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
-	instanceIds, err := s.GetInstanceIdsByWorkflowID(workflow.WorkflowId)
-	if err != nil {
-		return nil, err
-	}
-
-	instances, err := dms.GetInstancesByIds(context.TODO(), instanceIds)
-	if err != nil {
-		return nil, err
+func GetNeedExecTaskIds(workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
+	instances := make([]*model.Instance, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instances = append(instances, item.Instance)
 	}
 	// 有不在运维时间内的instances报错
 	var cannotExecuteInstanceNames []string
