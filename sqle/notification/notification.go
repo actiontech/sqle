@@ -280,36 +280,12 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 	}
 }
 
-func NotifyWorkflow(workflowId string, wt WorkflowNotifyType) {
+func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
-		log.NewEntry().Errorf("notify workflow error, %v", err)
-		return
-	}
-	if !exist {
 		log.NewEntry().Error("notify workflow error, workflow not exits")
 		return
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-	if err != nil {
-		log.NewEntry().Errorf("get instance error, %v", err)
-		return
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	go func() { notifyWorkflowWebhook(workflow, wt) }()

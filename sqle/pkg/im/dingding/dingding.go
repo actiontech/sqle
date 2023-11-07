@@ -167,7 +167,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 					processCode = *resp.Body.Result.ProcessCode
 				}
 				goto End
-			// https://github.com/actiontech/sqle/issues/1487
+				// https://github.com/actiontech/sqle/issues/1487
 			} else if !tea.BoolValue(util.Empty(sdkErr.Code)) && *sdkErr.Code == "formName.error" {
 				getProcessCodeByNameHeaders := &dingTalkWorkflow.GetProcessCodeByNameHeaders{}
 				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
@@ -210,7 +210,7 @@ End:
 
 // CreateApprovalInstance
 // https://open.dingtalk.com/document/orgapp-server/create-an-approval-instance
-func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId uint, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
+func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId string, originUserId *string, userIds []*string, auditResult, projectName, desc, workflowUrl string) error {
 	token, err := GetToken(d.AppKey, d.AppSecret)
 	if err != nil {
 		return fmt.Errorf("get token error: %v", err)
@@ -283,7 +283,7 @@ func (d *DingTalk) CreateApprovalInstance(workflowName string, workflowId uint, 
 
 // UpdateApprovalStatus
 // https://open.dingtalk.com/document/orgapp-server/approve-or-reject-the-approval-task
-func (d *DingTalk) UpdateApprovalStatus(workflowId uint, status, userId, reason string) error {
+func (d *DingTalk) UpdateApprovalStatus(workflowId string, status, userId, reason string) error {
 	s := model.GetStorage()
 	dingTalkInstance, exist, err := s.GetDingTalkInstanceByWorkflowID(workflowId)
 	if err != nil {

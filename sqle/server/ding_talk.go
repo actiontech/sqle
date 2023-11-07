@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -56,38 +55,15 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 
 				switch *approval.Result {
 				case model.ApproveStatusAgree:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
+
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
-					}
-
-					instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-					for _, item := range workflow.Record.InstanceRecords {
-						instanceIds = append(instanceIds, item.InstanceId)
-					}
-
-					instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-					if err != nil {
-						entry.Errorf("get instance error, %v", err)
-						continue
-					}
-					instanceMap := map[uint64]*model.Instance{}
-					for _, instance := range instances {
-						instanceMap[instance.ID] = instance
-					}
-					for i, item := range workflow.Record.InstanceRecords {
-						if instance, ok := instanceMap[item.InstanceId]; ok {
-							workflow.Record.InstanceRecords[i].Instance = instance
-						}
 					}
 
 					nextStep := workflow.NextStep()
@@ -112,42 +88,19 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
+						imPkg.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 					}
 
 				case model.ApproveStatusRefuse:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
+
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
-					}
-
-					instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-					for _, item := range workflow.Record.InstanceRecords {
-						instanceIds = append(instanceIds, item.InstanceId)
-					}
-
-					instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-					if err != nil {
-						entry.Errorf("notify workflow error, %v", err)
-						continue
-					}
-					instanceMap := map[uint64]*model.Instance{}
-					for _, instance := range instances {
-						instanceMap[instance.ID] = instance
-					}
-					for i, item := range workflow.Record.InstanceRecords {
-						if instance, ok := instanceMap[item.InstanceId]; ok {
-							workflow.Record.InstanceRecords[i].Instance = instance
-						}
 					}
 
 					var reason string

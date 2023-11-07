@@ -63,12 +63,9 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
 	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{})
@@ -82,34 +79,6 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	workflowIdStr := strconv.Itoa(int(workflow.ID))
-	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
-	}
-
 	nextStep := workflow.NextStep()
 
 	err = server.CheckUserCanOperateStep(user, workflow, stepId)
@@ -121,10 +90,10 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
+	go im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusAgree, "")
 
 	if nextStep != nil {
-		go im.CreateApprove(strconv.Itoa(int(workflow.ID)))
+		go im.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
@@ -159,12 +128,9 @@ func RejectWorkflowV2(c echo.Context) error {
 	}
 
 	workflowID := c.Param("workflow_id")
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
 	// RejectWorkflow no need extra operation code for now.
@@ -182,34 +148,6 @@ func RejectWorkflowV2(c echo.Context) error {
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	workflowIdStr := strconv.Itoa(int(workflow.ID))
-	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	err = server.CheckUserCanOperateStep(user, workflow, stepId)
@@ -230,7 +168,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.ID, user, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusRefuse, req.Reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -293,37 +231,15 @@ func CancelWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	go im.BatchCancelApprove([]uint{workflow.ID}, user)
+	go im.BatchCancelApprove([]string{workflow.WorkflowId}, user)
 
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func checkCancelWorkflow(projectId, workflowID string) (*model.Workflow, error) {
-	workflow, exist, err := model.GetStorage().GetWorkflowDetailByWorkflowID(projectId, workflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return nil, err
-	}
-	if !exist {
-		return nil, v1.ErrWorkflowNoAccess
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-	if err != nil {
-		return nil, err
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	if !(workflow.Record.Status == model.WorkflowStatusWaitForAudit ||
@@ -361,14 +277,14 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	}
 
 	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
-	workflowIds := make([]uint, 0, len(req.WorkflowIDList))
+	workflowIds := make([]string, 0, len(req.WorkflowIDList))
 	for i, workflowID := range req.WorkflowIDList {
 		workflow, err := checkCancelWorkflow(projectUid, workflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		workflows[i] = workflow
-		workflowIds = append(workflowIds, workflow.ID)
+		workflowIds = append(workflowIds, workflow.WorkflowId)
 		workflow.Record.Status = model.WorkflowStatusCancel
 		workflow.Record.CurrentWorkflowStepId = 0
 	}
@@ -465,31 +381,9 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 }
 
 func checkCanCompleteWorkflow(projectId, workflowID string) (*model.Workflow, error) {
-	workflow, exist, err := model.GetStorage().GetWorkflowDetailByWorkflowID(projectId, workflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return nil, err
-	}
-	if !exist {
-		return nil, v1.ErrWorkflowNoAccess
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-	if err != nil {
-		return nil, err
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
@@ -518,47 +412,15 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 	workflowID := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	workflowId := fmt.Sprintf("%v", workflow.ID)
 
 	taskIdStr := c.Param("task_id")
 	taskId, err := v1.FormatStringToInt(taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -575,7 +437,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !isCan {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflowId))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflow.WorkflowId))
 	}
 
 	err = server.ExecuteWorkflow(workflow, map[uint]string{uint(taskId): user.GetIDStr()})
@@ -915,10 +777,9 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
 	}
 
-	workFlowId := strconv.Itoa(int(workflow.ID))
-	go notification.NotifyWorkflow(workFlowId, notification.WorkflowNotifyTypeCreate)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeCreate)
 
-	go im.CreateApprove(workFlowId)
+	go im.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 
 	return c.JSON(http.StatusOK, &CreateWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
@@ -959,12 +820,9 @@ func UpdateWorkflowV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("workflow not exist"))
 	}
 
 	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{})
@@ -1043,34 +901,6 @@ func UpdateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
 
-	workflowIdStr := fmt.Sprintf("%v", workflow.ID)
-	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds = make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err = dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap = map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
-	}
-
 	if workflow.Record.Status != model.WorkflowStatusReject {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
@@ -1099,10 +929,9 @@ func UpdateWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
-	go notification.NotifyWorkflow(workflowIdStr, notification.WorkflowNotifyTypeCreate)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeCreate)
 
-	workFlowId := strconv.Itoa(int(workflow.ID))
-	go im.CreateApprove(workFlowId)
+	go im.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1134,21 +963,15 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
 	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	workflowId = strconv.Itoa(int(workflow.ID))
 
 	taskId := c.Param("task_id")
 	taskIdUint, err := v1.FormatStringToUint64(taskId)
@@ -1163,32 +986,6 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 	user, err := controller.GetCurrentUser(c)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	currentStep := workflow.CurrentStep()
@@ -1263,41 +1060,9 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 	workflowId := c.Param("workflow_id")
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	workflowId = fmt.Sprintf("%v", workflow.ID)
-
-	workflow, exist, err = s.GetWorkflowDetailById(workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	user, err := controller.GetCurrentUser(c)
@@ -1308,12 +1073,12 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	err = server.ExecuteTasksProcess(workflowId, projectUid, user)
+	err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	im.UpdateApprove(workflow.ID, user, model.ApproveStatusAgree, "")
+	im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusAgree, "")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
@@ -1363,47 +1128,14 @@ func GetWorkflowV2(c echo.Context) error {
 	workflowID := c.Param("workflow_id")
 
 	s := model.GetStorage()
-
-	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
 	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	workflowIdStr := strconv.Itoa(int(workflow.ID))
-
-	workflow, exist, err = s.GetWorkflowDetailById(workflowIdStr)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	// TODO 优化为一次批量用户查询,history 记录也许一并处理
@@ -1427,7 +1159,7 @@ func GetWorkflowV2(c echo.Context) error {
 		workflow.Record.Steps[i] = step
 	}
 
-	history, err := s.GetWorkflowHistoryById(workflowIdStr)
+	history, err := s.GetWorkflowHistoryById(workflow.WorkflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

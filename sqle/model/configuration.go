@@ -481,13 +481,13 @@ const (
 type DingTalkInstance struct {
 	Model
 	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
 	// 审批实例 taskID
 	TaskID int64  `json:"task_id" gorm:"column:task_id"`
 	Status string `json:"status" gorm:"default:\"initialized\""`
 }
 
-func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkInstance, bool, error) {
+func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId string) (*DingTalkInstance, bool, error) {
 	dti := new(DingTalkInstance)
 	err := s.db.Where("workflow_id = ?", workflowId).Last(&dti).Error
 	if err == gorm.ErrRecordNotFound {
@@ -496,7 +496,7 @@ func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId uint) (*DingTalkIns
 	return dti, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []uint) ([]DingTalkInstance, error) {
+func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []string) ([]DingTalkInstance, error) {
 	var dingTalkInstances []DingTalkInstance
 	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Find(&dingTalkInstances).Error
 	if err != nil {
@@ -506,7 +506,7 @@ func (s *Storage) GetDingTalkInstanceListByWorkflowIDs(workflowIds []uint) ([]Di
 }
 
 // batch updates ding_talk_instances'status into input status by workflow_ids, the status should be like ApproveStatusXXX in model package.
-func (s *Storage) BatchUpdateStatusOfDingTalkInstance(workflowIds []uint, status string) error {
+func (s *Storage) BatchUpdateStatusOfDingTalkInstance(workflowIds []string, status string) error {
 	err := s.db.Model(&DingTalkInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
 	if err != nil {
 		return err

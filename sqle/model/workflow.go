@@ -266,7 +266,7 @@ type WorkflowStep struct {
 	Model
 	OperationUserId        string
 	OperateAt              *time.Time
-	WorkflowId             uint   `gorm:"index; not null"`
+	WorkflowId             string `gorm:"index; not null"`
 	WorkflowRecordId       uint   `gorm:"index; not null"`
 	WorkflowStepTemplateId uint   `gorm:"index; not null"`
 	State                  string `gorm:"default:\"initialized\""`
@@ -309,7 +309,7 @@ func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 	for _, step := range w.Record.Steps {
 		steps = append(steps, &WorkflowStep{
 			WorkflowStepTemplateId: step.Template.ID,
-			WorkflowId:             w.ID,
+			WorkflowId:             w.WorkflowId,
 			Assignees:              step.Assignees,
 		})
 	}
@@ -485,7 +485,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		for _, step := range steps {
 			currentStep := step
 			currentStep.WorkflowRecordId = record.ID
-			currentStep.WorkflowId = workflow.ID
+			currentStep.WorkflowId = workflow.WorkflowId
 			err = tx.Save(currentStep).Error
 			if err != nil {
 				tx.Rollback()
@@ -570,14 +570,14 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 	}
 	// update record history
 	err = tx.Exec("INSERT INTO workflow_record_history (workflow_record_id, workflow_id) value (?, ?)",
-		w.Record.ID, w.ID).Error
+		w.Record.ID, w.WorkflowId).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	// update workflow record to new
-	if err := tx.Model(&Workflow{}).Where("id = ?", w.ID).
+	if err := tx.Model(&Workflow{}).Where("workflow_id = ?", w.WorkflowId).
 		Update("workflow_record_id", record.ID).Error; err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -740,41 +740,20 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 	return instanceRecords, nil
 }
 
-func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("Record").Where("id = ?", id).First(workflow).Error
+	err := s.db.Preload("Record").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
+		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	if workflow.Record == nil {
-		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
+		return workflow, false, nil
 	}
 
-	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.InstanceRecords = instanceRecords
-
-	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.Steps = steps
-	for _, step := range steps {
-		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
-		}
-	}
-	return workflow, true, nil
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowExportById(workflowId string) (*Workflow, bool, error) {
 	w := new(Workflow)
-	err := s.db.Preload("Record").Where("id = ?", id).First(&w).Error
+	err := s.db.Preload("Record").Where("workflow_id = ?", workflowId).First(&w).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -813,11 +792,13 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	return w, true, nil
 }
 
-func (s *Storage) GetWorkflowDetailByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowDetailWithoutInstancesByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).
-		Preload("Record").Where("workflow_id = ?", workflowID).Where("project_id = ?", projectId).
-		First(workflow).Error
+	db := s.db.Model(&Workflow{}).Preload("Record").Where("workflow_id = ?", workflowID)
+	if projectId != "" {
+		db = db.Where("project_id = ?", projectId)
+	}
+	err := db.First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -926,7 +907,7 @@ func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 }
 
 func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
-	err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID).Error
+	err := tx.Exec("DELETE FROM workflows WHERE workflow_id = ?", workflow.WorkflowId).Error
 	if err != nil {
 		return err
 	}
@@ -934,11 +915,11 @@ func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.ID).Error
+	err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.WorkflowId).Error
 	if err != nil {
 		return err
 	}
-	err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.ID).Error
+	err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.WorkflowId).Error
 	if err != nil {
 		return err
 	}
@@ -995,14 +976,14 @@ func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstanceIdsByWorkflowID(workflowID uint) ([]uint64, error) {
+func (s *Storage) GetInstanceIdsByWorkflowID(workflowID string) ([]uint64, error) {
 	query := `
-SELECT wir.instance_id
+SELECT wir.instance_id id
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
 LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
 WHERE 
-w.id = ?`
+w.workflow_id = ?`
 	instances := []*Instance{}
 	err := s.db.Raw(query, workflowID).Scan(&instances).Error
 	if err != nil {
@@ -1285,17 +1266,6 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectId, workflowName st
 	workflow := &Workflow{}
 	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectId).
 		Where("subject = ?", workflowName).
-		First(&workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return workflow, false, nil
-	}
-
-	return workflow, true, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Preload("Record").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil
