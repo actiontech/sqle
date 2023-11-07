@@ -59,37 +59,13 @@ func CreateApprovalTemplate(imType string) {
 	}
 }
 
-func CreateApprove(id string) {
+func CreateApprove(projectId, workflowId string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(id)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
-		newLog.Error("get workflow detail error: ", err)
-		return
-	}
-	if !exist {
 		newLog.Error("workflow not exist")
 		return
-	}
-
-	instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
-	for _, item := range workflow.Record.InstanceRecords {
-		instanceIds = append(instanceIds, item.InstanceId)
-	}
-
-	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
-	if err != nil {
-		log.NewEntry().Errorf("get instance error, %v", err)
-		return
-	}
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
-	}
-	for i, item := range workflow.Record.InstanceRecords {
-		if instance, ok := instanceMap[item.InstanceId]; ok {
-			workflow.Record.InstanceRecords[i].Instance = instance
-		}
 	}
 
 	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
@@ -102,11 +78,11 @@ func CreateApprove(id string) {
 		return
 	}
 	if workflow.CurrentStep() == nil {
-		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.ID)
+		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.WorkflowId)
 	}
 
 	if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
-		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.ID)
+		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.WorkflowId)
 		return
 	}
 
@@ -144,7 +120,7 @@ func CreateApprove(id string) {
 		switch im.Type {
 		case model.ImTypeDingTalk:
 			if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
-				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.ID)
+				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.WorkflowId)
 				return
 			}
 
@@ -196,7 +172,7 @@ func CreateApprove(id string) {
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.WorkflowId, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
@@ -211,7 +187,7 @@ func CreateApprove(id string) {
 	}
 }
 
-func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
+func UpdateApprove(workflowId string, user *model.User, status, reason string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -252,7 +228,7 @@ func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
 	}
 }
 
-func BatchCancelApprove(workflowIds []uint, user *model.User) {
+func BatchCancelApprove(workflowIds []string, user *model.User) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 	ims, err := s.GetAllIMConfig()
