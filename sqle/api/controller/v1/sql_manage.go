@@ -16,7 +16,7 @@ type GetSqlManageListReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
-	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_time last_appear_time appear_count" enums:"first_appear_time,last_appear_time,appear_count"`
+	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
 	PageSize                     uint32  `query:"page_size" valid:"required" json:"page_size"`
@@ -76,7 +76,7 @@ type Source struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
-// @Param sort_field query string false "sort field" Enums(first_appear_time,last_appear_time,appear_count)
+// @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
@@ -118,7 +118,7 @@ type ExportSqlManagesReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
-	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_time last_appear_time appear_count" enums:"first_appear_time,last_appear_time,appear_count"`
+	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 }
 
@@ -139,7 +139,7 @@ type ExportSqlManagesReq struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_db_type query string false "db type"
 // @Param filter_rule_name query string false "rule name"
-// @Param sort_field query string false "sort field" Enums(first_appear_time,last_appear_time,appear_count)
+// @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Success 200 {file} file "export sql manage"
 // @Router /v1/projects/{project_name}/sql_manages/exports [get]
