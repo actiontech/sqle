@@ -4820,9 +4820,9 @@ var doc = `{
                     },
                     {
                         "enum": [
-                            "first_appear_time",
-                            "last_appear_time",
-                            "appear_count"
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
                         ],
                         "type": "string",
                         "description": "sort field",
@@ -5004,9 +5004,9 @@ var doc = `{
                     },
                     {
                         "enum": [
-                            "first_appear_time",
-                            "last_appear_time",
-                            "appear_count"
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
                         ],
                         "type": "string",
                         "description": "sort field",
