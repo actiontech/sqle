@@ -1260,10 +1260,9 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
 		newTestResult())
-	// FIXME 这里有WHERE条件 并且条件并非恒为TRUE但结果会触发DMLCheckWhereIsInvalid
 	runDefaultRulesInspectCase(t, "delete: has where condition(5)", DefaultMysqlInspect(),
 		"DELETE FROM exist_db.exist_tb_1 WHERE EXISTS (SELECT id FROM exist_db.exist_tb_2 WHERE v1='v1' AND exist_tb_1.id < 10);",
-		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckWhereExistScalarSubquery).addResult(rulepkg.DMLNotRecommendSubquery))
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery).addResult(rulepkg.DMLNotRecommendSubquery))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1;",
