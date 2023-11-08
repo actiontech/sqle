@@ -16,23 +16,15 @@ import (
 )
 
 var (
-	slowLog                string
-	syncDmSlowLogStartTime string
-	skipErrorDmSlowQuery   bool
-	skipErrorDmSlowLogFile bool
-	skipDmSlowLogAudit     bool
+	slowLog string
 
 	slowLogFileCmd = &cobra.Command{
 		Use:   "dm-slow-log",
 		Short: "Parse dm slow log file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &dmslowlog.Params{
-				SQLDir:                 slowLog,
-				APName:                 rootCmdFlags.auditPlanName,
-				SyncDmSlowLogStartTime: syncDmSlowLogStartTime,
-				SkipErrorQuery:         skipErrorDmSlowQuery,
-				SkipErrorSqlFile:       skipErrorDmSlowLogFile,
-				SkipAudit:              skipDmSlowLogAudit,
+				SlowLogDir: slowLog,
+				APName:     rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "dmSlowLogFile")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -47,17 +39,12 @@ var (
 				fmt.Println(err)
 				os.Exit(1)
 			}
-
 		},
 	}
 )
 
 func init() {
-	slowLogFileCmd.Flags().StringVarP(&slowLog, "slow-log", "D", "", "dm slow log file directory")
-	slowLogFileCmd.Flags().StringVarP(&syncDmSlowLogStartTime, "sync-Dm-Slow-Log-StartTime", "B", "", "sync dm slowLog start time")
-	slowLogFileCmd.Flags().BoolVarP(&skipErrorDmSlowQuery, "skip-error-dm-slow-log-query", "S", false, "skip the statement that the scanner failed to parse from within the log file")
-	slowLogFileCmd.Flags().BoolVarP(&skipErrorDmSlowLogFile, "skip-error-dm-slow-log-file", "X", false, "skip the dm slow log file that failed to parse")
-	slowLogFileCmd.Flags().BoolVarP(&skipDmSlowLogAudit, "skip-dm-slow-log-file-audit", "K", false, "only upload dm slow log file to sqle, not audit")
+	slowLogFileCmd.Flags().StringVarP(&slowLog, "slow-log", "D", "", "dm slow log directory")
 	_ = slowLogFileCmd.MarkFlagRequired("slow-log")
 	rootCmd.AddCommand(slowLogFileCmd)
 }

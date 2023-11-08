@@ -22,21 +22,17 @@ import (
 )
 
 type DmSlowLog struct {
-	l                      *logrus.Entry
-	c                      *scanner.Client
-	sqls                   []scanners.SQL
-	allSQL                 []DmNode
-	getAll                 chan struct{}
-	apName                 string
-	sqlDir                 string // 同步达梦目录，如：/dm8/dmdbms/log
-	syncDmSlowLogStartTime string // 同步达梦日志开始时间
-	skipErrorQuery         bool
-	skipErrorSqlFile       bool
-	skipAudit              bool
+	l          *logrus.Entry
+	c          *scanner.Client
+	sqls       []scanners.SQL
+	allSQL     []DmNode
+	getAll     chan struct{}
+	apName     string
+	slowLogDir string // 同步达梦目录，如：/dm8/dmdbms/log
 }
 
 type Params struct {
-	SQLDir                 string // 同步达梦目录，如：/dm8/dmdbms/log
+	SlowLogDir             string // 同步达梦目录，如：/dm8/dmdbms/log
 	APName                 string
 	SyncDmSlowLogStartTime string // 同步达梦日志开始时间
 	SkipErrorQuery         bool
@@ -54,20 +50,16 @@ type DmNode struct {
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*DmSlowLog, error) {
 	return &DmSlowLog{
-		sqlDir:                 params.SQLDir,
-		apName:                 params.APName,
-		syncDmSlowLogStartTime: params.SyncDmSlowLogStartTime,
-		skipErrorQuery:         params.SkipErrorQuery,
-		skipErrorSqlFile:       params.SkipErrorSqlFile,
-		skipAudit:              params.SkipAudit,
-		l:                      l,
-		c:                      c,
-		getAll:                 make(chan struct{}),
+		slowLogDir: params.SlowLogDir,
+		apName:     params.APName,
+		l:          l,
+		c:          c,
+		getAll:     make(chan struct{}),
 	}, nil
 }
 
 func (dm *DmSlowLog) Run(ctx context.Context) error {
-	sqls, err := getSQLFromDir(dm.sqlDir, dm.syncDmSlowLogStartTime, scanners.LOGFileSuffix)
+	sqls, err := getSQLFromDir(dm.slowLogDir, scanners.LOGFileSuffix)
 	if err != nil {
 		return err
 	}
@@ -105,13 +97,10 @@ func (dm *DmSlowLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	if err != nil {
 		return err
 	}
-	if dm.skipAudit {
-		return nil
-	}
 	return common.Audit(dm.c, dm.apName)
 }
 
-func getSQLFromDir(dir, syncDmSlowLogStartTime string, fileSuffix string) ([]DmNode, error) {
+func getSQLFromDir(dir string, fileSuffix string) ([]DmNode, error) {
 	dmNodes := make([]DmNode, 0)
 	if fileSuffix == scanners.LOGFileSuffix {
 		fileName, err := getLatestFile(dir, "dmsql_")
@@ -164,19 +153,6 @@ func getSQLFromDir(dir, syncDmSlowLogStartTime string, fileSuffix string) ([]DmN
 					return nil, err
 				}
 				node.QueryAt = queryAt
-			}
-
-			// 慢查询发生时间在指定的时间之前，则跳过该行日志
-			timeFormat := "2006-01-02 15:04:05"
-			if len(syncDmSlowLogStartTime) > 0 {
-				syncDmSlowLogStartTimeForTimeType, err := time.Parse(timeFormat, syncDmSlowLogStartTime)
-				if err != nil {
-					log.Printf("parse string for time err:%s\n", err)
-					return nil, err
-				}
-				if node.QueryAt.Before(syncDmSlowLogStartTimeForTimeType) {
-					continue
-				}
 			}
 
 			// user:SYSDBA trxid:
