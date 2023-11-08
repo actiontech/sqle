@@ -350,6 +350,30 @@ type InstanceTypeCount struct {
 	Count  int64  `json:"count"`
 }
 
+func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error) {
+	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var typeCountMap = map[string]int64{}
+
+	for _, instance := range instances {
+		typeCountMap[instance.DbType]++
+	}
+
+	ret := make([]InstanceTypeCount, 0, len(typeCountMap))
+	for dbType, count := range typeCountMap {
+		ret = append(ret, InstanceTypeCount{
+			DBType: dbType,
+			Count:  count,
+		})
+	}
+
+	return ret, nil
+}
+
 func GetWorkflowDetailByWorkflowId(projectId, workflowId string, fn func(projectId, workflowId string) (*model.Workflow, bool, error)) (*model.Workflow, error) {
 	workflow, exist, err := fn(projectId, workflowId)
 	if err != nil {
