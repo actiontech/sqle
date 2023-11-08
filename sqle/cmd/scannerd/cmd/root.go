@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"context"
+
 	pkgScanner "github.com/actiontech/sqle/sqle/pkg/scanner"
 
 	"github.com/spf13/cobra"
@@ -17,8 +20,9 @@ var (
 	}
 
 	rootCmd = &cobra.Command{
-		Use:   "SQLE Scanner",
-		Short: "SQLE Scanner",
+		Use:     "SQLE Scanner",
+		Short:   "SQLE Scanner",
+		Version: "SQLE version", // cobra设置--version的固定写法
 	}
 )
 
@@ -33,6 +37,7 @@ func init() {
 	_ = rootCmd.MarkPersistentFlagRequired("token")
 }
 
-func Execute() error {
+func Execute(ctx context.Context) error {
+	rootCmd.SetVersionTemplate(fmt.Sprintln(ctx.Value(VersionKey)))
 	return rootCmd.Execute()
 }
