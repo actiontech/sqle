@@ -708,32 +708,42 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
 	}
-
+	// build ret info
+	status := SQLAuditRecordStatusAuditing
+	if record.Task.Status == model.TaskStatusAudited {
+		status = SQLAuditRecordStatusSuccessfully
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(record.Tags), &tags); err != nil {
+		log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+	}
+	task := &AuditTaskResV1{
+		Id:             record.Task.ID,
+		InstanceDbType: record.Task.DBType,
+		InstanceSchema: record.Task.Schema,
+		AuditLevel:     record.Task.AuditLevel,
+		Score:          record.Task.Score,
+		PassRate:       record.Task.PassRate,
+		Status:         record.Task.Status,
+		SQLSource:      record.Task.SQLSource,
+		ExecStartTime:  record.Task.ExecStartAt,
+		ExecEndTime:    record.Task.ExecEndAt,
+	}
 	instance, exist, err := dms.GetInstancesById(c.Request().Context(), record.Task.InstanceId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
+	if exist {
+		task.InstanceName = instance.Name
 	}
 
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SQLAuditRecord{
+			SQLAuditStatus:   status,
+			Tags:             tags,
 			SQLAuditRecordId: auditRecordId,
-			Task: &AuditTaskResV1{
-				Id:             record.Task.ID,
-				InstanceName:   instance.Name,
-				InstanceDbType: record.Task.DBType,
-				InstanceSchema: record.Task.Schema,
-				AuditLevel:     record.Task.AuditLevel,
-				Score:          record.Task.Score,
-				PassRate:       record.Task.PassRate,
-				Status:         record.Task.Status,
-				SQLSource:      record.Task.SQLSource,
-				ExecStartTime:  record.Task.ExecStartAt,
-				ExecEndTime:    record.Task.ExecEndAt,
-			},
+			Task:             task,
 		},
 	})
 }

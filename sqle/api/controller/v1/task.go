@@ -274,12 +274,9 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 
-	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
+	instance, _, err := dms.GetInstancesById(ctx, task.InstanceId)
 	if err != nil {
 		return nil, err
-	}
-	if !exist {
-		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 	task.Instance = instance
 
