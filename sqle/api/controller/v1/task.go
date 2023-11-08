@@ -210,7 +210,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task, _, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
+	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -274,12 +274,9 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 
-	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
+	instance, _, err := dms.GetInstancesById(ctx, task.InstanceId)
 	if err != nil {
 		return nil, err
-	}
-	if !exist {
-		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 	task.Instance = instance
 

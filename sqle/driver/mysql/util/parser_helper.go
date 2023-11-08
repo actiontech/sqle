@@ -409,6 +409,14 @@ func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 					isExist = true
 					return true
 				}
+			case *ast.FuncCallExpr:
+				result := NewFuncCallStringResultGenerator(pattern).GenerateResult()
+				if strings.HasPrefix(result, "%") || strings.HasPrefix(result, "_") {
+					isExist = true
+					return true
+				}
+				// unsupport subquery result as value of like
+				// example (select '%' 'any_string' '%')
 			}
 		}
 		return false

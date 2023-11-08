@@ -20,13 +20,14 @@ const (
 )
 
 const (
-	DriverTypeMySQL      = "MySQL"
-	DriverTypePostgreSQL = "PostgreSQL"
-	DriverTypeTiDB       = "TiDB"
-	DriverTypeSQLServer  = "SQL Server"
-	DriverTypeOracle     = "Oracle"
-	DriverTypeDB2        = "DB2"
-	DriverTypeOceanBase  = "OceanBase For MySQL"
+	DriverTypeMySQL          = "MySQL"
+	DriverTypePostgreSQL     = "PostgreSQL"
+	DriverTypeTiDB           = "TiDB"
+	DriverTypeSQLServer      = "SQL Server"
+	DriverTypeOracle         = "Oracle"
+	DriverTypeDB2            = "DB2"
+	DriverTypeOceanBase      = "OceanBase For MySQL"
+	DriverTypeTDSQLForInnoDB = "TDSQL For InnoDB"
 )
 
 type DriverNotSupportedError struct {
@@ -96,6 +97,7 @@ func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
 		Annotation: rule.Annotation,
 		Level:      RuleLevel(rule.Level),
 		Params:     ps,
+		Knowledge:  RuleKnowledge{Content: rule.Knowledge.GetContent()},
 	}
 }
 

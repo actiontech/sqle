@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/opcode"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -225,5 +226,102 @@ func (v *SelectVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 }
 
 func (v *SelectVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type ColumnNameVisitor struct {
+	ColumnNameList []*ast.ColumnNameExpr
+}
+
+func (v *ColumnNameVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.ColumnNameExpr:
+		v.ColumnNameList = append(v.ColumnNameList, stmt)
+	}
+	return in, false
+}
+
+func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type WhereVisitor struct {
+	WhereList []ast.ExprNode
+}
+
+func (v *WhereVisitor) append(where ast.ExprNode) {
+	if where != nil {
+		v.WhereList = append(v.WhereList, where)
+	}
+}
+
+func (v *WhereVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null skip check. EX: select 1;select version
+			return in, false
+		}
+		v.append(stmt.Where)
+	case *ast.UpdateStmt:
+		v.append(stmt.Where)
+	case *ast.DeleteStmt:
+		v.append(stmt.Where)
+	}
+	return in, false
+}
+
+func (v *WhereVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type EqualColumns struct {
+	Left  *ast.ColumnName
+	Right *ast.ColumnName
+}
+type EqualConditionVisitor struct {
+	ConditionList []EqualColumns
+}
+
+func (v *EqualConditionVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.BinaryOperationExpr:
+		var tableNameL, tableNameR string
+		var equalColumns EqualColumns
+		if stmt.Op == opcode.EQ {
+			switch t := stmt.L.(type) {
+			case *ast.ColumnNameExpr:
+				tableNameL = t.Name.Table.L
+				equalColumns.Left = t.Name
+			}
+			switch t := stmt.R.(type) {
+			case *ast.ColumnNameExpr:
+				tableNameR = t.Name.Table.L
+				equalColumns.Right = t.Name
+			}
+			if tableNameL != "" && tableNameR != "" && tableNameL != tableNameR {
+				v.ConditionList = append(v.ConditionList, equalColumns)
+			}
+		}
+	}
+	return in, false
+}
+
+func (v *EqualConditionVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type FuncCallExprVisitor struct {
+	FuncCallList []*ast.FuncCallExpr
+}
+
+func (v *FuncCallExprVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.FuncCallExpr:
+		v.FuncCallList = append(v.FuncCallList, stmt)
+	}
+	return in, false
+}
+
+func (v *FuncCallExprVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
