@@ -532,13 +532,13 @@ const (
 type FeishuInstance struct {
 	Model
 	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          uint   `json:"workflow_id" gorm:"column:workflow_id"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
 	// 审批实例 taskID
 	TaskID string `json:"task_id" gorm:"column:task_id"`
 	Status string `json:"status" gorm:"default:\"INITIALIZED\""`
 }
 
-func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []uint) ([]FeishuInstance, error) {
+func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []string) ([]FeishuInstance, error) {
 	var feishuInstList []FeishuInstance
 	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Find(&feishuInstList).Error
 	if err != nil {
@@ -547,7 +547,7 @@ func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []uint) ([]Feis
 	return feishuInstList, nil
 }
 
-func (s *Storage) BatchUpdateStatusOfFeishuInstance(workflowIds []uint, status string) error {
+func (s *Storage) BatchUpdateStatusOfFeishuInstance(workflowIds []string, status string) error {
 	err := s.db.Model(&FeishuInstance{}).Where("workflow_id IN (?)", workflowIds).Updates(map[string]interface{}{"status": status}).Error
 	if err != nil {
 		return err
@@ -555,7 +555,7 @@ func (s *Storage) BatchUpdateStatusOfFeishuInstance(workflowIds []uint, status s
 	return nil
 }
 
-func (s *Storage) GetFeishuInstanceByWorkflowID(workflowId uint) (*FeishuInstance, bool, error) {
+func (s *Storage) GetFeishuInstanceByWorkflowID(workflowId string) (*FeishuInstance, bool, error) {
 	fi := new(FeishuInstance)
 	err := s.db.Where("workflow_id = ?", workflowId).Last(&fi).Error
 	if e.Is(err, gorm.ErrRecordNotFound) {
