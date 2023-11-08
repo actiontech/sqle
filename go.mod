@@ -3,7 +3,6 @@ module github.com/actiontech/sqle
 go 1.19
 
 require (
-	dm v1.8.1
 	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
@@ -185,5 +184,3 @@ replace (
 	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
-
-replace dm v1.8.1 => ./sqle/pkg/dm/driver

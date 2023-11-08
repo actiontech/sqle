@@ -9,19 +9,6 @@ definitions:
         example: ok
         type: string
     type: object
-  model.AuditResult:
-    properties:
-      level:
-        type: string
-      message:
-        type: string
-      rule_name:
-        type: string
-    type: object
-  model.AuditResults:
-    items:
-      $ref: '#/definitions/model.AuditResult'
-    type: array
   v1.AuditPlanCount:
     properties:
       audit_plan_count:
@@ -4452,8 +4439,9 @@ definitions:
       audit_level:
         type: string
       audit_result:
-        $ref: '#/definitions/model.AuditResults'
-        type: object
+        items:
+          $ref: '#/definitions/v2.AuditResult'
+        type: array
       exec_sql:
         type: string
       number:

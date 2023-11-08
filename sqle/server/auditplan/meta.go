@@ -332,8 +332,14 @@ var Metas = []Meta{
 		InstanceType: InstanceTypeDM,
 		Params: []*params.Param{
 			{
-				Key:   paramKeySlowLogCollectInput,
-				Desc:  "采集来源。0：来自达梦慢日志文件，如：dmsql_DMSERVER_20231028_110621.log",
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
 				Value: "0",
 				Type:  params.ParamTypeInt,
 			},

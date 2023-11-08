@@ -3,10 +3,8 @@ package auditplan
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/dm"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1538,52 +1536,15 @@ func (at *DmSlowLogTask) Audit() (*AuditResultResp, error) {
 }
 
 func (at *DmSlowLogTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string]string, uint64, error) {
-	head, rows, count := make([]Head, 0), make([]map[string]string, 0), 0
-	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
-	if err != nil {
-		at.logger.Warnf("get instance fail, error: %v", err)
-		return head, rows, uint64(count), err
-	}
-	dsn := &dm.DSN{
-		Host:     inst.Host,
-		Port:     inst.Port,
-		User:     inst.User,
-		Password: inst.Password,
-	}
-	db, err := dm.NewDB(dsn)
-	if err != nil {
-		at.logger.Errorf("connect to dm fail, error: %v", err)
-		return head, rows, uint64(count), err
-	}
-	defer func(db *sql.DB) {
-		err := dm.Close(db)
-		if err != nil {
-			at.logger.Errorf("close dm fail, error: %v", err)
-		}
-	}(db)
-	return dmSlowLogGetSQLs(args, at.persist, db)
+	return dmSlowLogGetSQLs(args, at.persist)
 }
 
 // 获取达梦慢日志sql，用于前端页面展示
-func dmSlowLogGetSQLs(args map[string]interface{}, persist *model.Storage, dmDb *sql.DB) ([]Head, []map[string]string, uint64, error) {
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	schema := ""
-	go func() {
-		// 获取schema
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-		schema, _ = dm.QueryCurrentSchema(ctx, dmDb)
-		wg.Done()
-	}()
-
+func dmSlowLogGetSQLs(args map[string]interface{}, persist *model.Storage) ([]Head, []map[string]string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetAuditPlanSQLsByReq(args)
 	if err != nil {
-		wg.Done()
 		return nil, nil, count, err
 	}
-	wg.Done()
-	wg.Wait()
 
 	head := []Head{
 		{
@@ -1635,7 +1596,6 @@ func dmSlowLogGetSQLs(args map[string]interface{}, persist *model.Storage, dmDb 
 		if err != nil {
 			return nil, nil, 0, err
 		}
-		info.Schema = schema
 
 		rows = append(rows, map[string]string{
 			"sql":                    sql.SQLContent,

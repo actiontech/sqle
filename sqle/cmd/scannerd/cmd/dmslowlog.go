@@ -16,17 +16,18 @@ import (
 )
 
 var (
+	slowLog                string
 	syncDmSlowLogStartTime string
 	skipErrorDmSlowQuery   bool
 	skipErrorDmSlowLogFile bool
 	skipDmSlowLogAudit     bool
 
 	slowLogFileCmd = &cobra.Command{
-		Use:   "dmSlowLogFile",
+		Use:   "dm-slow-log",
 		Short: "Parse dm slow log file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &dmslowlog.Params{
-				SQLDir:                 dir,
+				SQLDir:                 slowLog,
 				APName:                 rootCmdFlags.auditPlanName,
 				SyncDmSlowLogStartTime: syncDmSlowLogStartTime,
 				SkipErrorQuery:         skipErrorDmSlowQuery,
@@ -52,11 +53,11 @@ var (
 )
 
 func init() {
-	slowLogFileCmd.Flags().StringVarP(&dir, "dir", "D", "", "dm slow log file directory")
-	slowLogFileCmd.Flags().StringVarP(&syncDmSlowLogStartTime, "syncDmSlowLogStartTime", "B", "", "sync dm slowLog start time")
+	slowLogFileCmd.Flags().StringVarP(&slowLog, "slow-log", "D", "", "dm slow log file directory")
+	slowLogFileCmd.Flags().StringVarP(&syncDmSlowLogStartTime, "sync-Dm-Slow-Log-StartTime", "B", "", "sync dm slowLog start time")
 	slowLogFileCmd.Flags().BoolVarP(&skipErrorDmSlowQuery, "skip-error-dm-slow-log-query", "S", false, "skip the statement that the scanner failed to parse from within the log file")
 	slowLogFileCmd.Flags().BoolVarP(&skipErrorDmSlowLogFile, "skip-error-dm-slow-log-file", "X", false, "skip the dm slow log file that failed to parse")
 	slowLogFileCmd.Flags().BoolVarP(&skipDmSlowLogAudit, "skip-dm-slow-log-file-audit", "K", false, "only upload dm slow log file to sqle, not audit")
-	_ = slowLogFileCmd.MarkFlagRequired("dir")
+	_ = slowLogFileCmd.MarkFlagRequired("slow-log")
 	rootCmd.AddCommand(slowLogFileCmd)
 }
