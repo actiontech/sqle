@@ -538,35 +538,23 @@ func GetRules(c echo.Context) error {
 	var rules []*model.Rule
 	var customRules []*model.CustomRule
 	var err error
-	if req.FilterGlobalRuleTemplateName != "" {
-		rules, err = s.GetAllRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetAllCustomRuleByGlobalRuleTemplateName(req.FilterGlobalRuleTemplateName)
-	} else if req.FilterDBType != "" {
-		rules, err = s.GetAllRuleByDBType(req.FilterDBType)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRulesByDBType(req.FilterDBType)
-	} else if len(req.FilterRuleNames) != 0 {
-		ruleNames := strings.Split(req.FilterRuleNames, ",")
-		rules, err = s.GetRulesByNames(ruleNames)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRulesByIds(ruleNames)
-	} else {
-		rules, err = s.GetAllRule()
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		customRules, err = s.GetCustomRules("*")
-	}
+	rules, err = s.GetRulesByReq(map[string]interface{}{
+		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
+		"filter_db_type":                   req.FilterDBType,
+		"filter_rule_names":                req.FilterRuleNames,
+	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	customRules, err = s.GetCustomRulesByReq(map[string]interface{}{
+		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
+		"filter_db_type":                   req.FilterDBType,
+		"filter_rule_names":                req.FilterRuleNames,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	ruleRes := convertRulesToRes(rules)
 	customRuleRes := convertRulesToRes(customRules)
 	ruleRes = append(ruleRes, customRuleRes...)
@@ -1515,4 +1503,33 @@ type UpdateRuleKnowledgeReq struct {
 // @router /v1/rule_knowledge/db_types/{db_type}/rules/{rule_name}/ [patch]
 func UpdateRuleKnowledgeV1(c echo.Context) error {
 	return updateRuleKnowledge(c)
+}
+
+// GetCustomRuleKnowledge
+// @Summary 查看自定义规则知识库
+// @Description get custom rule knowledge
+// @Id getCustomRuleKnowledgeV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Success 200 {object} v1.GetRuleKnowledgeResV1
+// @router /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/ [get]
+func GetCustomRuleKnowledge(c echo.Context) error {
+	return getCustomRuleKnowledge(c)
+}
+
+// UpdateCustomRuleKnowledgeV1
+// @Summary 更新自定义规则知识库
+// @Description update custom rule knowledge
+// @Id updateCustomRuleKnowledge
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param rule_name path string true "rule name"
+// @Param db_type path string true "db type of rule"
+// @Param req body v1.UpdateRuleKnowledgeReq true "update rule knowledge"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/ [patch]
+func UpdateCustomRuleKnowledgeV1(c echo.Context) error {
+	return updateCustomRuleKnowledge(c)
 }

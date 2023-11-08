@@ -294,3 +294,17 @@ func IsGitHttpURL(s string) bool {
 	}
 	return true
 }
+
+func IsPrefixSubStrArray(arr []string, prefix []string) bool {
+	if len(prefix) > len(arr) {
+		return false
+	}
+
+	for i := 0; i < len(prefix); i++ {
+		if arr[i] != prefix[i] {
+			return false
+		}
+	}
+
+	return true
+}

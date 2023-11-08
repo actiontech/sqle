@@ -54,6 +54,18 @@ type AuditPlanSQLV2 struct {
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
 }
 
+type BlackListAuditPlanSQL struct {
+	Model
+
+	FilterSQL     string `json:"filter_sql" gorm:"type:varchar(512);not null;unique"`
+}
+
+func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
+	var blackListAPS []*BlackListAuditPlanSQL
+	err := s.db.Model(BlackListAuditPlanSQL{}).Find(&blackListAPS).Error
+	return blackListAPS, errors.New(errors.ConnectStorageError, err)
+}
+
 func (a AuditPlanSQLV2) TableName() string {
 	return "audit_plan_sqls_v2"
 }

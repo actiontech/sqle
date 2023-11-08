@@ -44,3 +44,11 @@ func getRuleKnowledge(c echo.Context) error {
 func updateRuleKnowledge(c echo.Context) error {
 	return errCommunityEditionNotSupportRuleKnowledge
 }
+
+func getCustomRuleKnowledge(c echo.Context) error {
+	return errCommunityEditionNotSupportRuleKnowledge
+}
+
+func updateCustomRuleKnowledge(c echo.Context) error {
+	return errCommunityEditionNotSupportRuleKnowledge
+}

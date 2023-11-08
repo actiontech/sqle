@@ -105,3 +105,88 @@ func TestSelectFieldExtractor(t *testing.T) {
 		})
 	}
 }
+
+func TestColumnNameVisitor(t *testing.T) {
+	tests := []struct {
+		input       string
+		columnCount uint
+	}{
+		{"SELECT * FROM t1", 0},                                                         //不包含列
+		{"SELECT a,b,c FROM t1 WHERE id > 1", 4},                                        //使用不等号
+		{"SELECT COUNT(*) FROM t1", 0},                                                  //使用函数并不包含列
+		{"SELECT a,COUNT(*) FROM t1 GROUP BY a", 2},                                     //使用函数包含列
+		{"SELECT * FROM table1 INNER JOIN table2 ON table1.id = table2.table1_id", 2},   //使用JOIN
+		{"SELECT * FROM table1 WHERE id IN ( SELECT id FROM table2 WHERE age > 30)", 3}, //使用子查询
+		{"SELECT UPPER(name), LENGTH(comments) FROM table1", 2},                         //使用函数
+		{"SELECT CAST(price AS DECIMAL(10,2))FROM products", 1},                         //使用类型转换
+		{"SELECT * FROM table1 INNER JOIN table2 ON table1.id = table2.table1_id INNER JOIN table3 ON table2.id = table3.table2_id", 4}, //使用JOIN嵌套
+		{"SELECT column1 AS alias1, column2 AS alias2 FROM table1", 2},                                                                  //使用列别名
+		{"SELECT column1 + column2 AS sum_columns FROM table1", 2},
+		{"SELECT t1.column1 AS t1_col1, t2.column2 AS t2_col2 FROM table1 t1 INNER JOIN table2 t2 ON t1.id = t2.t1_id", 4}, //不带AS的表别名
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+
+			visitor := &ColumnNameVisitor{}
+			stmt.Accept(visitor)
+
+			assert.Equal(t, tt.columnCount, uint(len(visitor.ColumnNameList)))
+		})
+	}
+}
+
+func TestEqualConditionVisitor(t *testing.T) {
+	tests := []struct {
+		input          string
+		conditionCount int
+	}{
+		{"SELECT * FROM t1 WHERE t1.id1 = t2.id2", 1},
+		{"SELECT * FROM t1 WHERE t1.id1 = t3.id3 OR t2.id2 = t1.id1", 2},
+		{"SELECT * FROM t JOIN t2 ON t.id = t2.id2 WHERE t.name = ? AND t2.age = ?", 1},
+		{"DELETE FROM t1 WHERE t1.id1 = t1.id2", 0},
+		{"UPDATE t1 SET id2 = 2 WHERE id1 > 1", 0},
+		{"INSERT INTO t1 (id1, id2) VALUES (1, 2)", 0},
+		{"DELETE FROM t1 WHERE id2 > 2", 0},
+		{"UPDATE t1 SET id1 = 2 WHERE t2.id2 = t3.id3", 1}, //SET id1 = 2不是BinaryOperation，而是Assignment
+		{"INSERT INTO t1 (id1, id2) VALUES (2, 1)", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+
+			visitor := &EqualConditionVisitor{}
+			stmt.Accept(visitor)
+
+			assert.Equal(t, tt.conditionCount, len(visitor.ConditionList))
+		})
+	}
+}
+
+func TestFuncCallVisitor(t *testing.T) {
+	tests := []struct {
+		input          string
+		conditionCount int
+	}{
+		{"SELECT * FROM t1 WHERE t1.id1 = t3.id3 OR t2.id2 = t1.id1", 0},
+		{"SELECT UPPER(CONCAT(CONCAT('a_',UPPER('b'),'_c'),'_','a_',UPPER('b'),'_c'));", 5},
+		{"SELECT UPPER('a');", 1},
+		{"SELECT UPPER(CONCAT('a_',UPPER('b'),'_c'));", 3},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+
+			visitor := &FuncCallExprVisitor{}
+			stmt.Accept(visitor)
+
+			assert.Equal(t, tt.conditionCount, len(visitor.FuncCallList))
+		})
+	}
+}

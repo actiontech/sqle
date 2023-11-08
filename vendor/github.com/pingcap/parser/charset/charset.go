@@ -451,4 +451,6 @@ func init() {
 	for id, name := range mysql.Collations {
 		collationsNameMap[name] = collationsIDMap[int(id)]
 	}
+
+	InitAllCharset()
 }
