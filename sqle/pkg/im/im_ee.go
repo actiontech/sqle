@@ -98,7 +98,7 @@ func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 // 	return nil
 // }
 
-func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
+func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string, user *model.User, status string, reason string) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
 	userId, err := client.GetFeishuUserIdList([]*model.User{user}, larkContact.UserIdTypeOpenId)
 	if err != nil {
@@ -137,7 +137,7 @@ func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, 
 	return nil
 }
 
-func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
+func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []string, user *model.User) error {
 	s := model.GetStorage()
 	err := s.BatchUpdateStatusOfFeishuInstance(workflowIDs, model.WorkflowStatusCancel)
 	if err != nil {
