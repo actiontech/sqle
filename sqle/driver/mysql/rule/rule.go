@@ -3122,6 +3122,9 @@ func isSelectCount(selectStmt *ast.SelectStmt) bool {
 func checkSelectWhere(input *RuleHandlerInput) error {
 
 	visitor := util.WhereVisitor{}
+	if input.Rule.Name == DMLCheckWhereIsInvalid {
+		visitor.WhetherContainNil = true
+	}
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
@@ -3150,6 +3153,10 @@ func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, whereList []ast.
 			addResult(res, rule, DMLCheckWhereIsInvalid)
 		}
 		for _, where := range whereList {
+			if where == nil {
+				addResult(res, rule, DMLCheckWhereIsInvalid)
+				break
+			}
 			if !util.WhereStmtHasOneColumn(where) {
 				addResult(res, rule, DMLCheckWhereIsInvalid)
 				break
