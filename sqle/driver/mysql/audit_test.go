@@ -1197,7 +1197,7 @@ func TestCheckWhereInvalid(t *testing.T) {
 
 	runDefaultRulesInspectCase(t, "select_count: has where condition(2)", DefaultMysqlInspect(),
 		"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id>1) t LIMIT 999;",
-		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
+		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY").addResult(rulepkg.DMLCheckWhereIsInvalid),
 	)
 
 	runDefaultRulesInspectCase(t, "select_count: has no where condition(3)", DefaultMysqlInspect(),
@@ -4120,6 +4120,10 @@ func Test_DMLCheckInQueryLimit(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckInQueryNumber].Rule
 	paramValue := "5"
 	rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, paramValue)
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1",
+		newTestResult())
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		"select * from exist_tb_1 where id in (1,2,3,4,5,6)",
