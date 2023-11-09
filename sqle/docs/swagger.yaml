@@ -8522,6 +8522,10 @@ paths:
         in: formData
         name: input_mybatis_xml_file
         type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
+        type: file
       produces:
       - application/json
       responses:
