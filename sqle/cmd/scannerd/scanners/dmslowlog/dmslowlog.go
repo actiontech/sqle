@@ -20,7 +20,6 @@ import (
 type DmSlowLog struct {
 	l           *logrus.Entry
 	c           *scanner.Client
-	sqls        []scanners.SQL
 	sqlCh       chan scanners.SQL
 	apName      string
 	slowLogFile string // 同步达梦目录，如：/dm8/dmdbms/log
@@ -47,7 +46,6 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*DmSlowLog, error)
 	return &DmSlowLog{
 		slowLogFile: params.SlowLogFile,
 		apName:      params.APName,
-		sqls:        make([]scanners.SQL, 0),
 		sqlCh:       make(chan scanners.SQL, 10),
 		l:           l,
 		c:           c,
@@ -139,9 +137,7 @@ func (dm *DmSlowLog) SQLs() <-chan scanners.SQL {
 }
 
 func (dm *DmSlowLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	dm.sqls = make([]scanners.SQL, len(sqls))
-	dm.sqls = append(dm.sqls, sqls...)
-	return common.UploadForDmSlowLog(ctx, dm.sqls, dm.c, dm.apName)
+	return common.UploadForDmSlowLog(ctx, sqls, dm.c, dm.apName)
 }
 
 func parseSqlAndType(line string) *DmNode {
