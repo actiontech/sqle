@@ -7914,7 +7914,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is zip file, sql will be parsed from it.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -7950,6 +7950,12 @@ var doc = `{
                         "type": "file",
                         "description": "input mybatis XML file",
                         "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
                         "in": "formData"
                     }
                 ],
