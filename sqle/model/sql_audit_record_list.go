@@ -88,6 +88,10 @@ AND sql_audit_records.created_at > :filter_create_time_from
 AND sql_audit_records.created_at < :filter_create_time_to
 {{- end }}
 
+{{- if .filter_audit_record_ids }}
+AND sql_audit_records.audit_record_id IN ( {{ .filter_audit_record_ids }} )
+{{- end }}
+
 {{ end }}
 
 `

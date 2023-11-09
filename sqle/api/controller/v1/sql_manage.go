@@ -50,9 +50,9 @@ type AuditResult struct {
 }
 
 type Source struct {
-	Type             string `json:"type" enums:"audit_plan,sql_audit_record"`
-	AuditPlanName    string `json:"audit_plan_name"`
-	SqlAuditRecordId string `json:"sql_audit_record_id"`
+	Type              string   `json:"type" enums:"audit_plan,sql_audit_record"`
+	AuditPlanName     string   `json:"audit_plan_name"`
+	SqlAuditRecordIds []string `json:"sql_audit_record_ids"`
 }
 
 // GetSqlManageList

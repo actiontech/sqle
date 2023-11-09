@@ -71,6 +71,10 @@ github.com/actiontech/dms/pkg/dms-common/dmsobject
 github.com/actiontech/dms/pkg/dms-common/pkg/aes
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
+# github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
+## explicit; go 1.19
+github.com/actiontech/java-sql-extractor/java_antlr
+github.com/actiontech/java-sql-extractor/parser
 # github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 ## explicit; go 1.14
 github.com/actiontech/mybatis-mapper-2-sql
@@ -130,6 +134,9 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
+# github.com/antlr4-go/antlr/v4 v4.13.0
+## explicit; go 1.20
+github.com/antlr4-go/antlr/v4
 # github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 ## explicit; go 1.13
 github.com/asaskevich/govalidator
@@ -570,7 +577,7 @@ github.com/pingcap/errors
 # github.com/pingcap/log v0.0.0-20210317133921-96f4fcab92a4 => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 ## explicit; go 1.13
 github.com/pingcap/log
-# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
+# github.com/pingcap/parser v3.0.12+incompatible => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 ## explicit; go 1.13
 github.com/pingcap/parser
 github.com/pingcap/parser/ast
@@ -777,12 +784,16 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
+# golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
+## explicit; go 1.20
+golang.org/x/exp/constraints
+golang.org/x/exp/slices
 # golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.15.0 => golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+# golang.org/x/net v0.15.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/html
@@ -798,7 +809,7 @@ golang.org/x/net/proxy
 golang.org/x/net/trace
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.12.0 => golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+# golang.org/x/sys v0.12.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -977,7 +988,5 @@ vitess.io/vitess/go/vt/vtgate/evalengine
 # github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 # github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20230614092412-936a5cff4635
 # github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-# github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
-# golang.org/x/net => golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-# golang.org/x/sys => golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+# github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0

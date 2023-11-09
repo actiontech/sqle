@@ -72,6 +72,11 @@ message Rule {
   string category = 4;
   repeated Param params = 5;
   string annotation = 6;
+  Knowledge knowledge = 7;
+}
+
+message Knowledge {
+  string content = 1;
 }
 
 // Metas

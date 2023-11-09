@@ -8,6 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/dms v0.0.0-20231019085256-6c3ffc8b3489
+	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.4.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
@@ -95,6 +96,7 @@ require (
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
 	github.com/aliyun/credentials-go v1.1.2 // indirect
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
@@ -173,6 +175,7 @@ require (
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
@@ -190,8 +193,6 @@ replace (
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20230614092412-936a5cff4635
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20220614062700-e3219e3d6833
-	golang.org/x/net => golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
