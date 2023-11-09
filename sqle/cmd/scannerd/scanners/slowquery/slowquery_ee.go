@@ -190,20 +190,21 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	var nodes []driverV2.Node
 	var sqlIdentity sqlIdentity
 	var processedRawText, processedFingerPrint string
-
+	var err error
 	for _, sql := range sqls {
-		// 在聚合之前对sql.Fingerprint和sql.RawText进行预处理，去除SQL中的脏数据
-		// 当解析结果中有多个node的时候，说明该SQL带有冗余的脏数据
-		// 这里把第一个node作为RawText解析出的SQL
-		// 为了在显示上和其他SQL一致，这里还需要去除node.Text字符串结尾的';'
-		// 若解析失败则nodes为nil len(nil)=0 此时Fingerprint和RawText都为sql.RawText
-		nodes, _ = common.Parse(ctx, sql.RawText)
-		if len(nodes) > 0 {
+		nodes, err = common.Parse(ctx, sql.RawText)
+		if err != nil {
+			// 解析出错 节点为空 保留SQL原语句
+			processedRawText = sql.RawText
+			processedFingerPrint = sql.RawText
+		} else if len(nodes) > 0 {
+			// 解析正常 节点非空 保留解析出的SQL
+			// 若节点数量大于1 则第一个节点对应解析出的SQL 后续节点为;后的字符串 不保留
 			processedFingerPrint = nodes[0].Fingerprint
 			processedRawText = strings.Trim(nodes[0].Text, ";")
 		} else {
-			processedRawText = sql.RawText
-			processedFingerPrint = sql.RawText
+			// 解析正常 节点为空 不保留该语句
+			continue
 		}
 
 		// 使用指纹和Schema的JSON String作为SQL的唯一标识符
@@ -222,7 +223,7 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			sqlReq.QueryTimeMax = &tMax
 			sqlReq.QueryTimeAvg = &tAvg
 			sqlReq.Counter = strconv.Itoa(atoi + 1)
-			sqlReq.LastReceiveText = sql.RawText
+			sqlReq.LastReceiveText = processedRawText
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
 		} else {
 			sqlReq := &scanner.AuditPlanSQLReq{

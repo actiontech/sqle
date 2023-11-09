@@ -82,7 +82,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 			lastReceiveTime = &lastReceiveTimeStamp
 		}
 
-		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, string(ap.ProjectId), ap.ID, firstAppearTime, lastReceiveTime, 0, fpCount, reportSQL.AuditResults, nil)
+		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, string(ap.ProjectId), ap.ID, firstAppearTime, lastReceiveTime, fpCount, reportSQL.AuditResults, nil)
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
@@ -90,7 +90,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 		sqlManageList = append(sqlManageList, sqlManage)
 	}
 
-	if err := s.InsertOrUpdateSqlManage(sqlManageList); err != nil {
+	if err := s.InsertOrUpdateSqlManage(sqlManageList, 0); err != nil {
 		return fmt.Errorf("insert or update sql manage failed, error: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		instName := sa.Task.InstanceName()
 		source := model.SQLManageSourceSqlAuditRecord
 
-		sqlManage, err := NewSqlManage(fp, sql, schemaName, instName, source, executeSQL.AuditLevel, sa.ProjectId, 0, &executeSQL.CreatedAt, &executeSQL.CreatedAt, sa.SqlAuditRecordID, 0, executeSQL.AuditResults, md5SqlManageMap)
+		sqlManage, err := NewSqlManage(fp, sql, schemaName, instName, source, executeSQL.AuditLevel, sa.ProjectId, 0, &executeSQL.CreatedAt, &executeSQL.CreatedAt, 0, executeSQL.AuditResults, md5SqlManageMap)
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
@@ -131,7 +131,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		newSqlManageList = append(newSqlManageList, sqlManage)
 	}
 
-	if err := s.InsertOrUpdateSqlManage(newSqlManageList); err != nil {
+	if err := s.InsertOrUpdateSqlManage(newSqlManageList, sa.SqlAuditRecordID); err != nil {
 		return fmt.Errorf("insert or update sql manage failed, error: %v", err)
 	}
 
@@ -163,7 +163,7 @@ func GetSqlMangeMd5(projectId string, fp string, schema string, instName string,
 	return utils.Md5String(string(md5Json)), nil
 }
 
-func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId string, apId uint, createAt, LastReceiveAt *time.Time, sqlAuditRecordID, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
+func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId string, apId uint, createAt, LastReceiveAt *time.Time, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
 	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source, apId)
 	if err != nil {
 		return nil, fmt.Errorf("get sql manage md5 failed, error: %v", err)
@@ -177,7 +177,6 @@ func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, proj
 		ProjectId:                 projectId,
 		SchemaName:                schemaName,
 		InstanceName:              instName,
-		SqlAuditRecordId:          sqlAuditRecordID,
 		AuditLevel:                auditLevel,
 		AuditResults:              auditResult,
 		AuditPlanId:               apId,
@@ -237,7 +236,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 
 		// todo: 更新审核等级
 		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "",
-			string(ap.ProjectId), ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, 0,
+			string(ap.ProjectId), ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat,
 			uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
 		if err != nil {
 			return err
