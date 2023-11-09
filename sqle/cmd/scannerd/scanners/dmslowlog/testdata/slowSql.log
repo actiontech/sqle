@@ -1,0 +1,1 @@
+2023-10-29 13:28:47.046 (EP[0] sess:0x97ec678 thrd:4337 user:SYSDBA trxid:0 stmt:0x9810678 appname: ip:::ffff:10.186.57.143) [SEL] SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') AS schema_name FROM dual EXECTIME: 3(ms) ROWCOUNT: 1(rows) EXEC_ID: 62900.

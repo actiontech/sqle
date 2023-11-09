@@ -90,6 +90,6 @@ func UploadForDmSlowLog(ctx context.Context, sqls []scanners.SQL, c *scanner.Cli
 		})
 	}
 
-	err := c.UploadReq(scanner.FullUpload, apName, reqBody)
+	err := c.UploadReq(scanner.PartialUpload, apName, reqBody)
 	return err
 }

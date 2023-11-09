@@ -16,15 +16,15 @@ import (
 )
 
 var (
-	slowLog string
+	slowLogFile string
 
 	slowLogFileCmd = &cobra.Command{
 		Use:   "dm-slow-log",
 		Short: "Parse dm slow log file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &dmslowlog.Params{
-				SlowLogDir: slowLog,
-				APName:     rootCmdFlags.auditPlanName,
+				SlowLogFile: slowLogFile,
+				APName:      rootCmdFlags.auditPlanName,
 			}
 			log := logrus.WithField("scanner", "dmSlowLogFile")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -44,7 +44,7 @@ var (
 )
 
 func init() {
-	slowLogFileCmd.Flags().StringVarP(&slowLog, "slow-log", "D", "", "dm slow log directory")
-	_ = slowLogFileCmd.MarkFlagRequired("slow-log")
+	slowLogFileCmd.Flags().StringVarP(&slowLogFile, "slow-log-file", "D", "", "slow log file")
+	_ = slowLogFileCmd.MarkFlagRequired("slow-log-file")
 	rootCmd.AddCommand(slowLogFileCmd)
 }

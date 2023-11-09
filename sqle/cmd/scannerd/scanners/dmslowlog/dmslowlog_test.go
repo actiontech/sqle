@@ -12,7 +12,7 @@ import (
 
 func TestDmSlowLog(t *testing.T) {
 	params := &Params{
-		SlowLogDir: "./testdata/",
+		SlowLogFile: "./testdata/slowSql.log",
 	}
 	scanner, err := New(params, logrus.New().WithField("test", "test"), nil)
 	assert.NoError(t, err)
