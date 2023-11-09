@@ -45,7 +45,7 @@ type AuditPlanSQLV2 struct {
 	// add unique index on fingerprint and audit_plan_id
 	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
 	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null"`
-	Fingerprint    string `json:"fingerprint" gorm:"type:text;not null"`
+	Fingerprint    string `json:"fingerprint" gorm:"type:mediumtext;not null"`
 	FingerprintMD5 string `json:"fingerprint_md5" gorm:"column:fingerprint_md5;not null"`
 	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
