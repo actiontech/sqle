@@ -10108,6 +10108,7 @@ paths:
         1. formData[sql]: sql content;
         2. file[input_sql_file]: it is a sql file;
         3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+        4. file[input_zip_file]: it is zip file, sql will be parsed from it.
       operationId: auditTaskGroupIdV1
       parameters:
       - description: group id of tasks
@@ -10126,6 +10127,10 @@ paths:
       - description: input mybatis XML file
         in: formData
         name: input_mybatis_xml_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
         type: file
       produces:
       - application/json
