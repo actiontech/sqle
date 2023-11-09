@@ -246,12 +246,15 @@ func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 }
 
 type WhereVisitor struct {
-	WhereList []ast.ExprNode
+	WhereList         []ast.ExprNode
+	WhetherContainNil bool
 }
 
 func (v *WhereVisitor) append(where ast.ExprNode) {
 	if where != nil {
 		v.WhereList = append(v.WhereList, where)
+	} else if v.WhetherContainNil {
+		v.WhereList = append(v.WhereList, nil)
 	}
 }
 
