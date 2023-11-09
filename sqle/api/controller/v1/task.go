@@ -133,6 +133,7 @@ func getSQLFromFile(c echo.Context) (string, string, error) {
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
+// @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
@@ -702,6 +703,7 @@ type AuditTaskGroupResV1 struct {
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
 // @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+// @Description 4. file[input_zip_file]: it is zip file, sql will be parsed from it.
 // @Accept mpfd
 // @Produce json
 // @Tags task
@@ -711,6 +713,7 @@ type AuditTaskGroupResV1 struct {
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
+// @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.AuditTaskGroupResV1
 // @router /v1/task_groups/audit [post]
 func AuditTaskGroupV1(c echo.Context) error {
