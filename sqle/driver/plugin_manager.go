@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
 
@@ -128,6 +129,7 @@ func getClientConfig(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig {
 		Cmd:              exec.Command(cmdBase, cmdArgs...),
 		AllowedProtocols: []goPlugin.Protocol{goPlugin.ProtocolGRPC},
 		GRPCDialOptions:  common.GRPCDialOptions,
+		StartTimeout:     10 * time.Minute,
 	}
 }
 

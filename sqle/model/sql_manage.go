@@ -48,15 +48,21 @@ type SqlManage struct {
 
 	Assignees string `json:"assignees"`
 	Status    string `json:"status" gorm:"default:\"unhandled\""`
-	Remark    string `json:"remark" gorm:"type:varchar(512)"`
+	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
 
 	ProjectId string `json:"project_id"`
 
 	AuditPlanId uint       `json:"audit_plan_id"`
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`
+}
 
-	SqlAuditRecordId uint            `json:"sql_audit_record_id"`
-	SqlAuditRecord   *SQLAuditRecord `gorm:"foreignkey:SqlAuditRecordId"`
+type SqlManageSqlAuditRecord struct {
+	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"primary_key;auto_increment:false;"`
+	SqlAuditRecordId          uint   `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;"`
+}
+
+func (sm SqlManageSqlAuditRecord) TableName() string {
+	return "sql_manage_sql_audit_records"
 }
 
 func (s *Storage) GetSqlManageByFingerprintSourceInstNameSchemaMd5(projFpSourceInstSchemaMd5 string) (*SqlManage, bool, error) {
@@ -92,7 +98,7 @@ type SqlManageDetail struct {
 	Remark               string       `json:"remark"`
 	Assignees            *string      `json:"assignees"`
 	ApName               *string      `json:"ap_name"`
-	SqlAuditRecordID     *string      `json:"sql_audit_record_id"`
+	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
@@ -132,7 +138,7 @@ SELECT
 	sm.remark,
 	sm.assignees as assignees,
 	ap.name as ap_name,
-	sar.audit_record_id as sql_audit_record_id
+	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids
 
 {{- template "body" . -}} 
 
@@ -148,7 +154,8 @@ var sqlManageBodyTpl = `
 {{ define "body" }}
 
 FROM sql_manages sm
-         LEFT JOIN sql_audit_records sar ON sm.sql_audit_record_id = sar.id
+         LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
+         LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
 
 WHERE sm.project_id = :project_id
@@ -251,21 +258,20 @@ func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*S
 	args := make([]interface{}, 0, len(sqlManageList))
 	pattern := make([]string, 0, len(sqlManageList))
 	for _, sqlManage := range sqlManageList {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
-			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Status, sqlManage.Remark,
-			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
+			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
+			sqlManage.AuditPlanId, sqlManage.ProjectId)
 	}
 
 	raw := fmt.Sprintf(`
 INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
-                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name, status,
-                         remark, audit_plan_id, project_id, sql_audit_record_id)
+                         fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
+                         remark, audit_plan_id, project_id)
 		VALUES %s
 		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
                         audit_plan_id          = VALUES(audit_plan_id),
-                        sql_audit_record_id    = VALUES(sql_audit_record_id),
                         audit_level            = VALUES(audit_level),
                         audit_results          = VALUES(audit_results),
                         first_appear_timestamp = VALUES(first_appear_timestamp),
@@ -275,7 +281,7 @@ INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_te
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
+func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRecordID uint) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		batchSize := 50 // 每批处理的大小
 		total := len(sqlManageList)
@@ -292,21 +298,20 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
 			args := make([]interface{}, 0, len(batchSqlManageList))
 			pattern := make([]string, 0, len(batchSqlManageList))
 			for _, sqlManage := range batchSqlManageList {
-				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 				args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 					sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
 					sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-					sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.SqlAuditRecordId)
+					sqlManage.AuditPlanId, sqlManage.ProjectId)
 			}
 
 			raw := fmt.Sprintf(`
 			INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
 			                        fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-			                        remark, audit_plan_id, project_id, sql_audit_record_id)
+			                        remark, audit_plan_id, project_id)
 					VALUES %s
 					ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
 			                       audit_plan_id          = VALUES(audit_plan_id),
-			                       sql_audit_record_id    = VALUES(sql_audit_record_id),
 			                       audit_level            = VALUES(audit_level),
 			                       audit_results          = VALUES(audit_results),
 			                       fp_count 			   = VALUES(fp_count),
@@ -317,6 +322,25 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage) error {
 			err := tx.Exec(raw, args...).Error
 			if err != nil {
 				return err
+			}
+
+			if sqlAuditRecordID != 0 {
+				sqlAuditArgs := make([]interface{}, 0, len(batchSqlManageList))
+				sqlAuditPattern := make([]string, 0, len(batchSqlManageList))
+
+				for _, sqlManage := range batchSqlManageList {
+					sqlAuditPattern = append(sqlAuditPattern, "(?, ?)")
+					sqlAuditArgs = append(sqlAuditArgs, sqlManage.ProjFpSourceInstSchemaMd5, sqlAuditRecordID)
+				}
+
+				rawSql := fmt.Sprintf(`
+				INSERT INTO sql_manage_sql_audit_records (proj_fp_source_inst_schema_md5, sql_audit_record_id) 
+				 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
+
+				err := tx.Exec(rawSql, sqlAuditArgs...).Error
+				if err != nil {
+					return err
+				}
 			}
 
 			start += batchSize

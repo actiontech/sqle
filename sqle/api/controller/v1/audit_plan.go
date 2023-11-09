@@ -766,6 +766,24 @@ func GetAuditPlanReport(c echo.Context) error {
 	})
 }
 
+func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV1 {
+	filteredSQLs := []*AuditPlanSQLReqV1{}
+	for _, sql := range sqls {
+		var match bool
+		for _, blackSQL := range blackList {
+			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
+			match = strings.Contains(strings.ToUpper(sql.LastReceiveText), strings.ToUpper(blackSQL.FilterSQL))
+			if match {
+				break
+			}
+		}
+		if !match {
+			filteredSQLs = append(filteredSQLs, sql)
+		}
+	}
+	return filteredSQLs
+}
+
 type FullSyncAuditPlanSQLsReqV1 struct {
 	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
@@ -814,12 +832,21 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	l := log.NewEntry()
+	reqSQLs := req.SQLs
+	blackList, err := s.GetBlackListAuditPlanSQLs()
+	if err == nil {
+		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
+	} else {
+		l.Warnf("blacklist is not used, err:%v", err)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, false))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -857,11 +884,20 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	sqls, err := convertToModelAuditPlanSQL(c, ap, req.SQLs)
+	l := log.NewEntry()
+	reqSQLs := req.SQLs
+	blackList, err := s.GetBlackListAuditPlanSQLs()
+	if err == nil {
+		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
+	} else {
+		l.Warnf("blacklist is not used, err:%v", err)
+	}
+
+	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(log.NewEntry(), ap, sqls, true))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, true))
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
@@ -884,8 +920,11 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		}
 	}()
 
-	sqls := make([]*auditplan.SQL, len(reqSQLs))
-	for i, reqSQL := range reqSQLs {
+	sqls := make([]*auditplan.SQL, 0, len(reqSQLs))
+	for _, reqSQL := range reqSQLs {
+		if reqSQL.LastReceiveText == "" {
+			continue
+		}
 		fp := reqSQL.Fingerprint
 		// the caller may be written in a different language, such as (Java, Bash, Python), so the fingerprint is
 		// generated in different ways. In order to maintain th same fingerprint generation logic, we provide a way to
@@ -929,12 +968,12 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		if reqSQL.DBUser != "" {
 			info["db_user"] = reqSQL.DBUser
 		}
-		sqls[i] = &auditplan.SQL{
+		sqls = append(sqls, &auditplan.SQL{
 			Fingerprint: fp,
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
 			Schema:      reqSQL.Schema,
-		}
+		})
 	}
 	return sqls, nil
 }

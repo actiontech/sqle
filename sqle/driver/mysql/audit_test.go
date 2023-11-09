@@ -844,6 +844,115 @@ insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 	)
 }
 
+type testCase struct {
+	Name         string
+	SQL          string
+	ExpectResult *testResult
+}
+
+func TestDMLCheckHasJoinCondition(t *testing.T) {
+
+	casesWithResult := []testCase{
+		{
+			Name: "select with no join condition, trigger rule",
+			SQL: `
+				SELECT exist_tb_1.id, exist_tb_1.v1, exist_tb_2.v1    
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_2  
+				WHERE exist_tb_1.id > 10 
+				ORDER BY exist_tb_1.id
+				LIMIT 10;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckHasJoinCondition).
+				addResult(rulepkg.DMLCheckSelectWithOrderBy),
+		},
+		{
+			Name: "select with using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_1.v1, exist_tb_3.v3  
+				FROM exist_db.exist_tb_1  
+				JOIN exist_db.exist_tb_3 USING(id)
+				WHERE exist_tb_3.v3 > 5;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		}, {
+			Name: "select mix with where and on condition, does not trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_1.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select with where condition match another table, trigger rule",
+			SQL: `
+				SELECT DISTINCT exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 ON exist_tb_2.v1 = exist_tb_1.v1
+				JOIN exist_db.exist_tb_3 t3
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "select mix with where on using condition, does not trigger rule",
+			SQL: `
+				SELECT exist_tb_2.id, exist_tb_2.v2, exist_tb_1.v3  
+				FROM exist_db.exist_tb_2  
+				JOIN exist_db.exist_tb_1 t1 USING(v1)
+				JOIN exist_db.exist_tb_3 t3 ON t1.id = t3.id
+				WHERE exist_tb_2.user_id = t3.v1;
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex).
+				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+		},
+		{
+			Name: "update, does not trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1  
+				SET v1 = 'new_value'  
+				WHERE id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+		{
+			Name: "update without any join condition, trigger rule",
+			SQL: `
+				UPDATE exist_db.exist_tb_1 t1
+				JOIN exist_db.exist_tb_1 
+				SET t1.v1 = 'new_value'  
+				WHERE t1.id IN (SELECT id FROM exist_db.exist_tb_2 WHERE user_id > 10);
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery).
+				addResult(rulepkg.DMLCheckHasJoinCondition),
+		},
+		{
+			Name: "delete, does not trigger rule",
+			SQL: `
+				DELETE FROM exist_db.exist_tb_3 t3
+				WHERE t3.id IN (SELECT id FROM exist_db.exist_tb_1 WHERE v1 = 'some_value');
+			`,
+			ExpectResult: newTestResult().
+				addResult(rulepkg.DMLCheckWhereExistScalarSubquery).
+				addResult(rulepkg.DMLNotRecommendSubquery),
+		},
+	}
+	for _, c := range casesWithResult {
+		runDefaultRulesInspectCase(t, c.Name, DefaultMysqlInspect(), c.SQL, c.ExpectResult)
+	}
+}
 func TestCheckInvalidUpdate(t *testing.T) {
 	runDefaultRulesInspectCase(t, "update: ok", DefaultMysqlInspect(),
 		`
@@ -925,7 +1034,7 @@ update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -946,63 +1055,63 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult(),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckJoinHasOn),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnIsAmbiguousMessage, "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 }
 
@@ -1081,12 +1190,22 @@ func TestCheckWhereInvalid(t *testing.T) {
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "select_count: has no where condition", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "select_count: has where condition(1)", DefaultMysqlInspect(),
+		"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id=exist_tb_1.id) t LIMIT 999;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
+	)
+
+	runDefaultRulesInspectCase(t, "select_count: has where condition(2)", DefaultMysqlInspect(),
+		"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id>1) t LIMIT 999;",
+		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
+	)
+
+	runDefaultRulesInspectCase(t, "select_count: has no where condition(3)", DefaultMysqlInspect(),
 		"select count(*) from exist_db.exist_tb_1",
 		newTestResult(),
 	)
 
-	runDefaultRulesInspectCase(t, "select_from: has where condition", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "select_from: has where condition(4)", DefaultMysqlInspect(),
 		"select id from exist_db.exist_tb_1 where id > 1 limit 1;",
 		newTestResult().add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
 	)
@@ -1114,10 +1233,17 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "update: has where condition", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where id = 1;",
 		newTestResult())
+	runDefaultRulesInspectCase(t, "update: has where condition(1)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1=v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1=1)/100 where id = 1;",
+		newTestResult())
 
 	runDefaultRulesInspectCase(t, "update: no where condition(1)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1';",
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckUpdateOrDeleteHasWhere))
+
+	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
+		"update exist_db.exist_tb_1 set v1=v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE exist_tb_1.id=exist_tb_1.id)/100 where id = 1;",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 
 	runDefaultRulesInspectCase(t, "update: no where condition(2)", DefaultMysqlInspect(),
 		"update exist_db.exist_tb_1 set v1='v1' where 1=1 and 2=2;",
@@ -1134,6 +1260,10 @@ func TestCheckWhereInvalid(t *testing.T) {
 	runDefaultRulesInspectCase(t, "delete: has where condition", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1 where id = 1;",
 		newTestResult())
+	// FIXME 这里有WHERE条件 并且条件并非恒为TRUE但结果会触发DMLCheckWhereIsInvalid
+	runDefaultRulesInspectCase(t, "delete: has where condition(5)", DefaultMysqlInspect(),
+		"DELETE FROM exist_db.exist_tb_1 WHERE EXISTS (SELECT id FROM exist_db.exist_tb_2 WHERE v1='v1' AND exist_tb_1.id < 10);",
+		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid).addResult(rulepkg.DMLCheckWhereExistScalarSubquery).addResult(rulepkg.DMLNotRecommendSubquery))
 
 	runDefaultRulesInspectCase(t, "delete: no where condition(1)", DefaultMysqlInspect(),
 		"delete from exist_db.exist_tb_1;",
@@ -1630,6 +1760,20 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id),
 INDEX idx_1 (v1,id)
+)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
+`,
+		newTestResult(),
+	)
+
+	// 相关issue:https://github.com/actiontech/sqle/issues/1936
+	runSingleRuleInspectCase(rule, t, "create_table: String prefix error", DefaultMysqlInspect(),
+		`
+CREATE TABLE  if not exists exist_db.not_exist_tb_1 (
+id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+id_num varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
+PRIMARY KEY (id),
+INDEX idx_1 (id_num,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
@@ -2818,6 +2962,12 @@ select v1 from exist_db.exist_tb_1 where v2 <> "3";
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
 	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist <> ", DefaultMysqlInspect(),
+		`
+		select v1 from (select * from exist_db.exist_tb_1 where v2 <> "3") t;
+		`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistNot),
+	)
 	runSingleRuleInspectCase(rule, t, "select: check where exist not like ", DefaultMysqlInspect(),
 		`
 select v1 from exist_db.exist_tb_1 where v2 not like "%3%";
@@ -2990,6 +3140,18 @@ select v1 from exist_db.exist_tb_1 where v1 in (select v1 from  exist_db.exist_t
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
 	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (select v1 from  exist_db.exist_tb_2)) t;
+`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
+	)
+	runSingleRuleInspectCase(rule, t, "select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+select v1 from (select v1 from exist_db.exist_tb_1 a, exist_db.exist_tb_2 b  where a.v1 = b.v1) t;
+`,
+		newTestResult(),
+	)
 	runSingleRuleInspectCase(rule, t, "select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
 select a.v1 from exist_db.exist_tb_1 a, exist_db.exist_tb_2 b  where a.v1 = b.v1 ;
@@ -3006,10 +3168,22 @@ select v1 from exist_db.exist_tb_1 where v1 in (select v1 from exist_db.exist_tb
 `,
 		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
 	)
+	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+	select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (select v1 from exist_db.exist_tb_2 where v1 = ?)) t;
+		`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistScalarSubquery),
+	)
+	runSingleRuleInspectCase(rule, t, "[fp]select: check where exist scalar sub queries", DefaultMysqlInspect(),
+		`
+		select v1 from (select v1 from exist_db.exist_tb_1 where v1 in (?)) t;
+	`,
+		newTestResult(),
+	)
 	runSingleRuleInspectCase(rule, t, "[fp]select: passing the check where exist scalar sub queries", DefaultMysqlInspect(),
 		`
-select v1 from exist_db.exist_tb_1 where v1 in (?);
-`,
+		select v1 from exist_db.exist_tb_1 where v1 in (?);
+	`,
 		newTestResult(),
 	)
 }
@@ -3443,6 +3617,8 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a') t;`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a') t;`,
 
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE '%a';`,
@@ -3450,6 +3626,8 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '%a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 NOT LIKE '_a';`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a')/100;`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a')/100;`,
 
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a';`,
@@ -3457,6 +3635,7 @@ func TestCheckFuzzySearch(t *testing.T) {
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '%a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE '_a';`,
+		`DELETE FROM exist_db.exist_tb_1 USING (SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE '%a%') t WHERE t.id = exist_db.exist_tb_1.id;`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLCheckFuzzySearch))
 	}
@@ -3464,12 +3643,15 @@ func TestCheckFuzzySearch(t *testing.T) {
 	for _, sql := range []string{
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
 		`SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a___';`,
+		`SELECT * FROM (SELECT * FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE 'a_') t;`,
 
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a%';`,
 		`UPDATE exist_db.exist_tb_1 SET id = 1 WHERE v1 LIKE 'a___';`,
+		`UPDATE exist_db.exist_tb_1 SET v1 = v1 * (SELECT AVG(id) FROM exist_db.exist_tb_1 WHERE v1 NOT LIKE 'a_')/100;`,
 
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%';`,
 		`DELETE FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a____';`,
+		`DELETE FROM exist_db.exist_tb_1 USING (SELECT * FROM exist_db.exist_tb_1 WHERE v1 LIKE 'a%') t WHERE t.id = exist_db.exist_tb_1.id;`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckFuzzySearch].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
@@ -3825,6 +4007,35 @@ ALTER TABLE exist_db.exist_tb_1 ADD INDEX idx_v3(v3);
 
 func Test_DMLCheckJoinFieldType(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldType].Rule
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON t1.id = t2.id`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON CAST(t1.id AS FLOAT) = t2.id`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldType))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON CAST(t1.id AS FLOAT) = CONVERT(t2.id, FLOAT)`,
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1 LEFT JOIN 
+		(SELECT id FROM exist_tb_2 t2 JOIN exist_tb_1 t1 ON t2.id = t1.id WHERE t2.id < 100 ) t3 
+		ON CAST(t1.id AS FLOAT) = t3.id`,
+		newTestResult()) // 不支持子查询涉及多表作为临时表的来源,不会触发
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		`SELECT * FROM exist_tb_1 t1
+			LEFT JOIN (SELECT id FROM exist_tb_2 WHERE id < 100) t2
+			ON (t1.id,t1.v1) = (t2.v2,t2.id)`,
+		newTestResult()) // 连接键中包含多列,不会触发
 
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 
@@ -3925,6 +4136,50 @@ func Test_DMLCheckInQueryLimit(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
 		"update exist_tb_1 set v1 = 'v1_next' where id in (1,2,3,4,5,6,7)",
 		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (select id from exist_tb_1 where id in (1,2,3,4))",
+		newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c'))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select * from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c', 'd', 'e', 'f'))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue).addResult(rulepkg.DMLCheckInQueryNumber, 6, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"delete from exist_tb_1 where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c', 'd', 'e', 'f'))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue).addResult(rulepkg.DMLCheckInQueryNumber, 6, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"update exist_tb_1 set v1 = 'v1_next' where id in (select id from exist_tb_1 where id in (1,2,3,4,5,6,7) and v1 in ('a', 'b', 'c', 'd', 'e', 'f'))",
+		newTestResult().addResult(rulepkg.DMLCheckInQueryNumber, 7, paramValue).addResult(rulepkg.DMLCheckInQueryNumber, 6, paramValue))
+
+	runSingleRuleInspectCase(rule, t, "", DefaultMysqlInspect(),
+		"select 1 in (1,2,3,4,5,6);",
+		newTestResult())
 }
 
 func TestCheckIndexOption(t *testing.T) {
@@ -3933,34 +4188,39 @@ func TestCheckIndexOption(t *testing.T) {
 	assert.NoError(t, err)
 
 	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM (SELECT v1 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_3 add primary key (v1);", newTestResult())
 
 	inspect2 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("100.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM (SELECT v1 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect2, "alter table exist_tb_3 add unique(v1);", newTestResult())
 
 	inspect3 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v2"}).
-			AddRow("30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM (SELECT v2 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v2"}).AddRow("30.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect3, "alter table exist_tb_3 add index idx_c2(v2);",
 		newTestResult().addResult(rulepkg.DDLCheckIndexOption, "v2", 70))
 
 	inspect4 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v3 ) ) / COUNT( * ) * 100 AS v3 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v3"}).
-			AddRow("70.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v3 ) ) / COUNT( * ) * 100 AS v3 FROM (SELECT v3 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v3"}).AddRow("70.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect4, "alter table exist_tb_3 add fulltext(v3);", newTestResult())
 
 	inspect5 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1,COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM exist_tb_3")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1", "v2"}).
-			AddRow("100.0000", "30.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1,COUNT( DISTINCT ( v2 ) ) / COUNT( * ) * 100 AS v2 FROM (SELECT v1,v2 FROM exist_db.exist_tb_3 LIMIT 50000) t;`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect5, "alter table exist_tb_3 add index idx_c1_c2(v1,v2);", newTestResult())
 
 }
@@ -5872,46 +6132,38 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect1 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).AddRow("50.0000", "v1"),
+		)
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_6 where v1='10'", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1").AddRow("primary", "id"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("50.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("50.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult().add(driverV2.RuleLevelError, rulepkg.DMLCheckIndexSelectivity, "索引：v1，未超过区分度阈值：70，建议使用超过阈值的索引。"))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_6 where v1='10'", newTestResult())
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
-	handler.ExpectQuery(regexp.QuoteMeta("SHOW INDEX FROM exist_db.exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Key_name"}).AddRow("v1", "v1"))
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( v1 ) ) / COUNT( * ) * 100 AS v1 FROM exist_tb_6")).
-		WillReturnRows(sqlmock.NewRows([]string{"v1"}).
-			AddRow("80.0000"))
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
+
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
+		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
+			AddRow("80.0000", "v1"))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')", newTestResult())
 
 }
@@ -6385,8 +6637,9 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 	//	v2 varchar(255) character SET utf8mb4,
 	//	v3 int,
 	//	v4 int,
+	//	v5 int,
 	//	PRIMARY KEY (id) USING BTREE,
-	//	KEY idx_1 (v1,v2,v3),
+	//	KEY idx_1 (v1,v2,v3,v4),
 	//	UNIQUE KEY uniq_1 (v2,v3),
 	//	KEY idx_100 (v3)
 	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
@@ -6428,6 +6681,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6454,6 +6712,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		},
 		{
 			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v1 in(1,2)`,
 			TriggerRule: true,
 		},
@@ -6470,6 +6733,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-without-equal",
+			Sql:         `select * from exist_tb_9 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		{
@@ -6549,6 +6817,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6556,6 +6829,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v4 = 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v5 = 1`,
 			TriggerRule: true,
 		},
 		{
@@ -6571,6 +6849,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v4 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 > 1`,
 			TriggerRule: false,
 		},
 		{
@@ -6591,6 +6874,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "update-without-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		// delete
@@ -6625,6 +6913,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			TriggerRule: false,
 		},
 		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 > 1 and v2 > 1`,
 			TriggerRule: true,
@@ -6651,6 +6944,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		},
 		{
 			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 in(1,2)`,
 			TriggerRule: true,
 		},
@@ -6667,6 +6965,11 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v4 in(1,2)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 in(1,2)`,
 			TriggerRule: false,
 		},
 		// select union
@@ -6727,8 +7030,9 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 	//	v2 varchar(255) character SET utf8mb4,
 	//	v3 int,
 	//	v4 int,
+	//	v5 int,
 	//	PRIMARY KEY (id) USING BTREE,
-	//	KEY idx_1 (v1,v2,v3),
+	//	KEY idx_1 (v1,v2,v3, v4),
 	//	UNIQUE KEY uniq_1 (v2,v3),
 	//	KEY idx_100 (v3)
 	//)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
@@ -6758,6 +7062,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			Name:        "select-with-equal",
 			Sql:         `select * from exist_tb_9 where v4 = 1`,
 			TriggerRule: true,
+		},
+		{
+			Name:        "select-with-equal",
+			Sql:         `select * from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-without-equal",
@@ -6826,6 +7135,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			TriggerRule: true,
 		},
 		{
+			Name:        "update-with-equal",
+			Sql:         `update exist_tb_9 set v4 = 1 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v1 > 1 and v2 > 1`,
 			TriggerRule: false,
@@ -6872,6 +7186,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			TriggerRule: true,
 		},
 		{
+			Name:        "delete-with-equal",
+			Sql:         `delete from exist_tb_9 where v5 = 1`,
+			TriggerRule: false,
+		},
+		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v1 > 1 and v4 = 1`,
 			TriggerRule: false,
@@ -6890,6 +7209,11 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v4 > 1`,
 			TriggerRule: true,
+		},
+		{
+			Name:        "delete-without-equal",
+			Sql:         `delete from exist_tb_9 where v5 > 1`,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-without-equal",

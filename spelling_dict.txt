@@ -432,3 +432,10 @@ ccer
 tdsql
 unhandled
 mkdir
+msar
+recv
+xtra
+XtraBackup
+mysqldump
+datediff
+xxx

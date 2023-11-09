@@ -153,7 +153,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		// 2. from audit plan
 		//		- the audit plan may collect SQLs which plugins can not Parse.
 		//      - In these case, we pass the raw SQL to plugins, it's ok.
-		node, err := parse(l, p, executeSQL.Content)
+		node, err := parse(l, p, strings.TrimSpace(executeSQL.Content))
 		if err != nil {
 			return err
 		}

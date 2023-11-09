@@ -41,6 +41,7 @@ type AuditResult struct {
 	Level    string `json:"level" example:"warn"`
 	Message  string `json:"message" example:"避免使用不必要的内置函数md5()"`
 	RuleName string `json:"rule_name"`
+	DbType   string `json:"db_type"`
 }
 
 // @Summary 获取指定扫描任务的SQLs信息
@@ -111,6 +112,7 @@ func GetTaskSQLs(c echo.Context) error {
 				Level:    ar.Level,
 				Message:  ar.Message,
 				RuleName: ar.RuleName,
+				DbType:   task.DBType,
 			})
 		}
 

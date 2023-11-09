@@ -28,6 +28,44 @@ const (
 	apiV2 = "v2"
 )
 
+type restApi struct {
+	method        string
+	path          string
+	handlerFn     echo.HandlerFunc
+	middleWareFns []echo.MiddlewareFunc
+}
+
+var restApis []restApi
+
+func LoadRestApi(method string, path string, handlerFn echo.HandlerFunc, middleWareFns ...echo.MiddlewareFunc) {
+	restApis = append(restApis, restApi{
+		method:        method,
+		path:          path,
+		handlerFn:     handlerFn,
+		middleWareFns: middleWareFns,
+	})
+}
+
+func addCustomApis(e *echo.Group, apis []restApi) error {
+	for _, api := range apis {
+		switch api.method {
+		case http.MethodGet:
+			e.GET(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPost:
+			e.POST(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPatch:
+			e.PATCH(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodDelete:
+			e.DELETE(api.path, api.handlerFn, api.middleWareFns...)
+		case http.MethodPut:
+			e.PUT(api.path, api.handlerFn, api.middleWareFns...)
+		default:
+			return fmt.Errorf("unsupported http method")
+		}
+	}
+	return nil
+}
+
 // @title Sqle API Docs
 // @version 1.0
 // @description This is a sample server for dev.
@@ -110,6 +148,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.DELETE("/custom_rules/:rule_id", v1.DeleteCustomRule, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/custom_rules", v1.CreateCustomRule, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/custom_rules/:rule_id", v1.UpdateCustomRule, sqleMiddleware.AdminUserAllowed())
+		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.PATCH("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.UpdateCustomRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
 
 		// configurations
 		// v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
@@ -139,9 +179,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// v1Router.PATCH("/configurations/webhook", v1.UpdateWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 		// v1Router.GET("/configurations/webhook", v1.GetWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 		// v1Router.POST("/configurations/webhook/test", v1.TestWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
-
-		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge, sqleMiddleware.AdminUserAllowed())
-		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
@@ -267,6 +304,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/notify_config/test", v1.TestAuditPlanNotifyConfig)
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
+		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/export", v1.ExportAuditPlanReportV1)
 		// scanner token auth
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
@@ -365,6 +403,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	// 全局 workflow
 	v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1)
+	v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge)
+	v1Router.GET("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.GetCustomRuleKnowledge)
 
 	//rule
 	v1Router.GET("/rules", v1.GetRules)
@@ -401,8 +441,15 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	// sql audit
 	v1Router.POST("/sql_audit", v1.DirectAudit)
 	v1Router.POST("/audit_files", v1.DirectAuditFiles)
+	v2Router.POST("/audit_files", v2.DirectAuditFiles)
 	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 
+	// enterprise customized apis
+	err := addCustomApis(v1Router, restApis)
+	if err != nil {
+		log.Logger().Fatalf("failed to register custom api, %v", err)
+		return
+	}
 	// UI
 	e.File("/", "ui/index.html")
 	e.Static("/static", "ui/static")
