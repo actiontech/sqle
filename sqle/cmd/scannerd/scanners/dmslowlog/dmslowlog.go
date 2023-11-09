@@ -125,7 +125,6 @@ func (dm *DmSlowLog) Run(ctx context.Context) error {
 					QueryAt:     node.QueryAt,
 					DBUser:      node.DBUser,
 				}
-				dm.sqls = append(dm.sqls, scannerSql)
 				dm.sqlCh <- scannerSql
 			}
 		case <-ctx.Done():
@@ -140,12 +139,9 @@ func (dm *DmSlowLog) SQLs() <-chan scanners.SQL {
 }
 
 func (dm *DmSlowLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
+	dm.sqls = make([]scanners.SQL, len(sqls))
 	dm.sqls = append(dm.sqls, sqls...)
-	err := common.UploadForDmSlowLog(ctx, dm.sqls, dm.c, dm.apName)
-	if err != nil {
-		return err
-	}
-	return common.Audit(dm.c, dm.apName)
+	return common.UploadForDmSlowLog(ctx, dm.sqls, dm.c, dm.apName)
 }
 
 func parseSqlAndType(line string) *DmNode {
