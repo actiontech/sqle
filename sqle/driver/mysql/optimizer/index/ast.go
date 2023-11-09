@@ -1,8 +1,6 @@
 package index
 
 import (
-	"fmt"
-
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
@@ -12,9 +10,11 @@ import (
 
 type selectAST struct {
 	selectStmt *ast.SelectStmt
+	o          *Optimizer
+	tableName  string
 }
 
-func newSelectAST(sql string) (*selectAST, error) {
+func (o *Optimizer) newSelectAST(sql string, tableName string) (*selectAST, error) {
 	stmt, err := parser.New().ParseOneStmt(sql, "", "")
 	if err != nil {
 		return nil, errors.Wrap(err, "parse sql failed")
@@ -27,7 +27,8 @@ func newSelectAST(sql string) (*selectAST, error) {
 
 	return &selectAST{
 		selectStmt: s,
-	}, nil
+		o:          o,
+		tableName:  tableName}, nil
 }
 
 func (sa *selectAST) EqualPredicateColumnsInWhere() []string {
@@ -44,10 +45,40 @@ func (sa *selectAST) EqualPredicateColumnsInWhere() []string {
 
 		return false
 	}, sa.selectStmt.Where)
-
-	return columns
+	tableNameFromAST, err := extractTableNameFromAST(sa.selectStmt, sa.tableName)
+	if err != nil {
+		return columns
+	}
+	sortedColumns, err := sa.o.sortColumnsByCardinality(tableNameFromAST, columns)
+	if err != nil {
+		return columns
+	}
+	return sortedColumns
 }
+func (sa *selectAST) UnequalPredicateColumnsInWhere() []string {
+	var columns []string
 
+	util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		if boExpr, ok := expr.(*ast.BinaryOperationExpr); ok {
+			if boExpr.Op == opcode.GE || boExpr.Op == opcode.GT || boExpr.Op == opcode.LE || boExpr.Op == opcode.LT {
+				if col, ok := boExpr.L.(*ast.ColumnNameExpr); ok {
+					columns = append(columns, col.Name.Name.L)
+				}
+			}
+		}
+
+		return false
+	}, sa.selectStmt.Where)
+	tableNameFromAST, err := extractTableNameFromAST(sa.selectStmt, sa.tableName)
+	if err != nil {
+		return columns
+	}
+	sortedColumns, err := sa.o.sortColumnsByCardinality(tableNameFromAST, columns)
+	if err != nil {
+		return columns
+	}
+	return sortedColumns
+}
 func (sa *selectAST) ColumnsInOrderBy() []string {
 	var columns []string
 
@@ -59,15 +90,22 @@ func (sa *selectAST) ColumnsInOrderBy() []string {
 				// Before MySQL 8.0, they are parsed but ignored; index values are always
 				// stored in ascending order. It's OK to add sequence to column.
 				if item.Desc {
-					columns = append(columns, fmt.Sprintf("%s", col.Name.Name.L))
+					columns = append(columns, col.Name.Name.L)
 				} else {
 					columns = append(columns, col.Name.Name.L)
 				}
 			}
 		}
 	}
-
-	return columns
+	tableNameFromAST, err := extractTableNameFromAST(sa.selectStmt, sa.tableName)
+	if err != nil {
+		return columns
+	}
+	sortedColumns, err := sa.o.sortColumnsByCardinality(tableNameFromAST, columns)
+	if err != nil {
+		return columns
+	}
+	return sortedColumns
 }
 
 func (sa *selectAST) ColumnsInProjection() []string {
@@ -82,8 +120,15 @@ func (sa *selectAST) ColumnsInProjection() []string {
 			return nil
 		}
 	}
-
-	return columns
+	tableNameFromAST, err := extractTableNameFromAST(sa.selectStmt, sa.tableName)
+	if err != nil {
+		return columns
+	}
+	sortedColumns, err := sa.o.sortColumnsByCardinality(tableNameFromAST, columns)
+	if err != nil {
+		return columns
+	}
+	return sortedColumns
 }
 
 // GetCreateTableSQLs only support single table now

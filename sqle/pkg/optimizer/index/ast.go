@@ -10,6 +10,11 @@ type SelectAST interface {
 	// For example, the SQL: select * from t where a = 1 and b = 2;
 	// it returns []string{"a", "b"}.
 	EqualPredicateColumnsInWhere() []string
+	// EqualPredicateColumnsInWhere find the unequal predicate column in where clause.
+	//
+	// For example, the SQL: select * from t where a >= 1 and b <= 2;
+	// it returns []string{"a", "b"}.
+	UnequalPredicateColumnsInWhere() []string
 
 	// ColumnsInOrderBy find the columns in order by clause.
 	//

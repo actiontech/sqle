@@ -8,18 +8,19 @@
 // a scan of a thin slice of an index.
 //
 // The three-star index algorithm described in the following steps:
-//	1. An index deserves the first star if the index rows
-//	   relevant to the SELECT are next to each other or at least as
-//	   close to each other as possible. This minimizes the thickness
-//	   of the index slice that must be scanned.
-//	2. The second star is given if the index rows are in the right
-//	   order for the SELECT.
-//	3. If the index rows contain all the columns referred to
-//	   by the SELECT the index is given the third star.
-//	   This eliminates table access: The access path is index only.
+//  1. An index deserves the first star if the index rows
+//     relevant to the SELECT are next to each other or at least as
+//     close to each other as possible. This minimizes the thickness
+//     of the index slice that must be scanned.
+//  2. The second star is given if the index rows are in the right
+//     order for the SELECT.
+//  3. If the index rows contain all the columns referred to
+//     by the SELECT the index is given the third star.
+//     This eliminates table access: The access path is index only.
 //
 // Suppose we have a SQL:
-// 	SELECT CNO, FNAME
+//
+//	SELECT CNO, FNAME
 //	FROM CUST
 //	WHERE LNAME = :LNAME AND CITY = :CITY
 //	ORDER BY FNAME
@@ -46,10 +47,6 @@
 package index
 
 import (
-	"strings"
-
-	"github.com/pingcap/parser/ast"
-
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -72,45 +69,40 @@ func NewOptimizer(ctx *session.Context, opts ...optimizerOption) *Optimizer {
 	return optimizer
 }
 
-// Optimize try him best to give three-star index advice for ast.
-func (o *Optimizer) Optimize(ast SelectAST) (columns []string, err error) {
-	columns = append(ast.EqualPredicateColumnsInWhere(), ast.ColumnsInOrderBy()...)
+/*
+GiveThreeStarAdvice 三星索引建议
 
-	// todo 由于涉及的场景较复杂，暂时不检查select的字段
-	//columns = append(columns, ast.ColumnsInProjection()...)
+	三星索引要求:
+	1. 第一颗星:取出所有等值谓词中的列，作为索引开头的最开始的列
+	2. 第二颗星:添加排序列到索引的列中
+	3. 第三颗星:将查询语句剩余的列全部加入到索引中
+
+	其他要求:
+	1. 最后添加范围查询列
+	2. 每个星级添加的列按照索引区分度由高到低排序
+
+	注意:
+	1. 若索引列数达到索引列数阈值，依次舍弃第三颗星和第二颗星
+	2. 不支持根据索引区分度阈值舍弃等值列和排序列
+	3. 给出的三星索引列数不在这里限制 在外层有限制
+*/
+func (o *Optimizer) GiveThreeStarAdvice(ast SelectAST) (columns []string, err error) {
+	// 排序后的等值谓词中的列
+	equalColumnInWhere := ast.EqualPredicateColumnsInWhere()
+	// 排序后的排序列
+	columnInOrderBy := ast.ColumnsInOrderBy()
+	columns = append(equalColumnInWhere, columnInOrderBy...)
+	// 排序后的SELECT中所有列
+	columnInProjection := ast.ColumnsInProjection()
+	columns = append(columns, columnInProjection...)
+	// 排序后的范围查询列
+	unequalColumnInWhere := ast.UnequalPredicateColumnsInWhere()
+	if len(unequalColumnInWhere) > 0 {
+		columns = append(columns, unequalColumnInWhere[0])
+	}
+
 	columns = utils.RemoveDuplicate(columns)
-
-	tables := ast.GetSelectedTables()
-	if len(tables) <= 0 {
-		return utils.RemoveDuplicate(columns), nil
-	}
-
-	createTableStmt, exist, err := o.Context.GetCreateTableStmt(tables[0])
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return utils.RemoveDuplicate(columns), nil
-	}
-
-	for _, column := range columns {
-		if isColumnHasIndex(column, createTableStmt.Constraints) {
-			return []string{}, nil
-		}
-	}
 	return columns, nil
-}
-
-func isColumnHasIndex(column string, constraints []*ast.Constraint) bool {
-	for _, constraint := range constraints {
-		for _, key := range constraint.Keys {
-			if key.Column.Name.L == strings.ToLower(column) {
-				// 有索引的列可以通过检查
-				return true
-			}
-		}
-	}
-	return false
 }
 
 type optimizerOption func(*Optimizer)

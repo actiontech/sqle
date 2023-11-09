@@ -779,11 +779,14 @@ type column struct {
 }
 
 func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index name*/ float64, error) {
+	var columnSelectivityMap = make(map[string]float64, len(columns))
 	if c.e == nil {
-		return nil, nil
+		return columnSelectivityMap, nil
+	}
+	if len(columns) == 0 {
+		return columnSelectivityMap, nil
 	}
 	var selectivityValue float64
-	var columnSelectivityMap = make(map[string]float64, len(columns))
 
 	sqls := make([]string, 0, len(columns))
 	selectColumns := make([]string, 0, len(columns))
@@ -804,7 +807,7 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 		),
 	)
 	if err != nil {
-		return nil, err
+		return columnSelectivityMap, err
 	}
 	for _, resultMap := range results {
 		for k, v := range resultMap {
@@ -813,7 +816,7 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 			} else {
 				selectivityValue, err = strconv.ParseFloat(v.String, 64)
 				if err != nil {
-					return nil, err
+					return columnSelectivityMap, err
 				}
 			}
 			columnSelectivityMap[k] = selectivityValue

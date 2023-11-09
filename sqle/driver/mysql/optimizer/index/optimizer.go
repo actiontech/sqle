@@ -232,13 +232,13 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 		optimizeResult *OptimizeResult
 	)
 
-	optimizeResult, err = o.doSpecifiedOptimization(ctx, ss)
+	optimizeResult, err = o.doSpecifiedOptimization(ctx, tbl, ss)
 	if err != nil {
 		return nil, err
 	}
 
 	if optimizeResult == nil {
-		optimizeResult, err = o.doGeneralOptimization(ctx, ss)
+		optimizeResult, err = o.doGeneralOptimization(ctx, tbl, ss)
 		if err != nil {
 			return nil, err
 		}
@@ -263,25 +263,6 @@ func (o *Optimizer) optimizeSingleTable(ctx context.Context, tbl string, ss *ast
 
 	o.l.Infof("table:%s, indexed columns:%v, reason:%s", optimizeResult.TableName, optimizeResult.IndexedColumns, optimizeResult.Reason)
 
-	if len(optimizeResult.IndexedColumns) > 1 {
-		tableNameFromAST, err := extractTableNameFromAST(ss, tbl)
-		if err != nil {
-			return nil, errors.Wrap(err, "extract table name from AST")
-		}
-
-		rowCount, err := o.GetTableRowCount(tableNameFromAST)
-		if err != nil {
-			return nil, errors.Wrap(err, "get table row count when optimize")
-		}
-
-		if rowCount < o.calculateCardinalityMaxRow {
-			optimizeResult.IndexedColumns, err = o.sortColumnsByCardinality(tableNameFromAST, optimizeResult.IndexedColumns)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	return optimizeResult, nil
 }
 
@@ -294,7 +275,7 @@ func (o *Optimizer) optimizeJoinTable(tbl string) *OptimizeResult {
 }
 
 // doSpecifiedOptimization optimize single table select.
-func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
+func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, tableName string, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
 	if where := selectStmt.Where; where != nil {
 		if boe, ok := where.(*ast.BinaryOperationExpr); ok {
 			// check function in select stmt
@@ -342,6 +323,16 @@ func (o *Optimizer) doSpecifiedOptimization(ctx context.Context, selectStmt *ast
 						cols = append(cols, cne.Name.Name.L)
 					}
 				}
+			}
+		}
+		if len(cols) > 1 {
+			tableNameFromAST, err := extractTableNameFromAST(selectStmt, tableName)
+			if err != nil {
+				return nil, nil
+			}
+			cols, err = o.sortColumnsByCardinality(tableNameFromAST, cols)
+			if err != nil {
+				return nil, nil
 			}
 		}
 		if len(cols) > 0 {
@@ -400,7 +391,7 @@ func (o *Optimizer) optimizeOnFunctionCallExpression(tbl string, fce *ast.FuncCa
 }
 
 // doGeneralOptimization optimize single table select.
-func (o *Optimizer) doGeneralOptimization(ctx context.Context, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
+func (o *Optimizer) doGeneralOptimization(ctx context.Context, tbl string, selectStmt *ast.SelectStmt) (*OptimizeResult, error) {
 	generalOptimizer := indexoptimizer.NewOptimizer(o.Context)
 
 	restoredSQL, err := restoreSelectStmt(selectStmt)
@@ -408,12 +399,12 @@ func (o *Optimizer) doGeneralOptimization(ctx context.Context, selectStmt *ast.S
 		return nil, err
 	}
 
-	sa, err := newSelectAST(restoredSQL)
+	sa, err := o.newSelectAST(restoredSQL, tbl)
 	if err != nil {
 		return nil, err
 	}
 
-	indexedColumns, err := generalOptimizer.Optimize(sa)
+	indexedColumns, err := generalOptimizer.GiveThreeStarAdvice(sa)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +424,7 @@ func (o *Optimizer) doGeneralOptimization(ctx context.Context, selectStmt *ast.S
 
 type cardinality struct {
 	columnName  string
-	cardinality int
+	cardinality float64
 }
 
 type cardinalities []cardinality
@@ -455,16 +446,16 @@ func (o *Optimizer) sortColumnsByCardinality(tn *ast.TableName, indexedColumns [
 		return nil, errors.New("table ast not found when sort columns by cardinality")
 	}
 
-	cardinalitySlice := make(cardinalities, len(indexedColumns))
-	for i, column := range indexedColumns {
-		c, err := o.GetColumnCardinality(tn, column)
-		if err != nil {
-			return nil, errors.Wrap(err, "get column cardinality")
-		}
-		cardinalitySlice[i] = cardinality{
-			columnName:  column,
-			cardinality: c,
-		}
+	cardinalitySlice := make(cardinalities, 0, len(indexedColumns))
+	columnSelectivity, err := o.Context.GetSelectivityOfColumns(tn, indexedColumns)
+	if err != nil {
+		return nil, errors.Wrap(err, "get column cardinality")
+	}
+	for key, value := range columnSelectivity {
+		cardinalitySlice = append(cardinalitySlice, cardinality{
+			columnName:  key,
+			cardinality: value,
+		})
 	}
 
 	o.l.Debugf("table %s column cardinalities(before sort): %+v", tn.Name, cardinalitySlice)
@@ -493,10 +484,10 @@ func (o *Optimizer) needOptimize(record *executor.ExplainRecord) bool {
 	if record.Type == executor.ExplainRecordAccessTypeAll {
 		return true
 	}
-
 	// Index-only scan: select key_part2 from t1 where key_part3 = 'a'
 	// This SQL will scan all rows of index idx_composite. It's a little better than previous case.
 	if record.Type == executor.ExplainRecordAccessTypeIndex {
+		// TODO 判断使用的索引是否是唯一索引
 		return true
 	}
 

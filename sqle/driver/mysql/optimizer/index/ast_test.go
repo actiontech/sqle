@@ -21,9 +21,11 @@ func Test_selectAST(t *testing.T) {
 		{"select * from t", nil, nil, nil},
 		{"select t.id = 1 from t where a > 1", nil, nil, nil},
 	}
+	var o *Optimizer
 	for i, tt := range tests {
+		//! 需要调用session.Context
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			sa, err := newSelectAST(tt.input)
+			sa, err := o.newSelectAST(tt.input, "t")
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orderBy, sa.ColumnsInOrderBy())
 			assert.Equal(t, tt.whereEqual, sa.EqualPredicateColumnsInWhere())
