@@ -7300,6 +7300,7 @@ paths:
       - description: project name
         in: query
         name: filter_project
+        required: true
         type: string
       responses:
         "200":
