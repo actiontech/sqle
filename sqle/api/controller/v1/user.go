@@ -550,7 +550,7 @@ import (
 // }
 
 type UserTipsReqV1 struct {
-	FilterProject string `json:"filter_project" query:"filter_project"`
+	FilterProject string `json:"filter_project" query:"filter_project" valid:"required"`
 }
 
 type UserTipResV1 struct {
@@ -568,7 +568,7 @@ type GetUserTipsResV1 struct {
 // @Tags user
 // @Id getUserTipListV1
 // @Security ApiKeyAuth
-// @Param filter_project query string false "project name"
+// @Param filter_project query string true "project name"
 // @Success 200 {object} v1.GetUserTipsResV1
 // @router /v1/user_tips [get]
 func GetUserTips(c echo.Context) error {
@@ -576,7 +576,7 @@ func GetUserTips(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.FilterProject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -5917,7 +5917,8 @@ var doc = `{
                         "type": "string",
                         "description": "project name",
                         "name": "filter_project",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
