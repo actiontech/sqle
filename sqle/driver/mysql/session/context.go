@@ -851,7 +851,7 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 	}
 	columnSelectivity, err := c.getSelectivityByColumn(columns)
 	if err != nil {
-		return nil, fmt.Errorf("get selectivity by index error: %v", err)
+		return nil, fmt.Errorf("get selectivity by column error: %v", err)
 	}
 	for indexName, selectivity := range columnSelectivity {
 		c.addSelectivity(schemaName, tableName, indexName, selectivity)
