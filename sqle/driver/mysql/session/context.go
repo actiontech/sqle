@@ -743,6 +743,10 @@ func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string
 	if len(indexNames) == 0 || stmt == nil {
 		return nil, nil
 	}
+	if exist, _ := c.IsTableExist(stmt); !exist {
+		// would not get selectivity if table not exist
+		return nil, nil
+	}
 	schemaName := c.GetSchemaName(stmt)
 	tableName := stmt.Name.L
 	cachedIndexSelectivity := make(map[string]float64)
@@ -824,6 +828,10 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 
 func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
 	if stmt == nil || len(indexColumns) == 0 {
+		return nil, nil
+	}
+	if exist, _ := c.IsTableExist(stmt); !exist {
+		// would not get selectivity if table not exist
 		return nil, nil
 	}
 	schemaName := c.GetSchemaName(stmt)
