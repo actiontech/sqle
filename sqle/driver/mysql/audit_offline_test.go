@@ -102,6 +102,11 @@ func TestCheckWhereInvalidOffline(t *testing.T) {
 			noResult,
 		},
 		{
+			"select_from: has where condition",
+			"select id from exist_db.exist_tb_1;",
+			whereIsInvalid,
+		},
+		{
 			"select_from: no where condition(1)",
 			"select id from exist_db.exist_tb_1;",
 			whereIsInvalid,
@@ -129,7 +134,7 @@ func TestCheckWhereInvalidOffline(t *testing.T) {
 		{
 			"select_from: no where condition(6)",
 			"select id from (select * from exist_db.exist_tb_1 where exist_tb_1.id>1) t;",
-			noResult,
+			whereIsInvalid,
 		},
 		// UPDATE
 		{
@@ -199,6 +204,52 @@ func TestCheckWhereInvalidOffline(t *testing.T) {
 		{
 			"delete: has where condition(6)",
 			"delete from exist_db.exist_tb_1 USING (SELECT * FROM exist_db.exist_tb_1 WHERE exist_tb_1.id=exist_tb_1.id) t WHERE t.id > 10;",
+			whereIsInvalid,
+		},
+		// exists
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2 t2 where t1.id=t2.id);",
+			noResult,
+		},
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2 t2 where 1=1);",
+			whereIsInvalid,
+		},
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2);",
+			whereIsInvalid,
+		},
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2 t2 where exists (select 1 from exist_db.exist_db_3 t3 where t1.id=t2.id and t2.id=t3.id));",
+			noResult,
+		},
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2 t2 where exists (select 1 from exist_db.exist_db_3 t3 where 1=1));",
+			whereIsInvalid,
+		},
+		{
+			"use exists",
+			"select * from exist_db.exist_tb_1 t1 where exists (select 1 from exist_db.exist_tb_2 t2 where exists (select 1 from exist_db.exist_db_3));",
+			whereIsInvalid,
+		},
+		{
+			"use not exists",
+			"select * from exist_db.exist_tb_1 t1 where not exists (select 1 from exist_db.exist_tb_2 t2 where t1.id=t2.id);",
+			noResult,
+		},
+		{
+			"use not exists",
+			"select * from exist_db.exist_tb_1 t1 where not exists (select 1 from exist_db.exist_tb_2 t2 where 1=1);",
+			whereIsInvalid,
+		},
+		{
+			"use not exists",
+			"select * from exist_db.exist_tb_1 t1 where not exists (select 1 from exist_db.exist_tb_2);",
 			whereIsInvalid,
 		},
 	}
