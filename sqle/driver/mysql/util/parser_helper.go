@@ -279,6 +279,9 @@ func WhereStmtHasOneColumn(where ast.ExprNode) bool {
 		case *ast.ColumnNameExpr:
 			hasColumn = true
 			return true
+		case *ast.ExistsSubqueryExpr:
+			hasColumn = true
+			return true
 		case *ast.BinaryOperationExpr:
 			col1, ok := x.R.(*ast.ColumnNameExpr)
 			if !ok {
