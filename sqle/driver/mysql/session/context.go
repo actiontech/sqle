@@ -745,7 +745,7 @@ func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string
 	}
 	if exist, _ := c.IsTableExist(stmt); !exist {
 		// would not get selectivity if table not exist
-		return nil, nil
+		return nil, fmt.Errorf("table not exist")
 	}
 	schemaName := c.GetSchemaName(stmt)
 	tableName := stmt.Name.L
@@ -832,7 +832,7 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 	}
 	if exist, _ := c.IsTableExist(stmt); !exist {
 		// would not get selectivity if table not exist
-		return nil, nil
+		return nil, fmt.Errorf("table not exist")
 	}
 	schemaName := c.GetSchemaName(stmt)
 	tableName := stmt.Name.L

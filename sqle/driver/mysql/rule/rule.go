@@ -5258,7 +5258,8 @@ func checkIndexOption(input *RuleHandlerInput) error {
 
 	columnSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(tableName, indexColumns)
 	if err != nil {
-		return err
+		log.NewEntry().Errorf("get selectivity of columns failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
 	}
 
 	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
@@ -6676,6 +6677,7 @@ func checkIndexSelectivity(input *RuleHandlerInput) error {
 				}
 				indexSelectivityMap, err := input.Ctx.GetSelectivityOfIndex(tableName, indexes)
 				if err != nil {
+					log.NewEntry().Errorf("get selectivity of index failed, sqle: %v, error: %v", input.Node.Text(), err)
 					continue
 				}
 				max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
