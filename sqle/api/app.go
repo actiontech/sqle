@@ -99,10 +99,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
-	e.GET("/v1/basic_info", v1.GetSQLEInfo)
-	e.GET("/v1/static/logo", v1.GetLogo)
-
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord())
 	v2Router := e.Group(apiV2)
@@ -121,7 +117,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.PATCH("/custom_rules/:rule_id", v1.UpdateCustomRule, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.UpdateCustomRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
-
+		// configurations
 		v1Router.GET("/configurations/ding_talk", v1.GetDingTalkConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/configurations/ding_talk", v1.UpdateDingTalkConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/ding_talk/test", v1.TestDingTalkConfigV1, sqleMiddleware.AdminUserAllowed())
@@ -131,8 +127,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/configurations/license", v1.SetLicense, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/license/check", v1.CheckLicense, sqleMiddleware.AdminUserAllowed())
-		v1Router.POST("/configurations/personalise/logo", v1.UploadLogo, sqleMiddleware.AdminUserAllowed())
-		v1Router.PATCH("/configurations/personalise", v1.UpdatePersonaliseConfig, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
@@ -141,13 +135,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/statistic/workflows/rejected_percent_group_by_creator", v1.GetWorkflowRejectedPercentGroupByCreatorV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/counts", v1.GetWorkflowCountsV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/duration_of_waiting_for_audit", v1.GetWorkflowDurationOfWaitingForAuditV1, sqleMiddleware.AdminUserAllowed())
-		//v1Router.GET("/statistic/workflows/duration_of_waiting_for_execution", v1.GetWorkflowDurationOfWaitingForExecutionV1, AdminUserAllowed())
-		//v1Router.GET("/statistic/workflows/pass_percent", v1.GetWorkflowPassPercentV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/audit_pass_percent", v1.GetWorkflowAuditPassPercentV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/each_day_counts", v1.GetWorkflowCreatedCountsEachDayV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/status_count", v1.GetWorkflowStatusCountV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/instance_type_percent", v1.GetWorkflowPercentCountedByInstanceTypeV1, sqleMiddleware.AdminUserAllowed())
-		v1Router.GET("/static/instance_logo", v1.GetInstanceTypeLogo)
 
 		// operation record
 		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, sqleMiddleware.AdminUserAllowed())
@@ -155,8 +146,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
 
-		// statistic
-		v1Router.GET("/projects/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
 		// 内部调用
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.AdminUserAllowed())
@@ -169,11 +158,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectAdminRouter.POST("/:project_name/audit_whitelist", v1.CreateAuditWhitelist)
 		v1ProjectAdminRouter.PATCH("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById)
 		v1ProjectAdminRouter.DELETE("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById)
+
 		// rule template
 		v1ProjectAdminRouter.POST("/:project_name/rule_templates", v1.CreateProjectRuleTemplate)
 		v1ProjectAdminRouter.PATCH("/:project_name/rule_templates/:rule_template_name/", v1.UpdateProjectRuleTemplate)
 		v1ProjectAdminRouter.DELETE("/:project_name/rule_templates/:rule_template_name/", v1.DeleteProjectRuleTemplate)
 		v1ProjectAdminRouter.POST("/:project_name/rule_templates/:rule_template_name/clone", v1.CloneProjectRuleTemplate)
+
 		// workflow template
 		v1ProjectAdminRouter.PATCH("/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
 	}
@@ -191,8 +182,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/statistic/role_user", v1.GetRoleUserCountV1)
 		v1ProjectRouter.GET("/:project_name/statistic/project_score", v1.GetProjectScoreV1)
 		v1ProjectRouter.GET("/:project_name/statistic/instance_health", v1.GetInstanceHealthV1)
+		v1ProjectRouter.GET("/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
+
 		// audit whitelist
 		v1ProjectRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
+
 		// instance
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 		v1ProjectRouter.POST("/:project_name/instances/connections", v1.BatchCheckInstanceConnections)
@@ -201,13 +195,16 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/rules", v1.GetInstanceRules)
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
+
 		// rule template
 		v1ProjectRouter.GET("/:project_name/rule_templates/:rule_template_name/", v1.GetProjectRuleTemplate)
 		v1ProjectRouter.GET("/:project_name/rule_templates", v1.GetProjectRuleTemplates)
 		v1ProjectRouter.GET("/:project_name/rule_template_tips", v1.GetProjectRuleTemplateTips)
 		v1ProjectRouter.GET("/:project_name/rule_templates/:rule_template_name/export", v1.ExportProjectRuleTemplateFile)
+
 		// workflow template
 		v1ProjectRouter.GET("/:project_name/workflow_template", v1.GetWorkflowTemplate)
+
 		// workflow
 		v1ProjectRouter.POST("/:project_name/workflows", DeprecatedBy(apiV2))
 		v1ProjectRouter.GET("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
@@ -225,6 +222,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.PUT("/:project_name/workflows/:workflow_name/tasks/:task_id/schedule", DeprecatedBy(apiV2))
 		v1ProjectRouter.PATCH("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
 		v1ProjectRouter.GET("/:project_name/workflows/exports", v1.ExportWorkflowV1)
+
 		// audit plan; 智能扫描任务
 		v1ProjectRouter.POST("/:project_name/audit_plans", v1.CreateAuditPlan)
 		v1ProjectRouter.GET("/:project_name/audit_plans", v1.GetAuditPlans)
@@ -241,6 +239,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v1.GetAuditPlanAnalysisData)
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 		v1ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/export", v1.ExportAuditPlanReportV1)
+
 		// scanner token auth
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
@@ -277,64 +276,66 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.POST("/:project_name/workflows/:workflow_id/tasks/execute", v2.ExecuteTasksOnWorkflowV2)
 		v2ProjectRouter.PUT("/:project_name/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
 		v2ProjectRouter.PATCH("/:project_name/workflows/:workflow_id/", v2.UpdateWorkflowV2)
+
+		// instance
+		v2ProjectRouter.GET("/:project_name/instances/:instance_name/", v2.GetInstance)
 		// audit plan; 智能扫描任务
 		v2ProjectRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 	}
 
-	v1Router.GET("/user_tips", v1.GetUserTips)
+	{
+		v1Router.GET("/user_tips", v1.GetUserTips)
 
-	v2Router.GET("/projects/:project_name/instances/:instance_name/", v2.GetInstance)
+		// 全局 rule template
+		v1Router.GET("/rule_templates", v1.GetRuleTemplates)
+		v1Router.GET("/rule_template_tips", v1.GetRuleTemplateTips)
+		v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
 
-	// 全局 rule template
-	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
-	v1Router.GET("/rule_template_tips", v1.GetRuleTemplateTips)
-	v1Router.GET("/rule_templates/:rule_template_name/", v1.GetRuleTemplate)
+		v1Router.POST("/rule_templates/parse", v1.ParseProjectRuleTemplateFile)
 
-	v1Router.POST("/rule_templates/parse", v1.ParseProjectRuleTemplateFile)
+		// 全局 workflow
+		v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1)
+		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge)
+		v1Router.GET("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.GetCustomRuleKnowledge)
 
-	// 全局 workflow
-	v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1)
-	v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge)
-	v1Router.GET("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.GetCustomRuleKnowledge)
+		//rule
+		v1Router.GET("/rules", v1.GetRules)
+		v1Router.GET("/custom_rules", v1.GetCustomRules)
+		v1Router.GET("/custom_rules/:rule_id", v1.GetCustomRule)
+		v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
 
-	//rule
-	v1Router.GET("/rules", v1.GetRules)
-	v1Router.GET("/custom_rules", v1.GetCustomRules)
-	v1Router.GET("/custom_rules/:rule_id", v1.GetCustomRule)
-	v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
+		// task
+		v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
+		v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
+		v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
+		v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
+		v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
+		v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
+		v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
+		v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
+		v2Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v2.GetTaskAnalysisData)
+		v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
+		v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 
-	// task
-	v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
-	v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
-	v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
-	v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
-	v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
-	v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
-	v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
-	v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
-	v2Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v2.GetTaskAnalysisData)
-	v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
-	v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
+		// dashboard
+		v1Router.GET("/dashboard", v1.Dashboard)
 
-	// dashboard
-	v1Router.GET("/dashboard", v1.Dashboard)
-	// v1Router.GET("/dashboard/project_tips", v1.DashboardProjectTipsV1)
+		// configurations
+		v1Router.GET("/configurations/drivers", v1.GetDrivers)
+		v2Router.GET("/configurations/drivers", v2.GetDrivers)
 
-	// configurations
-	v1Router.GET("/configurations/drivers", v1.GetDrivers)
-	v2Router.GET("/configurations/drivers", v2.GetDrivers)
+		// audit plan
+		v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
+		v1Router.GET("/audit_plan_types", v1.GetAuditPlanTypes)
 
-	// audit plan
-	v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
-	v1Router.GET("/audit_plan_types", v1.GetAuditPlanTypes)
-
-	// sql audit
-	v1Router.POST("/sql_audit", v1.DirectAudit)
-	v1Router.POST("/audit_files", v1.DirectAuditFiles)
-	v2Router.POST("/audit_files", v2.DirectAuditFiles)
-	v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
+		// sql audit
+		v1Router.POST("/sql_audit", v1.DirectAudit)
+		v1Router.POST("/audit_files", v1.DirectAuditFiles)
+		v2Router.POST("/audit_files", v2.DirectAuditFiles)
+		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
+	}
 
 	// enterprise customized apis
 	err := addCustomApis(v1Router, restApis)

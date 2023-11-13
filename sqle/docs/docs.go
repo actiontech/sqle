@@ -113,24 +113,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/basic_info": {
-            "get": {
-                "description": "get sqle basic info",
-                "tags": [
-                    "global"
-                ],
-                "summary": "获取 sqle 基本信息",
-                "operationId": "getSQLEInfoV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSQLEInfoResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/configurations/ding_talk": {
             "get": {
                 "security": [
@@ -347,75 +329,6 @@ var doc = `{
                         "description": "server info",
                         "schema": {
                             "type": "file"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/configurations/personalise": {
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update personalise config",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "更新个性化设置",
-                "operationId": "personalise",
-                "parameters": [
-                    {
-                        "description": "personalise req",
-                        "name": "conf",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.PersonaliseReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/configurations/personalise/logo": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "upload logo",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "上传Logo",
-                "operationId": "uploadLogo",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "logo file",
-                        "name": "logo",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.UploadLogoResV1"
                         }
                     }
                 }
@@ -5070,64 +4983,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/static/instance_logo": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get instance type logo",
-                "tags": [
-                    "instance"
-                ],
-                "summary": "获取实例类型logo",
-                "operationId": "getInstanceTypeLogo",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "instance type",
-                        "name": "instance_type",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "get instance type logo",
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/static/logo": {
-            "get": {
-                "description": "get logo",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "获取logo",
-                "operationId": "getLogo",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "timestamp",
-                        "name": "timestamp",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "get logo",
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -8959,37 +8814,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSQLEInfoResDataV1": {
-            "type": "object",
-            "properties": {
-                "logo_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.GetSQLEInfoResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.GetSQLEInfoResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetSqlAverageExecutionTimeResV1": {
             "type": "object",
             "properties": {
@@ -9799,14 +9623,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
                     }
-                }
-            }
-        },
-        "v1.PersonaliseReqV1": {
-            "type": "object",
-            "properties": {
-                "title": {
-                    "type": "string"
                 }
             }
         },
@@ -10790,31 +10606,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkFlowStepTemplateReqV1"
                     }
-                }
-            }
-        },
-        "v1.UploadLogoResDataV1": {
-            "type": "object",
-            "properties": {
-                "logo_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.UploadLogoResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.UploadLogoResDataV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
