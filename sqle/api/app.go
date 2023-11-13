@@ -99,18 +99,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
-	// e.POST("/v1/login", v1.LoginV1)
-	// e.POST("/v2/login", v2.LoginV2)
-
 	// the operation of obtaining the basic information of the platform should be for all users, not the users who log in to the platform
 	e.GET("/v1/basic_info", v1.GetSQLEInfo)
 	e.GET("/v1/static/logo", v1.GetLogo)
-
-	// oauth2 interface does not require login authentication
-	// e.GET("/v1/configurations/oauth2/tips", v1.GetOauth2Tips)
-	// e.GET("/v1/oauth2/link", v1.Oauth2Link)
-	// e.GET("/v1/oauth2/callback", v1.Oauth2Callback)
-	// e.POST("/v1/oauth2/user/bind", v1.BindOauth2User)
 
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord())
@@ -119,26 +110,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	// v1 admin api, just admin user can access.
 	{
-		// user
-		// v1Router.GET("/users", v1.GetUsers, AdminUserAllowed())
-		// v1Router.POST("/users", v1.CreateUser, AdminUserAllowed())
-		// v1Router.GET("/users/:user_name/", v1.GetUser, AdminUserAllowed())
-		// v1Router.PATCH("/users/:user_name/", v1.UpdateUser, AdminUserAllowed())
-		// v1Router.DELETE("/users/:user_name/", v1.DeleteUser, AdminUserAllowed())
-		// v1Router.PATCH("/users/:user_name/password", v1.UpdateOtherUserPassword, AdminUserAllowed())
-
-		// user_group
-		// v1Router.POST("/user_groups", v1.CreateUserGroup, AdminUserAllowed())
-		// v1Router.GET("/user_groups", v1.GetUserGroups, AdminUserAllowed())
-		// v1Router.DELETE("/user_groups/:user_group_name/", v1.DeleteUserGroup, AdminUserAllowed())
-		// v1Router.PATCH("/user_groups/:user_group_name/", v1.UpdateUserGroup, AdminUserAllowed())
-
-		// role
-		// v1Router.GET("/roles", v1.GetRoles, AdminUserAllowed())
-		// v1Router.POST("/roles", v1.CreateRole, AdminUserAllowed())
-		// v1Router.PATCH("/roles/:role_name/", v1.UpdateRole, AdminUserAllowed())
-		// v1Router.DELETE("/roles/:role_name/", v1.DeleteRole, AdminUserAllowed())
-
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/rule_templates/:rule_template_name/clone", v1.CloneRuleTemplate, sqleMiddleware.AdminUserAllowed())
@@ -151,42 +122,23 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.PATCH("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.UpdateRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.UpdateCustomRuleKnowledgeV1, sqleMiddleware.AdminUserAllowed())
 
-		// configurations
-		// v1Router.GET("/configurations/ldap", v1.GetLDAPConfiguration, AdminUserAllowed())
-		// v1Router.PATCH("/configurations/ldap", v1.UpdateLDAPConfiguration, AdminUserAllowed())
-		// v1Router.GET("/configurations/smtp", v1.GetSMTPConfiguration, sqleMiddleware.AdminUserAllowed())
-		// v1Router.POST("/configurations/smtp/test", v1.TestSMTPConfigurationV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.PATCH("/configurations/smtp", v1.UpdateSMTPConfiguration, sqleMiddleware.AdminUserAllowed())
-		// v1Router.GET("/configurations/wechat", v1.GetWeChatConfiguration, sqleMiddleware.AdminUserAllowed())
-		// v1Router.PATCH("/configurations/wechat", v1.UpdateWeChatConfigurationV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.POST("/configurations/wechat/test", v1.TestWeChatConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/ding_talk", v1.GetDingTalkConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/configurations/ding_talk", v1.UpdateDingTalkConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/ding_talk/test", v1.TestDingTalkConfigV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.GET("/configurations/feishu", v1.GetFeishuConfigurationV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.PATCH("/configurations/feishu", v1.UpdateFeishuConfigurationV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.POST("/configurations/feishu/test", v1.TestFeishuConfigV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/license", v1.GetLicense, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/license", v1.SetLicense, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/license/check", v1.CheckLicense, sqleMiddleware.AdminUserAllowed())
-		// v1Router.GET("/configurations/oauth2", v1.GetOauth2Configuration, AdminUserAllowed())
-		// v1Router.PATCH("/configurations/oauth2", v1.UpdateOauth2Configuration, AdminUserAllowed())
 		v1Router.POST("/configurations/personalise/logo", v1.UploadLogo, sqleMiddleware.AdminUserAllowed())
 		v1Router.PATCH("/configurations/personalise", v1.UpdatePersonaliseConfig, sqleMiddleware.AdminUserAllowed())
-		// v1Router.PATCH("/configurations/webhook", v1.UpdateWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
-		// v1Router.GET("/configurations/webhook", v1.GetWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
-		// v1Router.POST("/configurations/webhook/test", v1.TestWorkflowWebHookConfig, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetSqlAverageExecutionTimeV1, sqleMiddleware.AdminUserAllowed())
-		// v1Router.GET("/statistic/instances/sql_execution_fail_percent", v1.GetSqlExecutionFailPercentV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/rejected_percent_group_by_creator", v1.GetWorkflowRejectedPercentGroupByCreatorV1, sqleMiddleware.AdminUserAllowed())
-		//v1Router.GET("/statistic/workflows/rejected_percent_group_by_instance", v1.GetWorkflowRejectedPercentGroupByInstanceV1, AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/counts", v1.GetWorkflowCountsV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/statistic/workflows/duration_of_waiting_for_audit", v1.GetWorkflowDurationOfWaitingForAuditV1, sqleMiddleware.AdminUserAllowed())
 		//v1Router.GET("/statistic/workflows/duration_of_waiting_for_execution", v1.GetWorkflowDurationOfWaitingForExecutionV1, AdminUserAllowed())
@@ -197,23 +149,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/statistic/workflows/instance_type_percent", v1.GetWorkflowPercentCountedByInstanceTypeV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/static/instance_logo", v1.GetInstanceTypeLogo)
 
-		// sync instance
-		// v1Router.POST("/sync_instances", v1.CreateSyncInstanceTask, AdminUserAllowed())
-		// v1Router.GET("/sync_instances", v1.GetSyncInstanceTaskList, AdminUserAllowed())
-		// v1Router.GET("/sync_instances/:task_id/", v1.GetSyncInstanceTask, AdminUserAllowed())
-		// v1Router.PATCH("/sync_instances/:task_id/", v1.UpdateSyncInstanceTask, AdminUserAllowed())
-		// v1Router.GET("/sync_instances/source_tips", v1.GetSyncTaskSourceTips, AdminUserAllowed())
-		// v1Router.DELETE("/sync_instances/:task_id/", v1.DeleteSyncInstanceTask, AdminUserAllowed())
-		// v1Router.POST("/sync_instances/:task_id/trigger", v1.TriggerSyncInstance, AdminUserAllowed())
-
 		// operation record
 		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
-
-		// other
-		// v1Router.GET("/management_permissions", v1.GetManagementPermissions, AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/projects/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
@@ -221,9 +161,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.AdminUserAllowed())
 	}
-
-	// auth
-	// v1Router.POST("/logout", v1.LogoutV1)
 
 	// project admin router
 	v1ProjectAdminRouter := v1Router.Group("/projects", sqleMiddleware.ProjectAdminUserAllowed())
@@ -257,7 +194,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// audit whitelist
 		v1ProjectRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
 		// instance
-		// v1ProjectRouter.GET("/:project_name/instances/:instance_name/", v1.GetInstance)
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 		v1ProjectRouter.POST("/:project_name/instances/connections", v1.BatchCheckInstanceConnections)
 		v1ProjectRouter.GET("/:project_name/instances/:instance_name/schemas", v1.GetInstanceSchemas)
@@ -347,52 +283,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
 	}
 
-	// project
-	// v1Router.PATCH("/projects/:project_name/", v1.UpdateProjectV1)
-	// v1Router.DELETE("/projects/:project_name/", v1.DeleteProjectV1)
-	// v1Router.POST("/projects", v1.CreateProjectV1)
-	// v1Router.POST("/projects/:project_name/archive", v1.ArchiveProjectV1)
-	// v1Router.POST("/projects/:project_name/unarchive", v1.UnarchiveProjectV1)
-	// v1Router.GET("/projects", v1.GetProjectListV1)
-
-	// role
-	// v1Router.GET("/role_tips", v1.GetRoleTips)
-
-	// user
-	// v1Router.GET("/user", v1.GetCurrentUser)
-	// v1Router.PATCH("/user", v1.UpdateCurrentUser)
 	v1Router.GET("/user_tips", v1.GetUserTips)
-	// v1Router.PUT("/user/password", v1.UpdateCurrentUserPassword)
-	// v1Router.POST("/projects/:project_name/members", v1.AddMember)
-	// v1Router.PATCH("/projects/:project_name/members/:user_name/", v1.UpdateMember)
-	// v1Router.DELETE("/projects/:project_name/members/:user_name/", v1.DeleteMember)
-	// v1Router.GET("/projects/:project_name/members", v1.GetMembers)
-	// v1Router.GET("/projects/:project_name/members/:user_name/", v1.GetMember)
-	// v1Router.GET("/projects/:project_name/member_tips", v1.GetMemberTips)
-
-	// user group
-	// v1Router.POST("/projects/:project_name/member_groups", v1.AddMemberGroup)
-	// v1Router.PATCH("/projects/:project_name/member_groups/:user_group_name/", v1.UpdateMemberGroup)
-	// v1Router.DELETE("/projects/:project_name/member_groups/:user_group_name/", v1.DeleteMemberGroup)
-	// v1Router.GET("/projects/:project_name/member_groups", v1.GetMemberGroups)
-	// v1Router.GET("/projects/:project_name/member_groups/:user_group_name/", v1.GetMemberGroup)
-	// v1Router.GET("/user_group_tips", v1.GetUserGroupTips)
-
-	// operations
-	// v1Router.GET("/operations", v1.GetOperations)
-
-	// instance
-	// v1Router.GET("/projects/:project_name/instances", v1.GetInstances)
-	// v2Router.GET("/projects/:project_name/instances", v2.GetInstances)
 
 	v2Router.GET("/projects/:project_name/instances/:instance_name/", v2.GetInstance)
-
-	// v1Router.POST("/instance_connection", v1.CheckInstanceIsConnectable) // permission
-	// v1Router.POST("/projects/:project_name/instances", DeprecatedBy(apiV2))
-	// v2Router.POST("/projects/:project_name/instances", v2.CreateInstance)
-	// v1Router.GET("/instance_additional_metas", v1.GetInstanceAdditionalMetas)
-	// v1Router.DELETE("/projects/:project_name/instances/:instance_name/", v1.DeleteInstance)
-	// v1Router.PATCH("/projects/:project_name/instances/:instance_name/", v1.UpdateInstance)
 
 	// 全局 rule template
 	v1Router.GET("/rule_templates", v1.GetRuleTemplates)
@@ -427,12 +320,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 	// dashboard
 	v1Router.GET("/dashboard", v1.Dashboard)
-	v1Router.GET("/dashboard/project_tips", v1.DashboardProjectTipsV1)
+	// v1Router.GET("/dashboard/project_tips", v1.DashboardProjectTipsV1)
 
 	// configurations
 	v1Router.GET("/configurations/drivers", v1.GetDrivers)
 	v2Router.GET("/configurations/drivers", v2.GetDrivers)
-	// v1Router.GET("/configurations/sql_query", v1.GetSQLQueryConfiguration)
 
 	// audit plan
 	v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
