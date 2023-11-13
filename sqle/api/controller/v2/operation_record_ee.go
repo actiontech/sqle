@@ -21,14 +21,6 @@ import (
 
 func init() {
 	sqleMiddleware.ApiInterfaceInfoList = append(sqleMiddleware.ApiInterfaceInfoList, []sqleMiddleware.ApiInterfaceInfo{
-		// 数据源
-		// {
-		// 	RouterPath:               "/v2/projects/:project_name/instances",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeInstance,
-		// 	OperationAction:          model.OperationRecordActionCreateInstance,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreatingInstance,
-		// },
 		{
 			RouterPath:               "/v2/projects/:project_name/workflows",
 			Method:                   http.MethodPost,
@@ -122,16 +114,6 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, string,
 		return projectName, fmt.Sprintf("取消定时上线，工单名称：%v, 数据源名: %v", workflow.Subject, task.InstanceName()), nil
 	}
 }
-
-// func getProjectAndContentFromCreatingInstance(c echo.Context) (string, string, error) {
-// 	req := new(CreateInstanceReqV2)
-// 	err := marshalRequestBody(c, req)
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-// 	projectName := c.Param("project_name")
-// 	return projectName, fmt.Sprintf("添加数据源，数据源名称：%v", req.Name), nil
-// }
 
 func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, string, error) {
 	projectName := c.Param("project_name")

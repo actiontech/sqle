@@ -24,73 +24,6 @@ import (
 
 func init() {
 	sqleMiddleware.ApiInterfaceInfoList = append(sqleMiddleware.ApiInterfaceInfoList, []sqleMiddleware.ApiInterfaceInfo{
-		// // 项目
-		// {
-		// 	RouterPath:               "/v1/projects",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeProject,
-		// 	OperationAction:          model.OperationRecordActionCreateProject,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreateProject,
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeProject,
-		// 	OperationAction: model.OperationRecordActionUpdateProject,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		name := c.Param("project_name")
-		// 		return name, fmt.Sprintf("编辑项目，项目名：%v", name), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeProject,
-		// 	OperationAction: model.OperationRecordActionDeleteProject,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		name := c.Param("project_name")
-		// 		return name, fmt.Sprintf("删除项目，项目名：%v", name), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/archive",
-		// 	Method:          http.MethodPost,
-		// 	OperationType:   model.OperationRecordTypeProject,
-		// 	OperationAction: model.OperationRecordActionArchiveProject,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		projectName := c.Param("project_name")
-		// 		return projectName, fmt.Sprintf("冻结项目，项目名：%v", projectName), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/unarchive",
-		// 	Method:          http.MethodPost,
-		// 	OperationType:   model.OperationRecordTypeProject,
-		// 	OperationAction: model.OperationRecordActionUnarchiveProject,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		projectName := c.Param("project_name")
-		// 		return projectName, fmt.Sprintf("取消冻结项目，项目名：%v", projectName), nil
-		// 	},
-		// },
-		// 数据源
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeInstance,
-		// 	OperationAction: model.OperationRecordActionUpdateInstance,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("编辑数据源，数据源名称：%v", c.Param("instance_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/instances/:instance_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeInstance,
-		// 	OperationAction: model.OperationRecordActionDeleteInstance,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("删除数据源，数据源名称：%v", c.Param("instance_name")), nil
-		// 	},
-		// },
 		// 项目规则模板
 		{
 			RouterPath:               "/v1/projects/:project_name/rule_templates",
@@ -153,182 +86,53 @@ func init() {
 				return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
 			},
 		},
-		// // 平台用户
-		// {
-		// 	RouterPath:               "/v1/users",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeGlobalUser,
-		// 	OperationAction:          model.OperationRecordActionCreateUser,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreateUser,
-		// },
-		// {
-		// 	RouterPath:      "/v1/users/:user_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeGlobalUser,
-		// 	OperationAction: model.OperationRecordActionUpdateUser,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", fmt.Sprintf("编辑用户，用户名：%v", c.Param("user_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/users/:user_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeGlobalUser,
-		// 	OperationAction: model.OperationRecordActionDeleteUser,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", fmt.Sprintf("删除用户，用户名：%v", c.Param("user_name")), nil
-		// 	},
-		// },
-		// // 全局规则模板
-		// {
-		// 	RouterPath:               "/v1/rule_templates",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeGlobalRuleTemplate,
-		// 	OperationAction:          model.OperationRecordActionCreateGlobalRuleTemplate,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreateRuleTemplate,
-		// },
-		// {
-		// 	RouterPath:      "/v1/rule_templates/:rule_template_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
-		// 	OperationAction: model.OperationRecordActionUpdateGlobalRuleTemplate,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", fmt.Sprintf("编辑全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/rule_templates/:rule_template_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
-		// 	OperationAction: model.OperationRecordActionDeleteGlobalRuleTemplate,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", fmt.Sprintf("删除全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
-		// 	},
-		// },
-		// // 系统配置
-		// {
-		// 	RouterPath:      "/v1/configurations/ding_talk",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateDingTalkConfiguration,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改钉钉配置", nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/configurations/smtp",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateSMTPConfiguration,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改SMTP配置", nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/configurations/wechat",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateWechatConfiguration,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改微信配置", nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/configurations/system_variables",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateSystemVariables,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改全局配置", nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/configurations/ldap",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateLDAPConfiguration,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改LDAP配置", nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/configurations/oauth2",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeSystemConfiguration,
-		// 	OperationAction: model.OperationRecordActionUpdateOAuth2Configuration,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return "", "修改OAuth2配置", nil
-		// 	},
-		// },
-		// // 成员
-		// {
-		// 	RouterPath:               "/v1/projects/:project_name/members",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeProjectMember,
-		// 	OperationAction:          model.OperationRecordActionCreateMember,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreateMember,
-		// },
-		// {
-		// 	RouterPath:               "/v1/projects/:project_name/member_groups",
-		// 	Method:                   http.MethodPost,
-		// 	OperationType:            model.OperationRecordTypeProjectMember,
-		// 	OperationAction:          model.OperationRecordActionCreateMemberGroup,
-		// 	GetProjectAndContentFunc: getProjectAndContentFromCreateMemberGroup,
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/members/:user_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeProjectMember,
-		// 	OperationAction: model.OperationRecordActionDeleteMember,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("删除成员，用户名：%v", c.Param("user_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
-		// 	Method:          http.MethodDelete,
-		// 	OperationType:   model.OperationRecordTypeProjectMember,
-		// 	OperationAction: model.OperationRecordActionDeleteMemberGroup,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("删除成员组，组名：%v", c.Param("user_group_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/members/:user_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeProjectMember,
-		// 	OperationAction: model.OperationRecordActionUpdateMember,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("编辑成员，用户名：%v", c.Param("user_name")), nil
-		// 	},
-		// },
-		// {
-		// 	RouterPath:      "/v1/projects/:project_name/member_groups/:user_group_name/",
-		// 	Method:          http.MethodPatch,
-		// 	OperationType:   model.OperationRecordTypeProjectMember,
-		// 	OperationAction: model.OperationRecordActionUpdateMemberGroup,
-		// 	GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-		// 		return c.Param("project_name"), fmt.Sprintf("编辑成员组，组名：%v", c.Param("user_group_name")), nil
-		// 	},
-		// },
+		// 全局规则模板
+		{
+			RouterPath:               "/v1/rule_templates",
+			Method:                   http.MethodPost,
+			OperationType:            model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction:          model.OperationRecordActionCreateGlobalRuleTemplate,
+			GetProjectAndContentFunc: getProjectAndContentFromCreateRuleTemplate,
+		},
+		{
+			RouterPath:      "/v1/rule_templates/:rule_template_name/",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction: model.OperationRecordActionUpdateGlobalRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("编辑全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
+		},
+		{
+			RouterPath:      "/v1/rule_templates/:rule_template_name/",
+			Method:          http.MethodDelete,
+			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
+			OperationAction: model.OperationRecordActionDeleteGlobalRuleTemplate,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", fmt.Sprintf("删除全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			},
+		},
+		// 系统配置
+		{
+			RouterPath:      "/v1/configurations/ding_talk",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateDingTalkConfiguration,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改钉钉配置", nil
+			},
+		},
+		{
+			RouterPath:      "/v1/configurations/system_variables",
+			Method:          http.MethodPatch,
+			OperationType:   model.OperationRecordTypeSystemConfiguration,
+			OperationAction: model.OperationRecordActionUpdateSystemVariables,
+			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
+				return "", "修改全局配置", nil
+			},
+		},
 	}...)
 }
-
-// func getProjectAndContentFromCreateMemberGroup(c echo.Context) (string, string, error) {
-// 	req := new(CreateMemberGroupReqV1)
-// 	if err := marshalRequestBody(c, req); err != nil {
-// 		return "", "", err
-// 	}
-// 	return c.Param("project_name"), fmt.Sprintf("添加成员组，组名：%v", req.UserGroupName), nil
-// }
-
-// func getProjectAndContentFromCreateMember(c echo.Context) (string, string, error) {
-// 	req := new(CreateMemberReqV1)
-// 	if err := marshalRequestBody(c, req); err != nil {
-// 		return "", "", err
-// 	}
-// 	return c.Param("project_name"), fmt.Sprintf("添加成员，用户名：%v", req.UserName), nil
-// }
 
 func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, string, error) {
 	req := new(CreateRuleTemplateReqV1)
@@ -337,14 +141,6 @@ func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, string,
 	}
 	return "", fmt.Sprintf("创建全局规则模板，模板名：%v", req.Name), nil
 }
-
-// func getProjectAndContentFromCreateUser(c echo.Context) (string, string, error) {
-// 	req := new(CreateUserReqV1)
-// 	if err := marshalRequestBody(c, req); err != nil {
-// 		return "", "", err
-// 	}
-// 	return "", fmt.Sprintf("创建用户，用户名：%v", req.Name), nil
-// }
 
 func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, string, error) {
 	req := new(CreateAuditPlanReqV1)
@@ -363,16 +159,6 @@ func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string
 	}
 	return c.Param("project_name"), fmt.Sprintf("添加规则模板，模板名：%v", req.Name), nil
 }
-
-// func getProjectAndContentFromCreateProject(c echo.Context) (string, string, error) {
-// 	req := new(CreateProjectReqV1)
-// 	err := marshalRequestBody(c, req)
-// 	if err != nil {
-// 		return "", "", err
-// 	}
-
-// 	return req.Name, fmt.Sprintf("创建项目，项目名：%v", req.Name), nil
-// }
 
 func marshalRequestBody(c echo.Context, pattern interface{}) error {
 	reqBody, err := getReqBodyBytes(c)
