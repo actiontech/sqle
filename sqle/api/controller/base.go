@@ -71,28 +71,6 @@ func GetUserName(c echo.Context) string {
 	return claims["name"].(string)
 }
 
-// func GetCurrentUser(c echo.Context) (*model.User, error) {
-// 	key := "current_user"
-// 	currentUser := c.Get(key)
-// 	if currentUser != nil {
-// 		if user, ok := currentUser.(*model.User); ok {
-// 			return user, nil
-// 		}
-// 	}
-// 	s := model.GetStorage()
-// 	user, exist, err := s.GetUserByName(GetUserName(c))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if !exist {
-// 		return nil, errors.New(errors.DataNotExist,
-// 			fmt.Errorf("current user is not exist"))
-// 	}
-// 	c.Set(key, user)
-// 	return user, nil
-// }
-
-// TODO 该方法后面需要完全替代GetUserName
 func GetUserID(c echo.Context) string {
 	uidStr, err := dmsJWT.GetUserUidStrFromContextWithOldJwt(c)
 	if err != nil {
