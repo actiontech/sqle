@@ -715,32 +715,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/dashboard/project_tips": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get dashboard project tips",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "dashboard"
-                ],
-                "summary": "获取dashboard项目提示列表",
-                "operationId": "getDashboardProjectTipsV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetDashboardProjectTipsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/operation_records": {
             "get": {
                 "security": [
@@ -7905,18 +7879,6 @@ var doc = `{
                 }
             }
         },
-        "v1.DashboardProjectTipV1": {
-            "type": "object",
-            "properties": {
-                "project_name": {
-                    "type": "string"
-                },
-                "unfinished_workflow_count": {
-                    "description": "只统计与当前用户相关的未完成工单",
-                    "type": "integer"
-                }
-            }
-        },
         "v1.DashboardResV1": {
             "type": "object",
             "properties": {
@@ -8411,25 +8373,6 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.CustomRuleResV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetDashboardProjectTipsResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.DashboardProjectTipV1"
                     }
                 },
                 "message": {
