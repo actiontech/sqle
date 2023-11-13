@@ -1161,8 +1161,8 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 		return nil, errNoSQLNeedToBeAudited
 	}
 
-	task := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
-	vTask := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
+	task := &model.Task{Instance: ap.Instance, DBType: ap.DBType, Schema: ap.InstanceDatabase}
+	vTask := &model.Task{Instance: ap.Instance, DBType: ap.DBType, Schema: ap.InstanceDatabase}
 
 	for i, sql := range filteredSqls {
 		sqlItem := &model.ExecuteSQL{
