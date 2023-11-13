@@ -1353,27 +1353,6 @@ definitions:
       total_nums:
         type: integer
     type: object
-  v1.GetSQLEInfoResDataV1:
-    properties:
-      logo_url:
-        type: string
-      title:
-        type: string
-      version:
-        type: string
-    type: object
-  v1.GetSQLEInfoResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.GetSQLEInfoResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetSqlAverageExecutionTimeResV1:
     properties:
       code:
@@ -1925,11 +1904,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
-    type: object
-  v1.PersonaliseReqV1:
-    properties:
-      title:
-        type: string
     type: object
   v1.ProjectRuleTemplateResV1:
     properties:
@@ -2592,23 +2566,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
         type: array
-    type: object
-  v1.UploadLogoResDataV1:
-    properties:
-      logo_url:
-        type: string
-    type: object
-  v1.UploadLogoResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.UploadLogoResDataV1'
-        type: object
-      message:
-        example: ok
-        type: string
     type: object
   v1.UserTipResV1:
     properties:
@@ -3525,18 +3482,6 @@ paths:
       summary: 获取扫描任务类型
       tags:
       - audit_plan
-  /v1/basic_info:
-    get:
-      description: get sqle basic info
-      operationId: getSQLEInfoV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSQLEInfoResV1'
-      summary: 获取 sqle 基本信息
-      tags:
-      - global
   /v1/configurations/ding_talk:
     get:
       description: get dingTalk configuration
@@ -3672,49 +3617,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取生成 sqle license需要的的信息
-      tags:
-      - configuration
-  /v1/configurations/personalise:
-    patch:
-      description: update personalise config
-      operationId: personalise
-      parameters:
-      - description: personalise req
-        in: body
-        name: conf
-        required: true
-        schema:
-          $ref: '#/definitions/v1.PersonaliseReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 更新个性化设置
-      tags:
-      - configuration
-  /v1/configurations/personalise/logo:
-    post:
-      consumes:
-      - multipart/form-data
-      description: upload logo
-      operationId: uploadLogo
-      parameters:
-      - description: logo file
-        in: formData
-        name: logo
-        required: true
-        type: file
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.UploadLogoResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 上传Logo
       tags:
       - configuration
   /v1/configurations/system_variables:
@@ -6737,43 +6639,6 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
-  /v1/static/instance_logo:
-    get:
-      description: get instance type logo
-      operationId: getInstanceTypeLogo
-      parameters:
-      - description: instance type
-        in: query
-        name: instance_type
-        required: true
-        type: string
-      responses:
-        "200":
-          description: get instance type logo
-          schema:
-            type: file
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例类型logo
-      tags:
-      - instance
-  /v1/static/logo:
-    get:
-      description: get logo
-      operationId: getLogo
-      parameters:
-      - description: timestamp
-        in: query
-        name: timestamp
-        type: string
-      responses:
-        "200":
-          description: get logo
-          schema:
-            type: file
-      summary: 获取logo
-      tags:
-      - configuration
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
