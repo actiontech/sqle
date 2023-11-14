@@ -21,6 +21,11 @@ const (
 
 	SQLManageSourceAuditPlan      = "audit_plan"
 	SQLManageSourceSqlAuditRecord = "sql_audit_record"
+
+	CommonAuditLevel = "normal"
+	NoticeAuditLevel = "notice"
+	WarnAuditLevel   = "warn"
+	ErrorAduitLevel  = "error"
 )
 
 var SqlManageSourceMap = map[string]string{
@@ -231,7 +236,7 @@ AND sm.source = :filter_source
 {{- end }}
 
 {{- if .filter_audit_level }}
-AND sm.audit_level = :filter_audit_level
+AND sm.audit_level in ({{range $index, $element := .filter_audit_level}}{{if $index}}, {{end}}'{{$element}}'{{end}})
 {{- end }}
 
 {{- if .filter_db_type }}
@@ -266,8 +271,36 @@ AND sm.status = 'solved'
 {{ end }}
 `
 
+// 获取大于等于传参的审核等级
+// 比如：传参的值为warn，需要返回的审核等级为warn和error；传参的值为notice，需要返回notice，warn和error
+func getAuditLevelsByLowestLevel(auditLevel string) []string {
+	auditLevels := []string{CommonAuditLevel, NoticeAuditLevel, WarnAuditLevel, ErrorAduitLevel}
+	switch auditLevel {
+	case CommonAuditLevel:
+		return auditLevels
+	case NoticeAuditLevel:
+		return auditLevels[1:]
+	case WarnAuditLevel:
+		return auditLevels[2:]
+	case ErrorAduitLevel:
+		return auditLevels[3:]
+	default:
+		return []string{}
+	}
+}
+
 func (s *Storage) GetSqlManageListByReq(data map[string]interface{}) (list *SqlManageResp, err error) {
 	sqlManageList := make([]*SqlManageDetail, 0)
+	auditLevel := data["filter_audit_level"]
+	auditLevelPointer, ok := auditLevel.(*string)
+	if !ok {
+		return nil, e.New("sql_manage: filter_audit_level convert to *string failed")
+	}
+	if auditLevelPointer != nil {
+		auditLevelStr := *auditLevelPointer
+		data["filter_audit_level"] = getAuditLevelsByLowestLevel(auditLevelStr)
+	}
+
 	err = s.getListResult(sqlManageQueryTpl, sqlManageBodyTpl, data, &sqlManageList)
 	if err != nil {
 		return nil, err
