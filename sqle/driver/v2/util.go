@@ -118,6 +118,9 @@ func ConvertRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 		Level:      string(rule.Level),
 		Category:   rule.Category,
 		Params:     params,
+		Knowledge: &protoV2.Knowledge{
+			Content: rule.Knowledge.Content,
+		},
 	}
 }
 
