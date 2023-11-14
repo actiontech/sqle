@@ -86,7 +86,13 @@ func CreateApprove(projectId, workflowId string) {
 		return
 	}
 
-	assignUsers := workflow.CurrentAssigneeUser()
+	assignUserIds := workflow.CurrentAssigneeUser()
+
+	assignUsers, err := dms.GetUsers(context.TODO(), assignUserIds, controller.GetDMSServerAddress())
+	if err != nil {
+		newLog.Errorf("get user error: %v", err)
+		return
+	}
 
 	ims, err := s.GetAllIMConfig()
 	if err != nil {
@@ -94,11 +100,6 @@ func CreateApprove(projectId, workflowId string) {
 		return
 	}
 
-	workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
-	if err != nil {
-		newLog.Errorf("get user error: %v", err)
-		return
-	}
 	for _, im := range ims {
 		if !im.IsEnable {
 			continue
@@ -143,7 +144,11 @@ func CreateApprove(projectId, workflowId string) {
 				AppSecret:   im.AppSecret,
 				ProcessCode: im.ProcessCode,
 			}
-
+			workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
+			if err != nil {
+				newLog.Errorf("get user error: %v", err)
+				return
+			}
 			createUserId, err := dingTalk.GetUserIDByPhone(workflowCreateUser.Phone)
 			if err != nil {
 				newLog.Errorf("get origin user id by phone error: %v", err)
@@ -152,23 +157,15 @@ func CreateApprove(projectId, workflowId string) {
 
 			var userIds []*string
 			for _, assignUser := range assignUsers {
-				// TODO 使用DMS提供的批量获取用户接口
-				user, err := dmsobject.GetUser(context.TODO(), assignUser, controller.GetDMSServerAddress())
-				if err != nil {
-					newLog.Errorf("get user error: %v", err)
-					return
-				}
 				if user.Phone == "" {
 					newLog.Infof("user %v phone is empty, skip", assignUser)
 					continue
 				}
-
-				userId, err := dingTalk.GetUserIDByPhone(user.Phone)
+				userId, err := dingTalk.GetUserIDByPhone(assignUser.Phone)
 				if err != nil {
 					newLog.Errorf("get user id by phone error: %v", err)
 					continue
 				}
-
 				userIds = append(userIds, userId)
 			}
 
@@ -177,10 +174,10 @@ func CreateApprove(projectId, workflowId string) {
 				continue
 			}
 		case model.ImTypeFeishuAudit:
-			// if err := CreateFeishuAuditInst(context.TODO(), im, workflow, users, workflowUrl); err != nil {
-			// 	newLog.Errorf("create feishu audit instance error: %v", err)
-			// 	continue
-			// }
+			if err := CreateFeishuAuditInst(context.TODO(), im, workflow, assignUsers, workflowUrl); err != nil {
+				newLog.Errorf("create feishu audit instance error: %v", err)
+				continue
+			}
 		default:
 			newLog.Errorf("im type %s not found", im.Type)
 		}

@@ -720,6 +720,13 @@ definitions:
           type: object
         type: array
     type: object
+  v1.FeishuConfigurationV1:
+    properties:
+      app_id:
+        type: string
+      is_feishu_notification_enabled:
+        type: boolean
+    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -985,6 +992,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.DriversResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetFeishuAuditConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.FeishuConfigurationV1'
         type: object
       message:
         example: ok
@@ -2382,6 +2401,35 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TestFeishuConfigResDataV1:
+    properties:
+      error_message:
+        type: string
+      is_message_sent_normally:
+        type: boolean
+    type: object
+  v1.TestFeishuConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestFeishuConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.TestFeishuConfigurationReqV1:
+    properties:
+      account:
+        type: string
+      account_type:
+        enum:
+        - email
+        - phone
+        type: string
+    type: object
   v1.TimeResV1:
     properties:
       hour:
@@ -2496,6 +2544,19 @@ definitions:
     - app_key
     - app_secret
     - is_enable_ding_talk_notify
+    type: object
+  v1.UpdateFeishuConfigurationReqV1:
+    properties:
+      app_id:
+        type: string
+      app_secret:
+        type: string
+      is_feishu_notification_enabled:
+        type: boolean
+    required:
+    - app_id
+    - app_secret
+    - is_feishu_notification_enabled
     type: object
   v1.UpdateProjectRuleTemplateReqV1:
     properties:
@@ -3546,6 +3607,65 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取当前 server 支持的审核类型
+      tags:
+      - configuration
+  /v1/configurations/feishu_audit:
+    get:
+      description: get feishu audit configuration
+      operationId: getFeishuAuditConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetFeishuAuditConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取飞书审核配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update feishu audit configuration
+      operationId: updateFeishuAuditConfigurationV1
+      parameters:
+      - description: update feishu audit configuration req
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateFeishuConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新飞书配置
+      tags:
+      - configuration
+  /v1/configurations/feishu_audit/test:
+    post:
+      consumes:
+      - application/json
+      description: test feishu audit configuration
+      operationId: testFeishuAuditConfigV1
+      parameters:
+      - description: test feishu configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestFeishuConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestFeishuConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试飞书审批配置
       tags:
       - configuration
   /v1/configurations/license:
