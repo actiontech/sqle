@@ -220,6 +220,101 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/feishu_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get feishu audit configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取飞书审核配置",
+                "operationId": "getFeishuAuditConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetFeishuAuditConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update feishu audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新飞书配置",
+                "operationId": "updateFeishuAuditConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update feishu audit configuration req",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateFeishuConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/feishu_audit/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test feishu audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试飞书审批配置",
+                "operationId": "testFeishuAuditConfigV1",
+                "parameters": [
+                    {
+                        "description": "test feishu configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestFeishuConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestFeishuConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/license": {
             "get": {
                 "security": [
@@ -7896,6 +7991,17 @@ var doc = `{
                 }
             }
         },
+        "v1.FeishuConfigurationV1": {
+            "type": "object",
+            "properties": {
+                "app_id": {
+                    "type": "string"
+                },
+                "is_feishu_notification_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v1.FullSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -8280,6 +8386,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DriversResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetFeishuAuditConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.FeishuConfigurationV1"
                 },
                 "message": {
                     "type": "string",
@@ -10339,6 +10462,49 @@ var doc = `{
                 }
             }
         },
+        "v1.TestFeishuConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "is_message_sent_normally": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TestFeishuConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestFeishuConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.TestFeishuConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "type": "string"
+                },
+                "account_type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "phone"
+                    ]
+                }
+            }
+        },
         "v1.TimeResV1": {
             "type": "object",
             "properties": {
@@ -10499,6 +10665,25 @@ var doc = `{
                     "type": "string"
                 },
                 "is_enable_ding_talk_notify": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.UpdateFeishuConfigurationReqV1": {
+            "type": "object",
+            "required": [
+                "app_id",
+                "app_secret",
+                "is_feishu_notification_enabled"
+            ],
+            "properties": {
+                "app_id": {
+                    "type": "string"
+                },
+                "app_secret": {
+                    "type": "string"
+                },
+                "is_feishu_notification_enabled": {
                     "type": "boolean"
                 }
             }

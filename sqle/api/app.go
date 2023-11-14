@@ -127,6 +127,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/configurations/license", v1.SetLicense, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/license/check", v1.CheckLicense, sqleMiddleware.AdminUserAllowed())
+		v1Router.PATCH("/configurations/feishu_audit", v1.UpdateFeishuAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.GET("/configurations/feishu_audit", v1.GetFeishuAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.POST("/configurations/feishu_audit/test", v1.TestFeishuAuditConfigV1, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())

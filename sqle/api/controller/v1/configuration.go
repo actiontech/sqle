@@ -286,3 +286,79 @@ func GetDrivers(c echo.Context) error {
 		Data:    DriversResV1{Drivers: driver.GetPluginManager().AllDrivers()},
 	})
 }
+
+type GetFeishuAuditConfigurationResV1 struct {
+	controller.BaseRes
+	Data FeishuConfigurationV1 `json:"data"`
+}
+
+type FeishuConfigurationV1 struct {
+	AppID                       string `json:"app_id"`
+	IsFeishuNotificationEnabled bool   `json:"is_feishu_notification_enabled"`
+}
+
+// GetFeishuAuditConfigurationV1
+// @Summary 获取飞书审核配置
+// @Description get feishu audit configuration
+// @Id getFeishuAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetFeishuAuditConfigurationResV1
+// @router /v1/configurations/feishu_audit [get]
+func GetFeishuAuditConfigurationV1(c echo.Context) error {
+	return getFeishuAuditConfigurationV1(c)
+}
+
+type UpdateFeishuConfigurationReqV1 struct {
+	AppID                       *string `json:"app_id" form:"app_id" validate:"required" description:"飞书应用ID"`
+	AppSecret                   *string `json:"app_secret" form:"app_secret" validate:"required" description:"飞书应用Secret"`
+	IsFeishuNotificationEnabled *bool   `json:"is_feishu_notification_enabled" from:"is_feishu_notification_enabled" validate:"required" description:"是否启用飞书推送"`
+}
+
+// UpdateFeishuAuditConfigurationV1
+// @Summary 添加或更新飞书配置
+// @Description update feishu audit configuration
+// @Accept json
+// @Id updateFeishuAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param param body v1.UpdateFeishuConfigurationReqV1 true "update feishu audit configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/feishu_audit [patch]
+func UpdateFeishuAuditConfigurationV1(c echo.Context) error {
+	return updateFeishuAuditConfigurationV1(c)
+}
+
+type TestFeishuConfigurationReqV1 struct {
+	AccountType string `json:"account_type" form:"account_type" enums:"email,phone" valid:"required"`
+	Account     string `json:"account" form:"account" valid:"required" description:"绑定了飞书的手机号或邮箱"`
+}
+
+type TestFeishuConfigResDataV1 struct {
+	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
+	ErrorMessage          string `json:"error_message,omitempty"`
+}
+
+type TestFeishuConfigResV1 struct {
+	controller.BaseRes
+	Data TestFeishuConfigResDataV1 `json:"data"`
+}
+
+const (
+	FeishuAccountTypeEmail = "email"
+	FeishuAccountTypePhone = "phone"
+)
+
+// TestFeishuAuditConfigV1
+// @Summary 测试飞书审批配置
+// @Description test feishu audit configuration
+// @Accept json
+// @Id testFeishuAuditConfigV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param req body v1.TestFeishuConfigurationReqV1 true "test feishu configuration req"
+// @Success 200 {object} v1.TestFeishuConfigResV1
+// @router /v1/configurations/feishu_audit/test [post]
+func TestFeishuAuditConfigV1(c echo.Context) error {
+	return testFeishuAuditConfigV1(c)
+}
