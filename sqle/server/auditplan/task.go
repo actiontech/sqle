@@ -1161,8 +1161,8 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 		return nil, errNoSQLNeedToBeAudited
 	}
 
-	task := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
-	vTask := &model.Task{Instance: ap.Instance, DBType: ap.DBType}
+	task := &model.Task{Instance: ap.Instance, DBType: ap.DBType, Schema: ap.InstanceDatabase}
+	vTask := &model.Task{Instance: ap.Instance, DBType: ap.DBType, Schema: ap.InstanceDatabase}
 
 	for i, sql := range filteredSqls {
 		sqlItem := &model.ExecuteSQL{
@@ -1174,16 +1174,16 @@ func auditWithSchema(l *logrus.Entry, persist *model.Storage, ap *model.AuditPla
 		}
 		{
 			info := struct {
-				Schema string `json:"schema"`
+				AuditSchema string `json:"AuditSchema"`
 			}{}
 			err := json.Unmarshal(sql.Info, &info)
 			if err != nil {
 				return nil, fmt.Errorf("parse schema failed: %v", err)
 			}
-			if info.Schema != "" {
+			if info.AuditSchema != "" {
 				vTask.ExecuteSQLs = append(vTask.ExecuteSQLs, &model.ExecuteSQL{
 					BaseSQL: model.BaseSQL{
-						Content: fmt.Sprintf("USE %s;", info.Schema),
+						Content: fmt.Sprintf("USE %s;", info.AuditSchema),
 					},
 				})
 			}
