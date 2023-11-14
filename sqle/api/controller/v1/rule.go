@@ -1083,20 +1083,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// userName := controller.GetUserName(c)
-	// err := CheckIsProjectManager(userName, projectName)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-
 	s := model.GetStorage()
-	// project, exist, err := s.GetProjectByName(projectName)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// if !exist {
-	// 	return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	// }
 	exist, err := s.IsRuleTemplateExistFromAnyProject(model.ProjectUID(projectUid), req.Name)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1152,10 +1139,6 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// err = s.UpdateRuleTemplateInstances(ruleTemplate, instances...)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
