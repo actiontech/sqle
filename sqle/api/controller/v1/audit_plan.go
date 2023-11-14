@@ -1023,44 +1023,6 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
-// // deprecated. will be removed when sqle-ee is not referenced.
-// func CheckCurrentUserCanAccessAuditPlan(c echo.Context, apName string, opCode int) error {
-// 	storage := model.GetStorage()
-
-// 	ap, exist, err := storage.GetAuditPlanByName(apName)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if !exist {
-// 		return errAuditPlanNotExist
-// 	}
-
-// 	if controller.GetUserName(c) == model.DefaultAdminUser {
-// 		return nil
-// 	}
-
-// 	user, err := controller.GetCurrentUserFromDMS(c)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if ap.CreateUserID == user.ID {
-// 		return nil
-// 	}
-// 	if opCode > 0 {
-// 		instances, err := storage.GetUserCanOpInstances(user, []uint{uint(opCode)})
-// 		if err != nil {
-// 			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(opCode))))
-// 		}
-// 		for _, instance := range instances {
-// 			if ap.InstanceName == instance.Name {
-// 				return nil
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
-
 type UpdateAuditPlanNotifyConfigReqV1 struct {
 	NotifyInterval      *int    `json:"notify_interval" default:"10"`
 	NotifyLevel         *string `json:"notify_level" default:"warn" enums:"normal,notice,warn,error" valid:"oneof=normal notice warn error"`
