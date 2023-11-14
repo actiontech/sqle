@@ -231,9 +231,13 @@ type RuleHandler struct {
 }
 
 func init() {
+	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
+	if err != nil {
+		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
+	}
 	for i, rh := range RuleHandlers {
-		if knowledge, ok := defaultRuleKnowledgeMap[rh.Rule.Name]; ok {
-			rh.Rule.Knowledge = knowledge
+		if knowledge, ok := defaultRulesKnowledge[rh.Rule.Name]; ok {
+			rh.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh
