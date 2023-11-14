@@ -4,10 +4,14 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
+	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 	"github.com/sirupsen/logrus"
@@ -25,120 +29,121 @@ func NewFeishuJob(entry *logrus.Entry) ServerJob {
 }
 
 func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
-	// dms-todo 当前飞书配置已经迁移，需要迁移对应代码
-	// s := model.GetStorage()
-	// im, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
-	// if err != nil {
-	// 	entry.Errorf("get im config by type error: %v", err)
-	// 	return
-	// }
-	// if !exist {
-	// 	entry.Errorf("im config not exist")
-	// 	return
-	// }
+	s := model.GetStorage()
+	im, exist, err := s.GetImConfigByType(model.ImTypeFeishuAudit)
+	if err != nil {
+		entry.Errorf("get im config by type error: %v", err)
+		return
+	}
+	if !exist {
+		entry.Errorf("im config not exist")
+		return
+	}
 
-	// if !im.IsEnable {
-	// 	entry.Infof("im config is disabled")
-	// 	return
-	// }
+	if !im.IsEnable {
+		entry.Infof("im config is disabled")
+		return
+	}
 
-	// instList, err := s.GetFeishuInstByStatus(model.FeishuAuditStatusInitialized)
-	// if err != nil {
-	// 	entry.Errorf("get feishu instance by status error: %v", err)
-	// 	return
-	// }
+	instList, err := s.GetFeishuInstByStatus(model.FeishuAuditStatusInitialized)
+	if err != nil {
+		entry.Errorf("get feishu instance by status error: %v", err)
+		return
+	}
 
-	// client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
-	// for _, inst := range instList {
-	// 	instDetail, err := client.GetApprovalInstDetail(context.TODO(), inst.ApproveInstanceCode)
-	// 	if err != nil {
-	// 		entry.Errorf("get feishu approval instance detail error: %v", err)
-	// 		continue
-	// 	}
+	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
+	for _, inst := range instList {
+		instDetail, err := client.GetApprovalInstDetail(context.TODO(), inst.ApproveInstanceCode)
+		if err != nil {
+			entry.Errorf("get feishu approval instance detail error: %v", err)
+			continue
+		}
 
-	// 	switch *instDetail.Status {
-	// 	case model.FeishuAuditStatusApprove:
-	// 		workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
-	// 		if err != nil {
-	// 			entry.Errorf("get workflow detail error: %v", err)
-	// 			continue
-	// 		}
-	// 		if !exist {
-	// 			entry.Errorf("workflow not exist, id: %d", inst.WorkflowId)
-	// 			continue
-	// 		}
+		switch *instDetail.Status {
+		case model.FeishuAuditStatusApprove:
+			workflow, err := dms.GetWorkflowDetailByWorkflowId("", inst.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+			if err != nil {
+				entry.Errorf("get workflow detail error: %v", err)
+				continue
+			}
 
-	// 		nextStep := workflow.NextStep()
+			nextStep := workflow.NextStep()
 
-	// 		openId := instDetail.TaskList[0].OpenId
-	// 		user, err := getSqleUserByFeishuUserID(client, *openId, workflow.CurrentAssigneeUser())
-	// 		if err != nil {
-	// 			entry.Errorf("get user by user id error: %v", err)
-	// 			continue
-	// 		}
+			openId := instDetail.TaskList[0].OpenId
+			assigneesUsers, err := dms.GetUsers(context.Background(), workflow.CurrentAssigneeUser(), dms.GetDMSServerAddress())
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
+			user, err := getSqleUserByFeishuUserID(client, *openId, assigneesUsers)
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
 
-	// 		if workflow.Record.Status == model.WorkflowStatusWaitForAudit {
-	// 			if err := ApproveWorkflowProcess(workflow, user, s); err != nil {
-	// 				entry.Errorf("approve workflow process error: %v", err)
-	// 				continue
-	// 			}
-	// 		} else if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
-	// 			if err := ExecuteTasksProcess(strconv.Itoa(int(workflow.ID)), workflow.Project.Name, user); err != nil {
-	// 				entry.Errorf("execute workflow process error: %v", err)
-	// 				continue
-	// 			}
-	// 		} else {
-	// 			entry.Errorf("workflow status error, status: %s", workflow.Record.Status)
-	// 			continue
-	// 		}
+			if workflow.Record.Status == model.WorkflowStatusWaitForAudit {
+				if err := ApproveWorkflowProcess(workflow, user, s); err != nil {
+					entry.Errorf("approve workflow process error: %v", err)
+					continue
+				}
+			} else if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
+				if err := ExecuteTasksProcess(strconv.Itoa(int(workflow.ID)), string(workflow.ProjectId), user); err != nil {
+					entry.Errorf("execute workflow process error: %v", err)
+					continue
+				}
+			} else {
+				entry.Errorf("workflow status error, status: %s", workflow.Record.Status)
+				continue
+			}
 
-	// 		inst.Status = model.FeishuAuditStatusApprove
-	// 		if err := s.Save(&inst); err != nil {
-	// 			entry.Errorf("save feishu instance error: %v", err)
-	// 			continue
-	// 		}
+			inst.Status = model.FeishuAuditStatusApprove
+			if err := s.Save(&inst); err != nil {
+				entry.Errorf("save feishu instance error: %v", err)
+				continue
+			}
 
-	// 		if nextStep != nil {
-	// 			imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
-	// 		}
-	// 	case model.FeishuAuditStatusRejected:
-	// 		workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
-	// 		if err != nil {
-	// 			entry.Errorf("get workflow detail error: %v", err)
-	// 			continue
-	// 		}
-	// 		if !exist {
-	// 			entry.Errorf("workflow not exist, id: %d", inst.WorkflowId)
-	// 			continue
-	// 		}
+			if nextStep != nil {
+				imPkg.CreateApprove(string(workflow.ProjectId), strconv.Itoa(int(workflow.ID)))
+			}
+		case model.FeishuAuditStatusRejected:
+			workflow, err := dms.GetWorkflowDetailByWorkflowId("", inst.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+			if err != nil {
+				entry.Errorf("get workflow detail error: %v", err)
+				continue
+			}
 
-	// 		var reason string
-	// 		timeline := instDetail.Timeline
-	// 		if timeline != nil && len(timeline) >= 2 && timeline[1].Comment != nil {
-	// 			reason = *timeline[1].Comment
-	// 		} else {
-	// 			reason = "审批拒绝"
-	// 		}
+			var reason string
+			timeline := instDetail.Timeline
+			if timeline != nil && len(timeline) >= 2 && timeline[1].Comment != nil {
+				reason = *timeline[1].Comment
+			} else {
+				reason = "审批拒绝"
+			}
 
-	// 		openId := instDetail.TaskList[0].OpenId
-	// 		user, err := getSqleUserByFeishuUserID(client, *openId, workflow.CurrentAssigneeUser())
-	// 		if err != nil {
-	// 			entry.Errorf("get user by user id error: %v", err)
-	// 			continue
-	// 		}
+			openId := instDetail.TaskList[0].OpenId
+			assigneesUsers, err := dms.GetUsers(context.Background(), workflow.CurrentAssigneeUser(), dms.GetDMSServerAddress())
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
+			user, err := getSqleUserByFeishuUserID(client, *openId, assigneesUsers)
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
 
-	// 		if err := RejectWorkflowProcess(workflow, reason, user, s); err != nil {
-	// 			entry.Errorf("reject workflow process error: %v", err)
-	// 			continue
-	// 		}
+			if err := RejectWorkflowProcess(workflow, reason, user, s); err != nil {
+				entry.Errorf("reject workflow process error: %v", err)
+				continue
+			}
 
-	// 		inst.Status = model.FeishuAuditStatusRejected
-	// 		if err := s.Save(&inst); err != nil {
-	// 			entry.Errorf("save feishu instance error: %v", err)
-	// 			continue
-	// 		}
-	// 	}
-	// }
+			inst.Status = model.FeishuAuditStatusRejected
+			if err := s.Save(&inst); err != nil {
+				entry.Errorf("save feishu instance error: %v", err)
+				continue
+			}
+		}
+	}
 }
 
 func getSqleUserByFeishuUserID(client *feishu.FeishuClient, userId string, assignees []*model.User) (*model.User, error) {
