@@ -6,7 +6,10 @@ package im
 import (
 	"context"
 	e "errors"
+	"fmt"
+	"strings"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
@@ -50,53 +53,56 @@ func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 	return nil
 }
 
-// dms-todo 当前飞书配置已经迁移，需要迁移对应代码
-// func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
-// 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
-// 	originUser, err := client.GetFeishuUserIdList([]*model.User{workflow.CreateUser}, larkContact.UserIdTypeOpenId)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if len(originUser) == 0 {
-// 		return nil
-// 	}
+func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
+	createUser, err := dms.GetUser(ctx, workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		return err
+	}
+	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
+	originUser, err := client.GetFeishuUserIdList([]*model.User{createUser}, larkContact.UserIdTypeOpenId)
+	if err != nil {
+		return err
+	}
+	if len(originUser) == 0 {
+		return nil
+	}
 
-// 	assignUserIDs, err := client.GetFeishuUserIdList(assignUsers, larkContact.UserIdTypeOpenId)
-// 	if err != nil {
-// 		return err
-// 	}
+	assignUserIDs, err := client.GetFeishuUserIdList(assignUsers, larkContact.UserIdTypeOpenId)
+	if err != nil {
+		return err
+	}
 
-// 	var tableRows []string
-// 	for _, record := range workflow.Record.InstanceRecords {
-// 		tableRow := fmt.Sprintf(FeishuAuditResultLayout, record.Instance.Name, record.Task.Score, record.Task.PassRate*100)
-// 		tableRows = append(tableRows, tableRow)
-// 	}
-// 	auditResult := strings.Join(tableRows, ",")
+	var tableRows []string
+	for _, record := range workflow.Record.InstanceRecords {
+		tableRow := fmt.Sprintf(FeishuAuditResultLayout, record.Instance.Name, record.Task.Score, record.Task.PassRate*100)
+		tableRows = append(tableRows, tableRow)
+	}
+	auditResult := strings.Join(tableRows, ",")
 
-// 	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
-// 		assignUserIDs, auditResult, workflow.Project.Name, workflow.Desc, url)
-// 	if err != nil {
-// 		return err
-// 	}
+	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
+		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url)
+	if err != nil {
+		return err
+	}
 
-// 	instDetail, err := client.GetApprovalInstDetail(ctx, *approvalInstCode)
-// 	if err != nil {
-// 		return err
-// 	}
+	instDetail, err := client.GetApprovalInstDetail(ctx, *approvalInstCode)
+	if err != nil {
+		return err
+	}
 
-// 	s := model.GetStorage()
-// 	feishuInst := &model.FeishuInstance{
-// 		ApproveInstanceCode: *approvalInstCode,
-// 		WorkflowId:          workflow.ID,
-// 		TaskID:              *instDetail.TaskList[0].Id,
-// 	}
+	s := model.GetStorage()
+	feishuInst := &model.FeishuInstance{
+		ApproveInstanceCode: *approvalInstCode,
+		WorkflowId:          workflow.WorkflowId,
+		TaskID:              *instDetail.TaskList[0].Id,
+	}
 
-// 	if err := s.Save(&feishuInst); err != nil {
-// 		return err
-// 	}
+	if err := s.Save(&feishuInst); err != nil {
+		return err
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string, user *model.User, status string, reason string) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
