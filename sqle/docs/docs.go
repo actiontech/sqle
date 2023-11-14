@@ -4819,6 +4819,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "endpoint",
+                        "name": "filter_endpoint",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "first_appear_timestamp",
                             "last_receive_timestamp",
@@ -5000,6 +5006,12 @@ var doc = `{
                         "type": "string",
                         "description": "rule name",
                         "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endpoint",
+                        "name": "filter_endpoint",
                         "in": "query"
                     },
                     {
@@ -14932,6 +14944,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditResult"
                     }
+                },
+                "endpoint": {
+                    "type": "string"
                 },
                 "first_appear_time": {
                     "type": "string"

@@ -3309,6 +3309,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditResult'
         type: array
+      endpoint:
+        type: string
       first_appear_time:
         type: string
       id:
@@ -8106,6 +8108,10 @@ paths:
         in: query
         name: filter_db_type
         type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
+        type: string
       - description: sort field
         enum:
         - first_appear_timestamp
@@ -8229,6 +8235,10 @@ paths:
       - description: rule name
         in: query
         name: filter_rule_name
+        type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
         type: string
       - description: sort field
         enum:
