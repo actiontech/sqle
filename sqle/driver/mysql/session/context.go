@@ -942,7 +942,8 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 
 // GetExecutionPlan get execution plan of SQL.
 func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
-	if ep, ok := c.executionPlan[sql]; ok {
+	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
+	if ep, ok := c.executionPlan[key]; ok {
 		return ep, nil
 	}
 
@@ -955,7 +956,7 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 		return nil, err
 	}
 
-	c.executionPlan[sql] = records
+	c.executionPlan[key] = records
 	return records, nil
 }
 
