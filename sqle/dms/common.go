@@ -34,17 +34,28 @@ func GetAllUsers(ctx context.Context, dmsAddr string) ([]*model.User, error) {
 }
 
 func GetMapUsers(ctx context.Context, userUid []string, dmsAddr string) (map[string] /*user_id*/ *model.User, error) {
-	users, _, err := dmsobject.ListUsers(ctx, controller.GetDMSServerAddress(), dmsV1.ListUserReq{PageSize: 999, PageIndex: 1, FilterDeletedUser: true, FilterByUids: strings.Join(userUid, ",")})
+	users, err := GetUsers(ctx, userUid, dmsAddr)
 	if err != nil {
 		return nil, err
 	}
 	ret := make(map[string]*model.User)
 	for _, user := range users {
-		userModel := convertListUserToModel(user)
-		ret[userModel.GetIDStr()] = userModel
+		ret[user.GetIDStr()] = user
 	}
 	if len(users) == 0 {
 		return nil, fmt.Errorf("cant't find any users")
+	}
+	return ret, nil
+}
+
+func GetUsers(ctx context.Context, userUid []string, dmsAddr string) ([]*model.User, error) {
+	users, _, err := dmsobject.ListUsers(ctx, controller.GetDMSServerAddress(), dmsV1.ListUserReq{PageSize: 999, PageIndex: 1, FilterDeletedUser: true, FilterByUids: strings.Join(userUid, ",")})
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*model.User, 0)
+	for _, user := range users {
+		ret = append(ret, convertListUserToModel(user))
 	}
 	return ret, nil
 }
