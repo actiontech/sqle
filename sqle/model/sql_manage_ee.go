@@ -25,7 +25,7 @@ const (
 	CommonAuditLevel = "normal"
 	NoticeAuditLevel = "notice"
 	WarnAuditLevel   = "warn"
-	ErrorAduitLevel  = "error"
+	ErrorAuditLevel  = "error"
 )
 
 var SqlManageSourceMap = map[string]string{
@@ -274,7 +274,7 @@ AND sm.status = 'solved'
 // 获取大于等于传参的审核等级
 // 比如：传参的值为warn，需要返回的审核等级为warn和error；传参的值为notice，需要返回notice，warn和error
 func getAuditLevelsByLowestLevel(auditLevel string) []string {
-	auditLevels := []string{CommonAuditLevel, NoticeAuditLevel, WarnAuditLevel, ErrorAduitLevel}
+	auditLevels := []string{CommonAuditLevel, NoticeAuditLevel, WarnAuditLevel, ErrorAuditLevel}
 	switch auditLevel {
 	case CommonAuditLevel:
 		return auditLevels
@@ -282,7 +282,7 @@ func getAuditLevelsByLowestLevel(auditLevel string) []string {
 		return auditLevels[1:]
 	case WarnAuditLevel:
 		return auditLevels[2:]
-	case ErrorAduitLevel:
+	case ErrorAuditLevel:
 		return auditLevels[3:]
 	default:
 		return []string{}
