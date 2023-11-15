@@ -144,6 +144,9 @@ definitions:
       db_user:
         example: database_user001
         type: string
+      end_point:
+        example: 10.186.1.2
+        type: string
       first_query_at:
         example: "2023-09-12T02:48:01.317880Z"
         type: string
@@ -3309,6 +3312,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditResult'
         type: array
+      endpoint:
+        type: string
       first_appear_time:
         type: string
       id:
@@ -8106,6 +8111,10 @@ paths:
         in: query
         name: filter_db_type
         type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
+        type: string
       - description: sort field
         enum:
         - first_appear_timestamp
@@ -8229,6 +8238,10 @@ paths:
       - description: rule name
         in: query
         name: filter_rule_name
+        type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
         type: string
       - description: sort field
         enum:
