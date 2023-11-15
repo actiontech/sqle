@@ -75,7 +75,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectById(projectUid, apnInParam)
+			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectUid, apnInParam)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
