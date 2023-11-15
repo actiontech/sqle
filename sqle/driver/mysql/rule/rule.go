@@ -5863,14 +5863,26 @@ func containsOp(ops []opcode.Op, op opcode.Op) bool {
 	return false
 }
 
+/*
+应避免在 WHERE子句中使用函数或其他运算符
+
+	触发条件：
+	1 在WHERE子句中使用了函数，并且函数作用在至少一列上
+	2 在WHERE二元操作符中使用运算符，包括：位运算符和算数运算符
+	3 如果WHERE子句中使用了像sysdate()、now()这样的函数，不作用在任何列上，则不触发规则
+*/
 func notRecommendFuncInWhere(input *RuleHandlerInput) error {
 	if where := getWhereExpr(input.Node); where != nil {
 		trigger := false
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch stmt := expr.(type) {
 			case *ast.FuncCallExpr:
-				trigger = true
-				return true
+				visitor := util.ColumnNameVisitor{}
+				stmt.Accept(&visitor)
+				if len(visitor.ColumnNameList) > 0 {
+					trigger = true
+					return true
+				}
 			case *ast.BinaryOperationExpr:
 				ops := []opcode.Op{
 					opcode.LeftShift, opcode.RightShift, opcode.And, opcode.Or, opcode.BitNeg, opcode.Xor, // 位运算符
