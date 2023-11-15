@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
@@ -34,7 +35,7 @@ alter table not_exist_tb_2 drop column v1;
 alter table not_exist_tb_1 drop column v1;
 `,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
 		newTestResult(),
 		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb_1"),
@@ -65,7 +66,7 @@ alter table not_exist_tb_1 drop column v1;
 	alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
 		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
 	)
@@ -139,7 +140,7 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	inspect2 := DefaultMysqlInspect()
