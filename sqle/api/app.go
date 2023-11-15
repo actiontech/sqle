@@ -149,6 +149,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, sqleMiddleware.AdminUserAllowed())
 
+		// 企业公告
+		v1Router.PATCH("/company_notice", v1.UpdateCompanyNotice, sqleMiddleware.AdminUserAllowed())
+
 		// 内部调用
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.AdminUserAllowed())
@@ -286,6 +289,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+
 	}
 
 	{
@@ -338,6 +342,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/audit_files", v1.DirectAuditFiles)
 		v2Router.POST("/audit_files", v2.DirectAuditFiles)
 		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
+		// 企业公告
+		v1Router.GET("/company_notice", v1.GetCompanyNotice)
 	}
 
 	// enterprise customized apis

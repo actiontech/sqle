@@ -408,3 +408,60 @@ func GetWorkflowDetailByWorkflowId(projectId, workflowId string, fn func(project
 
 	return workflow, nil
 }
+
+func GetAuditPlanWithInstanceFromProjectByName(projectId, name string, fn func(projectId, name string) (*model.AuditPlan, bool, error)) (*model.AuditPlan, bool, error) {
+	auditPlan, exist, err := fn(projectId, name)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exist {
+		return nil, false, nil
+	}
+
+	instance, exists, err := GetInstanceInProjectByName(context.Background(), projectId, name)
+	if err != nil {
+		return nil, false, err
+	}
+	if exists {
+		auditPlan.Instance = instance
+	}
+	return auditPlan, true, nil
+}
+
+func GetActiveAuditPlansWithInstance(fn func() ([]*model.AuditPlan, error)) ([]*model.AuditPlan, error) {
+	auditPlans, err := fn()
+	if err != nil {
+		return nil, err
+	}
+
+	for i, item := range auditPlans {
+		// todo dms不支持跨项目查询实例，所以单个查询
+		instance, exists, err := GetInstanceInProjectByName(context.Background(), string(item.ProjectId), item.Name)
+		if err != nil {
+			continue
+		}
+		if exists {
+			auditPlans[i].Instance = instance
+		}
+	}
+	return auditPlans, nil
+}
+
+func GetAuditPlanWithInstanceById(id uint, fn func(id uint) (*model.AuditPlan, bool, error)) (*model.AuditPlan, bool, error) {
+	auditPlan, exist, err := fn(id)
+	if err != nil {
+		return nil, false, err
+	}
+	if !exist {
+		return nil, false, nil
+	}
+
+	instance, exists, err := GetInstanceInProjectByName(context.Background(), string(auditPlan.ProjectId), auditPlan.Name)
+	if err != nil {
+		return nil, false, err
+	}
+	if exists {
+		auditPlan.Instance = instance
+	}
+	return auditPlan, true, nil
+}

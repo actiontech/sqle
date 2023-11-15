@@ -144,6 +144,9 @@ definitions:
       db_user:
         example: database_user001
         type: string
+      end_point:
+        example: 10.186.1.2
+        type: string
       first_query_at:
         example: "2023-09-12T02:48:01.317880Z"
         type: string
@@ -418,6 +421,11 @@ definitions:
       desc:
         type: string
       new_rule_template_name:
+        type: string
+    type: object
+  v1.CompanyNotice:
+    properties:
+      notice_str:
         type: string
     type: object
   v1.CreateAuditPlanReqV1:
@@ -936,6 +944,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetCompanyNoticeResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CompanyNotice'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetCustomRuleResV1:
     properties:
       code:
@@ -1416,6 +1436,19 @@ definitions:
         type: integer
       sql_manage_total_num:
         type: integer
+    type: object
+  v1.GetSqlManageRuleTipsResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RuleTips'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetSystemVariablesResV1:
     properties:
@@ -2073,6 +2106,13 @@ definitions:
         example: 全局配置
         type: string
     type: object
+  v1.RuleRespV1:
+    properties:
+      desc:
+        type: string
+      rule_name:
+        type: string
+    type: object
   v1.RuleTemplateDetailResV1:
     properties:
       db_type:
@@ -2103,6 +2143,15 @@ definitions:
         type: string
       rule_template_name:
         type: string
+    type: object
+  v1.RuleTips:
+    properties:
+      db_type:
+        type: string
+      rule:
+        items:
+          $ref: '#/definitions/v1.RuleRespV1'
+        type: array
     type: object
   v1.RuleTypeV1:
     properties:
@@ -2232,6 +2281,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditResult'
         type: array
+      endpoint:
+        type: string
       first_appear_time:
         type: string
       id:
@@ -2508,6 +2559,11 @@ definitions:
         type: string
       value:
         example: create table
+        type: string
+    type: object
+  v1.UpdateCompanyNoticeReq:
+    properties:
+      notice_str:
         type: string
     type: object
   v1.UpdateCustomRuleReqV1:
@@ -3543,6 +3599,44 @@ paths:
       summary: 获取扫描任务类型
       tags:
       - audit_plan
+  /v1/company_notice:
+    get:
+      description: get company notice info
+      operationId: getCompanyNotice
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCompanyNoticeResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取企业公告
+      tags:
+      - companyNotice
+    patch:
+      consumes:
+      - application/json
+      description: update company notice info
+      operationId: updateCompanyNotice
+      parameters:
+      - description: company notice
+        in: body
+        name: companyNotice
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCompanyNoticeReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新企业公告
+      tags:
+      - companyNotice
   /v1/configurations/ding_talk:
     get:
       description: get dingTalk configuration
@@ -5371,6 +5465,33 @@ paths:
         in: query
         name: filter_status
         type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -5472,6 +5593,33 @@ paths:
         in: query
         name: filter_status
         type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: endpoint
+        in: query
+        name: filter_endpoint
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
       responses:
         "200":
           description: export sql manage
@@ -5480,6 +5628,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 导出SQL管控
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/rule_tips:
+    get:
+      description: get sql manage rule tips
+      operationId: GetSqlManageRuleTips
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageRuleTipsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控规则tips
       tags:
       - SqlManage
   /v1/projects/{project_name}/statistic/audit_plans:
@@ -5728,6 +5896,10 @@ paths:
       - description: input mybatis XML file
         in: formData
         name: input_mybatis_xml_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
         type: file
       produces:
       - application/json
@@ -7004,6 +7176,7 @@ paths:
         1. formData[sql]: sql content;
         2. file[input_sql_file]: it is a sql file;
         3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+        4. file[input_zip_file]: it is zip file, sql will be parsed from it.
       operationId: auditTaskGroupIdV1
       parameters:
       - description: group id of tasks
@@ -7022,6 +7195,10 @@ paths:
       - description: input mybatis XML file
         in: formData
         name: input_mybatis_xml_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
         type: file
       produces:
       - application/json

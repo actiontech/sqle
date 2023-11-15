@@ -214,9 +214,25 @@ func (o *Optimizer) parseSelectStmt(ss *ast.SelectStmt) {
 				o.tables[rightCNE.Name.Table.O] = &tableInSelect{joinOnColumn: rightCNE.Name.Name.L}
 
 			} else if ss.From.TableRefs.Using != nil {
-				//FIXME  Panic Here by SQL SELECT * FROM table_1 JOIN table_2 on table_1.id = table_2.id JOIN table_3 USING (column_name); USING在最后并且是多表JOIN的最后
-				leftTableName := left.(*ast.TableSource).Source.(*ast.TableName).Name.O
-				rightTableName := right.(*ast.TableSource).Source.(*ast.TableName).Name.O
+				leftSource, ok := left.(*ast.TableSource)
+				if !ok {
+					continue
+				}
+				leftTable, ok := leftSource.Source.(*ast.TableName)
+				if !ok {
+					continue
+				}
+				leftTableName := leftTable.Name.O
+
+				rightSource, ok := right.(*ast.TableSource)
+				if !ok {
+					continue
+				}
+				rightTable, ok := rightSource.Source.(*ast.TableName)
+				if !ok {
+					continue
+				}
+				rightTableName := rightTable.Name.O
 				for _, col := range ss.From.TableRefs.Using {
 					o.tables[leftTableName] = &tableInSelect{joinOnColumn: col.Name.L}
 					o.tables[rightTableName] = &tableInSelect{joinOnColumn: col.Name.L}
