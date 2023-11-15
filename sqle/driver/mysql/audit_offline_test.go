@@ -320,7 +320,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT= "unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutIfNotExists),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutIfNotExists),
 	)
 }
 
@@ -335,7 +335,7 @@ func TestCheckObjectNameUsingKeywordOffline(t *testing.T) {
 			"PRIMARY KEY (id),"+
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameUsingKeyword, "select, create, show").
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameUsingKeyword, "select, create, show").
 			addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 }
@@ -354,7 +354,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length64),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table length > 64", DefaultMysqlInspectOffline(),
@@ -367,7 +367,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspectOffline(),
@@ -380,7 +380,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: index length > 64", DefaultMysqlInspectOffline(),
@@ -394,7 +394,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspectOffline(),
@@ -479,7 +479,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutAutoIncrement),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not bigint unsigned(1)", DefaultMysqlInspectOffline(),
@@ -506,7 +506,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
 	)
 }
 
@@ -521,7 +521,7 @@ func TestCheckColumnCharLengthOffline(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: check char(21)", DefaultMysqlInspectOffline(),
@@ -535,7 +535,7 @@ func TestCheckColumnCharLengthOffline(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult().addResult(rulepkg.DDLCheckColumnCharLength),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnCharLength),
 	)
 }
 
@@ -666,7 +666,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspectOffline(),
@@ -681,7 +681,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -705,7 +705,7 @@ PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLDisableFK),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLDisableFK),
 	)
 }
 
@@ -836,7 +836,7 @@ PRIMARY KEY (id),
 INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: index prefix not idx_", DefaultMysqlInspectOffline(),
@@ -918,7 +918,7 @@ v1 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column without default", DefaultMysqlInspectOffline(),
@@ -961,7 +961,7 @@ v1 timestamp COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).addResult(rulepkg.DDLDisableTypeTimestamp),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspectOffline(),
@@ -985,7 +985,7 @@ v1 blob NOT NULL COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull).
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnBlobWithNotNull).
 			addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v1"),
 	)
 
@@ -1008,7 +1008,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobDefaultIsNotNull),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnBlobDefaultIsNotNull),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspectOffline(),
@@ -2015,7 +2015,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-			newTestResult(),
+			newTestResult().addResult(rulepkg.DDLCheckPKName),
 		)
 		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
@@ -2071,7 +2071,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-			newTestResult(),
+			newTestResult().addResult(rulepkg.DDLCheckPKName),
 		)
 		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
@@ -2283,15 +2283,15 @@ func Test_DDL_CHECK_PK_NAMEOffline(t *testing.T) {
 	for _, sql := range []string{
 		`create table t1(id int, primary key pk_t1(id))`,
 		`create table t1(id int, primary key PK_T1(id))`,
-		`create table t1(id int, primary key(id))`,
-		`alter table exist_db.exist_tb_2 Add primary key(id)`,
 		`alter table exist_db.exist_tb_2 Add primary key PK_EXIST_TB_2(id)`} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKName].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult())
 	}
 
 	for _, sql := range []string{
 		`create table t1(id int, primary key wrongPK(id))`,
-		`alter table exist_db.exist_tb_2 Add primary key wrongPK(id)`} {
+		`alter table exist_db.exist_tb_2 Add primary key wrongPK(id)`,
+		`create table t1(id int, primary key(id))`,
+		`alter table exist_db.exist_tb_2 Add primary key(id)`} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKName].Rule, t, "", DefaultMysqlInspectOffline(), sql, newTestResult().addResult(rulepkg.DDLCheckPKName))
 	}
 }
