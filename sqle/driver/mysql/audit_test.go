@@ -5387,13 +5387,10 @@ func TestDMLNotRecommendFuncInWhere(t *testing.T) {
 		`SELECT * FROM exist_tb_1 WHERE UNIX_TIMESTAMP(v1) BETWEEN UNIX_TIMESTAMP('2018-11-16 09:46:00 +0800 CST') AND UNIX_TIMESTAMP('2018-11-22 00:00:00 +0800 CST')`,
 		`select id from exist_tb_1 where id/2 = 100`,
 		`select id from exist_tb_1 where id/2 < 100`,
-		`SELECT * FROM exist_tb_1 WHERE DATE '2020-01-01'`,
-		`DELETE FROM exist_tb_1 WHERE DATE '2020-01-01'`,
-		`UPDATE exist_tb_1 SET id = 1 WHERE DATE '2020-01-01'`,
-		`SELECT * FROM exist_tb_1 WHERE TIME '10:01:01'`,
-		`SELECT * FROM exist_tb_1 WHERE TIMESTAMP '1587181360'`,
-		`select * from exist_tb_1 where id = "root" and date '2020-02-01'`,
 		`select id from exist_tb_1 where 'abc'=substring(v1,1,3);`,
+		`SELECT * FROM exist_tb_1 WHERE DATE(exist_tb_1.update_time)`,
+		`SELECT * FROM exist_tb_1 WHERE TIMESTAMP(exist_tb_1.update_time)`,
+		`SELECT * FROM exist_tb_1 WHERE TIME(exist_tb_1.update_time)`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendFuncInWhere].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DMLNotRecommendFuncInWhere))
 	}
@@ -5401,6 +5398,12 @@ func TestDMLNotRecommendFuncInWhere(t *testing.T) {
 	for _, sql := range []string{
 		`select id from exist_tb_1 where v1 = (select 1)`,
 		`select id from exist_tb_1 where v1 = 1`,
+		`SELECT * FROM exist_tb_1 WHERE DATE '2020-01-01'`,
+		`DELETE FROM exist_tb_1 WHERE DATE '2020-01-01'`,
+		`UPDATE exist_tb_1 SET id = 1 WHERE DATE('2020-01-01')`,
+		`SELECT * FROM exist_tb_1 WHERE TIME('10:01:01')`,
+		`SELECT * FROM exist_tb_1 WHERE TIMESTAMP('1587181360')`,
+		`select * from exist_tb_1 where id = "root" and date '2020-02-01'`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLNotRecommendFuncInWhere].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
 	}
