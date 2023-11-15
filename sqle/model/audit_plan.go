@@ -101,7 +101,7 @@ func (s *Storage) GetAuditPlans() ([]*AuditPlan, error) {
 
 func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
 	var aps []*AuditPlan
-	err := s.db.Model(AuditPlan{}).Debug().
+	err := s.db.Model(AuditPlan{}).
 		Where("project_status = ?", ProjectStatusActive).
 		Find(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
@@ -127,7 +127,7 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(ap).
+	err := s.db.Model(AuditPlan{}).
 		Where("project_status = ?", ProjectStatusActive).
 		Where("id = ?", id).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {
