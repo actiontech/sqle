@@ -15,6 +15,7 @@ import (
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	driver "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/pingcap/tidb/sessionctx/stmtctx"
 )
 
 func ParseSql(sql string) ([]ast.StmtNode, error) {
@@ -269,6 +270,57 @@ func WhereStmtHasSubQuery(where ast.ExprNode) bool {
 	return hasSubQuery
 }
 
+func compareValueExpr(binary *ast.BinaryOperationExpr) bool {
+	col1, ok := binary.R.(*driver.ValueExpr)
+	if !ok {
+		return false
+	}
+	col2, ok := binary.L.(*driver.ValueExpr)
+	if !ok {
+		return false
+	}
+	// 暂时只判断相同类型数据的比值，不考虑隐式转换
+	if col1.Datum.GetValue() != col2.Datum.GetValue() {
+		return false
+	}
+	sc := &stmtctx.StatementContext{}
+	// col1 < col2; return -1
+	// col1 == col2; return 0
+	// col1 > col2; return 1
+	result, err := col1.CompareDatum(sc, &col2.Datum)
+	if err != nil {
+		return false
+	}
+	switch binary.Op {
+	case opcode.GE:
+		if result == 1 || result == 0 {
+			return true
+		}
+	case opcode.GT:
+		if result == 1 {
+			return true
+		}
+	case opcode.LE:
+		if result == 0 || result == -1 {
+			return true
+		}
+	case opcode.LT:
+		if result == -1 {
+			return true
+		}
+	case opcode.EQ:
+		if result == 0 {
+			return true
+		}
+	case opcode.NE:
+		if result != 0 {
+			return true
+		}
+	}
+	
+	return false
+}
+
 func WhereStmtHasOneColumn(where ast.ExprNode) bool {
 	hasColumn := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
@@ -283,6 +335,11 @@ func WhereStmtHasOneColumn(where ast.ExprNode) bool {
 			hasColumn = true
 			return true
 		case *ast.BinaryOperationExpr:
+			compareResult := compareValueExpr(x)
+			if compareResult {
+				hasColumn = true
+				return true
+			}
 			col1, ok := x.R.(*ast.ColumnNameExpr)
 			if !ok {
 				return false
