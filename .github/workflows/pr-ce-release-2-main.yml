@@ -20,3 +20,6 @@ jobs:
         branch: ${{ github.repository == 'actiontech/sqle-ee' && 'main-ee' || 'main' }}
         labels: |
           cherry-pick
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
