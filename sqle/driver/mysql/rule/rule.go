@@ -5118,15 +5118,25 @@ func checkDatabaseSuffix(input *RuleHandlerInput) error {
 	return nil
 }
 
+/*
+规则：建议主键命名为"PK_表名"
+
+	触发条件:
+	1 是创建或变更表的DDL语句
+	2 DDL语句中创建或修改了主键
+	3 未对该主键命名或主键命名不遵循PK_表名的规范
+*/
 func checkPKIndexName(input *RuleHandlerInput) error {
 	indexesName := ""
 	tableName := ""
+	var hasPrimaryKey bool
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, constraint := range stmt.Constraints {
 			if constraint.Tp == ast.ConstraintPrimaryKey {
 				indexesName = constraint.Name
 				tableName = stmt.Table.Name.String()
+				hasPrimaryKey = true
 				break
 			}
 		}
@@ -5136,13 +5146,14 @@ func checkPKIndexName(input *RuleHandlerInput) error {
 			if spec.Constraint != nil && spec.Constraint.Tp == ast.ConstraintPrimaryKey {
 				indexesName = spec.Constraint.Name
 				tableName = stmt.Table.Name.String()
+				hasPrimaryKey = true
 				break
 			}
 		}
 	default:
 		return nil
 	}
-	if indexesName != "" && !strings.EqualFold(indexesName, "PK_"+tableName) {
+	if hasPrimaryKey && !strings.EqualFold(indexesName, "PK_"+tableName) {
 		addResult(input.Res, input.Rule, DDLCheckPKName)
 		return nil
 	}
