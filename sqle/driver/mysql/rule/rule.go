@@ -2141,7 +2141,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckAggregate,
 			Desc:       "不建议使用聚合函数",
-			Annotation: "不建议使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Annotation: "不建议使用SQL聚合函数,是为了确保查询的简单性、高性能和数据一致性。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
