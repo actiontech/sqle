@@ -113,8 +113,8 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit 
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
 					newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
 						add(driverV2.RuleLevelWarn, "", "这些索引字段(b1)需要有非空约束"),
 					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
 					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
@@ -229,8 +229,8 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
 					newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
 					newTestResult(),
 				)
 			})
@@ -250,8 +250,8 @@ PRIMARY KEY (id)
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
 					newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
 					newTestResult(),
 				)
 			})
