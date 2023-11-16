@@ -823,7 +823,7 @@ type AuditPlanSQLReqV1 struct {
 	QueryTimeMax         *float64  `json:"query_time_max" from:"query_time_max" example:"5.22"`
 	FirstQueryAt         time.Time `json:"first_query_at" from:"first_query_at" example:"2023-09-12T02:48:01.317880Z"`
 	DBUser               string    `json:"db_user" from:"db_user" example:"database_user001"`
-	EndPoint             string    `json:"end_point" from:"end_point" example:"10.186.1.2"`
+	Endpoint             string    `json:"endpoint" from:"endpoint" example:"10.186.1.2"`
 }
 
 // @Summary 全量同步SQL到扫描任务
