@@ -274,11 +274,11 @@ func WhereStmtHasSubQuery(where ast.ExprNode) bool {
 func getBinaryExprCompateResult(binary *ast.BinaryOperationExpr) (bool, error) {
 	col1, ok := binary.L.(*driver.ValueExpr)
 	if !ok {
-		return false, errors.New("binary.R is not driver.ValueExpr")
+		return false, errors.New("binary.L is not driver.ValueExpr")
 	}
 	col2, ok := binary.R.(*driver.ValueExpr)
 	if !ok {
-		return false, errors.New("binary.L is not driver.ValueExpr")
+		return false, errors.New("binary.R is not driver.ValueExpr")
 	}
 	// 暂时只判断相同类型数据的比值，不考虑隐式转换
 	if col1.Datum.Kind() != col2.Datum.Kind() {
