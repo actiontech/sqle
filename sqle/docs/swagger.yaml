@@ -144,7 +144,7 @@ definitions:
       db_user:
         example: database_user001
         type: string
-      end_point:
+      endpoint:
         example: 10.186.1.2
         type: string
       first_query_at:
