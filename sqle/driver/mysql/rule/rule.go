@@ -231,9 +231,13 @@ type RuleHandler struct {
 }
 
 func init() {
+	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
+	if err != nil {
+		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
+	}
 	for i, rh := range RuleHandlers {
-		if knowledge, ok := defaultRuleKnowledgeMap[rh.Rule.Name]; ok {
-			rh.Rule.Knowledge = knowledge
+		if knowledge, ok := defaultRulesKnowledge[rh.Rule.Name]; ok {
+			rh.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh
@@ -3157,7 +3161,7 @@ func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, whereList []ast.
 				addResult(res, rule, DMLCheckWhereIsInvalid)
 				break
 			}
-			if !util.WhereStmtHasOneColumn(where) {
+			if !util.WhereStmtNotAlwaysTrue(where) {
 				addResult(res, rule, DMLCheckWhereIsInvalid)
 				break
 			}

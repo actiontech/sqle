@@ -14,6 +14,7 @@ import (
 	_model "github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
+	"github.com/pingcap/tidb/sessionctx/stmtctx"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -269,20 +270,78 @@ func WhereStmtHasSubQuery(where ast.ExprNode) bool {
 	return hasSubQuery
 }
 
-func WhereStmtHasOneColumn(where ast.ExprNode) bool {
-	hasColumn := false
+// compare binary.L to binary.R
+func getBinaryExprCompateResult(binary *ast.BinaryOperationExpr) (bool, error) {
+	col1, ok := binary.L.(*driver.ValueExpr)
+	if !ok {
+		return false, errors.New("binary.L is not driver.ValueExpr")
+	}
+	col2, ok := binary.R.(*driver.ValueExpr)
+	if !ok {
+		return false, errors.New("binary.R is not driver.ValueExpr")
+	}
+	// 暂时只判断相同类型数据的比值，不考虑隐式转换
+	if col1.Datum.Kind() != col2.Datum.Kind() {
+		return false, nil
+	}
+	sc := &stmtctx.StatementContext{}
+
+	// col1 < col2; return -1
+	// col1 == col2; return 0
+	// col1 > col2; return 1
+	result, err := col1.CompareDatum(sc, &col2.Datum)
+	if err != nil {
+		return false, err
+	}
+	switch binary.Op {
+	case opcode.GE:
+		if result == 1 || result == 0 {
+			return true, nil
+		}
+	case opcode.GT:
+		if result == 1 {
+			return true, nil
+		}
+	case opcode.LE:
+		if result == 0 || result == -1 {
+			return true, nil
+		}
+	case opcode.LT:
+		if result == -1 {
+			return true, nil
+		}
+	case opcode.EQ:
+		if result == 0 {
+			return true, nil
+		}
+	case opcode.NE:
+		if result != 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func WhereStmtNotAlwaysTrue(where ast.ExprNode) bool {
+	notAlwaysTrue := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.FuncCallExpr:
-			hasColumn = true
+			notAlwaysTrue = true
 			return true
 		case *ast.ColumnNameExpr:
-			hasColumn = true
+			notAlwaysTrue = true
 			return true
 		case *ast.ExistsSubqueryExpr:
-			hasColumn = true
+			notAlwaysTrue = true
 			return true
 		case *ast.BinaryOperationExpr:
+			compareResult, err := getBinaryExprCompateResult(x)
+			if err == nil && !compareResult {
+				notAlwaysTrue = true
+				return true
+			}
 			col1, ok := x.R.(*ast.ColumnNameExpr)
 			if !ok {
 				return false
@@ -297,7 +356,7 @@ func WhereStmtHasOneColumn(where ast.ExprNode) bool {
 		}
 		return false
 	}, where)
-	return hasColumn
+	return notAlwaysTrue
 }
 
 func IsFuncUsedOnColumnInWhereStmt(cols map[string]struct{}, where ast.ExprNode) bool {
