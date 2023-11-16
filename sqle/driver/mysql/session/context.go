@@ -743,6 +743,10 @@ func (c *Context) GetSelectivityOfIndex(stmt *ast.TableName, indexNames []string
 	if len(indexNames) == 0 || stmt == nil {
 		return nil, nil
 	}
+	if exist, _ := c.IsTableExist(stmt); !exist {
+		// would not get selectivity if table not exist
+		return nil, fmt.Errorf("table not exist")
+	}
 	schemaName := c.GetSchemaName(stmt)
 	tableName := stmt.Name.L
 	cachedIndexSelectivity := make(map[string]float64)
@@ -826,6 +830,10 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 	if stmt == nil || len(indexColumns) == 0 {
 		return nil, nil
 	}
+	if exist, _ := c.IsTableExist(stmt); !exist {
+		// would not get selectivity if table not exist
+		return nil, fmt.Errorf("table not exist")
+	}
 	schemaName := c.GetSchemaName(stmt)
 	tableName := stmt.Name.L
 	cachedIndexSelectivity := make(map[string]float64)
@@ -843,7 +851,7 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 	}
 	columnSelectivity, err := c.getSelectivityByColumn(columns)
 	if err != nil {
-		return nil, fmt.Errorf("get selectivity by index error: %v", err)
+		return nil, fmt.Errorf("get selectivity by column error: %v", err)
 	}
 	for indexName, selectivity := range columnSelectivity {
 		c.addSelectivity(schemaName, tableName, indexName, selectivity)
@@ -934,7 +942,8 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 
 // GetExecutionPlan get execution plan of SQL.
 func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
-	if ep, ok := c.executionPlan[sql]; ok {
+	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
+	if ep, ok := c.executionPlan[key]; ok {
 		return ep, nil
 	}
 
@@ -947,7 +956,7 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 		return nil, err
 	}
 
-	c.executionPlan[sql] = records
+	c.executionPlan[key] = records
 	return records, nil
 }
 

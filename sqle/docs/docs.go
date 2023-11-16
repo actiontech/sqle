@@ -113,6 +113,67 @@ var doc = `{
                 }
             }
         },
+        "/v1/company_notice": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get company notice info",
+                "tags": [
+                    "companyNotice"
+                ],
+                "summary": "获取企业公告",
+                "operationId": "getCompanyNotice",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCompanyNoticeResp"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update company notice info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "companyNotice"
+                ],
+                "summary": "更新企业公告",
+                "operationId": "updateCompanyNotice",
+                "parameters": [
+                    {
+                        "description": "company notice",
+                        "name": "companyNotice",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCompanyNoticeReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/ding_talk": {
             "get": {
                 "security": [
@@ -2946,6 +3007,45 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endpoint",
+                        "name": "filter_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -3095,6 +3195,45 @@ var doc = `{
                         "description": "status",
                         "name": "filter_status",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "endpoint",
+                        "name": "filter_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3102,6 +3241,38 @@ var doc = `{
                         "description": "export sql manage",
                         "schema": {
                             "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages/rule_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage rule tips",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控规则tips",
+                "operationId": "GetSqlManageRuleTips",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageRuleTipsResp"
                         }
                     }
                 }
@@ -3498,6 +3669,12 @@ var doc = `{
                         "type": "file",
                         "description": "input mybatis XML file",
                         "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
                         "in": "formData"
                     }
                 ],
@@ -5462,7 +5639,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.",
+                "description": "audit task group.\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is zip file, sql will be parsed from it.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -5498,6 +5675,12 @@ var doc = `{
                         "type": "file",
                         "description": "input mybatis XML file",
                         "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
                         "in": "formData"
                     }
                 ],
@@ -7155,6 +7338,10 @@ var doc = `{
                     "type": "string",
                     "example": "database_user001"
                 },
+                "end_point": {
+                    "type": "string",
+                    "example": "10.186.1.2"
+                },
                 "first_query_at": {
                     "type": "string",
                     "example": "2023-09-12T02:48:01.317880Z"
@@ -7558,6 +7745,14 @@ var doc = `{
                     "type": "string"
                 },
                 "new_rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CompanyNotice": {
+            "type": "object",
+            "properties": {
+                "notice_str": {
                     "type": "string"
                 }
             }
@@ -8306,6 +8501,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetCompanyNoticeResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CompanyNotice"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetCustomRuleResV1": {
             "type": "object",
             "properties": {
@@ -9000,6 +9212,25 @@ var doc = `{
                 },
                 "sql_manage_total_num": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetSqlManageRuleTipsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleTips"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -9972,6 +10203,17 @@ var doc = `{
                 }
             }
         },
+        "v1.RuleRespV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RuleTemplateDetailResV1": {
             "type": "object",
             "properties": {
@@ -10017,6 +10259,20 @@ var doc = `{
                 },
                 "rule_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.RuleTips": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "rule": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RuleRespV1"
+                    }
                 }
             }
         },
@@ -10210,6 +10466,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.AuditResult"
                     }
+                },
+                "endpoint": {
+                    "type": "string"
                 },
                 "first_appear_time": {
                     "type": "string"
@@ -10617,6 +10876,14 @@ var doc = `{
                 "value": {
                     "type": "string",
                     "example": "create table"
+                }
+            }
+        },
+        "v1.UpdateCompanyNoticeReq": {
+            "type": "object",
+            "properties": {
+                "notice_str": {
+                    "type": "string"
                 }
             }
         },
