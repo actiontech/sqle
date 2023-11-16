@@ -466,12 +466,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckPKWithoutIfNotExists,
-			Desc:       "新建表必须加入 IF NOT EXISTS，保证重复执行不报错",
+			Desc:       "新建表建议加入 IF NOT EXISTS，保证重复执行不报错",
 			Annotation: "新建表如果表已经存在，不添加IF NOT EXISTS CREATE执行SQL会报错，建议开启此规则，避免SQL实际执行报错",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 		},
-		Message:      "新建表必须加入 IF NOT EXISTS，保证重复执行不报错",
+		Message:      "新建表建议加入 IF NOT EXISTS，保证重复执行不报错",
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
@@ -565,12 +565,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckHasJoinCondition,
-			Desc:       "连接操作必须指定连接条件",
+			Desc:       "建议连接操作指定连接条件",
 			Annotation: "指定连接条件可以确保连接操作的正确性和可靠性，如果没有指定连接条件，可能会导致连接失败或连接不正确的情况。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message:      "连接操作必须指定连接条件，JOIN字段后必须有ON条件",
+		Message:      "建议连接操作指定连接条件，JOIN字段后必须有ON条件",
 		AllowOffline: true,
 		Func:         checkHasJoinCondition,
 	},
@@ -589,12 +589,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckFieldNotNUllMustContainDefaultValue,
-			Desc:       "字段约束为NOT NULL时必须带默认值",
+			Desc:       "建议字段约束为NOT NULL时带默认值",
 			Annotation: "如存在NOT NULL且不带默认值的字段，INSERT时不包含该字段，会导致插入报错",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
-		Message:      "字段约束为NOT NULL时必须带默认值，以下字段不规范:%v",
+		Message:      "建议字段约束为NOT NULL时带默认值，以下字段不规范:%v",
 		AllowOffline: true,
 		Func:         checkFieldNotNUllMustContainDefaultValue,
 	},
@@ -625,7 +625,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckCreateTimeColumn,
-			Desc:       "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
+			Desc:       "建议建表DDL包含创建时间字段且默认值为CURRENT_TIMESTAMP",
 			Annotation: "使用CREATE_TIME字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为CURRENT_TIMESTAMP可保证时间的准确性",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
@@ -638,7 +638,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "建表DDL必须包含%v字段且默认值为CURRENT_TIMESTAMP",
+		Message:      "建议建表DDL包含%v字段且默认值为CURRENT_TIMESTAMP",
 		AllowOffline: true,
 		Func:         checkFieldCreateTime,
 	},
@@ -668,7 +668,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckUpdateTimeColumn,
-			Desc:       "建表DDL必须包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+			Desc:       "建表DDL需要包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 			Annotation: "使用更新时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为UPDATE_TIME可保证时间的准确性",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
@@ -681,7 +681,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "建表DDL必须包含%v字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		Message:      "建表DDL需要包含%v字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
 		AllowOffline: true,
 		Func:         checkFieldUpdateTime,
 	},
@@ -748,7 +748,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckTableDBEngine,
-			Desc:       "必须使用指定数据库引擎",
+			Desc:       "建议使用指定数据库引擎",
 			Annotation: "通过配置该规则可以规范指定业务的数据库引擎，具体规则可以自定义设置。默认值是INNODB，INNODB 支持事务，支持行级锁，更好的恢复性，高并发下性能更好",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDDLConvention,
@@ -762,14 +762,14 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "必须使用%v数据库引擎",
+		Message:      "建议使用%v数据库引擎",
 		AllowOffline: false,
 		Func:         checkEngine,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckTableCharacterSet,
-			Desc:       "必须使用指定数据库字符集",
+			Desc:       "建议使用指定数据库字符集",
 			Annotation: "通过该规则约束全局的数据库字符集，避免创建非预期的字符集，防止业务侧出现“乱码”等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDDLConvention,
@@ -783,7 +783,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "必须使用%v数据库字符集",
+		Message:      "建议使用%v数据库字符集",
 		AllowOffline: false,
 		Func:         checkCharacterSet,
 	},
@@ -877,7 +877,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckIndexPrefix,
-			Desc:       "普通索引必须使用固定前缀",
+			Desc:       "建议普通索引使用固定前缀",
 			Annotation: "通过配置该规则可以规范指定业务的索引命名规则，具体命名规范可以自定义设置，默认提示值：idx_",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeNamingConvention,
@@ -891,14 +891,14 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "普通索引必须要以\"%v\"为前缀",
+		Message:      "建议普通索引要以\"%v\"为前缀",
 		AllowOffline: true,
 		Func:         checkIndexPrefix,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckUniqueIndexPrefix,
-			Desc:       "UNIQUE索引必须使用固定前缀",
+			Desc:       "建议UNIQUE索引使用固定前缀",
 			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeNamingConvention,
@@ -912,19 +912,19 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "UNIQUE索引必须要以\"%v\"为前缀",
+		Message:      "建议UNIQUE索引要以\"%v\"为前缀",
 		AllowOffline: true,
 		Func:         checkUniqIndexPrefix,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckUniqueIndex,
-			Desc:       "UNIQUE索引名必须使用 IDX_UK_表名_字段名",
+			Desc:       "建议UNIQUE索引名使用 IDX_UK_表名_字段名",
 			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeNamingConvention,
 		},
-		Message:      "UNIQUE索引名必须使用 IDX_UK_表名_字段名",
+		Message:      "建议UNIQUE索引名使用 IDX_UK_表名_字段名",
 		AllowOffline: true,
 		Func:         checkUniqIndex,
 	},
@@ -1015,7 +1015,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckSelectLimit,
-			Desc:       "SELECT 语句必须带LIMIT",
+			Desc:       "SELECT 语句需要带LIMIT",
 			Annotation: "如果查询的扫描行数很大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：1000",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
@@ -1028,7 +1028,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "SELECT 语句必须带LIMIT,且限制数不得超过%v",
+		Message:      "SELECT 语句需要带LIMIT,且限制数不得超过%v",
 		AllowOffline: true,
 		Func:         checkSelectLimit,
 	},
@@ -1060,12 +1060,12 @@ var RuleHandlers = []RuleHandler{
 		// TODO: 修改level以适配默认模板
 		Rule: driverV2.Rule{
 			Name:       DMLCheckInsertColumnsExist,
-			Desc:       "INSERT 语句必须指定COLUMN",
+			Desc:       "INSERT 语句需要指定COLUMN",
 			Annotation: "当表结构发生变更，INSERT请求不明确指定列名，会发生插入数据不匹配的情况；建议开启此规则，避免插入结果与业务预期不符",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message:      "INSERT 语句必须指定COLUMN",
+		Message:      "INSERT 语句需要指定COLUMN",
 		AllowOffline: true,
 		Func:         checkDMLWithInsertColumnExist,
 	},
@@ -1113,12 +1113,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckPKProhibitAutoIncrement,
-			Desc:       "主键禁止使用自增",
+			Desc:       "不建议主键使用自增",
 			Annotation: "后期维护相对不便，过于依赖数据库自增机制达到全局唯一，不易拆分，容易造成主键冲突",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeIndexingConvention,
 		},
-		Message:                         "主键禁止使用自增",
+		Message:                         "不建议主键使用自增",
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
@@ -1163,35 +1163,35 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckWhereExistImplicitConversion,
-			Desc:       "禁止WHERE条件中使用与过滤字段不一致的数据类型",
+			Desc:       "不建议在WHERE条件中使用与过滤字段不一致的数据类型",
 			Annotation: "WHERE条件中使用与过滤字段不一致的数据类型会引发隐式数据类型转换，导致查询有无法命中索引的风险，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message: "禁止WHERE条件中使用与过滤字段不一致的数据类型",
+		Message: "不建议在WHERE条件中使用与过滤字段不一致的数据类型",
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckLimitMustExist,
-			Desc:       "DELETE/UPDATE 语句必须有LIMIT条件",
+			Desc:       "建议DELETE/UPDATE 语句带有LIMIT条件",
 			Annotation: "LIMIT条件可以降低写错 SQL 的代价（删错数据），同时避免长事务影响业务",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message:      "DELETE/UPDATE 语句必须有LIMIT条件",
+		Message:      "建议DELETE/UPDATE 语句带有LIMIT条件",
 		Func:         checkDMLLimitExist,
 		AllowOffline: true,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckWhereExistScalarSubquery,
-			Desc:       "避免使用标量子查询",
+			Desc:       "不建议使用标量子查询",
 			Annotation: "标量子查询存在多次访问同一张表的问题，执行开销大效率低，可使用LEFT JOIN 替代标量子查询",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message:      "避免使用标量子查询",
+		Message:      "不建议使用标量子查询",
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
@@ -1307,7 +1307,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckDatabaseSuffix,
-			Desc:       "数据库名称必须使用固定后缀结尾",
+			Desc:       "建议数据库名称使用固定后缀结尾",
 			Annotation: "通过配置该规则可以规范指定业务的数据库命名规则，具体命名规范可以自定义设置，默认提示值：_DB",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeNamingConvention,
@@ -1321,7 +1321,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "数据库名称必须以\"%v\"结尾",
+		Message:      "建议数据库名称以\"%v\"结尾",
 		Func:         checkDatabaseSuffix,
 		AllowOffline: true,
 	},
@@ -1571,12 +1571,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLDisableTypeTimestamp,
-			Desc:       "禁止使用TIMESTAMP字段",
+			Desc:       "不建议使用TIMESTAMP字段",
 			Annotation: "TIMESTAMP 有最大值限制（'2038-01-19 03:14:07' UTC），且会时区转换的问题",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 		},
-		Message:      "禁止使用TIMESTAMP字段",
+		Message:      "不建议使用TIMESTAMP字段",
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
@@ -1911,12 +1911,12 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{ //TRUNCATE TABLE tbl_name
 			Name:       DMLHintTruncateTips,
-			Desc:       "禁止使用TRUNCATE操作",
+			Desc:       "不建议使用TRUNCATE操作",
 			Annotation: "TRUNCATE是DLL，数据不能回滚，在没有备份情况下，谨慎使用TRUNCATE",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message: "禁止使用TRUNCATE操作",
+		Message: "不建议使用TRUNCATE操作",
 		Func:    hintTruncateTips,
 	}, {
 		Rule: driverV2.Rule{ //delete from t where col = 'condition'
@@ -1931,12 +1931,12 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driverV2.Rule{ //SELECT BENCHMARK(10, RAND())
 			Name:       DMLCheckSQLInjectionFunc,
-			Desc:       "禁止使用常见 SQL 注入函数",
+			Desc:       "不建议使用常见 SQL 注入函数",
 			Annotation: "攻击者通过SQL注入，可未经授权可访问数据库中的数据，存在盗取用户信息，造成用户数据泄露等安全漏洞问题",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message: "禁止使用常见 SQL 注入函数",
+		Message: "不建议使用常见 SQL 注入函数",
 		Func:    checkSQLInjectionFunc,
 	}, {
 		Rule: driverV2.Rule{ //select col1,col2 from tbl where type!=0
@@ -1961,12 +1961,12 @@ var RuleHandlers = []RuleHandler{
 	}, {
 		Rule: driverV2.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
 			Name:       DMLCheckSubqueryLimit,
-			Desc:       "禁止在子查询中使用LIMIT",
+			Desc:       "不建议在子查询中使用LIMIT",
 			Annotation: "部分MySQL版本不支持在子查询中进行'LIMIT & IN/ALL/ANY/SOME'",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
-		Message: "禁止在子查询中使用LIMIT",
+		Message: "不建议在子查询中使用LIMIT",
 		Func:    checkSubqueryLimit,
 	}, {
 		Rule: driverV2.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
@@ -2116,7 +2116,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckExplainUsingIndex,
-			Desc:       "SQL查询条件必须走索引",
+			Desc:       "SQL查询条件需要走索引",
 			Annotation: "使用索引可以显著提高SQL查询的性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
@@ -2128,25 +2128,25 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckInsertSelect,
-			Desc:       "禁止INSERT ... SELECT",
+			Desc:       "不建议使用INSERT ... SELECT",
 			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
-		Message:      "禁止 INSERT ... SELECT",
+		Message:      "不建议使用INSERT ... SELECT",
 		Func:         checkInsertSelect,
 	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckAggregate,
-			Desc:       "禁止使用聚合函数",
-			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
+			Desc:       "不建议使用聚合函数",
+			Annotation: "不建议使用SQL聚合函数,是为了确保查询的简单性、高性能和数据一致性。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用聚合函数计算",
+		Message:      "不建议使用聚合函数计算",
 		Func:         checkAggregateFunc,
 	},
 	{
