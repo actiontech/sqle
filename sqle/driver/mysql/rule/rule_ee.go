@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"path"
+	"strings"
 )
 
 //go:embed default_knowledge_ee
@@ -24,7 +25,7 @@ func getDefaultRulesKnowledge() (map[string]string, error) {
 		if entry.IsDir() {
 			continue
 		}
-		ruleName := entry.Name()
+		ruleName := strings.TrimSuffix(entry.Name(), ".md")
 		filePath := path.Join(defaultKnowledgeRootDir, entry.Name())
 		content, err := f.ReadFile(filePath)
 		if err != nil {
