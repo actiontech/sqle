@@ -10321,7 +10321,7 @@ var doc = `{
                     "type": "string",
                     "example": "database_user001"
                 },
-                "end_point": {
+                "endpoint": {
                     "type": "string",
                     "example": "10.186.1.2"
                 },
