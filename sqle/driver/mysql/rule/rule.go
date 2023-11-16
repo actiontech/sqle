@@ -3157,7 +3157,7 @@ func checkWhere(rule driverV2.Rule, res *driverV2.AuditResults, whereList []ast.
 				addResult(res, rule, DMLCheckWhereIsInvalid)
 				break
 			}
-			if !util.WhereStmtHasOneColumn(where) {
+			if !util.WhereStmtNotAlwaysTrue(where) {
 				addResult(res, rule, DMLCheckWhereIsInvalid)
 				break
 			}

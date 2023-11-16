@@ -252,6 +252,100 @@ func TestCheckWhereInvalidOffline(t *testing.T) {
 			"select * from exist_db.exist_tb_1 t1 where not exists (select 1 from exist_db.exist_tb_2);",
 			whereIsInvalid,
 		},
+		{
+			"select_from: no where condition(2)",
+			"select id from exist_db.exist_tb_1 where 1=1 and 2=2;",
+			whereIsInvalid,
+		},
+		// value compare
+		// int
+		{
+			"int compare(1)",
+			"select * from exist_db.exist_tb_1 where 1 > 0",
+			whereIsInvalid,
+		},
+		{
+			"int compare(2)",
+			"select * from exist_db.exist_tb_1 where 1 < 0",
+			noResult,
+		},
+		{
+			"int compare(3)",
+			"select * from exist_db.exist_tb_1 where 1 >= 0",
+			whereIsInvalid,
+		},
+		{
+			"int compare(4)",
+			"select * from exist_db.exist_tb_1 where 1 = 0",
+			noResult,
+		},
+		{
+			"int compare(5)",
+			"select * from exist_db.exist_tb_1 where 1 <= 0",
+			noResult,
+		},
+		{
+			"int compare(6)",
+			"select * from exist_db.exist_tb_1 where 1 != 0",
+			whereIsInvalid,
+		},
+		{
+			"int compare(7)",
+			"select * from exist_db.exist_tb_1 where 1 = '1'",
+			noResult,
+		},
+		// str
+		{
+			"str compare(1)",
+			"select * from exist_db.exist_tb_1 where '1' = '1'",
+			whereIsInvalid,
+		},
+		{
+			"str compare(2)",
+			"select * from exist_db.exist_tb_1 where '1' > '1'",
+			noResult,
+		},
+		{
+			"str compare(3)",
+			"select * from exist_db.exist_tb_1 where '1' > '0'",
+			whereIsInvalid,
+		},
+		{
+			"str compare(3)",
+			"select * from exist_db.exist_tb_1 where '1' != '0'",
+			whereIsInvalid,
+		},
+		{
+			"str compare(4)",
+			"select * from exist_db.exist_tb_1 where '1' >= '1'",
+			whereIsInvalid,
+		},
+		{
+			"str compare(5)",
+			"select * from exist_db.exist_tb_1 where '1' < '1'",
+			noResult,
+		},
+		// float
+		{
+			"float compare(1)",
+			"select * from exist_db.exist_tb_1 where 1.6 = 1.6",
+			whereIsInvalid,
+		},
+		{
+			"float compare(2)",
+			"select * from exist_db.exist_tb_1 where 1.6 > 1.2",
+			whereIsInvalid,
+		},
+		{
+			"float compare(3)",
+			"select * from exist_db.exist_tb_1 where 1.6 < 1.2",
+			noResult,
+		},
+		{
+			"float compare(4)",
+			"select * from exist_db.exist_tb_1 where 1.6 >= 1.2",
+			whereIsInvalid,
+		},
 	}
 	offlineInspect := DefaultMysqlInspectOffline()
 	for _, testCase := range testCases {
