@@ -20,6 +20,7 @@ bigint
 binlog
 blkid
 btree
+chinese
 cardinalities
 ccug
 chanxuehong
