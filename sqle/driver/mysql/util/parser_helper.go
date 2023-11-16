@@ -338,11 +338,9 @@ func WhereStmtNotAlwaysTrue(where ast.ExprNode) bool {
 			return true
 		case *ast.BinaryOperationExpr:
 			compareResult, err := getBinaryExprCompateResult(x)
-			if err == nil {
-				if !compareResult {
-					notAlwaysTrue = true
-					return true
-				}
+			if err == nil && !compareResult {
+				notAlwaysTrue = true
+				return true
 			}
 			col1, ok := x.R.(*ast.ColumnNameExpr)
 			if !ok {
