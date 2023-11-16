@@ -47,7 +47,7 @@ type AuditPlanSQLV2 struct {
 	// add unique index on fingerprint and audit_plan_id
 	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
 	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null"`
-	Fingerprint    string `json:"fingerprint" gorm:"type:text;not null"`
+	Fingerprint    string `json:"fingerprint" gorm:"type:mediumtext;not null"`
 	FingerprintMD5 string `json:"fingerprint_md5" gorm:"column:fingerprint_md5;not null"`
 	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
@@ -57,7 +57,7 @@ type AuditPlanSQLV2 struct {
 type BlackListAuditPlanSQL struct {
 	Model
 
-	FilterSQL     string `json:"filter_sql" gorm:"type:varchar(512);not null;unique"`
+	FilterSQL string `json:"filter_sql" gorm:"type:varchar(512);not null;unique"`
 }
 
 func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
@@ -136,7 +136,7 @@ func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanFromProjectById(projectId, AuditPlanName string) (*AuditPlan, bool, error) {
+func (s *Storage) GetAuditPlanFromProjectByName(projectId, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).Find(ap).Error
 	if err == gorm.ErrRecordNotFound {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -147,7 +148,7 @@ func (mgr *Manager) Start() {
 func (mgr *Manager) sync() error {
 	// 全量同步智能扫描任务，仅需成功做一次
 	if !mgr.isFullSyncDone {
-		aps, err := mgr.persist.GetActiveAuditPlans()
+		aps, err := dms.GetActiveAuditPlansWithInstance(mgr.persist.GetActiveAuditPlans)
 		if err != nil {
 			return err
 		}

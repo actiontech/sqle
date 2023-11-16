@@ -93,7 +93,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []dmsV1.OpPermissionType) error {
 	userId := controller.GetUserID(c)
 	// todo issues-2005
-	if task.Instance == nil{
+	if task.Instance == nil {
 		return nil
 	}
 	up, err := dms.NewUserPermission(userId, task.Instance.ProjectId)
@@ -133,7 +133,7 @@ func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []dmsV1
 func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName string, opType v1.OpPermissionType) (*model.AuditPlan, bool, error) {
 	storage := model.GetStorage()
 
-	ap, exist, err := storage.GetAuditPlanFromProjectById(projectId, auditPlanName)
+	ap, exist, err := dms.GetAuditPlanWithInstanceFromProjectByName(projectId, auditPlanName, storage.GetAuditPlanFromProjectByName)
 	if err != nil || !exist {
 		return nil, exist, err
 	}

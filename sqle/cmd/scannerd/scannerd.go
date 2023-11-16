@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,9 +10,13 @@ import (
 	"github.com/fatih/color"
 )
 
+var version string
+
 func main() {
 	var code int
-	err := cmd.Execute()
+	ctx := context.WithValue(context.Background(), cmd.VersionKey, version)
+
+	err := cmd.Execute(ctx)
 	if err != nil {
 		fmt.Println(color.RedString("Error: %v", err))
 		code = 1
