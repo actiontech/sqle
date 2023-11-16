@@ -12,5 +12,5 @@ jobs:
         name: Prevent file change
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          pattern: ^(?!.*_ee\.go$)(?!.*_ee_test\.go$)(?!.*_rel\.go$)(?!.*_rel_test\.go$)(?!go\.mod$)(?!go\.sum$)(?!\.github\/workflows\/check-pr-files\.yml$)(?!vendor\/.*)(?!.*_qa\.go$).*
+          pattern: ^(?!.*_ee\/.*$)(?!.*_ee\.go$)(?!.*_ee_test\.go$)(?!.*_rel\.go$)(?!.*_rel_test\.go$)(?!go\.mod$)(?!go\.sum$)(?!\.github\/workflows\/check-pr-files\.yml$)(?!vendor\/.*)(?!.*_qa\.go$).*
           trustedAuthors: xalvarez
