@@ -1006,6 +1006,7 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
 			Schema:      reqSQL.Schema,
+			Endpoint:    reqSQL.Endpoint,
 		})
 	}
 	return sqls, nil
