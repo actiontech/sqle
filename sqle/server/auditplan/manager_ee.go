@@ -82,7 +82,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 			lastReceiveTime = &lastReceiveTimeStamp
 		}
 
-		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, ap.ProjectId, ap.ID, firstAppearTime, lastReceiveTime, fpCount, reportSQL.AuditResults, nil)
+		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, ap.ProjectId, ap.ID, firstAppearTime, lastReceiveTime, fpCount, reportSQL.AuditResults, nil, apSql.Endpoint)
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
@@ -123,7 +123,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		instName := sa.Task.InstanceName()
 		source := model.SQLManageSourceSqlAuditRecord
 
-		sqlManage, err := NewSqlManage(fp, sql, schemaName, instName, source, executeSQL.AuditLevel, sa.ProjectId, 0, &executeSQL.CreatedAt, &executeSQL.CreatedAt, 0, executeSQL.AuditResults, md5SqlManageMap)
+		sqlManage, err := NewSqlManage(fp, sql, schemaName, instName, source, executeSQL.AuditLevel, sa.ProjectId, 0, &executeSQL.CreatedAt, &executeSQL.CreatedAt, 0, executeSQL.AuditResults, md5SqlManageMap, "")
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
@@ -138,7 +138,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 	return nil
 }
 
-func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, source string, apID uint) (string, error) {
+func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, source string, apID uint, endpoint string) (string, error) {
 	md5Json, err := json.Marshal(
 		struct {
 			ProjectId   uint
@@ -147,6 +147,7 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 			InstName    string
 			Source      string
 			ApID        uint
+			Endpoint    string
 		}{
 			ProjectId:   projectId,
 			Fingerprint: fp,
@@ -154,6 +155,7 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 			InstName:    instName,
 			Source:      source,
 			ApID:        apID,
+			Endpoint:    endpoint,
 		},
 	)
 	if err != nil {
@@ -163,8 +165,8 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 	return utils.Md5String(string(md5Json)), nil
 }
 
-func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId, apId uint, createAt, LastReceiveAt *time.Time, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
-	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source, apId)
+func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId, apId uint, createAt, LastReceiveAt *time.Time, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage, endpoint string) (*model.SqlManage, error) {
+	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source, apId, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("get sql manage md5 failed, error: %v", err)
 	}
@@ -176,6 +178,7 @@ func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, proj
 		Source:                    source,
 		ProjectId:                 projectId,
 		SchemaName:                schemaName,
+		Endpoint:                  endpoint,
 		InstanceName:              instName,
 		AuditLevel:                auditLevel,
 		AuditResults:              auditResult,
@@ -211,9 +214,9 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		var err error
 		firstQueryAt, ok := sql.Info["first_query_at"]
 		if ok && firstQueryAt != nil {
-			firstQueryAtFormat, err := time.Parse("2006-01-02T15:04:05-07:00", firstQueryAt.(string))
-			if err != nil {
-				return fmt.Errorf("parse first query at failed, error: %v", err)
+			firstQueryAtFormat, ok := firstQueryAt.(time.Time)
+			if !ok {
+				return fmt.Errorf("first query at type is not time.Time")
 			}
 			firstQueryAtPtrFormat = &firstQueryAtFormat
 		}
@@ -235,7 +238,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		}
 
 		// todo: 更新审核等级
-		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "", ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
+		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "", ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil, sql.Endpoint)
 		if err != nil {
 			return err
 		}

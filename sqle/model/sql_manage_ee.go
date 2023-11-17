@@ -145,6 +145,7 @@ type SqlManageDetail struct {
 	Remark               string       `json:"remark"`
 	Assignees            RowList      `json:"assignees"`
 	ApName               *string      `json:"ap_name"`
+	Endpoint             string       `json:"endpoint"`
 	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
 }
 
@@ -185,6 +186,7 @@ SELECT
 	sm.remark,
 	GROUP_CONCAT(DISTINCT all_users.login_name) as assignees,
 	ap.name as ap_name,
+	sm.endpoint,
 	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids
 
 {{- template "body" . -}} 
@@ -257,6 +259,10 @@ AND sm.last_receive_timestamp <= :filter_last_audit_start_time_to
 
 {{- if .filter_status }}
 AND sm.status = :filter_status
+{{- end }}
+
+{{- if .fuzzy_search_endpoint }}
+AND sm.endpoint LIKE '%{{ .fuzzy_search_endpoint }}%'
 {{- end }}
 
 {{- if .count_bad_sql }}
@@ -352,17 +358,17 @@ func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*S
 	args := make([]interface{}, 0, len(sqlManageList))
 	pattern := make([]string, 0, len(sqlManageList))
 	for _, sqlManage := range sqlManageList {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
 			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-			sqlManage.AuditPlanId, sqlManage.ProjectId)
+			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.Endpoint)
 	}
 
 	raw := fmt.Sprintf(`
 INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
                          fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-                         remark, audit_plan_id, project_id)
+                         remark, audit_plan_id, project_id, endpoint)
 		VALUES %s
 		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
                         audit_plan_id          = VALUES(audit_plan_id),
@@ -392,17 +398,17 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 			args := make([]interface{}, 0, len(batchSqlManageList))
 			pattern := make([]string, 0, len(batchSqlManageList))
 			for _, sqlManage := range batchSqlManageList {
-				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 				args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 					sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
 					sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-					sqlManage.AuditPlanId, sqlManage.ProjectId)
+					sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.Endpoint)
 			}
 
 			raw := fmt.Sprintf(`
 			INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
 			                        fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-			                        remark, audit_plan_id, project_id)
+			                        remark, audit_plan_id, project_id, endpoint)
 					VALUES %s
 					ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
 			                       audit_plan_id          = VALUES(audit_plan_id),
