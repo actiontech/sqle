@@ -139,6 +139,7 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 			SQLContent:  "select * from t1 where id = 1",
 			Info:        []byte(`{"counter": 1, "last_receive_timestamp": "mock time"}`),
 			Schema:      "test1",
+			Endpoint:    "10.186.1.2",
 		},
 	}
 
@@ -149,8 +150,8 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	mock.ExpectExec("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`, `schema`) VALUES (?, ?, ?, ?, ?, ?);").
-		WithArgs(ap.ID, sqls[0].GetFingerprintMD5(), sqls[0].Fingerprint, sqls[0].SQLContent, sqls[0].Info, sqls[0].Schema).
+	mock.ExpectExec("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`, `schema`, `endpoint`) VALUES (?, ?, ?, ?, ?, ?, ?);").
+		WithArgs(ap.ID, sqls[0].GetFingerprintMD5(), sqls[0].Fingerprint, sqls[0].SQLContent, sqls[0].Info, sqls[0].Schema, sqls[0].Endpoint).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	err = GetStorage().OverrideAuditPlanSQLs(ap.ID, sqls)
