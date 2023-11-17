@@ -4,6 +4,7 @@
 package model
 
 import (
+	"database/sql"
 	e "errors"
 	"fmt"
 	"strings"
@@ -130,23 +131,23 @@ type SqlManageResp struct {
 }
 
 type SqlManageDetail struct {
-	ID                   uint         `json:"id"`
-	SqlFingerprint       string       `json:"sql_fingerprint"`
-	SqlText              string       `json:"sql_text"`
-	Source               string       `json:"source"`
-	AuditLevel           string       `json:"audit_level"`
-	AuditResults         AuditResults `json:"audit_results"`
-	FpCount              uint64       `json:"fp_count"`
-	AppearTimestamp      *time.Time   `json:"first_appear_timestamp"`
-	LastReceiveTimestamp *time.Time   `json:"last_receive_timestamp"`
-	InstanceName         string       `json:"instance_name"`
-	SchemaName           string       `json:"schema_name"`
-	Status               string       `json:"status"`
-	Remark               string       `json:"remark"`
-	Assignees            RowList      `json:"assignees"`
-	ApName               *string      `json:"ap_name"`
-	Endpoint             string       `json:"endpoint"`
-	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
+	ID                   uint           `json:"id"`
+	SqlFingerprint       string         `json:"sql_fingerprint"`
+	SqlText              string         `json:"sql_text"`
+	Source               string         `json:"source"`
+	AuditLevel           string         `json:"audit_level"`
+	AuditResults         AuditResults   `json:"audit_results"`
+	FpCount              uint64         `json:"fp_count"`
+	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
+	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
+	InstanceName         string         `json:"instance_name"`
+	SchemaName           string         `json:"schema_name"`
+	Status               string         `json:"status"`
+	Remark               string         `json:"remark"`
+	Assignees            RowList        `json:"assignees"`
+	ApName               *string        `json:"ap_name"`
+	Endpoint             sql.NullString `json:"endpoint"`
+	SqlAuditRecordIDs    RowList        `json:"sql_audit_record_ids"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
