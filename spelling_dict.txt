@@ -440,3 +440,5 @@ mysqldump
 datediff
 xxx
 sprintln
+sessionctx
+stmtctx
