@@ -214,9 +214,9 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		var err error
 		firstQueryAt, ok := sql.Info["first_query_at"]
 		if ok && firstQueryAt != nil {
-			firstQueryAtFormat, err := time.Parse("2006-01-02T15:04:05-07:00", firstQueryAt.(string))
-			if err != nil {
-				return fmt.Errorf("parse first query at failed, error: %v", err)
+			firstQueryAtFormat, ok := firstQueryAt.(time.Time)
+			if !ok {
+				return fmt.Errorf("first query at type is not time.Time")
 			}
 			firstQueryAtPtrFormat = &firstQueryAtFormat
 		}
