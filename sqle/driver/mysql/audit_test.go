@@ -322,7 +322,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", SchemaNotExistMessage, "not_exist_db"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", SchemaNotExistMessage, "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table is exist(1)", DefaultMysqlInspect(),
@@ -336,7 +336,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKWithoutIfNotExists]
 	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckPKWithoutIfNotExists)
@@ -354,7 +354,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", TableExistMessage, "exist_db.exist_tb_1"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", TableExistMessage, "exist_db.exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: refer table not exist", DefaultMysqlInspect(),
@@ -375,7 +375,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", MultiPrimaryKeyMessage))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
 		`
@@ -389,7 +389,7 @@ PRIMARY KEY (id),
 PRIMARY KEY (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", MultiPrimaryKeyMessage))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", MultiPrimaryKeyMessage))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
 		`
@@ -402,7 +402,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicateColumnsMessage,
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicateColumnsMessage,
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
@@ -418,7 +418,7 @@ INDEX idx_1 (v1),
 INDEX idx_1 (v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicateIndexesMessage,
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicateIndexesMessage,
 			"idx_1"))
 
 	runDefaultRulesInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
@@ -434,7 +434,7 @@ INDEX idx_1 (v3),
 INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
 			"v3,v4,v5").add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(v3,v4,v5)需要有非空约束"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
@@ -448,7 +448,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage,
 			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
@@ -462,7 +462,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id,id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicatePrimaryKeyedColumnMessage, "id"))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicatePrimaryKeyedColumnMessage, "id"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate", DefaultMysqlInspect(),
 		`
@@ -476,7 +476,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "idx_1",
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "idx_1",
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(2)", DefaultMysqlInspect(),
@@ -491,7 +491,7 @@ PRIMARY KEY (id),
 INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "(匿名)",
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "(匿名)",
 			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
@@ -507,7 +507,7 @@ INDEX idx_1 (v1,v1),
 INDEX idx_2 (v1,v2,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "idx_1", "v1").
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "idx_1", "v1").
 			add(driverV2.RuleLevelError, "", DuplicateIndexedColumnMessage, "idx_2", "v2"))
 }
 
@@ -590,14 +590,14 @@ ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id);
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but exist pk", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 `,
-		newTestResult().
+		newTestResult().addResult(rulepkg.DDLCheckPKName).
 			add(driverV2.RuleLevelError, "", PrimaryKeyExistMessage).
 			addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).
 			addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
@@ -607,14 +607,14 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id11);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "id11").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", KeyedColumnNotExistMessage, "id11").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but key column is duplicate", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id,id);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", DuplicatePrimaryKeyedColumnMessage,
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", DuplicatePrimaryKeyedColumnMessage,
 			"id"),
 	)
 
@@ -1353,7 +1353,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutIfNotExists),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutIfNotExists),
 	)
 }
 
@@ -1368,7 +1368,7 @@ func TestCheckObjectNameUsingKeyword(t *testing.T) {
 			"PRIMARY KEY (id),"+
 			"INDEX `show` (v1)"+
 			")ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT=\"unit test\";",
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameUsingKeyword, "select, create, show").
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameUsingKeyword, "select, create, show").
 			addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
@@ -1399,7 +1399,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length64),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table length > 64", DefaultMysqlInspect(),
@@ -1412,7 +1412,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: columns length > 64", DefaultMysqlInspect(),
@@ -1425,7 +1425,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: index length > 64", DefaultMysqlInspect(),
@@ -1439,7 +1439,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id),
 INDEX idx_%s (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";`, length65),
-		newTestResult().addResult(rulepkg.DDLCheckObjectNameLength, 64),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckObjectNameLength, 64),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: table length > 64", DefaultMysqlInspect(),
@@ -1620,7 +1620,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutAutoIncrement),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: primary key not bigint unsigned(1)", DefaultMysqlInspect(),
@@ -1647,7 +1647,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
 	)
 }
 
@@ -1663,7 +1663,7 @@ func TestCheckColumnCharLength(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: check char(21)", DefaultMysqlInspect(),
@@ -1677,7 +1677,7 @@ func TestCheckColumnCharLength(t *testing.T) {
 	PRIMARY KEY (id)
 	)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 	`,
-		newTestResult().addResult(rulepkg.DDLCheckColumnCharLength),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnCharLength),
 	)
 }
 
@@ -2126,7 +2126,7 @@ PRIMARY KEY (id),
 INDEX idx_b1 (b1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: disable index column blob (2)", DefaultMysqlInspect(),
@@ -2141,7 +2141,7 @@ b1 blob UNIQUE KEY COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 	)
 
 	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
@@ -2166,7 +2166,7 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_2(b1);
 ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit test";
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(b1)需要有非空约束"),
 		newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b2"),
@@ -2187,7 +2187,7 @@ PRIMARY KEY (id),
 FOREIGN KEY (id) REFERENCES exist_tb_1(id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLDisableFK),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLDisableFK),
 	)
 }
 
@@ -2247,7 +2247,7 @@ PRIMARY KEY (id),
 INDEX index_1 (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: index prefix not idx_", DefaultMysqlInspect(),
@@ -2328,7 +2328,7 @@ v1 varchar(255) COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutDefault),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnWithoutDefault),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column without default", DefaultMysqlInspect(),
@@ -2370,7 +2370,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnTimestampWithoutDefault).
 			addResult(rulepkg.DDLDisableTypeTimestamp),
 	)
 
@@ -2395,7 +2395,7 @@ v1 blob NOT NULL COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobWithNotNull).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v1"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnBlobWithNotNull).addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
@@ -2417,7 +2417,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckColumnBlobDefaultIsNotNull),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckColumnBlobDefaultIsNotNull),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: column timestamp without default", DefaultMysqlInspect(),
@@ -3740,7 +3740,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-			newTestResult(),
+			newTestResult().addResult(rulepkg.DDLCheckPKName),
 		)
 		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
@@ -3796,7 +3796,7 @@ update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMEST
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-			newTestResult(),
+			newTestResult().addResult(rulepkg.DDLCheckPKName),
 		)
 		inspector.Ctx = session.NewContext(parent.Ctx)
 	}
@@ -4323,15 +4323,15 @@ func Test_DDL_CHECK_PK_NAME(t *testing.T) {
 	for _, sql := range []string{
 		`create table t1(id int, primary key pk_t1(id))`,
 		`create table t1(id int, primary key PK_T1(id))`,
-		`create table t1(id int, primary key(id))`,
-		`alter table exist_db.exist_tb_2 Add primary key(id)`,
 		`alter table exist_db.exist_tb_2 Add primary key PK_EXIST_TB_2(id)`} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKName].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult())
 	}
 
 	for _, sql := range []string{
 		`create table t1(id int, primary key wrongPK(id))`,
-		`alter table exist_db.exist_tb_2 Add primary key wrongPK(id)`} {
+		`alter table exist_db.exist_tb_2 Add primary key wrongPK(id)`,
+		`create table t1(id int, primary key(id))`,
+		`alter table exist_db.exist_tb_2 Add primary key(id)`} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckPKName].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckPKName))
 	}
 }
