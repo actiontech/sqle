@@ -271,7 +271,7 @@ func WhereStmtHasSubQuery(where ast.ExprNode) bool {
 }
 
 // compare binary.L to binary.R
-func getBinaryExprCompateResult(binary *ast.BinaryOperationExpr) (bool, error) {
+func getBinaryExprCompareResult(binary *ast.BinaryOperationExpr) (bool, error) {
 	col1, ok := binary.L.(*driver.ValueExpr)
 	if !ok {
 		return false, errors.New("binary.L is not driver.ValueExpr")
@@ -337,7 +337,7 @@ func WhereStmtNotAlwaysTrue(where ast.ExprNode) bool {
 			notAlwaysTrue = true
 			return true
 		case *ast.BinaryOperationExpr:
-			compareResult, err := getBinaryExprCompateResult(x)
+			compareResult, err := getBinaryExprCompareResult(x)
 			if err == nil && !compareResult {
 				notAlwaysTrue = true
 				return true
