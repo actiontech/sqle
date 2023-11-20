@@ -257,7 +257,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 }
 
 type GetRuleTemplateReqV1 struct {
-	FuzzyKeyword string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
+	FuzzyKeywordRule string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
 }
 
 type GetRuleTemplateResV1 struct {
@@ -301,7 +301,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param rule_template_name path string true "rule template name"
-// @Param fuzzy_keyword query string false "fuzzy keyword"
+// @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Success 200 {object} v1.GetRuleTemplateResV1
 // @router /v1/rule_templates/{rule_template_name}/ [get]
 func GetRuleTemplate(c echo.Context) error {
@@ -311,7 +311,7 @@ func GetRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, templateName, req.FuzzyKeyword)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, templateName, req.FuzzyKeywordRule)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -456,7 +456,7 @@ type GetRulesReqV1 struct {
 	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
 	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
 	FilterRuleNames              string `json:"filter_rule_names" query:"filter_rule_names"`
-	FuzzyKeyword                 string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
+	FuzzyKeywordRule             string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
 }
 
 type GetRulesResV1 struct {
@@ -541,7 +541,7 @@ func convertRulesToRes(rules interface{}) []RuleResV1 {
 // @Tags rule_template
 // @Security ApiKeyAuth
 // @Param filter_db_type query string false "filter db type"
-// @Param fuzzy_keyword query string false "filter desc or annotation"
+// @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
 // @Param filter_rule_names query string false "filter rule name list"
 // @Success 200 {object} v1.GetRulesResV1
@@ -559,7 +559,7 @@ func GetRules(c echo.Context) error {
 		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
 		"filter_db_type":                   req.FilterDBType,
 		"filter_rule_names":                req.FilterRuleNames,
-		"fuzzy_keyword":                    req.FuzzyKeyword,
+		"fuzzy_keyword_rule":               req.FuzzyKeywordRule,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -568,7 +568,7 @@ func GetRules(c echo.Context) error {
 		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
 		"filter_db_type":                   req.FilterDBType,
 		"filter_rule_names":                req.FilterRuleNames,
-		"fuzzy_keyword":                    req.FuzzyKeyword,
+		"fuzzy_keyword_rule":               req.FuzzyKeywordRule,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -899,7 +899,7 @@ type ProjectRuleTemplateInstance struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
-// @Param fuzzy_keyword query string false "fuzzy keyword"
+// @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [get]
 func GetProjectRuleTemplate(c echo.Context) error {
@@ -913,7 +913,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, templateName, req.FuzzyKeyword)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, templateName, req.FuzzyKeywordRule)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
