@@ -5801,114 +5801,156 @@ recommendTableColumnCharsetSame
 
 	触发条件：
 	1 若DDL语句是建表语句：
-		1.1 若列和表都声明了字符集。列的字符集与表字符集不同，触发规则。
-		1.2 若列声明了字符集，表未声明字符集只声明排序规则。排序规则对应字符集与列字符集不同，触发规则。
-		1.3 若列声明了字符集，表未声明字符集和排序规则。列字符集和数据库默认字符集不同，触发规则。
-	2 若DDL语句是修改表语句
+		1.1 若列声明了字符集或排序规则。列的字符集或排序规则对应的字符集与表字符集不同，触发规则
+	2 若DDL语句是修改表语句：
 		2.1 若只修改列字符集。字符集与原表不同，触发规则。
-		2.2 若先修改表的字符集，再修改列的字符集。新列字符集与新表字符集不同，触发规则。
-		2.3 若先修改列的字符集，再修改表的字符集。表中列的字符集会统一为新字符集，不触发规则。
+		2.2 若修改了表的字符集，并且使用CONVERT，对比CONVERT的目标字符集，以及CONVERT后续修改列的语句
+		2.3 !若修改了表的字符集，但没有使用CONVERT，不触发规则，暂不支持这种情形
 
 	注意：若建表语句的字符集缺失，会按照mysql选择使用哪种字符集的逻辑获取字符集
-	建表语句选择使用哪种字符集以及排序规则的逻辑如下：
-	1 若两者都指定，则根据指定的字符集以及排序规则设定
+
+	建表语句或列选择使用哪种字符集以及排序规则的逻辑如下：
+	1 若符集以及排序都指定，则根据指定的字符集以及排序规则设定
 	2 若未指定字符集，但指定了排序规则，字符集设定为排序规则关联的字符集
 	3 若未指定排序规则，但指定了字符集，排序规则设定为字符集关联的排序规则
-	4 若字符集和排序规则都不指定，二者将被设定为database的字符集及排序的默认值
+	4 若表的字符集和排序规则都不指定，二者将被设定为数据库的字符集及排序的默认值
+	5 若列的字符集和排序规则都不知道，二者将被设定为数据表的字符集及排序的默认值
+	6 若ALTER语句中使用CONVERT TO修改表的字符集，表中所有列的字符集都会被修改为目标字符集
 
 	不支持：
-	1 反复修改同一列的字符集
+	1 一条ALTER语句中反复修改同一列的字符集
 	2 检查修改的列是否在表中
+	3 修改表不使用CONVERT
 
-参考文档：https://dev.mysql.com/doc/refman/8.0/en/charset-database.html
+参考文档1：
+https://dev.mysql.com/doc/refman/8.0/en/charset-database.html
+
+参考文档2：
+https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
 */
 func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
-	charset := &ast.TableOption{}
-	collation := &ast.TableOption{}
-	var columns []*ast.ColumnDef
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		if len(stmt.Options) > 0 {
-			newCharset, newCollation := getCharsetAndCollation(stmt.Options)
-			if newCharset != nil {
-				charset = newCharset
-			}
-			if newCollation != nil {
-				collation = newCollation
-			}
+		// 获取建表语句中指定了字符集或排序的列
+		columnWithCharset := getColumnWithCharset(stmt, input)
+		if len(columnWithCharset) == 0 {
+			return nil
 		}
-		for _, col := range stmt.Cols {
-			if col.Tp.Charset != "" {
-				columns = append(columns, col)
+		// 获取建表语句中的字符集
+		charset := getCharsetFromCreateTableStmt(input.Ctx, stmt)
+		if charset.StrValue == "" {
+			// 未能获取字符集 无法比较 返回
+			return nil
+		}
+		for _, column := range columnWithCharset {
+			if column.Tp.Charset != charset.StrValue {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
 			}
 		}
 	case *ast.AlterTableStmt:
+		var columnWithCharset []*ast.ColumnDef
+		var newCharset *ast.TableOption
+		var useConvert bool
+		// 若未更改表的字符集，则获取原表字符集作为表字符集
 		originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 		if err != nil || !exist {
 			return nil
 		}
-		newCharset, newCollation := getCharsetAndCollation(originTable.Options)
-		if newCharset != nil {
-			charset = newCharset
-		}
-		if newCollation != nil {
-			collation = newCollation
-		}
-		for idx, spec := range stmt.Specs {
-			if len(spec.Options) > 0 {
-				// 若修改表的字符集，表中列的字符集都会
-				newCharset, _ := getCharsetAndCollation(spec.Options)
-				if newCharset != nil {
-					if idx == len(stmt.Specs)-1 {
-						// 若修改表的字符集是修改语句的最后一句，则表的字符集会统一为该字符集
-						return nil
-					}
-					charset = newCharset
-				}
-			}
+
+		for _, spec := range stmt.Specs {
+			// 修改的列
 			for _, col := range spec.NewColumns {
 				if col.Tp.Charset != "" {
-					columns = append(columns, col)
+					columnWithCharset = append(columnWithCharset, col)
 				}
 			}
-
+			// 获取更改后的字符集以及更改的列
+			charset, _ := getCharsetAndCollation(spec.Options)
+			if charset.StrValue != "" {
+				if charset.UintValue == ast.TableOptionCharsetWithConvertTo {
+					// 使用CONVERT TO 则表的字符集会统一为该字符集 清空指定charset的列
+					columnWithCharset = make([]*ast.ColumnDef, 0)
+					useConvert = true
+				}
+				newCharset = charset
+			}
 		}
+
+		if newCharset != nil {
+			if useConvert {
+				for _, column := range columnWithCharset {
+					if column.Tp.Charset != newCharset.StrValue {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						break
+					}
+				}
+				return nil
+			}
+			if !useConvert {
+				/*
+					暂不支持修改表字符集但不使用CONVERT的情况
+					若不使用CONVERT，仅修改表的字符集，不修改表中列的字符集
+					需要判断最终的表字符集和列字符集是否一致，
+					1. 获取原表各列字符集:
+						SELECT column_name, character_set_name
+						FROM information_schema.columns
+						WHERE table_name = 'your_table_name';
+					2. 根据SQL语句修改列的字符集到目标字符集
+					3. 判断最终表字符集和最终列字符集是否一致
+				*/
+				return nil
+			}
+		}
+		if newCharset == nil {
+			if len(columnWithCharset) == 0 {
+				// 没有指定字符集的列时，列的字符集被设定为表字符集
+				return nil
+			}
+			// 若没有修改表字符集
+			charset := getCharsetFromCreateTableStmt(input.Ctx, originTable)
+			if charset.StrValue == "" {
+				// 未能获取字符集 无法比较 返回
+				return nil
+			}
+			for _, column := range columnWithCharset {
+				if column.Tp.Charset != charset.StrValue {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+
 	default:
 		return nil
-	}
-	if len(columns) == 0 {
-		return nil
-	}
-	if charset.StrValue == "" {
-		// 获取字符集
-		executor := input.Ctx.GetExecutor()
-		if executor != nil {
-			// 获取排序对应的字符集
-			if collation.StrValue != "" {
-				charset.StrValue, _ = executor.ShowDefaultConfiguration(
-					fmt.Sprintf("SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = \"%s\"", collation.StrValue), "CHARACTER_SET_NAME",
-				)
-			}
-			// 获取数据库默认的字符集
-			if collation.StrValue == "" {
-				charset.StrValue, _ = executor.ShowDefaultConfiguration(
-					"select @@character_set_database", "@@character_set_database")
-			}
-		}
-		if charset.StrValue == "" {
-			return nil
-		}
-	}
-	for _, column := range columns {
-		if column.Tp.Charset != charset.StrValue {
-			addResult(input.Res, input.Rule, input.Rule.Name)
-			break
-		}
 	}
 	return nil
 }
 
-func getCharsetAndCollation(options []*ast.TableOption) (charset *ast.TableOption, collation *ast.TableOption) {
+func getColumnWithCharset(stmt *ast.CreateTableStmt, input *RuleHandlerInput) []*ast.ColumnDef {
+	var columnWithCharset []*ast.ColumnDef
+	for _, col := range stmt.Cols {
+
+		if col.Tp.Charset != "" {
+			columnWithCharset = append(columnWithCharset, col)
+		} else if col.Tp.Collate != "" {
+			col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
+			columnWithCharset = append(columnWithCharset, col)
+		} else if len(col.Options) > 0 {
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionCollate {
+					col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(option.StrValue)
+					columnWithCharset = append(columnWithCharset, col)
+				}
+			}
+		}
+	}
+	return columnWithCharset
+}
+
+func getCharsetAndCollation(options []*ast.TableOption) (*ast.TableOption, *ast.TableOption) {
+	charset := &ast.TableOption{}
+	collation := &ast.TableOption{}
 	for _, option := range options {
 		if option.Tp == ast.TableOptionCharset {
 			charset = option
@@ -5917,7 +5959,21 @@ func getCharsetAndCollation(options []*ast.TableOption) (charset *ast.TableOptio
 			collation = option
 		}
 	}
-	return
+	return charset, collation
+}
+
+// 获取建表语句中的字符集
+func getCharsetFromCreateTableStmt(ctx *session.Context, stmt *ast.CreateTableStmt) *ast.TableOption {
+	charset, collation := getCharsetAndCollation(stmt.Options)
+	if charset.StrValue == "" && collation.StrValue == "" {
+		// 没有指定表字符集以及排序时，表的字符集和排序被设定为数据库默认字符集以及排序
+		charset.StrValue, _ = ctx.GetSchemaCharacter(stmt.Table, "")
+	}
+	if charset.StrValue == "" && collation.StrValue != "" {
+		// 指定了表排序但未指定表字符集时，表字符集被设定为排序对应的字符集
+		charset.StrValue, _ = ctx.GetSchemaCharacterByCollation(collation.StrValue)
+	}
+	return charset
 }
 
 func checkColumnTypeInteger(input *RuleHandlerInput) error {
