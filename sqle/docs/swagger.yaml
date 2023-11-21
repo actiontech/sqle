@@ -3084,6 +3084,8 @@ definitions:
         type: integer
       rollback_sql:
         type: string
+      sql_source_file:
+        type: string
     type: object
   v2.BatchCancelWorkflowsReqV2:
     properties:
