@@ -7586,9 +7586,6 @@ var doc = `{
                 },
                 "rollback_sql": {
                     "type": "string"
-                },
-                "sql_source_file": {
-                    "type": "string"
                 }
             }
         },
