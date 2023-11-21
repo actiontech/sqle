@@ -300,15 +300,16 @@ type GetAuditTaskSQLsResV1 struct {
 }
 
 type AuditTaskSQLResV1 struct {
-	Number      uint   `json:"number"`
-	ExecSQL     string `json:"exec_sql"`
-	AuditResult string `json:"audit_result"`
-	AuditLevel  string `json:"audit_level"`
-	AuditStatus string `json:"audit_status"`
-	ExecResult  string `json:"exec_result"`
-	ExecStatus  string `json:"exec_status"`
-	RollbackSQL string `json:"rollback_sql,omitempty"`
-	Description string `json:"description"`
+	Number        uint   `json:"number"`
+	ExecSQL       string `json:"exec_sql"`
+	SQLSourceFile string `json:"sql_source_file"`
+	AuditResult   string `json:"audit_result"`
+	AuditLevel    string `json:"audit_level"`
+	AuditStatus   string `json:"audit_status"`
+	ExecResult    string `json:"exec_result"`
+	ExecStatus    string `json:"exec_status"`
+	RollbackSQL   string `json:"rollback_sql,omitempty"`
+	Description   string `json:"description"`
 }
 
 // @Summary 获取指定扫描任务的SQLs信息
