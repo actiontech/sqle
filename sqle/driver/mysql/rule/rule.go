@@ -5936,6 +5936,7 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 					2. 根据SQL语句修改列的字符集到目标字符集
 					3. 判断最终表字符集和最终列字符集是否一致
 				*/
+				log.Logger().Info("暂不支持修改表字符集但不使用CONVERT的情况")
 				return nil
 			}
 		}
