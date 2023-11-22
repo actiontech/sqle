@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
@@ -238,4 +239,15 @@ func KillProcess(ctx context.Context, killSQL string, killConn *executor.Executo
 	}
 	logEntry.Infof("exec sql(%v) successfully", killSQL)
 	return nil
+}
+
+func IsGeometryColumn(col *ast.ColumnDef) bool {
+	geometryColumns := []byte{mysql.TypeGeometry, mysql.TypePoint, mysql.TypeLineString, mysql.TypePolygon,
+		mysql.TypeMultiPoint, mysql.TypeMultiLineString, mysql.TypeMultiPolygon, mysql.TypeGeometryCollection}
+	for _, geo := range geometryColumns {
+		if col.Tp.Tp == geo {
+			return true
+		}
+	}
+	return false
 }
