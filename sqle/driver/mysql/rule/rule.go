@@ -118,6 +118,7 @@ const (
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
+	DDLAvoidFullTextAndGeometry                        = "ddl_avoid_full_text_and_geometry"
 )
 
 // inspector DML rules
@@ -2328,6 +2329,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "禁止对索引列进行数学运算和使用函数",
 		Func:         checkMathComputationOrFuncOnIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidFullTextAndGeometry,
+			Desc:       "禁止使用全文索引与空间索引和空间字段",
+			Annotation: "使用全文索引与空间索引和空间字段会造成额外的性能开销，占用更大的存储空间，降低MySQL的性能。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用全文索引与空间索引和空间字段",
+		Func:         avoidFullTextAndGeometry,
 	},
 }
 
@@ -7402,5 +7415,48 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 
 	}
 
+	return nil
+}
+
+func avoidFullTextAndGeometry(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if util.IsGeometryColumn(col) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintFulltext, ast.ConstraintSpatial:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint, ast.AlterTableAddColumns) {
+			if spec.Constraint == nil {
+				for _, newColumn := range spec.NewColumns {
+					if util.IsGeometryColumn(newColumn) {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						return nil
+					}
+				}
+			} else {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintFulltext, ast.ConstraintSpatial:
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeFullText, ast.IndexKeyTypeSpatial:
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
 	return nil
 }
