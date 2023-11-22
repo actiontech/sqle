@@ -192,6 +192,7 @@ const (
 	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
+	DMLSQLExplainLowestLevel                  = "dml_sql_explain_lowest_level"
 )
 
 // inspector config code
@@ -2328,6 +2329,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "禁止对索引列进行数学运算和使用函数",
 		Func:         checkMathComputationOrFuncOnIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLSQLExplainLowestLevel,
+			Desc:       "SQL性能需要达到type等级",
+			Annotation: "验证 SQL 查询的执行计划中的 type 字段，确保其达到要求级别，以保证查询性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "range,ref,const,eq_ref,system,NULL",
+					Desc:  "查询计划type等级，以英文逗号隔开",
+					Type:  params.ParamTypeString,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "SQL性能需要达到等级：%v",
+		Func:         checkSQLExplainLowsetLevel,
 	},
 }
 
@@ -7402,5 +7423,35 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 
 	}
 
+	return nil
+}
+
+func checkSQLExplainLowsetLevel(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	levelStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	splitStr := strings.Split(levelStr, ",")
+	levelMap := make(map[string]struct{})
+	for _, s := range splitStr {
+		s = strings.ToLower(strings.TrimSpace(s))
+		levelMap[s] = struct{}{}
+	}
+
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		explainType := strings.ToLower(record.Type)
+		if _, ok := levelMap[explainType]; !ok {
+			addResult(input.Res, input.Rule, DMLSQLExplainLowestLevel, levelStr)
+			return nil
+		}
+	}
 	return nil
 }
