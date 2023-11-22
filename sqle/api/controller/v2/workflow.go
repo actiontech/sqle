@@ -1159,7 +1159,7 @@ func GetWorkflowV2(c echo.Context) error {
 		workflow.Record.Steps[i] = step
 	}
 
-	history, err := s.GetWorkflowHistoryById(workflow.WorkflowId)
+	history, err := s.GetWorkflowHistoryById(workflow.ID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

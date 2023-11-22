@@ -187,8 +187,9 @@ type Workflow struct {
 
 	Record *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
 	// Project       *Project          `gorm:"foreignkey:ProjectId"`
-	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
-	Mode          string
+	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history"`
+
+	Mode string
 }
 
 const (
@@ -570,7 +571,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 	}
 	// update record history
 	err = tx.Exec("INSERT INTO workflow_record_history (workflow_record_id, workflow_id) value (?, ?)",
-		w.Record.ID, w.WorkflowId).Error
+		w.Record.ID, w.ID).Error
 	if err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -828,7 +829,7 @@ func (s *Storage) GetWorkflowDetailWithoutInstancesByWorkflowID(projectId, workf
 	return workflow, true, nil
 }
 
-func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
+func (s *Storage) GetWorkflowHistoryById(id uint) ([]*WorkflowRecord, error) {
 	records := []*WorkflowRecord{}
 	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.*").
 		Joins("JOIN workflow_record_history AS wrh ON workflow_records.id = wrh.workflow_record_id").
@@ -919,7 +920,7 @@ func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.WorkflowId).Error
+	err = tx.Exec("DELETE FROM workflow_record_history WHERE workflow_id = ?", workflow.ID).Error
 	if err != nil {
 		return err
 	}
