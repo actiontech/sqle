@@ -5876,6 +5876,7 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 		// 获取建表语句中的字符集
 		charset := getCharsetFromCreateTableStmt(input.Ctx, stmt)
 		if charset.StrValue == "" {
+			log.Logger().Infof("对于SQL:%s;规则%s未能获取字符集无法比较", input.Node.Text(), input.Rule.Desc)
 			// 未能获取字符集 无法比较 返回
 			return nil
 		}
@@ -5889,12 +5890,6 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 		var columnWithCharset []*ast.ColumnDef
 		var newCharset *ast.TableOption
 		var useConvert bool
-		// 若未更改表的字符集，则获取原表字符集作为表字符集
-		originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if err != nil || !exist {
-			return nil
-		}
-
 		for _, spec := range stmt.Specs {
 			// 修改的列
 			for _, col := range spec.NewColumns {
@@ -5924,31 +5919,40 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 				}
 				return nil
 			}
-			if !useConvert {
-				/*
-					暂不支持修改表字符集但不使用CONVERT的情况
-					若不使用CONVERT，仅修改表的字符集，不修改表中列的字符集
-					需要判断最终的表字符集和列字符集是否一致，
-					1. 获取原表各列字符集:
-						SELECT column_name, character_set_name
-						FROM information_schema.columns
-						WHERE table_name = 'your_table_name';
-					2. 根据SQL语句修改列的字符集到目标字符集
-					3. 判断最终表字符集和最终列字符集是否一致
-				*/
-				log.Logger().Info("暂不支持修改表字符集但不使用CONVERT的情况")
-				return nil
-			}
+			/*
+				暂不支持修改表字符集但不使用CONVERT的情况
+				若不使用CONVERT，仅修改表的字符集，不修改表中列的字符集
+				需要判断最终的表字符集和列字符集是否一致，
+				1. 获取原表各列字符集:
+					SELECT column_name, character_set_name
+					FROM information_schema.columns
+					WHERE table_name = 'your_table_name';
+				2. 根据SQL语句修改列的字符集到目标字符集
+				3. 判断最终表字符集和最终列字符集是否一致
+			*/
+			log.Logger().Info("暂不支持修改表字符集但不使用CONVERT的情况")
+			return nil
 		}
 		if newCharset == nil {
 			if len(columnWithCharset) == 0 {
 				// 没有指定字符集的列时，列的字符集被设定为表字符集
 				return nil
 			}
+			// 若未更改表的字符集，则获取原表字符集作为表字符集
+			originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+			if err != nil {
+				log.Logger().Errorf("对于SQL:%s,规则%s获取表失败%v", input.Node.Text(), input.Rule.Desc, err)
+				return nil
+			}
+			if !exist {
+				log.Logger().Infof("对于SQL:%s,规则%s找不到对应的表", input.Node.Text(), input.Rule.Desc)
+				return nil
+			}
 			// 若没有修改表字符集
 			charset := getCharsetFromCreateTableStmt(input.Ctx, originTable)
 			if charset.StrValue == "" {
 				// 未能获取字符集 无法比较 返回
+				log.Logger().Infof("对于SQL:%s;规则%s未能获取字符集无法比较", input.Node.Text(), input.Rule.Desc)
 				return nil
 			}
 			for _, column := range columnWithCharset {
