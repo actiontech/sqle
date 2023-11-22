@@ -118,6 +118,7 @@ const (
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
+	DDLCheckTableLength                                = "ddl_check_table_length"
 )
 
 // inspector DML rules
@@ -2328,6 +2329,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "禁止对索引列进行数学运算和使用函数",
 		Func:         checkMathComputationOrFuncOnIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckTableLength,
+			Desc:       "表的总长度不能超过阈值",
+			Annotation: "",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2000",
+					Desc:  "byte",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "表的总长度不能超过阈值",
+		Func:         checkTableLength,
 	},
 }
 
@@ -7401,6 +7422,11 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 		}
 
 	}
+
+	return nil
+}
+
+func checkTableLength(input *RuleHandlerInput) error {
 
 	return nil
 }
