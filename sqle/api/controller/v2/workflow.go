@@ -736,6 +736,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
 
+			auditWorkflowMapUsers, executorWorkflowMapUsers := make(map[uint]struct{}, 0), make(map[uint]struct{}, 0)
 			for _, memberWithPermission := range memberWithPermissions {
 				for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
 					if v1.CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeAuditWorkflow}, task.Instance) {
@@ -746,7 +747,10 @@ func CreateWorkflowV2(c echo.Context) error {
 						}
 						auditWorkflowUser.ID = uint(userId)
 						auditWorkflowUser.Name = memberWithPermission.User.Name
-						auditWorkflowUsers[i] = append(auditWorkflowUsers[i], auditWorkflowUser)
+						if _, ok := auditWorkflowMapUsers[auditWorkflowUser.ID]; !ok {
+							auditWorkflowMapUsers[auditWorkflowUser.ID] = struct{}{}
+							auditWorkflowUsers[i] = append(auditWorkflowUsers[i], auditWorkflowUser)
+						}
 					}
 
 					if v1.CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow}, task.Instance) {
@@ -757,7 +761,10 @@ func CreateWorkflowV2(c echo.Context) error {
 						}
 						executor.ID = uint(userId)
 						executor.Name = memberWithPermission.User.Name
-						executorWorkflowUsers[i] = append(executorWorkflowUsers[i], executor)
+						if _, ok := executorWorkflowMapUsers[executor.ID]; !ok {
+							executorWorkflowMapUsers[executor.ID] = struct{}{}
+							executorWorkflowUsers[i] = append(executorWorkflowUsers[i], executor)
+						}
 					}
 				}
 			}
