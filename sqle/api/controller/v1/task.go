@@ -206,7 +206,7 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -584,7 +584,7 @@ func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 
 // TODO 使用DMS的权限校验
 func CheckCurrentUserCanViewTaskDMS(c echo.Context, task *model.Task) error {
-	_, err := controller.GetCurrentUser(c)
+	_, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return err
 	}
@@ -680,7 +680,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -260,7 +260,7 @@ func CreateAuditPlan(c echo.Context) error {
 		}
 		instanceType = inst.DbType
 		// check operation
-		user, err := controller.GetCurrentUser(c)
+		user, err := controller.GetCurrentUser(c, dms.GetUser)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1176,7 +1176,7 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 	}
 
 	// s := model.GetStorage()
-	_, err = controller.GetCurrentUser(c)
+	_, err = controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		// return controller.JSONBaseErrorReq(c, err)
 		// dms-todo: 需要判断用户是否存在，dms提供
