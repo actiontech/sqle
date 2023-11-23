@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/postgresql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1545,4 +1546,150 @@ func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task 
 	b.baiduRdsMySQLTask = task
 
 	return b
+}
+
+// PostgreSQLTopSQLTask implement the Task interface.
+//
+// PostgreSQLTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type PostgreSQLTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewPostgreSQLTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &PostgreSQLTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *PostgreSQLTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	dsn := &postgresql.DSN{
+		Host:     inst.Host,
+		Port:     inst.Port,
+		User:     inst.User,
+		Password: inst.Password,
+		Database: at.ap.InstanceDatabase,
+	}
+	db, err := postgresql.NewDB(dsn)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
+	defer db.Close()
+
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+
+	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int(),
+		at.ap.Params.GetParam("order_by_column").String())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+	if len(sqls) > 0 {
+		apSQLs := make([]*SQL, 0, len(sqls))
+		for _, sql := range sqls {
+			apSQLs = append(apSQLs, &SQL{
+				SQLContent:  sql.SQLFullText,
+				Fingerprint: sql.SQLFullText,
+				Info: map[string]interface{}{
+					postgresql.DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
+					postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
+					postgresql.DynPerformanceViewPgSQLColumnCPUTime:        sql.CPUTime,
+					postgresql.DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
+					postgresql.DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
+					postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
+				},
+			})
+		}
+
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+		if err != nil {
+			at.logger.Errorf("save top sql to storage fail, error: %v", err)
+		}
+	}
+}
+
+func (at *PostgreSQLTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnElapsedTime,
+			Desc: "执行时间(s)",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnCPUTime,
+			Desc: "CPU消耗时间(s)",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnDiskReads,
+			Desc: "物理读",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnBufferGets,
+			Desc: "逻辑读",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime,
+			Desc: "I/O等待时间(s)",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &postgresql.DynPerformancePgColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+			postgresql.DynPerformanceViewPgSQLColumnExecutions:     strconv.Itoa(int(info.Executions)),
+			postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+			postgresql.DynPerformanceViewPgSQLColumnCPUTime:        fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000, 3)),     //视图中时间单位是毫秒，所以除以1000得到秒
+			postgresql.DynPerformanceViewPgSQLColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
+			postgresql.DynPerformanceViewPgSQLColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
+			postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+		})
+	}
+	return heads, rows, count, nil
 }

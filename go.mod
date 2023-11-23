@@ -50,6 +50,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
+	github.com/lib/pq v1.10.2
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
