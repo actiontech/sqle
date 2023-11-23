@@ -94,7 +94,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -448,7 +448,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -558,7 +558,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -678,7 +678,7 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 	}
 	auditRecordId := c.Param("sql_audit_record_id")
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
