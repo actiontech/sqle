@@ -114,6 +114,7 @@ type BaseSQL struct {
 	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
 	Schema          string `json:"schema"`
+	SourceFile      string `json:"source_file"`
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
@@ -434,15 +435,16 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
-	Number       uint           `json:"number"`
-	Description  string         `json:"description"`
-	ExecSQL      string         `json:"exec_sql"`
-	AuditResults AuditResults   `json:"audit_results"`
-	AuditLevel   string         `json:"audit_level"`
-	AuditStatus  string         `json:"audit_status"`
-	ExecResult   string         `json:"exec_result"`
-	ExecStatus   string         `json:"exec_status"`
-	RollbackSQL  sql.NullString `json:"rollback_sql"`
+	Number        uint           `json:"number"`
+	Description   string         `json:"description"`
+	ExecSQL       string         `json:"exec_sql"`
+	SQLSourceFile sql.NullString `json:"sql_source_file"`
+	AuditResults  AuditResults   `json:"audit_results"`
+	AuditLevel    string         `json:"audit_level"`
+	AuditStatus   string         `json:"audit_status"`
+	ExecResult    string         `json:"exec_result"`
+	ExecStatus    string         `json:"exec_status"`
+	RollbackSQL   sql.NullString `json:"rollback_sql"`
 }
 
 func (t *TaskSQLDetail) GetAuditResults() string {
@@ -453,7 +455,7 @@ func (t *TaskSQLDetail) GetAuditResults() string {
 	return t.AuditResults.String()
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, r_sql.content AS rollback_sql,
 e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
