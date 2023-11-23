@@ -177,7 +177,7 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 }
 
 func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, []*CustomRule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
 	if !exist {
 		return nil, nil, errors.New(errors.DataNotExist, err)
 	}
@@ -238,12 +238,18 @@ func (s *Storage) IsRuleTemplateExistFromAnyProject(projectId ProjectUID, name s
 	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string, fuzzy_keyword_rule string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
+	fuzzy_condition := func(db *gorm.DB) *gorm.DB {
+		if fuzzy_keyword_rule == "" {
+			return db
+		}
+		return db.Where("`desc` like ? OR annotation like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule), fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
+	}
 	t := &RuleTemplate{Name: name}
-	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("CustomRuleList.CustomRule").
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("CustomRuleList.CustomRule", fuzzy_condition).
 		Where(t).
 		Where("project_id IN (?)", projectIds).
 		First(t).Error

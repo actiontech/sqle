@@ -5109,6 +5109,10 @@ paths:
         name: rule_template_name
         required: true
         type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
+        type: string
       responses:
         "200":
           description: OK
@@ -6746,6 +6750,10 @@ paths:
         name: rule_template_name
         required: true
         type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
+        type: string
       responses:
         "200":
           description: OK
@@ -6859,6 +6867,10 @@ paths:
       - description: filter db type
         in: query
         name: filter_db_type
+        type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
         type: string
       - description: filter global rule template name
         in: query
