@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -49,7 +50,7 @@ func OperationLogRecord() echo.MiddlewareFunc {
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range ApiInterfaceInfoList {
 				if c.Request().Method == interfaceInfo.Method && interfaceInfo.RouterPath == path {
-					user, err := controller.GetCurrentUser(c)
+					user, err := controller.GetCurrentUser(c, dms.GetUser)
 					if err != nil {
 						newLog.Errorf("get current error: %s", err)
 						return nil
