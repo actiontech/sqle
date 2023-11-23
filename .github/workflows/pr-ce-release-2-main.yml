@@ -6,16 +6,20 @@ on:
 
 jobs:
   cherry_pick_release_2_main:
-    if: github.event.pull_request.merged == true && github.repository == 'actiontech/sqle'
+    if: contains(github.event.pull_request.labels.*.name, 'need_cherry_pick')
     runs-on: ubuntu-latest
     name: Cherry pick into main
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Cherry pick into main
-        uses: Nathanmalnoury/gh-backport-action@master
-        with:
-          pr_branch: 'main'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Create PR to main
+      uses: carloscastrojumo/github-cherry-pick-action@v1.0.1
+      with:
+        branch: ${{ github.repository == 'actiontech/sqle-ee' && 'main-ee' || 'main' }}
+        labels: |
+          cherry-pick
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

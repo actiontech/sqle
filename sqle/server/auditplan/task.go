@@ -56,6 +56,7 @@ type SQL struct {
 	SQLContent  string
 	Fingerprint string
 	Schema      string
+	Endpoint    string
 	Info        map[string]interface{}
 }
 
@@ -292,6 +293,7 @@ func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
 			SQLContent:  sql.SQLContent,
 			Schema:      sql.Schema,
 			Info:        data,
+			Endpoint:    sql.Endpoint,
 		}
 	}
 	return as
