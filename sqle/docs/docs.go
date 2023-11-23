@@ -2434,6 +2434,12 @@ var doc = `{
                         "name": "rule_template_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -4969,6 +4975,12 @@ var doc = `{
                         "name": "rule_template_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5144,6 +5156,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter db type",
                         "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
                         "in": "query"
                     },
                     {
