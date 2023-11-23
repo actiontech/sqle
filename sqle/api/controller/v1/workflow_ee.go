@@ -34,7 +34,7 @@ func exportWorkflowV1(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
