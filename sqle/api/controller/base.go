@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	dmsJWT "github.com/actiontech/dms/pkg/dms-common/api/jwt"
-	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
@@ -83,7 +83,7 @@ func GetUserID(c echo.Context) string {
 	return fmt.Sprintf("%d", uid)
 }
 
-func GetCurrentUser(c echo.Context) (*model.User, error) {
+func GetCurrentUser(c echo.Context, getUser func(context.Context, string, string) (*model.User, error)) (*model.User, error) {
 	key := "current_user"
 	currentUser := c.Get(key)
 	if currentUser != nil {
@@ -92,19 +92,9 @@ func GetCurrentUser(c echo.Context) (*model.User, error) {
 		}
 	}
 	uidStr := GetUserID(c)
-	dmsUser, err := dmsobject.GetUser(c.Request().Context(), uidStr, GetDMSServerAddress())
+	user, err := getUser(c.Request().Context(), uidStr, GetDMSServerAddress())
 	if err != nil {
 		return nil, err
-	}
-	uid, err := strconv.Atoi(uidStr)
-	if err != nil {
-		return nil, err
-	}
-	user := &model.User{
-		Model: model.Model{
-			ID: uint(uid),
-		},
-		Name: dmsUser.Name,
 	}
 	c.Set(key, user)
 	return user, nil
