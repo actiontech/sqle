@@ -58,7 +58,7 @@ func ApproveWorkflowV2(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -145,7 +145,7 @@ func RejectWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -227,7 +227,7 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -292,7 +292,7 @@ func BatchCancelWorkflowsV2(c echo.Context) error {
 	if err := model.GetStorage().BatchUpdateWorkflowStatus(workflows); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -326,7 +326,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -423,7 +423,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -606,7 +606,7 @@ func CreateWorkflowV2(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -853,7 +853,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 		instanceMap[instance.ID] = instance
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -983,7 +983,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1065,7 +1065,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

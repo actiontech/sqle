@@ -372,7 +372,7 @@ func GetInstanceTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
