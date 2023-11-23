@@ -13,6 +13,7 @@ import (
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -74,47 +75,59 @@ const (
 	GitPassword             = "git_user_password"
 )
 
-func getSQLFromFile(c echo.Context) (string, string, error) {
+func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	// Read it from sql file.
-	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	sqlsFromSQLFile, exist, err := controller.ReadFileContent(c, InputSQLFileName)
 	if err != nil {
-		return "", model.TaskSQLSourceFromSQLFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromSQLFile, nil
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromSQLFile,
+			SQLs:       []SQLsFromFile{{SQLs: sqlsFromSQLFile}},
+		}, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
 	data, exist, err := controller.ReadFileContent(c, InputMyBatisXMLFileName)
 	if err != nil {
-		return "", model.TaskSQLSourceFromMyBatisXMLFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
 		sql, err := mybatis_parser.ParseXML(data)
 		if err != nil {
-			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
+			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
-		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromMyBatisXMLFile,
+			SQLs:       []SQLsFromFile{{SQLs: sql}},
+		}, nil
 	}
 
 	// If mybatis xml file is not exist, read it from zip file.
-	sqls, exist, err = getSqlsFromZip(c)
+	sqlsFromZip, exist, err := getSqlsFromZip(c)
 	if err != nil {
-		return "", model.TaskSQLSourceFromZipFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromZipFile, nil
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromZipFile,
+			SQLs:       sqlsFromZip,
+		}, nil
 	}
 
 	// If zip file is not exist, read it from git repository
-	sqls, exist, err = getSqlsFromGit(c)
+	sqlsFromGit, exist, err := getSqlsFromGit(c)
 	if err != nil {
-		return "", model.TaskSQLSourceFromGitRepository, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromGitRepository, nil
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromGitRepository,
+			SQLs:       sqlsFromGit,
+		}, nil
 	}
-	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
 // @Summary 创建Sql扫描任务并提交审核
@@ -141,14 +154,21 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	var sql string
-	var source string
+	var sqls getSQLFromFileResp
 	var err error
 
 	if req.Sql != "" {
-		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromFormData,
+			SQLs: []SQLsFromFile{
+				{
+					FilePath: "",
+					SQLs:     req.Sql,
+				},
+			},
+		}
 	} else {
-		sql, source, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -165,10 +185,8 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
-
-	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sql)
+	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, sqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -723,13 +741,19 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	var err error
-	var sql string
-	var source string
-
+	var sqls getSQLFromFileResp
 	if req.Sql != "" {
-		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromFormData,
+			SQLs: []SQLsFromFile{
+				{
+					FilePath: "",
+					SQLs:     req.Sql,
+				},
+			},
+		}
 	} else {
-		sql, source, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -743,43 +767,54 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	tasks := taskGroup.Tasks
 
-	instances := make([]*model.Instance, 0)
-	for _, task := range tasks {
-		instances = append(instances, task.Instance)
-	}
+	{
+		instances := make([]*model.Instance, 0)
+		for _, task := range tasks {
+			instances = append(instances, task.Instance)
+		}
 
-	can, err := checkCurrentUserCanAccessInstances(c, instances)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !can {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-	}
+		can, err := checkCurrentUserCanAccessInstances(c, instances)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !can {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+		}
 
-	l := log.NewEntry()
+		l := log.NewEntry()
 
-	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
-	dbType := instances[0].DbType
-	plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	defer plugin.Close(context.TODO())
+		// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
+		dbType := instances[0].DbType
+		plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		defer plugin.Close(context.TODO())
 
-	nodes, err := plugin.Parse(context.TODO(), sql)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+		allNodes := make(map[string][]driverV2.Node, len(sqls.SQLs))
+		for _, sqlsFromOneFile := range sqls.SQLs {
+			nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			allNodes[sqlsFromOneFile.FilePath] = nodes
+		}
 
-	for _, task := range tasks {
-		task.SQLSource = source
-		for j, node := range nodes {
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:  uint(j + 1),
-					Content: node.Text,
-				},
-			})
+		for _, task := range tasks {
+			task.SQLSource = sqls.SourceType
+			num := 1
+			for filePath, nodes := range allNodes {
+				for _, node := range nodes {
+					task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+						BaseSQL: model.BaseSQL{
+							Number:     uint(num),
+							Content:    node.Text,
+							SourceFile: filePath,
+						},
+					})
+					num += 1
+				}
+			}
 		}
 	}
 
