@@ -110,6 +110,9 @@ func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string
 	if err != nil {
 		return err
 	}
+	if len(userId) == 0 {
+		return fmt.Errorf("user %s has no associated feishu account", user.Name)
+	}
 
 	s := model.GetStorage()
 	feishuInst, exist, err := s.GetFeishuInstanceByWorkflowID(workflowId)
