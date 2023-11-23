@@ -334,36 +334,47 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 	// parse xml content
 	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
 	{
-		allStmtsFromXml, err := xmlParser.ParseXMLsWithFilePath(xmlContents, false)
+		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
 		if err != nil {
-			return nil, false, fmt.Errorf("parse sqls from xml failed: %v", err)
+			return nil, false, err
 		}
-		for _, xmlContent := range xmlContents {
-			var sqlBuffer bytes.Buffer
-			ss, ok := allStmtsFromXml[xmlContent.FilePath]
-			if !ok {
-				continue
-			}
-
-			for _, sql := range ss {
-				if sqlBuffer.String() != "" && !strings.HasSuffix(sqlBuffer.String(), ";") {
-					if _, err = sqlBuffer.WriteString(";"); err != nil {
-						return nil, false, fmt.Errorf("gather sqls from xml file failed: %v", err)
-					}
-				}
-				if _, err = sqlBuffer.WriteString(sql); err != nil {
-					return nil, false, fmt.Errorf("gather sqls from xml file failed: %v", err)
-				}
-			}
-
-			sqls = append(sqls, SQLsFromFile{
-				FilePath: xmlContent.FilePath,
-				SQLs:     sqlBuffer.String(),
-			})
-		}
+		sqls = append(sqls, sqlsFromXmls...)
 	}
 
 	return sqls, true, nil
+}
+
+func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFiles) ([]SQLsFromFile, error) {
+	allStmtsFromXml, err := xmlParser.ParseXMLsWithFilePath(xmlContents, false)
+	if err != nil {
+		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
+	}
+
+	var sqls []SQLsFromFile
+	for _, xmlContent := range xmlContents {
+		var sqlBuffer bytes.Buffer
+		ss, ok := allStmtsFromXml[xmlContent.FilePath]
+		if !ok {
+			continue
+		}
+
+		for _, sql := range ss {
+			if sqlBuffer.String() != "" && !strings.HasSuffix(sqlBuffer.String(), ";") {
+				if _, err = sqlBuffer.WriteString(";"); err != nil {
+					return nil, fmt.Errorf("gather sqls from xml file failed: %v", err)
+				}
+			}
+			if _, err = sqlBuffer.WriteString(sql); err != nil {
+				return nil, fmt.Errorf("gather sqls from xml file failed: %v", err)
+			}
+		}
+
+		sqls = append(sqls, SQLsFromFile{
+			FilePath: xmlContent.FilePath,
+			SQLs:     sqlBuffer.String(),
+		})
+	}
+	return sqls, nil
 }
 
 func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
@@ -395,8 +406,11 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 	if err != nil {
 		return nil, false, err
 	}
+	l := log.NewEntry().WithField("function", "getSqlsFromGit")
+	var xmlContents []xmlParser.XmlFiles
 	// traverse the repository, parse and put SQL into sqlBuffer
 	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		gitPath := strings.TrimPrefix(path, strings.TrimPrefix(dir, "./"))
 		if !info.IsDir() {
 			var sqlBuffer strings.Builder
 			var sqlsFromOneFile string
@@ -404,30 +418,17 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 			case strings.HasSuffix(path, ".xml"):
 				content, err := os.ReadFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
-				ss, err := xmlParser.ParseXMLs([]string{string(content)}, false)
-				if err != nil {
-					return nil
-				}
-				if len(ss) == 0 {
-					return nil
-				}
-				if sqlBuffer.Len() > 0 && !strings.HasSuffix(sqlBuffer.String(), ";") {
-					if _, err = sqlBuffer.WriteString(";"); err != nil {
-						return fmt.Errorf("gather sqls from xml file failed: %v", err)
-					}
-				}
-				for i := range ss {
-					_, err = sqlBuffer.WriteString(ss[i] + ";")
-					if err != nil {
-						return fmt.Errorf("gather sqls from xml file failed: %v", err)
-					}
-				}
-				sqlsFromOneFile = sqlBuffer.String()
+				xmlContents = append(xmlContents, xmlParser.XmlFiles{
+					FilePath: gitPath,
+					Content:  string(content),
+				})
 			case strings.HasSuffix(path, ".sql"):
 				content, err := os.ReadFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
 				sqlsFromOneFile = string(content)
@@ -450,7 +451,7 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 			}
 
 			sqls = append(sqls, SQLsFromFile{
-				FilePath: path,
+				FilePath: gitPath,
 				SQLs:     sqlsFromOneFile,
 			})
 		}
@@ -459,6 +460,17 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 	if err != nil {
 		return nil, false, err
 	}
+
+	// parse xml content
+	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
+	{
+		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
+		if err != nil {
+			return nil, false, err
+		}
+		sqls = append(sqls, sqlsFromXmls...)
+	}
+
 	return sqls, true, nil
 }
 
