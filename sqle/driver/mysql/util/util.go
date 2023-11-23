@@ -98,8 +98,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, nil
 	}
 
-	if len(row) != 1 {
-		return 0, fmt.Errorf("affected row sql(%v) result row count(%v) is not 1", affectRowSql, len(row))
+	if len(row) < 1 {
+		return 0, fmt.Errorf("affected row sql(%v) result row count(%v) less than 1", affectRowSql, len(row))
 	}
 
 	affectCount, err := strconv.ParseInt(row[0][0].String, 10, 64)

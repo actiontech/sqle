@@ -673,7 +673,24 @@ type index struct {
 	IndexName  string
 }
 
+/*
+示例：
+
+	mysql> [透传语句]SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY, s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (("db_name","table_name","idx_name_1"),("db_name","table_name","idx_name_2"));
+
+									  ↓包含透传语句时会多出info列
+	+-------------------+------------+--------------------+
+	| INDEX_SELECTIVITY | INDEX_NAME | info               |
+	+-------------------+------------+--------------------+
+	|          100.0000 | idx_name_2 | set_1700620716_1   |
+	|           28.5714 | idx_name_1 | set_1700620716_1   |
+	|           28.5714 | idx_name_1 | set_1700620716_1   |
+	+-------------------+------------+--------------------+
+*/
 func (c *Context) getSelectivityByIndex(indexes []index) (map[string] /*index name*/ float64, error) {
+	if len(indexes) == 0 {
+		return make(map[string]float64, 0), nil
+	}
 	if c.e == nil {
 		return nil, nil
 	}
@@ -782,7 +799,21 @@ type column struct {
 	ColumnName string
 }
 
+/*
+示例：
+
+	mysql> [TDSQL透传语句]SELECT COUNT( DISTINCT ( name ) ) / COUNT( * ) * 100 AS name,COUNT( DISTINCT ( age  ) ) / COUNT( * ) * 100 AS age FROM (SELECT name,age FROM test.test_table LIMIT 50000) t;
+						 ↓包含透传语句时会多出info列
+	+---------+---------+--------------------+
+	| name    | age     | info               |
+	+---------+---------+--------------------+
+	| 50.0000 | 75.0000 | set_1700620716_1   |
+	+---------+---------+--------------------+
+*/
 func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index name*/ float64, error) {
+	if len(columns) == 0 {
+		return make(map[string]float64, 0), nil
+	}
 	if c.e == nil {
 		return nil, nil
 	}
@@ -797,6 +828,7 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 			fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", column.ColumnName, column.ColumnName),
 		)
 		selectColumns = append(selectColumns, column.ColumnName)
+		columnSelectivityMap[column.ColumnName] = 0
 	}
 
 	results, err := c.e.Db.Query(
@@ -812,6 +844,9 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	}
 	for _, resultMap := range results {
 		for k, v := range resultMap {
+			if _, ok := columnSelectivityMap[k]; !ok {
+				continue
+			}
 			if v.String == "" {
 				selectivityValue = -1
 			} else {
