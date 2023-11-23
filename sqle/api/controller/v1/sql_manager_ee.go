@@ -50,6 +50,7 @@ func getSqlManageList(c echo.Context) error {
 		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
 		"sort_field":                        req.SortField,
 		"sort_order":                        req.SortOrder,
 		"limit":                             req.PageSize,
@@ -123,6 +124,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 
 		sqlMgr.Status = sqlManage.Status
 		sqlMgr.Remark = sqlManage.Remark
+		sqlMgr.Endpoint = sqlManage.Endpoint.String
 
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
@@ -185,6 +187,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
 		"sort_field":                        req.SortField,
 		"sort_order":                        req.SortOrder,
 	}
@@ -216,6 +219,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		"初次出现时间",
 		"最后一次出现时间",
 		"出现数量",
+		"端点信息",
 		"负责人",
 		"状态",
 		"备注",
@@ -246,6 +250,7 @@ func exportSqlManagesV1(c echo.Context) error {
 			sqlManage.FirstAppearTime(),
 			sqlManage.LastReceiveTime(),
 			strconv.FormatUint(sqlManage.FpCount, 10),
+			sqlManage.Endpoint.String,
 			strings.Join(assignees, ","),
 			model.SqlManageStatusMap[sqlManage.Status],
 			sqlManage.Remark,

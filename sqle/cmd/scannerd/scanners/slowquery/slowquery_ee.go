@@ -161,6 +161,7 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 				QueryAt:   e.Ts,
 				DBUser:    e.User,
 				Schema:    e.Db,
+				Endpoint:  e.Host,
 			}
 		}
 	}
@@ -236,6 +237,7 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 				FirstQueryAt:         sql.QueryAt,
 				DBUser:               sql.DBUser,
 				Schema:               sql.Schema,
+				Endpoint:             sql.Endpoint,
 			}
 			auditPlanSqlMap[key] = sqlReq
 			sqlListReq = append(sqlListReq, sqlReq)
