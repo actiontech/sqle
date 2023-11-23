@@ -7269,3 +7269,35 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckTableLength(t *testing.T) {
+	args := []struct {
+		Name        string
+		Sql         string
+		TriggerRule bool
+	}{
+		// select
+		{
+			Name: "select-with-equal",
+			Sql: `CREATE TABLE example_table (
+				char_column decimal(9, 10)
+			);`,
+			TriggerRule: false,
+		},
+	}
+
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Rule
+	for _, arg := range args {
+		e, _, err := executor.NewMockExecutor()
+		assert.NoError(t, err)
+		inspect := NewMockInspect(e)
+
+		t.Run(arg.Name, func(t *testing.T) {
+			res := newTestResult()
+			if arg.TriggerRule {
+				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Message)
+			}
+			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Rule, t, "", inspect, arg.Sql, res)
+		})
+	}
+}

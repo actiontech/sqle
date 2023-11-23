@@ -7426,7 +7426,161 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkTableLength(input *RuleHandlerInput) error {
+// 忽略json字段计算大小，json字段根据存储对象的大小分配空间
+// https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html#data-types-storage-reqs-json
+// 计算公式满足mysql5.6.4以后的版本
+func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
+	byteLength := 0
 
+	// 计算time占用字节 https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html#data-types-storage-reqs-date-time
+	var calTimeBytes = func(initByte int) {
+		byteLength = initByte
+		if tp.Decimal == 1 && tp.Decimal == 2 {
+			byteLength += 1
+		} else if tp.Decimal == 3 && tp.Decimal == 4 {
+			byteLength += 2
+		} else if tp.Decimal == 5 && tp.Decimal == 6 {
+			byteLength += 3
+		}
+	}
+
+	// 计算decimal占用字节  https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html#data-types-storage-reqs-numeric
+	var calDecimal = func(decimal int) int {
+		quotient := decimal / 9
+		remainder := decimal % 9
+		tmpByteLength := quotient * 4
+		if remainder == 1 && remainder == 2 {
+			tmpByteLength += 1
+		} else if remainder == 3 && remainder == 4 {
+			tmpByteLength += 2
+		} else if remainder == 5 && remainder == 6 {
+			tmpByteLength += 3
+		} else if remainder == 7 && remainder == 8 {
+			tmpByteLength += 4
+		}
+		return tmpByteLength
+	}
+
+	switch tp.Tp {
+	// INT
+	case mysql.TypeLong:
+		byteLength = 4
+	case mysql.TypeVarchar:
+		if tp.Charset != "binary" {
+			// todo: 判断是utf8mb3还是utf8mb4
+			byteLength = tp.Flen * 3
+		} else if tp.Charset == "binary" {
+			byteLength = tp.Flen
+		}
+	case mysql.TypeString:
+		if tp.Charset == "binary" {
+			if tp.Flen > 0 {
+				byteLength = tp.Flen
+			} else {
+				// BINARY字段不指定大小默认为1
+				byteLength = 1
+			}
+		} else {
+			// todo: 判断是utf8mb3还是utf8mb4
+			byteLength = tp.Flen * 3
+		}
+	case mysql.TypeTinyBlob:
+		if tp.Charset == "binary" {
+			// TINYBLOB
+			byteLength = 255
+		} else {
+			// TINYTEXT
+			// todo: 判断是utf8mb3还是utf8mb4
+			byteLength = 255 * 3
+		}
+	case mysql.TypeBlob:
+		if tp.Charset == "binary" {
+			// BLOB
+			if tp.Flen < 0 {
+				byteLength = 65532
+			} else {
+				byteLength = tp.Flen
+			}
+		} else {
+			// TEXT
+			// todo: 判断是utf8mb3还是utf8mb4
+			if tp.Flen < 0 {
+				byteLength = 65532 * 3
+			} else {
+				byteLength = tp.Flen * 3
+			}
+		}
+	case mysql.TypeMediumBlob:
+		if tp.Charset == "binary" {
+			// MEDIUMBLOB
+			byteLength = 16777215
+		} else {
+			// MEDIUMTEXT
+			// todo: 判断是utf8mb3还是utf8mb4
+			byteLength = 16777215 * 3
+		}
+	case mysql.TypeLongBlob:
+		if tp.Charset == "binary" {
+			// LONGBLOB
+			byteLength = 4294967295
+		} else {
+			// LONGTEXT
+			// todo: 判断是utf8mb3还是utf8mb4
+			byteLength = 4294967295 * 3
+		}
+	// TINYINT, BOOL, BOOLEAN
+	case mysql.TypeTiny:
+		byteLength = 1
+	// SMALLINT
+	case mysql.TypeShort:
+		byteLength = 2
+	// MEDIUMINT
+	case mysql.TypeInt24:
+		byteLength = 3
+	// BIGINT
+	case mysql.TypeLonglong:
+		byteLength = 8
+	// FLOAT
+	case mysql.TypeFloat:
+		byteLength = 4
+	// DOUBLE
+	case mysql.TypeDouble:
+		byteLength = 8
+	// DECIMAL
+	case mysql.TypeDecimal:
+		byteLength += calDecimal(tp.Flen)
+		byteLength += calDecimal(tp.Decimal)
+	// TIME
+	case mysql.TypeDuration:
+		calTimeBytes(3)
+	// DATETIME
+	case mysql.TypeDatetime:
+		calTimeBytes(5)
+	// TIMESTAMP
+	case mysql.TypeTimestamp:
+		calTimeBytes(4)
+	// YEAR
+	case mysql.TypeYear:
+		byteLength = 1
+	// DATE
+	case mysql.TypeDate:
+		byteLength = 3
+	}
+	return byteLength
+}
+
+func checkTableLength(input *RuleHandlerInput) error {
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	byteLength := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			byteLength += getBytesLengthFromColumn(col.Tp)
+		}
+	case *ast.AlterTableStmt:
+	}
+	if byteLength > max {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
 	return nil
 }
