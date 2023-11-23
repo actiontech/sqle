@@ -13,6 +13,7 @@ asensitive
 atoi
 attrs
 auditplan
+armscii
 backoff
 bcda
 beeefore
@@ -20,6 +21,7 @@ bigint
 binlog
 blkid
 btree
+chinese
 cardinalities
 ccug
 chanxuehong
@@ -440,3 +442,5 @@ mysqldump
 datediff
 xxx
 sprintln
+sessionctx
+stmtctx
