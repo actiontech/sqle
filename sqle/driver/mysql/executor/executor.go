@@ -298,6 +298,19 @@ func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 	}
 }
 
+/*
+示例：
+
+	mysql> [透传语句]show databases where lower(`Database`) not in ('information_schema','performance_schema','mysql','sys', 'query_rewrite');
+
+				↓包含透传语句时会多出info列
+	+----------+------------------+
+	| Database | info             |
+	+----------+------------------+
+	| sysdb    | set_1700620716_1 |
+	| test     | set_1700620716_1 |
+	+----------+------------------+
+*/
 func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 	var query string
 
@@ -316,19 +329,41 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 	}
 	dbs := make([]string, len(result))
 	for n, v := range result {
-		if len(v) != 1 {
+		if len(v) < 1 {
 			err := fmt.Errorf("show databases error, result not match")
 			c.Db.Logger().Error(err)
 			return dbs, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
-		for _, db := range v {
-			dbs[n] = db.String
+		for key, value := range v {
+			if key != "Database" {
+				continue
+			}
+			dbs[n] = value.String
 			break
 		}
 	}
 	return dbs, nil
 }
 
+/*
+示例：
+
+	mysql> [透传语句]select TABLE_NAME from information_schema.tables where table_schema='test' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW');
+				  ↓包含透传语句时会多出info列
+	+------------+------------------+
+	| TABLE_NAME | info             |
+	+------------+------------------+
+	| test_table | set_1700620716_1 |
+	+------------+------------------+
+
+	mysql> [透传语句]select TABLE_NAME from information_schema.tables where lower(table_schema) = 'test' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW');
+				  ↓包含透传语句时会多出info列
+	+------------+------------------+
+	| TABLE_NAME | info             |
+	+------------+------------------+
+	| test_table | set_1700620716_1 |
+	+------------+------------------+
+*/
 func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	query := fmt.Sprintf(
 		"select TABLE_NAME from information_schema.tables where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
@@ -345,12 +380,15 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	}
 	tables := make([]string, len(result))
 	for n, v := range result {
-		if len(v) != 1 {
+		if len(v) < 1 {
 			err := fmt.Errorf("show tables error, result not match")
 			c.Db.Logger().Error(err)
 			return tables, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
-		for _, table := range v {
+		for key, table := range v {
+			if key != "TABLE_NAME" {
+				continue
+			}
 			tables[n] = table.String
 			break
 		}
@@ -358,6 +396,26 @@ func (c *Executor) ShowSchemaTables(schema string) ([]string, error) {
 	return tables, nil
 }
 
+/*
+示例：
+
+	当使用透传语句时，会多出一列info
+	mysql> [透传语句]select TABLE_NAME from information_schema.tables where table_schema='test' and TABLE_TYPE='VIEW';
+				  ↓包含透传语句时会多出info列
+	+------------+------------------+
+	| TABLE_NAME | info             |
+	+------------+------------------+
+	| test_table | set_1700620716_1 |
+	+------------+------------------+
+
+	mysql> [透传语句]select TABLE_NAME from information_schema.tables where lower(table_schema) = 'test' and TABLE_TYPE='VIEW';
+				  ↓包含透传语句时会多出info列
+	+------------+------------------+
+	| TABLE_NAME | info             |
+	+------------+------------------+
+	| test_table | set_1700620716_1 |
+	+------------+------------------+
+*/
 func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 	query := fmt.Sprintf(
 		"select TABLE_NAME from information_schema.tables where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
@@ -375,12 +433,15 @@ func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 	}
 	tables := make([]string, len(result))
 	for n, v := range result {
-		if len(v) != 1 {
+		if len(v) < 1 {
 			err := fmt.Errorf("show views error, result not match")
 			c.Db.Logger().Error(err)
 			return tables, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
-		for _, table := range v {
+		for key, table := range v {
+			if key != "TABLE_NAME" {
+				continue
+			}
 			tables[n] = table.String
 			break
 		}
