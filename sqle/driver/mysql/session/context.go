@@ -889,6 +889,25 @@ func (c *Context) GetSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 	return character, nil
 }
 
+/*
+Example:
+
+	mysql> SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "armscii8_bin";
+	+--------------------+
+	| CHARACTER_SET_NAME |
+	+--------------------+
+	| armscii8           |
+	+--------------------+
+	1 row in set (0.01 sec)
+*/
+func (c *Context) GetSchemaCharacterByCollation(collation string) (string, error) {
+	if collation == "" || c.e == nil  {
+		return "", nil
+	}
+	return c.e.ShowDefaultConfiguration(
+		fmt.Sprintf("SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = \"%s\"", collation), "CHARACTER_SET_NAME")
+}
+
 // GetSchemaEngine get schema default engine.
 func (c *Context) GetSchemaEngine(stmt *ast.TableName, schemaName string) (string, error) {
 	if schemaName == "" {
