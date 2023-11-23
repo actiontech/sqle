@@ -5876,7 +5876,7 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 		// 获取建表语句中的字符集
 		charset := getCharsetFromCreateTableStmt(input.Ctx, stmt)
 		if charset.StrValue == "" {
-			log.Logger().Infof("对于SQL:%s;规则%s未能获取字符集无法比较", input.Node.Text(), input.Rule.Desc)
+			log.Logger().Warnf("skip rule:%s. reason: for sql %s, rule failed to obtain character set for comparison", input.Rule.Name, input.Node.Text())
 			// 未能获取字符集 无法比较 返回
 			return nil
 		}
@@ -5930,7 +5930,7 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 				2. 根据SQL语句修改列的字符集到目标字符集
 				3. 判断最终表字符集和最终列字符集是否一致
 			*/
-			log.Logger().Info("暂不支持修改表字符集但不使用CONVERT的情况")
+			log.Logger().Warnf("skip rule:%s. reason: for sql %s,alter the table character but not using CONVERT TO is currently not supported.", input.Rule.Name, input.Node.Text())
 			return nil
 		}
 		if newCharset == nil {
@@ -5941,18 +5941,18 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 			// 若未更改表的字符集，则获取原表字符集作为表字符集
 			originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
 			if err != nil {
-				log.Logger().Errorf("对于SQL:%s,规则%s获取表失败%v", input.Node.Text(), input.Rule.Desc, err)
+				log.Logger().Errorf("skip rule:%s. reason: for sql %s, an error occur when rule try to obtain the corresponding table,err:%v", input.Rule.Name, input.Node.Text(), err)
 				return nil
 			}
 			if !exist {
-				log.Logger().Infof("对于SQL:%s,规则%s找不到对应的表", input.Node.Text(), input.Rule.Desc)
+				log.Logger().Warnf("skip rule:%s. reason: for sql %s,the corresponding table is not exist", input.Rule.Name, input.Node.Text())
 				return nil
 			}
 			// 若没有修改表字符集
 			charset := getCharsetFromCreateTableStmt(input.Ctx, originTable)
 			if charset.StrValue == "" {
 				// 未能获取字符集 无法比较 返回
-				log.Logger().Infof("对于SQL:%s;规则%s未能获取字符集无法比较", input.Node.Text(), input.Rule.Desc)
+				log.Logger().Warnf("skip rule:%s. reason: for sql %s, rule failed to obtain character set for comparison", input.Rule.Name, input.Node.Text())
 				return nil
 			}
 			for _, column := range columnWithCharset {
