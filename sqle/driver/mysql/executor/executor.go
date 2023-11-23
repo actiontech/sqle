@@ -307,7 +307,7 @@ func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 	+----------+------------------+
 	| Database | info             |
 	+----------+------------------+
-	| sysdb    | set_1700620716_1 |
+	| system   | set_1700620716_1 |
 	| test     | set_1700620716_1 |
 	+----------+------------------+
 */
