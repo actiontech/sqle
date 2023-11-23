@@ -3020,8 +3020,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "endpoint",
-                        "name": "filter_endpoint",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
                         "in": "query"
                     },
                     {
@@ -3210,8 +3210,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "endpoint",
-                        "name": "filter_endpoint",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
                         "in": "query"
                     },
                     {
@@ -7338,7 +7338,7 @@ var doc = `{
                     "type": "string",
                     "example": "database_user001"
                 },
-                "end_point": {
+                "endpoint": {
                     "type": "string",
                     "example": "10.186.1.2"
                 },

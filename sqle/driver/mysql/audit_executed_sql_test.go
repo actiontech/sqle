@@ -112,9 +112,9 @@ ALTER TABLE exist_db.not_exist_tb_1 ADD INDEX idx_2(b1);
 ALTER TABLE exist_db.not_exist_tb_1 ADD COLUMN b2 blob UNIQUE KEY COMMENT "unit test";
 ALTER TABLE exist_db.not_exist_tb_1 MODIFY COLUMN b1 blob UNIQUE KEY COMMENT "unit test";
 `,
-					newTestResult().addResult(rulepkg.DDLCheckIndexedColumnWithBlob).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
+					newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckIndexedColumnWithBlob).
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").
 						add(driverV2.RuleLevelWarn, "", "这些索引字段(b1)需要有非空约束"),
 					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
 					newTestResult().addResult(rulepkg.DDLCheckIndexNotNullConstraint, "b1"),
@@ -226,12 +226,12 @@ id bigint unsigned NOT NULL KEY DEFAULT "unit test" COMMENT "unit test",
 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test"
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
-ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
+ALTER TABLE exist_db.exist_tb_1 Add primary key(v1); 
 			`,
 					newTestResult().addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-					newTestResult(),
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+					newTestResult().addResult(rulepkg.DDLCheckPKName),
 				)
 			})
 
@@ -249,10 +249,10 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 			`,
-					newTestResult().addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
-						add(driverV2.RuleLevelWarn, "", "建表DDL必须包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
-					newTestResult(),
+					newTestResult().addResult(rulepkg.DDLCheckPKName).addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned).
+						add(driverV2.RuleLevelWarn, "", "建议建表DDL包含CREATE_TIME字段且默认值为CURRENT_TIMESTAMP").
+						add(driverV2.RuleLevelWarn, "", "建表DDL需要包含UPDATE_TIME字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+					newTestResult().addResult(rulepkg.DDLCheckPKName),
 				)
 			})
 

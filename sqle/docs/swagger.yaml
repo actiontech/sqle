@@ -144,7 +144,7 @@ definitions:
       db_user:
         example: database_user001
         type: string
-      end_point:
+      endpoint:
         example: 10.186.1.2
         type: string
       first_query_at:
@@ -5475,9 +5475,9 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: endpoint
+      - description: fuzzy search endpoint
         in: query
-        name: filter_endpoint
+        name: fuzzy_search_endpoint
         type: string
       - description: sort field
         enum:
@@ -5603,9 +5603,9 @@ paths:
         in: query
         name: filter_rule_name
         type: string
-      - description: endpoint
+      - description: fuzzy search endpoint
         in: query
-        name: filter_endpoint
+        name: fuzzy_search_endpoint
         type: string
       - description: sort field
         enum:
