@@ -2,6 +2,7 @@ package v1
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	e "errors"
@@ -93,17 +94,15 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-
+	sqls := getSQLFromFileResp{}
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	var sqls string
-	var source string
 	if req.Sqls != "" {
-		sqls, source = req.Sqls, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{model.TaskSQLSourceFromFormData, []SQLsFromFile{{SQLs: req.Sqls}}}
 	} else {
-		sqls, source, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -111,12 +110,12 @@ func CreateSQLAuditRecord(c echo.Context) error {
 
 	var task *model.Task
 	if req.InstanceName != "" {
-		task, err = buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sqls)
+		task, err = buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
-		task, err = buildOfflineTaskForAudit(uint64(user.ID), req.DbType, source, sqls)
+		task, err = buildOfflineTaskForAudit(uint64(user.ID), req.DbType, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -165,7 +164,17 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	})
 }
 
-func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid, sourceType, sqls string) (*model.Task, error) {
+type getSQLFromFileResp struct {
+	SourceType string
+	SQLs       []SQLsFromFile
+}
+
+type SQLsFromFile struct {
+	FilePath string
+	SQLs     string
+}
+
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls getSQLFromFileResp) (*model.Task, error) {
 	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return nil, err
@@ -197,33 +206,38 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, in
 		Instance:     instance,
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    sourceType,
+		SQLSource:    sqls.SourceType,
 		DBType:       instance.DbType,
 	}
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	nodes, err := plugin.Parse(context.TODO(), sqls)
-	if err != nil {
-		return nil, err
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
+	var num uint = 1
+	for _, sqlsFromOneFile := range sqls.SQLs {
+		nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:     num,
+					Content:    node.Text,
+					SourceFile: sqlsFromOneFile.FilePath,
+				},
+			})
+			num++
+		}
 	}
 
 	return task, nil
 }
 
-func buildOfflineTaskForAudit(userId uint64, dbType, sourceType, sqls string) (*model.Task, error) {
+func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileResp) (*model.Task, error) {
 	task := &model.Task{
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    sourceType,
+		SQLSource:    sqls.SourceType,
 		DBType:       dbType,
 	}
 	var err error
@@ -234,54 +248,58 @@ func buildOfflineTaskForAudit(userId uint64, dbType, sourceType, sqls string) (*
 	}
 	defer plugin.Close(context.TODO())
 
-	nodes, err = plugin.Parse(context.TODO(), sqls)
-	if err != nil {
-		return nil, fmt.Errorf("parse sqls failed: %v", err)
+	var num uint = 1
+	for _, sqlsFromOneFile := range sqls.SQLs {
+		nodes, err = plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
+		if err != nil {
+			return nil, fmt.Errorf("parse sqls failed: %v", err)
+		}
+		for _, node := range nodes {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:     num,
+					Content:    node.Text,
+					SourceFile: sqlsFromOneFile.FilePath,
+				},
+			})
+			num++
+		}
 	}
 
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
-	}
-
 	return task, nil
 }
 
-func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
+func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
-		return "", false, nil
+		return nil, false, nil
 	}
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	f, err := file.Open()
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	defer f.Close()
 
 	currentPos, err := f.Seek(0, io.SeekEnd) // get size of zip file
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	size := currentPos + 1
 	if size > maxZipFileSize {
-		return "", false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+		return nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
 	}
 	r, err := zip.NewReader(f, size)
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
-	var sqlBuffer strings.Builder
-	xmlContents := make([]string, len(r.File))
+
+	var xmlContents []xmlParser.XmlFiles
 	for i := range r.File {
 		srcFile := r.File[i]
 		if srcFile == nil {
@@ -293,52 +311,72 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 
 		r, err := srcFile.Open()
 		if err != nil {
-			return "", false, fmt.Errorf("open src file failed:  %v", err)
+			return nil, false, fmt.Errorf("open src file failed:  %v", err)
 		}
 		content, err := io.ReadAll(r)
 		if err != nil {
-			return "", false, fmt.Errorf("read src file failed:  %v", err)
+			return nil, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
 		if strings.HasSuffix(srcFile.Name, ".xml") {
-			xmlContents[i] = string(content)
+			xmlContents = append(xmlContents, xmlParser.XmlFiles{
+				FilePath: srcFile.Name,
+				Content:  string(content),
+			})
 		} else if strings.HasSuffix(srcFile.Name, ".sql") {
-			if _, err = sqlBuffer.Write(content); err != nil {
-				return "", false, fmt.Errorf("gather sqls from sql file failed: %v", err)
-			}
+			sqls = append(sqls, SQLsFromFile{
+				FilePath: srcFile.Name,
+				SQLs:     string(content),
+			})
 		}
 	}
 
 	// parse xml content
-	ss, err := xmlParser.ParseXMLs(xmlContents, false)
-	if err != nil {
-		return "", false, fmt.Errorf("parse sqls from xml failed: %v", err)
-	}
-	for i := range ss {
-		if !strings.HasSuffix(sqlBuffer.String(), ";") {
-			if _, err = sqlBuffer.WriteString(";"); err != nil {
-				return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
-			}
+	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
+	{
+		allStmtsFromXml, err := xmlParser.ParseXMLsWithFilePath(xmlContents, false)
+		if err != nil {
+			return nil, false, fmt.Errorf("parse sqls from xml failed: %v", err)
 		}
-		if _, err = sqlBuffer.WriteString(ss[i]); err != nil {
-			return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
+		for _, xmlContent := range xmlContents {
+			var sqlBuffer bytes.Buffer
+			ss, ok := allStmtsFromXml[xmlContent.FilePath]
+			if !ok {
+				continue
+			}
+
+			for _, sql := range ss {
+				if sqlBuffer.String() != "" && !strings.HasSuffix(sqlBuffer.String(), ";") {
+					if _, err = sqlBuffer.WriteString(";"); err != nil {
+						return nil, false, fmt.Errorf("gather sqls from xml file failed: %v", err)
+					}
+				}
+				if _, err = sqlBuffer.WriteString(sql); err != nil {
+					return nil, false, fmt.Errorf("gather sqls from xml file failed: %v", err)
+				}
+			}
+
+			sqls = append(sqls, SQLsFromFile{
+				FilePath: xmlContent.FilePath,
+				SQLs:     sqlBuffer.String(),
+			})
 		}
 	}
 
-	return sqlBuffer.String(), true, nil
+	return sqls, true, nil
 }
 
-func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
+func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	defer os.RemoveAll(dir)
 	// read http url from form and check if it's a git url
 	url := c.FormValue(GitHttpURL)
 	if !utils.IsGitHttpURL(url) {
-		return "", false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+		return nil, false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
 	cloneOpts := &goGit.CloneOptions{
 		URL: url,
@@ -355,12 +393,13 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 	// clone from git
 	_, err = goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	// traverse the repository, parse and put SQL into sqlBuffer
-	var sqlBuffer strings.Builder
 	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
+			var sqlBuffer strings.Builder
+			var sqlsFromOneFile string
 			switch {
 			case strings.HasSuffix(path, ".xml"):
 				content, err := os.ReadFile(path)
@@ -385,18 +424,17 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 						return fmt.Errorf("gather sqls from xml file failed: %v", err)
 					}
 				}
+				sqlsFromOneFile = sqlBuffer.String()
 			case strings.HasSuffix(path, ".sql"):
 				content, err := os.ReadFile(path)
 				if err != nil {
 					return nil
 				}
-				_, err = sqlBuffer.Write(content)
-				if err != nil {
-					return fmt.Errorf("gather sqls from sql file failed: %v", err)
-				}
+				sqlsFromOneFile = string(content)
 			case strings.HasSuffix(path, ".java"):
 				sqls, err := javaParser.GetSqlFromJavaFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because get sql from java file failed: %v", path, err)
 					return nil
 				}
 				for _, sql := range sqls {
@@ -408,14 +446,20 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 						return fmt.Errorf("gather sqls from java file failed: %v", err)
 					}
 				}
+				sqlsFromOneFile = sqlBuffer.String()
 			}
+
+			sqls = append(sqls, SQLsFromFile{
+				FilePath: path,
+				SQLs:     sqlsFromOneFile,
+			})
 		}
 		return nil
 	})
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
-	return sqlBuffer.String(), true, nil
+	return sqls, true, nil
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
