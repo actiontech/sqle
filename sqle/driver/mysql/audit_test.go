@@ -5317,21 +5317,72 @@ func TestDDLCheckColumnQuantity(t *testing.T) {
 }
 
 func TestDDLRecommendTableColumnCharsetSame(t *testing.T) {
-	for _, sql := range []string{
-		"CREATE TABLE `t` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)",
-		//TODO　"alter table exist_tb_1 change v1 v1 char(10) CHARACTER SET utf8 DEFAULT NULL;",
-		"CREATE TABLE `t` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL) DEFAULT CHARSET=utf8mb4",
-	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-	}
+	// 无需连库
 
-	for _, sql := range []string{
-		"CREATE TABLE `t` ( `id` int(10) )",
-		//TODO　"CREATE TABLE `t` ( `id` varchar(10) CHARACTER SET utf8 ) DEFAULT CHARSET=utf8",
-	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), sql, newTestResult())
-	}
+	// 需要查询数据库 获取数据库默认字符集
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+	inspect1 := NewMockInspect(e)
 
+	// 不触发规则
+	// 创建表 声明列字符集与表字符集 二者一致
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE `t` ( `id` varchar(10) CHARACTER SET utf8 ) CHARACTER SET utf8", newTestResult())
+	// 创建表 未声明列字符集
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE `t` ( `id` int(11), `col` char(10) DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult())
+	// 触发规则
+	// 创建表 声明列字符集与表字符集 二者不一致
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "", DefaultMysqlInspect(), "CREATE TABLE `t` (`id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL) DEFAULT CHARSET=utf8mb4", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+
+	// 需要连库
+
+	// 不触发规则
+	// 先修改列的字符集，再修改表的字符集
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET cp850,
+		CONVERT TO CHARACTER SET gbk COLLATE gbk_chinese_ci;`, newTestResult())
+	// 先修改表的字符集，再修改列的字符集，二者字符集一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
+		MODIFY column_1 VARCHAR(255) CHARACTER SET latin1;`, newTestResult())
+	// 修改列的字符集和原表字符集一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET utf8mb4;`, newTestResult())
+	// 创建表未声明字符集和排序 列字符集与默认字符集一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t0` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL)", newTestResult())
+	// 创建表只声明排序 列字符集与排序对应字符集一致
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t1` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci", newTestResult())
+	// 创建表声明列排序 列字符集与排序对应字符集一致
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t4` ( `col` char(10) COLLATE gbk_chinese_ci DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult())
+
+	// 触发规则
+	// 创建表未声明字符集和排序 列字符集与默认字符集不一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t2` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL)", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+	// 创建表只声明排序 列字符集与排序对应字符集不一致
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t3` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+
+	// 先修改表的字符集，再修改列的字符集，二者字符集不一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
+		MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+	// 修改列的字符集和原表字符集一致
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+	// 创建表声明列排序 列字符集与排序对应字符集一致
+	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "latin1_general_ci"`)).
+		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("latin1"))
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t5` ( `col` char(10) COLLATE latin1_general_ci DEFAULT NULL,`col2` char(10)) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
 }
 
 func TestDDLCheckColumnTypeInteger(t *testing.T) {
@@ -7268,4 +7319,79 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
 		})
 	}
+}
+
+func Test_CheckSQLExplainLowsetLevel(t *testing.T) {
+	e, handler, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLSQLExplainLowestLevel].Rule
+	param := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName)
+
+	inspect1 := NewMockInspect(e)
+
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+
+	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
+
+	inspect2 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select id from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("INDEX"))
+	runSingleRuleInspectCase(rule, t, "", inspect2, "select id from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
+
+	inspect3 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id > 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("range"))
+	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_1 where id > 1", newTestResult())
+
+	inspect4 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_1 where id = 1", newTestResult())
+
+	inspect5 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("null"))
+	runSingleRuleInspectCase(rule, t, "", inspect5, "select 1", newTestResult())
+
+	inspect6 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id >= 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("eq_ref"))
+	runSingleRuleInspectCase(rule, t, "", inspect6, "select * from exist_tb_1 where id >= 1", newTestResult())
+
+	inspect7 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a'")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+	runSingleRuleInspectCase(rule, t, "", inspect7, "update exist_tb_1 set v1 = 'a'", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
+
+	inspect8 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a' where id = 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	runSingleRuleInspectCase(rule, t, "", inspect8, "update exist_tb_1 set v1 = 'a' where id = 1", newTestResult())
+
+	inspect9 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a' where id > 1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
+	runSingleRuleInspectCase(rule, t, "", inspect9, "update exist_tb_1 set v1 = 'a' where id > 1", newTestResult())
+
+	inspect10 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+	runSingleRuleInspectCase(rule, t, "", inspect10, "delete from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
+
+	inspect11 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1 where id > 10")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
+	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_1 where id > 10", newTestResult())
+
+	inspect12 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1 where id = 10")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	runSingleRuleInspectCase(rule, t, "", inspect12, "delete from exist_tb_1 where id = 10", newTestResult())
+
+	inspect13 := NewMockInspect(e)
+	runSingleRuleInspectCase(rule, t, "", inspect13, "insert into exist_tb_1(id) values(10)", newTestResult())
+
+	assert.NoError(t, handler.ExpectationsWereMet())
 }

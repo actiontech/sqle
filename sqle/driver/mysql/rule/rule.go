@@ -194,6 +194,7 @@ const (
 	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
+	DMLSQLExplainLowestLevel                  = "dml_sql_explain_lowest_level"
 )
 
 // inspector config code
@@ -2330,6 +2331,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: false,
 		Message:      "禁止对索引列进行数学运算和使用函数",
 		Func:         checkMathComputationOrFuncOnIndex,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLSQLExplainLowestLevel,
+			Desc:       "SQL执行计划中type字段建议满足规定的级别",
+			Annotation: "验证 SQL 执行计划中的 type 字段，确保满足要求级别，以保证查询性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "range,ref,const,eq_ref,system,NULL",
+					Desc:  "查询计划type等级，以英文逗号隔开",
+					Type:  params.ParamTypeString,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
+		Func:         checkSQLExplainLowsetLevel,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -5833,19 +5854,189 @@ func checkColumnQuantity(input *RuleHandlerInput) error {
 	}
 }
 
+/*
+recommendTableColumnCharsetSame
+
+	触发条件：
+	1 若DDL语句是建表语句：
+		1.1 若列声明了字符集或排序规则。列的字符集或排序规则对应的字符集与表字符集不同，触发规则
+	2 若DDL语句是修改表语句：
+		2.1 若只修改列字符集。字符集与原表不同，触发规则。
+		2.2 若修改了表的字符集，并且使用CONVERT，对比CONVERT的目标字符集，以及CONVERT后续修改列的语句
+		2.3 !若修改了表的字符集，但没有使用CONVERT，不触发规则，暂不支持这种情形
+
+	注意：若建表语句的字符集缺失，会按照mysql选择使用哪种字符集的逻辑获取字符集
+
+	建表语句或列选择使用哪种字符集以及排序规则的逻辑如下：
+	1 若符集以及排序都指定，则根据指定的字符集以及排序规则设定
+	2 若未指定字符集，但指定了排序规则，字符集设定为排序规则关联的字符集
+	3 若未指定排序规则，但指定了字符集，排序规则设定为字符集关联的排序规则
+	4 若表的字符集和排序规则都不指定，二者将被设定为数据库的字符集及排序的默认值
+	5 若列的字符集和排序规则都不知道，二者将被设定为数据表的字符集及排序的默认值
+	6 若ALTER语句中使用CONVERT TO修改表的字符集，表中所有列的字符集都会被修改为目标字符集
+
+	不支持：
+	1 一条ALTER语句中反复修改同一列的字符集
+	2 检查修改的列是否在表中
+	3 修改表不使用CONVERT
+
+参考文档1：
+https://dev.mysql.com/doc/refman/8.0/en/charset-database.html
+
+参考文档2：
+https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+*/
 func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		for _, col := range stmt.Cols {
-			if col.Tp.Charset != "" {
+		// 获取建表语句中指定了字符集或排序的列
+		columnWithCharset := getColumnWithCharset(stmt, input)
+		if len(columnWithCharset) == 0 {
+			return nil
+		}
+		// 获取建表语句中的字符集
+		charset := getCharsetFromCreateTableStmt(input.Ctx, stmt)
+		if charset.StrValue == "" {
+			log.Logger().Warnf("skip rule:%s. reason: for sql %s, rule failed to obtain character set for comparison", input.Rule.Name, input.Node.Text())
+			// 未能获取字符集 无法比较 返回
+			return nil
+		}
+		for _, column := range columnWithCharset {
+			if column.Tp.Charset != charset.StrValue {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
 			}
 		}
-		return nil
+	case *ast.AlterTableStmt:
+		var columnWithCharset []*ast.ColumnDef
+		var newCharset *ast.TableOption
+		var useConvert bool
+		for _, spec := range stmt.Specs {
+			// 修改的列
+			for _, col := range spec.NewColumns {
+				if col.Tp.Charset != "" {
+					columnWithCharset = append(columnWithCharset, col)
+				}
+			}
+			// 获取更改后的字符集以及更改的列
+			charset, _ := getCharsetAndCollation(spec.Options)
+			if charset.StrValue != "" {
+				if charset.UintValue == ast.TableOptionCharsetWithConvertTo {
+					// 使用CONVERT TO 则表的字符集会统一为该字符集 清空指定charset的列
+					columnWithCharset = make([]*ast.ColumnDef, 0)
+					useConvert = true
+				}
+				newCharset = charset
+			}
+		}
+
+		if newCharset != nil {
+			if useConvert {
+				for _, column := range columnWithCharset {
+					if column.Tp.Charset != newCharset.StrValue {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						break
+					}
+				}
+				return nil
+			}
+			/*
+				暂不支持修改表字符集但不使用CONVERT的情况
+				若不使用CONVERT，仅修改表的字符集，不修改表中列的字符集
+				需要判断最终的表字符集和列字符集是否一致，
+				1. 获取原表各列字符集:
+					SELECT column_name, character_set_name
+					FROM information_schema.columns
+					WHERE table_name = 'your_table_name';
+				2. 根据SQL语句修改列的字符集到目标字符集
+				3. 判断最终表字符集和最终列字符集是否一致
+			*/
+			log.Logger().Warnf("skip rule:%s. reason: for sql %s,alter the table character but not using CONVERT TO is currently not supported.", input.Rule.Name, input.Node.Text())
+			return nil
+		}
+		if newCharset == nil {
+			if len(columnWithCharset) == 0 {
+				// 没有指定字符集的列时，列的字符集被设定为表字符集
+				return nil
+			}
+			// 若未更改表的字符集，则获取原表字符集作为表字符集
+			originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+			if err != nil {
+				log.Logger().Errorf("skip rule:%s. reason: for sql %s, an error occur when rule try to obtain the corresponding table,err:%v", input.Rule.Name, input.Node.Text(), err)
+				return nil
+			}
+			if !exist {
+				log.Logger().Warnf("skip rule:%s. reason: for sql %s,the corresponding table is not exist", input.Rule.Name, input.Node.Text())
+				return nil
+			}
+			// 若没有修改表字符集
+			charset := getCharsetFromCreateTableStmt(input.Ctx, originTable)
+			if charset.StrValue == "" {
+				// 未能获取字符集 无法比较 返回
+				log.Logger().Warnf("skip rule:%s. reason: for sql %s, rule failed to obtain character set for comparison", input.Rule.Name, input.Node.Text())
+				return nil
+			}
+			for _, column := range columnWithCharset {
+				if column.Tp.Charset != charset.StrValue {
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					break
+				}
+			}
+		}
+
 	default:
 		return nil
 	}
+	return nil
+}
+
+func getColumnWithCharset(stmt *ast.CreateTableStmt, input *RuleHandlerInput) []*ast.ColumnDef {
+	var columnWithCharset []*ast.ColumnDef
+	for _, col := range stmt.Cols {
+
+		if col.Tp.Charset != "" {
+			columnWithCharset = append(columnWithCharset, col)
+		} else if col.Tp.Collate != "" {
+			col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
+			columnWithCharset = append(columnWithCharset, col)
+		} else if len(col.Options) > 0 {
+			for _, option := range col.Options {
+				if option.Tp == ast.ColumnOptionCollate {
+					col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(option.StrValue)
+					columnWithCharset = append(columnWithCharset, col)
+				}
+			}
+		}
+	}
+	return columnWithCharset
+}
+
+func getCharsetAndCollation(options []*ast.TableOption) (*ast.TableOption, *ast.TableOption) {
+	charset := &ast.TableOption{}
+	collation := &ast.TableOption{}
+	for _, option := range options {
+		if option.Tp == ast.TableOptionCharset {
+			charset = option
+		}
+		if option.Tp == ast.TableOptionCollate {
+			collation = option
+		}
+	}
+	return charset, collation
+}
+
+// 获取建表语句中的字符集
+func getCharsetFromCreateTableStmt(ctx *session.Context, stmt *ast.CreateTableStmt) *ast.TableOption {
+	charset, collation := getCharsetAndCollation(stmt.Options)
+	if charset.StrValue == "" && collation.StrValue == "" {
+		// 没有指定表字符集以及排序时，表的字符集和排序被设定为数据库默认字符集以及排序
+		charset.StrValue, _ = ctx.GetSchemaCharacter(stmt.Table, "")
+	}
+	if charset.StrValue == "" && collation.StrValue != "" {
+		// 指定了表排序但未指定表字符集时，表字符集被设定为排序对应的字符集
+		charset.StrValue, _ = ctx.GetSchemaCharacterByCollation(collation.StrValue)
+	}
+	return charset
 }
 
 func checkColumnTypeInteger(input *RuleHandlerInput) error {
@@ -7428,6 +7619,36 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 
 	}
 
+	return nil
+}
+
+func checkSQLExplainLowsetLevel(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	levelStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	splitStr := strings.Split(levelStr, ",")
+	levelMap := make(map[string]struct{})
+	for _, s := range splitStr {
+		s = strings.ToLower(strings.TrimSpace(s))
+		levelMap[s] = struct{}{}
+	}
+
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		explainType := strings.ToLower(record.Type)
+		if _, ok := levelMap[explainType]; !ok {
+			addResult(input.Res, input.Rule, DMLSQLExplainLowestLevel, levelStr)
+			return nil
+		}
+	}
 	return nil
 }
 
