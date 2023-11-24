@@ -71,7 +71,10 @@ func GetInstance(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, v1.ErrInstanceNoAccess)
 	}
-
+	ruletemplate, err := model.GetStorage().GetRuleTemplateById(instance.RuleTemplateId)
+	if err == nil {
+		instance.RuleTemplates = []model.RuleTemplate{*ruletemplate}
+	}
 	return c.JSON(http.StatusOK, &GetInstanceResV2{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertInstanceToRes(instance),
@@ -97,12 +100,11 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV2 {
 		Source: instance.Source,
 	}
 
-	if len(instance.RuleTemplates) > 0 {
+	if len(instance.RuleTemplates) != 0 {
+		ruleTemplate := instance.RuleTemplates[0]
 		instanceResV2.RuleTemplate = &RuleTemplateV2{
-			Name: instance.RuleTemplates[0].Name,
-		}
-		if instance.RuleTemplates[0].ProjectId == model.ProjectIdForGlobalRuleTemplate {
-			instanceResV2.RuleTemplate.IsGlobalRuleTemplate = true
+			Name:                 ruleTemplate.Name,
+			IsGlobalRuleTemplate: ruleTemplate.ProjectId == model.ProjectIdForGlobalRuleTemplate,
 		}
 	}
 	for _, param := range instance.AdditionalParams {
