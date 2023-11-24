@@ -19,18 +19,19 @@ type Meta struct {
 }
 
 const (
-	TypeDefault              = "default"
-	TypeMySQLSlowLog         = "mysql_slow_log"
-	TypeMySQLMybatis         = "mysql_mybatis"
-	TypeMySQLSchemaMeta      = "mysql_schema_meta"
-	TypeMySQLProcesslist     = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog   = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog  = "ali_rds_mysql_audit_log"
-	TypeOracleTopSQL         = "oracle_top_sql"
-	TypeTiDBAuditLog         = "tidb_audit_log"
-	TypeAllAppExtract        = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
-	TypeSQLFile              = "sql_file"
+	TypeDefault               = "default"
+	TypeMySQLSlowLog          = "mysql_slow_log"
+	TypeMySQLMybatis          = "mysql_mybatis"
+	TypeMySQLSchemaMeta       = "mysql_schema_meta"
+	TypeMySQLProcesslist      = "mysql_processlist"
+	TypeAliRdsMySQLSlowLog    = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
+	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
+	TypeOracleTopSQL          = "oracle_top_sql"
+	TypeTiDBAuditLog          = "tidb_audit_log"
+	TypeAllAppExtract         = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
+	TypeSQLFile               = "sql_file"
 )
 
 const (
@@ -51,6 +52,8 @@ const (
 	paramKeyAccessKeySecret                     = "access_key_secret"
 	paramKeyRdsPath                             = "rds_path"
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
+	paramProjectId                              = "project_id"
+	paramRegion                                 = "region"
 )
 
 var Metas = []Meta{
@@ -268,6 +271,50 @@ var Metas = []Meta{
 				Key:   paramKeyRdsPath,
 				Desc:  "RDS Open API地址",
 				Value: "rds.bj.baidubce.com",
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeHuaweiRdsMySQLSlowLog,
+		Desc:         "华为云RDS MySQL慢日志",
+		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewHuaweiRdsMySQLSlowLogTask,
+		Params: []*params.Param{
+			{
+				Key:   paramProjectId,
+				Desc:  "项目ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyDBInstanceId,
+				Desc:  "实例ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大30天)",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramRegion,
+				Desc:  "当前API开放的地区",
+				Value: "ap-southeast-1",
 				Type:  params.ParamTypeString,
 			},
 		},
