@@ -292,6 +292,13 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 	return ruleMap
 }
 
+func (s *Storage) GetRuleTemplateById(id uint64) (*RuleTemplate, error) {
+	ruleTemplate := new(RuleTemplate)
+
+	err := s.db.Where("id = ?", id).First(ruleTemplate).Error
+	return ruleTemplate, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetRuleTemplateTips(projectId, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
