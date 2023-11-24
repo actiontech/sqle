@@ -41,7 +41,6 @@ type HuaweiRdsMySQLSlowLogTask struct {
 	*huaweiRdsMySQLTask
 }
 
-
 func (hr *HuaweiRdsMySQLSlowLogTask) pullLogs(client *rds.RdsClient, instanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []SqlFromHuaweiCloud, err error) {
 	request := hr.newSlowSqlsRequest(instanceId, startTime, endTime, pageSize, pageNum)
 	response := &rdsModel.ListSlowLogsResponse{}
@@ -132,7 +131,7 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 
 	periodHours := at.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).String()
 	if periodHours == "" {
-		at.logger.Warnf("huawei cloud region is not configured")
+		at.logger.Warnf("huawei cloud period hours is not configured")
 		return
 	}
 	firstScrapInLastHours, err := strconv.Atoi(periodHours)
