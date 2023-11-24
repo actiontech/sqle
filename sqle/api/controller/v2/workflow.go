@@ -5,7 +5,6 @@ import (
 	_err "errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -735,33 +734,14 @@ func CreateWorkflowV2(c echo.Context) error {
 		auditWorkflowUsers = make([][]*model.User, len(tasks))
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
-
-			for _, memberWithPermission := range memberWithPermissions {
-				for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
-					if v1.CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeAuditWorkflow}, task.Instance) {
-						auditWorkflowUser := new(model.User)
-						userId, err := strconv.Atoi(memberWithPermission.User.Uid)
-						if err != nil {
-							return
-						}
-						auditWorkflowUser.ID = uint(userId)
-						auditWorkflowUser.Name = memberWithPermission.User.Name
-						auditWorkflowUsers[i] = append(auditWorkflowUsers[i], auditWorkflowUser)
-					}
-
-					if v1.CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow}, task.Instance) {
-						executor := new(model.User)
-						userId, err := strconv.Atoi(memberWithPermission.User.Uid)
-						if err != nil {
-							return
-						}
-						executor.ID = uint(userId)
-						executor.Name = memberWithPermission.User.Name
-						executorWorkflowUsers[i] = append(executorWorkflowUsers[i], executor)
-					}
-				}
+			auditWorkflowUsers[i], err = v1.GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeAuditWorkflow})
+			if err != nil {
+				return
 			}
-
+			executorWorkflowUsers[i], err = v1.GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow})
+			if err != nil {
+				return
+			}
 		}
 		return auditWorkflowUsers, executorWorkflowUsers
 	})
