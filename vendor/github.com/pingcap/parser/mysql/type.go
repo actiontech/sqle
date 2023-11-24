@@ -45,6 +45,15 @@ const (
 	TypeVarString  byte = 0xfd
 	TypeString     byte = 0xfe
 	TypeGeometry   byte = 0xff
+	// custom other geometry columns
+	// start counting from 230 because 255(0xff) has reached the maximum value of byte type
+	TypePoint              byte = 0xE6
+	TypeLineString         byte = 0xE7
+	TypePolygon            byte = 0xE8
+	TypeMultiPoint         byte = 0xE9
+	TypeMultiLineString    byte = 0xEa
+	TypeMultiPolygon       byte = 0xEb
+	TypeGeometryCollection byte = 0xEc
 )
 
 // TypeUnspecified is an uninitialized type. TypeDecimal is not used in MySQL.
