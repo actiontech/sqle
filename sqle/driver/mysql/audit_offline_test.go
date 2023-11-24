@@ -3062,8 +3062,8 @@ func TestDDLAvoidText(t *testing.T) {
 	})
 }
 
-func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
-	rule := rulepkg.RuleHandlerMap[rulepkg.DDLAvoidFullTextAndGeometry].Rule
+func TestDDLAvoidFullText(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLAvoidFullText].Rule
 	// 全文索引
 	t.Run(`create table without fulltext index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3100,7 +3100,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			DefaultMysqlInspectOffline(),
 			`CREATE FULLTEXT INDEX index_name
 			ON table_name (column_name);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidFullText))
 	})
 
 	t.Run(`create index`, func(t *testing.T) {
@@ -3134,7 +3134,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 				content TEXT,
 				FULLTEXT INDEX idx_content (content)
 			);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidFullText))
 	})
 
 	t.Run(`alter table add fulltext`, func(t *testing.T) {
@@ -3145,7 +3145,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			DefaultMysqlInspectOffline(),
 			`ALTER TABLE your_table_name
 			ADD FULLTEXT INDEX idx_name (name);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidFullText))
 	})
 
 	t.Run(`alter table`, func(t *testing.T) {
@@ -3159,6 +3159,10 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			ADD UNIQUE INDEX idx_email (email);`,
 			newTestResult())
 	})
+}
+
+func TestDDLAvoidGeometry(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLAvoidGeometry].Rule
 	// 空间字段
 	t.Run(`create table with column point`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3167,7 +3171,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g POINT);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column GEOMETRY`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3176,7 +3180,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g GEOMETRY);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column LINESTRING`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3185,7 +3189,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g LINESTRING);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column POLYGON`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3194,7 +3198,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g POLYGON);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column MULTIPOINT`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3203,7 +3207,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g MULTIPOINT);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column MULTILINESTRING`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3212,7 +3216,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g MULTILINESTRING);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column MULTIPOLYGON`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3221,7 +3225,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g MULTIPOLYGON);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create table with column GEOMETRYCOLLECTION`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3230,7 +3234,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g GEOMETRYCOLLECTION);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	// alter add
 	t.Run(`alter table with column point`, func(t *testing.T) {
@@ -3240,7 +3244,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column t point;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column GEOMETRY`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3249,7 +3253,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g GEOMETRY;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column LINESTRING`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3258,7 +3262,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g LINESTRING;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column POLYGON`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3267,7 +3271,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g POLYGON;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column MULTIPOINT`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3276,7 +3280,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g MULTIPOINT;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column MULTILINESTRING`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3285,7 +3289,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g MULTILINESTRING;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column MULTIPOLYGON`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3294,7 +3298,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g MULTIPOLYGON;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with column GEOMETRYCOLLECTION`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3303,7 +3307,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column g GEOMETRYCOLLECTION;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	// 空间索引
 	t.Run(`create table with GEOMETRY index`, func(t *testing.T) {
@@ -3313,7 +3317,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE TABLE t (id INT PRIMARY KEY, g POINT, SPATIAL INDEX(g));`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`Create a normal index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3331,7 +3335,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`ALTER TABLE geom ADD SPATIAL INDEX(g);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table a normal index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3349,7 +3353,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`CREATE SPATIAL INDEX g ON geom (g);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`create a normal index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3367,7 +3371,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter table table_1 add SPATIAL index index_2(g);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	// 添加多个字段
 	t.Run(`alter table with column MULTIPOLYGON`, func(t *testing.T) {
@@ -3377,7 +3381,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter TABLE t add column name varchar(20),add column g MULTIPOLYGON;`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with normal columns`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3395,7 +3399,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter table table_1 add column g point, add index index_1(column_name);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with normal column and geo index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3404,7 +3408,7 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter table table_1 add column name varchar(20), add SPATIAL INDEX(g);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 	t.Run(`alter table with normal column and geo index`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3413,6 +3417,6 @@ func TestDDLAvoidFullTextAndGeometry(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`alter table table_1 add SPATIAL index index_2(g);`,
-			newTestResult().addResult(rulepkg.DDLAvoidFullTextAndGeometry))
+			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 }
