@@ -118,7 +118,8 @@ const (
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
-	DDLAvoidFullTextAndGeometry                        = "ddl_avoid_full_text_and_geometry"
+	DDLAvoidFullText                                   = "ddl_avoid_full_text"
+	DDLAvoidGeometry                                   = "ddl_avoid_geometry"
 )
 
 // inspector DML rules
@@ -2332,15 +2333,27 @@ var RuleHandlers = []RuleHandler{
 	},
 	{
 		Rule: driverV2.Rule{
-			Name:       DDLAvoidFullTextAndGeometry,
-			Desc:       "禁止使用全文索引与空间索引和空间字段",
-			Annotation: "使用全文索引与空间索引和空间字段会造成额外的性能开销，占用更大的存储空间，降低MySQL的性能。",
+			Name:       DDLAvoidFullText,
+			Desc:       "禁止使用全文索引",
+			Annotation: "全文索引的使用会增加存储开销，并对写操作性能产生一定影响。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用全文索引与空间索引和空间字段",
-		Func:         avoidFullTextAndGeometry,
+		Message:      "禁止使用全文索引",
+		Func:         avoidFullText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidGeometry,
+			Desc:       "禁止使用空间字段和空间索引",
+			Annotation: "使用空间字段和空间索引会增加存储需求，对数据库性能造成一定影响",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用空间字段和空间索引",
+		Func:         avoidGeometry,
 	},
 }
 
@@ -7418,7 +7431,35 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 	return nil
 }
 
-func avoidFullTextAndGeometry(input *RuleHandlerInput) error {
+func avoidFullText(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintFulltext:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintFulltext, ast.ConstraintSpatial:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeFullText:
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidGeometry(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
@@ -7429,7 +7470,7 @@ func avoidFullTextAndGeometry(input *RuleHandlerInput) error {
 		}
 		for _, constraint := range stmt.Constraints {
 			switch constraint.Tp {
-			case ast.ConstraintFulltext, ast.ConstraintSpatial:
+			case ast.ConstraintSpatial:
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
@@ -7445,7 +7486,7 @@ func avoidFullTextAndGeometry(input *RuleHandlerInput) error {
 				}
 			} else {
 				switch spec.Constraint.Tp {
-				case ast.ConstraintFulltext, ast.ConstraintSpatial:
+				case ast.ConstraintSpatial:
 					addResult(input.Res, input.Rule, input.Rule.Name)
 					return nil
 				}
@@ -7453,7 +7494,7 @@ func avoidFullTextAndGeometry(input *RuleHandlerInput) error {
 		}
 	case *ast.CreateIndexStmt:
 		switch stmt.KeyType {
-		case ast.IndexKeyTypeFullText, ast.IndexKeyTypeSpatial:
+		case ast.IndexKeyTypeSpatial:
 			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
