@@ -7444,7 +7444,7 @@ func avoidFullText(input *RuleHandlerInput) error {
 	case *ast.AlterTableStmt:
 		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 			switch spec.Constraint.Tp {
-			case ast.ConstraintFulltext, ast.ConstraintSpatial:
+			case ast.ConstraintFulltext:
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
@@ -7464,13 +7464,6 @@ func avoidGeometry(input *RuleHandlerInput) error {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			if util.IsGeometryColumn(col) {
-				addResult(input.Res, input.Rule, input.Rule.Name)
-				return nil
-			}
-		}
-		for _, constraint := range stmt.Constraints {
-			switch constraint.Tp {
-			case ast.ConstraintSpatial:
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				return nil
 			}
