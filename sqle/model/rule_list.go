@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -62,6 +63,9 @@ func (s *Storage) GetRulesByReq(data map[string]interface{}) (
 			db = db.Where("rules.name in (?)", strings.Split(namesStr, ","))
 		}
 	}
+	if data["fuzzy_keyword_rule"] != "" {
+		db = db.Where("rules.`desc` like ? OR rules.annotation like ?", fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]), fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]))
+	}
 	err = db.Find(&result).Error
 	return result, err
 }
@@ -83,6 +87,9 @@ func (s *Storage) GetCustomRulesByReq(data map[string]interface{}) (
 		if namesStr, yes := data["filter_rule_names"].(string); yes {
 			db = db.Where("custom_rules.rule_id in (?)", strings.Split(namesStr, ","))
 		}
+	}
+	if data["fuzzy_keyword_rule"] != "" {
+		db = db.Where("custom_rules.`desc` like ? OR custom_rules.annotation like ?", fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]), fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]))
 	}
 	err = db.Find(&result).Error
 	return result, err
