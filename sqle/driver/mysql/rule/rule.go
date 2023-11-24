@@ -118,6 +118,8 @@ const (
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
+	DDLAvoidFullText                                   = "ddl_avoid_full_text"
+	DDLAvoidGeometry                                   = "ddl_avoid_geometry"
 )
 
 // inspector DML rules
@@ -2348,7 +2350,31 @@ var RuleHandlers = []RuleHandler{
 		},
 		AllowOffline: false,
 		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
-		Func:         checkSQLExplainLowsetLevel,
+		Func:         checkSQLExplainLowestLevel,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidFullText,
+			Desc:       "禁止使用全文索引",
+			Annotation: "全文索引的使用会增加存储开销，并对写操作性能产生一定影响。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用全文索引",
+		Func:         avoidFullText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidGeometry,
+			Desc:       "禁止使用空间字段和空间索引",
+			Annotation: "使用空间字段和空间索引会增加存储需求，对数据库性能造成一定影响",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用空间字段和空间索引",
+		Func:         avoidGeometry,
 	},
 }
 
@@ -7596,7 +7622,7 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkSQLExplainLowsetLevel(input *RuleHandlerInput) error {
+func checkSQLExplainLowestLevel(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case *ast.SelectStmt, *ast.DeleteStmt, *ast.UpdateStmt:
 	default:
@@ -7620,6 +7646,70 @@ func checkSQLExplainLowsetLevel(input *RuleHandlerInput) error {
 		explainType := strings.ToLower(record.Type)
 		if _, ok := levelMap[explainType]; !ok {
 			addResult(input.Res, input.Rule, DMLSQLExplainLowestLevel, levelStr)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidFullText(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintFulltext:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintFulltext:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeFullText:
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidGeometry(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if util.IsGeometryColumn(col) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint, ast.AlterTableAddColumns) {
+			if spec.Constraint == nil {
+				for _, newColumn := range spec.NewColumns {
+					if util.IsGeometryColumn(newColumn) {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						return nil
+					}
+				}
+			} else {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintSpatial:
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeSpatial:
+			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
 	}

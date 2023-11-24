@@ -7321,7 +7321,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 	}
 }
 
-func Test_CheckSQLExplainLowsetLevel(t *testing.T) {
+func Test_CheckSQLExplainLowestLevel(t *testing.T) {
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
 
