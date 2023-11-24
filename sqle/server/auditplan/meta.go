@@ -19,19 +19,19 @@ type Meta struct {
 }
 
 const (
-	TypeDefault              = "default"
-	TypeMySQLSlowLog         = "mysql_slow_log"
-	TypeMySQLMybatis         = "mysql_mybatis"
-	TypeMySQLSchemaMeta      = "mysql_schema_meta"
-	TypeMySQLProcesslist     = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog   = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog  = "ali_rds_mysql_audit_log"
+	TypeDefault               = "default"
+	TypeMySQLSlowLog          = "mysql_slow_log"
+	TypeMySQLMybatis          = "mysql_mybatis"
+	TypeMySQLSchemaMeta       = "mysql_schema_meta"
+	TypeMySQLProcesslist      = "mysql_processlist"
+	TypeAliRdsMySQLSlowLog    = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
 	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL         = "oracle_top_sql"
-	TypeTiDBAuditLog         = "tidb_audit_log"
-	TypeAllAppExtract        = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
-	TypeSQLFile              = "sql_file"
+	TypeOracleTopSQL          = "oracle_top_sql"
+	TypeTiDBAuditLog          = "tidb_audit_log"
+	TypeAllAppExtract         = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
+	TypeSQLFile               = "sql_file"
 )
 
 const (
@@ -311,12 +311,6 @@ var Metas = []Meta{
 				Value: "",
 				Type:  params.ParamTypeInt,
 			},
-			// {
-			// 	Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			// 	Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			// 	Value: "0",
-			// 	Type:  params.ParamTypeInt,
-			// },
 			{
 				Key:   paramRegion,
 				Desc:  "当前API开放的地区",
