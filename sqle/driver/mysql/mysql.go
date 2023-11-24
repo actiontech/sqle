@@ -108,6 +108,10 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 	return inspect, nil
 }
 
+func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
+	i.dbConn = dbConn
+}
+
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
 	return i.isOfflineAudit
 }
