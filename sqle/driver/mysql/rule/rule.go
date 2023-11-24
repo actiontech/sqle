@@ -2350,7 +2350,7 @@ var RuleHandlers = []RuleHandler{
 		},
 		AllowOffline: false,
 		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
-		Func:         checkSQLExplainLowsetLevel,
+		Func:         checkSQLExplainLowestLevel,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -7622,7 +7622,7 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 	return nil
 }
 
-func checkSQLExplainLowsetLevel(input *RuleHandlerInput) error {
+func checkSQLExplainLowestLevel(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case *ast.SelectStmt, *ast.DeleteStmt, *ast.UpdateStmt:
 	default:
