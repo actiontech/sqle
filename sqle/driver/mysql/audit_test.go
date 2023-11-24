@@ -159,6 +159,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLAvoidText:                                {},
 		rulepkg.DMLCheckSelectRows:                          {},
 		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
+		rulepkg.DDLCheckTableLength:                         {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -7326,19 +7327,431 @@ func TestCheckTableLength(t *testing.T) {
 		Name        string
 		Sql         string
 		TriggerRule bool
+		Param       string
+		ByteLength  string
 	}{
-		// select
 		{
-			Name: "select-with-equal",
+			Name: "create char and varchar trigger",
 			Sql: `CREATE TABLE example_table (
-				char_column decimal(9, 10)
-			);`,
+				t1 char(20),
+				t2 varchar(10)
+			) DEFAULT CHARSET=utf8mb4;
+			`,
+			TriggerRule: true,
+			Param:       "100",
+			ByteLength:  "120",
+		},
+		{
+			Name: "create char and varchar not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 char(20),
+				t2 varchar(10)
+			) DEFAULT CHARSET=utf8;
+			`,
 			TriggerRule: false,
+			Param:       "100",
+			ByteLength:  "120",
+		},
+		{
+			Name: "create binary and varbinary trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 binary,
+				t2 varbinary(20)
+			);
+			`,
+			TriggerRule: true,
+			Param:       "20",
+			ByteLength:  "21",
+		},
+		{
+			Name: "create binary and varbinary not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 binary,
+				t2 varbinary(19)
+			);
+			`,
+			TriggerRule: false,
+			Param:       "20",
+		},
+		{
+			Name: "create tinyblob not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinyblob
+			);
+			`,
+			TriggerRule: false,
+			Param:       "255",
+		},
+		{
+			Name: "create tinyblob trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinyblob
+			);
+			`,
+			TriggerRule: true,
+			Param:       "254",
+			ByteLength:  "255",
+		},
+		{
+			Name: "create tinyblob not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinytext
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "766",
+		},
+		{
+			Name: "create tinyblob trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinytext
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "764",
+			ByteLength:  "765",
+		},
+		{
+			Name: "create blob trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 blob
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "65534",
+			ByteLength:  "65535",
+		},
+		{
+			Name: "create blob not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 blob
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "65536",
+		},
+		{
+			Name: "create blob(10) not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 blob(10)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "11",
+		},
+		{
+			Name: "create blob(10) trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 blob(10)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "9",
+			ByteLength:  "10",
+		},
+		{
+			Name: "create text not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 text(30)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "100",
+		},
+		{
+			Name: "create text trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 text(40)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "100",
+			ByteLength:  "120",
+		},
+		{
+			Name: "create mediumblob trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 mediumblob
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "2000",
+			ByteLength:  "16777215",
+		},
+		{
+			Name: "create mediumblob not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 mediumblob
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "16777216",
+		},
+		{
+			Name: "create mediumtext not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 mediumtext
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "50331666",
+		},
+		{
+			Name: "create mediumtext trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 mediumtext
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "2000",
+			ByteLength:  "50331645",
+		},
+		{
+			Name: "create tinyint, bool trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinyint,
+				t2 bool
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "1",
+			ByteLength:  "2",
+		},
+		{
+			Name: "create tinyint, bool not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 tinyint,
+				t2 bool
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "1000",
+		},
+		{
+			Name: "create smallint, mediumint trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 smallint,
+				t2 mediumint
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "4",
+			ByteLength:  "5",
+		},
+		{
+			Name: "create smallint, mediumint not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 smallint,
+				t2 mediumint
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "6",
+		},
+		{
+			Name: "create int, bigint trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 int,
+				t2 bigint,
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "10",
+			ByteLength:  "16",
+		},
+		{
+			Name: "create int, bigint not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 int,
+				t2 bigint,
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "17",
+		},
+		{
+			Name: "create int, float, double not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 float,
+				t2 double,
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "17",
+		},
+		{
+			Name: "create int, float, double trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 float,
+				t2 double,
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "15",
+			ByteLength:  "16",
+		},
+		{
+			Name: "create date, year trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 date,
+				t2 year
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "3",
+			ByteLength:  "4",
+		},
+		{
+			Name: "create date, year not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 date,
+				t2 year
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "10",
+		},
+		{
+			Name: "create datetime trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 datetime(5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "7",
+			ByteLength:  "8",
+		},
+		{
+			Name: "create datetime not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 datetime(5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "9",
+		},
+		{
+			Name: "create timestamp not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 timestamp(5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "9",
+		},
+		{
+			Name: "create timestamp trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 datetime(5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "6",
+			ByteLength:  "8",
+		},
+		{
+			Name: "create time trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 time(3)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "4",
+			ByteLength:  "5",
+		},
+		{
+			Name: "create decimal trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 decimal(9, 5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "5",
+			ByteLength:  "7",
+		},
+		{
+			Name: "create decimal not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 decimal(9, 5)
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "10",
+		},
+		{
+			Name: "create table with varchar, int trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 varchar(20) CHARACTER set utf8mb4,
+				t2 varchar(10),
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: true,
+			Param:       "113",
+			ByteLength:  "114",
+		},
+		{
+			Name: "create table with varchar, int not trigger",
+			Sql: `CREATE TABLE example_table (
+				t1 varchar(20) CHARACTER set utf8mb4,
+				t2 varchar(10),
+				t3 int
+			)DEFAULT CHARSET=utf8mb3;
+			`,
+			TriggerRule: false,
+			Param:       "115",
+		},
+		// CREATE TABLE exist_db.exist_tb_9 (
+		// 	id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+		// 	v1 int,
+		// 	v2 varchar(255) character SET utf8mb4,
+		// 	v3 int,
+		// 	v4 int,
+		// 	v5 int,
+		// 	PRIMARY KEY (id) USING BTREE,
+		// 	KEY idx_1 (v1,v2,v3,v4),
+		// 	UNIQUE KEY uniq_1 (v2,v3),
+		// 	KEY idx_100 (v3)
+		// )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+		{
+			Name: "alter add varchar(10) trigger",
+			Sql: `alter table exist_db.exist_tb_9 add column v6 varchar(10);
+			`,
+			TriggerRule: true,
+			Param:       "1000",
+			ByteLength:  "1074",
+		},
+		{
+			Name: "alter add varchar(10) not trigger",
+			Sql: `alter table exist_db.exist_tb_9 add column v6 varchar(10);
+			`,
+			TriggerRule: false,
+			Param:       "1100",
+		},
+		{
+			Name: "alter modify varchar(200) not trigger",
+			Sql: `alter table exist_db.exist_tb_9 modify column v2 varchar(200) character set utf8mb4;
+			`,
+			TriggerRule: false,
+			Param:       "900",
+		},
+		{
+			Name: "alter modify varchar(230) trigger",
+			Sql: `alter table exist_db.exist_tb_9 modify column v2 varchar(230) character set utf8mb4;
+			`,
+			TriggerRule: true,
+			Param:       "900",
+			ByteLength:  "944",
 		},
 	}
 
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Rule
 	for _, arg := range args {
+		rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, arg.Param)
 		e, _, err := executor.NewMockExecutor()
 		assert.NoError(t, err)
 		inspect := NewMockInspect(e)
@@ -7346,7 +7759,7 @@ func TestCheckTableLength(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Message)
+				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Message, arg.ByteLength, arg.Param)
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableLength].Rule, t, "", inspect, arg.Sql, res)
 		})

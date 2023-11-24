@@ -2347,7 +2347,7 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		AllowOffline: false,
-		Message:      "表的总长度不能超过阈值",
+		Message:      "表的总长度为：%v，超过阈值：%v (byte)",
 		Func:         checkTableLength,
 	},
 }
@@ -7599,17 +7599,17 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 // 忽略json字段计算大小，json字段根据存储对象的大小分配空间
 // https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html#data-types-storage-reqs-json
 // 计算公式满足mysql5.6.4以后的版本
-func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
+func getBytesLengthFromColumn(tp *tidbTypes.FieldType, tableCharset *ast.TableOption) int {
 	byteLength := 0
-
+	l := log.Logger()
 	// 计算time占用字节 https://dev.mysql.com/doc/refman/8.0/en/storage-requirements.html#data-types-storage-reqs-date-time
 	var calTimeBytes = func(initByte int) {
 		byteLength = initByte
-		if tp.Decimal == 1 && tp.Decimal == 2 {
+		if tp.Decimal == 1 || tp.Decimal == 2 {
 			byteLength += 1
-		} else if tp.Decimal == 3 && tp.Decimal == 4 {
+		} else if tp.Decimal == 3 || tp.Decimal == 4 {
 			byteLength += 2
-		} else if tp.Decimal == 5 && tp.Decimal == 6 {
+		} else if tp.Decimal == 5 || tp.Decimal == 6 {
 			byteLength += 3
 		}
 	}
@@ -7619,16 +7619,31 @@ func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
 		quotient := decimal / 9
 		remainder := decimal % 9
 		tmpByteLength := quotient * 4
-		if remainder == 1 && remainder == 2 {
+		if remainder == 1 || remainder == 2 {
 			tmpByteLength += 1
-		} else if remainder == 3 && remainder == 4 {
+		} else if remainder == 3 || remainder == 4 {
 			tmpByteLength += 2
-		} else if remainder == 5 && remainder == 6 {
+		} else if remainder == 5 || remainder == 6 {
 			tmpByteLength += 3
-		} else if remainder == 7 && remainder == 8 {
+		} else if remainder == 7 || remainder == 8 {
 			tmpByteLength += 4
 		}
 		return tmpByteLength
+	}
+
+	var calCharByte = func(charLength int, charset string) {
+		if charset == "" {
+			charset = tableCharset.StrValue
+		}
+		if charset != "utf8" && charset != "utf8mb4" {
+			l.Warnf("DDLCheckTableLength need charset is utf8 || utf8mb4, but get %v", charset)
+			return
+		}
+		if charset == "utf8" {
+			byteLength = charLength * 3
+		} else {
+			byteLength = charLength * 4
+		}
 	}
 
 	switch tp.Tp {
@@ -7636,14 +7651,16 @@ func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
 	case mysql.TypeLong:
 		byteLength = 4
 	case mysql.TypeVarchar:
-		if tp.Charset != "binary" {
-			// todo: 判断是utf8mb3还是utf8mb4
-			byteLength = tp.Flen * 3
-		} else if tp.Charset == "binary" {
+		if tp.Charset == "binary" {
+			// VARBINARY
 			byteLength = tp.Flen
+		} else if tp.Charset != "binary" {
+			// VARCHAR
+			calCharByte(tp.Flen, tp.Charset)
 		}
 	case mysql.TypeString:
 		if tp.Charset == "binary" {
+			// BINARY
 			if tp.Flen > 0 {
 				byteLength = tp.Flen
 			} else {
@@ -7651,52 +7668,49 @@ func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
 				byteLength = 1
 			}
 		} else {
-			// todo: 判断是utf8mb3还是utf8mb4
-			byteLength = tp.Flen * 3
+			// CHAR
+			calCharByte(tp.Flen, tp.Charset)
 		}
 	case mysql.TypeTinyBlob:
 		if tp.Charset == "binary" {
 			// TINYBLOB
-			byteLength = 255
+			byteLength = 255 // 2^8 − 1
 		} else {
 			// TINYTEXT
-			// todo: 判断是utf8mb3还是utf8mb4
-			byteLength = 255 * 3
+			calCharByte(255, tp.Charset)
 		}
 	case mysql.TypeBlob:
+		// TEXT,BLOB不指定大小，默认为65535
 		if tp.Charset == "binary" {
 			// BLOB
 			if tp.Flen < 0 {
-				byteLength = 65532
+				byteLength = 65535 // 2^16 - 1
 			} else {
 				byteLength = tp.Flen
 			}
 		} else {
 			// TEXT
-			// todo: 判断是utf8mb3还是utf8mb4
-			if tp.Flen < 0 {
-				byteLength = 65532 * 3
+			if tp.Flen > 0 {
+				calCharByte(tp.Flen, tp.Charset)
 			} else {
-				byteLength = tp.Flen * 3
+				calCharByte(65535, tp.Charset)
 			}
 		}
 	case mysql.TypeMediumBlob:
 		if tp.Charset == "binary" {
 			// MEDIUMBLOB
-			byteLength = 16777215
+			byteLength = 16777215 // 2^24 - 1
 		} else {
 			// MEDIUMTEXT
-			// todo: 判断是utf8mb3还是utf8mb4
-			byteLength = 16777215 * 3
+			calCharByte(16777215, tp.Charset)
 		}
 	case mysql.TypeLongBlob:
 		if tp.Charset == "binary" {
 			// LONGBLOB
-			byteLength = 4294967295
+			byteLength = 4294967295 // 2^32 - 1
 		} else {
 			// LONGTEXT
-			// todo: 判断是utf8mb3还是utf8mb4
-			byteLength = 4294967295 * 3
+			calCharByte(4294967295, tp.Charset)
 		}
 	// TINYINT, BOOL, BOOLEAN
 	case mysql.TypeTiny:
@@ -7717,7 +7731,7 @@ func getBytesLengthFromColumn(tp *tidbTypes.FieldType) int {
 	case mysql.TypeDouble:
 		byteLength = 8
 	// DECIMAL
-	case mysql.TypeDecimal:
+	case mysql.TypeNewDecimal:
 		byteLength += calDecimal(tp.Flen)
 		byteLength += calDecimal(tp.Decimal)
 	// TIME
@@ -7744,13 +7758,36 @@ func checkTableLength(input *RuleHandlerInput) error {
 	byteLength := 0
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
+		charset := getCharsetFromCreateTableStmt(input.Ctx, stmt)
 		for _, col := range stmt.Cols {
-			byteLength += getBytesLengthFromColumn(col.Tp)
+			byteLength += getBytesLengthFromColumn(col.Tp, charset)
 		}
 	case *ast.AlterTableStmt:
+		if originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table); err == nil && exist {
+			charset := getCharsetFromCreateTableStmt(input.Ctx, originTable)
+			modifyColMap := make(map[string]struct{})
+			for _, col := range stmt.Specs {
+				if col.Tp == ast.AlterTableAddColumns {
+					for _, newColumn := range col.NewColumns {
+						byteLength += getBytesLengthFromColumn(newColumn.Tp, charset)
+					}
+				} else if col.Tp == ast.AlterTableModifyColumn {
+					for _, modifyCol := range col.NewColumns {
+						modifyColMap[modifyCol.Name.Name.O] = struct{}{}
+						byteLength += getBytesLengthFromColumn(modifyCol.Tp, charset)
+					}
+				}
+			}
+			for _, col := range originTable.Cols {
+				if _, ok := modifyColMap[col.Name.Name.O]; ok {
+					continue
+				}
+				byteLength += getBytesLengthFromColumn(col.Tp, charset)
+			}
+		}
 	}
 	if byteLength > max {
-		addResult(input.Res, input.Rule, input.Rule.Name)
+		addResult(input.Res, input.Rule, input.Rule.Name, byteLength, max)
 	}
 	return nil
 }
