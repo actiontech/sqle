@@ -242,12 +242,10 @@ func KillProcess(ctx context.Context, killSQL string, killConn *executor.Executo
 }
 
 func IsGeometryColumn(col *ast.ColumnDef) bool {
-	geometryColumns := []byte{mysql.TypeGeometry, mysql.TypePoint, mysql.TypeLineString, mysql.TypePolygon,
-		mysql.TypeMultiPoint, mysql.TypeMultiLineString, mysql.TypeMultiPolygon, mysql.TypeGeometryCollection}
-	for _, geo := range geometryColumns {
-		if col.Tp.Tp == geo {
-			return true
-		}
+	switch col.Tp.Tp {
+	case mysql.TypeGeometry, mysql.TypePoint, mysql.TypeLineString, mysql.TypePolygon,
+		mysql.TypeMultiPoint, mysql.TypeMultiLineString, mysql.TypeMultiPolygon, mysql.TypeGeometryCollection:
+		return true
 	}
 	return false
 }
