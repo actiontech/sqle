@@ -2334,7 +2334,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLSQLExplainLowestLevel,
 			Desc:       "SQL执行计划中type字段建议满足规定的级别",
-			Annotation: "验证 SQL 执行计划中的 type 字段，确保其达到要求级别，以保证查询性能。",
+			Annotation: "验证 SQL 执行计划中的 type 字段，确保满足要求级别，以保证查询性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDDLConvention,
 			Params: params.Params{
@@ -2347,7 +2347,7 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		AllowOffline: false,
-		Message:      "建议修改SQL，确保执行计划中type字段满足规定的等级：%v",
+		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
 		Func:         checkSQLExplainLowsetLevel,
 	},
 }
