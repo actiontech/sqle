@@ -1485,8 +1485,8 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name: DMLCheckExplainAccessTypeAll,
 			//Value:    "10000",
-			Desc:       "查询的扫描不建议超过指定行数（默认值：10000）",
-			Annotation: "查询的扫描行数多大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：10000",
+			Desc:       "全表扫描时，扫描行数不建议超过指定行数（默认值：10000）",
+			Annotation: "全表扫描时，扫描行数不建议超过指定行数是为了避免性能问题；具体规则阈值可以根据业务需求调整，默认值：10000；如果设置为0，全表扫描都会触发规则",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
@@ -1498,7 +1498,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "该查询的扫描行数为%v",
+		Message:      "该查询使用了全表扫描并且扫描行数为%v",
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
