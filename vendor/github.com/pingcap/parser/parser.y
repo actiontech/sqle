@@ -703,6 +703,16 @@ import (
 	builtinVarPop
 	builtinVarSamp
 
+	/* The following tokens belong to GEOMETRY column. */
+	geometry           "GEOMETRY"
+	point              "POINT"
+	linestring         "LINESTRING"
+	polygon            "POLYGON"
+	multipoint         "MULTIPOINT"
+	multilinestring    "MULTILINESTRING"
+	multipolygon       "MULTIPOLYGON"
+	geometrycollection "GEOMETRYCOLLECTION"
+
 %token	<item>
 
 	/*yy:token "1.%d"   */
@@ -2742,6 +2752,18 @@ ConstraintElem:
 	{
 		c := &ast.Constraint{
 			Tp:   ast.ConstraintFulltext,
+			Keys: $5.([]*ast.IndexPartSpecification),
+			Name: $3.(string),
+		}
+		if $7 != nil {
+			c.Option = $7.(*ast.IndexOption)
+		}
+		$$ = c
+	}
+|	"SPATIAL" KeyOrIndexOpt IndexName '(' IndexPartSpecificationList ')' IndexOptionList
+	{
+		c := &ast.Constraint{
+			Tp:   ast.ConstraintSpatial,
 			Keys: $5.([]*ast.IndexPartSpecification),
 			Name: $3.(string),
 		}
@@ -6817,7 +6839,70 @@ CastType:
 		x.Collate = charset.CollationBin
 		$$ = x
 	}
-
+|   "GEOMETRY"
+	{
+		x := types.NewFieldType(mysql.TypeGeometry)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "POINT"
+	{
+		x := types.NewFieldType(mysql.TypePoint)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "LINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeLineString)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "POLYGON"
+	{
+		x := types.NewFieldType(mysql.TypePolygon)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTIPOINT"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPoint)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTILINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeMultiLineString)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTIPOLYGON"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPolygon)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "GEOMETRYCOLLECTION"
+	{
+		x := types.NewFieldType(mysql.TypeGeometryCollection)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
 PriorityOpt:
 	{
 		$$ = mysql.NoPriority
@@ -10067,6 +10152,70 @@ StringType:
 		if $2.(*ast.OptBinary).IsBinary {
 			x.Flag |= mysql.BinaryFlag
 		}
+		$$ = x
+	}
+|   "GEOMETRY"
+	{
+		x := types.NewFieldType(mysql.TypeGeometry)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "POINT"
+	{
+		x := types.NewFieldType(mysql.TypePoint)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "LINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeLineString)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "POLYGON"
+	{
+		x := types.NewFieldType(mysql.TypePolygon)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTIPOINT"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPoint)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTILINESTRING"
+	{
+		x := types.NewFieldType(mysql.TypeMultiLineString)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "MULTIPOLYGON"
+	{
+		x := types.NewFieldType(mysql.TypeMultiPolygon)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
+		$$ = x
+	}
+|   "GEOMETRYCOLLECTION"
+	{
+		x := types.NewFieldType(mysql.TypeGeometryCollection)
+		x.Flag |= mysql.BinaryFlag
+		x.Charset = charset.CharsetBin
+		x.Collate = charset.CollationBin
 		$$ = x
 	}
 
