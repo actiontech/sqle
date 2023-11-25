@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/postgresql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1545,4 +1546,134 @@ func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task 
 	b.baiduRdsMySQLTask = task
 
 	return b
+}
+
+// PostgreSQL库表元数据
+type PostgreSQLSchemaMetaTask struct {
+	*sqlCollector
+}
+
+func NewPostgreSQLSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	sqlCollector := newSQLCollector(entry, ap)
+	task := &PostgreSQLSchemaMetaTask{
+		sqlCollector,
+	}
+	sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *PostgreSQLSchemaMetaTask) collectorDo() {
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+	if at.ap.InstanceDatabase == "" {
+		at.logger.Warnf("instance schema is not configured")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Warnf("get postgreSQL instance error:%s", err)
+		return
+	}
+
+	dsn := &postgresql.DSN{
+		Host:     instance.Host,
+		Port:     instance.Port,
+		User:     instance.User,
+		Password: instance.Password,
+		Database: at.ap.InstanceDatabase,
+	}
+	db, err := postgresql.NewDB(dsn)
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %s", err)
+		return
+	}
+	defer db.Close()
+	db.IsCaseSensitive = db.GetCaseSensitive()
+
+	tables, err := db.ShowSchemaTables(at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("get schema table fail, error: %s", err)
+		return
+	}
+	var views []string
+	if at.ap.Params.GetParam("collect_view").Bool() {
+		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase)
+		if err != nil {
+			at.logger.Errorf("get schema view fail, error: %s", err)
+			return
+		}
+	}
+
+	schemas, err := db.GetAllUserSchemas()
+	if err != nil {
+		at.logger.Errorf("get database=%s schemas error: %s", at.ap.InstanceDatabase, err)
+		return
+	}
+	if len(schemas) == 0 {
+		at.logger.Errorf("get database=%s schemas empty error: %s", at.ap.InstanceDatabase, err)
+		return
+	}
+
+	sqls := make([]string, 0, len(tables)+len(views))
+	for _, table := range tables {
+		tableSqls, err := db.ShowCreateTables(at.ap.InstanceDatabase, table, schemas)
+		if err != nil {
+			at.logger.Errorf("show create table fail, error: %s", err)
+			return
+		}
+		sqls = append(sqls, tableSqls...)
+	}
+	for _, view := range views {
+		viewSqls, err := db.ShowCreateViews(at.ap.InstanceDatabase, view)
+		if err != nil {
+			at.logger.Errorf("show create view fail, error: %s", err)
+			return
+		}
+		sqls = append(sqls, viewSqls...)
+	}
+	if len(sqls) > 0 {
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
+		if err != nil {
+			at.logger.Errorf("save schema meta to storage fail, error: %s", err)
+		}
+	}
+}
+
+func (at *PostgreSQLSchemaMetaTask) Audit() (*AuditResultResp, error) {
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	head, rows := buildPostgreSQLSchemaMetaSQLsResult(auditPlanSQLs)
+	return head, rows, count, nil
+}
+
+func buildPostgreSQLSchemaMetaSQLsResult(auditPlanSQLs []*model.AuditPlanSQLListDetail) ([]Head, []map[string] /* head name */ string) {
+	head := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+		})
+	}
+	return head, rows
 }
