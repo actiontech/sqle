@@ -40,14 +40,14 @@ mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
 cp %{_builddir}/%{buildsubdir}/dms/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
-cp -r %{_builddir}/%{buildsubdir}/dms/build/logo $RPM_BUILD_ROOT/usr/local/%{name}/static/
+cp -R %{_builddir}/%{buildsubdir}/dms/build/logo $RPM_BUILD_ROOT/usr/local/%{name}/static/
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{name}/bin/sqled
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/dms $RPM_BUILD_ROOT/usr/local/%{name}/bin/dms
 cp -R %{_builddir}/%{buildsubdir}/%{name}/plugins $RPM_BUILD_ROOT/usr/local/%{name}/plugins
 cp -R %{_builddir}/%{buildsubdir}/%{name}/scripts $RPM_BUILD_ROOT/usr/local/%{name}/scripts
 cp %{_builddir}/%{buildsubdir}/dms/build/service-file-template/dms.systemd $RPM_BUILD_ROOT/usr/local/%{name}/scripts/dms.systemd
-cp -R %{_builddir}/%{buildsubdir}/%{name}/static $RPM_BUILD_ROOT/usr/local/%{name}/static
+cp -R %{_builddir}/%{buildsubdir}/%{name}/static/* $RPM_BUILD_ROOT/usr/local/%{name}/static/
 
 
 ##########
@@ -94,7 +94,7 @@ if [ $? -eq 0 ]; then
     -e "s|ExecStart=|ExecStart=/bin/sh -c 'exec $RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/config.yaml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid >>$RPM_INSTALL_PREFIX\/std.log 2>\&1'|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
-    sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/dms.pid|g" -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/dms -conf $RPM_INSTALL_PREFIX\/etc\/config.yaml|g" -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" $RPM_INSTALL_PREFIX/scripts/dms.systemd > /lib/systemd/system/dms.service
+    sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/dms.pid|g" -e "s|User=|User=actiontech-universe|g" -e "s|ExecStart=|ExecStart=$RPM_INSTALL_PREFIX\/bin\/dms -conf $RPM_INSTALL_PREFIX\/etc\/config.yaml|g" -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" $RPM_INSTALL_PREFIX/scripts/dms.systemd > /lib/systemd/system/dms.service
     systemctl daemon-reload
     systemctl enable sqled.service
     systemctl enable dms.service

@@ -3,8 +3,6 @@ module github.com/actiontech/sqle
 go 1.19
 
 require (
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/dms v0.0.0-20231019085256-6c3ffc8b3489
@@ -65,14 +63,13 @@ require (
 	github.com/sijms/go-ora/v2 v2.2.15
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.1.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 	github.com/urfave/cli/v2 v2.8.1
-	github.com/vektah/gqlparser/v2 v2.5.1
 	golang.org/x/net v0.15.0
 	google.golang.org/grpc v1.50.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
@@ -82,6 +79,8 @@ require (
 
 require golang.org/x/sys v0.12.0
 
+require github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -89,7 +88,6 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
-	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
@@ -133,7 +131,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.11 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
@@ -143,7 +141,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -163,12 +161,12 @@ require (
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14 // indirect
-	github.com/tjfoc/gmsm v1.3.2 // indirect
+	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	go.mongodb.org/mongo-driver v1.11.3 // indirect
+	go.mongodb.org/mongo-driver v1.12.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
@@ -182,7 +180,7 @@ require (
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20220414192740-2d67ff6cf2b4 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
