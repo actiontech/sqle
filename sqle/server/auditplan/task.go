@@ -1595,20 +1595,6 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 	defer db.Close()
 	db.IsCaseSensitive = db.GetCaseSensitive()
 
-	tables, err := db.ShowSchemaTables(at.ap.InstanceDatabase)
-	if err != nil {
-		at.logger.Errorf("get schema table fail, error: %s", err)
-		return
-	}
-	var views []string
-	if at.ap.Params.GetParam("collect_view").Bool() {
-		views, err = db.ShowSchemaViews(at.ap.InstanceDatabase)
-		if err != nil {
-			at.logger.Errorf("get schema view fail, error: %s", err)
-			return
-		}
-	}
-
 	schemas, err := db.GetAllUserSchemas()
 	if err != nil {
 		at.logger.Errorf("get database=%s schemas error: %s", at.ap.InstanceDatabase, err)
@@ -1619,23 +1605,69 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		return
 	}
 
-	sqls := make([]string, 0, len(tables)+len(views))
-	for _, table := range tables {
-		tableSqls, err := db.ShowCreateTables(at.ap.InstanceDatabase, table, schemas)
-		if err != nil {
-			at.logger.Errorf("show create table fail, error: %s", err)
-			return
-		}
-		sqls = append(sqls, tableSqls...)
+	wg := sync.WaitGroup{}
+	wg.Add(len(schemas) * 2)
+	tableMutex := sync.Mutex{}
+	viewMutex := sync.Mutex{}
+	sqls := make([]string, 0)
+	finalTableSqls := make([]string, 0)
+	finalViewSqls := make([]string, 0)
+	for _, schema := range schemas {
+		go func(schema string) {
+			defer wg.Done()
+			tables, err := db.ShowSchemaTables(schema)
+			if err != nil {
+				at.logger.Errorf("get schema table fail, error: %s", err)
+				return
+			}
+			for _, table := range tables {
+				tableSqls, err := db.ShowCreateTables(at.ap.InstanceDatabase, schema, table)
+				if err != nil {
+					at.logger.Errorf("show create table fail, error: %s", err)
+					return
+				}
+				tableMutex.Lock()
+				if len(tableSqls) > 0 {
+					finalTableSqls = append(finalTableSqls, tableSqls...)
+				}
+				tableMutex.Unlock()
+			}
+		}(schema)
+
+		go func(schema string) {
+			defer wg.Done()
+			var views []string
+			if at.ap.Params.GetParam("collect_view").Bool() {
+				views, err = db.ShowSchemaViews(schema)
+				if err != nil {
+					at.logger.Errorf("get schema view fail, error: %s", err)
+					return
+				}
+			}
+			for _, view := range views {
+				viewSqls, err := db.ShowCreateViews(at.ap.InstanceDatabase, schema, view)
+				if err != nil {
+					at.logger.Errorf("show create view fail, error: %s", err)
+					return
+				}
+				viewMutex.Lock()
+				if len(viewSqls) > 0 {
+					finalViewSqls = append(finalViewSqls, viewSqls...)
+				}
+				viewMutex.Unlock()
+			}
+		}(schema)
 	}
-	for _, view := range views {
-		viewSqls, err := db.ShowCreateViews(at.ap.InstanceDatabase, view)
-		if err != nil {
-			at.logger.Errorf("show create view fail, error: %s", err)
-			return
-		}
-		sqls = append(sqls, viewSqls...)
+	wg.Wait()
+
+	if len(finalTableSqls) > 0 {
+		sqls = append(sqls, finalTableSqls...)
 	}
+
+	if len(finalViewSqls) > 0 {
+		sqls = append(sqls, finalViewSqls...)
+	}
+
 	if len(sqls) > 0 {
 		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
 		if err != nil {

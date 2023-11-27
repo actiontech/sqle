@@ -104,101 +104,98 @@ func (o *DB) ShowSchemaViews(schema string) ([]string, error) {
 	return getResultSqls(o.Db, query)
 }
 
-func (o *DB) ShowCreateTables(database, tableName string, schemas []string) ([]string, error) {
+func (o *DB) ShowCreateTables(database, schema, tableName string) ([]string, error) {
 	tables := make([]string, 0)
-	for _, schema := range schemas {
-		tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
-		if o.IsCaseSensitive {
-			database = strings.ToLower(database)
-			schema = strings.ToLower(schema)
-			tableName = strings.ToLower(tableName)
-		}
-		columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
-			database, schema, tableName)
-		if o.IsCaseSensitive {
-			columnsCondition = fmt.Sprintf("lower(table_catalog) = '%s' AND lower(table_schema) = '%s' "+
-				"AND lower(table_name) = '%s'", database, schema, tableName)
-		}
-		// 获取列定义，多个英文逗号分割
-		columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
-			"CASE "+
-			" WHEN data_type IN ('character', 'character varying', 'text') "+
-			" THEN data_type || '(' || character_maximum_length || ')' "+
-			" WHEN data_type IN ('numeric', 'decimal') "+
-			" THEN data_type || '(' || numeric_precision || ',' || numeric_scale || ')' "+
-			" WHEN data_type IN ('integer', 'smallint', 'bigint') THEN data_type "+
-			" ELSE data_type "+
-			" END "+
-			" || "+
-			" CASE "+
-			" WHEN column_default != '' THEN ' DEFAULT ' || column_default ELSE '' END "+
-			" || "+
-			" CASE "+
-			" WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END, ',\n ' ORDER BY ordinal_position) AS columns_sql"+
-			" FROM information_schema.columns "+
-			" WHERE %s GROUP BY table_name", columnsCondition)
-		sqls, err := getResultSqls(o.Db, columns)
-		if err != nil {
-			log.Printf("search column definition error:%s\n", err)
-			return nil, err
-		}
-		if len(sqls) == 0 {
+	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
+	if o.IsCaseSensitive {
+		database = strings.ToLower(database)
+		schema = strings.ToLower(schema)
+		tableName = strings.ToLower(tableName)
+	}
+	columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+		database, schema, tableName)
+	if o.IsCaseSensitive {
+		columnsCondition = fmt.Sprintf("lower(table_catalog) = '%s' AND lower(table_schema) = '%s' "+
+			"AND lower(table_name) = '%s'", database, schema, tableName)
+	}
+	// 获取列定义，多个英文逗号分割
+	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
+		"CASE "+
+		" WHEN data_type IN ('char', 'varchar', 'character', 'character varying', 'text') "+
+		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
+		" WHEN data_type IN ('numeric', 'decimal') "+
+		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
+		" WHEN data_type IN ('integer', 'smallint', 'bigint') THEN data_type "+
+		" ELSE data_type "+
+		" END "+
+		" || "+
+		" CASE "+
+		" WHEN column_default != '' THEN ' DEFAULT ' || column_default ELSE '' END "+
+		" || "+
+		" CASE "+
+		" WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END, ',\n ' ORDER BY ordinal_position) AS columns_sql"+
+		" FROM information_schema.columns "+
+		" WHERE %s GROUP BY table_name", columnsCondition)
+	sqls, err := getResultSqls(o.Db, columns)
+	if err != nil {
+		log.Printf("search column definition error:%s\n", err)
+		return nil, err
+	}
+	if len(sqls) == 0 {
+		return tables, nil
+	}
+	tableDDl += strings.Join(sqls, "")
+	constraintsCondition := fmt.Sprintf("n.nspname = '%s' AND C.relname = '%s'", schema, tableName)
+	if o.IsCaseSensitive {
+		constraintsCondition = fmt.Sprintf("lower(n.nspname) = '%s' "+
+			"AND lower(C.relname) = '%s'", schema, tableName)
+	}
+	// 获取所有约束
+	constraints := fmt.Sprintf("SELECT 'CONSTRAINT ' || r.conname || ' ' || "+
+		" pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition "+
+		" FROM pg_catalog.pg_constraint r "+
+		" JOIN pg_catalog.pg_class C ON C.OID = r.conrelid "+
+		" JOIN pg_catalog.pg_namespace n ON n.OID = C.relnamespace "+
+		" WHERE %s", constraintsCondition)
+	sqls, err = getResultSqls(o.Db, constraints)
+	if err != nil {
+		log.Printf("search constraint definition error:%s\n", err)
+		return nil, err
+	}
+	for _, sqlContext := range sqls {
+		tableDDl += ",\n" + sqlContext
+	}
+	tableDDl += ")"
+	indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
+	if o.IsCaseSensitive {
+		indexesCondition = fmt.Sprintf("lower(schemaname) = '%s' and lower(tablename) = '%s'",
+			schema, tableName)
+	}
+	// 获取索引
+	indexes := fmt.Sprintf("SELECT indexdef AS index_definition FROM pg_indexes "+
+		" WHERE %s", indexesCondition)
+	sqls, err = getResultSqls(o.Db, indexes)
+	if err != nil {
+		log.Printf("search index definition error:%s\n", err)
+		return nil, err
+	}
+	for _, sqlContent := range sqls {
+		if strings.Contains(sqlContent, "CREATE UNIQUE INDEX") {
 			continue
 		}
-		tableDDl += strings.Join(sqls, "")
-		constraintsCondition := fmt.Sprintf("d.datname = '%s' AND n.nspname = '%s' AND C.relname = '%s'",
-			database, schema, tableName)
-		if o.IsCaseSensitive {
-			constraintsCondition = fmt.Sprintf("lower(d.datname) = '%s' AND lower(n.nspname) = '%s' "+
-				"AND lower(C.relname) = '%s'", database, schema, tableName)
-		}
-		// 获取所有约束
-		constraints := fmt.Sprintf("SELECT 'CONSTRAINT ' || r.conname || ' ' || "+
-			" pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition "+
-			" FROM pg_catalog.pg_constraint r "+
-			" JOIN pg_catalog.pg_class C ON C.OID = r.conrelid "+
-			" JOIN pg_catalog.pg_namespace n ON n.OID = C.relnamespace "+
-			" JOIN pg_catalog.pg_database d ON d.datname = n.nspname "+
-			" WHERE %s", constraintsCondition)
-		sqls, err = getResultSqls(o.Db, constraints)
-		if err != nil {
-			log.Printf("search constraint definition error:%s\n", err)
-			return nil, err
-		}
-		for _, sqlContext := range sqls {
-			tableDDl += ",\n" + sqlContext
-		}
-		tableDDl += ")"
-		indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
-		if o.IsCaseSensitive {
-			indexesCondition = fmt.Sprintf("lower(schemaname) = '%s' and lower(tablename) = '%s'",
-				schema, tableName)
-		}
-		// 获取索引
-		indexes := fmt.Sprintf("SELECT indexdef AS index_definition FROM pg_indexes "+
-			" WHERE %s", indexesCondition)
-		sqls, err = getResultSqls(o.Db, indexes)
-		if err != nil {
-			log.Printf("search index definition error:%s\n", err)
-			return nil, err
-		}
-		for _, sqlContent := range sqls {
-			if strings.Contains(sqlContent, "CREATE UNIQUE INDEX") {
-				continue
-			}
-			tableDDl += ";\n" + sqlContent
-		}
-		tables = append(tables, tableDDl)
+		tableDDl += ";\n" + sqlContent
 	}
+	tables = append(tables, tableDDl)
 	return tables, nil
 }
 
-func (o *DB) ShowCreateViews(database, tableName string) ([]string, error) {
+func (o *DB) ShowCreateViews(database, schema, tableName string) ([]string, error) {
 	query := fmt.Sprintf(
 		"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
 			" AS create_view_statement "+
-			" FROM information_schema.views WHERE table_catalog = '%s' AND table_name = '%s'",
-		database, tableName)
+			" FROM information_schema.views "+
+			" WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+		database, schema, tableName)
 
 	if o.IsCaseSensitive {
 		database = strings.ToLower(database)
@@ -206,8 +203,9 @@ func (o *DB) ShowCreateViews(database, tableName string) ([]string, error) {
 		query = fmt.Sprintf(
 			"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
 				" AS create_view_statement "+
-				" FROM information_schema.views WHERE lower(table_catalog) = '%s' AND lower(table_name) = '%s'",
-			database, tableName)
+				" FROM information_schema.views "+
+				" WHERE lower(table_catalog) = '%s' AND lower(table_schema) = '%s' AND lower(table_name) = '%s'",
+			database, schema, tableName)
 	}
 	return getResultSqls(o.Db, query)
 }
