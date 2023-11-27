@@ -66,7 +66,7 @@ func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instan
 	}
 
 	if total == 0 {
-		return nil, false, nil
+		return &model.Instance{}, false, nil
 	}
 
 	instance, err := convertInstance(dbServices[0])
