@@ -66,7 +66,7 @@ func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instan
 	}
 
 	if total == 0 {
-		return nil, false, nil
+		return &model.Instance{}, false, nil
 	}
 
 	instance, err := convertInstance(dbServices[0])
@@ -123,11 +123,6 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		}
 	}
 
-	var ruleTemplates []model.RuleTemplate
-	if instance.SQLEConfig.RuleTemplateID != "" {
-		ruleTemplates = []model.RuleTemplate{{ProjectId: model.ProjectUID(instance.ProjectUID), Name: instance.SQLEConfig.RuleTemplateName}}
-	}
-
 	return &model.Instance{
 		ID:                uint64(instanceId),
 		Name:              instance.Name,
@@ -143,7 +138,6 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		Desc:              instance.Desc,
 		AdditionalParams:  additionalParams,
 		SqlQueryConfig:    sqlQueryConfig,
-		RuleTemplates:     ruleTemplates,
 	}, nil
 }
 
