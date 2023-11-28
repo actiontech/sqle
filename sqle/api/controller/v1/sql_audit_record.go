@@ -17,6 +17,7 @@ import (
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
+	xmlAst "github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -354,6 +355,16 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 }
 
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFiles) ([]SQLsFromFile, error) {
+	getSQLsByFilePath := func(filePath string, stmtsInfo []xmlAst.StmtsInfo) []string {
+		for _, info := range stmtsInfo {
+			if info.FilePath != filePath {
+				continue
+			}
+			return info.SQLs
+		}
+		return nil
+	}
+
 	allStmtsFromXml, err := xmlParser.ParseXMLsWithFilePath(xmlContents, false)
 	if err != nil {
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
@@ -362,8 +373,8 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFiles) ([]SQLsFromFile, er
 	var sqls []SQLsFromFile
 	for _, xmlContent := range xmlContents {
 		var sqlBuffer bytes.Buffer
-		ss, ok := allStmtsFromXml[xmlContent.FilePath]
-		if !ok {
+		ss := getSQLsByFilePath(xmlContent.FilePath, allStmtsFromXml)
+		if ss == nil {
 			continue
 		}
 
