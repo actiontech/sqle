@@ -252,3 +252,6 @@ fi
 /usr/local/%{name}/scripts/*
 /usr/local/%{name}/static/* 
 /usr/local/%{name}/etc/config.yaml
+
+
+%config /usr/local/%{name}/etc/config.yaml
