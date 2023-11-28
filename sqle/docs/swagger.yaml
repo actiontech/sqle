@@ -4769,6 +4769,25 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v2.GetSqlManageListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.SqlManage'
+        type: array
+      message:
+        example: ok
+        type: string
+      sql_manage_bad_num:
+        type: integer
+      sql_manage_optimized_num:
+        type: integer
+      sql_manage_total_num:
+        type: integer
+    type: object
   v2.GetTaskAnalysisDataResV2:
     properties:
       code:
@@ -4909,6 +4928,49 @@ definitions:
       err_message:
         type: string
       sql:
+        type: string
+    type: object
+  v2.SqlManage:
+    properties:
+      appear_num:
+        type: integer
+      assignees:
+        items:
+          type: string
+        type: array
+      audit_result:
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
+      endpoints:
+        items:
+          type: string
+        type: array
+      first_appear_time:
+        type: string
+      id:
+        type: integer
+      instance_name:
+        type: string
+      last_appear_time:
+        type: string
+      remark:
+        type: string
+      schema_name:
+        type: string
+      source:
+        $ref: '#/definitions/v1.Source'
+        type: object
+      sql:
+        type: string
+      sql_fingerprint:
+        type: string
+      status:
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
         type: string
     type: object
   v2.TableMetas:
@@ -11068,6 +11130,108 @@ paths:
       summary: 获取实例信息
       tags:
       - instance
+  /v2/projects/{project_name}/sql_manages:
+    get:
+      description: get sql manage list
+      operationId: GetSqlManageListV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        in: query
+        name: filter_status
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: fuzzy search endpoint
+        in: query
+        name: fuzzy_search_endpoint
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控sql列表
+      tags:
+      - SqlManage
   /v2/projects/{project_name}/workflows:
     post:
       consumes:
