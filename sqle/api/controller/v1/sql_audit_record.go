@@ -370,7 +370,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFiles) ([]SQLsFromFile, er
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
 
-	var sqls []SQLsFromFile
+	sqls := []SQLsFromFile{}
 	for _, xmlContent := range xmlContents {
 		var sqlBuffer bytes.Buffer
 		ss := getSQLsByFilePath(xmlContent.FilePath, allStmtsFromXml)
