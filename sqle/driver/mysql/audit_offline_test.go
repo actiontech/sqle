@@ -3420,3 +3420,57 @@ func TestDDLAvoidGeometry(t *testing.T) {
 			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 }
+
+func TestDDLAvoidEvent(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLAvoidEvent].Rule
+	t.Run(`create event`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
+	t.Run(`create event with DEFINER`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`create DEFINER=user event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
+	t.Run(`alter event`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`ALTER EVENT your_event_name
+			ON SCHEDULE
+			  EVERY 1 DAY
+			  STARTS '2023-01-01 00:00:00'
+			DO
+			  -- 修改事件的具体操作
+			  UPDATE your_table SET your_column = your_value WHERE your_condition;
+			`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
+	t.Run(`alter event with DEFINER`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`ALTER DEFINER = user EVENT your_event_name
+			ON SCHEDULE
+			  EVERY 1 DAY
+			  STARTS '2023-01-01 00:00:00'
+			DO
+			  -- 修改事件的具体操作
+			  UPDATE your_table SET your_column = your_value WHERE your_condition;
+			`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
+}
