@@ -120,6 +120,7 @@ const (
 	DDLAvoidText                                       = "ddl_avoid_text"
 	DDLAvoidFullText                                   = "ddl_avoid_full_text"
 	DDLAvoidGeometry                                   = "ddl_avoid_geometry"
+	DDLAvoidEvent                                      = "ddl_avoid_event"
 )
 
 // inspector DML rules
@@ -2354,6 +2355,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用空间字段和空间索引",
 		Func:         avoidGeometry,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidEvent,
+			Desc:       "禁止使用event",
+			Annotation: "使用event会增加数据库的维护难度和依赖性，并且也会造成安全问题。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用event",
+		Func:         avoidEvent,
 	},
 }
 
@@ -7661,6 +7674,13 @@ func avoidGeometry(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
+	}
+	return nil
+}
+
+func avoidEvent(input *RuleHandlerInput) error {
+	if util.IsEventSQL(input.Node.Text()) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
