@@ -7455,18 +7455,18 @@ func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
 		return nil
 	}
 	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(input.Ctx, joinNode)
-	tableConstarints := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
+	tableIndexes := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
 	for table, createTableStmt := range tableNameCreateTableStmtMap {
-		tableConstarints[table] = createTableStmt.Constraints
+		tableIndexes[table] = createTableStmt.Constraints
 	}
 
-	if joinNodes, hasIndex := joinConditionInJoinNodeHasIndex(input.Ctx, joinNode, tableConstarints); joinNodes && !hasIndex {
+	if joinNodes, hasIndex := joinConditionInJoinNodeHasIndex(input.Ctx, joinNode, tableIndexes); joinNodes && !hasIndex {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 		return nil
 	}
 
 	whereStmt := getWhereStmtFromNode(input.Node)
-	if joinNodes, hasIndex := joinConditionInWhereStmtHasIndex(input.Ctx, joinNode, whereStmt, tableConstarints); joinNodes && !hasIndex {
+	if joinNodes, hasIndex := joinConditionInWhereStmtHasIndex(input.Ctx, joinNode, whereStmt, tableIndexes); joinNodes && !hasIndex {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 		return nil
 	}
