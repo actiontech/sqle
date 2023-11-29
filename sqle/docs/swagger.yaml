@@ -4932,8 +4932,6 @@ definitions:
     type: object
   v2.SqlManage:
     properties:
-      appear_num:
-        type: integer
       assignees:
         items:
           type: string
@@ -4946,13 +4944,15 @@ definitions:
         items:
           type: string
         type: array
-      first_appear_time:
+      first_appear_timestamp:
         type: string
+      fp_count:
+        type: integer
       id:
         type: integer
       instance_name:
         type: string
-      last_appear_time:
+      last_receive_timestamp:
         type: string
       remark:
         type: string
