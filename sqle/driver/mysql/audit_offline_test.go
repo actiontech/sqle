@@ -3420,3 +3420,295 @@ func TestDDLAvoidGeometry(t *testing.T) {
 			newTestResult().addResult(rulepkg.DDLAvoidGeometry))
 	})
 }
+
+func TestDMLAvoidWhereEqualNull(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLAvoidWhereEqualNull].Rule
+	t.Run(`select a = null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a = null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a is null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a is null;`,
+			newTestResult())
+	})
+	t.Run(`select a is not null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a is not null;`,
+			newTestResult())
+	})
+	t.Run(`select a != null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a != null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a <> null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a <> null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a >= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a >= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a > null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a > null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a <= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a <= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`select a < null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`select * from t1 where a < null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`update a = null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a = null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`update a != null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a != null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`update a <> null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a <> null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`update a >= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a >= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`update a is null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a is null;`,
+			newTestResult())
+	})
+	t.Run(`update a is not null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`update t1 set name='v1' where a is not null;`,
+			newTestResult())
+	})
+	t.Run(`delete a = null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a = null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a != null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a != null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a <> null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a <> null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a >= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a >= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a < null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a > null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a < null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a < null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`delete a is null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a is null;`,
+			newTestResult())
+	})
+	t.Run(`delete a is not null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`delete from t1 where a is not null;`,
+			newTestResult())
+	})
+	t.Run(`insert select v1 = null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 = null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 != null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 != null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 <> null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 <> null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 >= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 >= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 > null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 > null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 <= null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 <= null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 < null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 < null;`,
+			newTestResult().addResult(rulepkg.DMLAvoidWhereEqualNull))
+	})
+	t.Run(`insert select v1 is null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 is null;`,
+			newTestResult())
+	})
+	t.Run(`insert select v1 is not null`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`insert into t1(column1) select column1 from t2 where v1 is not null;`,
+			newTestResult())
+	})
+}
