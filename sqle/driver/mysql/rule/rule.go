@@ -2381,7 +2381,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DMLAvoidWhereEqualNull,
 			Desc:       "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
-			Annotation: "NULL在SQL中属于特殊值，无法与普通值进行比较。例如：column = NULL恒为false，所以column = NULL应该写为column is NULL",
+			Annotation: "NULL在SQL中属于特殊值，无法与普通值进行比较。例如：column = NULL恒为false，即使column存在null值也不会查询出来，所以column = NULL应该写为column is NULL",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
 		},
