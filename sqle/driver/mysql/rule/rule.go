@@ -195,6 +195,7 @@ const (
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
 	DMLSQLExplainLowestLevel                  = "dml_sql_explain_lowest_level"
+	DMLAvoidWhereEqualNull                    = "dml_avoid_where_equal_null"
 )
 
 // inspector config code
@@ -2375,6 +2376,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用空间字段和空间索引",
 		Func:         avoidGeometry,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLAvoidWhereEqualNull,
+			Desc:       "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
+			Annotation: "NULL在SQL中属于特殊值，无法与普通值进行比较。例如：column = NULL恒为false，即使column存在null值也不会查询出来，所以column = NULL应该写为column is NULL",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
+		Func:         avoidWhereEqualNull,
 	},
 }
 
@@ -7712,6 +7725,37 @@ func avoidGeometry(input *RuleHandlerInput) error {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
+	}
+	return nil
+}
+
+func avoidWhereEqualNull(input *RuleHandlerInput) error {
+	dmlNode, ok := input.Node.(ast.DMLNode)
+	if !ok {
+		return nil
+	}
+
+	whereVisitor := &util.WhereVisitor{}
+	dmlNode.Accept(whereVisitor)
+	for _, whereExpr := range whereVisitor.WhereList {
+		util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+			switch stmt := expr.(type) {
+			case *ast.BinaryOperationExpr:
+				for _, binExpr := range []ast.ExprNode{stmt.L, stmt.R} {
+					value, ok := binExpr.(*parserdriver.ValueExpr)
+					if ok {
+						if value.Type.Tp == mysql.TypeNull {
+							switch stmt.Op {
+							case opcode.GE, opcode.LE, opcode.EQ, opcode.NE, opcode.LT, opcode.GT:
+								addResult(input.Res, input.Rule, input.Rule.Name)
+								return true
+							}
+						}
+					}
+				}
+			}
+			return false
+		}, whereExpr)
 	}
 	return nil
 }
