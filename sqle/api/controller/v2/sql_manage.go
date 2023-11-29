@@ -15,20 +15,20 @@ type GetSqlManageListResp struct {
 }
 
 type SqlManage struct {
-	Id              uint64            `json:"id"`
-	SqlFingerprint  string            `json:"sql_fingerprint"`
-	Sql             string            `json:"sql"`
-	Source          *v1.Source        `json:"source"`
-	InstanceName    string            `json:"instance_name"`
-	SchemaName      string            `json:"schema_name"`
-	AuditResult     []*v1.AuditResult `json:"audit_result"`
-	FirstAppearTime string            `json:"first_appear_time"`
-	LastAppearTime  string            `json:"last_appear_time"`
-	AppearNum       uint64            `json:"appear_num"`
-	Assignees       []string          `json:"assignees"`
-	Status          string            `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
-	Remark          string            `json:"remark"`
-	Endpoints       []string          `json:"endpoints"`
+	Id                   uint64            `json:"id"`
+	SqlFingerprint       string            `json:"sql_fingerprint"`
+	Sql                  string            `json:"sql"`
+	Source               *v1.Source        `json:"source"`
+	InstanceName         string            `json:"instance_name"`
+	SchemaName           string            `json:"schema_name"`
+	AuditResult          []*v1.AuditResult `json:"audit_result"`
+	FirstAppearTimeStamp string            `json:"first_appear_timestamp"`
+	LastReceiveTimeStamp string            `json:"last_receive_timestamp"`
+	FpCount              uint64            `json:"fp_count"`
+	Assignees            []string          `json:"assignees"`
+	Status               string            `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	Remark               string            `json:"remark"`
+	Endpoints            []string          `json:"endpoints"`
 }
 
 // GetSqlManageList

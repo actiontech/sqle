@@ -17484,9 +17484,6 @@ var doc = `{
         "v2.SqlManage": {
             "type": "object",
             "properties": {
-                "appear_num": {
-                    "type": "integer"
-                },
                 "assignees": {
                     "type": "array",
                     "items": {
@@ -17505,8 +17502,11 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "first_appear_time": {
+                "first_appear_timestamp": {
                     "type": "string"
+                },
+                "fp_count": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "integer"
@@ -17514,7 +17514,7 @@ var doc = `{
                 "instance_name": {
                     "type": "string"
                 },
-                "last_appear_time": {
+                "last_receive_timestamp": {
                     "type": "string"
                 },
                 "remark": {
