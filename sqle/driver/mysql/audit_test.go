@@ -876,7 +876,8 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 				WHERE exist_tb_3.v3 > 5;
 			`,
 			ExpectResult: newTestResult().
-				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+				addResult(rulepkg.DMLCheckSelectLimit, 1000).
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 		}, {
 			Name: "select mix with where and on condition, does not trigger rule",
 			SQL: `
@@ -887,7 +888,8 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 				WHERE exist_tb_1.user_id = t3.v1;
 			`,
 			ExpectResult: newTestResult().
-				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+				addResult(rulepkg.DMLCheckSelectLimit, 1000).
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 		},
 		{
 			Name: "select with where condition match another table, trigger rule",
@@ -899,7 +901,8 @@ func TestDMLCheckHasJoinCondition(t *testing.T) {
 				WHERE exist_tb_2.user_id = t3.v1;
 			`,
 			ExpectResult: newTestResult().
-				addResult(rulepkg.DMLCheckSelectLimit, 1000),
+				addResult(rulepkg.DMLCheckSelectLimit, 1000).
+				addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 		},
 		{
 			Name: "select mix with where on using condition, does not trigger rule",
@@ -1051,39 +1054,42 @@ update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist
 		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb"),
 	)
 
-	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "multi-update: column not exist 1", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3"),
 	)
 
-	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "multi-update: column not exist 2", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
 		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_2.v3"),
 	)
 
-	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "multi-update: column not exist 3", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_1.v3,exist_tb_2.v3").
+			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
-	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "multi-update: column not exist 4", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "exist_tb_3.v1").
+			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
-	runDefaultRulesInspectCase(t, "multi-update: column not exist", DefaultMysqlInspect(),
+	runDefaultRulesInspectCase(t, "multi-update: column not exist 5", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "not_exist_db.exist_tb_1.v1").
+			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
@@ -6456,13 +6462,14 @@ func TestDMLCheckScanRows(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_2 where v1=1", newTestResult())
 }
 
+// TODO
 func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckJoinFieldUseIndex].Rule
 
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"success",
+		"without join conodition",
 		DefaultMysqlInspect(),
 		`select * from exist_tb_2`,
 		newTestResult(),
@@ -6471,7 +6478,7 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"success",
+		"left join, with join condition, without index 1",
 		DefaultMysqlInspect(),
 		`select * from exist_tb_2 left join exist_tb_3 on exist_tb_2.v1=exist_tb_3.v2`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
@@ -6480,7 +6487,7 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"success",
+		"left join, with join condition, with index",
 		DefaultMysqlInspect(),
 		`select * from exist_tb_1 left join exist_tb_2 on exist_tb_1.v1=exist_tb_2.user_id`,
 		newTestResult(),
@@ -6489,28 +6496,27 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"left join, with join condition, without index 2",
 		DefaultMysqlInspect(),
-		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3
-				on t3.v2 = t2.id where exist_tb_2.v2 = 'v1'`,
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 on t3.v2 = t2.id where exist_tb_2.v2 = 'v1'`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"left join, with join condition, without index 3",
 		DefaultMysqlInspect(),
-		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = id`,
-		newTestResult(),
+		`select * from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 using(id)`,
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"multi-column index, cross join,  with join condition, with index",
 		DefaultMysqlInspect(),
-		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id
+		`update exist_tb_1 t1 join exist_tb_2 t2 on t1.v2 = t2.id and t1.v1 = t2.id
 		set t1.id = 1
 		where t2.id = 2;`,
 		newTestResult(),
@@ -6519,9 +6525,9 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"multi-column index, cross join,  with join condition, with index but not match multi-column index",
 		DefaultMysqlInspect(),
-		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id left join exist_tb_3 t3 on t2.id=t3.id
+		`update exist_tb_1 t1 join exist_tb_2 t2 on t1.v1 = t2.id and t1.v2 = t2.user_id
 		set t1.id = 1
 		where t2.id = 2;`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
@@ -6530,28 +6536,28 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"left join, with join condition, with index, ignore index on left table",
 		DefaultMysqlInspect(),
-		`update exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2
-		set t1.id = 1
+		`update exist_tb_3 t3 left join exist_tb_2 t2 on t3.id = t2.user_id
+		set t3.id = 1
 		where t2.id = 2;`,
-		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
+		newTestResult(),
 	)
 
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"right join, with less join condition, with index",
 		DefaultMysqlInspect(),
-		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.id where t2.v2 = 'v1'`,
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 right join exist_tb_2 t2 on t1.id = t2.id where t2.v2 = 'v1'`,
 		newTestResult())
 
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"",
+		"right join, with join condition, not satisfy multi-column index",
 		DefaultMysqlInspect(),
-		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 left join exist_tb_2 t2 on t1.id = t2.v2 where t2.v2 = 'v1'`,
+		`delete exist_tb_1 , exist_tb_2 , exist_tb_3  from exist_tb_1 t1 right join exist_tb_2 t2 on t1.id = t2.v2 where t2.v2 = 'v1'`,
 		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex))
 }
 
