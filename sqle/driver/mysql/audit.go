@@ -1177,6 +1177,11 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 
 // checkUnparsedStmt might add more check in future.
 func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性")
+	// todo 解析器增加对evnet的支持，先提示不支持event语法正确性检查
+	if util.IsEventSQL(stmt.Text()) {
+		i.result.Add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查")
+	} else {
+		i.result.Add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性")
+	}
 	return nil
 }
