@@ -3765,4 +3765,25 @@ func TestDDLAvoidEvent(t *testing.T) {
 			`,
 			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
 	})
+	t.Run(`create event with blank line`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`
+
+			
+			create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
+	t.Run(`create event with space`, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`       create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
+			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+	})
 }

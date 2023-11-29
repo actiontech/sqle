@@ -258,7 +258,7 @@ func IsEventSQL(sql string) bool {
 	alterPattern := `^ALTER\s+(DEFINER\s?=.+?)?EVENT`
 	alterRe := regexp.MustCompile(alterPattern)
 
-	sql = strings.ToUpper(sql)
+	sql = strings.ToUpper(strings.TrimSpace(sql))
 	if createRe.MatchString(sql) {
 		return true
 	} else {
