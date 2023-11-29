@@ -6469,7 +6469,7 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"without join conodition",
+		"without join condition",
 		DefaultMysqlInspect(),
 		`select * from exist_tb_2`,
 		newTestResult(),
