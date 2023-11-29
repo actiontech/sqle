@@ -412,7 +412,7 @@ func GetAuditPlanWithInstanceFromProjectByName(projectId, name string, fn func(p
 		return nil, false, nil
 	}
 
-	instance, exists, err := GetInstanceInProjectByName(context.Background(), projectId, name)
+	instance, exists, err := GetInstanceInProjectByName(context.Background(), projectId, auditPlan.InstanceName)
 	if err != nil {
 		return nil, false, err
 	}
@@ -450,7 +450,7 @@ func GetAuditPlanWithInstanceById(id uint, fn func(id uint) (*model.AuditPlan, b
 		return nil, false, nil
 	}
 
-	instance, exists, err := GetInstanceInProjectByName(context.Background(), string(auditPlan.ProjectId), auditPlan.Name)
+	instance, exists, err := GetInstanceInProjectByName(context.Background(), string(auditPlan.ProjectId), auditPlan.InstanceName)
 	if err != nil {
 		return nil, false, err
 	}
