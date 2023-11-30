@@ -11,12 +11,12 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-func (h AfterCreateProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterCreateProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	td := model.DefaultWorkflowTemplate(dataResourceId)
 	return s.SaveWorkflowTemplate(td)
 }
-func (h BeforeDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
 	if err != nil {
@@ -28,12 +28,12 @@ func (h BeforeDeleteProject) Hanle(ctx context.Context, currentUserId string, da
 	return nil
 }
 
-func (h AfterDeleteProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	return s.RemoveProjectRelateData(model.ProjectUID(dataResourceId))
 }
 
-func (h BeforeArvhiveProject) Hanle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeArchiveProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
 	s := model.GetStorage()
 	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
 	if err != nil {
