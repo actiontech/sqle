@@ -94,7 +94,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []dmsV1.OpPermissionType) error {
 	userId := controller.GetUserID(c)
 	// todo issues-2005
-	if task.Instance == nil {
+	if task.Instance == nil || task.Instance.ProjectId == "" {
 		return nil
 	}
 	up, err := dms.NewUserPermission(userId, task.Instance.ProjectId)
