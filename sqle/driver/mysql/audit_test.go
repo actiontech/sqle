@@ -6536,12 +6536,12 @@ func TestDMLCheckJoinFieldUseIndex(t *testing.T) {
 	runSingleRuleInspectCase(
 		rule,
 		t,
-		"left join, with join condition, with index, ignore index on left table",
+		"left join, with join condition, without index",
 		DefaultMysqlInspect(),
 		`update exist_tb_3 t3 left join exist_tb_2 t2 on t3.id = t2.user_id
 		set t3.id = 1
 		where t2.id = 2;`,
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
 	runSingleRuleInspectCase(
