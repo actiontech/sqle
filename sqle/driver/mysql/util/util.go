@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -248,4 +249,19 @@ func IsGeometryColumn(col *ast.ColumnDef) bool {
 		return true
 	}
 	return false
+}
+
+// TODO: 暂时使用正则表达式匹配event，后续会修改语法树进行匹配event
+func IsEventSQL(sql string) bool {
+	createPattern := `^CREATE\s+(DEFINER\s?=.+?)?EVENT`
+	createRe := regexp.MustCompile(createPattern)
+	alterPattern := `^ALTER\s+(DEFINER\s?=.+?)?EVENT`
+	alterRe := regexp.MustCompile(alterPattern)
+
+	sql = strings.ToUpper(strings.TrimSpace(sql))
+	if createRe.MatchString(sql) {
+		return true
+	} else {
+		return alterRe.MatchString(sql)
+	}
 }
