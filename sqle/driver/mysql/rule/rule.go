@@ -7064,7 +7064,7 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 		for _, indexColumn := range singleIndexSlice {
 			selectivityValue, ok := colSelectivityMap[indexColumn]
 			if !ok {
-				log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+				return fmt.Errorf("do not get column selectivity, column: %v", indexColumn)
 			}
 			indexSelectValueSlice = append(indexSelectValueSlice, struct {
 				Index string
