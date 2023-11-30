@@ -2778,13 +2778,14 @@ func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, 
 	return tableNameCreateTableStmtMap
 }
 
-func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	tableSources := util.GetTableSources(joinStmt)
 	for _, tableSource := range tableSources {
 		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
 			tableName := tableNameStmt.Name.L
 			if tableSource.AsName.L != "" {
+				// 如果使用别名，则需要用别名引用
 				tableName = tableSource.AsName.L
 			}
 
@@ -7458,8 +7459,8 @@ func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
 	}
 	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(input.Ctx, joinNode)
 	tableIndexes := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
-	for table, createTableStmt := range tableNameCreateTableStmtMap {
-		tableIndexes[table] = createTableStmt.Constraints
+	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
+		tableIndexes[tableName] = createTableStmt.Constraints
 	}
 
 	if joinNodes, hasIndex := joinConditionInJoinNodeHasIndex(input.Ctx, joinNode, tableIndexes); joinNodes && !hasIndex {
@@ -7485,18 +7486,12 @@ func joinConditionInWhereStmtHasIndex(ctx *session.Context, joinNode *ast.Join, 
 
 	visitor := util.EqualConditionVisitor{}
 	whereStmt.Accept(&visitor)
-	tableColumn := make(map[string] /*table name*/ map[string] /*column name*/ struct{})
+	tableColumnMap := make(tableColumnMap)
 	for _, condition := range visitor.ConditionList {
-		if tableColumn[condition.Left.Table.L] == nil {
-			tableColumn[condition.Left.Table.L] = make(map[string]struct{})
-		}
-		if tableColumn[condition.Right.Table.L] == nil {
-			tableColumn[condition.Right.Table.L] = make(map[string]struct{})
-		}
-		tableColumn[condition.Left.Table.L][condition.Left.Name.L] = struct{}{}
-		tableColumn[condition.Right.Table.L][condition.Right.Name.L] = struct{}{}
+		tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+		tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
 	}
-	for tableName, columnMap := range tableColumn {
+	for tableName, columnMap := range tableColumnMap {
 		if constraints, ok := tableIndex[tableName]; ok {
 			if !IsIndex(columnMap, constraints) {
 				return true, false
@@ -7507,7 +7502,7 @@ func joinConditionInWhereStmtHasIndex(ctx *session.Context, joinNode *ast.Join, 
 	return true, true
 }
 
-func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, tableIndex map[string] /*table name*/ []*ast.Constraint) (joinTables, hasIndex bool) {
+func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, tableIndex map[string] /*table name or alias name*/ []*ast.Constraint) (joinTables, hasIndex bool) {
 	if doesNotJoinTables(joinNode) {
 		return false, false
 	}
@@ -7519,54 +7514,34 @@ func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, t
 		}
 	}
 
-	tableColumn := make(map[string] /*table name*/ map[string] /*column name*/ struct{})
+	tableColumnMap := make(tableColumnMap)
 
 	if isJoinConditionInOnClause(joinNode) {
 		visitor := util.EqualConditionVisitor{}
 		joinNode.On.Accept(&visitor)
 		for _, condition := range visitor.ConditionList {
-			if tableColumn[condition.Left.Table.L] == nil {
-				tableColumn[condition.Left.Table.L] = make(map[string]struct{})
-			}
-			if tableColumn[condition.Right.Table.L] == nil {
-				tableColumn[condition.Right.Table.L] = make(map[string]struct{})
-			}
-			tableColumn[condition.Left.Table.L][condition.Left.Name.L] = struct{}{}
-			tableColumn[condition.Right.Table.L][condition.Right.Name.L] = struct{}{}
+			tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+			tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
 		}
 	}
+
 	if isJoinConditionInUsingClause(joinNode) {
 		leftTableSource, rightTableSource := getTableSourcesBesideJoin(joinNode)
 		if leftTableSource != nil {
 			tableName := getTableName(leftTableSource)
 			for _, columnName := range joinNode.Using {
-				if tableColumn[tableName] == nil {
-					tableColumn[tableName] = make(map[string]struct{})
-				}
-				tableColumn[tableName][columnName.Name.L] = struct{}{}
+				tableColumnMap.add(tableName, columnName.Name.L)
 			}
 		}
 		if rightTableSource != nil {
 			tableName := getTableName(rightTableSource)
 			for _, columnName := range joinNode.Using {
-				if tableColumn[tableName] == nil {
-					tableColumn[tableName] = make(map[string]struct{})
-				}
-				tableColumn[tableName][columnName.Name.L] = struct{}{}
+				tableColumnMap.add(tableName, columnName.Name.L)
 			}
 		}
 	}
-	var isLeftJoin bool = (joinNode.Tp == ast.LeftJoin)
-	var rightTableName string
-	if isLeftJoin {
-		if tableSource, ok := joinNode.Right.(*ast.TableSource); ok {
-			rightTableName = getTableName(tableSource)
-		}
-	}
-	for tableName, columnMap := range tableColumn {
-		if isLeftJoin && tableName != rightTableName {
-			continue
-		}
+
+	for tableName, columnMap := range tableColumnMap {
 		if constraints, ok := tableIndex[tableName]; ok {
 			if !IsIndex(columnMap, constraints) {
 				return true, false
@@ -7574,6 +7549,15 @@ func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, t
 		}
 	}
 	return true, true
+}
+
+type tableColumnMap map[string] /*table name or alias name*/ map[string] /*column name*/ struct{}
+
+func (m tableColumnMap) add(tableName, columnName string) {
+	if m[tableName] == nil {
+		m[tableName] = make(map[string]struct{})
+	}
+	m[tableName][columnName] = struct{}{}
 }
 
 /*
@@ -7644,6 +7628,7 @@ func getTableSourcesBesideJoin(joinNode *ast.Join) (left *ast.TableSource, right
 func getTableName(tableSource *ast.TableSource) string {
 	if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
 		if tableSource.AsName.L != "" {
+			// 如果使用了别名，就应该用别名来引用列
 			return tableSource.AsName.L
 		}
 		return tableNameStmt.Name.L
