@@ -966,7 +966,7 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error) {
+func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, error) {
 	count := 0
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").

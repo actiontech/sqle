@@ -7,17 +7,33 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-var OperateHandlers map[string]OperationHanler = make(map[string]OperationHanler)
+var operateHandlers map[string]OperationHandler = make(map[string]OperationHandler)
 
-// NOTE:
+// OperationHandler NOTE:
 // The implemented structure must be named[CamelCase] by the combination of DataResourceType, OperationType, and OperationTimingType
-type OperationHanler interface {
-	Hanle(ctx context.Context, currentUserId string, dataResourceId string) error
+type OperationHandler interface {
+	Handle(ctx context.Context, currentUserId string, objId string) error
 }
 
-func InitOperateHandlers(operationHandlers []OperationHanler) {
+type DefaultOperateHandle struct {
+}
+
+func (f DefaultOperateHandle) Handle(ctx context.Context, currentUserId string, objId string) error {
+	return nil
+}
+
+func InitOperateHandlers(operationHandlers []OperationHandler) {
 	for _, v := range operationHandlers {
 		structName := strcase.ToSnake(reflect.TypeOf(v).Name())
-		OperateHandlers[structName] = v
+		operateHandlers[structName] = v
 	}
+}
+
+func GetOperateHandle(name string) OperationHandler {
+	handle, ok := operateHandlers[name]
+	if ok {
+		return handle
+	}
+
+	return DefaultOperateHandle{}
 }
