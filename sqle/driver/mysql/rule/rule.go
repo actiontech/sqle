@@ -7029,6 +7029,7 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 		return nil
 	}
 
+	l := log.NewEntry()
 	noticeInfos := []string{}
 	for _, singleIndexSlice := range indexSlices {
 		var indexSelectValueSlice []struct {
@@ -7038,12 +7039,14 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 		sortIndexes := make([]string, len(singleIndexSlice))
 		colSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(table, singleIndexSlice)
 		if err != nil {
-			return err
+			l.Errorf("get columns selectivity error: %v", err)
+			return nil
 		}
 		for _, indexColumn := range singleIndexSlice {
 			selectivityValue, ok := colSelectivityMap[indexColumn]
 			if !ok {
-				return fmt.Errorf("do not get column selectivity, column: %v", indexColumn)
+				l.Errorf("do not get column selectivity, column: %v", indexColumn)
+				return nil
 			}
 			indexSelectValueSlice = append(indexSelectValueSlice, struct {
 				Index string
