@@ -3430,7 +3430,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with DEFINER`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3439,7 +3439,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`create DEFINER=user event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`alter event`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3455,7 +3455,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			  -- 修改事件的具体操作
 			  UPDATE your_table SET your_column = your_value WHERE your_condition;
 			`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`alter event with DEFINER`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3471,7 +3471,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			  -- 修改事件的具体操作
 			  UPDATE your_table SET your_column = your_value WHERE your_condition;
 			`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with blank line`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3483,7 +3483,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 
 			
 			create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with space`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3492,6 +3492,6 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`       create event my_event on schedule every 10 second do update myschema.mytable set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "不支持event语法正确性检查").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
 	})
 }
