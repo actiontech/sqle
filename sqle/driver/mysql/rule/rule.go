@@ -7054,18 +7054,21 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 	for _, singleIndexSlice := range indexSlices {
 		var indexSelectValueSlice []struct {
 			Index string
-			Value int
+			Value float64
 		}
 		sortIndexes := make([]string, len(singleIndexSlice))
+		colSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(table, singleIndexSlice)
+		if err != nil {
+			return err
+		}
 		for _, indexColumn := range singleIndexSlice {
-			columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
-			if err != nil {
-				return err
+			selectivityValue, ok := colSelectivityMap[indexColumn]
+			if !ok {
+				log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
 			}
-			selectivityValue := columnCardinality
 			indexSelectValueSlice = append(indexSelectValueSlice, struct {
 				Index string
-				Value int
+				Value float64
 			}{indexColumn, selectivityValue})
 		}
 		sort.Slice(indexSelectValueSlice, func(i, j int) bool {
