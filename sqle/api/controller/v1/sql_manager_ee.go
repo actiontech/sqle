@@ -109,7 +109,8 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 
 		sqlMgr.Status = sqlManage.Status
 		sqlMgr.Remark = sqlManage.Remark
-		// todo: 端点信息数组
+		sqlMgr.Endpoint = sqlManage.Endpoint
+
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
@@ -248,7 +249,7 @@ func exportSqlManagesV1(c echo.Context) error {
 			sqlManage.FirstAppearTime(),
 			sqlManage.LastReceiveTime(),
 			strconv.FormatUint(sqlManage.FpCount, 10),
-			// todo: 端点信息数组
+			sqlManage.Endpoint,
 			strings.Join(assignees, ","),
 			model.SqlManageStatusMap[sqlManage.Status],
 			sqlManage.Remark,
