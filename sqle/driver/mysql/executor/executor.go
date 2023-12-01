@@ -451,7 +451,7 @@ func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 
 // When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateView(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create view `%s`", tableName))
+	result, err := c.Db.Query(fmt.Sprintf("show create view %s", tableName))
 	if err != nil {
 		return "", err
 	}
