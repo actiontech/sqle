@@ -276,9 +276,9 @@ func Ping(entry *logrus.Entry, instance *driverV2.DSN) error {
 
 // When using keywords as table names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
-	query := fmt.Sprintf("show create table `%s`", tableName)
+	query := fmt.Sprintf("show create table %s", tableName)
 	if schema != "" {
-		query = fmt.Sprintf("show create table `%s`.`%s`", schema, tableName)
+		query = fmt.Sprintf("show create table %s.%s", schema, tableName)
 	}
 	result, err := c.Db.Query(query)
 	if err != nil {
@@ -451,7 +451,7 @@ func (c *Executor) ShowSchemaViews(schema string) ([]string, error) {
 
 // When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateView(tableName string) (string, error) {
-	result, err := c.Db.Query(fmt.Sprintf("show create view `%s`", tableName))
+	result, err := c.Db.Query(fmt.Sprintf("show create view %s", tableName))
 	if err != nil {
 		return "", err
 	}
@@ -677,8 +677,9 @@ type TableIndexesInfo struct {
 	Comment     string
 }
 
+// When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexesInfo, error) {
-	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM `%s`.`%s`", schema, tableName))
+	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
 	if err != nil {
 		return nil, err
 	}

@@ -1119,5 +1119,5 @@ func (c *Context) GetExecutor() *executor.Executor {
 }
 
 func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
-	return c.e.GetTableIndexesInfo(schema, tableName)
+	return c.e.GetTableIndexesInfo(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(tableName))
 }
