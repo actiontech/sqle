@@ -2669,36 +2669,9 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 }
 
 func checkHasJoinCondition(input *RuleHandlerInput) error {
-	var joinNode *ast.Join
-	var whereStmt ast.ExprNode
-
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			return nil
-		}
-		joinNode = stmt.From.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	case *ast.UpdateStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		joinNode = stmt.TableRefs.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	case *ast.DeleteStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		joinNode = stmt.TableRefs.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	default:
-		// 不检查JOIN不会存在的语句
+	joinNode := getJoinNodeFromNode(input.Node)
+	whereStmt := getWhereExpr(input.Node)
+	if joinNode == nil {
 		return nil
 	}
 	joinTables, hasCondition := checkJoinConditionInJoinNode(input.Ctx, whereStmt, joinNode)
@@ -2709,7 +2682,7 @@ func checkHasJoinCondition(input *RuleHandlerInput) error {
 }
 
 func doesNotJoinTables(tableRefs *ast.Join) bool {
-	return tableRefs.Left == nil || tableRefs.Right == nil
+	return tableRefs == nil || tableRefs.Left == nil || tableRefs.Right == nil
 }
 
 func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
@@ -2831,13 +2804,14 @@ func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, 
 	return tableNameCreateTableStmtMap
 }
 
-func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	tableSources := util.GetTableSources(joinStmt)
 	for _, tableSource := range tableSources {
 		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
 			tableName := tableNameStmt.Name.L
 			if tableSource.AsName.L != "" {
+				// 如果使用别名，则需要用别名引用
 				tableName = tableSource.AsName.L
 			}
 
@@ -7491,57 +7465,248 @@ func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) 
 	return true
 }
 
-func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {
-	for _, column := range columnNames {
-		if column.Name.L == columnNameExpr.Name.Name.L {
+/*
+checkJoinFieldUseIndex 判断Join语句中被驱动表中作为连接条件的列是否属于索引
+
+	触发条件：
+		A. CrossJoin和RightJoin (选择驱动表的情况复杂：随着数据变化而变化，因此都判断)
+			1. 分别判断ON USING WHERE中的连接条件是否有索引
+		B. LeftJoin (选择驱动表的情况固定：Join右侧的表为被驱动表)
+			1. ON和USING，判断LeftJoin的被驱动表 (右侧的表) 的连接条件是否有索引
+			2. 判断WHERE中的连接条件是否有索引
+	连接条件：等值条件两侧为不同表的列
+	支持情况：
+		支持：
+			1. 多表JOIN
+			2. 判断单列索引和复合索引
+		不支持：
+			1. 子查询中JOIN多表的判断
+*/
+func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
+
+	joinNode := getJoinNodeFromNode(input.Node)
+	if doesNotJoinTables(joinNode) {
+		// 如果SQL没有JOIN多表，则不需要审核
+		return nil
+	}
+	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(input.Ctx, joinNode)
+	tableIndexes := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
+	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
+		tableIndexes[tableName] = createTableStmt.Constraints
+	}
+
+	if joinNodes, hasIndex := joinConditionInJoinNodeHasIndex(input.Ctx, joinNode, tableIndexes); joinNodes && !hasIndex {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	}
+
+	whereStmt := getWhereStmtFromNode(input.Node)
+	if joinNodes, hasIndex := joinConditionInWhereStmtHasIndex(input.Ctx, joinNode, whereStmt, tableIndexes); joinNodes && !hasIndex {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	}
+	return nil
+}
+
+func joinConditionInWhereStmtHasIndex(ctx *session.Context, joinNode *ast.Join, whereStmt ast.ExprNode, tableIndex map[string][]*ast.Constraint) (joinTables, hasIndex bool) {
+	if doesNotJoinTables(joinNode) {
+		return false, false
+	}
+	if whereStmt == nil {
+		return false, false
+	}
+
+	visitor := util.EqualConditionVisitor{}
+	whereStmt.Accept(&visitor)
+	tableColumnMap := make(tableColumnMap)
+	for _, condition := range visitor.ConditionList {
+		tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+		tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
+	}
+	for tableName, columnMap := range tableColumnMap {
+		if constraints, ok := tableIndex[tableName]; ok {
+			if !IsIndex(columnMap, constraints) {
+				return true, false
+			}
+		}
+	}
+
+	return true, true
+}
+
+func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, tableIndex map[string] /*table name or alias name*/ []*ast.Constraint) (joinTables, hasIndex bool) {
+	if doesNotJoinTables(joinNode) {
+		return false, false
+	}
+	// 深度遍历左子树类型为ast.Join的节点
+	if l, ok := joinNode.Left.(*ast.Join); ok {
+		joinTables, hasIndex = joinConditionInJoinNodeHasIndex(ctx, l, tableIndex)
+		if joinTables && !hasIndex {
+			return joinTables, hasIndex
+		}
+	}
+
+	tableColumnMap := make(tableColumnMap)
+
+	if isJoinConditionInOnClause(joinNode) {
+		visitor := util.EqualConditionVisitor{}
+		joinNode.On.Accept(&visitor)
+		for _, condition := range visitor.ConditionList {
+			tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+			tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
+		}
+	}
+
+	if isJoinConditionInUsingClause(joinNode) {
+		leftTableSource, rightTableSource := getTableSourcesBesideJoin(joinNode)
+		if leftTableSource != nil {
+			tableName := getTableName(leftTableSource)
+			for _, columnName := range joinNode.Using {
+				tableColumnMap.add(tableName, columnName.Name.L)
+			}
+		}
+		if rightTableSource != nil {
+			tableName := getTableName(rightTableSource)
+			for _, columnName := range joinNode.Using {
+				tableColumnMap.add(tableName, columnName.Name.L)
+			}
+		}
+	}
+
+	for tableName, columnMap := range tableColumnMap {
+		if constraints, ok := tableIndex[tableName]; ok {
+			if !IsIndex(columnMap, constraints) {
+				return true, false
+			}
+		}
+	}
+	return true, true
+}
+
+type tableColumnMap map[string] /*table name or alias name*/ map[string] /*column name*/ struct{}
+
+func (m tableColumnMap) add(tableName, columnName string) {
+	if m[tableName] == nil {
+		m[tableName] = make(map[string]struct{})
+	}
+	m[tableName][columnName] = struct{}{}
+}
+
+/*
+IsIndex
+
+	判断单列或多列是否属于索引切片中的索引：
+		1. 单列：满足单列索引或多列索引的第一列，则返回true
+		2. 多列：满足N列是M列索引的前N列（M>=N），则返回true
+		3. 否则返回false
+*/
+func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.Constraint) bool {
+	for _, constraint := range constraints {
+		if len(columnMap) > len(constraint.Keys) {
+			// 若符合索引的列数小于关联列的列数 一定不满足多列索引
+			continue
+		}
+		var matchCount int
+		for _, key := range constraint.Keys {
+			if _, ok := columnMap[key.Column.Name.L]; ok {
+				matchCount++
+			} else {
+				break
+			}
+		}
+		if matchCount == len(columnMap) {
 			return true
 		}
 	}
 	return false
 }
 
-func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
-	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
-	if tableNameCreateTableStmtMap == nil || onConditions == nil {
+/*
+示例SQL:
+
+	select * from a join b join c join d;
+						   ↑
+	如果*ast.Join节点是↑所指的join，拿到的是b和c两张表的tableSource
+
+	select * from a join b join c join d;
+								  ↑
+	如果*ast.Join节点是↑所指的join，拿到的是c和d两张表的tableSource
+
+	SQL: select * from a join(1) b join(2) c join(3) d;中join的抽象语法树如下:
+
+		 join(3)
+		 /     \
+	   join(2)  d
+	   /     \
+	 join(1)  c
+	 /    \
+	a      b
+*/
+func getTableSourcesBesideJoin(joinNode *ast.Join) (left *ast.TableSource, right *ast.TableSource) {
+	if tableSource, ok := joinNode.Right.(*ast.TableSource); ok {
+		right = tableSource
+	}
+	if tableSource, ok := joinNode.Left.(*ast.TableSource); ok {
+		left = tableSource
+	}
+	if join, ok := joinNode.Left.(*ast.Join); ok {
+		if tableSource, ok := join.Right.(*ast.TableSource); ok {
+			left = tableSource
+		}
+	}
+	return
+}
+
+func getTableName(tableSource *ast.TableSource) string {
+	if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+		if tableSource.AsName.L != "" {
+			// 如果使用了别名，就应该用别名来引用列
+			return tableSource.AsName.L
+		}
+		return tableNameStmt.Name.L
+	}
+	return ""
+}
+
+func getJoinNodeFromNode(node ast.Node) *ast.Join {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		return stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	default:
 		return nil
 	}
-	tableNameIndexMap := make(map[string][]*ast.ColumnName)
+}
 
-	for table, createTableStmt := range tableNameCreateTableStmtMap {
-		indexes := []*ast.ColumnName{}
-		for _, constraint := range createTableStmt.Constraints {
-			// 联合索引只取第一个字段
-			if len(constraint.Keys) > 0 {
-				indexes = append(indexes, constraint.Keys[0].Column)
-			}
+func getWhereStmtFromNode(node ast.Node) ast.ExprNode {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-		tableNameIndexMap[table] = indexes
-	}
-	for _, onCondition := range onConditions {
-		var isUseIndex bool
-		binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr)
-		if !ok {
-			continue
+	case *ast.UpdateStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-		if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
-			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-				if !isUseIndex {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
-			}
+	case *ast.DeleteStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-
-		if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
-			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-				if !isUseIndex {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
-			}
-		}
+	default:
+		// 不检查JOIN不会存在的语句
+		return nil
 	}
 	return nil
 }
