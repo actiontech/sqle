@@ -33,8 +33,14 @@ func getSqlManageList(c echo.Context) error {
 	if req.PageIndex > 0 {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
+
+	searchSqlFingerprint := ""
+	if req.FuzzySearchSqlFingerprint != nil {
+		searchSqlFingerprint = strings.Replace(*req.FuzzySearchSqlFingerprint, "'", "\\'", -1)
+	}
+
 	data := map[string]interface{}{
-		"fuzzy_search_sql_fingerprint":      req.FuzzySearchSqlFingerprint,
+		"fuzzy_search_sql_fingerprint":      searchSqlFingerprint,
 		"filter_assignee":                   req.FilterAssignee,
 		"filter_instance_name":              req.FilterInstanceName,
 		"filter_source":                     req.FilterSource,
@@ -180,8 +186,13 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	searchSqlFingerprint := ""
+	if req.FuzzySearchSqlFingerprint != nil {
+		searchSqlFingerprint = strings.Replace(*req.FuzzySearchSqlFingerprint, "'", "\\'", -1)
+	}
+
 	data := map[string]interface{}{
-		"fuzzy_search_sql_fingerprint":      req.FuzzySearchSqlFingerprint,
+		"fuzzy_search_sql_fingerprint":      searchSqlFingerprint,
 		"filter_assignee":                   req.FilterAssignee,
 		"filter_instance_name":              req.FilterInstanceName,
 		"filter_source":                     req.FilterSource,
