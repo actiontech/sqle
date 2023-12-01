@@ -260,7 +260,7 @@ AND sm.status = :filter_status
 {{- end }}
 
 {{- if .count_bad_sql }}
-AND sm.audit_level <> ''
+AND ( sm.audit_level = 'warn' OR sm.audit_level = 'error' )
 AND sm.status = 'unhandled'
 {{- end }}
 
