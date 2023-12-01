@@ -279,9 +279,6 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !exist {
-		return nil, errors.NewInstanceNoExistErr()
-	}
 	task.Instance = instance
 
 	return task, nil
