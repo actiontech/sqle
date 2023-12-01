@@ -825,15 +825,15 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	for _, column := range columns {
 		sqls = append(
 			sqls,
-			fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", column.ColumnName, column.ColumnName),
+			fmt.Sprintf("COUNT( DISTINCT ( `%v` ) ) / COUNT( * ) * 100 AS '%v'", column.ColumnName, column.ColumnName),
 		)
-		selectColumns = append(selectColumns, column.ColumnName)
+		selectColumns = append(selectColumns, "`"+column.ColumnName+"`")
 		columnSelectivityMap[column.ColumnName] = 0
 	}
 
 	results, err := c.e.Db.Query(
 		fmt.Sprintf(
-			"SELECT %v FROM (SELECT %v FROM %v.%v LIMIT 50000) t;",
+			"SELECT %v FROM (SELECT %v FROM `%v`.`%v` LIMIT 50000) t;",
 			strings.Join(sqls, ","),
 			strings.Join(selectColumns, ","),
 			columns[0].SchemaName, columns[0].TableName,
@@ -936,7 +936,7 @@ Example:
 	1 row in set (0.01 sec)
 */
 func (c *Context) GetSchemaCharacterByCollation(collation string) (string, error) {
-	if collation == "" || c.e == nil  {
+	if collation == "" || c.e == nil {
 		return "", nil
 	}
 	return c.e.ShowDefaultConfiguration(
@@ -1028,9 +1028,9 @@ func (c *Context) GetTableRowCount(tn *ast.TableName) (int, error) {
 		if c.e == nil {
 			return 0, nil
 		}
-		query := fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
+		query := fmt.Sprintf("show table status from `%s` where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
 		if c.IsLowerCaseTableName() {
-			query = fmt.Sprintf("show table status from %s where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
+			query = fmt.Sprintf("show table status from `%s` where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
 		}
 
 		records, err := c.e.Db.Query(query)
