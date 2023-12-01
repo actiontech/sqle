@@ -17,6 +17,7 @@ type SqlManage struct {
 	LastReceiveTimestamp      *time.Time   `json:"last_receive_timestamp"`
 	InstanceName              string       `json:"instance_name"`
 	SchemaName                string       `json:"schema_name"`
+	Endpoint                  string       `json:"endpoint"`
 
 	Assignees []*User `gorm:"many2many:sql_manage_assignees;"`
 	Status    string  `json:"status" gorm:"default:\"unhandled\""`
