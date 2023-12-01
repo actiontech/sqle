@@ -677,8 +677,9 @@ type TableIndexesInfo struct {
 	Comment     string
 }
 
+// When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexesInfo, error) {
-	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM `%s`.`%s`", schema, tableName))
+	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
 	if err != nil {
 		return nil, err
 	}
