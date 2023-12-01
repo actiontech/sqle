@@ -2373,7 +2373,7 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckCharLength,
 			Desc:       "禁止char, varchar类型字段字符长度总和超过阈值",
-			Annotation: "char，varchar字段总和过长可能会导致行溢出，查询时需要更多的内存存储索引和数据，对整体性能造成影响。",
+			Annotation: "使用过长或者过多的varchar，char字段可能会增加业务逻辑的复杂性；如果字段平均长度过大时，会占用更多的存储空间。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeUsageSuggestion,
 			Params: params.Params{
