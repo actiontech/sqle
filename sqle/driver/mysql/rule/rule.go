@@ -7847,12 +7847,14 @@ func checkCharLength(input *RuleHandlerInput) error {
 					}
 				}
 			}
-			for _, col := range originTable.Cols {
-				// 获取建表语句char总和时，排除modify字段
-				if _, ok := modifyColMap[col.Name.Name.O]; ok {
-					continue
+			if charLength > 0 {
+				for _, col := range originTable.Cols {
+					// 获取建表语句char总和时，排除modify字段
+					if _, ok := modifyColMap[col.Name.Name.O]; ok {
+						continue
+					}
+					charLength += getCharLengthFromColumn(col)
 				}
-				charLength += getCharLengthFromColumn(col)
 			}
 		}
 	}

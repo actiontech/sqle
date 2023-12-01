@@ -7495,6 +7495,13 @@ func TestDDLCheckCharLength(t *testing.T) {
 			TriggerRule: true,
 			Param:       "599",
 		},
+		{
+			Name: "alter table add int not trigger rule",
+			Sql: `alter table exist_db.exist_tb_1 add v3 int;
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
 	}
 
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule
