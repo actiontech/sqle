@@ -449,3 +449,4 @@ multipoint
 multilinestring
 multipolygon
 geometrycollection
+charlength

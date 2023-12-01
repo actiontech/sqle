@@ -159,6 +159,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DDLAvoidText:                                {},
 		rulepkg.DMLCheckSelectRows:                          {},
 		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
+		rulepkg.DDLCheckCharLength:                          {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -7372,4 +7373,156 @@ func Test_CheckSQLExplainLowestLevel(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "", inspect13, "insert into exist_tb_1(id) values(10)", newTestResult())
 
 	assert.NoError(t, handler.ExpectationsWereMet())
+}
+
+func TestDDLCheckCharLength(t *testing.T) {
+	args := []struct {
+		Name        string
+		Sql         string
+		TriggerRule bool
+		Param       string
+	}{
+		{
+			Name: "create table charlength > 500",
+			Sql: `create table t1(v1 char(20), v2 varchar(200), v3 varchar(200), v4 char(90));
+			`,
+			TriggerRule: true,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength < 500 with other type columns",
+			Sql: `create table t1(v1 char(20), v2 varchar(200), v3 varchar(200), v4 char(80), v5 int(4), v6 text);
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength < 500",
+			Sql: `create table t1(v1 char(20), v2 varchar(200), v3 varchar(200), v4 char(70));
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength > 500, columns all varchar",
+			Sql: `create table t1(v1 varchar(20), v2 varchar(200), v3 varchar(200), v4 varchar(90));
+			`,
+			TriggerRule: true,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength < 500, columns all varchar",
+			Sql: `create table t1(v1 varchar(20), v2 varchar(200), v3 varchar(200), v4 varchar(80));
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength > 500, columns all char",
+			Sql: `create table t1(v1 char(20), v2 char(200), v3 char(200), v4 char(90));
+			`,
+			TriggerRule: true,
+			Param:       "500",
+		},
+		{
+			Name: "create table charlength < 500, columns all char",
+			Sql: `create table t1(v1 char(20), v2 char(200), v3 char(200), v4 char(70));
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+		{
+			Name: "alter table add char, charlength > 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 char(100) 
+			`,
+			TriggerRule: true,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add char, charlength < 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 char(80) 
+			`,
+			TriggerRule: false,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add varchar, charlength > 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 varchar(99) 
+			`,
+			TriggerRule: true,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add varchar, charlength < 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 varchar(80) 
+			`,
+			TriggerRule: false,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add varchar, charlength < 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 varchar(70), add column v4 varchar(10) 
+			`,
+			TriggerRule: false,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add varchar, char, charlength > 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 varchar(50), add column v4 char(50) 
+			`,
+			TriggerRule: true,
+			Param:       "600",
+		},
+		{
+			Name: "alter table add varchar, char, int, text, charlength < 600",
+			Sql: `alter table exist_db.exist_tb_1 add column v3 varchar(50), add column v4 char(40), add column v5 int(10) 
+			`,
+			TriggerRule: false,
+			Param:       "600",
+		},
+		{
+			Name: "alter table modify v2 varchar(255) -> varchar(355)",
+			Sql: `alter table exist_db.exist_tb_1 modify v2 varchar(355)
+			`,
+			TriggerRule: true,
+			Param:       "600",
+		},
+		{
+			Name: "alter table modify v2 varchar(255) -> varchar(200)",
+			Sql: `alter table exist_db.exist_tb_1 modify v2 varchar(200)
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+		{
+			Name: "alter table modify v1 varchar(255) -> varchar(300), v1 varchar(255) -> varchar(300)",
+			Sql: `alter table exist_db.exist_tb_1 modify v2 varchar(300), modify v1 varchar(300)
+			`,
+			TriggerRule: true,
+			Param:       "599",
+		},
+		{
+			Name: "alter table add int not trigger rule",
+			Sql: `alter table exist_db.exist_tb_1 add v3 int;
+			`,
+			TriggerRule: false,
+			Param:       "500",
+		},
+	}
+
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule
+	for _, arg := range args {
+		rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, arg.Param)
+		e, _, err := executor.NewMockExecutor()
+		assert.NoError(t, err)
+		inspect := NewMockInspect(e)
+
+		t.Run(arg.Name, func(t *testing.T) {
+			res := newTestResult()
+			if arg.TriggerRule {
+				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Message, arg.Param)
+			}
+			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule, t, "", inspect, arg.Sql, res)
+		})
+	}
 }

@@ -121,6 +121,7 @@ const (
 	DDLAvoidFullText                                   = "ddl_avoid_full_text"
 	DDLAvoidGeometry                                   = "ddl_avoid_geometry"
 	DDLAvoidEvent                                      = "ddl_avoid_event"
+	DDLCheckCharLength                                 = "ddl_check_char_length"
 )
 
 // inspector DML rules
@@ -2401,6 +2402,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用event",
 		Func:         avoidEvent,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckCharLength,
+			Desc:       "禁止char, varchar类型字段字符长度总和超过阈值",
+			Annotation: "使用过长或者过多的varchar，char字段可能会增加业务逻辑的复杂性；如果字段平均长度过大时，会占用更多的存储空间。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2000",
+					Desc:  "字符长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "禁止char, varchar类型字段字符长度总和超过阈值 %v",
+		Func:         checkCharLength,
 	},
 }
 
@@ -7947,6 +7968,63 @@ func avoidWhereEqualNull(input *RuleHandlerInput) error {
 func avoidEvent(input *RuleHandlerInput) error {
 	if util.IsEventSQL(input.Node.Text()) {
 		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func getCharLengthFromColumn(col *ast.ColumnDef) int {
+	charLength := 0
+	switch col.Tp.Tp {
+	case mysql.TypeString:
+		// charset为binary，字段类型为binary
+		if col.Tp.Charset != "binary" {
+			charLength = col.Tp.Flen
+		}
+	case mysql.TypeVarchar:
+		// charset为binary，字段类型为varbinary
+		if col.Tp.Charset != "binary" {
+			charLength = col.Tp.Flen
+		}
+	}
+	return charLength
+}
+
+func checkCharLength(input *RuleHandlerInput) error {
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	charLength := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			charLength += getCharLengthFromColumn(col)
+		}
+	case *ast.AlterTableStmt:
+		if originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table); err == nil && exist {
+			modifyColMap := make(map[string]struct{})
+			for _, col := range stmt.Specs {
+				if col.Tp == ast.AlterTableAddColumns {
+					for _, newColumn := range col.NewColumns {
+						charLength += getCharLengthFromColumn(newColumn)
+					}
+				} else if col.Tp == ast.AlterTableModifyColumn {
+					for _, modifyCol := range col.NewColumns {
+						modifyColMap[modifyCol.Name.Name.O] = struct{}{}
+						charLength += getCharLengthFromColumn(modifyCol)
+					}
+				}
+			}
+			if charLength > 0 {
+				for _, col := range originTable.Cols {
+					// 获取建表语句char总和时，排除modify字段
+					if _, ok := modifyColMap[col.Name.Name.O]; ok {
+						continue
+					}
+					charLength += getCharLengthFromColumn(col)
+				}
+			}
+		}
+	}
+	if charLength > max {
+		addResult(input.Res, input.Rule, input.Rule.Name, max)
 	}
 	return nil
 }
