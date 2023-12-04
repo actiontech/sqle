@@ -50,8 +50,6 @@ type AuditPlanSQLV2 struct {
 	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
-	// 可能是URL或IP地址等
-	Endpoint string `json:"endpoint" gorm:"type:varchar(512)"`
 }
 
 type BlackListAuditPlanSQL struct {
