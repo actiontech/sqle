@@ -290,6 +290,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+		// sql managers
+		v2ProjectRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
 
 	}
 

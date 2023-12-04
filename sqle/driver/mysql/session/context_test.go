@@ -1,9 +1,10 @@
 package session
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"unicode"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_LoadSchemaLowerCaseTableNamesOpen(t *testing.T) {
@@ -26,7 +27,7 @@ func Test_LoadSchemaLowerCaseTableNamesOpen(t *testing.T) {
 func Test_LoadTablesLowerCaseTableNamesOpen(t *testing.T) {
 	context := &Context{
 		schemas: map[string]*SchemaInfo{
-			"exist_db": &SchemaInfo{},
+			"exist_db": {},
 		},
 		schemaHasLoad: true,
 		sysVars: map[string]string{
