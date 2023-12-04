@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
@@ -98,8 +100,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, nil
 	}
 
-	if len(row) != 1 {
-		return 0, fmt.Errorf("affected row sql(%v) result row count(%v) is not 1", affectRowSql, len(row))
+	if len(row) < 1 {
+		return 0, fmt.Errorf("affected row sql(%v) result row count(%v) less than 1", affectRowSql, len(row))
 	}
 
 	affectCount, err := strconv.ParseInt(row[0][0].String, 10, 64)
@@ -238,4 +240,28 @@ func KillProcess(ctx context.Context, killSQL string, killConn *executor.Executo
 	}
 	logEntry.Infof("exec sql(%v) successfully", killSQL)
 	return nil
+}
+
+func IsGeometryColumn(col *ast.ColumnDef) bool {
+	switch col.Tp.Tp {
+	case mysql.TypeGeometry, mysql.TypePoint, mysql.TypeLineString, mysql.TypePolygon,
+		mysql.TypeMultiPoint, mysql.TypeMultiLineString, mysql.TypeMultiPolygon, mysql.TypeGeometryCollection:
+		return true
+	}
+	return false
+}
+
+// TODO: 暂时使用正则表达式匹配event，后续会修改语法树进行匹配event
+func IsEventSQL(sql string) bool {
+	createPattern := `^CREATE\s+(DEFINER\s?=.+?)?EVENT`
+	createRe := regexp.MustCompile(createPattern)
+	alterPattern := `^ALTER\s+(DEFINER\s?=.+?)?EVENT`
+	alterRe := regexp.MustCompile(alterPattern)
+
+	sql = strings.ToUpper(strings.TrimSpace(sql))
+	if createRe.MatchString(sql) {
+		return true
+	} else {
+		return alterRe.MatchString(sql)
+	}
 }

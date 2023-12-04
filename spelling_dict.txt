@@ -444,3 +444,9 @@ xxx
 sprintln
 sessionctx
 stmtctx
+linestring
+multipoint
+multilinestring
+multipolygon
+geometrycollection
+charlength
