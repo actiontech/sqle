@@ -620,8 +620,10 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 			status = SQLAuditRecordStatusSuccessfully
 		}
 		var tags []string
-		if err := json.Unmarshal([]byte(record.Tags.String), &tags); err != nil {
-			log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+		if record.Tags.Valid {
+			if err := json.Unmarshal([]byte(record.Tags.String), &tags); err != nil {
+				log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+			}
 		}
 
 		resData[i] = SQLAuditRecord{

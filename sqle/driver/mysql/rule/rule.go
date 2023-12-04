@@ -118,6 +118,10 @@ const (
 	DDLCheckTableRows                                  = "ddl_check_table_rows"
 	DDLCheckCompositeIndexDistinction                  = "ddl_check_composite_index_distinction"
 	DDLAvoidText                                       = "ddl_avoid_text"
+	DDLAvoidFullText                                   = "ddl_avoid_full_text"
+	DDLAvoidGeometry                                   = "ddl_avoid_geometry"
+	DDLAvoidEvent                                      = "ddl_avoid_event"
+	DDLCheckCharLength                                 = "ddl_check_char_length"
 )
 
 // inspector DML rules
@@ -192,6 +196,8 @@ const (
 	DMLCheckMathComputationOrFuncOnIndex      = "dml_check_math_computation_or_func_on_index"
 	DMLCheckJoinFieldUseIndex                 = "dml_check_join_field_use_index"
 	DMLCheckJoinFieldCharacterSetAndCollation = "dml_check_join_field_character_set_Collation"
+	DMLSQLExplainLowestLevel                  = "dml_sql_explain_lowest_level"
+	DMLAvoidWhereEqualNull                    = "dml_avoid_where_equal_null"
 )
 
 // inspector config code
@@ -1483,8 +1489,8 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name: DMLCheckExplainAccessTypeAll,
 			//Value:    "10000",
-			Desc:       "查询的扫描不建议超过指定行数（默认值：10000）",
-			Annotation: "查询的扫描行数多大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：10000",
+			Desc:       "全表扫描时，扫描行数不建议超过指定行数（默认值：10000）",
+			Annotation: "全表扫描时，扫描行数不建议超过指定行数是为了避免性能问题；具体规则阈值可以根据业务需求调整，默认值：10000；如果设置为0，全表扫描都会触发规则",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   RuleTypeDMLConvention,
 			Params: params.Params{
@@ -1496,7 +1502,7 @@ var RuleHandlers = []RuleHandler{
 				},
 			},
 		},
-		Message:      "该查询的扫描行数为%v",
+		Message:      "该查询使用了全表扫描并且扫描行数为%v",
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
@@ -2329,6 +2335,94 @@ var RuleHandlers = []RuleHandler{
 		Message:      "禁止对索引列进行数学运算和使用函数",
 		Func:         checkMathComputationOrFuncOnIndex,
 	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLSQLExplainLowestLevel,
+			Desc:       "SQL执行计划中type字段建议满足规定的级别",
+			Annotation: "验证 SQL 执行计划中的 type 字段，确保满足要求级别，以保证查询性能。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "range,ref,const,eq_ref,system,NULL",
+					Desc:  "查询计划type等级，以英文逗号隔开",
+					Type:  params.ParamTypeString,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
+		Func:         checkSQLExplainLowestLevel,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidFullText,
+			Desc:       "禁止使用全文索引",
+			Annotation: "全文索引的使用会增加存储开销，并对写操作性能产生一定影响。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用全文索引",
+		Func:         avoidFullText,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidGeometry,
+			Desc:       "禁止使用空间字段和空间索引",
+			Annotation: "使用空间字段和空间索引会增加存储需求，对数据库性能造成一定影响",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用空间字段和空间索引",
+		Func:         avoidGeometry,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLAvoidWhereEqualNull,
+			Desc:       "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
+			Annotation: "NULL在SQL中属于特殊值，无法与普通值进行比较。例如：column = NULL恒为false，即使column存在null值也不会查询出来，所以column = NULL应该写为column is NULL",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		AllowOffline: true,
+		Message:      "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
+		Func:         avoidWhereEqualNull,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLAvoidEvent,
+			Desc:       "禁止使用event",
+			Annotation: "使用event会增加数据库的维护难度和依赖性，并且也会造成安全问题。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用event",
+		Func:         avoidEvent,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckCharLength,
+			Desc:       "禁止char, varchar类型字段字符长度总和超过阈值",
+			Annotation: "使用过长或者过多的varchar，char字段可能会增加业务逻辑的复杂性；如果字段平均长度过大时，会占用更多的存储空间。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeUsageSuggestion,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "2000",
+					Desc:  "字符长度",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: false,
+		Message:      "禁止char, varchar类型字段字符长度总和超过阈值 %v",
+		Func:         checkCharLength,
+	},
 }
 
 func checkMathComputationOrFuncOnIndex(input *RuleHandlerInput) error {
@@ -2596,36 +2690,9 @@ func checkJoinFieldType(input *RuleHandlerInput) error {
 }
 
 func checkHasJoinCondition(input *RuleHandlerInput) error {
-	var joinNode *ast.Join
-	var whereStmt ast.ExprNode
-
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			return nil
-		}
-		joinNode = stmt.From.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	case *ast.UpdateStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		joinNode = stmt.TableRefs.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	case *ast.DeleteStmt:
-		if stmt.TableRefs == nil {
-			return nil
-		}
-		joinNode = stmt.TableRefs.TableRefs
-		if stmt.Where != nil {
-			whereStmt = stmt.Where
-		}
-	default:
-		// 不检查JOIN不会存在的语句
+	joinNode := getJoinNodeFromNode(input.Node)
+	whereStmt := getWhereExpr(input.Node)
+	if joinNode == nil {
 		return nil
 	}
 	joinTables, hasCondition := checkJoinConditionInJoinNode(input.Ctx, whereStmt, joinNode)
@@ -2636,7 +2703,7 @@ func checkHasJoinCondition(input *RuleHandlerInput) error {
 }
 
 func doesNotJoinTables(tableRefs *ast.Join) bool {
-	return tableRefs.Left == nil || tableRefs.Right == nil
+	return tableRefs == nil || tableRefs.Left == nil || tableRefs.Right == nil
 }
 
 func checkJoinConditionInJoinNode(ctx *session.Context, whereStmt ast.ExprNode, joinNode *ast.Join) (joinTables, hasCondition bool) {
@@ -2758,13 +2825,14 @@ func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, 
 	return tableNameCreateTableStmtMap
 }
 
-func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string]*ast.CreateTableStmt {
+func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
 	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
 	tableSources := util.GetTableSources(joinStmt)
 	for _, tableSource := range tableSources {
 		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
 			tableName := tableNameStmt.Name.L
 			if tableSource.AsName.L != "" {
+				// 如果使用别名，则需要用别名引用
 				tableName = tableSource.AsName.L
 			}
 
@@ -6990,22 +7058,28 @@ func checkCompositeIndexSelectivity(input *RuleHandlerInput) error {
 		return nil
 	}
 
+	l := log.NewEntry()
 	noticeInfos := []string{}
 	for _, singleIndexSlice := range indexSlices {
 		var indexSelectValueSlice []struct {
 			Index string
-			Value int
+			Value float64
 		}
 		sortIndexes := make([]string, len(singleIndexSlice))
+		colSelectivityMap, err := input.Ctx.GetSelectivityOfColumns(table, singleIndexSlice)
+		if err != nil {
+			l.Errorf("get columns selectivity error: %v", err)
+			return nil
+		}
 		for _, indexColumn := range singleIndexSlice {
-			columnCardinality, err := input.Ctx.GetColumnCardinality(table, indexColumn)
-			if err != nil {
-				return err
+			selectivityValue, ok := colSelectivityMap[indexColumn]
+			if !ok {
+				l.Errorf("do not get column selectivity, column: %v", indexColumn)
+				return nil
 			}
-			selectivityValue := columnCardinality
 			indexSelectValueSlice = append(indexSelectValueSlice, struct {
 				Index string
-				Value int
+				Value float64
 			}{indexColumn, selectivityValue})
 		}
 		sort.Slice(indexSelectValueSlice, func(i, j int) bool {
@@ -7412,57 +7486,248 @@ func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) 
 	return true
 }
 
-func judgeColumnIsIndex(columnNameExpr *ast.ColumnNameExpr, columnNames []*ast.ColumnName) bool {
-	for _, column := range columnNames {
-		if column.Name.L == columnNameExpr.Name.Name.L {
+/*
+checkJoinFieldUseIndex 判断Join语句中被驱动表中作为连接条件的列是否属于索引
+
+	触发条件：
+		A. CrossJoin和RightJoin (选择驱动表的情况复杂：随着数据变化而变化，因此都判断)
+			1. 分别判断ON USING WHERE中的连接条件是否有索引
+		B. LeftJoin (选择驱动表的情况固定：Join右侧的表为被驱动表)
+			1. ON和USING，判断LeftJoin的被驱动表 (右侧的表) 的连接条件是否有索引
+			2. 判断WHERE中的连接条件是否有索引
+	连接条件：等值条件两侧为不同表的列
+	支持情况：
+		支持：
+			1. 多表JOIN
+			2. 判断单列索引和复合索引
+		不支持：
+			1. 子查询中JOIN多表的判断
+*/
+func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
+
+	joinNode := getJoinNodeFromNode(input.Node)
+	if doesNotJoinTables(joinNode) {
+		// 如果SQL没有JOIN多表，则不需要审核
+		return nil
+	}
+	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(input.Ctx, joinNode)
+	tableIndexes := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
+	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
+		tableIndexes[tableName] = createTableStmt.Constraints
+	}
+
+	if joinNodes, hasIndex := joinConditionInJoinNodeHasIndex(input.Ctx, joinNode, tableIndexes); joinNodes && !hasIndex {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	}
+
+	whereStmt := getWhereStmtFromNode(input.Node)
+	if joinNodes, hasIndex := joinConditionInWhereStmtHasIndex(input.Ctx, joinNode, whereStmt, tableIndexes); joinNodes && !hasIndex {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+		return nil
+	}
+	return nil
+}
+
+func joinConditionInWhereStmtHasIndex(ctx *session.Context, joinNode *ast.Join, whereStmt ast.ExprNode, tableIndex map[string][]*ast.Constraint) (joinTables, hasIndex bool) {
+	if doesNotJoinTables(joinNode) {
+		return false, false
+	}
+	if whereStmt == nil {
+		return false, false
+	}
+
+	visitor := util.EqualConditionVisitor{}
+	whereStmt.Accept(&visitor)
+	tableColumnMap := make(tableColumnMap)
+	for _, condition := range visitor.ConditionList {
+		tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+		tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
+	}
+	for tableName, columnMap := range tableColumnMap {
+		if constraints, ok := tableIndex[tableName]; ok {
+			if !IsIndex(columnMap, constraints) {
+				return true, false
+			}
+		}
+	}
+
+	return true, true
+}
+
+func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, tableIndex map[string] /*table name or alias name*/ []*ast.Constraint) (joinTables, hasIndex bool) {
+	if doesNotJoinTables(joinNode) {
+		return false, false
+	}
+	// 深度遍历左子树类型为ast.Join的节点
+	if l, ok := joinNode.Left.(*ast.Join); ok {
+		joinTables, hasIndex = joinConditionInJoinNodeHasIndex(ctx, l, tableIndex)
+		if joinTables && !hasIndex {
+			return joinTables, hasIndex
+		}
+	}
+
+	tableColumnMap := make(tableColumnMap)
+
+	if isJoinConditionInOnClause(joinNode) {
+		visitor := util.EqualConditionVisitor{}
+		joinNode.On.Accept(&visitor)
+		for _, condition := range visitor.ConditionList {
+			tableColumnMap.add(condition.Left.Table.L, condition.Left.Name.L)
+			tableColumnMap.add(condition.Right.Table.L, condition.Right.Name.L)
+		}
+	}
+
+	if isJoinConditionInUsingClause(joinNode) {
+		leftTableSource, rightTableSource := getTableSourcesBesideJoin(joinNode)
+		if leftTableSource != nil {
+			tableName := getTableName(leftTableSource)
+			for _, columnName := range joinNode.Using {
+				tableColumnMap.add(tableName, columnName.Name.L)
+			}
+		}
+		if rightTableSource != nil {
+			tableName := getTableName(rightTableSource)
+			for _, columnName := range joinNode.Using {
+				tableColumnMap.add(tableName, columnName.Name.L)
+			}
+		}
+	}
+
+	for tableName, columnMap := range tableColumnMap {
+		if constraints, ok := tableIndex[tableName]; ok {
+			if !IsIndex(columnMap, constraints) {
+				return true, false
+			}
+		}
+	}
+	return true, true
+}
+
+type tableColumnMap map[string] /*table name or alias name*/ map[string] /*column name*/ struct{}
+
+func (m tableColumnMap) add(tableName, columnName string) {
+	if m[tableName] == nil {
+		m[tableName] = make(map[string]struct{})
+	}
+	m[tableName][columnName] = struct{}{}
+}
+
+/*
+IsIndex
+
+	判断单列或多列是否属于索引切片中的索引：
+		1. 单列：满足单列索引或多列索引的第一列，则返回true
+		2. 多列：满足N列是M列索引的前N列（M>=N），则返回true
+		3. 否则返回false
+*/
+func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.Constraint) bool {
+	for _, constraint := range constraints {
+		if len(columnMap) > len(constraint.Keys) {
+			// 若符合索引的列数小于关联列的列数 一定不满足多列索引
+			continue
+		}
+		var matchCount int
+		for _, key := range constraint.Keys {
+			if _, ok := columnMap[key.Column.Name.L]; ok {
+				matchCount++
+			} else {
+				break
+			}
+		}
+		if matchCount == len(columnMap) {
 			return true
 		}
 	}
 	return false
 }
 
-func checkJoinFieldUseIndex(input *RuleHandlerInput) error {
-	tableNameCreateTableStmtMap, onConditions := getCreateTableAndOnCondition(input)
-	if tableNameCreateTableStmtMap == nil || onConditions == nil {
+/*
+示例SQL:
+
+	select * from a join b join c join d;
+						   ↑
+	如果*ast.Join节点是↑所指的join，拿到的是b和c两张表的tableSource
+
+	select * from a join b join c join d;
+								  ↑
+	如果*ast.Join节点是↑所指的join，拿到的是c和d两张表的tableSource
+
+	SQL: select * from a join(1) b join(2) c join(3) d;中join的抽象语法树如下:
+
+		 join(3)
+		 /     \
+	   join(2)  d
+	   /     \
+	 join(1)  c
+	 /    \
+	a      b
+*/
+func getTableSourcesBesideJoin(joinNode *ast.Join) (left *ast.TableSource, right *ast.TableSource) {
+	if tableSource, ok := joinNode.Right.(*ast.TableSource); ok {
+		right = tableSource
+	}
+	if tableSource, ok := joinNode.Left.(*ast.TableSource); ok {
+		left = tableSource
+	}
+	if join, ok := joinNode.Left.(*ast.Join); ok {
+		if tableSource, ok := join.Right.(*ast.TableSource); ok {
+			left = tableSource
+		}
+	}
+	return
+}
+
+func getTableName(tableSource *ast.TableSource) string {
+	if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+		if tableSource.AsName.L != "" {
+			// 如果使用了别名，就应该用别名来引用列
+			return tableSource.AsName.L
+		}
+		return tableNameStmt.Name.L
+	}
+	return ""
+}
+
+func getJoinNodeFromNode(node ast.Node) *ast.Join {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		return stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	default:
 		return nil
 	}
-	tableNameIndexMap := make(map[string][]*ast.ColumnName)
+}
 
-	for table, createTableStmt := range tableNameCreateTableStmtMap {
-		indexes := []*ast.ColumnName{}
-		for _, constraint := range createTableStmt.Constraints {
-			// 联合索引只取第一个字段
-			if len(constraint.Keys) > 0 {
-				indexes = append(indexes, constraint.Keys[0].Column)
-			}
+func getWhereStmtFromNode(node ast.Node) ast.ExprNode {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-		tableNameIndexMap[table] = indexes
-	}
-	for _, onCondition := range onConditions {
-		var isUseIndex bool
-		binaryOperation, ok := onCondition.Expr.(*ast.BinaryOperationExpr)
-		if !ok {
-			continue
+	case *ast.UpdateStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-		if columnNameExpr, ok := binaryOperation.L.(*ast.ColumnNameExpr); ok {
-			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-				if !isUseIndex {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
-			}
+	case *ast.DeleteStmt:
+		if stmt.Where != nil {
+			return stmt.Where
 		}
-
-		if columnNameExpr, ok := binaryOperation.R.(*ast.ColumnNameExpr); ok {
-			if columnNames, ok := tableNameIndexMap[columnNameExpr.Name.Table.L]; ok {
-				isUseIndex = judgeColumnIsIndex(columnNameExpr, columnNames)
-				if !isUseIndex {
-					addResult(input.Res, input.Rule, input.Rule.Name)
-					return nil
-				}
-			}
-		}
+	default:
+		// 不检查JOIN不会存在的语句
+		return nil
 	}
 	return nil
 }
@@ -7572,5 +7837,194 @@ func checkJoinFieldCharacterSetAndCollation(input *RuleHandlerInput) error {
 
 	}
 
+	return nil
+}
+
+func checkSQLExplainLowestLevel(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SelectStmt, *ast.DeleteStmt, *ast.UpdateStmt:
+	default:
+		return nil
+	}
+
+	levelStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
+	splitStr := strings.Split(levelStr, ",")
+	levelMap := make(map[string]struct{})
+	for _, s := range splitStr {
+		s = strings.ToLower(strings.TrimSpace(s))
+		levelMap[s] = struct{}{}
+	}
+
+	epRecords, err := input.Ctx.GetExecutionPlan(input.Node.Text())
+	if err != nil {
+		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", input.Node.Text(), err)
+		return nil
+	}
+	for _, record := range epRecords {
+		explainType := strings.ToLower(record.Type)
+		if _, ok := levelMap[explainType]; !ok {
+			addResult(input.Res, input.Rule, DMLSQLExplainLowestLevel, levelStr)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidFullText(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintFulltext:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
+			switch spec.Constraint.Tp {
+			case ast.ConstraintFulltext:
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeFullText:
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidGeometry(input *RuleHandlerInput) error {
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			if util.IsGeometryColumn(col) {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint, ast.AlterTableAddColumns) {
+			if spec.Constraint == nil {
+				for _, newColumn := range spec.NewColumns {
+					if util.IsGeometryColumn(newColumn) {
+						addResult(input.Res, input.Rule, input.Rule.Name)
+						return nil
+					}
+				}
+			} else {
+				switch spec.Constraint.Tp {
+				case ast.ConstraintSpatial:
+					addResult(input.Res, input.Rule, input.Rule.Name)
+					return nil
+				}
+			}
+		}
+	case *ast.CreateIndexStmt:
+		switch stmt.KeyType {
+		case ast.IndexKeyTypeSpatial:
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			return nil
+		}
+	}
+	return nil
+}
+
+func avoidWhereEqualNull(input *RuleHandlerInput) error {
+	dmlNode, ok := input.Node.(ast.DMLNode)
+	if !ok {
+		return nil
+	}
+
+	whereVisitor := &util.WhereVisitor{}
+	dmlNode.Accept(whereVisitor)
+	for _, whereExpr := range whereVisitor.WhereList {
+		util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+			switch stmt := expr.(type) {
+			case *ast.BinaryOperationExpr:
+				for _, binExpr := range []ast.ExprNode{stmt.L, stmt.R} {
+					value, ok := binExpr.(*parserdriver.ValueExpr)
+					if ok {
+						if value.Type.Tp == mysql.TypeNull {
+							switch stmt.Op {
+							case opcode.GE, opcode.LE, opcode.EQ, opcode.NE, opcode.LT, opcode.GT:
+								addResult(input.Res, input.Rule, input.Rule.Name)
+								return true
+							}
+						}
+					}
+				}
+			}
+			return false
+		}, whereExpr)
+	}
+	return nil
+}
+
+func avoidEvent(input *RuleHandlerInput) error {
+	if util.IsEventSQL(input.Node.Text()) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
+	}
+	return nil
+}
+
+func getCharLengthFromColumn(col *ast.ColumnDef) int {
+	charLength := 0
+	switch col.Tp.Tp {
+	case mysql.TypeString:
+		// charset为binary，字段类型为binary
+		if col.Tp.Charset != "binary" {
+			charLength = col.Tp.Flen
+		}
+	case mysql.TypeVarchar:
+		// charset为binary，字段类型为varbinary
+		if col.Tp.Charset != "binary" {
+			charLength = col.Tp.Flen
+		}
+	}
+	return charLength
+}
+
+func checkCharLength(input *RuleHandlerInput) error {
+	max := input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	charLength := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, col := range stmt.Cols {
+			charLength += getCharLengthFromColumn(col)
+		}
+	case *ast.AlterTableStmt:
+		if originTable, exist, err := input.Ctx.GetCreateTableStmt(stmt.Table); err == nil && exist {
+			modifyColMap := make(map[string]struct{})
+			for _, col := range stmt.Specs {
+				if col.Tp == ast.AlterTableAddColumns {
+					for _, newColumn := range col.NewColumns {
+						charLength += getCharLengthFromColumn(newColumn)
+					}
+				} else if col.Tp == ast.AlterTableModifyColumn {
+					for _, modifyCol := range col.NewColumns {
+						modifyColMap[modifyCol.Name.Name.O] = struct{}{}
+						charLength += getCharLengthFromColumn(modifyCol)
+					}
+				}
+			}
+			if charLength > 0 {
+				for _, col := range originTable.Cols {
+					// 获取建表语句char总和时，排除modify字段
+					if _, ok := modifyColMap[col.Name.Name.O]; ok {
+						continue
+					}
+					charLength += getCharLengthFromColumn(col)
+				}
+			}
+		}
+	}
+	if charLength > max {
+		addResult(input.Res, input.Rule, input.Rule.Name, max)
+	}
 	return nil
 }
