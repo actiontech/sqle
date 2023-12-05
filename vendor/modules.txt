@@ -1,22 +1,6 @@
 # dario.cat/mergo v1.0.0
 ## explicit; go 1.13
 dario.cat/mergo
-# github.com/99designs/gqlgen v0.17.20
-## explicit; go 1.16
-github.com/99designs/gqlgen/api
-github.com/99designs/gqlgen/codegen
-github.com/99designs/gqlgen/codegen/config
-github.com/99designs/gqlgen/codegen/templates
-github.com/99designs/gqlgen/graphql
-github.com/99designs/gqlgen/graphql/introspection
-github.com/99designs/gqlgen/internal/code
-github.com/99designs/gqlgen/internal/imports
-github.com/99designs/gqlgen/internal/rewrite
-github.com/99designs/gqlgen/plugin
-github.com/99designs/gqlgen/plugin/federation
-github.com/99designs/gqlgen/plugin/federation/fieldset
-github.com/99designs/gqlgen/plugin/modelgen
-github.com/99designs/gqlgen/plugin/resolvergen
 # github.com/DATA-DOG/go-sqlmock v1.5.0
 ## explicit
 github.com/DATA-DOG/go-sqlmock
@@ -79,7 +63,7 @@ github.com/actiontech/dms/pkg/dms-common/register
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
 github.com/actiontech/java-sql-extractor/parser
-# github.com/actiontech/mybatis-mapper-2-sql v0.4.0
+# github.com/actiontech/mybatis-mapper-2-sql v0.5.0
 ## explicit; go 1.14
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
@@ -87,9 +71,6 @@ github.com/actiontech/mybatis-mapper-2-sql/sqlfmt
 # github.com/agiledragon/gomonkey v2.0.2+incompatible
 ## explicit
 github.com/agiledragon/gomonkey
-# github.com/agnivade/levenshtein v1.1.1
-## explicit; go 1.13
-github.com/agnivade/levenshtein
 # github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 ## explicit
 github.com/alecthomas/template
@@ -664,15 +645,6 @@ github.com/valyala/bytebufferpool
 # github.com/valyala/fasttemplate v1.2.2
 ## explicit; go 1.12
 github.com/valyala/fasttemplate
-# github.com/vektah/gqlparser/v2 v2.5.1
-## explicit; go 1.16
-github.com/vektah/gqlparser/v2
-github.com/vektah/gqlparser/v2/ast
-github.com/vektah/gqlparser/v2/gqlerror
-github.com/vektah/gqlparser/v2/lexer
-github.com/vektah/gqlparser/v2/parser
-github.com/vektah/gqlparser/v2/validator
-github.com/vektah/gqlparser/v2/validator/rules
 # github.com/xanzy/ssh-agent v0.3.3
 ## explicit; go 1.16
 github.com/xanzy/ssh-agent
@@ -730,8 +702,6 @@ golang.org/x/exp/constraints
 golang.org/x/exp/slices
 # golang.org/x/mod v0.12.0
 ## explicit; go 1.17
-golang.org/x/mod/internal/lazyregexp
-golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.15.0
 ## explicit; go 1.17
@@ -795,17 +765,13 @@ golang.org/x/tools/go/internal/packagesdriver
 golang.org/x/tools/go/loader
 golang.org/x/tools/go/packages
 golang.org/x/tools/go/types/objectpath
-golang.org/x/tools/imports
 golang.org/x/tools/internal/event
 golang.org/x/tools/internal/event/core
 golang.org/x/tools/internal/event/keys
 golang.org/x/tools/internal/event/label
 golang.org/x/tools/internal/event/tag
-golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gcimporter
 golang.org/x/tools/internal/gocommand
-golang.org/x/tools/internal/gopathwalk
-golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/packagesinternal
 golang.org/x/tools/internal/pkgbits
 golang.org/x/tools/internal/tokeninternal
