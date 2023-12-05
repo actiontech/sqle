@@ -7652,12 +7652,6 @@ func (m tableColumnMap) add(tableName, columnName string) {
 	m[tableName][columnName] = struct{}{}
 }
 
-func (m tableColumnMap) initMap(tables []*ast.TableSource) {
-	for _, t := range tables {
-		println(t)
-	}
-}
-
 /*
 IsIndex
 
