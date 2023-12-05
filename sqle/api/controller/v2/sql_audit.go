@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"bytes"
 	e "errors"
 	"fmt"
 	"net/http"
@@ -151,11 +152,20 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == v1.SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, false)
+		data := make([]parser.XmlFile, len(req.FileContents))
+		for i, content := range req.FileContents {
+			data[i] = parser.XmlFile{Content: content}
+		}
+		sqlsInfo, err := parser.ParseXMLs(data, false)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		sqls = strings.Join(ss, ";")
+		buf := bytes.Buffer{}
+		for _, info := range sqlsInfo {
+			buf.WriteString(info.SQL)
+			buf.WriteString(";")
+		}
+		sqls = strings.TrimSuffix(buf.String(), ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
