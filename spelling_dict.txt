@@ -50,6 +50,7 @@ errorf
 errorln
 exprs
 facebookgo
+falsef
 fatale
 fatalf
 fatalln
@@ -227,6 +228,7 @@ tinyint
 tinytext
 todo
 tracef
+truef
 typecheck
 unary
 ungerik
