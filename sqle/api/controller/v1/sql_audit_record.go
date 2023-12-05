@@ -460,6 +460,13 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, fmt.Errorf("sql audit record id %v not exist", auditRecordId)))
 	}
+	instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		record.Task.Instance = instance
+	}
 
 	if req.Tags != nil {
 		up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
