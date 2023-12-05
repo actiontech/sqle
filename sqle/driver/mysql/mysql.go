@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
-	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
+
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -360,24 +360,20 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 	}
 
-	if i.cnf.optimizeIndexEnabled && index.CanOptimize(i.log, i.Ctx, nodes[0]) {
-		optimizer := index.NewOptimizer(
-			i.log, i.Ctx,
-			index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
-			index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn),
+	if i.cnf.optimizeIndexEnabled {
+		optimizer := NewIndexOptimizer(
+			i.log, i.Ctx, nodes[0],
+			WithMaxColumn(i.cnf.compositeIndexMaxColumn), //i.cnf.compositeIndexMaxColumn
 		)
-
-		advices, err := optimizer.Optimize(ctx, nodes[0].(*ast.SelectStmt))
-		if err != nil {
-			// ignore error, source: https://github.com/actiontech/sqle/issues/416
-			i.log.Errorf("optimize sqle failed: %v", err)
+		results := optimizer.Optimize()
+		for _, advice := range results {
+			i.result.Add(
+				driverV2.RuleLevelNotice,
+				rulepkg.ConfigOptimizeIndexEnabled,
+				fmt.Sprintf("%s，建议从表%s中选取合适的列添加索引，参考列：%s \n", advice.Reason, advice.TableName, strings.Join(advice.IndexedColumns, "、")),
+			)
 		}
 
-		var buf strings.Builder
-		for _, advice := range advices {
-			buf.WriteString(fmt.Sprintf("建议从表 %s 的以下列中 [%s] 选取合适的列添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
-		}
-		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigOptimizeIndexEnabled, buf.String())
 	}
 
 	// dry run gh-ost
