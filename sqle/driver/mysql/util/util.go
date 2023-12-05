@@ -265,3 +265,16 @@ func IsEventSQL(sql string) bool {
 		return alterRe.MatchString(sql)
 	}
 }
+
+func GetTableNameFromTableSource(tableSource *ast.TableSource) string {
+	if tableSource == nil {
+		return ""
+	}
+	if tableSource.AsName.L != "" {
+		return tableSource.AsName.L
+	}
+	if tableName, ok := tableSource.Source.(*ast.TableName); ok {
+		return tableName.Name.L
+	}
+	return ""
+}
