@@ -300,7 +300,7 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 		return nil, false, err
 	}
 
-	var xmlContents []xmlParser.XmlFiles
+	var xmlContents []xmlParser.XmlFile
 	for i := range r.File {
 		srcFile := r.File[i]
 		if srcFile == nil {
@@ -320,7 +320,7 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 		}
 
 		if strings.HasSuffix(srcFile.Name, ".xml") {
-			xmlContents = append(xmlContents, xmlParser.XmlFiles{
+			xmlContents = append(xmlContents, xmlParser.XmlFile{
 				FilePath: srcFile.Name,
 				Content:  string(content),
 			})
@@ -345,18 +345,19 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 	return sqls, true, nil
 }
 
-func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFiles) ([]SQLsFromFile, error) {
-	getSQLsByFilePath := func(filePath string, stmtsInfo []xmlAst.StmtsInfo) []string {
-		for _, info := range stmtsInfo {
-			if info.FilePath != filePath {
-				continue
-			}
-			return info.SQLs
+func getSQLsByFilePath(filePath string, stmtsInfo []xmlAst.StmtInfo) []string {
+	sqls := []string{}
+	for _, info := range stmtsInfo {
+		if info.FilePath != filePath {
+			continue
 		}
-		return nil
+		sqls = append(sqls, info.SQL)
 	}
+	return sqls
+}
 
-	allStmtsFromXml, err := xmlParser.ParseXMLsWithFilePath(xmlContents, false)
+func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLsFromFile, error) {
+	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, false)
 	if err != nil {
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
@@ -418,7 +419,7 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 		return nil, false, err
 	}
 	l := log.NewEntry().WithField("function", "getSqlsFromGit")
-	var xmlContents []xmlParser.XmlFiles
+	var xmlContents []xmlParser.XmlFile
 	// traverse the repository, parse and put SQL into sqlBuffer
 	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		gitPath := strings.TrimPrefix(path, strings.TrimPrefix(dir, "./"))
@@ -432,7 +433,7 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
-				xmlContents = append(xmlContents, xmlParser.XmlFiles{
+				xmlContents = append(xmlContents, xmlParser.XmlFile{
 					FilePath: gitPath,
 					Content:  string(content),
 				})
