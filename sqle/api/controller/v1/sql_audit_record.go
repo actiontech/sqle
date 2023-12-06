@@ -22,7 +22,6 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -250,7 +249,6 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 		DBType:       dbType,
 	}
 	var err error
-	var nodes []driverV2.Node
 	plugin, err := common.NewDriverManagerWithoutCfg(log.NewEntry(), dbType)
 	if err != nil {
 		return nil, fmt.Errorf("open plugin failed: %v", err)
