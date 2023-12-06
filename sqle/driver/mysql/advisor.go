@@ -36,9 +36,9 @@ SELECT语句建议者
 */
 type selectAdvisorVisitor struct {
 	log                  *logrus.Entry
+	joinIndexAdvisor     CreateIndexAdvisor
 	threeStarAdvisor     CreateIndexAdvisor
 	extremalIndexAdvisor CreateIndexAdvisor
-	fromAdvisorVisitor
 	whereAdvisorVisitor
 	advices []*OptimizeResult
 }
@@ -52,11 +52,14 @@ func (a *selectAdvisorVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bo
 				a.advices = append(a.advices, advice)
 			}
 		}
+	case *ast.Join:
+		if a.joinIndexAdvisor != nil {
+			advice := a.joinIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
+			if advice != nil {
+				a.advices = append(a.advices, advice)
+			}
+		}
 	case *ast.SelectStmt:
-		// 检查From子句
-		currentNode.From.Accept(&a.fromAdvisorVisitor)
-		a.advices = append(a.advices, a.fromAdvisorVisitor.advices...)
-
 		if currentNode.Where != nil {
 			// 检查Where子句
 			currentNode.Where.Accept(&a.whereAdvisorVisitor)
@@ -75,35 +78,6 @@ func (a *selectAdvisorVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bo
 }
 
 func (v *selectAdvisorVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
-	return in, true
-}
-
-/*
-fromAdvisorVisitor
-
-	1 组合了基于JOIN子句的Advisor
-	2 遍历JOIN子句，使用具体的Advisor给出建议
-*/
-type fromAdvisorVisitor struct {
-	joinIndexAdvisor CreateIndexAdvisor
-	advices          []*OptimizeResult
-}
-
-func (visitor *fromAdvisorVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	var advice *OptimizeResult
-	switch currentNode := in.(type) {
-	case *ast.Join:
-		if visitor.joinIndexAdvisor != nil {
-			advice = visitor.joinIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
-			if advice != nil {
-				visitor.advices = append(visitor.advices, advice)
-			}
-		}
-	}
-	return in, false
-}
-
-func (v *fromAdvisorVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
 
@@ -237,7 +211,9 @@ func (a *threeStarAdvisor) GiveAdvice() *OptimizeResult {
 	}
 	a.sortColumnBySelectivity()
 	a.giveAdvice()
-
+	if util.IsIndex(a.columnHasAdded, a.drivingTableCreateStmt.Constraints) {
+		return nil
+	}
 	return &OptimizeResult{
 		TableName:      util.GetTableNameFromTableSource(a.drivingTableSource),
 		IndexedColumns: a.indexColumns(),
@@ -604,13 +580,15 @@ joinIndexAdvisor
 */
 type joinIndexAdvisor struct {
 	sqlContext        *session.Context
+	log               *logrus.Entry
 	currentNode       *ast.Join
 	drivenTableSource map[string] /*table name*/ *ast.TableSource
 }
 
-func newJoinAdvisor(ctx *session.Context, drivenTableSource map[string]*ast.TableSource) CreateIndexAdvisor {
+func newJoinAdvisor(ctx *session.Context, log *logrus.Entry, drivenTableSource map[string]*ast.TableSource) CreateIndexAdvisor {
 	return joinIndexAdvisor{
 		sqlContext:        ctx,
+		log:               log,
 		drivenTableSource: drivenTableSource,
 	}
 }
@@ -624,7 +602,7 @@ func (a joinIndexAdvisor) GiveAdvice() *OptimizeResult {
 	if a.currentNode == nil {
 		return nil
 	}
-	var indexColumn []string
+	indexColumnMap := make(columnMap)
 	drivenTableName := a.getDrivenTableName()
 	if drivenTableName == "" {
 		return nil
@@ -635,22 +613,45 @@ func (a joinIndexAdvisor) GiveAdvice() *OptimizeResult {
 		if ok {
 			leftName, ok := bo.L.(*ast.ColumnNameExpr)
 			if ok && leftName.Name.Table.L == drivenTableName {
-				indexColumn = append(indexColumn, leftName.Name.String())
+				indexColumnMap.add(&ast.ColumnNameExpr{Name: leftName.Name})
 			}
 			rightName, ok := bo.R.(*ast.ColumnNameExpr)
 			if ok && rightName.Name.Table.L == drivenTableName {
-				indexColumn = append(indexColumn, rightName.Name.String())
+				indexColumnMap.add(&ast.ColumnNameExpr{Name: rightName.Name})
 			}
 		}
 	}
 	if len(a.currentNode.Using) > 0 {
 		// https://dev.mysql.com/doc/refman/8.0/en/join.html
 		for _, column := range a.currentNode.Using {
-			indexColumn = append(indexColumn, fmt.Sprintf("%s.%s", drivenTableName, column.Name.L))
+			indexColumnMap.add(&ast.ColumnNameExpr{Name: column})
 		}
 	}
-	if len(indexColumn) == 0 {
+	if len(indexColumnMap) == 0 {
 		return nil
+	}
+
+	tableSource := a.drivenTableSource[drivenTableName]
+	tableName, ok := tableSource.Source.(*ast.TableName)
+	if !ok {
+		a.log.Warn("in join index advisor driven tableSource.Source is not ast.TableName")
+		return nil
+	}
+	createTable, exist, err := a.sqlContext.GetCreateTableStmt(tableName)
+	if err != nil {
+		a.log.Warnf("join index advisor get create table statement failed,err %v", err)
+		return nil
+	}
+	if !exist {
+		a.log.Warnf("join index advisor get create table statement failed,table not exist %s", drivenTableName)
+		return nil
+	}
+	if util.IsIndex(indexColumnMap, createTable.Constraints) {
+		return nil
+	}
+	indexColumn := make([]string, 0, len(indexColumnMap))
+	for column := range indexColumnMap {
+		indexColumn = append(indexColumn, column)
 	}
 	return &OptimizeResult{
 		TableName:      drivenTableName,
@@ -789,12 +790,16 @@ https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_max
 https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_min
 */
 type extremalIndexAdvisor struct {
-	currentNode        *ast.SelectField
-	drivingTableSource *ast.TableSource // 驱动表的TableSource
+	currentNode            *ast.SelectField
+	drivingTableCreateStmt *ast.CreateTableStmt // 驱动表的建表语句
+	drivingTableSource     *ast.TableSource     // 驱动表的TableSource
 }
 
-func newExtremalIndexAdvisor(drivingTableSource *ast.TableSource) CreateIndexAdvisor {
-	return &extremalIndexAdvisor{drivingTableSource: drivingTableSource}
+func newExtremalIndexAdvisor(drivingTableSource *ast.TableSource, drivingTableCreateStmt *ast.CreateTableStmt) CreateIndexAdvisor {
+	return &extremalIndexAdvisor{
+		drivingTableSource:     drivingTableSource,
+		drivingTableCreateStmt: drivingTableCreateStmt,
+	}
 }
 
 func (a *extremalIndexAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
@@ -828,6 +833,9 @@ func (a *extremalIndexAdvisor) GiveAdvice() *OptimizeResult {
 		tableName = column.Name.Table.L
 	} else {
 		tableName = util.GetTableNameFromTableSource(a.drivingTableSource)
+	}
+	if util.IsIndex(map[string]struct{}{indexColumn: {}}, a.drivingTableCreateStmt.Constraints) {
+		return nil
 	}
 	return &OptimizeResult{
 		TableName:      tableName,
