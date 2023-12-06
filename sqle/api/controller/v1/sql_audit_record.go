@@ -21,6 +21,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -175,6 +176,27 @@ type SQLsFromFile struct {
 	SQLs     string
 }
 
+func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin driver.Plugin) error {
+	var num uint = 1
+	for _, sqlsFromOneFile := range sqls.SQLs {
+		nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
+		if err != nil {
+			return fmt.Errorf("parse sqls failed: %v", err)
+		}
+		for _, node := range nodes {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:     num,
+					Content:    node.Text,
+					SourceFile: sqlsFromOneFile.FilePath,
+				},
+			})
+			num++
+		}
+	}
+	return nil
+}
+
 func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls getSQLFromFileResp) (*model.Task, error) {
 	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
@@ -197,7 +219,7 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, in
 	}
 	defer plugin.Close(context.TODO())
 
-	if err := plugin.Ping(context.TODO()); err != nil {
+	if err = plugin.Ping(context.TODO()); err != nil {
 		return nil, err
 	}
 
@@ -212,23 +234,9 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, in
 	}
 	createAt := time.Now()
 	task.CreatedAt = createAt
-
-	var num uint = 1
-	for _, sqlsFromOneFile := range sqls.SQLs {
-		nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:     num,
-					Content:    node.Text,
-					SourceFile: sqlsFromOneFile.FilePath,
-				},
-			})
-			num++
-		}
+	err = addSQLsFromFileToTasks(sqls, task, plugin)
+	if err != nil {
+		return nil, err
 	}
 
 	return task, nil
@@ -249,22 +257,9 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	}
 	defer plugin.Close(context.TODO())
 
-	var num uint = 1
-	for _, sqlsFromOneFile := range sqls.SQLs {
-		nodes, err = plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
-		if err != nil {
-			return nil, fmt.Errorf("parse sqls failed: %v", err)
-		}
-		for _, node := range nodes {
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:     num,
-					Content:    node.Text,
-					SourceFile: sqlsFromOneFile.FilePath,
-				},
-			})
-			num++
-		}
+	err = addSQLsFromFileToTasks(sqls, task, plugin)
+	if err != nil {
+		return nil, err
 	}
 
 	createAt := time.Now()
