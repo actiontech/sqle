@@ -69,7 +69,7 @@ func mockExtremalOptimizeResult(caseName string, c optimizerTestContent, t *test
 		func(optimizer *indexOptimizer) selectAdvisorVisitor {
 			return selectAdvisorVisitor{
 				log:                  optimizer.log,
-				extremalIndexAdvisor: newExtremalIndexAdvisor(optimizer.drivingTableSource),
+				extremalIndexAdvisor: newExtremalIndexAdvisor(optimizer.drivingTableSource, optimizer.drivingTableCreateStmt),
 				advices:              make([]*OptimizeResult, 0),
 			}
 		},
@@ -81,10 +81,11 @@ func mockJoinOptimizeResult(caseName string, c optimizerTestContent, t *testing.
 		func(optimizer *indexOptimizer) selectAdvisorVisitor {
 			return selectAdvisorVisitor{
 				log: optimizer.log,
-				fromAdvisorVisitor: fromAdvisorVisitor{
-					joinIndexAdvisor: newJoinAdvisor(optimizer.sqlContext, optimizer.drivenTableSources),
-					advices:          make([]*OptimizeResult, 0),
-				},
+				joinIndexAdvisor: newJoinAdvisor(
+					optimizer.sqlContext,
+					optimizer.log,
+					optimizer.drivenTableSources,
+				),
 				advices: make([]*OptimizeResult, 0),
 			}
 		},
@@ -397,15 +398,20 @@ func TestThreeStarOptimize(t *testing.T) {
 
 func TestExtremalOptimize(t *testing.T) {
 	testCases := make(optimizerTestCaseMap)
-	testCases["test1"] = optimizerTestContent{
-		sql: `SELECT v1,MAX(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v2`,
+	testCases["test1-v3v2都无索引"] = optimizerTestContent{
+		sql: `SELECT MIN(v3),MAX(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v2`,
 		queryResults: []*queryResult{
 			{
-				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1,MAX(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v2`)),
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT MIN(v3),MAX(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v2`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			},
 		},
 		expectResults: []*OptimizeResult{
+			{
+				Reason:         "索引建议 | SQL：MIN(`v3`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
+				IndexedColumns: []string{"v3"},
+				TableName:      "exist_tb_1",
+			},
 			{
 				Reason:         "索引建议 | SQL：MAX(`v2`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
 				IndexedColumns: []string{"v2"},
@@ -414,7 +420,7 @@ func TestExtremalOptimize(t *testing.T) {
 		},
 		maxColumn: 4,
 	}
-	testCases["test2"] = optimizerTestContent{
+	testCases["test2-v2无索引"] = optimizerTestContent{
 		sql: `SELECT v1,MIN(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`,
 		queryResults: []*queryResult{
 			{
@@ -431,7 +437,7 @@ func TestExtremalOptimize(t *testing.T) {
 		},
 		maxColumn: 4,
 	}
-	testCases["test3"] = optimizerTestContent{
+	testCases["test3-v1有索引v2无索引"] = optimizerTestContent{
 		sql: `SELECT MAX(v1),MIN(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`,
 		queryResults: []*queryResult{
 			{
@@ -441,11 +447,6 @@ func TestExtremalOptimize(t *testing.T) {
 		},
 		expectResults: []*OptimizeResult{
 			{
-				Reason:         "索引建议 | SQL：MAX(`v1`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
-				IndexedColumns: []string{"v1"},
-				TableName:      "exist_tb_1",
-			},
-			{
 				Reason:         "索引建议 | SQL：MIN(`v2`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
 				IndexedColumns: []string{"v2"},
 				TableName:      "exist_tb_1",
@@ -453,7 +454,7 @@ func TestExtremalOptimize(t *testing.T) {
 		},
 		maxColumn: 4,
 	}
-	testCases["test4"] = optimizerTestContent{
+	testCases["test4-无最值函数"] = optimizerTestContent{
 		sql: `SELECT v1,v2 FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`,
 		queryResults: []*queryResult{
 			{
@@ -463,6 +464,17 @@ func TestExtremalOptimize(t *testing.T) {
 		},
 		expectResults: []*OptimizeResult{},
 		maxColumn:     4,
+	}
+	testCases["test5-v1有索引"] = optimizerTestContent{
+		sql: `SELECT MAX(v1) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT MAX(v1) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			},
+		},
+		expectResults: []*OptimizeResult{},
+		maxColumn:     1,
 	}
 	testCases.testAll(mockExtremalOptimizeResult, t)
 }
@@ -480,8 +492,8 @@ func TestJoinOptimize(t *testing.T) {
 		maxColumn: 1,
 		expectResults: []*OptimizeResult{
 			{
-				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` ON `t1`.`v1`=`t2`.`v1` 中，字段 t2.v1 为被驱动表 t2 上的关联字段",
-				IndexedColumns: []string{"t2.v1"},
+				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` ON `t1`.`v1`=`t2`.`v1` 中，字段 v1 为被驱动表 t2 上的关联字段",
+				IndexedColumns: []string{"v1"},
 				TableName:      "t2",
 			},
 		},
@@ -497,8 +509,8 @@ func TestJoinOptimize(t *testing.T) {
 		maxColumn: 1,
 		expectResults: []*OptimizeResult{
 			{
-				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` USING (`v1`) 中，字段 t2.v1 为被驱动表 t2 上的关联字段",
-				IndexedColumns: []string{"t2.v1"},
+				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` USING (`v1`) 中，字段 v1 为被驱动表 t2 上的关联字段",
+				IndexedColumns: []string{"v1"},
 				TableName:      "t2",
 			},
 		},
