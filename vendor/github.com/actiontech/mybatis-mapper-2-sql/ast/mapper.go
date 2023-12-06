@@ -13,6 +13,7 @@ type Mapper struct {
 	SqlNodes       map[string]*SqlNode
 	QueryNodeIndex map[string]*QueryNode
 	QueryNodes     []*QueryNode
+	FilePath       string
 }
 
 func NewMapper() *Mapper {
