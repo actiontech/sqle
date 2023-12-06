@@ -828,12 +828,12 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 		for _, task := range tasks {
 			task.SQLSource = sqls.SourceType
-			num := 1
+			var num uint = 1
 			for filePath, nodes := range allNodes {
 				for _, node := range nodes {
 					task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 						BaseSQL: model.BaseSQL{
-							Number:     uint(num),
+							Number:     num,
 							Content:    node.Text,
 							SourceFile: filePath,
 						},
