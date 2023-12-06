@@ -28,12 +28,17 @@ func ParseXML(data string) (string, error) {
 	return stmt, nil
 }
 
-// ParseXMLs is a parser for parse all query in several XML files to []string one by one;
+type XmlFile struct {
+	FilePath string
+	Content  string
+}
+
+// ParseXMLs is a parser for parse all query in several XML files to []ast.StmtInfo one by one;
 // you can set `skipErrorQuery` true to ignore invalid query.
-func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
+func ParseXMLs(data []XmlFile, skipErrorQuery bool) ([]ast.StmtInfo, error) {
 	ms := ast.NewMappers()
-	for i := range data {
-		r := strings.NewReader(data[i])
+	for _, data := range data {
+		r := strings.NewReader(data.Content)
 		d := xml.NewDecoder(r)
 		n, err := parse(d)
 		if err != nil {
@@ -56,6 +61,7 @@ func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
 				return nil, errors.New("the mapper is not found")
 			}
 		}
+		m.FilePath = data.FilePath
 		err = ms.AddMapper(m)
 		if err != nil && !skipErrorQuery {
 			return nil, fmt.Errorf("add mapper failed: %v", err)
