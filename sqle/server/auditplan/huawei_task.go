@@ -189,11 +189,6 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		at.logger.Warnf("Can not get slow logs from so early time. firstScrapInLastHours=%v", firstScrapInLastHours)
 		return
 	}
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println("in huawei rds of audit plan, recovered from panic: ", err)
-		}
-	}()
 	//2. Init Client
 	client := at.CreateClient(accessKeyId, secretAccessKey, projectId, region)
 	if client == nil {
@@ -284,6 +279,11 @@ func mergeSQLsFromHuaweiCloud(sqls []SqlFromHuaweiCloud) []sqlInfo {
 	return sqlInfos
 }
 func (at *huaweiRdsMySQLTask) CreateClient(accessKeyId, secretAccessKey, projectId, region string) *rds.RdsClient {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("in huawei rds of audit plan, recovered from panic: ", err)
+		}
+	}()
 	credential := basic.NewCredentialsBuilder().
 		WithAk(accessKeyId).
 		WithSk(secretAccessKey).
@@ -293,7 +293,8 @@ func (at *huaweiRdsMySQLTask) CreateClient(accessKeyId, secretAccessKey, project
 		WithRegion(rdsRegion.ValueOf(region)).
 		WithCredential(credential).
 		Build()
-	return rds.NewRdsClient(hcClient)
+	client := rds.NewRdsClient(hcClient)
+	return client
 }
 
 func (at *huaweiRdsMySQLTask) newSlowSqlsRequest(instanceId string, startTime, endTime time.Time, pageSize, pageNum int32) *rdsModel.ListSlowLogsRequest {
