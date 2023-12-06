@@ -4476,7 +4476,7 @@ definitions:
       db_user:
         example: database_user001
         type: string
-      endpoint:
+      endpoints:
         items:
           type: string
         type: array
