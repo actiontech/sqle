@@ -8,6 +8,8 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
+
+	rdsCoreRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/core/region"
 	rds "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3"
 	rdsModel "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3/model"
 	rdsRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3/region"
@@ -97,6 +99,41 @@ type huaweiRdsMySQLTask struct {
 	pullLogs    func(client *rds.RdsClient, instanceId string, startTime, endTime time.Time, pageSize, pageNum int32) (sqls []SqlFromHuaweiCloud, err error)
 }
 
+var staticFields = map[string]struct{}{
+	"af-south-1":     {},
+	"cn-north-4":     {},
+	"cn-north-1":     {},
+	"cn-east-2":      {},
+	"cn-east-3":      {},
+	"cn-south-1":     {},
+	"cn-southwest-2": {},
+	"ap-southeast-2": {},
+	"ap-southeast-1": {},
+	"ap-southeast-3": {},
+	"ru-northwest-2": {},
+	"sa-brazil-1":    {},
+	"la-north-2":     {},
+	"cn-south-2":     {},
+	"na-mexico-1":    {},
+	"la-south-2":     {},
+	"cn-north-9":     {},
+	"cn-north-2":     {},
+	"tr-west-1":      {},
+	"ap-southeast-4": {},
+	"ae-ad-1":        {},
+	"eu-west-101":    {},
+}
+
+func isHuaweiRdsRegionExist(region string) bool {
+	var provider = rdsCoreRegion.DefaultProviderChain("RDS")
+	reg := provider.GetRegion(region)
+	if reg == nil {
+		_, exist := staticFields[region]
+		return exist
+	}
+	return true
+}
+
 func (at *huaweiRdsMySQLTask) collectorDo() {
 	//1. Load Configuration
 	// if at.ap.InstanceName == "" {
@@ -128,7 +165,10 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		at.logger.Warnf("huawei cloud region is not configured")
 		return
 	}
-
+	if !isHuaweiRdsRegionExist(region) {
+		at.logger.Warnf("huawei cloud region is not exist")
+		return
+	}
 	periodHours := at.ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).String()
 	if periodHours == "" {
 		at.logger.Warnf("huawei cloud period hours is not configured")
