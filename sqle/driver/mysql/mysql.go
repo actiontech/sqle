@@ -361,11 +361,14 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 
 	if i.cnf.optimizeIndexEnabled {
-		optimizer := NewIndexOptimizer(
-			i.log, i.Ctx, nodes[0],
-			WithMaxColumn(i.cnf.compositeIndexMaxColumn), //i.cnf.compositeIndexMaxColumn
-		)
-		results := optimizer.Optimize()
+		params := params.Params{
+			{
+				Key:   MAX_INDEX_COLUMN,
+				Value: fmt.Sprint(i.cnf.compositeIndexMaxColumn),
+				Type:  params.ParamTypeInt,
+			},
+		}
+		results := optimize(i.log, i.Ctx, nodes[0], params)
 		for _, advice := range results {
 			i.result.Add(
 				driverV2.RuleLevelNotice,

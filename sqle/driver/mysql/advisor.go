@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
@@ -15,6 +17,108 @@ import (
 	parser_driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
 )
+
+const (
+	MAX_INDEX_COLUMN               string = "composite_index_max_column"
+	MAX_INDEX_COLUMN_DEFAULT_VALUE int    = 5
+)
+
+type OptimizeResult struct {
+	TableName      string
+	IndexedColumns []string
+	Reason         string
+}
+
+func optimize(log *logrus.Entry, ctx *session.Context, node ast.Node, params params.Params) []*OptimizeResult {
+	if !canOptimize(log, ctx, node) {
+		return nil
+	}
+
+	log = log.WithField("optimizer", "index")
+
+	var optimizeResult []*OptimizeResult
+	for _, meta := range AdvisorMetaList {
+		optimizeResult = append(
+			optimizeResult,
+			meta.newFunction(ctx, log, node, params).GiveAdvices()...,
+		)
+	}
+	return optimizeResult
+}
+
+func canOptimize(log *logrus.Entry, ctx *session.Context, node ast.Node) bool {
+	canNotOptimizeWarnf := "can not optimize node: %v, reason: %v"
+	if ctx == nil {
+		return false
+	}
+	if node == nil {
+		return false
+	}
+	selectStmt, ok := node.(*ast.SelectStmt)
+	if !ok {
+		log.Warnf(canNotOptimizeWarnf, node, "not select statement")
+		return false
+	}
+
+	if selectStmt.From == nil {
+		log.Warnf(canNotOptimizeWarnf, node, "no from clause")
+		return false
+	}
+
+	extractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
+	selectStmt.Accept(&extractor)
+	for name, ast := range extractor.TableNames {
+		exist, err := ctx.IsTableExistInDatabase(ast)
+		if err != nil {
+			log.Warnf(canNotOptimizeWarnf, node, err)
+			return false
+		}
+		if !exist {
+			log.Warnf(canNotOptimizeWarnf, node, fmt.Sprintf("table %s not exist", name))
+			return false
+		}
+	}
+	executionPlans, err := ctx.GetExecutionPlan(node.Text())
+	if err != nil {
+		log.Errorf("get execution plan failed, sql: %v, error: %v", node.Text(), err)
+		return false
+	}
+	for _, record := range executionPlans {
+		if record.Type == executor.ExplainRecordAccessTypeAll || record.Type == executor.ExplainRecordAccessTypeIndex {
+			return true
+		}
+	}
+	return false
+}
+
+// CreateIndexAdvisor 基于SQL语句、SQL上下文、库表信息等生成创建索引的建议，在给出建议前需要指明优化建议针对的节点
+type AdvisorMeta struct {
+	advisorName string
+	newFunction func(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor
+}
+
+var AdvisorMetaList []AdvisorMeta = []AdvisorMeta{
+	{
+		advisorName: "prefix_index_advisor",
+		newFunction: newPrefixIndexAdvisor,
+	},
+	{
+		advisorName: "join_index_advisor",
+		newFunction: newJoinIndexAdvisor,
+	},
+	{
+		advisorName: "extremal_index_advisor",
+		newFunction: newExtremalIndexAdvisor,
+	},
+	{
+		advisorName: "function_index_advisor",
+		newFunction: newFunctionIndexAdvisor,
+	},
+	{
+		advisorName: "three_star_index_advisor",
+		newFunction: newThreeStarIndexAdvisor,
+	},
+}
 
 // 还原抽象语法树节点至SQL
 func restore(node ast.Node) (sql string) {
@@ -28,118 +132,34 @@ func restore(node ast.Node) (sql string) {
 	return
 }
 
-/*
-SELECT语句建议者
-
-	1 组合了基于SELECT语句给出建议的Advisor
-	2 遍历SQL语句中所有SELECT语句，使用具体的Advisor给出添加索引的建议
-*/
-type selectAdvisorVisitor struct {
-	log                  *logrus.Entry
-	joinIndexAdvisor     CreateIndexAdvisor
-	threeStarAdvisor     CreateIndexAdvisor
-	extremalIndexAdvisor CreateIndexAdvisor
-	whereAdvisorVisitor
-	advices []*OptimizeResult
-}
-
-func (a *selectAdvisorVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	switch currentNode := in.(type) {
-	case *ast.SelectField:
-		if a.extremalIndexAdvisor != nil {
-			advice := a.extremalIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
-			if advice != nil {
-				a.advices = append(a.advices, advice)
-			}
-		}
-	case *ast.Join:
-		if a.joinIndexAdvisor != nil {
-			advice := a.joinIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
-			if advice != nil {
-				a.advices = append(a.advices, advice)
-			}
-		}
-	case *ast.SelectStmt:
-		if currentNode.Where != nil {
-			// 检查Where子句
-			currentNode.Where.Accept(&a.whereAdvisorVisitor)
-			a.advices = append(a.advices, a.whereAdvisorVisitor.advices...)
-		}
-
-		// 检查Select语句
-		if a.threeStarAdvisor != nil {
-			advice := a.threeStarAdvisor.setCurrentNode(currentNode).GiveAdvice()
-			if advice != nil {
-				a.advices = append(a.advices, advice)
-			}
+func getDrivingTableInfo(originNode ast.Node, sqlContext *session.Context) (*ast.TableSource, *ast.CreateTableStmt, error) {
+	executionPlans, err := sqlContext.GetExecutionPlan(originNode.Text())
+	if err != nil {
+		return nil, nil, err
+	}
+	var tableSource *ast.TableSource
+	var createTable *ast.CreateTableStmt
+	extractor := util.TableSourceExtractor{TableSources: map[string]*ast.TableSource{}}
+	originNode.Accept(&extractor)
+	var ok bool
+	if len(executionPlans) > 0 {
+		tableSource, ok = extractor.TableSources[strings.ToLower(executionPlans[0].Table)]
+		if !ok {
+			return nil, nil, fmt.Errorf("get driving table source failed")
 		}
 	}
-	return in, false
-}
-
-func (v *selectAdvisorVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
-	return in, true
-}
-
-/*
-WHERE子句建议者
-
-	1 组合了基于WHERE子句给出建议的Advisor
-	2 遍历WHERE子句，使用具体的Advisor给出建议
-*/
-type whereAdvisorVisitor struct {
-	functionIndexAdvisor CreateIndexAdvisor
-	prefixIndexAdvisor   CreateIndexAdvisor
-	advices              []*OptimizeResult
-}
-
-func (opt *whereAdvisorVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
-	var advice *OptimizeResult
-	switch currentNode := in.(type) {
-	case *ast.BinaryOperationExpr:
-		if currentNode.Op == opcode.EQ {
-			if opt.functionIndexAdvisor != nil {
-				advice = opt.functionIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
-				if advice != nil {
-					opt.advices = append(opt.advices, advice)
-				}
-			}
-		}
-	case *ast.PatternLikeExpr:
-		if opt.prefixIndexAdvisor != nil {
-			advice = opt.prefixIndexAdvisor.setCurrentNode(currentNode).GiveAdvice()
-			if advice != nil {
-				opt.advices = append(opt.advices, advice)
-			}
-		}
+	tableName, ok := tableSource.Source.(*ast.TableName)
+	if !ok {
+		return nil, nil, fmt.Errorf("driving tableSource.Source is not ast.TableName")
 	}
-	return in, false
-}
-
-func (v *whereAdvisorVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
-	return in, true
-}
-
-// CreateIndexAdvisor 基于SQL语句、SQL上下文、库表信息等生成创建索引的建议，在给出建议前需要指明优化建议针对的节点
-type CreateIndexAdvisor interface {
-	GiveAdvice() *OptimizeResult
-	setCurrentNode(interface{}) CreateIndexAdvisor
-}
-
-type threeStarAdvisor struct {
-	sqlContext             *session.Context
-	log                    *logrus.Entry
-	drivingTableSource     *ast.TableSource        // 驱动表的TableSource
-	drivingTableColumn     *columnInSelect         // 经过解析的驱动表的列
-	drivingTableCreateStmt *ast.CreateTableStmt    // 驱动表的建表语句
-	originNode             ast.Node                // 原SQL的节点
-	currentNode            ast.Node                // 当前节点
-	maxColumns             int                     // 复合索引列的上限数量
-	possibleColumns        columnMap               // SQL语句中可能作为索引的备选列
-	columnLastAdd          columnMap               // 最后添加的列，例如：非等值列
-	columnShouldNotAdd     columnMap               // 不该添加的列，例如：类型不适合作为索引的列、单列主键列
-	columnHasAdded         columnMap               // 已经添加的列
-	adviceColumns          []columnWithSelectivity // 给出建议的列
+	createTable, ok, err = sqlContext.GetCreateTableStmt(tableName)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !ok {
+		return nil, nil, fmt.Errorf("driving table CreateTableStmt is not exist")
+	}
+	return tableSource, createTable, nil
 }
 
 type columnMap map[string] /*column name or alias name*/ struct{}
@@ -147,8 +167,28 @@ type columnMap map[string] /*column name or alias name*/ struct{}
 func (c columnMap) add(col *ast.ColumnNameExpr) {
 	c[col.Name.Name.L] = struct{}{}
 }
+
 func (c columnMap) delete(col *ast.ColumnNameExpr) {
 	delete(c, col.Name.Name.L)
+}
+
+type CreateIndexAdvisor interface {
+	GiveAdvices() []*OptimizeResult
+}
+
+type threeStarIndexAdvisor struct {
+	sqlContext             *session.Context
+	log                    *logrus.Entry
+	drivingTableSource     *ast.TableSource        // 驱动表的TableSource
+	drivingTableColumn     *columnInSelect         // 经过解析的驱动表的列
+	drivingTableCreateStmt *ast.CreateTableStmt    // 驱动表的建表语句
+	originNode             ast.Node                // 原SQL的节点
+	maxColumns             int                     // 复合索引列的上限数量
+	possibleColumns        columnMap               // SQL语句中可能作为索引的备选列
+	columnLastAdd          columnMap               // 最后添加的列，例如：非等值列
+	columnShouldNotAdd     columnMap               // 不该添加的列，例如：类型不适合作为索引的列、单列主键列
+	columnHasAdded         columnMap               // 已经添加的列
+	adviceColumns          []columnWithSelectivity // 给出建议的列
 }
 
 type columnInSelect struct {
@@ -158,26 +198,23 @@ type columnInSelect struct {
 	columnInFieldList    columnsWithSelectivity
 }
 
-func newThreeStarAdvisor(ctx *session.Context, log *logrus.Entry, drivingTableSource *ast.TableSource, drivingTableCreateStmt *ast.CreateTableStmt, originNode ast.Node, maxColumns int) CreateIndexAdvisor {
-	return &threeStarAdvisor{
-		sqlContext:             ctx,
-		log:                    log,
-		drivingTableSource:     drivingTableSource,
-		drivingTableCreateStmt: drivingTableCreateStmt,
-		originNode:             originNode,
-		maxColumns:             maxColumns,
-		drivingTableColumn:     &columnInSelect{},
-		columnLastAdd:          make(columnMap),
-		possibleColumns:        make(columnMap),
-		columnHasAdded:         make(columnMap, maxColumns),
-		columnShouldNotAdd:     make(columnMap),
-		adviceColumns:          make([]columnWithSelectivity, 0),
+func newThreeStarIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor {
+	maxColumns := params.GetParam(MAX_INDEX_COLUMN).Int()
+	if maxColumns == 0 {
+		maxColumns = MAX_INDEX_COLUMN_DEFAULT_VALUE
 	}
-}
-
-func (a *threeStarAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
-	a.currentNode, _ = node.(ast.Node)
-	return a
+	return &threeStarIndexAdvisor{
+		sqlContext:         ctx,
+		log:                log,
+		originNode:         originNode,
+		maxColumns:         maxColumns,
+		drivingTableColumn: &columnInSelect{},
+		columnLastAdd:      make(columnMap),
+		possibleColumns:    make(columnMap),
+		columnHasAdded:     make(columnMap, maxColumns),
+		columnShouldNotAdd: make(columnMap),
+		adviceColumns:      make([]columnWithSelectivity, 0),
+	}
 }
 
 /*
@@ -192,11 +229,13 @@ func (a *threeStarAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
 	1. 最后添加范围查询列，并仅添加一列
 	2. 每个星级添加的列按照索引区分度由高到低排序
 */
-func (a *threeStarAdvisor) GiveAdvice() *OptimizeResult {
-	if !a.canGiveAdvice() {
+func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	err := a.loadEssentials()
+	if err != nil {
+		a.log.Logger.Warnf("when three star index advisor load essentials failed, err:%v", err)
 		return nil
 	}
-	err := a.extractColumnInSelect()
+	err = a.extractColumnInSelect()
 	if err != nil {
 		a.log.Logger.Warnf("extract column in select failed, sql:%s,err:%v", restore(a.originNode), err)
 		return nil
@@ -214,22 +253,22 @@ func (a *threeStarAdvisor) GiveAdvice() *OptimizeResult {
 	if util.IsIndex(a.columnHasAdded, a.drivingTableCreateStmt.Constraints) {
 		return nil
 	}
-	return &OptimizeResult{
+	return []*OptimizeResult{{
 		TableName:      util.GetTableNameFromTableSource(a.drivingTableSource),
 		IndexedColumns: a.indexColumns(),
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，根据三星索引设计规范", restore(a.currentNode)),
-	}
+		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，根据三星索引设计规范", restore(a.originNode)),
+	}}
 }
 
-func (a threeStarAdvisor) indexColumns() []string {
-	indexedColumn := make([]string, 0, len(a.adviceColumns))
-	for _, column := range a.adviceColumns {
-		indexedColumn = append(indexedColumn, column.columnName.Name.Name.L)
+func (a *threeStarIndexAdvisor) loadEssentials() (err error) {
+	a.drivingTableSource, a.drivingTableCreateStmt, err = getDrivingTableInfo(a.originNode, a.sqlContext)
+	if err != nil {
+		return err
 	}
-	return indexedColumn
+	return nil
 }
 
-func (a *threeStarAdvisor) giveAdvice() {
+func (a *threeStarIndexAdvisor) giveAdvice() {
 	// 加入WHERE等值条件中的列
 	for _, column := range a.drivingTableColumn.equalColumnInWhere {
 		if len(a.adviceColumns) == a.maxColumns {
@@ -275,7 +314,7 @@ func (a *threeStarAdvisor) giveAdvice() {
 	}
 }
 
-func (a threeStarAdvisor) shouldSkipColumn(column columnWithSelectivity) bool {
+func (a threeStarIndexAdvisor) shouldSkipColumn(column columnWithSelectivity) bool {
 	columnName := column.columnName.Name.Name.L
 	if _, exist := a.possibleColumns[columnName]; !exist {
 		// 跳过非备选列
@@ -296,19 +335,19 @@ func (a threeStarAdvisor) shouldSkipColumn(column columnWithSelectivity) bool {
 	return false
 }
 
-func (a *threeStarAdvisor) addColumn(column columnWithSelectivity) {
+func (a *threeStarIndexAdvisor) addColumn(column columnWithSelectivity) {
 	a.adviceColumns = append(a.adviceColumns, column)
 	a.columnHasAdded.add(column.columnName)
 }
 
-func (a *threeStarAdvisor) replaceColumn(newColumn columnWithSelectivity, index int) {
+func (a *threeStarIndexAdvisor) replaceColumn(newColumn columnWithSelectivity, index int) {
 	oldColumn := a.adviceColumns[index]
 	a.adviceColumns[index] = newColumn
 	a.columnHasAdded.delete(oldColumn.columnName)
 	a.columnHasAdded.add(newColumn.columnName)
 }
 
-func (a threeStarAdvisor) canAddOrderColumn() bool {
+func (a threeStarIndexAdvisor) canAddOrderColumn() bool {
 	originNode, ok := a.originNode.(*ast.SelectStmt)
 	if !ok {
 		return false
@@ -339,11 +378,11 @@ func (a threeStarAdvisor) canAddOrderColumn() bool {
 	return true
 }
 
-func (a threeStarAdvisor) canAddUnequalColumn() bool {
+func (a threeStarIndexAdvisor) canAddUnequalColumn() bool {
 	return len(a.adviceColumns) < a.maxColumns
 }
 
-func (a threeStarAdvisor) canGiveCoverIndex() bool {
+func (a threeStarIndexAdvisor) canGiveCoverIndex() bool {
 	// 非等值列大于1时，覆盖索引走不到索引的最后一列，不添加覆盖索引
 	if len(a.drivingTableColumn.unequalColumnInWhere) > 1 {
 		return false
@@ -355,17 +394,7 @@ func (a threeStarAdvisor) canGiveCoverIndex() bool {
 	return true
 }
 
-func (a threeStarAdvisor) canGiveAdvice() bool {
-
-	if a.currentNode != a.originNode {
-		// 三星索引建议只对SQL原语句对应的节点生效
-		return false
-	}
-	// 三星索引建议只对驱动表给出索引建议 不对被驱动表给出
-	return a.drivingTableSource != nil
-}
-
-func (a threeStarAdvisor) isColumnInDrivingTable(column *ast.ColumnNameExpr) bool {
+func (a threeStarIndexAdvisor) isColumnInDrivingTable(column *ast.ColumnNameExpr) bool {
 	if column.Name.Table.L == "" {
 		// 没有表名，说明只有一张表
 		return true
@@ -373,14 +402,14 @@ func (a threeStarAdvisor) isColumnInDrivingTable(column *ast.ColumnNameExpr) boo
 	return column.Name.Table.L == util.GetTableNameFromTableSource(a.drivingTableSource)
 }
 
-func (a *threeStarAdvisor) sortColumnBySelectivity() {
+func (a *threeStarIndexAdvisor) sortColumnBySelectivity() {
 	sort.Sort(a.drivingTableColumn.columnInOrderBy)
 	sort.Sort(a.drivingTableColumn.columnInFieldList)
 	sort.Sort(a.drivingTableColumn.unequalColumnInWhere)
 	sort.Sort(a.drivingTableColumn.equalColumnInWhere)
 }
 
-func (a *threeStarAdvisor) fillColumnWithSelectivity() error {
+func (a *threeStarIndexAdvisor) fillColumnWithSelectivity() error {
 	tableName, ok := a.drivingTableSource.Source.(*ast.TableName)
 	if !ok {
 		return fmt.Errorf("in three star advisor driving tableSource.Source is not ast.TableName")
@@ -418,8 +447,8 @@ func (a *threeStarAdvisor) fillColumnWithSelectivity() error {
 	3 WHERE不等值条件中，列(非等)值的范围删选列，其中列属于驱动表
 	4 ORDER BY中裸的列，其中列属于驱动表
 */
-func (a *threeStarAdvisor) extractColumnInSelect() error {
-	selectStmt, ok := a.currentNode.(*ast.SelectStmt)
+func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
+	selectStmt, ok := a.originNode.(*ast.SelectStmt)
 	if !ok {
 		return fmt.Errorf("in three star advisor, type of current node is not ast.SelectStmt")
 	}
@@ -509,7 +538,7 @@ func (a *threeStarAdvisor) extractColumnInSelect() error {
 	return nil
 }
 
-func (a *threeStarAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+func (a *threeStarIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	switch currentNode := in.(type) {
 	case *ast.BinaryOperationExpr:
 		switch currentNode.Op {
@@ -548,8 +577,16 @@ func (a *threeStarAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) 
 	return in, false
 }
 
-func (a *threeStarAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
+func (a *threeStarIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
+}
+
+func (a threeStarIndexAdvisor) indexColumns() []string {
+	indexedColumn := make([]string, 0, len(a.adviceColumns))
+	for _, column := range a.adviceColumns {
+		indexedColumn = append(indexedColumn, column.columnName.Name.Name.L)
+	}
+	return indexedColumn
 }
 
 type columnWithSelectivity struct {
@@ -581,31 +618,72 @@ joinIndexAdvisor
 type joinIndexAdvisor struct {
 	sqlContext        *session.Context
 	log               *logrus.Entry
+	originNode        ast.Node
 	currentNode       *ast.Join
 	drivenTableSource map[string] /*table name*/ *ast.TableSource
+	advices           []*OptimizeResult
 }
 
-func newJoinAdvisor(ctx *session.Context, log *logrus.Entry, drivenTableSource map[string]*ast.TableSource) CreateIndexAdvisor {
-	return joinIndexAdvisor{
+func newJoinIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor {
+	return &joinIndexAdvisor{
 		sqlContext:        ctx,
 		log:               log,
-		drivenTableSource: drivenTableSource,
+		originNode:        originNode,
+		drivenTableSource: make(map[string]*ast.TableSource),
 	}
 }
 
-func (a joinIndexAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
-	a.currentNode, _ = node.(*ast.Join)
-	return a
-}
-
-func (a joinIndexAdvisor) GiveAdvice() *OptimizeResult {
-	if a.currentNode == nil {
+func (a *joinIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	err := a.loadEssentials()
+	if err != nil {
+		a.log.Logger.Warnf("when join index advisor load essentials failed, err:%v", err)
 		return nil
 	}
+	a.originNode.Accept(a)
+	return a.advices
+}
+
+func (a *joinIndexAdvisor) loadEssentials() error {
+	executionPlans, err := a.sqlContext.GetExecutionPlan(a.originNode.Text())
+	if err != nil {
+		return err
+	}
+	extractor := util.TableSourceExtractor{TableSources: map[string]*ast.TableSource{}}
+	a.originNode.Accept(&extractor)
+	for id, record := range executionPlans {
+		if id == 0 {
+			continue
+		}
+		if record.Type == executor.ExplainRecordAccessTypeAll || record.Type == executor.ExplainRecordAccessTypeIndex {
+			recordTableNameLow := strings.ToLower(record.Table)
+			tableSource, ok := extractor.TableSources[recordTableNameLow]
+			if !ok {
+				continue
+			}
+			a.drivenTableSource[recordTableNameLow] = tableSource
+		}
+	}
+	return nil
+}
+
+func (a *joinIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch currentNode := in.(type) {
+	case *ast.Join:
+		a.currentNode = currentNode
+		a.giveAdvice()
+	}
+	return in, false
+}
+
+func (v *joinIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+func (a *joinIndexAdvisor) giveAdvice() {
 	indexColumnMap := make(columnMap)
 	drivenTableName := a.getDrivenTableName()
 	if drivenTableName == "" {
-		return nil
+		return
 	}
 	// 在ON和USING中找被驱动表的列
 	if a.currentNode.On != nil {
@@ -628,36 +706,36 @@ func (a joinIndexAdvisor) GiveAdvice() *OptimizeResult {
 		}
 	}
 	if len(indexColumnMap) == 0 {
-		return nil
+		return
 	}
 
 	tableSource := a.drivenTableSource[drivenTableName]
 	tableName, ok := tableSource.Source.(*ast.TableName)
 	if !ok {
 		a.log.Warn("in join index advisor driven tableSource.Source is not ast.TableName")
-		return nil
+		return
 	}
 	createTable, exist, err := a.sqlContext.GetCreateTableStmt(tableName)
 	if err != nil {
 		a.log.Warnf("join index advisor get create table statement failed,err %v", err)
-		return nil
+		return
 	}
 	if !exist {
 		a.log.Warnf("join index advisor get create table statement failed,table not exist %s", drivenTableName)
-		return nil
+		return
 	}
 	if util.IsIndex(indexColumnMap, createTable.Constraints) {
-		return nil
+		return
 	}
 	indexColumn := make([]string, 0, len(indexColumnMap))
 	for column := range indexColumnMap {
 		indexColumn = append(indexColumn, column)
 	}
-	return &OptimizeResult{
+	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      drivenTableName,
 		IndexedColumns: indexColumn,
 		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，字段 %s 为被驱动表 %s 上的关联字段", restore(a.currentNode), strings.Join(indexColumn, "，"), drivenTableName),
-	}
+	})
 }
 
 // 获取到Join节点左右节点中被驱动表的名称
@@ -700,38 +778,70 @@ functionIndexAdvisor 函数索引 虚拟列索引建议者
 https://dev.mysql.com/doc/refman/8.0/en/create-index.html#create-index-functional-key-parts
 */
 type functionIndexAdvisor struct {
-	log                *logrus.Entry
 	sqlContext         *session.Context
+	log                *logrus.Entry
+	originNode         ast.Node
 	currentNode        *ast.BinaryOperationExpr
 	drivingTableSource *ast.TableSource // 驱动表的TableSource
+	advices            []*OptimizeResult
 }
 
-func newFunctionIndexAdvisor(ctx *session.Context, log *logrus.Entry, drivingTableSource *ast.TableSource) CreateIndexAdvisor {
+func newFunctionIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor {
 	return &functionIndexAdvisor{
-		log:                log,
-		sqlContext:         ctx,
-		drivingTableSource: drivingTableSource,
+		sqlContext: ctx,
+		log:        log,
+		originNode: originNode,
 	}
 }
 
-func (a *functionIndexAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
-	a.currentNode, _ = node.(*ast.BinaryOperationExpr)
-	return a
-}
-
-func (a *functionIndexAdvisor) GiveAdvice() *OptimizeResult {
-	if a.currentNode == nil {
+func (a *functionIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	err := a.loadEssentials()
+	if err != nil {
+		a.log.Logger.Warnf("when function index advisor load essentials failed, err:%v", err)
 		return nil
 	}
+	node, ok := a.originNode.(*ast.SelectStmt)
+	if !ok {
+		return nil
+	}
+	node.Where.Accept(a)
+	return a.advices
+}
+
+func (a *functionIndexAdvisor) loadEssentials() (err error) {
+	a.drivingTableSource, _, err = getDrivingTableInfo(a.originNode, a.sqlContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *functionIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch currentNode := in.(type) {
+	case *ast.BinaryOperationExpr:
+		if currentNode.Op == opcode.EQ {
+			a.currentNode = currentNode
+			a.giveAdvice()
+		}
+	}
+	return in, false
+}
+
+func (v *functionIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+func (a *functionIndexAdvisor) giveAdvice() {
+
 	if _, ok := a.currentNode.L.(*ast.FuncCallExpr); !ok {
 		if _, ok := a.currentNode.R.(*ast.FuncCallExpr); !ok {
-			return nil
+			return
 		}
 	}
 	columnNameVisitor := util.ColumnNameVisitor{}
 	a.currentNode.L.Accept(&columnNameVisitor)
 	if len(columnNameVisitor.ColumnNameList) == 0 {
-		return nil
+		return
 	}
 	var curVersion *semver.Version
 	versionWithFlavor, err := a.sqlContext.GetSystemVariable("version")
@@ -744,7 +854,7 @@ func (a *functionIndexAdvisor) GiveAdvice() *OptimizeResult {
 
 		} else {
 			if curVersion.LessThan(semver.MustParse("5.7.0")) {
-				return nil
+				return
 			}
 		}
 	}
@@ -758,25 +868,27 @@ func (a *functionIndexAdvisor) GiveAdvice() *OptimizeResult {
 		tableName = util.GetTableNameFromTableSource(a.drivingTableSource)
 	}
 	if curVersion != nil && curVersion.LessThan(semver.MustParse("8.0.13")) {
-		return &OptimizeResult{
+		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
 			Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引", restore(a.currentNode.L)),
-		}
+		})
+		return
 	}
 	if curVersion != nil && curVersion.GreaterThan(semver.MustParse("8.0.12")) {
-		return &OptimizeResult{
+		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
 			Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引", restore(a.currentNode.L)),
-		}
+		})
+		return
 	}
 	// 某些版本解析会出错，例如"8.0.35-0<system_name>0.22.04.1"
-	return &OptimizeResult{
+	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
 		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，在MySQL8.0.13以上的版本，可以创建函数索引", restore(a.currentNode.L)),
-	}
+	})
 }
 
 /*
@@ -790,35 +902,63 @@ https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_max
 https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_min
 */
 type extremalIndexAdvisor struct {
+	sqlContext             *session.Context
+	log                    *logrus.Entry
+	originNode             ast.Node
 	currentNode            *ast.SelectField
 	drivingTableCreateStmt *ast.CreateTableStmt // 驱动表的建表语句
 	drivingTableSource     *ast.TableSource     // 驱动表的TableSource
+	advices                []*OptimizeResult
 }
 
-func newExtremalIndexAdvisor(drivingTableSource *ast.TableSource, drivingTableCreateStmt *ast.CreateTableStmt) CreateIndexAdvisor {
+func newExtremalIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor {
 	return &extremalIndexAdvisor{
-		drivingTableSource:     drivingTableSource,
-		drivingTableCreateStmt: drivingTableCreateStmt,
+		sqlContext: ctx,
+		log:        log,
+		originNode: originNode,
 	}
 }
 
-func (a *extremalIndexAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
-	a.currentNode, _ = node.(*ast.SelectField)
-	return a
-}
-
-func (a *extremalIndexAdvisor) GiveAdvice() *OptimizeResult {
-	if a.currentNode == nil {
+func (a *extremalIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	err := a.loadEssentials()
+	if err != nil {
+		a.log.Logger.Warnf("when extremal index advisor load essentials failed, err:%v", err)
 		return nil
 	}
+	a.originNode.Accept(a)
+	return a.advices
+}
+
+func (a *extremalIndexAdvisor) loadEssentials() (err error) {
+	a.drivingTableSource, a.drivingTableCreateStmt, err = getDrivingTableInfo(a.originNode, a.sqlContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *extremalIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch currentNode := in.(type) {
+	case *ast.SelectField:
+		a.currentNode = currentNode
+		a.giveAdvice()
+	}
+	return in, false
+}
+
+func (v *extremalIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+func (a *extremalIndexAdvisor) giveAdvice() {
 	var indexColumn string
 	var node *ast.AggregateFuncExpr
 	var ok bool
 	if node, ok = a.currentNode.Expr.(*ast.AggregateFuncExpr); !ok {
-		return nil
+		return
 	}
 	if len(node.Args) == 0 {
-		return nil
+		return
 	}
 	var column *ast.ColumnNameExpr
 	if strings.ToLower(node.F) == ast.AggFuncMin || strings.ToLower(node.F) == ast.AggFuncMax {
@@ -826,22 +966,23 @@ func (a *extremalIndexAdvisor) GiveAdvice() *OptimizeResult {
 			indexColumn = column.Name.Name.L
 		}
 	} else {
-		return nil
+		return
 	}
 	var tableName string
 	if column.Name.Table.L != "" {
 		tableName = column.Name.Table.L
 	} else {
 		tableName = util.GetTableNameFromTableSource(a.drivingTableSource)
+
 	}
 	if util.IsIndex(map[string]struct{}{indexColumn: {}}, a.drivingTableCreateStmt.Constraints) {
-		return nil
+		return
 	}
-	return &OptimizeResult{
+	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{indexColumn},
 		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了最值函数，可以利用索引有序的性质快速找到最值", restore(a.currentNode)),
-	}
+	})
 }
 
 /*
@@ -852,29 +993,73 @@ prefixIndexAdvisor 前缀索引建议者
 		2. Like子句使用了前缀匹配
 */
 type prefixIndexAdvisor struct {
+	sqlContext         *session.Context
+	log                *logrus.Entry
+	originNode         ast.Node
 	currentNode        *ast.PatternLikeExpr
 	drivingTableSource *ast.TableSource // 驱动表的TableSource
+	advices            []*OptimizeResult
 }
 
-func newPrefixIndexAdvisor(drivingTableSource *ast.TableSource) CreateIndexAdvisor {
-	return &prefixIndexAdvisor{drivingTableSource: drivingTableSource}
+func newPrefixIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor {
+	return &prefixIndexAdvisor{
+		sqlContext: ctx,
+		log:        log,
+		originNode: originNode,
+	}
 }
 
-func (a *prefixIndexAdvisor) setCurrentNode(node interface{}) CreateIndexAdvisor {
-	a.currentNode, _ = node.(*ast.PatternLikeExpr)
-	return a
-}
-
-func (a *prefixIndexAdvisor) GiveAdvice() *OptimizeResult {
-	if a.currentNode == nil {
+func (a *prefixIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	err := a.loadEssentials()
+	if err != nil {
+		a.log.Logger.Warnf("when prefix index advisor load essentials failed, err:%v", err)
 		return nil
 	}
-	if !util.CheckWhereFuzzySearch(a.currentNode) {
+	node, ok := a.originNode.(*ast.SelectStmt)
+	if !ok {
 		return nil
+	}
+	node.Where.Accept(a)
+	return a.advices
+}
+
+func (a *prefixIndexAdvisor) loadEssentials() error {
+	executionPlans, err := a.sqlContext.GetExecutionPlan(a.originNode.Text())
+	if err != nil {
+		return err
+	}
+	extractor := util.TableSourceExtractor{TableSources: map[string]*ast.TableSource{}}
+	a.originNode.Accept(&extractor)
+	if len(executionPlans) > 0 {
+		tableSource, ok := extractor.TableSources[strings.ToLower(executionPlans[0].Table)]
+		if !ok {
+			return fmt.Errorf("get driving table source failed")
+		}
+		a.drivingTableSource = tableSource
+	}
+	return nil
+}
+
+func (a *prefixIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch currentNode := in.(type) {
+	case *ast.PatternLikeExpr:
+		a.currentNode = currentNode
+		a.giveAdvice()
+	}
+	return in, false
+}
+
+func (v *prefixIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+func (a *prefixIndexAdvisor) giveAdvice() {
+	if !util.CheckWhereFuzzySearch(a.currentNode) {
+		return
 	}
 	column, ok := a.currentNode.Expr.(*ast.ColumnNameExpr)
 	if !ok {
-		return nil
+		return
 	}
 	var tableName string
 	if column.Name.Table.L != "" {
@@ -882,9 +1067,9 @@ func (a *prefixIndexAdvisor) GiveAdvice() *OptimizeResult {
 	} else {
 		tableName = util.GetTableNameFromTableSource(a.drivingTableSource)
 	}
-	return &OptimizeResult{
+	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column.Name.Name.L},
 		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了前缀模式匹配，在数据量大的时候，可以建立翻转函数索引", restore(a.currentNode)),
-	}
+	})
 }
