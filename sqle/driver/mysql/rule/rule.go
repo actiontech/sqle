@@ -7546,7 +7546,7 @@ func joinConditionInWhereStmtHasIndex(ctx *session.Context, joinNode *ast.Join, 
 	}
 	for tableName, columnMap := range tableColumnMap {
 		if constraints, ok := tableIndex[tableName]; ok {
-			if !IsIndex(columnMap, constraints) {
+			if !util.IsIndex(columnMap, constraints) {
 				return true, false
 			}
 		}
@@ -7596,7 +7596,7 @@ func joinConditionInJoinNodeHasIndex(ctx *session.Context, joinNode *ast.Join, t
 
 	for tableName, columnMap := range tableColumnMap {
 		if constraints, ok := tableIndex[tableName]; ok {
-			if !IsIndex(columnMap, constraints) {
+			if !util.IsIndex(columnMap, constraints) {
 				return true, false
 			}
 		}
@@ -7611,35 +7611,6 @@ func (m tableColumnMap) add(tableName, columnName string) {
 		m[tableName] = make(map[string]struct{})
 	}
 	m[tableName][columnName] = struct{}{}
-}
-
-/*
-IsIndex
-
-	判断单列或多列是否属于索引切片中的索引：
-		1. 单列：满足单列索引或多列索引的第一列，则返回true
-		2. 多列：满足N列是M列索引的前N列（M>=N），则返回true
-		3. 否则返回false
-*/
-func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.Constraint) bool {
-	for _, constraint := range constraints {
-		if len(columnMap) > len(constraint.Keys) {
-			// 若符合索引的列数小于关联列的列数 一定不满足多列索引
-			continue
-		}
-		var matchCount int
-		for _, key := range constraint.Keys {
-			if _, ok := columnMap[key.Column.Name.L]; ok {
-				matchCount++
-			} else {
-				break
-			}
-		}
-		if matchCount == len(columnMap) {
-			return true
-		}
-	}
-	return false
 }
 
 /*
