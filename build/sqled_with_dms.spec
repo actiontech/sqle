@@ -104,6 +104,7 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 # mkdir -p $RPM_INSTALL_PREFIX/etc
 
 
+if [ $1 -eq 1 ]; then 
 cat >> $RPM_INSTALL_PREFIX/etc/config.yaml<<EOF
 
 sqle:
@@ -131,7 +132,7 @@ sqle:
       mysql_password: 'pass'
       mysql_schema: 'sqle'
 EOF
-
+fi
 
 cat > $RPM_INSTALL_PREFIX/etc/gh-ost.ini<<EOF
 max_load=Threads_running=80,Threads_connected=1000
