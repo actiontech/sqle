@@ -182,20 +182,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == SQLTypeMyBatis {
-		data := make([]parser.XmlFile, len(req.FileContents))
-		for i, content := range req.FileContents {
-			data[i] = parser.XmlFile{Content: content}
-		}
-		sqlsInfo, err := parser.ParseXMLs(data, false)
+		sqls, err = ConvertXmlFileContentToSQLs(req.FileContents)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		buf := bytes.Buffer{}
-		for _, info := range sqlsInfo {
-			buf.WriteString(info.SQL)
-			buf.WriteString(";")
-		}
-		sqls = strings.TrimSuffix(buf.String(), ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
@@ -235,6 +225,24 @@ func DirectAuditFiles(c echo.Context) error {
 		BaseRes: controller.BaseRes{},
 		Data:    convertTaskResultToAuditResV1(task),
 	})
+}
+
+func ConvertXmlFileContentToSQLs(fileContent []string) (sqls string, err error) {
+	data := make([]parser.XmlFile, len(fileContent))
+	for i, content := range fileContent {
+		data[i] = parser.XmlFile{Content: content}
+	}
+	sqlsInfo, err := parser.ParseXMLs(data, false)
+	if err != nil {
+		return "", err
+	}
+	buf := bytes.Buffer{}
+	for _, info := range sqlsInfo {
+		buf.WriteString(info.SQL)
+		buf.WriteString(";")
+	}
+	sqls = strings.TrimSuffix(buf.String(), ";")
+	return sqls, nil
 }
 
 type GetSQLAnalysisReq struct {
