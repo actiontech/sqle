@@ -272,7 +272,7 @@ type AuditPlanSQLReqV2 struct {
 	QueryTimeMax         *float64  `json:"query_time_max" from:"query_time_max" example:"5.22"`
 	FirstQueryAt         time.Time `json:"first_query_at" from:"first_query_at" example:"2023-09-12T02:48:01.317880Z"`
 	DBUser               string    `json:"db_user" from:"db_user" example:"database_user001"`
-	Endpoint             []string  `json:"endpoint" from:"endpoint"`
+	Endpoints            []string  `json:"endpoints" from:"endpoints"`
 }
 
 func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV2, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV2 {
@@ -345,7 +345,7 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 			"counter":                counter,
 			"last_receive_timestamp": reqSQL.LastReceiveTimestamp,
 			server.AuditSchema:       reqSQL.Schema,
-			"endpoints":              reqSQL.Endpoint,
+			"endpoints":              reqSQL.Endpoints,
 		}
 		// 兼容老版本的Scannerd
 		// 老版本Scannerd不传输这两个字段，不记录到数据库中

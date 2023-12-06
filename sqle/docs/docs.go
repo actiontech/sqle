@@ -16937,7 +16937,7 @@ var doc = `{
                     "type": "string",
                     "example": "database_user001"
                 },
-                "endpoint": {
+                "endpoints": {
                     "type": "array",
                     "items": {
                         "type": "string"
