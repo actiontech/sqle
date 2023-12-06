@@ -846,20 +846,9 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
-	archived, err := s.IsProjectArchived(projectName)
+	ap, err := CheckProjectAndAuditPlan(s, projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
-	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	l := log.NewEntry()
@@ -903,20 +892,9 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
-	archived, err := s.IsProjectArchived(projectName)
+	ap, err := CheckProjectAndAuditPlan(s, projectName, apName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
-	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
 	l := log.NewEntry()
@@ -933,6 +911,26 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, true))
+}
+
+func CheckProjectAndAuditPlan(s *model.Storage, projectName string, apName string) (*model.AuditPlan, error) {
+	archived, err := s.IsProjectArchived(projectName)
+	if err != nil {
+		return nil, err
+	}
+	if archived {
+		return nil, ErrProjectArchived
+	}
+
+	ap, exist, err := s.GetAuditPlanFromProjectByName(projectName, apName)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.NewAuditPlanNotExistErr()
+	}
+
+	return ap, nil
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
