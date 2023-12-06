@@ -4458,6 +4458,40 @@ definitions:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
     type: object
+  v2.AuditPlanSQLReqV2:
+    properties:
+      audit_plan_sql_counter:
+        example: "6"
+        type: string
+      audit_plan_sql_fingerprint:
+        example: select * from t1 where id = ?
+        type: string
+      audit_plan_sql_last_receive_text:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_sql_last_receive_timestamp:
+        example: RFC3339
+        type: string
+      audit_plan_sql_schema:
+        example: db1
+        type: string
+      db_user:
+        example: database_user001
+        type: string
+      endpoint:
+        items:
+          type: string
+        type: array
+      first_query_at:
+        example: "2023-09-12T02:48:01.317880Z"
+        type: string
+      query_time_avg:
+        example: 3.22
+        type: number
+      query_time_max:
+        example: 5.22
+        type: number
+    type: object
   v2.AuditResDataV2:
     properties:
       audit_level:
@@ -4673,6 +4707,13 @@ definitions:
         type: string
       logo_url:
         type: string
+    type: object
+  v2.FullSyncAuditPlanSQLsReqV2:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLReqV2'
+        type: array
     type: object
   v2.GetAuditPlanAnalysisDataResV2:
     properties:
@@ -4903,6 +4944,13 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
+    type: object
+  v2.PartialSyncAuditPlanSQLsReqV2:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLReqV2'
+        type: array
     type: object
   v2.PerformanceStatistics:
     properties:
@@ -6807,6 +6855,7 @@ paths:
       - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full:
     post:
+      deprecated: true
       description: full sync audit plan SQLs
       operationId: fullSyncAuditPlanSQLsV1
       parameters:
@@ -6838,6 +6887,7 @@ paths:
       - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial:
     post:
+      deprecated: true
       description: partial sync audit plan SQLs
       operationId: partialSyncAuditPlanSQLsV1
       parameters:
@@ -11032,6 +11082,68 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取task相关的SQL执行计划和表元数据
+      tags:
+      - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full:
+    post:
+      description: full sync audit plan SQLs
+      operationId: fullSyncAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: full sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.FullSyncAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 全量同步SQL到扫描任务
+      tags:
+      - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial:
+    post:
+      description: partial sync audit plan SQLs
+      operationId: partialSyncAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: partial sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.PartialSyncAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
   /v2/projects/{project_name}/instances:
