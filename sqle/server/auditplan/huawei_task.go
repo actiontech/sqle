@@ -293,8 +293,7 @@ func (at *huaweiRdsMySQLTask) CreateClient(accessKeyId, secretAccessKey, project
 		WithRegion(rdsRegion.ValueOf(region)).
 		WithCredential(credential).
 		Build()
-	client := rds.NewRdsClient(hcClient)
-	return client
+	return rds.NewRdsClient(hcClient)
 }
 
 func (at *huaweiRdsMySQLTask) newSlowSqlsRequest(instanceId string, startTime, endTime time.Time, pageSize, pageNum int32) *rdsModel.ListSlowLogsRequest {
