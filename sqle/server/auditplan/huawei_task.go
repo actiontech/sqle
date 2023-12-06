@@ -281,7 +281,7 @@ func mergeSQLsFromHuaweiCloud(sqls []SqlFromHuaweiCloud) []sqlInfo {
 func (at *huaweiRdsMySQLTask) CreateClient(accessKeyId, secretAccessKey, projectId, region string) *rds.RdsClient {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("in huawei rds of audit plan, recovered from panic: ", err)
+			at.logger.Warnf("in huawei rds of audit plan, recovered from panic: %+v", err)
 		}
 	}()
 	credential := basic.NewCredentialsBuilder().
