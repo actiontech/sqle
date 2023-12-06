@@ -156,7 +156,8 @@ func (opt *indexOptimizer) hasNoTablesToOptimize() bool {
 func (opt *indexOptimizer) generateOptimizeResult() []*OptimizeResult {
 	advisor := selectAdvisorVisitor{
 		log:                  opt.log,
-		extremalIndexAdvisor: newExtremalIndexAdvisor(opt.drivingTableSource),
+		extremalIndexAdvisor: newExtremalIndexAdvisor(opt.drivingTableSource, opt.drivingTableCreateStmt),
+		joinIndexAdvisor:     newJoinAdvisor(opt.sqlContext, opt.log, opt.drivenTableSources),
 		threeStarAdvisor: newThreeStarAdvisor(
 			opt.sqlContext, opt.log,
 			opt.drivingTableSource, opt.drivingTableCreateStmt, opt.originNode,
@@ -166,10 +167,6 @@ func (opt *indexOptimizer) generateOptimizeResult() []*OptimizeResult {
 			advices:              make([]*OptimizeResult, 0),
 			prefixIndexAdvisor:   newPrefixIndexAdvisor(opt.drivingTableSource),
 			functionIndexAdvisor: newFunctionIndexAdvisor(opt.sqlContext, opt.log, opt.drivingTableSource),
-		},
-		fromAdvisorVisitor: fromAdvisorVisitor{
-			joinIndexAdvisor: newJoinAdvisor(opt.sqlContext, opt.drivenTableSources),
-			advices:          make([]*OptimizeResult, 0),
 		},
 		advices: make([]*OptimizeResult, 0),
 	}
