@@ -146,12 +146,12 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		return
 	}
 	secretAccessKey := at.ap.Params.GetParam(paramKeyAccessKeySecret).String()
-	if accessKeyId == "" {
+	if secretAccessKey == "" {
 		at.logger.Warnf("huawei cloud secret access key is not configured")
 		return
 	}
 	projectId := at.ap.Params.GetParam(paramProjectId).String()
-	if paramProjectId == "" {
+	if projectId == "" {
 		at.logger.Warnf("huawei cloud project id is not configured")
 		return
 	}
@@ -189,7 +189,11 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		at.logger.Warnf("Can not get slow logs from so early time. firstScrapInLastHours=%v", firstScrapInLastHours)
 		return
 	}
-
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println("in huawei rds of audit plan, recovered from panic: ", err)
+		}
+	}()
 	//2. Init Client
 	client := at.CreateClient(accessKeyId, secretAccessKey, projectId, region)
 	if client == nil {
