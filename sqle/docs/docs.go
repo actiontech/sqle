@@ -4736,6 +4736,7 @@ var doc = `{
                 ],
                 "summary": "获取管控sql列表",
                 "operationId": "GetSqlManageList",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
