@@ -6215,8 +6215,9 @@ func hintSumFuncTips(input *RuleHandlerInput) error {
 }
 
 func hintCountFuncWithCol(input *RuleHandlerInput) error {
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
+	extractor := util.SelectStmtExtractor{}
+	input.Node.Accept(&extractor)
+	for _, stmt := range extractor.SelectStmts {
 		for _, f := range stmt.Fields.Fields {
 			if fu, ok := f.Expr.(*ast.AggregateFuncExpr); ok && strings.ToLower(fu.F) == "count" {
 				if fu.Distinct {
@@ -6230,10 +6231,7 @@ func hintCountFuncWithCol(input *RuleHandlerInput) error {
 				}
 			}
 		}
-	default:
-		return nil
 	}
-
 	return nil
 }
 
