@@ -146,6 +146,7 @@ type SqlManageDetail struct {
 	Assignees            RowList      `json:"assignees"`
 	ApName               *string      `json:"ap_name"`
 	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
+	Endpoints            RowList      `json:"endpoints"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
@@ -185,7 +186,8 @@ SELECT
 	sm.remark,
 	GROUP_CONCAT(DISTINCT all_users.login_name) as assignees,
 	ap.name as ap_name,
-	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids
+	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids,
+	GROUP_CONCAT(DISTINCT all_sme.endpoint) as endpoints
 
 {{- template "body" . -}} 
 
@@ -208,6 +210,8 @@ var sqlManageBodyTpl = `
 FROM sql_manages sm
          LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
+         LEFT JOIN sql_manage_endpoints sme ON sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
+         LEFT JOIN sql_manage_endpoints all_sme ON all_sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5	
 		 LEFT JOIN tasks t ON sar.task_id = t.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
          LEFT JOIN projects p ON p.id = sm.project_id
@@ -253,6 +257,10 @@ AND sm.last_receive_timestamp >= :filter_last_audit_start_time_from
 
 {{- if .filter_last_audit_start_time_to }}
 AND sm.last_receive_timestamp <= :filter_last_audit_start_time_to
+{{- end }}
+
+{{- if .fuzzy_search_endpoint }}
+AND sme.endpoint LIKE '%{{ .fuzzy_search_endpoint }}%'
 {{- end }}
 
 {{- if .filter_status }}
