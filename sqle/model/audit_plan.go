@@ -50,8 +50,6 @@ type AuditPlanSQLV2 struct {
 	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
-	// 可能是URL或IP地址等
-	Endpoint string `json:"endpoint" gorm:"type:varchar(512)"`
 }
 
 type BlackListAuditPlanSQL struct {
@@ -250,7 +248,11 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 				JSON_TYPE(JSON_EXTRACT(info, '$.db_user'))="NULL",
 				JSON_EXTRACT(values(info), '$.db_user'),
 				JSON_EXTRACT(info, '$.db_user')
-			)
+			),
+            '$.endpoints', JSON_MERGE(
+                JSON_EXTRACT(info, '$.endpoints'),
+			    JSON_EXTRACT(VALUES(info), '$.endpoints')
+            )
 	  	);`
 
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
@@ -282,10 +284,10 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?)")
-		args = append(args, auditPlanId, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info, sql.Schema, sql.Endpoint)
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?)")
+		args = append(args, auditPlanId, sql.GetFingerprintMD5(), sql.Fingerprint, sql.SQLContent, sql.Info, sql.Schema)
 	}
-	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`, `schema`, `endpoint`) VALUES %s",
+	raw = fmt.Sprintf("INSERT INTO `audit_plan_sqls_v2` (`audit_plan_id`,`fingerprint_md5`, `fingerprint`, `sql_content`, `info`, `schema`) VALUES %s",
 		strings.Join(pattern, ", "))
 	return
 }
