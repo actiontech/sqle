@@ -247,7 +247,7 @@ func (v *ColumnNameVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 
 type WhereVisitor struct {
 	WhereList         []ast.ExprNode
-	WhetherContainNil bool // 是否需要包含空的where，例如select * from t1 该语句的where为空 
+	WhetherContainNil bool // 是否需要包含空的where，例如select * from t1 该语句的where为空
 }
 
 func (v *WhereVisitor) append(where ast.ExprNode) {
@@ -326,5 +326,33 @@ func (v *FuncCallExprVisitor) Enter(in ast.Node) (out ast.Node, skipChildren boo
 }
 
 func (v *FuncCallExprVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
+	return in, true
+}
+
+type WhereWithTable struct {
+	WhereStmt *ast.ExprNode
+	TableRef  *ast.Join
+}
+
+type WhereWithTableVisitor struct {
+	WhereStmts []*WhereWithTable
+}
+
+func (v *WhereWithTableVisitor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil { //If from is null, skip check. EX: select 1;select version;
+			return in, false
+		}
+		v.WhereStmts = append(v.WhereStmts, &WhereWithTable{WhereStmt: &stmt.Where, TableRef: stmt.From.TableRefs})
+	case *ast.DeleteStmt:
+		v.WhereStmts = append(v.WhereStmts, &WhereWithTable{WhereStmt: &stmt.Where, TableRef: stmt.TableRefs.TableRefs})
+	case *ast.UpdateStmt:
+		v.WhereStmts = append(v.WhereStmts, &WhereWithTable{WhereStmt: &stmt.Where, TableRef: stmt.TableRefs.TableRefs})
+	}
+	return in, false
+}
+
+func (v *WhereWithTableVisitor) Leave(in ast.Node) (out ast.Node, ok bool) {
 	return in, true
 }
