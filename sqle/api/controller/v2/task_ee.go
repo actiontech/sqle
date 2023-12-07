@@ -4,15 +4,38 @@
 package v2
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql"
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/pingcap/parser/format"
+	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pingcap/parser/ast"
+	pingcapMysql "github.com/pingcap/parser/mysql"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	MybatisXMLFile                 = "mybatis_xml_file"
+	MybatisXMLCharDefaultValue     = "a"
+	MybatisXMLIntDefaultValue      = 1
+	MybatisXMLDateTimeDefaultValue = "2023-01-01 00:00:00"
+	MybatisXMLFloatDefaultValue    = 1.0
 )
 
 func getTaskAnalysisData(c echo.Context) error {
@@ -40,7 +63,13 @@ func getTaskAnalysisData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
-
+	sqlContent := taskSql.Content
+	if task.SQLSource == MybatisXMLFile {
+		sqlContent, err = fillingMybatisXmlSQL(sqlContent, task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, taskSql.Content)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -163,4 +192,139 @@ func convertSQLAnalysisResultToRes(res *v1.AnalysisResult, rawSQL string) *TaskA
 	}
 
 	return data
+}
+func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
+	l := log.NewEntry()
+	driver := mysql.MysqlDriverImpl{}
+	nodes, err := driver.ParseSql(sqlContent)
+	if err != nil {
+		return sqlContent, err
+	}
+
+	if task.Instance == nil {
+		return sqlContent, nil
+	}
+	dsn, err := common.NewDSN(task.Instance, task.Schema)
+	if err != nil {
+		return sqlContent, err
+	}
+	conn, err := executor.NewExecutor(log.NewEntry(), dsn, task.Schema)
+	if err != nil {
+		return sqlContent, err
+	}
+	ctx := session.NewContext(nil, session.WithExecutor(conn))
+	ctx.SetCurrentSchema(task.Schema)
+
+	// sql分析是单条sql分析
+	node := nodes[0]
+	var tableRefs *ast.Join
+	var where ast.ExprNode
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		tableRefs = stmt.From.TableRefs
+		where = stmt.Where
+	case *ast.UpdateStmt:
+		tableRefs = stmt.TableRefs.TableRefs
+		where = stmt.Where
+	case *ast.DeleteStmt:
+		tableRefs = stmt.TableRefs.TableRefs
+		where = stmt.Where
+	default:
+		return sqlContent, nil
+	}
+
+	if where == nil {
+		return sqlContent, nil
+	}
+	tableNameCreateTableStmtMap := ctx.GetTableNameCreateTableStmtMap(tableRefs)
+	fillParamMarker(l, where, tableNameCreateTableStmtMap)
+	sqlContent = restore(node)
+	return sqlContent, nil
+}
+
+func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map[string]*ast.CreateTableStmt) {
+	util.ScanWhereStmt(func(expr ast.ExprNode) bool {
+		switch stmt := expr.(type) {
+		case *ast.BinaryOperationExpr:
+			// where name=?, 解析器会将'?'解析为ParamMarkerExpr
+			if column, ok := stmt.L.(*ast.ColumnNameExpr); ok {
+				if _, ok := stmt.R.(*parserdriver.ParamMarkerExpr); !ok {
+					return true
+				}
+				defaultValue, err := fillColumnDefaultValue(column, tableCreateStmtMap)
+				if err != nil {
+					l.Error(err)
+				}
+				if defaultValue == nil {
+					return false
+				}
+				stmt.R = defaultValue
+			} else if column, ok := stmt.R.(*ast.ColumnNameExpr); ok {
+				if _, ok := stmt.L.(*parserdriver.ParamMarkerExpr); !ok {
+					return true
+				}
+				defaultValue, err := fillColumnDefaultValue(column, tableCreateStmtMap)
+				if err != nil {
+					l.Error(err)
+				}
+				if defaultValue == nil {
+					return false
+				}
+				stmt.L = defaultValue
+			}
+		}
+		return false
+	}, where)
+}
+
+func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[string]*ast.CreateTableStmt) (ast.ExprNode, error) {
+	tableName := column.Name.Table.L
+	columnName := column.Name.Name.L
+	// tablename为空，代表没有进行连表查询也没有使用别名 e.g: select * from users where id=?
+	if tableName == "" {
+		for k := range tableCreateStmtMap {
+			tableName = k
+		}
+	}
+	createTableStmt, ok := tableCreateStmtMap[tableName]
+	if !ok {
+		return nil, fmt.Errorf("fillxmlsql get create table sql failed, table:%v", tableName)
+	}
+	for _, col := range createTableStmt.Cols {
+		if col.Name.Name.L != columnName {
+			continue
+		}
+		var value interface{}
+		switch col.Tp.Tp {
+		case pingcapMysql.TypeVarchar, pingcapMysql.TypeString:
+			value = MybatisXMLCharDefaultValue
+		// int类型
+		case pingcapMysql.TypeLong, pingcapMysql.TypeTiny, pingcapMysql.TypeShort,
+			pingcapMysql.TypeInt24, pingcapMysql.TypeLonglong:
+			value = MybatisXMLIntDefaultValue
+		// 浮点类型
+		case pingcapMysql.TypeNewDecimal, pingcapMysql.TypeFloat, pingcapMysql.TypeDouble:
+			value = MybatisXMLFloatDefaultValue
+		case pingcapMysql.TypeDatetime:
+			value = MybatisXMLDateTimeDefaultValue
+		}
+		if value != nil {
+			defaultValue := &parserdriver.ValueExpr{}
+			defaultValue.SetValue(value)
+			return defaultValue, nil
+		}
+	}
+	return nil, nil
+}
+
+// 还原抽象语法树节点至SQL
+func restore(node ast.Node) (sql string) {
+	var buf strings.Builder
+	rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
+
+	if err := node.Restore(rc); err != nil {
+		return
+	}
+	sql = buf.String()
+	return
 }
