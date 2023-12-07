@@ -205,7 +205,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		}
 	}()
 
-	var sqlManageList []*model.SqlManage
+	var sqlManageEdList []*model.SqlManageWithEndpoint
 	for _, sql := range sqls {
 		var firstQueryAtPtrFormat *time.Time
 		var err error
@@ -234,18 +234,23 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 			countFormat = count.(uint64)
 		}
 
+		endpoints := sql.Info["endpoints"].([]string)
+
 		// todo: 更新审核等级
 		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "", ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
 		if err != nil {
 			return err
 		}
 
-		sqlManageList = append(sqlManageList, sqlManage)
+		sqlManageEdList = append(sqlManageEdList, &model.SqlManageWithEndpoint{
+			SqlManage: sqlManage,
+			Endpoints: endpoints,
+		})
 	}
 
 	s := model.GetStorage()
 	// todo 计算count值
-	if err := s.InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList); err != nil {
+	if err := s.InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageEdList); err != nil {
 		return fmt.Errorf("insert or update sql manage failed, error: %v", err)
 	}
 
