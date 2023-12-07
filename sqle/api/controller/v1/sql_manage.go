@@ -61,7 +61,9 @@ type Source struct {
 	SqlAuditRecordIds []string `json:"sql_audit_record_ids"`
 }
 
+// todo : 该接口已废弃，后续会删除
 // GetSqlManageList
+// @Deprecated
 // @Summary 获取管控sql列表
 // @Description get sql manage list
 // @Tags SqlManage

@@ -8164,6 +8164,7 @@ paths:
       - sql_audit_record
   /v1/projects/{project_name}/sql_manages:
     get:
+      deprecated: true
       description: get sql manage list
       operationId: GetSqlManageList
       parameters:
