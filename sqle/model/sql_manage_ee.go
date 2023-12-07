@@ -360,7 +360,7 @@ type SqlManageWithEndpoint struct {
 	Endpoints []string
 }
 
-// todo 临时方案，后续移除
+// todo : 指纹count未累加
 func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*SqlManageWithEndpoint) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		args := make([]interface{}, 0, len(sqlManageList))
