@@ -226,6 +226,9 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			sqlReq.Counter = strconv.Itoa(atoi + 1)
 			sqlReq.LastReceiveText = processedRawText
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
+			if sql.Endpoint != "" {
+				sqlReq.Endpoints = append(sqlReq.Endpoints, sql.Endpoint)
+			}
 		} else {
 			sqlReq := &scanner.AuditPlanSQLReq{
 				Fingerprint:          processedFingerPrint,
@@ -237,8 +240,11 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 				FirstQueryAt:         sql.QueryAt,
 				DBUser:               sql.DBUser,
 				Schema:               sql.Schema,
-				Endpoint:             sql.Endpoint,
 			}
+			if sql.Endpoint != "" {
+				sqlReq.Endpoints = append(sqlReq.Endpoints, sql.Endpoint)
+			}
+
 			auditPlanSqlMap[key] = sqlReq
 			sqlListReq = append(sqlListReq, sqlReq)
 		}
