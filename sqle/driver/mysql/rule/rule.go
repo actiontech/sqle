@@ -5342,7 +5342,7 @@ func isColumnUsingIndex(column string, constraints []*ast.Constraint) bool {
 	return false
 }
 
-func checkWhereCondationUseIndex(ctx *session.Context, whereVisitor *util.WhereWithTableVisitor) bool {
+func checkWhereConditionUseIndex(ctx *session.Context, whereVisitor *util.WhereWithTableVisitor) bool {
 	for _, whereExpr := range whereVisitor.WhereStmts {
 		if whereExpr.WhereStmt == nil {
 			return false
@@ -5408,7 +5408,7 @@ func checkExplain(input *RuleHandlerInput) error {
 		// 验证where条件是否使用了索引字段
 		wv := &util.WhereWithTableVisitor{}
 		input.Node.Accept(wv)
-		if !checkWhereCondationUseIndex(input.Ctx, wv) {
+		if !checkWhereConditionUseIndex(input.Ctx, wv) {
 			addResult(input.Res, input.Rule, input.Rule.Name)
 			return nil
 		}
