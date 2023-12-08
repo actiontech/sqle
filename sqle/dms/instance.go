@@ -191,6 +191,10 @@ func GetInstancesNameByRuleTemplateName(ctx context.Context, ruleTemplateName st
 }
 
 func GetInstanceInProjectByName(ctx context.Context, projectUid, name string) (*model.Instance, bool, error) {
+	if len(projectUid) == 0 || len(name) == 0 {
+		return nil, false, nil
+	}
+
 	return getInstance(ctx, dmsV1.ListDBServiceReq{
 		PageSize:     1,
 		FilterByName: name,
@@ -259,6 +263,10 @@ func GetInstanceNamesInProject(ctx context.Context, projectUid string) ([]string
 }
 
 func GetInstancesById(ctx context.Context, instanceId uint64) (*model.Instance, bool, error) {
+	if instanceId == 0 {
+		return nil, false, nil
+	}
+
 	return getInstance(ctx, dmsV1.ListDBServiceReq{
 		PageSize:    1,
 		FilterByUID: strconv.FormatUint(instanceId, 10),
@@ -266,10 +274,6 @@ func GetInstancesById(ctx context.Context, instanceId uint64) (*model.Instance, 
 }
 
 func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Instance, error) {
-	if len(instanceIds) == 0 {
-		return nil, nil
-	}
-
 	ret := make([]*model.Instance, 0)
 	for _, instanceId := range instanceIds {
 		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
@@ -311,6 +315,10 @@ func GetInstanceIdNameMapByIds(ctx context.Context, instanceIds []uint64) (map[u
 }
 
 func GetInstanceInProjectById(ctx context.Context, projectUid string, instanceId uint64) (*model.Instance, bool, error) {
+	if len(projectUid) == 0 || instanceId == 0 {
+		return nil, false, nil
+	}
+
 	return getInstance(ctx, dmsV1.ListDBServiceReq{
 		PageSize:    1,
 		FilterByUID: strconv.FormatUint(instanceId, 10),
