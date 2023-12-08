@@ -334,6 +334,59 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 4,
 	}
+	testCases["test7-等值条件包含OR但无法给出覆盖索引"] = optimizerTestContent{
+		sql: `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
+			},
+		},
+		maxColumn: 3,
+	}
+	testCases["test8-等值条件包含OR可以给出覆盖索引"] = optimizerTestContent{
+		sql: `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			{
+				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' AND `v3`='6' AND `v2`='s' OR `id`=3 ORDER BY `v3` 中，根据三星索引设计规范",
+				IndexedColumns: []string{"id", "v3", "v2", "v1"},
+				TableName:      "exist_tb_3",
+			},
+		},
+		maxColumn: 4,
+	}
+	testCases["test8-SELECT *"] = optimizerTestContent{
+		sql: `SELECT * FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			{
+				Reason:         "索引建议 | SQL：SELECT * FROM `exist_tb_3` WHERE `v1`='s' AND `v3`='6' AND `v2`='s' OR `id`=3 ORDER BY `v3` 中，根据三星索引设计规范",
+				IndexedColumns: []string{"id", "v3", "v2", "v1"},
+				TableName:      "exist_tb_3",
+			},
+		},
+		maxColumn: 4,
+	}
 	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
 
