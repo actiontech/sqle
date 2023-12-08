@@ -158,13 +158,18 @@ func (se *SubQueryMaxNestNumExtractor) Leave(in ast.Node) (node ast.Node, ok boo
 }
 
 type TableSourceExtractor struct {
-	TableSources map[string] /*origin table name without database name*/ *ast.TableSource
+	TableSources map[string] /*origin table name and as name without database name*/ *ast.TableSource
 }
 
 func (ts *TableSourceExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch stmt := in.(type) {
 	case *ast.TableSource:
-		ts.TableSources[(stmt.Source).(*ast.TableName).Name.O] = stmt
+		if stmt.AsName.L != "" {
+			ts.TableSources[stmt.AsName.L] = stmt
+		}
+		if tableName, ok := stmt.Source.(*ast.TableName); ok {
+			ts.TableSources[tableName.Name.O] = stmt
+		}
 	}
 	return in, false
 }
