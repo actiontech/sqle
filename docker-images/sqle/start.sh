@@ -19,12 +19,21 @@ dms:
       port: ${MYSQL_PORT}
       database: ${MYSQL_DMS_SCHEMA}
       debug: ${DEBUG}
+    log:
+      level: DEBUG
+      path: logs
+      max_size_mb: 100
+      max_backup_number: 10      
   cloudbeaver:
     enable_https: 
     host: 
     port: 
     admin_user: 
     admin_password: 
+  database_driver_options:
+    - db_type: MySQL
+      logo_path: "/logo/mysql.png"
+      params: 
   secret_key:  
 sqle:
   id: 1
