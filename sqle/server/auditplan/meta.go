@@ -52,8 +52,8 @@ const (
 	paramKeyAccessKeySecret                     = "access_key_secret"
 	paramKeyRdsPath                             = "rds_path"
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
-	paramProjectId                              = "project_id"
-	paramRegion                                 = "region"
+	paramKeyProjectId                           = "project_id"
+	paramKeyRegion                              = "region"
 )
 
 var Metas = []Meta{
@@ -282,7 +282,7 @@ var Metas = []Meta{
 		CreateTask:   NewHuaweiRdsMySQLSlowLogTask,
 		Params: []*params.Param{
 			{
-				Key:   paramProjectId,
+				Key:   paramKeyProjectId,
 				Desc:  "项目ID",
 				Value: "",
 				Type:  params.ParamTypeString,
@@ -307,14 +307,14 @@ var Metas = []Meta{
 			},
 			{
 				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大30天)",
+				Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
 				Value: "",
 				Type:  params.ParamTypeInt,
 			},
 			{
-				Key:   paramRegion,
-				Desc:  "当前API开放的地区",
-				Value: "ap-southeast-1",
+				Key:   paramKeyRegion,
+				Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
+				Value: "",
 				Type:  params.ParamTypeString,
 			},
 		},

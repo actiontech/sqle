@@ -150,7 +150,7 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		at.logger.Warnf("huawei cloud secret access key is not configured")
 		return
 	}
-	projectId := at.ap.Params.GetParam(paramProjectId).String()
+	projectId := at.ap.Params.GetParam(paramKeyProjectId).String()
 	if projectId == "" {
 		at.logger.Warnf("huawei cloud project id is not configured")
 		return
@@ -160,7 +160,7 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 		at.logger.Warnf("huawei cloud instance id is not configured")
 		return
 	}
-	region := at.ap.Params.GetParam(paramRegion).String()
+	region := at.ap.Params.GetParam(paramKeyRegion).String()
 	if region == "" {
 		at.logger.Warnf("huawei cloud region is not configured")
 		return
