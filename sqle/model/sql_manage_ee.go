@@ -214,13 +214,12 @@ FROM sql_manages sm
          LEFT JOIN sql_manage_endpoints all_sme ON all_sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5	
 		 LEFT JOIN tasks t ON sar.task_id = t.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
-         LEFT JOIN projects p ON p.id = sm.project_id
          LEFT JOIN sql_manage_assignees sma ON sma.sql_manage_id = sm.id
          LEFT JOIN users u ON u.id = sma.user_id
          LEFT JOIN sql_manage_assignees all_sma ON all_sma.sql_manage_id = sm.id
          LEFT JOIN users all_users ON all_users.id = all_sma.user_id
 
-WHERE p.name = :project_name
+WHERE sm.project_id = :project_id
   AND sm.deleted_at IS NULL
 
 {{- if .fuzzy_search_sql_fingerprint }}

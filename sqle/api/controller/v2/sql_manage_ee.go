@@ -21,6 +21,15 @@ func getSqlManageList(c echo.Context) error {
 
 	projectName := c.Param("project_name")
 
+	s := model.GetStorage()
+	project, exist, err := s.GetProjectByName(projectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
+	}
+
 	var offset uint32
 	if req.PageIndex > 0 {
 		offset = (req.PageIndex - 1) * req.PageSize
@@ -40,7 +49,7 @@ func getSqlManageList(c echo.Context) error {
 		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
-		"project_name":                      projectName,
+		"project_id":                        project.ID,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
@@ -50,7 +59,6 @@ func getSqlManageList(c echo.Context) error {
 		"offset":                            offset,
 	}
 
-	s := model.GetStorage()
 	sqlManage, err := s.GetSqlManageListByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
