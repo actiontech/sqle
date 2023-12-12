@@ -373,7 +373,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			i.result.Add(
 				driverV2.RuleLevelNotice,
 				rulepkg.ConfigOptimizeIndexEnabled,
-				fmt.Sprintf("%s，建议从表%s中选取合适的列添加索引，参考列：%s \n", advice.Reason, advice.TableName, strings.Join(advice.IndexedColumns, "、")),
+				advice.Reason,
 			)
 		}
 
