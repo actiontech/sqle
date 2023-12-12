@@ -21,6 +21,13 @@ import (
 const (
 	MAX_INDEX_COLUMN               string = "composite_index_max_column"
 	MAX_INDEX_COLUMN_DEFAULT_VALUE int    = 5
+	threeStarIndexAdviceFormat     string = "索引建议 | 根据三星索引设计规范，建议对表%s添加复合索引：【%s】"
+	prefixIndexAdviceFormat        string = "索引建议 | SQL使用了前缀模式匹配，数据量大时，可建立翻转函数索引"
+	extremalIndexAdviceFormat      string = "索引建议 | SQL使用了最值函数，可以利用索引有序的性质快速找到最值，建议对表%s添加单列索引，参考列：%s"
+	functionIndexAdviceFormatV80   string = "索引建议 | SQL使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引，建议对表%s添加函数索引，参考列：%s"
+	functionIndexAdviceFormatV57   string = "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，建议对表%s添加虚拟列索引，参考列：%s"
+	functionIndexAdviceFormatAll   string = "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，在MySQL8.0.13以上的版本，可以创建函数索引，建议根据MySQL版本对表%s添加合适的索引，参考列：%s"
+	joinIndexAdviceFormat          string = "索引建议 | SQL中字段%s为被驱动表%s上的关联字段，建议对表%s添加单列索引，参考列：%s"
 )
 
 type OptimizeResult struct {
@@ -345,10 +352,12 @@ func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
 	if util.IsIndex(a.adviceColumns.columnMap, a.drivingTableCreateStmt.Constraints) {
 		return nil
 	}
+	tableName := util.GetTableNameFromTableSource(a.drivingTableSource)
+	indexColumns := a.adviceColumns.stringSlice()
 	return []*OptimizeResult{{
-		TableName:      util.GetTableNameFromTableSource(a.drivingTableSource),
-		IndexedColumns: a.adviceColumns.stringSlice(),
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，根据三星索引设计规范", restore(a.originNode)),
+		TableName:      tableName,
+		IndexedColumns: indexColumns,
+		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, strings.Join(indexColumns, "，")),
 	}}
 }
 
@@ -680,6 +689,9 @@ func newJoinIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode ast
 }
 
 func (a *joinIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	if a.originNode == nil {
+		return nil
+	}
 	err := a.loadEssentials()
 	if err != nil {
 		a.log.Logger.Warnf("when join index advisor load essentials failed, err:%v", err)
@@ -780,7 +792,7 @@ func (a *joinIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      drivenTableName,
 		IndexedColumns: indexColumn,
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，字段 %s 为被驱动表 %s 上的关联字段", restore(a.currentNode), strings.Join(indexColumn, "，"), drivenTableName),
+		Reason:         fmt.Sprintf(joinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
 	})
 }
 
@@ -841,13 +853,16 @@ func newFunctionIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode
 }
 
 func (a *functionIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	node, ok := a.originNode.(*ast.SelectStmt)
+	if !ok {
+		return nil
+	}
+	if node.Where == nil {
+		return nil
+	}
 	err := a.loadEssentials()
 	if err != nil {
 		a.log.Logger.Warnf("when function index advisor load essentials failed, err:%v", err)
-		return nil
-	}
-	node, ok := a.originNode.(*ast.SelectStmt)
-	if !ok {
 		return nil
 	}
 	node.Where.Accept(a)
@@ -917,7 +932,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引", restore(a.currentNode.L)),
+			Reason:         fmt.Sprintf(functionIndexAdviceFormatV57, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -925,7 +940,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引", restore(a.currentNode.L)),
+			Reason:         fmt.Sprintf(functionIndexAdviceFormatV80, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -933,7 +948,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，在MySQL8.0.13以上的版本，可以创建函数索引", restore(a.currentNode.L)),
+		Reason:         fmt.Sprintf(functionIndexAdviceFormatAll, tableName, strings.Join(columns, "，")),
 	})
 }
 
@@ -966,6 +981,9 @@ func newExtremalIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode
 }
 
 func (a *extremalIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	if a.originNode == nil {
+		return nil
+	}
 	err := a.loadEssentials()
 	if err != nil {
 		a.log.Logger.Warnf("when extremal index advisor load essentials failed, err:%v", err)
@@ -1027,7 +1045,7 @@ func (a *extremalIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{indexColumn},
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了最值函数，可以利用索引有序的性质快速找到最值", restore(a.currentNode)),
+		Reason:         fmt.Sprintf(extremalIndexAdviceFormat, tableName, indexColumn),
 	})
 }
 
@@ -1056,13 +1074,16 @@ func newPrefixIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNode a
 }
 
 func (a *prefixIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	node, ok := a.originNode.(*ast.SelectStmt)
+	if !ok {
+		return nil
+	}
+	if node.Where == nil {
+		return nil
+	}
 	err := a.loadEssentials()
 	if err != nil {
 		a.log.Logger.Warnf("when prefix index advisor load essentials failed, err:%v", err)
-		return nil
-	}
-	node, ok := a.originNode.(*ast.SelectStmt)
-	if !ok {
 		return nil
 	}
 	node.Where.Accept(a)
@@ -1100,7 +1121,7 @@ func (v *prefixIndexAdvisor) Leave(in ast.Node) (out ast.Node, ok bool) {
 }
 
 func (a *prefixIndexAdvisor) giveAdvice() {
-	if !util.CheckWhereFuzzySearch(a.currentNode) {
+	if !util.CheckWhereLeftFuzzySearch(a.currentNode) {
 		return
 	}
 	column, ok := a.currentNode.Expr.(*ast.ColumnNameExpr)
@@ -1116,6 +1137,6 @@ func (a *prefixIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column.Name.Name.L},
-		Reason:         fmt.Sprintf("索引建议 | SQL：%s 中，使用了前缀模式匹配，在数据量大的时候，可以建立翻转函数索引", restore(a.currentNode)),
+		Reason:         prefixIndexAdviceFormat,
 	})
 }
