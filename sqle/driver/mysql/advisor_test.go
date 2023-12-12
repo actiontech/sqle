@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
@@ -25,20 +26,60 @@ func mockPrefixIndexOptimizeResult(caseName string, c optimizerTestContent, t *t
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newPrefixIndexAdvisor)
 }
 
+func newPrefixOptimizeResult(columns []string, tableName string) *OptimizeResult {
+	return &OptimizeResult{
+		TableName:      tableName,
+		IndexedColumns: columns,
+		Reason:         prefixIndexAdviceFormat,
+	}
+}
+
 func mockThreeStarOptimizeResult(caseName string, c optimizerTestContent, t *testing.T) []*OptimizeResult {
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newThreeStarIndexAdvisor)
+}
+
+func newThreeStarOptimizeResult(columns []string, tableName string) *OptimizeResult {
+	return &OptimizeResult{
+		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, strings.Join(columns, "，")),
+		IndexedColumns: columns,
+		TableName:      tableName,
+	}
 }
 
 func mockFunctionOptimizeResult(caseName string, c optimizerTestContent, t *testing.T) []*OptimizeResult {
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newFunctionIndexAdvisor)
 }
 
+func newFunctionIndexOptimizeResult(format string, columns []string, tableName string) *OptimizeResult {
+	return &OptimizeResult{
+		TableName:      tableName,
+		IndexedColumns: columns,
+		Reason:         fmt.Sprintf(format, tableName, strings.Join(columns, "，")),
+	}
+}
+
 func mockExtremalOptimizeResult(caseName string, c optimizerTestContent, t *testing.T) []*OptimizeResult {
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newExtremalIndexAdvisor)
 }
 
+func newExtremalIndexOptimizeResult(column string, tableName string) *OptimizeResult {
+	return &OptimizeResult{
+		TableName:      tableName,
+		IndexedColumns: []string{column},
+		Reason:         fmt.Sprintf(extremalIndexAdviceFormat, tableName, column),
+	}
+}
+
 func mockJoinOptimizeResult(caseName string, c optimizerTestContent, t *testing.T) []*OptimizeResult {
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newJoinIndexAdvisor)
+}
+
+func newJoinIndexOptimizeResult(indexColumn []string, drivenTableName string) *OptimizeResult {
+	return &OptimizeResult{
+		Reason:         fmt.Sprintf(joinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
+		IndexedColumns: indexColumn,
+		TableName:      drivenTableName,
+	}
 }
 
 func mockOptimizeResultWithAdvisor(sql string, maxColumn int, queryResults []*queryResult, caseName string, t *testing.T, f func(ctx *session.Context, log *logrus.Entry, originNode ast.Node, params params.Params) CreateIndexAdvisor) []*OptimizeResult {
@@ -103,11 +144,7 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：`v1` LIKE '%_set' 中，使用了前缀模式匹配，在数据量大的时候，可以建立翻转函数索引",
-				IndexedColumns: []string{"v1"},
-				TableName:      "exist_tb_1",
-			},
+			newPrefixOptimizeResult([]string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 1,
 	}
@@ -120,11 +157,7 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：`v1` LIKE UPPER('_set') 中，使用了前缀模式匹配，在数据量大的时候，可以建立翻转函数索引",
-				IndexedColumns: []string{"v1"},
-				TableName:      "exist_tb_1",
-			},
+			newPrefixOptimizeResult([]string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 1,
 	}
@@ -133,6 +166,26 @@ func TestPrefixIndexOptimize(t *testing.T) {
 		queryResults: []*queryResult{
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 = '_set'`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			},
+		},
+		maxColumn: 1,
+	}
+	testCases["test4-without where"] = optimizerTestContent{
+		sql: `SELECT * FROM exist_tb_1`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			},
+		},
+		maxColumn: 1,
+	}
+	testCases["test5-full fuzzy search"] = optimizerTestContent{
+		sql: `SELECT * FROM exist_tb_1 WHERE v1 LIKE upper("_set_")`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 LIKE upper("_set_")`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			},
 		},
@@ -155,11 +208,7 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：LOWER(`v1`) 中，使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引",
-				IndexedColumns: []string{"v1"},
-				TableName:      "exist_tb_1",
-			},
+			newFunctionIndexOptimizeResult(functionIndexAdviceFormatV80, []string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -175,15 +224,11 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：LOWER(`v1`) 中，使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引",
-				IndexedColumns: []string{"v1"},
-				TableName:      "exist_tb_1",
-			},
+			newFunctionIndexOptimizeResult(functionIndexAdviceFormatV57, []string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
-	testCases["test3"] = optimizerTestContent{
+	testCases["test3-version lower than 5.7.0"] = optimizerTestContent{
 		sql: `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`,
 		queryResults: []*queryResult{
 			{
@@ -196,7 +241,7 @@ func TestFunctionIndexOptimize(t *testing.T) {
 		},
 		maxColumn: 4,
 	}
-	testCases["test4"] = optimizerTestContent{
+	testCases["test4-not use function"] = optimizerTestContent{
 		sql: `SELECT v1 FROM exist_tb_1 WHERE v1 = "s"`,
 		queryResults: []*queryResult{
 			{
@@ -205,6 +250,32 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("5.2.1"),
+			},
+		},
+		maxColumn: 4,
+	}
+	testCases["test5-version can not parse"] = optimizerTestContent{
+		sql: `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
+				result: sqlmock.NewRows([]string{"Value"}).AddRow("?,?,?"),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newFunctionIndexOptimizeResult(functionIndexAdviceFormatAll, []string{"v1"}, "exist_tb_1"),
+		},
+		maxColumn: 4,
+	}
+	testCases["test6-without where"] = optimizerTestContent{
+		sql: `SELECT v1 FROM exist_tb_1`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			},
 		},
 		maxColumn: 4,
@@ -226,11 +297,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `v1`,`v2` FROM `exist_tb_3` WHERE `v1`='s' ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"v1", "v3", "v2"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"v1", "v3", "v2"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
 	}
@@ -246,11 +313,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"v1", "v3"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"v1", "v3"}, "exist_tb_3"),
 		},
 		maxColumn: 3,
 	}
@@ -266,11 +329,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"v1", "v3", "id", "v2"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"v1", "v3", "id", "v2"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
 	}
@@ -286,11 +345,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' AND `v2`='s' AND `id`=20 ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"id", "v2", "v3"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"id", "v2", "v3"}, "exist_tb_3"),
 		},
 		maxColumn: 3,
 	}
@@ -306,11 +361,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' AND `v2`='s' AND `id`=20 ORDER BY `v2` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"id", "v2", "v1"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"id", "v2", "v1"}, "exist_tb_3"),
 		},
 		maxColumn: 3,
 	}
@@ -326,11 +377,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' AND `v2`='s' AND `id`<=20 ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"v2", "v1", "v3", "id"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"v2", "v1", "v3", "id"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
 	}
@@ -359,11 +406,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT `id`,`v1`,`v2`,`v3` FROM `exist_tb_3` WHERE `v1`='s' AND `v3`='6' AND `v2`='s' OR `id`=3 ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"id", "v3", "v2", "v1"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"id", "v3", "v2", "v1"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
 	}
@@ -379,11 +422,7 @@ func TestThreeStarOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：SELECT * FROM `exist_tb_3` WHERE `v1`='s' AND `v3`='6' AND `v2`='s' OR `id`=3 ORDER BY `v3` 中，根据三星索引设计规范",
-				IndexedColumns: []string{"id", "v3", "v2", "v1"},
-				TableName:      "exist_tb_3",
-			},
+			newThreeStarOptimizeResult([]string{"id", "v3", "v2", "v1"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
 	}
@@ -401,16 +440,8 @@ func TestExtremalOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：MIN(`v3`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
-				IndexedColumns: []string{"v3"},
-				TableName:      "exist_tb_1",
-			},
-			{
-				Reason:         "索引建议 | SQL：MAX(`v2`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
-				IndexedColumns: []string{"v2"},
-				TableName:      "exist_tb_1",
-			},
+			newExtremalIndexOptimizeResult("v3", "exist_tb_1"),
+			newExtremalIndexOptimizeResult("v2", "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -423,11 +454,7 @@ func TestExtremalOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：MIN(`v2`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
-				IndexedColumns: []string{"v2"},
-				TableName:      "exist_tb_1",
-			},
+			newExtremalIndexOptimizeResult("v2", "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -440,11 +467,7 @@ func TestExtremalOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：MIN(`v2`) 中，使用了最值函数，可以利用索引有序的性质快速找到最值",
-				IndexedColumns: []string{"v2"},
-				TableName:      "exist_tb_1",
-			},
+			newExtremalIndexOptimizeResult("v2", "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -483,11 +506,7 @@ func TestJoinOptimize(t *testing.T) {
 		},
 		maxColumn: 1,
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` ON `t1`.`v1`=`t2`.`v1` 中，字段 v1 为被驱动表 t2 上的关联字段",
-				IndexedColumns: []string{"v1"},
-				TableName:      "t2",
-			},
+			newJoinIndexOptimizeResult([]string{"v1"}, "t2"),
 		},
 	}
 	testCases["test2"] = optimizerTestContent{
@@ -500,11 +519,7 @@ func TestJoinOptimize(t *testing.T) {
 		},
 		maxColumn: 1,
 		expectResults: []*OptimizeResult{
-			{
-				Reason:         "索引建议 | SQL：`exist_tb_1` AS `t1` JOIN `exist_tb_2` AS `t2` USING (`v1`) 中，字段 v1 为被驱动表 t2 上的关联字段",
-				IndexedColumns: []string{"v1"},
-				TableName:      "t2",
-			},
+			newJoinIndexOptimizeResult([]string{"v1"}, "t2"),
 		},
 	}
 	testCases["test3"] = optimizerTestContent{
