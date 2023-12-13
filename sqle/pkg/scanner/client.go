@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,11 +13,10 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"errors"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
 )
 
 // %s = audit plan name
@@ -26,9 +26,9 @@ const (
 	// Post
 	TriggerAudit = "/v1/projects/%v/audit_plans/%s/trigger"
 	// Post
-	FullUpload = "/v1/projects/%v/audit_plans/%s/sqls/full"
+	FullUpload = "/v2/projects/%v/audit_plans/%s/sqls/full"
 	// Post
-	PartialUpload = "/v1/projects/%v/audit_plans/%s/sqls/partial"
+	PartialUpload = "/v2/projects/%v/audit_plans/%s/sqls/partial"
 	// Get										%v=report_id
 	GetAuditReport = "/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
 )
@@ -36,8 +36,8 @@ const (
 type (
 	BaseRes                     = controller.BaseRes
 	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
-	AuditPlanSQLReq             = v1.AuditPlanSQLReqV1
-	FullSyncAuditPlanSQLsReq    = v1.FullSyncAuditPlanSQLsReqV1
+	AuditPlanSQLReq             = v2.AuditPlanSQLReqV2
+	FullSyncAuditPlanSQLsReq    = v2.FullSyncAuditPlanSQLsReqV2
 	PartialSyncAuditPlanSQLsReq = v1.PartialSyncAuditPlanSQLsReqV1
 	TriggerAuditPlanRes         = v1.TriggerAuditPlanResV1
 )

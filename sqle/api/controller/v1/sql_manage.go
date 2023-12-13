@@ -17,6 +17,7 @@ type GetSqlManageListReq struct {
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
@@ -61,7 +62,9 @@ type Source struct {
 	SqlAuditRecordIds []string `json:"sql_audit_record_ids"`
 }
 
+// todo : 该接口已废弃，后续会删除
 // GetSqlManageList
+// @Deprecated
 // @Summary 获取管控sql列表
 // @Description get sql manage list
 // @Tags SqlManage
@@ -79,6 +82,7 @@ type Source struct {
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Param page_index query uint32 true "page index"
@@ -122,6 +126,7 @@ type ExportSqlManagesReq struct {
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 }
@@ -144,6 +149,7 @@ type ExportSqlManagesReq struct {
 // @Param filter_db_type query string false "db type"
 // @Param filter_rule_name query string false "rule name"
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Success 200 {file} file "export sql manage"
