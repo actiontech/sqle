@@ -49,6 +49,7 @@ type SqlManage struct {
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Param page_index query uint32 true "page index"

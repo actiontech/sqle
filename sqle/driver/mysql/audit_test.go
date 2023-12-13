@@ -7526,3 +7526,42 @@ func TestDDLCheckCharLength(t *testing.T) {
 		})
 	}
 }
+
+func Test_CheckMybatisSQLIndex(t *testing.T) {
+	e, _, err := executor.NewMockExecutor()
+	assert.NoError(t, err)
+
+	inspect1 := NewMockInspect(e)
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, "select * from exist_tb_1 where id=?", newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, "select * from exist_tb_2 where v1=?", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, "select * from exist_tb_2 t2 where t2.id=?", newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, "select * from exist_tb_2 t2 where t2.v1=?", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `select * from exist_tb_2 t2 left join exist_tb_1 t1 on t1.id=t2.id where t2.v1=?`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `select * from exist_tb_2 t2 left join exist_tb_1 t1 on t1.id=t2.id`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `select * from exist_tb_2 t2 left join exist_tb_1 t1 on t1.id=t2.id where t1.id=?`, newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `select * from exist_tb_2 where id in (select id from exist_tb_1 where v1=?)`, newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `select * from exist_tb_2 where v2 in (select v1 from exist_tb_1 where id=?)`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `delete from exist_tb_2`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `delete from exist_tb_2 where id=?`, newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `delete from exist_tb_2 where v1=?`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `update exist_tb_2 set id=1`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `update exist_tb_2 set v1=? where id=?`, newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
+		"", inspect1, `update exist_tb_2 set v1=? where v2=?`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+}
