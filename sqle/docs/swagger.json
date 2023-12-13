@@ -4812,6 +4812,12 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "first_appear_timestamp",
                             "last_receive_timestamp",
@@ -4999,6 +5005,12 @@
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -9574,6 +9586,12 @@
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
