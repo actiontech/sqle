@@ -4828,6 +4828,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "first_appear_timestamp",
                             "last_receive_timestamp",
@@ -5015,6 +5021,12 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -9602,6 +9614,12 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {

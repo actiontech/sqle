@@ -8230,6 +8230,10 @@ paths:
         in: query
         name: fuzzy_search_endpoint
         type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
+        type: string
       - description: sort field
         enum:
         - first_appear_timestamp
@@ -8357,6 +8361,10 @@ paths:
       - description: fuzzy search endpoint
         in: query
         name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
         type: string
       - description: sort field
         enum:
@@ -11319,6 +11327,10 @@ paths:
       - description: fuzzy search endpoint
         in: query
         name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
         type: string
       - description: sort field
         enum:
