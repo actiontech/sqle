@@ -2855,6 +2855,30 @@ func TestDMLHintCountFuncWithCol(t *testing.T) {
 			`SELECT a, b,COUNT(distinct col), COUNT(distinct(col)) AS t FROM test_table GROUP BY a,b ORDER BY a,t DESC;`,
 			newTestResult())
 	})
+	t.Run(`select fields contain different count(3) `, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT t1.a, t1.b, COUNT(distinct t1.col) AS distinct_count, t2.col_count   
+			FROM test_table AS t1   
+			LEFT JOIN (SELECT c, d, COUNT(col_1) AS col_count FROM test_table_1) AS t2   
+			ON t1.a = t2.c AND t1.b = t2.d;`,
+			newTestResult().addResult(rulepkg.DMLHintCountFuncWithCol))
+	})
+	t.Run(`select fields contain different count(4) `, func(t *testing.T) {
+		runSingleRuleInspectCase(
+			rule,
+			t,
+			``,
+			DefaultMysqlInspectOffline(),
+			`SELECT t1.a, t1.b, t2.col_count   
+			FROM test_table AS t1   
+			LEFT JOIN (SELECT c, COUNT(distinct col_1) AS distinct_count FROM test_table_1) AS t2   
+			ON t1.a = t2.c AND t1.b = t2.d;`,
+			newTestResult())
+	})
 }
 
 func TestDDLCheckAutoIncrementFieldNum(t *testing.T) {

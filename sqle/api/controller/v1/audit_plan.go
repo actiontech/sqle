@@ -801,6 +801,8 @@ type AuditPlanSQLReqV1 struct {
 	Endpoint             string    `json:"endpoint" from:"endpoint" example:"10.186.1.2"`
 }
 
+// todo: 后续该接口会废弃
+// @Deprecated
 // @Summary 全量同步SQL到扫描任务
 // @Description full sync audit plan SQLs
 // @Id fullSyncAuditPlanSQLsV1
@@ -854,6 +856,8 @@ type PartialSyncAuditPlanSQLsReqV1 struct {
 	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
+// todo: 后续该接口会废弃
+// @Deprecated
 // @Summary 增量同步SQL到扫描任务
 // @Description partial sync audit plan SQLs
 // @Id partialSyncAuditPlanSQLsV1
@@ -974,7 +978,6 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 			SQLContent:  reqSQL.LastReceiveText,
 			Info:        info,
 			Schema:      reqSQL.Schema,
-			Endpoint:    reqSQL.Endpoint,
 		})
 	}
 	return sqls, nil

@@ -1671,6 +1671,7 @@ var doc = `{
                 ],
                 "summary": "全量同步SQL到扫描任务",
                 "operationId": "fullSyncAuditPlanSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1719,6 +1720,7 @@ var doc = `{
                 ],
                 "summary": "增量同步SQL到扫描任务",
                 "operationId": "partialSyncAuditPlanSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -2940,6 +2942,7 @@ var doc = `{
                 ],
                 "summary": "获取管控sql列表",
                 "operationId": "GetSqlManageList",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3028,6 +3031,12 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -3218,6 +3227,12 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -6398,6 +6413,102 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "full sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "全量同步SQL到扫描任务",
+                "operationId": "fullSyncAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "full sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.FullSyncAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "partial sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "增量同步SQL到扫描任务",
+                "operationId": "partialSyncAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "partial sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.PartialSyncAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances/{instance_name}/": {
             "get": {
                 "security": [
@@ -6538,6 +6649,12 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -11722,6 +11839,53 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditPlanSQLReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_counter": {
+                    "type": "string",
+                    "example": "6"
+                },
+                "audit_plan_sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from t1 where id = ?"
+                },
+                "audit_plan_sql_last_receive_text": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_sql_last_receive_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                },
+                "audit_plan_sql_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "database_user001"
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "first_query_at": {
+                    "type": "string",
+                    "example": "2023-09-12T02:48:01.317880Z"
+                },
+                "query_time_avg": {
+                    "type": "number",
+                    "example": 3.22
+                },
+                "query_time_max": {
+                    "type": "number",
+                    "example": 5.22
+                }
+            }
+        },
         "v2.AuditResDataV2": {
             "type": "object",
             "properties": {
@@ -11981,6 +12145,17 @@ var doc = `{
                 },
                 "logo_url": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.FullSyncAuditPlanSQLsReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
+                    }
                 }
             }
         },
@@ -12289,6 +12464,17 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
+                }
+            }
+        },
+        "v2.PartialSyncAuditPlanSQLsReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
+                    }
                 }
             }
         },

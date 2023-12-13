@@ -458,27 +458,47 @@ func WhereStmtExistNot(where ast.ExprNode) bool {
 	return existNOT
 }
 
+// Check is exist a left fuzzy query.
+func CheckWhereLeftFuzzySearch(where ast.ExprNode) bool {
+	isExist := false
+	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
+		switch x := expr.(type) {
+		case *ast.PatternLikeExpr:
+			var resultString string
+			switch pattern := x.Pattern.(type) {
+			case *driver.ValueExpr:
+				resultString = pattern.Datum.GetString()
+			case *ast.FuncCallExpr:
+				resultString = NewFuncCallStringResultGenerator(pattern).GenerateResult()
+			}
+			if (strings.HasPrefix(resultString, "%") || strings.HasPrefix(resultString, "_")) && !(strings.HasSuffix(resultString, "%") || strings.HasSuffix(resultString, "_")) {
+				isExist = true
+				return true
+			}
+		}
+		return false
+	}, where)
+	return isExist
+}
+
 // Check is exist a full fuzzy query or a left fuzzy query. E.g: %name% or %name
 func CheckWhereFuzzySearch(where ast.ExprNode) bool {
 	isExist := false
 	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
 		case *ast.PatternLikeExpr:
+			var resultString string
 			switch pattern := x.Pattern.(type) {
 			case *driver.ValueExpr:
-				datum := pattern.Datum.GetString()
-				if strings.HasPrefix(datum, "%") || strings.HasPrefix(datum, "_") {
-					isExist = true
-					return true
-				}
+				resultString = pattern.Datum.GetString()
 			case *ast.FuncCallExpr:
-				result := NewFuncCallStringResultGenerator(pattern).GenerateResult()
-				if strings.HasPrefix(result, "%") || strings.HasPrefix(result, "_") {
-					isExist = true
-					return true
-				}
+				resultString = NewFuncCallStringResultGenerator(pattern).GenerateResult()
 				// unsupport subquery result as value of like
 				// example (select '%' 'any_string' '%')
+			}
+			if strings.HasPrefix(resultString, "%") || strings.HasPrefix(resultString, "_") {
+				isExist = true
+				return true
 			}
 		}
 		return false

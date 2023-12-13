@@ -293,6 +293,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// sql managers
 		v2ProjectRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
 
+		// scanner token auth
+		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+
 	}
 
 	{
