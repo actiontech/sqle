@@ -43,7 +43,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 		apSql := sqlApSqlMap[reportSQL.BaseSQL.Content]
 		fp := apSql.Fingerprint
 		instName := ap.InstanceName
-		schema := ap.InstanceDatabase
+		schema := apSql.Schema
 		source := model.SQLManageSourceAuditPlan
 		apInfo := apSql.Info
 
