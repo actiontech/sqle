@@ -144,6 +144,7 @@ var autoMigrateList = []interface{}{
 	&SqlManageSqlAuditRecord{},
 	&BlackListAuditPlanSQL{},
 	&CompanyNotice{},
+	&SqlManageEndpoint{},
 }
 
 func (s *Storage) AutoMigrate() error {
