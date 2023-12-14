@@ -4,7 +4,6 @@
 package model
 
 import (
-	"database/sql"
 	e "errors"
 	"fmt"
 	"strings"
@@ -127,23 +126,23 @@ type SqlManageResp struct {
 }
 
 type SqlManageDetail struct {
-	ID                   uint           `json:"id"`
-	SqlFingerprint       string         `json:"sql_fingerprint"`
-	SqlText              string         `json:"sql_text"`
-	Source               string         `json:"source"`
-	AuditLevel           string         `json:"audit_level"`
-	AuditResults         AuditResults   `json:"audit_results"`
-	FpCount              uint64         `json:"fp_count"`
-	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
-	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
-	InstanceName         string         `json:"instance_name"`
-	SchemaName           string         `json:"schema_name"`
-	Status               string         `json:"status"`
-	Remark               string         `json:"remark"`
-	Assignees            *string        `json:"assignees"`
-	ApName               *string        `json:"ap_name"`
-	Endpoint             sql.NullString `json:"endpoint"`
-	SqlAuditRecordIDs    RowList        `json:"sql_audit_record_ids"`
+	ID                   uint         `json:"id"`
+	SqlFingerprint       string       `json:"sql_fingerprint"`
+	SqlText              string       `json:"sql_text"`
+	Source               string       `json:"source"`
+	AuditLevel           string       `json:"audit_level"`
+	AuditResults         AuditResults `json:"audit_results"`
+	FpCount              uint64       `json:"fp_count"`
+	AppearTimestamp      *time.Time   `json:"first_appear_timestamp"`
+	LastReceiveTimestamp *time.Time   `json:"last_receive_timestamp"`
+	InstanceName         string       `json:"instance_name"`
+	SchemaName           string       `json:"schema_name"`
+	Status               string       `json:"status"`
+	Remark               string       `json:"remark"`
+	Assignees            *string      `json:"assignees"`
+	ApName               *string      `json:"ap_name"`
+	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
+	Endpoints            RowList      `json:"endpoints"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
@@ -183,8 +182,8 @@ SELECT
 	sm.remark,
 	sm.assignees as assignees,
 	ap.name as ap_name,
-	sm.endpoint,
-	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids
+	GROUP_CONCAT(DISTINCT sar.audit_record_id) as sql_audit_record_ids,
+	GROUP_CONCAT(DISTINCT all_sme.endpoint) as endpoints
 
 {{- template "body" . -}} 
 
@@ -207,12 +206,13 @@ var sqlManageBodyTpl = `
 FROM sql_manages sm
          LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
-				 LEFT JOIN tasks t ON sar.task_id = t.id
+         LEFT JOIN sql_manage_endpoints sme ON sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
+         LEFT JOIN sql_manage_endpoints all_sme ON all_sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
+		 LEFT JOIN tasks t ON sar.task_id = t.id
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
 
-
 WHERE sm.project_id = :project_id
-		AND sm.deleted_at IS NULL
+  AND sm.deleted_at IS NULL
 
 {{- if .fuzzy_search_sql_fingerprint }}
 AND sm.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
@@ -250,12 +250,12 @@ AND sm.last_receive_timestamp >= :filter_last_audit_start_time_from
 AND sm.last_receive_timestamp <= :filter_last_audit_start_time_to
 {{- end }}
 
-{{- if .filter_status }}
-AND sm.status = :filter_status
+{{- if .fuzzy_search_endpoint }}
+AND sme.endpoint LIKE '%{{ .fuzzy_search_endpoint }}%'
 {{- end }}
 
-{{- if .fuzzy_search_endpoint }}
-AND sm.endpoint LIKE '%{{ .fuzzy_search_endpoint }}%'
+{{- if .filter_status }}
+AND sm.status = :filter_status
 {{- end }}
 
 {{- if .count_bad_sql }}
@@ -346,22 +346,52 @@ func (s *Storage) GetAllSqlManageList() ([]*SqlManage, error) {
 	return sqlManageList, nil
 }
 
-// todo 临时方案，后续移除
-func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*SqlManage) error {
-	args := make([]interface{}, 0, len(sqlManageList))
-	pattern := make([]string, 0, len(sqlManageList))
-	for _, sqlManage := range sqlManageList {
-		pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-		args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
-			sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
-			sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-			sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.Endpoint)
-	}
+type SqlManageWithEndpoint struct {
+	*SqlManage
+	Endpoints []string
+}
 
-	raw := fmt.Sprintf(`
+// todo : 指纹count未累加
+func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*SqlManageWithEndpoint) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		args := make([]interface{}, 0, len(sqlManageList))
+		pattern := make([]string, 0, len(sqlManageList))
+
+		sqlManageEndpointArgs := make([]interface{}, 0, len(sqlManageList))
+		sqlManageEndpointPattern := make([]string, 0, len(sqlManageList))
+
+		now := time.Now().Format(time.RFC3339)
+		for _, sqlManage := range sqlManageList {
+			pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
+				sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
+				sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
+				sqlManage.AuditPlanId, sqlManage.ProjectId)
+
+			if len(sqlManage.Endpoints) > 0 {
+				for _, endpoint := range sqlManage.Endpoints {
+					sqlManageEndpointArgs = append(sqlManageEndpointArgs, now, now, sqlManage.ProjFpSourceInstSchemaMd5, endpoint)
+					sqlManageEndpointPattern = append(sqlManageEndpointPattern, "(?, ?, ?, ?)")
+				}
+			}
+		}
+
+		if len(sqlManageEndpointArgs) > 0 {
+			rawSql := fmt.Sprintf(`
+				INSERT INTO sql_manage_endpoints (created_at, updated_at, proj_fp_source_inst_schema_md5, endpoint) 
+				 	VALUES %s
+				 	ON DUPLICATE KEY UPDATE updated_at = '%s'`, strings.Join(sqlManageEndpointPattern, ", "), now)
+
+			err := tx.Exec(rawSql, sqlManageEndpointArgs...).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		raw := fmt.Sprintf(`
 INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
                          fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-                         remark, audit_plan_id, project_id, endpoint)
+                         remark, audit_plan_id, project_id)
 		VALUES %s
 		ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
                         audit_plan_id          = VALUES(audit_plan_id),
@@ -369,9 +399,14 @@ INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_te
                         audit_results          = VALUES(audit_results),
                         first_appear_timestamp = VALUES(first_appear_timestamp),
                         last_receive_timestamp = VALUES(last_receive_timestamp);`,
-		strings.Join(pattern, ", "))
+			strings.Join(pattern, ", "))
+		err := tx.Exec(raw, args...).Error
+		if err != nil {
+			return err
+		}
 
-	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+		return nil
+	})
 }
 
 func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRecordID uint) error {
@@ -391,17 +426,17 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 			args := make([]interface{}, 0, len(batchSqlManageList))
 			pattern := make([]string, 0, len(batchSqlManageList))
 			for _, sqlManage := range batchSqlManageList {
-				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+				pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 				args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
 					sqlManage.Source, sqlManage.AuditLevel, sqlManage.AuditResults, sqlManage.FpCount, sqlManage.FirstAppearTimestamp,
 					sqlManage.LastReceiveTimestamp, sqlManage.InstanceName, sqlManage.SchemaName, sqlManage.Remark,
-					sqlManage.AuditPlanId, sqlManage.ProjectId, sqlManage.Endpoint)
+					sqlManage.AuditPlanId, sqlManage.ProjectId)
 			}
 
 			raw := fmt.Sprintf(`
 			INSERT INTO sql_manages (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
 			                        fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
-			                        remark, audit_plan_id, project_id, endpoint)
+			                        remark, audit_plan_id, project_id)
 					VALUES %s
 					ON DUPLICATE KEY UPDATE sql_text       = VALUES(sql_text),
 			                       audit_plan_id          = VALUES(audit_plan_id),
