@@ -190,6 +190,10 @@ func (s *Storage) AutoMigrate() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
+	err = s.db.Model(BlackListAuditPlanSQL{}).AddUniqueIndex("uniq_type_content", "filter_type", "filter_content").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
 		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
 			return errors.New(errors.ConnectStorageError, err)
