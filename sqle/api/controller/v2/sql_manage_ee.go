@@ -4,11 +4,13 @@
 package v2
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -19,15 +21,9 @@ func getSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectName := c.Param("project_name")
-
-	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, v1.ErrProjectNotExist(projectName))
 	}
 
 	var offset uint32
@@ -49,7 +45,7 @@ func getSqlManageList(c echo.Context) error {
 		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
-		"project_id":                        project.ID,
+		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
@@ -59,22 +55,33 @@ func getSqlManageList(c echo.Context) error {
 		"offset":                            offset,
 	}
 
+	s := model.GetStorage()
 	sqlManage, err := s.GetSqlManageListByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	sqlManageRet, err := convertToGetSqlManageListResp(sqlManage.SqlManageList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageListResp{
 		BaseRes:               controller.NewBaseReq(nil),
-		Data:                  convertToGetSqlManageListResp(sqlManage.SqlManageList),
+		Data:                  sqlManageRet,
 		SqlManageTotalNum:     sqlManage.SqlManageTotalNum,
 		SqlManageBadNum:       sqlManage.SqlManageBadNum,
 		SqlManageOptimizedNum: sqlManage.SqlManageOptimizedNum,
 	})
 }
 
-func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*SqlManage {
+func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
+	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
+	if err != nil {
+
+		return nil, err
+	}
 	for _, sqlManage := range sqlManageList {
 		sqlMgr := new(SqlManage)
 		sqlMgr.Id = uint64(sqlManage.ID)
@@ -109,8 +116,12 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 		}
 		sqlMgr.FpCount = sqlManage.FpCount
 
-		for _, assignee := range sqlManage.Assignees {
-			sqlMgr.Assignees = append(sqlMgr.Assignees, assignee)
+		if sqlManage.Assignees != nil {
+			for _, assignees := range strings.Split(*sqlManage.Assignees, ",") {
+				if v, ok := users[assignees]; ok {
+					sqlMgr.Assignees = append(sqlMgr.Assignees, v.Name)
+				}
+			}
 		}
 
 		sqlMgr.Status = sqlManage.Status
@@ -120,5 +131,5 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
-	return sqlManageRespList
+	return sqlManageRespList, nil
 }
