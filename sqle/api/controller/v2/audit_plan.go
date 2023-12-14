@@ -276,19 +276,16 @@ type AuditPlanSQLReqV2 struct {
 }
 
 func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV2, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV2 {
+	if len(blackList) == 0 {
+		return sqls
+	}
 	filteredSQLs := []*AuditPlanSQLReqV2{}
+	filter := v1.ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		var match bool
-		for _, blackSQL := range blackList {
-			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
-			match = strings.Contains(strings.ToUpper(sql.LastReceiveText), strings.ToUpper(blackSQL.FilterSQL))
-			if match {
-				break
-			}
+		if filter.IsIpInBlackList(sql.Endpoints) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+			continue
 		}
-		if !match {
-			filteredSQLs = append(filteredSQLs, sql)
-		}
+		filteredSQLs = append(filteredSQLs, sql)
 	}
 	return filteredSQLs
 }
@@ -417,7 +414,9 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -469,7 +468,9 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
