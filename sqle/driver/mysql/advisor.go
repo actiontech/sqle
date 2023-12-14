@@ -21,7 +21,7 @@ import (
 const (
 	MAX_INDEX_COLUMN               string = "composite_index_max_column"
 	MAX_INDEX_COLUMN_DEFAULT_VALUE int    = 5
-	threeStarIndexAdviceFormat     string = "索引建议 | 根据三星索引设计规范，建议对表%s添加复合索引：【%s】"
+	threeStarIndexAdviceFormat     string = "索引建议 | 根据三星索引设计规范，建议对表%s添加%s索引：【%s】"
 	prefixIndexAdviceFormat        string = "索引建议 | SQL使用了前缀模式匹配，数据量大时，可建立翻转函数索引"
 	extremalIndexAdviceFormat      string = "索引建议 | SQL使用了最值函数，可以利用索引有序的性质快速找到最值，建议对表%s添加单列索引，参考列：%s"
 	functionIndexAdviceFormatV80   string = "索引建议 | SQL使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引，建议对表%s添加函数索引，参考列：%s"
@@ -198,14 +198,6 @@ func newColumnGroup() columnGroup {
 	}
 }
 
-func (g *columnGroup) setSelectivity(selectivityMap map[string] /*column name*/ float64) {
-	var columnName string
-	for i := range g.columnsWithSelectivity {
-		columnName = g.columnsWithSelectivity[i].columnName.Name.Name.L
-		g.columnsWithSelectivity[i].selectivity = selectivityMap[columnName]
-	}
-}
-
 func (g columnGroup) len() int {
 	return len(g.columnMap)
 }
@@ -219,13 +211,16 @@ func (g columnGroup) has(col *ast.ColumnNameExpr) bool {
 	return exist
 }
 
-func (g *columnGroup) add(col *ast.ColumnNameExpr) {
+func (g *columnGroup) add(col *ast.ColumnNameExpr, selectivity float64) {
 	if _, exist := g.columnMap[col.Name.Name.L]; exist {
 		// 不重复添加
 		return
 	}
 	g.columnMap.add(col)
-	g.columnsWithSelectivity = append(g.columnsWithSelectivity, columnWithSelectivity{columnName: col})
+	g.columnsWithSelectivity = append(g.columnsWithSelectivity, columnWithSelectivity{
+		columnName:  col,
+		selectivity: selectivity,
+	})
 }
 
 func (g *columnGroup) replace(newColumn columnWithSelectivity, index int) {
@@ -278,11 +273,13 @@ type threeStarIndexAdvisor struct {
 	drivingTableCreateStmt *ast.CreateTableStmt // 驱动表的建表语句
 	originNode             ast.Node             // 原SQL的节点
 	maxColumns             int                  // 复合索引列的上限数量
+	minSelecivity          float64              // 列选择性阈值下限
 	usingOr                bool                 // 使用了或条件
 	possibleColumns        columnGroup          // SQL语句中可能作为索引的备选列
 	columnLastAdd          columnGroup          // 最后添加的列，例如：非等值列
 	columnShouldNotAdd     columnGroup          // 不该添加的列，例如：类型不适合作为索引的列、单列主键列
 	adviceColumns          columnGroup
+	selectivityMap         map[string]float64
 }
 
 type columnInSelect struct {
@@ -298,10 +295,11 @@ func newThreeStarIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNod
 		maxColumns = MAX_INDEX_COLUMN_DEFAULT_VALUE
 	}
 	return &threeStarIndexAdvisor{
-		sqlContext: ctx,
-		log:        log,
-		originNode: originNode,
-		maxColumns: maxColumns,
+		sqlContext:    ctx,
+		log:           log,
+		originNode:    originNode,
+		maxColumns:    maxColumns,
+		minSelecivity: 2,
 		drivingTableColumn: &columnInSelect{
 			equalColumnInWhere:   newColumnGroup(),
 			unequalColumnInWhere: newColumnGroup(),
@@ -328,6 +326,9 @@ func newThreeStarIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNod
 	2. 每个星级添加的列按照索引区分度由高到低排序
 */
 func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
+	if a.originNode == nil {
+		return nil
+	}
 	err := a.loadEssentials()
 	if err != nil {
 		a.log.Logger.Warnf("when three star index advisor load essentials failed, err:%v", err)
@@ -342,22 +343,25 @@ func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
 	if !a.canGiveAdvice() {
 		return nil
 	}
-	err = a.fillColumnWithSelectivity()
-	if err != nil {
-		a.log.Logger.Warnf("fill column with selectivity failed, sql:%s,err:%v", restore(a.originNode), err)
-		return nil
-	}
+
 	a.sortColumnBySelectivity()
 	a.giveAdvice()
+	if a.adviceColumns.len() == 0 {
+		return nil
+	}
 	if util.IsIndex(a.adviceColumns.columnMap, a.drivingTableCreateStmt.Constraints) {
 		return nil
 	}
 	tableName := util.GetTableNameFromTableSource(a.drivingTableSource)
 	indexColumns := a.adviceColumns.stringSlice()
+	var indexType string = "复合"
+	if len(indexColumns) == 1 {
+		indexType = "单列"
+	}
 	return []*OptimizeResult{{
 		TableName:      tableName,
 		IndexedColumns: indexColumns,
-		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, strings.Join(indexColumns, "，")),
+		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, indexType, strings.Join(indexColumns, "，")),
 	}}
 }
 
@@ -365,6 +369,23 @@ func (a *threeStarIndexAdvisor) loadEssentials() (err error) {
 	a.drivingTableSource, a.drivingTableCreateStmt, err = getDrivingTableInfo(a.originNode, a.sqlContext)
 	if err != nil {
 		return err
+	}
+	columnInTable := make([]string, 0, len(a.drivingTableCreateStmt.Cols))
+	for _, column := range a.drivingTableCreateStmt.Cols {
+		columnInTable = append(columnInTable, column.Name.Name.L)
+	}
+	tableName, ok := a.drivingTableSource.Source.(*ast.TableName)
+	if !ok {
+		return fmt.Errorf("in three star advisor driving tableSource.Source is not ast.TableName,sql %s", restore(a.originNode))
+	}
+	a.selectivityMap, err = a.sqlContext.GetSelectivityOfColumns(tableName, columnInTable)
+	if err != nil {
+		return err
+	}
+	for _, value := range a.selectivityMap {
+		if value <= 0 {
+			return fmt.Errorf("get selectivity of columns failed, value of selectivity Less than or equal to zero,sql %s", restore(a.originNode))
+		}
 	}
 	return nil
 }
@@ -382,15 +403,26 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 	if !ok {
 		return fmt.Errorf("in three star advisor, type of current node is not ast.SelectStmt")
 	}
+	var selecivity float64
 	if selectStmt.Where != nil {
 		// 访问Where子句，解析并存储属于驱动表等值列和非等值列
 		selectStmt.Where.Accept(a)
 		for _, col := range a.drivingTableColumn.equalColumnInWhere.columnsWithSelectivity {
-			a.possibleColumns.add(col.columnName)
+			selecivity = a.selectivityMap[col.columnName.Name.Name.L]
+			if selecivity <= a.minSelecivity {
+				a.columnShouldNotAdd.add(col.columnName, selecivity)
+			} else {
+				a.possibleColumns.add(col.columnName, selecivity)
+			}
 		}
 		for _, col := range a.drivingTableColumn.unequalColumnInWhere.columnsWithSelectivity {
-			a.columnLastAdd.add(col.columnName)
-			a.possibleColumns.add(col.columnName)
+			selecivity = a.selectivityMap[col.columnName.Name.Name.L]
+			a.columnLastAdd.add(col.columnName, selecivity)
+			if selecivity <= a.minSelecivity {
+				a.columnShouldNotAdd.add(col.columnName, selecivity)
+			} else {
+				a.possibleColumns.add(col.columnName, selecivity)
+			}
 		}
 	}
 	if selectStmt.OrderBy != nil {
@@ -400,19 +432,32 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 				if !a.isColumnInDrivingTable(col) {
 					continue
 				}
-				a.drivingTableColumn.columnInOrderBy.add(col)
-				a.possibleColumns.add(col)
+				selecivity = a.selectivityMap[col.Name.Name.L]
+				a.drivingTableColumn.columnInOrderBy.add(col, selecivity)
+				if selecivity <= a.minSelecivity {
+					a.columnShouldNotAdd.add(col, selecivity)
+				} else {
+					a.possibleColumns.add(col, selecivity)
+				}
 			}
 		}
 	}
 	if selectStmt.Fields != nil {
 		// 遍历Select子句，存储其中属于驱动表的裸列
 		for _, field := range selectStmt.Fields.Fields {
-
+			// Expr is not nil, WildCard will be nil.
 			if field.WildCard != nil && field.WildCard.Table.String() == "" && field.WildCard.Schema.String() == "" {
 				// 如果是*则添加所有列
-				for _, col := range a.drivingTableCreateStmt.Cols {
-					a.drivingTableColumn.columnInFieldList.add(&ast.ColumnNameExpr{Name: col.Name})
+				var col *ast.ColumnNameExpr
+				for _, coldef := range a.drivingTableCreateStmt.Cols {
+					col = &ast.ColumnNameExpr{Name: coldef.Name}
+					selecivity = a.selectivityMap[coldef.Name.Name.L]
+					a.drivingTableColumn.columnInFieldList.add(col, selecivity)
+					if selecivity <= a.minSelecivity {
+						a.columnShouldNotAdd.add(col, selecivity)
+					} else {
+						a.possibleColumns.add(col, selecivity)
+					}
 				}
 				continue
 			}
@@ -420,8 +465,13 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 				if !a.isColumnInDrivingTable(col) {
 					continue
 				}
-				a.drivingTableColumn.columnInFieldList.add(col)
-				a.possibleColumns.add(col)
+				selecivity = a.selectivityMap[col.Name.Name.L]
+				a.drivingTableColumn.columnInFieldList.add(col, selecivity)
+				if selecivity <= a.minSelecivity {
+					a.columnShouldNotAdd.add(col, selecivity)
+				} else {
+					a.possibleColumns.add(col, selecivity)
+				}
 			}
 		}
 	}
@@ -457,14 +507,18 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 			}
 		}
 		// 2. 遍历列的类型
-		// 把不适合作为索引的列添加到columnShouldNotAdd中
+		// 把类型不适合作为索引的列添加到columnShouldNotAdd中，目前有Blob/Text和JSON
 		for _, columnDefine := range a.drivingTableCreateStmt.Cols {
 			if !a.possibleColumns.has(&ast.ColumnNameExpr{Name: columnDefine.Name}) {
 				continue
 			}
-			if columnDefine.Tp.Tp == mysql.TypeBlob {
-				a.columnShouldNotAdd.add(&ast.ColumnNameExpr{Name: columnDefine.Name})
+			switch columnDefine.Tp.Tp {
+			case mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeJSON:
+				selecivity = a.selectivityMap[columnDefine.Name.Name.L]
+				a.columnShouldNotAdd.add(&ast.ColumnNameExpr{Name: columnDefine.Name}, selecivity)
+				a.possibleColumns.delete(&ast.ColumnNameExpr{Name: columnDefine.Name})
 			}
+
 		}
 	}
 	return nil
@@ -472,6 +526,17 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 
 func (a *threeStarIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren bool) {
 	switch currentNode := in.(type) {
+	case *ast.PatternInExpr:
+		col, ok := currentNode.Expr.(*ast.ColumnNameExpr)
+		if ok {
+			if !a.isColumnInDrivingTable(col) {
+				return in, false
+			}
+			a.drivingTableColumn.unequalColumnInWhere.add(
+				col,
+				a.selectivityMap[col.Name.Name.L],
+			)
+		}
 	case *ast.BinaryOperationExpr:
 		switch currentNode.Op {
 		case opcode.EQ:
@@ -482,7 +547,7 @@ func (a *threeStarIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren b
 				if !a.isColumnInDrivingTable(col) {
 					return in, false
 				}
-				a.drivingTableColumn.equalColumnInWhere.add(col)
+				a.drivingTableColumn.equalColumnInWhere.add(col, a.selectivityMap[col.Name.Name.L])
 			}
 		case opcode.LogicOr:
 			a.usingOr = true
@@ -494,7 +559,10 @@ func (a *threeStarIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren b
 				if !a.isColumnInDrivingTable(col) {
 					return in, false
 				}
-				a.drivingTableColumn.unequalColumnInWhere.add(col)
+				a.drivingTableColumn.unequalColumnInWhere.add(
+					col,
+					a.selectivityMap[col.Name.Name.L],
+				)
 			}
 		}
 	}
@@ -528,7 +596,7 @@ func (a *threeStarIndexAdvisor) giveAdvice() {
 		if a.shouldSkipColumn(column) {
 			continue
 		}
-		a.adviceColumns.add(column.columnName)
+		a.adviceColumns.add(column.columnName, column.selectivity)
 	}
 	// 添加一个排序列
 	if a.canAddOrderColumn() {
@@ -537,7 +605,7 @@ func (a *threeStarIndexAdvisor) giveAdvice() {
 				continue
 			}
 			if a.adviceColumns.len() < a.maxColumns {
-				a.adviceColumns.add(column.columnName)
+				a.adviceColumns.add(column.columnName, column.selectivity)
 			} else if a.adviceColumns.columnsWithSelectivity[a.adviceColumns.len()-1].selectivity < column.selectivity {
 				// 当建议的列已满，此时如果建议的列的最后一列的区分度小于排序列的区分度，则替换该列为排序列
 				a.adviceColumns.replace(column, len(a.adviceColumns.columnMap)-1)
@@ -554,32 +622,18 @@ func (a *threeStarIndexAdvisor) giveAdvice() {
 			if a.shouldSkipColumn(column) {
 				continue
 			}
-			a.adviceColumns.add(column.columnName)
+			a.adviceColumns.add(column.columnName, column.selectivity)
 		}
 	}
 	// 最后添加一列WHERE中的非等值列
 	if a.canAddUnequalColumn() {
 		if a.drivingTableColumn.unequalColumnInWhere.len() > 0 {
-			a.adviceColumns.add(a.drivingTableColumn.unequalColumnInWhere.columnsWithSelectivity[0].columnName)
+			a.adviceColumns.add(
+				a.drivingTableColumn.unequalColumnInWhere.columnsWithSelectivity[0].columnName,
+				a.drivingTableColumn.unequalColumnInWhere.columnsWithSelectivity[0].selectivity,
+			)
 		}
 	}
-}
-
-func (a *threeStarIndexAdvisor) fillColumnWithSelectivity() error {
-	tableName, ok := a.drivingTableSource.Source.(*ast.TableName)
-	if !ok {
-		return fmt.Errorf("in three star advisor driving tableSource.Source is not ast.TableName")
-	}
-	selectivityMap, err := a.sqlContext.GetSelectivityOfColumns(tableName, a.possibleColumns.stringSlice())
-	if err != nil {
-		return err
-	}
-	// 填充驱动表中各列的列区分度
-	a.drivingTableColumn.equalColumnInWhere.setSelectivity(selectivityMap)
-	a.drivingTableColumn.columnInFieldList.setSelectivity(selectivityMap)
-	a.drivingTableColumn.columnInOrderBy.setSelectivity(selectivityMap)
-	a.drivingTableColumn.unequalColumnInWhere.setSelectivity(selectivityMap)
-	return nil
 }
 
 func (a *threeStarIndexAdvisor) sortColumnBySelectivity() {
@@ -654,6 +708,10 @@ func (a threeStarIndexAdvisor) canAddUnequalColumn() bool {
 func (a threeStarIndexAdvisor) canGiveCoverIndex() bool {
 	// 非等值列大于1时，覆盖索引走不到索引的最后一列，不添加覆盖索引
 	if a.drivingTableColumn.unequalColumnInWhere.len() > 1 {
+		return false
+	}
+	// 一旦SQL中有列不适合作为索引的列，则无法给出覆盖索引
+	if a.columnShouldNotAdd.len() > 0 {
 		return false
 	}
 	// 当备选列大于索引列的上限时，覆盖索引不满足该限制，不添加覆盖索引
