@@ -1053,7 +1053,7 @@ SELECT VARCHAR(SQL_STMT,2000) AS CREATE_VIEW_DDL FROM SYSTOOLS.DB2LOOK_INFO WHER
 		sqls = append(sqls, createViewDDL)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls, at.ap.InstanceDatabase))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
