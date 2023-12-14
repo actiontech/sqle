@@ -39,8 +39,12 @@ func mockThreeStarOptimizeResult(caseName string, c optimizerTestContent, t *tes
 }
 
 func newThreeStarOptimizeResult(columns []string, tableName string) *OptimizeResult {
+	var indexType string = "复合"
+	if len(columns) == 1 {
+		indexType = "单列"
+	}
 	return &OptimizeResult{
-		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, strings.Join(columns, "，")),
+		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, indexType, strings.Join(columns, "，")),
 		IndexedColumns: columns,
 		TableName:      tableName,
 	}
@@ -293,7 +297,7 @@ func TestThreeStarOptimize(t *testing.T) {
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`), // 组成请求的来源包含map，会导致query的形式随机
-				result: sqlmock.NewRows([]string{"v1", "v2", "v3"}).AddRow(70.12, 80.98, 34.2),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100, 70.12, 80.98, 34.2),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -425,6 +429,54 @@ func TestThreeStarOptimize(t *testing.T) {
 			newThreeStarOptimizeResult([]string{"id", "v3", "v2", "v1"}, "exist_tb_3"),
 		},
 		maxColumn: 4,
+	}
+	testCases["test9-exclude unsuitable types in select"] = optimizerTestContent{
+		sql: `SELECT id,v1,v2,v3 FROM exist_tb_10 WHERE (v1 in (1,2,3,4,5,6))`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_10 WHERE (v1 in (1,2,3,4,5,6))`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 80.98, 23.4, 21.2),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"v1"}, "exist_tb_10"),
+		},
+		maxColumn: 4,
+	}
+	testCases["test10-exclude unsuitable types in where"] = optimizerTestContent{
+		sql: `SELECT id,v1,v2 FROM exist_tb_10 WHERE v3 = "text" AND v1 in (1,2,3,4,5,6)`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2 FROM exist_tb_10 WHERE v3 = "text" AND v1 in (1,2,3,4,5,6)`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 80.98, 23.4, 21.2),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"v1"}, "exist_tb_10"),
+		},
+		maxColumn: 4,
+	}
+	testCases["test11-exclude column by selectivity"] = optimizerTestContent{
+		sql: `SELECT id,v1,v2 FROM exist_tb_10 WHERE v5 = 1 AND v1 in (1,2,3,4,5,6)`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2 FROM exist_tb_10 WHERE v5 = 1 AND v1 in (1,2,3,4,5,6)`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 2),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"v1"}, "exist_tb_10"),
+		},
+		maxColumn: 3,
 	}
 	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
