@@ -23,6 +23,7 @@ blkid
 btree
 brazil
 chinese
+cidr
 cardinalities
 ccug
 chanxuehong
