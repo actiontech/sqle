@@ -282,7 +282,7 @@ func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV2, blackList []*model.BlackLi
 	filteredSQLs := []*AuditPlanSQLReqV2{}
 	filter := v1.ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		if filter.IsIpInBlackList(sql.Endpoints) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+		if filter.IsEndpointInBlackList(sql.Endpoints) || filter.IsSqlInBlackList(sql.LastReceiveText) {
 			continue
 		}
 		filteredSQLs = append(filteredSQLs, sql)
