@@ -6,7 +6,9 @@ import (
 	"encoding/csv"
 	"fmt"
 	"mime"
+	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -767,21 +769,89 @@ func GetAuditPlanReport(c echo.Context) error {
 }
 
 func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV1 {
+	if len(blackList) == 0 {
+		return sqls
+	}
 	filteredSQLs := []*AuditPlanSQLReqV1{}
+	filter := ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		var match bool
-		for _, blackSQL := range blackList {
-			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
-			match = strings.Contains(strings.ToUpper(sql.LastReceiveText), strings.ToUpper(blackSQL.FilterSQL))
-			if match {
-				break
-			}
+		if filter.IsEndpointInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+			continue
 		}
-		if !match {
-			filteredSQLs = append(filteredSQLs, sql)
-		}
+		filteredSQLs = append(filteredSQLs, sql)
 	}
 	return filteredSQLs
+}
+
+func ConvertToBlackFilter(blackList []*model.BlackListAuditPlanSQL) *BlackFilter {
+	var blackFilter BlackFilter
+	for _, filter := range blackList {
+		switch filter.FilterType {
+		case model.FilterTypeSQL:
+			blackFilter.BlackSqlList = append(blackFilter.BlackSqlList, utils.FullFuzzySearchRegexp(filter.FilterContent))
+		case model.FilterTypeHost:
+			blackFilter.BlackHostList = append(blackFilter.BlackHostList, utils.FullFuzzySearchRegexp(filter.FilterContent))
+		case model.FilterTypeIP:
+			ip := net.ParseIP(filter.FilterContent)
+			if ip == nil {
+				log.Logger().Errorf("wrong ip in black list,ip:%s", filter.FilterContent)
+				continue
+			}
+			blackFilter.BlackIpList = append(blackFilter.BlackIpList, ip)
+		case model.FilterTypeCIDR:
+			_, cidr, err := net.ParseCIDR(filter.FilterContent)
+			if err != nil {
+				log.Logger().Errorf("wrong cidr in black list,cidr:%s,err:%v", filter.FilterContent, err)
+				continue
+			}
+			blackFilter.BlackCidrList = append(blackFilter.BlackCidrList, cidr)
+		}
+	}
+	return &blackFilter
+}
+
+// 构造BlackFilter的目的是缓存黑名单中需要使用的结构体，在每个循环中复用
+type BlackFilter struct {
+	BlackSqlList  []*regexp.Regexp //更换正则匹配提高效率
+	BlackIpList   []net.IP
+	BlackHostList []*regexp.Regexp
+	BlackCidrList []*net.IPNet
+}
+
+func (f BlackFilter) IsSqlInBlackList(checkSql string) bool {
+	for _, blackSql := range f.BlackSqlList {
+		if blackSql.MatchString(checkSql) {
+			return true
+		}
+	}
+	return false
+}
+
+func (f BlackFilter) IsEndpointInBlackList(checkIps []string) bool {
+	var checkNetIp net.IP
+	for _, checkIp := range checkIps {
+		checkNetIp = net.ParseIP(checkIp)
+		if checkNetIp == nil {
+			// 无法解析IP，可能是域名，需要正则匹配
+			for _, blackHost := range f.BlackHostList {
+				if blackHost.MatchString(checkIp) {
+					return true
+				}
+			}
+		} else {
+			for _, blackIp := range f.BlackIpList {
+				if blackIp.Equal(checkNetIp) {
+					return true
+				}
+			}
+			for _, blackCidr := range f.BlackCidrList {
+				if blackCidr.Contains(checkNetIp) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
@@ -843,7 +913,9 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -897,7 +969,9 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
