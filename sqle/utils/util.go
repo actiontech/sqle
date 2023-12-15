@@ -311,5 +311,5 @@ func IsPrefixSubStrArray(arr []string, prefix []string) bool {
 }
 
 func FullFuzzySearchRegexp(str string) *regexp.Regexp {
-	return regexp.MustCompile(`^.*(?i)` + str + `.*$`)
+	return regexp.MustCompile(`^.*(?i)` + regexp.QuoteMeta(str) + `.*$`)
 }
