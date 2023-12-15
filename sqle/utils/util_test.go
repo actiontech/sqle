@@ -255,6 +255,10 @@ func TestFullFuzzySearchRegexp(t *testing.T) {
 			"Golang",
 			[]string{"GoLang is awesome", "I love GOLANG", "GoLangGOLANGGolang"},
 			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
+		}, {
+			".*(?i)",
+			[]string{"GoLang .*(?i) awesome", "I love GO^.*(?i)SING", "GoLangGO.*(?i)Golang"},
+			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
 		},
 	}
 
