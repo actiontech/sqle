@@ -297,12 +297,13 @@ func convertSQLsToModelSQLs(sqls []*SQL) []*model.AuditPlanSQLV2 {
 	return as
 }
 
-func convertRawSQLToModelSQLs(sqls []string) []*model.AuditPlanSQLV2 {
+func convertRawSQLToModelSQLs(sqls []string, schema string) []*model.AuditPlanSQLV2 {
 	as := make([]*model.AuditPlanSQLV2, len(sqls))
 	for i, sql := range sqls {
 		as[i] = &model.AuditPlanSQLV2{
 			Fingerprint: sql,
 			SQLContent:  sql,
+			Schema:      schema,
 		}
 	}
 	return as
@@ -460,7 +461,7 @@ func (at *SchemaMetaTask) collectorDo() {
 		sqls = append(sqls, sql)
 	}
 	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls, at.ap.InstanceDatabase))
 		if err != nil {
 			at.logger.Errorf("save schema meta to storage fail, error: %v", err)
 		}
