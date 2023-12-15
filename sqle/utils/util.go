@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -307,4 +308,9 @@ func IsPrefixSubStrArray(arr []string, prefix []string) bool {
 	}
 
 	return true
+}
+
+// 全模糊匹配字符串，并且对大小写不敏感
+func FullFuzzySearchRegexp(str string) *regexp.Regexp {
+	return regexp.MustCompile(`^.*(?i)` + regexp.QuoteMeta(str) + `.*$`)
 }
