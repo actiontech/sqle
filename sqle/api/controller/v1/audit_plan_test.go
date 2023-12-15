@@ -115,9 +115,10 @@ func TestIsHostInBlackList(t *testing.T) {
 
 	matchHosts := []string{
 		"localtest",
-		"anytest",
-		"some_Site/home/",
-		"Some_site/mysql",
+		"localtest.com",
+		"anyTest.io",
+		"some-Site.org/home/",
+		"Some_site.cn/mysql",
 	}
 
 	if !filter.IsEndpointInBlackList(matchHosts) {
