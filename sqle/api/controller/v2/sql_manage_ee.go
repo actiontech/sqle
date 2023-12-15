@@ -49,6 +49,7 @@ func getSqlManageList(c echo.Context) error {
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
+		"fuzzy_search_schema_name":          req.FuzzySearchSchemaName,
 		"sort_field":                        req.SortField,
 		"sort_order":                        req.SortOrder,
 		"limit":                             req.PageSize,
