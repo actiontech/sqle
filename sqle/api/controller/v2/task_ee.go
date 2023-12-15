@@ -204,18 +204,11 @@ func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
 	if task.Instance == nil {
 		return sqlContent, nil
 	}
-	dsn, err := common.NewDSN(task.Instance, task.Schema)
-	if err != nil {
-		return sqlContent, err
-	}
-	conn, err := executor.NewExecutor(log.NewEntry(), dsn, task.Schema)
-	if err != nil {
-		return sqlContent, err
-	}
-	ctx := session.NewContext(nil, session.WithExecutor(conn))
-	ctx.SetCurrentSchema(task.Schema)
 
 	// sql分析是单条sql分析
+	if len(nodes) == 0 {
+		return sqlContent, nil
+	}
 	node := nodes[0]
 	var tableRefs *ast.Join
 	var where ast.ExprNode
@@ -236,6 +229,18 @@ func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
 	if where == nil {
 		return sqlContent, nil
 	}
+
+	dsn, err := common.NewDSN(task.Instance, task.Schema)
+	if err != nil {
+		return sqlContent, err
+	}
+	conn, err := executor.NewExecutor(log.NewEntry(), dsn, task.Schema)
+	if err != nil {
+		return sqlContent, err
+	}
+	ctx := session.NewContext(nil, session.WithExecutor(conn))
+	ctx.SetCurrentSchema(task.Schema)
+
 	tableNameCreateTableStmtMap := ctx.GetTableNameCreateTableStmtMap(tableRefs)
 	fillParamMarker(l, where, tableNameCreateTableStmtMap)
 	sqlContent = restore(node)
