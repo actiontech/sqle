@@ -800,7 +800,7 @@ func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackLi
 	filteredSQLs := []*AuditPlanSQLReqV1{}
 	filter := ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		if filter.IsIpInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+		if filter.IsEndpointInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
 			continue
 		}
 		filteredSQLs = append(filteredSQLs, sql)
@@ -852,14 +852,14 @@ func (f BlackFilter) IsSqlInBlackList(checkSql string) bool {
 	return false
 }
 
-func (f BlackFilter) IsIpInBlackList(checkIps []string) bool {
+func (f BlackFilter) IsEndpointInBlackList(checkIps []string) bool {
 	var checkNetIp net.IP
 	for _, checkIp := range checkIps {
 		checkNetIp = net.ParseIP(checkIp)
 		if checkNetIp == nil {
 			// 无法解析IP，可能是域名，需要正则匹配
-			for _, BlackHost := range f.BlackHostList {
-				if BlackHost.MatchString(checkIp) {
+			for _, blackHost := range f.BlackHostList {
+				if blackHost.MatchString(checkIp) {
 					return true
 				}
 			}
