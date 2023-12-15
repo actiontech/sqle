@@ -52,10 +52,21 @@ type AuditPlanSQLV2 struct {
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
 }
 
+const (
+	FilterTypeSQL  string = "SQL"
+	FilterTypeIP   string = "IP"
+	FilterTypeCIDR string = "CIDR"
+	FilterTypeHost string = "HOST"
+)
+
 type BlackListAuditPlanSQL struct {
 	Model
+	FilterContent string `json:"filter_content" gorm:"type:varchar(512);not null;"`
+	FilterType    string `json:"filter_type" gorm:"type:enum('SQL','IP','CIDR','HOST');default:'SQL';not null;"`
+}
 
-	FilterSQL string `json:"filter_sql" gorm:"type:varchar(512);not null;unique"`
+func (a BlackListAuditPlanSQL) TableName() string {
+	return "black_list_audit_plan_sqls"
 }
 
 func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
