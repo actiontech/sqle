@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	MybatisXMLFile                 = "mybatis_xml_file"
 	MybatisXMLCharDefaultValue     = "a"
 	MybatisXMLIntDefaultValue      = 1
 	MybatisXMLDateTimeDefaultValue = "2023-01-01 00:00:00"
@@ -64,7 +63,7 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
 	sqlContent := taskSql.Content
-	if task.SQLSource == MybatisXMLFile {
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
 		sqlContent, err = fillingMybatisXmlSQL(sqlContent, task)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
