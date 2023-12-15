@@ -262,6 +262,10 @@ AND sm.last_receive_timestamp <= :filter_last_audit_start_time_to
 AND sme.endpoint LIKE '%{{ .fuzzy_search_endpoint }}%'
 {{- end }}
 
+{{- if .fuzzy_search_schema_name }}
+AND sm.schema_name LIKE '%{{ .fuzzy_search_schema_name }}%'
+{{- end }}
+
 {{- if .filter_status }}
 AND sm.status = :filter_status
 {{- end }}
