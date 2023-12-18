@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -31,10 +32,9 @@ import (
 )
 
 const (
-	MybatisXMLCharDefaultValue     = "a"
-	MybatisXMLIntDefaultValue      = 1
-	MybatisXMLDateTimeDefaultValue = "2023-01-01 00:00:00"
-	MybatisXMLFloatDefaultValue    = 1.0
+	MybatisXMLCharDefaultValue  = "1"
+	MybatisXMLIntDefaultValue   = 1
+	MybatisXMLFloatDefaultValue = 1.0
 )
 
 func getTaskAnalysisData(c echo.Context) error {
@@ -228,17 +228,21 @@ func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
 	if where == nil {
 		return sqlContent, nil
 	}
+	schema := task.Schema
+	if task.Schema == "" {
+		schema = getSchemaFromJoin(tableRefs)
+	}
 
-	dsn, err := common.NewDSN(task.Instance, task.Schema)
+	dsn, err := common.NewDSN(task.Instance, schema)
 	if err != nil {
 		return sqlContent, err
 	}
-	conn, err := executor.NewExecutor(log.NewEntry(), dsn, task.Schema)
+	conn, err := executor.NewExecutor(log.NewEntry(), dsn, schema)
 	if err != nil {
 		return sqlContent, err
 	}
 	ctx := session.NewContext(nil, session.WithExecutor(conn))
-	ctx.SetCurrentSchema(task.Schema)
+	ctx.SetCurrentSchema(schema)
 
 	tableNameCreateTableStmtMap := ctx.GetTableNameCreateTableStmtMap(tableRefs)
 	fillParamMarker(l, where, tableNameCreateTableStmtMap)
@@ -263,6 +267,7 @@ func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map
 					return false
 				}
 				stmt.R = defaultValue
+				// 可能存在 `where ?=name` 这种写法
 			} else if column, ok := stmt.R.(*ast.ColumnNameExpr); ok {
 				if _, ok := stmt.L.(*parserdriver.ParamMarkerExpr); !ok {
 					return true
@@ -294,6 +299,7 @@ func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[s
 	if !ok {
 		return nil, fmt.Errorf("fillxmlsql get create table sql failed, table:%v", tableName)
 	}
+	currentTime := time.Now()
 	for _, col := range createTableStmt.Cols {
 		if col.Name.Name.L != columnName {
 			continue
@@ -310,7 +316,7 @@ func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[s
 		case pingcapMysql.TypeNewDecimal, pingcapMysql.TypeFloat, pingcapMysql.TypeDouble:
 			value = MybatisXMLFloatDefaultValue
 		case pingcapMysql.TypeDatetime:
-			value = MybatisXMLDateTimeDefaultValue
+			value = currentTime.Format("2006-01-02 15:04:05")
 		}
 		if value != nil {
 			defaultValue := &parserdriver.ValueExpr{}
@@ -331,4 +337,20 @@ func restore(node ast.Node) (sql string) {
 	}
 	sql = buf.String()
 	return
+}
+
+func getSchemaFromJoin(stmt *ast.Join) string {
+	schema := ""
+	if stmt == nil {
+		return schema
+	}
+	if n := stmt.Left; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			if tableName, ok := t.Source.(*ast.TableName); ok {
+				schema = tableName.Schema.L
+			}
+		}
+	}
+	return schema
 }
