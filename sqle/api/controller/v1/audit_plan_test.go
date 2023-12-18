@@ -105,7 +105,7 @@ func TestIsCidrInBlackList(t *testing.T) {
 func TestIsHostInBlackList(t *testing.T) {
 	filter := v1.ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
 		{
-			FilterContent: "test",
+			FilterContent: "host",
 			FilterType:    "HOST",
 		}, {
 			FilterContent: "some_site",
@@ -114,8 +114,8 @@ func TestIsHostInBlackList(t *testing.T) {
 	})
 
 	matchHosts := []string{
-		"localtest",
-		"localtest.com",
+		"local_host",
+		"local_Host.com",
 		"anyTest.io",
 		"some-Site.org/home/",
 		"Some_site.cn/mysql",
