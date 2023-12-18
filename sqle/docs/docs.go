@@ -5093,6 +5093,45 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取SQL管控SQL分析",
+                "operationId": "GetSqlManageSqlAnalysisV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql manage id",
+                        "name": "sql_manage_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlAnalysisResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/statistic/audit_plans": {
             "get": {
                 "security": [
@@ -10393,6 +10432,17 @@ var doc = `{
                 }
             }
         },
+        "v1.AffectRows": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "err_message": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanCount": {
             "type": "object",
             "properties": {
@@ -13317,6 +13367,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageSqlAnalysisResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysis"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSyncInstanceTaskListResV1": {
             "type": "object",
             "properties": {
@@ -14574,6 +14641,15 @@ var doc = `{
                 }
             }
         },
+        "v1.PerformanceStatistics": {
+            "type": "object",
+            "properties": {
+                "affect_rows": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AffectRows"
+                }
+            }
+        },
         "v1.PersonaliseReqV1": {
             "type": "object",
             "properties": {
@@ -15166,6 +15242,23 @@ var doc = `{
                 }
             }
         },
+        "v1.SqlAnalysis": {
+            "type": "object",
+            "properties": {
+                "performance_statistics": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.PerformanceStatistics"
+                },
+                "sql_explain": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
+                },
+                "table_metas": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMetas"
+                }
+            }
+        },
         "v1.SqlAnalysisResDataV1": {
             "type": "object",
             "properties": {
@@ -15449,6 +15542,20 @@ var doc = `{
                 },
                 "field_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.TableMetas": {
+            "type": "object",
+            "properties": {
+                "err_message": {
+                    "type": "string"
+                },
+                "table_meta_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
