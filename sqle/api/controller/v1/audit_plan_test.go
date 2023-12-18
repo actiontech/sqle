@@ -55,9 +55,10 @@ func TestIsIpInBlackList(t *testing.T) {
 		"10.0.5.67",
 		"192.168.1.23",
 	}
-
-	if !filter.IsEndpointInBlackList(matchIps) {
-		t.Error("Expected Ip to match blacklist")
+	for _, matchIp := range matchIps {
+		if !filter.HasEndpointInBlackList([]string{matchIp}) {
+			t.Error("Expected Ip to match blacklist")
+		}
 	}
 
 	notMatchIps := []string{
@@ -65,8 +66,10 @@ func TestIsIpInBlackList(t *testing.T) {
 		"134.12.45.78",
 		"50.67.89.12",
 	}
-	if filter.IsEndpointInBlackList(notMatchIps) {
-		t.Error("Did not expect Ip to match blacklist")
+	for _, notMatchIp := range notMatchIps {
+		if filter.HasEndpointInBlackList([]string{notMatchIp}) {
+			t.Error("Did not expect Ip to match blacklist")
+		}
 	}
 }
 
@@ -84,21 +87,26 @@ func TestIsCidrInBlackList(t *testing.T) {
 	matchIps := []string{
 		"10.100.1.2",
 		"10.100.25.45",
-		"172.30.1.2",
-		"172.30.30.45",
+		"192.168.0.2",
+		"192.168.0.45",
 	}
-
-	if !filter.IsEndpointInBlackList(matchIps) {
-		t.Error("Expected CIDR to match blacklist")
+	for _, matchIp := range matchIps {
+		if !filter.HasEndpointInBlackList([]string{matchIp}) {
+			t.Error("Expected CIDR to match blacklist")
+		}
 	}
 
 	notMatchIps := []string{
 		"172.16.254.89",
 		"134.12.45.78",
 		"50.67.89.12",
+		"172.30.1.2",
+		"172.30.30.45",
 	}
-	if filter.IsEndpointInBlackList(notMatchIps) {
-		t.Error("Did not expect CIDR to match blacklist")
+	for _, notMatchIp := range notMatchIps {
+		if filter.HasEndpointInBlackList([]string{notMatchIp}) {
+			t.Error("Did not expect CIDR to match blacklist")
+		}
 	}
 }
 
@@ -116,20 +124,24 @@ func TestIsHostInBlackList(t *testing.T) {
 	matchHosts := []string{
 		"local_host",
 		"local_Host.com",
-		"anyTest.io",
-		"some-Site.org/home/",
+		"any_Host.io",
+		"some_Site.org/home/",
 		"Some_site.cn/mysql",
 	}
 
-	if !filter.IsEndpointInBlackList(matchHosts) {
-		t.Error("Expected HOST to match blacklist")
+	for _, matchHost := range matchHosts {
+		if !filter.HasEndpointInBlackList([]string{matchHost}) {
+			t.Error("Expected HOST to match blacklist")
+		}
 	}
 
 	notMatchHosts := []string{
 		"other_site/home",
 		"any_other_site/local",
 	}
-	if filter.IsEndpointInBlackList(notMatchHosts) {
-		t.Error("Did not expect HOST to match blacklist")
+	for _, noMatchHost := range notMatchHosts {
+		if filter.HasEndpointInBlackList([]string{noMatchHost}) {
+			t.Error("Did not expect HOST to match blacklist")
+		}
 	}
 }
