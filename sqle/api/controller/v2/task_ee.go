@@ -246,8 +246,7 @@ func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
 
 	tableNameCreateTableStmtMap := ctx.GetTableNameCreateTableStmtMap(tableRefs)
 	fillParamMarker(l, where, tableNameCreateTableStmtMap)
-	sqlContent = restore(node)
-	return sqlContent, nil
+	return restore(node)
 }
 
 func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map[string]*ast.CreateTableStmt) {
@@ -267,7 +266,7 @@ func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map
 					return false
 				}
 				stmt.R = defaultValue
-				// 可能存在 `where ?=name` 这种写法
+				// 可能存在列名在比较符号左侧的情况 `where ?=name`
 			} else if column, ok := stmt.R.(*ast.ColumnNameExpr); ok {
 				if _, ok := stmt.L.(*parserdriver.ParamMarkerExpr); !ok {
 					return true
@@ -328,15 +327,16 @@ func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[s
 }
 
 // 还原抽象语法树节点至SQL
-func restore(node ast.Node) (sql string) {
+func restore(node ast.Node) (string, error) {
 	var buf strings.Builder
+	sql := ""
 	rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
 
 	if err := node.Restore(rc); err != nil {
-		return
+		return "", err
 	}
 	sql = buf.String()
-	return
+	return sql, nil
 }
 
 func getSchemaFromJoin(stmt *ast.Join) string {
