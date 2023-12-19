@@ -420,15 +420,15 @@ var RuleHandlers = []RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       ConfigOptimizeIndexEnabled,
 			Desc:       "索引创建建议",
-			Annotation: "通过该规则开启索引优化建议，提供两个参数配置来定义索引优化建议的行为。1. 计算列基数阈值：配置当表数据量超过多少行时不再计算列的区分度来排序索引优先级，防止对大表进行操作影响性能；2. 联合索引最大列数：限制联合索引给到的列数最大值，防止给出建议的联合索引不符合其他SQL标准",
+			Annotation: "通过该规则开启索引优化建议，提供两个参数配置来定义索引优化建议的行为。1. 列区分度最低值阈值（百分制）：配置当前表中列的区分度小于多少时，不作为索引的列；2. 联合索引最大列数：限制联合索引给到的列数最大值，防止给出建议的联合索引不符合其他SQL标准",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   RuleTypeIndexOptimization,
 			Params: params.Params{
 				&params.Param{
 					Key:   DefaultMultiParamsFirstKeyName,
-					Value: "1000000",
-					Desc:  "计算列基数阈值",
-					Type:  params.ParamTypeInt,
+					Value: "2.00",
+					Desc:  "列区分度最低值阈值（百分比）",
+					Type:  params.ParamTypeFloat64,
 				},
 				&params.Param{
 					Key:   DefaultMultiParamsSecondKeyName,

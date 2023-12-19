@@ -94,7 +94,7 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 		}
 		if rule.Name == rulepkg.ConfigOptimizeIndexEnabled {
 			inspect.cnf.optimizeIndexEnabled = true
-			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
+			inspect.cnf.indexSelectivityMinValue = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Float64()
 			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
 		}
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
@@ -366,6 +366,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 				Key:   MAX_INDEX_COLUMN,
 				Value: fmt.Sprint(i.cnf.compositeIndexMaxColumn),
 				Type:  params.ParamTypeInt,
+			}, {
+				Key:   MIN_COLUMN_SELECTIVITY,
+				Value: fmt.Sprint(i.cnf.indexSelectivityMinValue),
+				Type:  params.ParamTypeFloat64,
 			},
 		}
 		results := optimize(i.log, i.Ctx, nodes[0], params)
@@ -488,11 +492,11 @@ type Config struct {
 	DDLOSCMinSize      int64
 	DDLGhostMinSize    int64
 
-	optimizeIndexEnabled       bool
-	dmlExplainPreCheckEnable   bool
-	calculateCardinalityMaxRow int
-	compositeIndexMaxColumn    int
-	isExecutedSQL              bool
+	optimizeIndexEnabled     bool
+	dmlExplainPreCheckEnable bool
+	compositeIndexMaxColumn  int
+	indexSelectivityMinValue float64
+	isExecutedSQL            bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {
