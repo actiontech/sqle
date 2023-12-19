@@ -494,8 +494,7 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 3,
 	}
-	// testCases.testAll(mockThreeStarOptimizeResult, t)
-	testCases.testOne("test12-join table", mockThreeStarOptimizeResult, t)
+	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
 
 func TestExtremalOptimize(t *testing.T) {
