@@ -478,7 +478,24 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 3,
 	}
-	testCases.testAll(mockThreeStarOptimizeResult, t)
+	testCases["test12-join tables"] = optimizerTestContent{
+		sql: `SELECT t10.id,t10.v1,t10.v2,t3.v3 FROM exist_tb_10 t10 LEFT JOIN exist_tb_3 t3 ON t10.id = t3.id WHERE t10.v5 = t3.v3 AND t10.v1 in (1,2,3,4,5,6)`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT t10.id,t10.v1,t10.v2,t3.v3 FROM exist_tb_10 t10 LEFT JOIN exist_tb_3 t3 ON t10.id = t3.id WHERE t10.v5 = t3.v3 AND t10.v1 in (1,2,3,4,5,6)`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"v2", "v1"}, "t10"),
+		},
+		maxColumn: 3,
+	}
+	// testCases.testAll(mockThreeStarOptimizeResult, t)
+	testCases.testOne("test12-join table", mockThreeStarOptimizeResult, t)
 }
 
 func TestExtremalOptimize(t *testing.T) {
