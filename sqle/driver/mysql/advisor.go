@@ -274,7 +274,7 @@ type threeStarIndexAdvisor struct {
 	drivingTableColumnMap  map[string]*column   // 列名:column
 	originNode             ast.Node             // 原SQL的节点
 	maxColumns             int                  // 复合索引列的上限数量
-	minSelecivity          float64              // 列选择性阈值下限
+	minSelectivity         float64              // 列选择性阈值下限
 	usingOr                bool                 // 使用了或条件
 	possibleColumns        columnGroup          // SQL语句中可能作为索引的备选列
 	columnLastAdd          columnGroup          // 最后添加的列，例如：非等值列
@@ -302,7 +302,7 @@ func newThreeStarIndexAdvisor(ctx *session.Context, log *logrus.Entry, originNod
 		log:                   log,
 		originNode:            originNode,
 		maxColumns:            maxColumns,
-		minSelecivity:         minSelectivity,
+		minSelectivity:        minSelectivity,
 		drivingTableColumnMap: make(map[string]*column),
 		drivingTableColumn: &columnInSelect{
 			equalColumnInWhere:   newColumnGroup(),
@@ -447,9 +447,9 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 			if field.WildCard != nil && field.WildCard.Table.String() == "" && field.WildCard.Schema.String() == "" {
 				// 如果是 * 则添加所有列
 				var col *ast.ColumnNameExpr
-				for _, coldef := range a.drivingTableCreateStmt.Cols {
-					column = a.drivingTableColumnMap[coldef.Name.Name.L]
-					col = &ast.ColumnNameExpr{Name: coldef.Name}
+				for _, columnDefine := range a.drivingTableCreateStmt.Cols {
+					column = a.drivingTableColumnMap[columnDefine.Name.Name.L]
+					col = &ast.ColumnNameExpr{Name: columnDefine.Name}
 					column.columnName = col
 
 					a.drivingTableColumn.columnInFieldList.add(column)
@@ -656,7 +656,7 @@ func (a threeStarIndexAdvisor) shouldSkipColumn(column *column) bool {
 		// 跳过最后添加的列
 		return true
 	}
-	if column.selectivity <= a.minSelecivity {
+	if column.selectivity <= a.minSelectivity {
 		// 跳过选择性小于最低阈值的列
 		return true
 	}
@@ -709,7 +709,7 @@ func (a threeStarIndexAdvisor) canGiveCoverIndex() bool {
 	}
 	// 如果备选列中存在选择性小于等于选择性最低阈值的列，不添加覆盖索引
 	for _, column := range a.possibleColumns.columns {
-		if column.selectivity <= a.minSelecivity {
+		if column.selectivity <= a.minSelectivity {
 			return false
 		}
 	}
