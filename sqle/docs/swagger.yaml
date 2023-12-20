@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AffectRows:
+    properties:
+      count:
+        type: integer
+      err_message:
+        type: string
+    type: object
   v1.AuditPlanCount:
     properties:
       audit_plan_count:
@@ -1450,6 +1457,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlManageSqlAnalysisResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlAnalysis'
+        description: V1版本不能引用V2版本的结构体,所以只能复制一份
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -1957,6 +1977,12 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
     type: object
+  v1.PerformanceStatistics:
+    properties:
+      affect_rows:
+        $ref: '#/definitions/v1.AffectRows'
+        type: object
+    type: object
   v1.ProjectRuleTemplateResV1:
     properties:
       db_type:
@@ -2241,6 +2267,18 @@ definitions:
         - sql_audit_record
         type: string
     type: object
+  v1.SqlAnalysis:
+    properties:
+      performance_statistics:
+        $ref: '#/definitions/v1.PerformanceStatistics'
+        type: object
+      sql_explain:
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
+      table_metas:
+        $ref: '#/definitions/v1.TableMetas'
+        type: object
+    type: object
   v1.SqlAnalysisResDataV1:
     properties:
       sql_explain:
@@ -2413,6 +2451,15 @@ definitions:
         type: string
       field_name:
         type: string
+    type: object
+  v1.TableMetas:
+    properties:
+      err_message:
+        type: string
+      table_meta_items:
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -5633,6 +5680,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取管控sql列表
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis:
+    get:
+      description: get sql manage analysis
+      operationId: GetSqlManageSqlAnalysisV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql manage id
+        in: path
+        name: sql_manage_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlAnalysisResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL管控SQL分析
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/batch:
