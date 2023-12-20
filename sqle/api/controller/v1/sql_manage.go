@@ -185,3 +185,43 @@ type GetSqlManageRuleTipsResp struct {
 func GetSqlManageRuleTips(c echo.Context) error {
 	return getSqlManageRuleTips(c)
 }
+
+type AffectRows struct {
+	Count      int    `json:"count"`
+	ErrMessage string `json:"err_message"`
+}
+
+type PerformanceStatistics struct {
+	AffectRows *AffectRows `json:"affect_rows"`
+}
+
+type TableMetas struct {
+	ErrMessage string       `json:"err_message"`
+	Items      []*TableMeta `json:"table_meta_items"`
+}
+
+type SqlAnalysis struct {
+	SQLExplain            *SQLExplain            `json:"sql_explain"`
+	TableMetas            *TableMetas            `json:"table_metas"`
+	PerformanceStatistics *PerformanceStatistics `json:"performance_statistics"`
+}
+
+type GetSqlManageSqlAnalysisResp struct {
+	controller.BaseRes
+	// V1版本不能引用V2版本的结构体,所以只能复制一份
+	Data *SqlAnalysis `json:"data"`
+}
+
+// GetSqlManageSqlAnalysisV1
+// @Summary 获取SQL管控SQL分析
+// @Description get sql manage analysis
+// @Id GetSqlManageSqlAnalysisV1
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param sql_manage_id path string true "sql manage id"
+// @Security ApiKeyAuth
+// @Success 200 {object} GetSqlManageSqlAnalysisResp
+// @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
+func GetSqlManageSqlAnalysisV1(c echo.Context) error {
+	return nil
+}
