@@ -208,6 +208,7 @@ type SqlAnalysis struct {
 
 type GetSqlManageSqlAnalysisResp struct {
 	controller.BaseRes
+	// V1版本不能引用V2版本的结构体,所以只能复制一份
 	Data *SqlAnalysis `json:"data"`
 }
 
