@@ -741,6 +741,8 @@ type FreePunchCfg struct {
 	FreeEndTime          *string `json:"free_end_time,omitempty"`             // 自由班制打卡结束时间
 	PunchDay             *int    `json:"punch_day,omitempty"`                 // 打卡的时间，为 7 位数字，每一位依次代表周一到周日，0 为不上班，1 为上班
 	WorkDayNoPunchAsLack *bool   `json:"work_day_no_punch_as_lack,omitempty"` // 工作日不打卡是否记为缺卡
+	WorkHoursDemand      *bool   `json:"work_hours_demand,omitempty"`         // 工作日出勤是否需满足时长要求
+	WorkHours            *int    `json:"work_hours,omitempty"`                // 每日工作时长（分钟),范围[0,1440]
 }
 
 type FreePunchCfgBuilder struct {
@@ -752,6 +754,10 @@ type FreePunchCfgBuilder struct {
 	punchDayFlag             bool
 	workDayNoPunchAsLack     bool // 工作日不打卡是否记为缺卡
 	workDayNoPunchAsLackFlag bool
+	workHoursDemand          bool // 工作日出勤是否需满足时长要求
+	workHoursDemandFlag      bool
+	workHours                int // 每日工作时长（分钟),范围[0,1440]
+	workHoursFlag            bool
 }
 
 func NewFreePunchCfgBuilder() *FreePunchCfgBuilder {
@@ -795,6 +801,24 @@ func (builder *FreePunchCfgBuilder) WorkDayNoPunchAsLack(workDayNoPunchAsLack bo
 	return builder
 }
 
+// 工作日出勤是否需满足时长要求
+//
+// 示例值：false
+func (builder *FreePunchCfgBuilder) WorkHoursDemand(workHoursDemand bool) *FreePunchCfgBuilder {
+	builder.workHoursDemand = workHoursDemand
+	builder.workHoursDemandFlag = true
+	return builder
+}
+
+// 每日工作时长（分钟),范围[0,1440]
+//
+// 示例值：480
+func (builder *FreePunchCfgBuilder) WorkHours(workHours int) *FreePunchCfgBuilder {
+	builder.workHours = workHours
+	builder.workHoursFlag = true
+	return builder
+}
+
 func (builder *FreePunchCfgBuilder) Build() *FreePunchCfg {
 	req := &FreePunchCfg{}
 	if builder.freeStartTimeFlag {
@@ -811,6 +835,14 @@ func (builder *FreePunchCfgBuilder) Build() *FreePunchCfg {
 	}
 	if builder.workDayNoPunchAsLackFlag {
 		req.WorkDayNoPunchAsLack = &builder.workDayNoPunchAsLack
+
+	}
+	if builder.workHoursDemandFlag {
+		req.WorkHoursDemand = &builder.workHoursDemand
+
+	}
+	if builder.workHoursFlag {
+		req.WorkHours = &builder.workHours
 
 	}
 	return req
@@ -846,6 +878,7 @@ type Group struct {
 	HideStaffPunchTime      *bool                    `json:"hide_staff_punch_time,omitempty"`       // 是否隐藏员工打卡详情
 	FacePunch               *bool                    `json:"face_punch,omitempty"`                  // 是否开启人脸识别打卡
 	FacePunchCfg            *int                     `json:"face_punch_cfg,omitempty"`              // 人脸识别打卡规则，1：每次打卡均需人脸识别，2：疑似作弊打卡时需要人脸识别
+	FaceLiveNeedAction      *bool                    `json:"face_live_need_action,omitempty"`       // 人脸打卡规则， false：开启活体验证 true：0动作验证，仅在 face_punch_cfg = 1 时有效
 	FaceDowngrade           *bool                    `json:"face_downgrade,omitempty"`              // 人脸识别失败时是否允许普通拍照打卡
 	ReplaceBasicPic         *bool                    `json:"replace_basic_pic,omitempty"`           // 人脸识别失败时是否允许替换基准图片
 	Machines                []*Machine               `json:"machines,omitempty"`                    // 考勤机列表
@@ -867,6 +900,15 @@ type Group struct {
 	MemberEffectTime        *string                  `json:"member_effect_time,omitempty"`          // 参加考勤的人员、部门变动生效时间，精确到秒的时间戳
 	RestClockInNeedApproval *bool                    `json:"rest_clockIn_need_approval,omitempty"`  // 休息日打卡需审批
 	ClockInNeedPhoto        *bool                    `json:"clockIn_need_photo,omitempty"`          // 每次打卡均需拍照
+	MemberStatusChange      *MemberStatusChange      `json:"member_status_change,omitempty"`        // 人员异动打卡设置
+	LeaveNeedPunch          *bool                    `json:"leave_need_punch,omitempty"`            // 请假离岗或返岗是否需打卡
+	LeaveNeedPunchCfg       *LeaveNeedPunchCfg       `json:"leave_need_punch_cfg,omitempty"`        // 请假离岗或返岗打卡规则
+	GoOutNeedPunch          *int                     `json:"go_out_need_punch,omitempty"`           // 外出期间是否需打卡
+	GoOutNeedPunchCfg       *LeaveNeedPunchCfg       `json:"go_out_need_punch_cfg,omitempty"`       // 外出期间打卡规则
+	TravelNeedPunch         *int                     `json:"travel_need_punch,omitempty"`           // 出差期间是否需打卡
+	TravelNeedPunchCfg      *LeaveNeedPunchCfg       `json:"travel_need_punch_cfg,omitempty"`       // 出差期间打卡规则
+	NeedPunchMembers        []*PunchMember           `json:"need_punch_members,omitempty"`          // 需要打卡的人员配置（新）
+	NoNeedPunchMembers      []*PunchMember           `json:"no_need_punch_members,omitempty"`       // 无需打卡的人员配置（新）
 }
 
 type GroupBuilder struct {
@@ -928,6 +970,8 @@ type GroupBuilder struct {
 	facePunchFlag               bool
 	facePunchCfg                int // 人脸识别打卡规则，1：每次打卡均需人脸识别，2：疑似作弊打卡时需要人脸识别
 	facePunchCfgFlag            bool
+	faceLiveNeedAction          bool // 人脸打卡规则， false：开启活体验证 true：0动作验证，仅在 face_punch_cfg = 1 时有效
+	faceLiveNeedActionFlag      bool
 	faceDowngrade               bool // 人脸识别失败时是否允许普通拍照打卡
 	faceDowngradeFlag           bool
 	replaceBasicPic             bool // 人脸识别失败时是否允许替换基准图片
@@ -970,6 +1014,24 @@ type GroupBuilder struct {
 	restClockInNeedApprovalFlag bool
 	clockInNeedPhoto            bool // 每次打卡均需拍照
 	clockInNeedPhotoFlag        bool
+	memberStatusChange          *MemberStatusChange // 人员异动打卡设置
+	memberStatusChangeFlag      bool
+	leaveNeedPunch              bool // 请假离岗或返岗是否需打卡
+	leaveNeedPunchFlag          bool
+	leaveNeedPunchCfg           *LeaveNeedPunchCfg // 请假离岗或返岗打卡规则
+	leaveNeedPunchCfgFlag       bool
+	goOutNeedPunch              int // 外出期间是否需打卡
+	goOutNeedPunchFlag          bool
+	goOutNeedPunchCfg           *LeaveNeedPunchCfg // 外出期间打卡规则
+	goOutNeedPunchCfgFlag       bool
+	travelNeedPunch             int // 出差期间是否需打卡
+	travelNeedPunchFlag         bool
+	travelNeedPunchCfg          *LeaveNeedPunchCfg // 出差期间打卡规则
+	travelNeedPunchCfgFlag      bool
+	needPunchMembers            []*PunchMember // 需要打卡的人员配置（新）
+	needPunchMembersFlag        bool
+	noNeedPunchMembers          []*PunchMember // 无需打卡的人员配置（新）
+	noNeedPunchMembersFlag      bool
 }
 
 func NewGroupBuilder() *GroupBuilder {
@@ -1238,6 +1300,15 @@ func (builder *GroupBuilder) FacePunchCfg(facePunchCfg int) *GroupBuilder {
 	return builder
 }
 
+// 人脸打卡规则， false：开启活体验证 true：0动作验证，仅在 face_punch_cfg = 1 时有效
+//
+// 示例值：false
+func (builder *GroupBuilder) FaceLiveNeedAction(faceLiveNeedAction bool) *GroupBuilder {
+	builder.faceLiveNeedAction = faceLiveNeedAction
+	builder.faceLiveNeedActionFlag = true
+	return builder
+}
+
 // 人脸识别失败时是否允许普通拍照打卡
 //
 // 示例值：true
@@ -1427,6 +1498,87 @@ func (builder *GroupBuilder) ClockInNeedPhoto(clockInNeedPhoto bool) *GroupBuild
 	return builder
 }
 
+// 人员异动打卡设置
+//
+// 示例值：
+func (builder *GroupBuilder) MemberStatusChange(memberStatusChange *MemberStatusChange) *GroupBuilder {
+	builder.memberStatusChange = memberStatusChange
+	builder.memberStatusChangeFlag = true
+	return builder
+}
+
+// 请假离岗或返岗是否需打卡
+//
+// 示例值：false
+func (builder *GroupBuilder) LeaveNeedPunch(leaveNeedPunch bool) *GroupBuilder {
+	builder.leaveNeedPunch = leaveNeedPunch
+	builder.leaveNeedPunchFlag = true
+	return builder
+}
+
+// 请假离岗或返岗打卡规则
+//
+// 示例值：
+func (builder *GroupBuilder) LeaveNeedPunchCfg(leaveNeedPunchCfg *LeaveNeedPunchCfg) *GroupBuilder {
+	builder.leaveNeedPunchCfg = leaveNeedPunchCfg
+	builder.leaveNeedPunchCfgFlag = true
+	return builder
+}
+
+// 外出期间是否需打卡
+//
+// 示例值：0
+func (builder *GroupBuilder) GoOutNeedPunch(goOutNeedPunch int) *GroupBuilder {
+	builder.goOutNeedPunch = goOutNeedPunch
+	builder.goOutNeedPunchFlag = true
+	return builder
+}
+
+// 外出期间打卡规则
+//
+// 示例值：
+func (builder *GroupBuilder) GoOutNeedPunchCfg(goOutNeedPunchCfg *LeaveNeedPunchCfg) *GroupBuilder {
+	builder.goOutNeedPunchCfg = goOutNeedPunchCfg
+	builder.goOutNeedPunchCfgFlag = true
+	return builder
+}
+
+// 出差期间是否需打卡
+//
+// 示例值：0
+func (builder *GroupBuilder) TravelNeedPunch(travelNeedPunch int) *GroupBuilder {
+	builder.travelNeedPunch = travelNeedPunch
+	builder.travelNeedPunchFlag = true
+	return builder
+}
+
+// 出差期间打卡规则
+//
+// 示例值：
+func (builder *GroupBuilder) TravelNeedPunchCfg(travelNeedPunchCfg *LeaveNeedPunchCfg) *GroupBuilder {
+	builder.travelNeedPunchCfg = travelNeedPunchCfg
+	builder.travelNeedPunchCfgFlag = true
+	return builder
+}
+
+// 需要打卡的人员配置（新）
+//
+// 示例值：
+func (builder *GroupBuilder) NeedPunchMembers(needPunchMembers []*PunchMember) *GroupBuilder {
+	builder.needPunchMembers = needPunchMembers
+	builder.needPunchMembersFlag = true
+	return builder
+}
+
+// 无需打卡的人员配置（新）
+//
+// 示例值：
+func (builder *GroupBuilder) NoNeedPunchMembers(noNeedPunchMembers []*PunchMember) *GroupBuilder {
+	builder.noNeedPunchMembers = noNeedPunchMembers
+	builder.noNeedPunchMembersFlag = true
+	return builder
+}
+
 func (builder *GroupBuilder) Build() *Group {
 	req := &Group{}
 	if builder.groupIdFlag {
@@ -1539,6 +1691,10 @@ func (builder *GroupBuilder) Build() *Group {
 		req.FacePunchCfg = &builder.facePunchCfg
 
 	}
+	if builder.faceLiveNeedActionFlag {
+		req.FaceLiveNeedAction = &builder.faceLiveNeedAction
+
+	}
 	if builder.faceDowngradeFlag {
 		req.FaceDowngrade = &builder.faceDowngrade
 
@@ -1616,6 +1772,36 @@ func (builder *GroupBuilder) Build() *Group {
 	if builder.clockInNeedPhotoFlag {
 		req.ClockInNeedPhoto = &builder.clockInNeedPhoto
 
+	}
+	if builder.memberStatusChangeFlag {
+		req.MemberStatusChange = builder.memberStatusChange
+	}
+	if builder.leaveNeedPunchFlag {
+		req.LeaveNeedPunch = &builder.leaveNeedPunch
+
+	}
+	if builder.leaveNeedPunchCfgFlag {
+		req.LeaveNeedPunchCfg = builder.leaveNeedPunchCfg
+	}
+	if builder.goOutNeedPunchFlag {
+		req.GoOutNeedPunch = &builder.goOutNeedPunch
+
+	}
+	if builder.goOutNeedPunchCfgFlag {
+		req.GoOutNeedPunchCfg = builder.goOutNeedPunchCfg
+	}
+	if builder.travelNeedPunchFlag {
+		req.TravelNeedPunch = &builder.travelNeedPunch
+
+	}
+	if builder.travelNeedPunchCfgFlag {
+		req.TravelNeedPunchCfg = builder.travelNeedPunchCfg
+	}
+	if builder.needPunchMembersFlag {
+		req.NeedPunchMembers = builder.needPunchMembers
+	}
+	if builder.noNeedPunchMembersFlag {
+		req.NoNeedPunchMembers = builder.noNeedPunchMembers
 	}
 	return req
 }
@@ -1795,6 +1981,54 @@ func (builder *ItemBuilder) Build() *Item {
 	return req
 }
 
+type LangText struct {
+	Lang  *string `json:"lang,omitempty"`  // 语言码
+	Value *string `json:"value,omitempty"` // 语言码对应的文本
+}
+
+type LangTextBuilder struct {
+	lang      string // 语言码
+	langFlag  bool
+	value     string // 语言码对应的文本
+	valueFlag bool
+}
+
+func NewLangTextBuilder() *LangTextBuilder {
+	builder := &LangTextBuilder{}
+	return builder
+}
+
+// 语言码
+//
+// 示例值：cn_zh
+func (builder *LangTextBuilder) Lang(lang string) *LangTextBuilder {
+	builder.lang = lang
+	builder.langFlag = true
+	return builder
+}
+
+// 语言码对应的文本
+//
+// 示例值：test
+func (builder *LangTextBuilder) Value(value string) *LangTextBuilder {
+	builder.value = value
+	builder.valueFlag = true
+	return builder
+}
+
+func (builder *LangTextBuilder) Build() *LangText {
+	req := &LangText{}
+	if builder.langFlag {
+		req.Lang = &builder.lang
+
+	}
+	if builder.valueFlag {
+		req.Value = &builder.value
+
+	}
+	return req
+}
+
 type LateOffLateOnRule struct {
 	LateOffMinutes *int `json:"late_off_minutes,omitempty"` // 晚走多久
 	LateOnMinutes  *int `json:"late_on_minutes,omitempty"`  // 晚到多久
@@ -1838,6 +2072,516 @@ func (builder *LateOffLateOnRuleBuilder) Build() *LateOffLateOnRule {
 	}
 	if builder.lateOnMinutesFlag {
 		req.LateOnMinutes = &builder.lateOnMinutes
+
+	}
+	return req
+}
+
+type LeaveAccrualRecord struct {
+	Id               *string     `json:"id,omitempty"`                // 授予记录唯一ID
+	EmploymentId     *string     `json:"employment_id,omitempty"`     // 员工ID
+	LeaveTypeId      *string     `json:"leave_type_id,omitempty"`     // 假期类型ID
+	GrantingQuantity *string     `json:"granting_quantity,omitempty"` // 授予数量
+	GrantingUnit     *int        `json:"granting_unit,omitempty"`     // 授予单位，1表示天，2表示小时
+	EffectiveDate    *string     `json:"effective_date,omitempty"`    // 生效日期，格式"2020-01-01"
+	ExpirationDate   *string     `json:"expiration_date,omitempty"`   // 失效日期，格式"2020-01-01"
+	GrantedBy        *int        `json:"granted_by,omitempty"`        // 授予来源，1：系统授予；2：手动授予；3：外部系统授予
+	Reason           []*LangText `json:"reason,omitempty"`            // 授予原因
+	CreatedAt        *string     `json:"created_at,omitempty"`        // 授予记录的创建时间，unix时间戳
+	CreatedBy        *string     `json:"created_by,omitempty"`        // 授予记录的创建人的ID
+	UpdatedAt        *string     `json:"updated_at,omitempty"`        // 授予记录的更新时间，unix时间戳
+	UpdatedBy        *string     `json:"updated_by,omitempty"`        // 授予记录的更新人的ID
+}
+
+type LeaveAccrualRecordBuilder struct {
+	id                   string // 授予记录唯一ID
+	idFlag               bool
+	employmentId         string // 员工ID
+	employmentIdFlag     bool
+	leaveTypeId          string // 假期类型ID
+	leaveTypeIdFlag      bool
+	grantingQuantity     string // 授予数量
+	grantingQuantityFlag bool
+	grantingUnit         int // 授予单位，1表示天，2表示小时
+	grantingUnitFlag     bool
+	effectiveDate        string // 生效日期，格式"2020-01-01"
+	effectiveDateFlag    bool
+	expirationDate       string // 失效日期，格式"2020-01-01"
+	expirationDateFlag   bool
+	grantedBy            int // 授予来源，1：系统授予；2：手动授予；3：外部系统授予
+	grantedByFlag        bool
+	reason               []*LangText // 授予原因
+	reasonFlag           bool
+	createdAt            string // 授予记录的创建时间，unix时间戳
+	createdAtFlag        bool
+	createdBy            string // 授予记录的创建人的ID
+	createdByFlag        bool
+	updatedAt            string // 授予记录的更新时间，unix时间戳
+	updatedAtFlag        bool
+	updatedBy            string // 授予记录的更新人的ID
+	updatedByFlag        bool
+}
+
+func NewLeaveAccrualRecordBuilder() *LeaveAccrualRecordBuilder {
+	builder := &LeaveAccrualRecordBuilder{}
+	return builder
+}
+
+// 授予记录唯一ID
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) Id(id string) *LeaveAccrualRecordBuilder {
+	builder.id = id
+	builder.idFlag = true
+	return builder
+}
+
+// 员工ID
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) EmploymentId(employmentId string) *LeaveAccrualRecordBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) LeaveTypeId(leaveTypeId string) *LeaveAccrualRecordBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 授予数量
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) GrantingQuantity(grantingQuantity string) *LeaveAccrualRecordBuilder {
+	builder.grantingQuantity = grantingQuantity
+	builder.grantingQuantityFlag = true
+	return builder
+}
+
+// 授予单位，1表示天，2表示小时
+//
+// 示例值：1表示天，2表示小时
+func (builder *LeaveAccrualRecordBuilder) GrantingUnit(grantingUnit int) *LeaveAccrualRecordBuilder {
+	builder.grantingUnit = grantingUnit
+	builder.grantingUnitFlag = true
+	return builder
+}
+
+// 生效日期，格式"2020-01-01"
+//
+// 示例值：2020-01-01
+func (builder *LeaveAccrualRecordBuilder) EffectiveDate(effectiveDate string) *LeaveAccrualRecordBuilder {
+	builder.effectiveDate = effectiveDate
+	builder.effectiveDateFlag = true
+	return builder
+}
+
+// 失效日期，格式"2020-01-01"
+//
+// 示例值：2020-01-01
+func (builder *LeaveAccrualRecordBuilder) ExpirationDate(expirationDate string) *LeaveAccrualRecordBuilder {
+	builder.expirationDate = expirationDate
+	builder.expirationDateFlag = true
+	return builder
+}
+
+// 授予来源，1：系统授予；2：手动授予；3：外部系统授予
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) GrantedBy(grantedBy int) *LeaveAccrualRecordBuilder {
+	builder.grantedBy = grantedBy
+	builder.grantedByFlag = true
+	return builder
+}
+
+// 授予原因
+//
+// 示例值：
+func (builder *LeaveAccrualRecordBuilder) Reason(reason []*LangText) *LeaveAccrualRecordBuilder {
+	builder.reason = reason
+	builder.reasonFlag = true
+	return builder
+}
+
+// 授予记录的创建时间，unix时间戳
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) CreatedAt(createdAt string) *LeaveAccrualRecordBuilder {
+	builder.createdAt = createdAt
+	builder.createdAtFlag = true
+	return builder
+}
+
+// 授予记录的创建人的ID
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) CreatedBy(createdBy string) *LeaveAccrualRecordBuilder {
+	builder.createdBy = createdBy
+	builder.createdByFlag = true
+	return builder
+}
+
+// 授予记录的更新时间，unix时间戳
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) UpdatedAt(updatedAt string) *LeaveAccrualRecordBuilder {
+	builder.updatedAt = updatedAt
+	builder.updatedAtFlag = true
+	return builder
+}
+
+// 授予记录的更新人的ID
+//
+// 示例值：1
+func (builder *LeaveAccrualRecordBuilder) UpdatedBy(updatedBy string) *LeaveAccrualRecordBuilder {
+	builder.updatedBy = updatedBy
+	builder.updatedByFlag = true
+	return builder
+}
+
+func (builder *LeaveAccrualRecordBuilder) Build() *LeaveAccrualRecord {
+	req := &LeaveAccrualRecord{}
+	if builder.idFlag {
+		req.Id = &builder.id
+
+	}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+
+	}
+	if builder.grantingQuantityFlag {
+		req.GrantingQuantity = &builder.grantingQuantity
+
+	}
+	if builder.grantingUnitFlag {
+		req.GrantingUnit = &builder.grantingUnit
+
+	}
+	if builder.effectiveDateFlag {
+		req.EffectiveDate = &builder.effectiveDate
+
+	}
+	if builder.expirationDateFlag {
+		req.ExpirationDate = &builder.expirationDate
+
+	}
+	if builder.grantedByFlag {
+		req.GrantedBy = &builder.grantedBy
+
+	}
+	if builder.reasonFlag {
+		req.Reason = builder.reason
+	}
+	if builder.createdAtFlag {
+		req.CreatedAt = &builder.createdAt
+
+	}
+	if builder.createdByFlag {
+		req.CreatedBy = &builder.createdBy
+
+	}
+	if builder.updatedAtFlag {
+		req.UpdatedAt = &builder.updatedAt
+
+	}
+	if builder.updatedByFlag {
+		req.UpdatedBy = &builder.updatedBy
+
+	}
+	return req
+}
+
+type LeaveEmployExpireRecord struct {
+	Id                   *string     `json:"id,omitempty"`                     // record id
+	EmploymentId         *string     `json:"employment_id,omitempty"`          // 员工ID
+	LeaveTypeId          *string     `json:"leave_type_id,omitempty"`          // 假期类型ID
+	GrantingQuantity     *string     `json:"granting_quantity,omitempty"`      // 授予余额数量
+	LeftGrantingQuantity *string     `json:"left_granting_quantity,omitempty"` // 授予数量 扣减完后的授予数量
+	GrantingUnit         *int        `json:"granting_unit,omitempty"`          // 授予单位，1表示天，2表示小时
+	EffectiveDate        *string     `json:"effective_date,omitempty"`         // 生效日期，格式"2020-01-01"
+	ExpirationDate       *string     `json:"expiration_date,omitempty"`        // 失效日期，格式"2020-01-01"
+	Reason               []*LangText `json:"reason,omitempty"`                 // 授予原因
+	IsUpdateByExternal   *bool       `json:"is_update_by_external,omitempty"`  // 是否已经被外部系统更改过
+	AccrualSource        *int        `json:"accrual_source,omitempty"`         // 授予来源
+	LeaveSubTypeId       *string     `json:"leave_sub_type_id,omitempty"`      // 假期子类型id
+}
+
+type LeaveEmployExpireRecordBuilder struct {
+	id                       string // record id
+	idFlag                   bool
+	employmentId             string // 员工ID
+	employmentIdFlag         bool
+	leaveTypeId              string // 假期类型ID
+	leaveTypeIdFlag          bool
+	grantingQuantity         string // 授予余额数量
+	grantingQuantityFlag     bool
+	leftGrantingQuantity     string // 授予数量 扣减完后的授予数量
+	leftGrantingQuantityFlag bool
+	grantingUnit             int // 授予单位，1表示天，2表示小时
+	grantingUnitFlag         bool
+	effectiveDate            string // 生效日期，格式"2020-01-01"
+	effectiveDateFlag        bool
+	expirationDate           string // 失效日期，格式"2020-01-01"
+	expirationDateFlag       bool
+	reason                   []*LangText // 授予原因
+	reasonFlag               bool
+	isUpdateByExternal       bool // 是否已经被外部系统更改过
+	isUpdateByExternalFlag   bool
+	accrualSource            int // 授予来源
+	accrualSourceFlag        bool
+	leaveSubTypeId           string // 假期子类型id
+	leaveSubTypeIdFlag       bool
+}
+
+func NewLeaveEmployExpireRecordBuilder() *LeaveEmployExpireRecordBuilder {
+	builder := &LeaveEmployExpireRecordBuilder{}
+	return builder
+}
+
+// record id
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) Id(id string) *LeaveEmployExpireRecordBuilder {
+	builder.id = id
+	builder.idFlag = true
+	return builder
+}
+
+// 员工ID
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) EmploymentId(employmentId string) *LeaveEmployExpireRecordBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) LeaveTypeId(leaveTypeId string) *LeaveEmployExpireRecordBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 授予余额数量
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) GrantingQuantity(grantingQuantity string) *LeaveEmployExpireRecordBuilder {
+	builder.grantingQuantity = grantingQuantity
+	builder.grantingQuantityFlag = true
+	return builder
+}
+
+// 授予数量 扣减完后的授予数量
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) LeftGrantingQuantity(leftGrantingQuantity string) *LeaveEmployExpireRecordBuilder {
+	builder.leftGrantingQuantity = leftGrantingQuantity
+	builder.leftGrantingQuantityFlag = true
+	return builder
+}
+
+// 授予单位，1表示天，2表示小时
+//
+// 示例值：1表示天，2表示小时
+func (builder *LeaveEmployExpireRecordBuilder) GrantingUnit(grantingUnit int) *LeaveEmployExpireRecordBuilder {
+	builder.grantingUnit = grantingUnit
+	builder.grantingUnitFlag = true
+	return builder
+}
+
+// 生效日期，格式"2020-01-01"
+//
+// 示例值：2020-01-01
+func (builder *LeaveEmployExpireRecordBuilder) EffectiveDate(effectiveDate string) *LeaveEmployExpireRecordBuilder {
+	builder.effectiveDate = effectiveDate
+	builder.effectiveDateFlag = true
+	return builder
+}
+
+// 失效日期，格式"2020-01-01"
+//
+// 示例值：2020-01-01
+func (builder *LeaveEmployExpireRecordBuilder) ExpirationDate(expirationDate string) *LeaveEmployExpireRecordBuilder {
+	builder.expirationDate = expirationDate
+	builder.expirationDateFlag = true
+	return builder
+}
+
+// 授予原因
+//
+// 示例值：
+func (builder *LeaveEmployExpireRecordBuilder) Reason(reason []*LangText) *LeaveEmployExpireRecordBuilder {
+	builder.reason = reason
+	builder.reasonFlag = true
+	return builder
+}
+
+// 是否已经被外部系统更改过
+//
+// 示例值：true
+func (builder *LeaveEmployExpireRecordBuilder) IsUpdateByExternal(isUpdateByExternal bool) *LeaveEmployExpireRecordBuilder {
+	builder.isUpdateByExternal = isUpdateByExternal
+	builder.isUpdateByExternalFlag = true
+	return builder
+}
+
+// 授予来源
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) AccrualSource(accrualSource int) *LeaveEmployExpireRecordBuilder {
+	builder.accrualSource = accrualSource
+	builder.accrualSourceFlag = true
+	return builder
+}
+
+// 假期子类型id
+//
+// 示例值：1
+func (builder *LeaveEmployExpireRecordBuilder) LeaveSubTypeId(leaveSubTypeId string) *LeaveEmployExpireRecordBuilder {
+	builder.leaveSubTypeId = leaveSubTypeId
+	builder.leaveSubTypeIdFlag = true
+	return builder
+}
+
+func (builder *LeaveEmployExpireRecordBuilder) Build() *LeaveEmployExpireRecord {
+	req := &LeaveEmployExpireRecord{}
+	if builder.idFlag {
+		req.Id = &builder.id
+
+	}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+
+	}
+	if builder.grantingQuantityFlag {
+		req.GrantingQuantity = &builder.grantingQuantity
+
+	}
+	if builder.leftGrantingQuantityFlag {
+		req.LeftGrantingQuantity = &builder.leftGrantingQuantity
+
+	}
+	if builder.grantingUnitFlag {
+		req.GrantingUnit = &builder.grantingUnit
+
+	}
+	if builder.effectiveDateFlag {
+		req.EffectiveDate = &builder.effectiveDate
+
+	}
+	if builder.expirationDateFlag {
+		req.ExpirationDate = &builder.expirationDate
+
+	}
+	if builder.reasonFlag {
+		req.Reason = builder.reason
+	}
+	if builder.isUpdateByExternalFlag {
+		req.IsUpdateByExternal = &builder.isUpdateByExternal
+
+	}
+	if builder.accrualSourceFlag {
+		req.AccrualSource = &builder.accrualSource
+
+	}
+	if builder.leaveSubTypeIdFlag {
+		req.LeaveSubTypeId = &builder.leaveSubTypeId
+
+	}
+	return req
+}
+
+type LeaveNeedPunchCfg struct {
+	LateMinutesAsLate   *int `json:"late_minutes_as_late,omitempty"`   // 晚到超过多久记为迟到
+	LateMinutesAsLack   *int `json:"late_minutes_as_lack,omitempty"`   // 晚到超过多久记为缺卡
+	EarlyMinutesAsEarly *int `json:"early_minutes_as_early,omitempty"` // 早走超过多久记为早退
+	EarlyMinutesAsLack  *int `json:"early_minutes_as_lack,omitempty"`  // 早走超过多久记为缺卡
+}
+
+type LeaveNeedPunchCfgBuilder struct {
+	lateMinutesAsLate       int // 晚到超过多久记为迟到
+	lateMinutesAsLateFlag   bool
+	lateMinutesAsLack       int // 晚到超过多久记为缺卡
+	lateMinutesAsLackFlag   bool
+	earlyMinutesAsEarly     int // 早走超过多久记为早退
+	earlyMinutesAsEarlyFlag bool
+	earlyMinutesAsLack      int // 早走超过多久记为缺卡
+	earlyMinutesAsLackFlag  bool
+}
+
+func NewLeaveNeedPunchCfgBuilder() *LeaveNeedPunchCfgBuilder {
+	builder := &LeaveNeedPunchCfgBuilder{}
+	return builder
+}
+
+// 晚到超过多久记为迟到
+//
+// 示例值：0
+func (builder *LeaveNeedPunchCfgBuilder) LateMinutesAsLate(lateMinutesAsLate int) *LeaveNeedPunchCfgBuilder {
+	builder.lateMinutesAsLate = lateMinutesAsLate
+	builder.lateMinutesAsLateFlag = true
+	return builder
+}
+
+// 晚到超过多久记为缺卡
+//
+// 示例值：0
+func (builder *LeaveNeedPunchCfgBuilder) LateMinutesAsLack(lateMinutesAsLack int) *LeaveNeedPunchCfgBuilder {
+	builder.lateMinutesAsLack = lateMinutesAsLack
+	builder.lateMinutesAsLackFlag = true
+	return builder
+}
+
+// 早走超过多久记为早退
+//
+// 示例值：0
+func (builder *LeaveNeedPunchCfgBuilder) EarlyMinutesAsEarly(earlyMinutesAsEarly int) *LeaveNeedPunchCfgBuilder {
+	builder.earlyMinutesAsEarly = earlyMinutesAsEarly
+	builder.earlyMinutesAsEarlyFlag = true
+	return builder
+}
+
+// 早走超过多久记为缺卡
+//
+// 示例值：0
+func (builder *LeaveNeedPunchCfgBuilder) EarlyMinutesAsLack(earlyMinutesAsLack int) *LeaveNeedPunchCfgBuilder {
+	builder.earlyMinutesAsLack = earlyMinutesAsLack
+	builder.earlyMinutesAsLackFlag = true
+	return builder
+}
+
+func (builder *LeaveNeedPunchCfgBuilder) Build() *LeaveNeedPunchCfg {
+	req := &LeaveNeedPunchCfg{}
+	if builder.lateMinutesAsLateFlag {
+		req.LateMinutesAsLate = &builder.lateMinutesAsLate
+
+	}
+	if builder.lateMinutesAsLackFlag {
+		req.LateMinutesAsLack = &builder.lateMinutesAsLack
+
+	}
+	if builder.earlyMinutesAsEarlyFlag {
+		req.EarlyMinutesAsEarly = &builder.earlyMinutesAsEarly
+
+	}
+	if builder.earlyMinutesAsLackFlag {
+		req.EarlyMinutesAsLack = &builder.earlyMinutesAsLack
 
 	}
 	return req
@@ -2395,6 +3139,133 @@ func (builder *MachineBuilder) Build() *Machine {
 	return req
 }
 
+type MemberStatusChange struct {
+	OnboardingOnNoNeedPunch   *bool `json:"onboarding_on_no_need_punch,omitempty"`   // 是否入职日上班无需打卡
+	OnboardingOffNoNeedPunch  *bool `json:"onboarding_off_no_need_punch,omitempty"`  // 是否入职日下班无需打卡
+	OffboardingOnNoNeedPunch  *bool `json:"offboarding_on_no_need_punch,omitempty"`  // 是否离职日上班无需打卡
+	OffboardingOffNoNeedPunch *bool `json:"offboarding_off_no_need_punch,omitempty"` // 是否离职日下班无需打卡
+}
+
+type MemberStatusChangeBuilder struct {
+	onboardingOnNoNeedPunch       bool // 是否入职日上班无需打卡
+	onboardingOnNoNeedPunchFlag   bool
+	onboardingOffNoNeedPunch      bool // 是否入职日下班无需打卡
+	onboardingOffNoNeedPunchFlag  bool
+	offboardingOnNoNeedPunch      bool // 是否离职日上班无需打卡
+	offboardingOnNoNeedPunchFlag  bool
+	offboardingOffNoNeedPunch     bool // 是否离职日下班无需打卡
+	offboardingOffNoNeedPunchFlag bool
+}
+
+func NewMemberStatusChangeBuilder() *MemberStatusChangeBuilder {
+	builder := &MemberStatusChangeBuilder{}
+	return builder
+}
+
+// 是否入职日上班无需打卡
+//
+// 示例值：false
+func (builder *MemberStatusChangeBuilder) OnboardingOnNoNeedPunch(onboardingOnNoNeedPunch bool) *MemberStatusChangeBuilder {
+	builder.onboardingOnNoNeedPunch = onboardingOnNoNeedPunch
+	builder.onboardingOnNoNeedPunchFlag = true
+	return builder
+}
+
+// 是否入职日下班无需打卡
+//
+// 示例值：false
+func (builder *MemberStatusChangeBuilder) OnboardingOffNoNeedPunch(onboardingOffNoNeedPunch bool) *MemberStatusChangeBuilder {
+	builder.onboardingOffNoNeedPunch = onboardingOffNoNeedPunch
+	builder.onboardingOffNoNeedPunchFlag = true
+	return builder
+}
+
+// 是否离职日上班无需打卡
+//
+// 示例值：false
+func (builder *MemberStatusChangeBuilder) OffboardingOnNoNeedPunch(offboardingOnNoNeedPunch bool) *MemberStatusChangeBuilder {
+	builder.offboardingOnNoNeedPunch = offboardingOnNoNeedPunch
+	builder.offboardingOnNoNeedPunchFlag = true
+	return builder
+}
+
+// 是否离职日下班无需打卡
+//
+// 示例值：false
+func (builder *MemberStatusChangeBuilder) OffboardingOffNoNeedPunch(offboardingOffNoNeedPunch bool) *MemberStatusChangeBuilder {
+	builder.offboardingOffNoNeedPunch = offboardingOffNoNeedPunch
+	builder.offboardingOffNoNeedPunchFlag = true
+	return builder
+}
+
+func (builder *MemberStatusChangeBuilder) Build() *MemberStatusChange {
+	req := &MemberStatusChange{}
+	if builder.onboardingOnNoNeedPunchFlag {
+		req.OnboardingOnNoNeedPunch = &builder.onboardingOnNoNeedPunch
+
+	}
+	if builder.onboardingOffNoNeedPunchFlag {
+		req.OnboardingOffNoNeedPunch = &builder.onboardingOffNoNeedPunch
+
+	}
+	if builder.offboardingOnNoNeedPunchFlag {
+		req.OffboardingOnNoNeedPunch = &builder.offboardingOnNoNeedPunch
+
+	}
+	if builder.offboardingOffNoNeedPunchFlag {
+		req.OffboardingOffNoNeedPunch = &builder.offboardingOffNoNeedPunch
+
+	}
+	return req
+}
+
+type PunchMember struct {
+	RuleScopeType  *int        `json:"rule_scope_type,omitempty"`  // 圈人方式：0 无 1全部 2自定义
+	ScopeGroupList *ScopeGroup `json:"scope_group_list,omitempty"` // 圈人规则列表
+}
+
+type PunchMemberBuilder struct {
+	ruleScopeType      int // 圈人方式：0 无 1全部 2自定义
+	ruleScopeTypeFlag  bool
+	scopeGroupList     *ScopeGroup // 圈人规则列表
+	scopeGroupListFlag bool
+}
+
+func NewPunchMemberBuilder() *PunchMemberBuilder {
+	builder := &PunchMemberBuilder{}
+	return builder
+}
+
+// 圈人方式：0 无 1全部 2自定义
+//
+// 示例值：0
+func (builder *PunchMemberBuilder) RuleScopeType(ruleScopeType int) *PunchMemberBuilder {
+	builder.ruleScopeType = ruleScopeType
+	builder.ruleScopeTypeFlag = true
+	return builder
+}
+
+// 圈人规则列表
+//
+// 示例值：
+func (builder *PunchMemberBuilder) ScopeGroupList(scopeGroupList *ScopeGroup) *PunchMemberBuilder {
+	builder.scopeGroupList = scopeGroupList
+	builder.scopeGroupListFlag = true
+	return builder
+}
+
+func (builder *PunchMemberBuilder) Build() *PunchMember {
+	req := &PunchMember{}
+	if builder.ruleScopeTypeFlag {
+		req.RuleScopeType = &builder.ruleScopeType
+
+	}
+	if builder.scopeGroupListFlag {
+		req.ScopeGroupList = builder.scopeGroupList
+	}
+	return req
+}
+
 type PunchSpecialDateShift struct {
 	PunchDay *int    `json:"punch_day,omitempty"` // 打卡日期
 	ShiftId  *string `json:"shift_id,omitempty"`  // 班次 ID
@@ -2742,6 +3613,132 @@ func (builder *ScheduleBuilder) Build() *Schedule {
 	}
 	if builder.shiftsFlag {
 		req.Shifts = builder.shifts
+	}
+	return req
+}
+
+type ScopeGroup struct {
+	ScopeValueType *int          `json:"scope_value_type,omitempty"` // 类型： 1: 部门 2：人员 3:国家地区 4:员工类型 5:性别 6:工作城市
+	OperationType  *int          `json:"operation_type,omitempty"`   // 范围类型（是否包含）
+	Right          []*ScopeValue `json:"right,omitempty"`            // 如果是人员/部门类型 不需要使用该字段
+	MemberIds      []string      `json:"member_ids,omitempty"`       // 部门/人员id列表
+}
+
+type ScopeGroupBuilder struct {
+	scopeValueType     int // 类型： 1: 部门 2：人员 3:国家地区 4:员工类型 5:性别 6:工作城市
+	scopeValueTypeFlag bool
+	operationType      int // 范围类型（是否包含）
+	operationTypeFlag  bool
+	right              []*ScopeValue // 如果是人员/部门类型 不需要使用该字段
+	rightFlag          bool
+	memberIds          []string // 部门/人员id列表
+	memberIdsFlag      bool
+}
+
+func NewScopeGroupBuilder() *ScopeGroupBuilder {
+	builder := &ScopeGroupBuilder{}
+	return builder
+}
+
+// 类型： 1: 部门 2：人员 3:国家地区 4:员工类型 5:性别 6:工作城市
+//
+// 示例值：1
+func (builder *ScopeGroupBuilder) ScopeValueType(scopeValueType int) *ScopeGroupBuilder {
+	builder.scopeValueType = scopeValueType
+	builder.scopeValueTypeFlag = true
+	return builder
+}
+
+// 范围类型（是否包含）
+//
+// 示例值：1
+func (builder *ScopeGroupBuilder) OperationType(operationType int) *ScopeGroupBuilder {
+	builder.operationType = operationType
+	builder.operationTypeFlag = true
+	return builder
+}
+
+// 如果是人员/部门类型 不需要使用该字段
+//
+// 示例值：
+func (builder *ScopeGroupBuilder) Right(right []*ScopeValue) *ScopeGroupBuilder {
+	builder.right = right
+	builder.rightFlag = true
+	return builder
+}
+
+// 部门/人员id列表
+//
+// 示例值：
+func (builder *ScopeGroupBuilder) MemberIds(memberIds []string) *ScopeGroupBuilder {
+	builder.memberIds = memberIds
+	builder.memberIdsFlag = true
+	return builder
+}
+
+func (builder *ScopeGroupBuilder) Build() *ScopeGroup {
+	req := &ScopeGroup{}
+	if builder.scopeValueTypeFlag {
+		req.ScopeValueType = &builder.scopeValueType
+
+	}
+	if builder.operationTypeFlag {
+		req.OperationType = &builder.operationType
+
+	}
+	if builder.rightFlag {
+		req.Right = builder.right
+	}
+	if builder.memberIdsFlag {
+		req.MemberIds = builder.memberIds
+	}
+	return req
+}
+
+type ScopeValue struct {
+	Key  *string `json:"key,omitempty"`  //  标识Key
+	Name *string `json:"name,omitempty"` // 名称
+}
+
+type ScopeValueBuilder struct {
+	key      string //  标识Key
+	keyFlag  bool
+	name     string // 名称
+	nameFlag bool
+}
+
+func NewScopeValueBuilder() *ScopeValueBuilder {
+	builder := &ScopeValueBuilder{}
+	return builder
+}
+
+//  标识Key
+//
+// 示例值：CH
+func (builder *ScopeValueBuilder) Key(key string) *ScopeValueBuilder {
+	builder.key = key
+	builder.keyFlag = true
+	return builder
+}
+
+// 名称
+//
+// 示例值：中国大陆
+func (builder *ScopeValueBuilder) Name(name string) *ScopeValueBuilder {
+	builder.name = name
+	builder.nameFlag = true
+	return builder
+}
+
+func (builder *ScopeValueBuilder) Build() *ScopeValue {
+	req := &ScopeValue{}
+	if builder.keyFlag {
+		req.Key = &builder.key
+
+	}
+	if builder.nameFlag {
+		req.Name = &builder.name
+
 	}
 	return req
 }
@@ -5921,12 +6918,12 @@ type GetGroupRespData struct {
 	GroupId                 *string                  `json:"group_id,omitempty"`                    // 考勤组的Id， 需要从获取用户打卡结果信息的接口中获取groupId，修改考勤组时必填
 	GroupName               *string                  `json:"group_name,omitempty"`                  // 考勤组名称
 	TimeZone                *string                  `json:"time_zone,omitempty"`                   // 考勤组时区
-	BindDeptIds             []string                 `json:"bind_dept_ids,omitempty"`               //
-	ExceptDeptIds           []string                 `json:"except_dept_ids,omitempty"`             //
-	BindUserIds             []string                 `json:"bind_user_ids,omitempty"`               //
-	ExceptUserIds           []string                 `json:"except_user_ids,omitempty"`             //
-	GroupLeaderIds          []string                 `json:"group_leader_ids,omitempty"`            //
-	SubGroupLeaderIds       []string                 `json:"sub_group_leader_ids,omitempty"`        //
+	BindDeptIds             []string                 `json:"bind_dept_ids,omitempty"`               // 参加考勤的部门id列表
+	ExceptDeptIds           []string                 `json:"except_dept_ids,omitempty"`             // 无需考勤的部门id列表
+	BindUserIds             []string                 `json:"bind_user_ids,omitempty"`               // 参加考勤的人员id列表
+	ExceptUserIds           []string                 `json:"except_user_ids,omitempty"`             // 参加考勤的人员id列表
+	GroupLeaderIds          []string                 `json:"group_leader_ids,omitempty"`            // 考勤组主负责人id列表
+	SubGroupLeaderIds       []string                 `json:"sub_group_leader_ids,omitempty"`        // 考勤组子负责人id列表
 	AllowOutPunch           *bool                    `json:"allow_out_punch,omitempty"`             // 是否允许外勤打卡
 	OutPunchNeedApproval    *bool                    `json:"out_punch_need_approval,omitempty"`     // 外勤打卡需审批（需要允许外勤打卡才能设置生效）
 	OutPunchNeedRemark      *bool                    `json:"out_punch_need_remark,omitempty"`       // 外勤打卡需填写备注（需要允许外勤打卡才能设置生效）
@@ -5947,11 +6944,12 @@ type GetGroupRespData struct {
 	HideStaffPunchTime      *bool                    `json:"hide_staff_punch_time,omitempty"`       // 是否隐藏员工打卡详情
 	FacePunch               *bool                    `json:"face_punch,omitempty"`                  // 是否开启人脸打卡
 	FacePunchCfg            *int                     `json:"face_punch_cfg,omitempty"`              // 人脸打卡规则， 1：每次打卡均需人脸识别 2：疑似需要
+	FaceLiveNeedAction      *bool                    `json:"face_live_need_action,omitempty"`       // 人脸打卡规则， false：开启活体验证 true：0动作验证，仅在 face_punch_cfg = 1 时有效
 	FaceDowngrade           *bool                    `json:"face_downgrade,omitempty"`              // 脸识别失败时允许普通拍照打卡
 	ReplaceBasicPic         *bool                    `json:"replace_basic_pic,omitempty"`           // 是否允许替换基准图片
-	Machines                []*Machine               `json:"machines,omitempty"`                    //
+	Machines                []*Machine               `json:"machines,omitempty"`                    // 考勤机信息
 	GpsRange                *int                     `json:"gps_range,omitempty"`                   // GPS打卡的地址范围
-	Locations               []*Location              `json:"locations,omitempty"`                   //
+	Locations               []*Location              `json:"locations,omitempty"`                   // GPS打卡的地址信息
 	GroupType               *int                     `json:"group_type,omitempty"`                  // 考勤类型 0：固定考勤  2：排班考勤， 3：自由班次
 	PunchDayShiftIds        []string                 `json:"punch_day_shift_ids,omitempty"`         // 固定班次必需填
 	FreePunchCfg            *FreePunchCfg            `json:"free_punch_cfg,omitempty"`              //
@@ -5967,6 +6965,15 @@ type GetGroupRespData struct {
 	MemberEffectTime        *string                  `json:"member_effect_time,omitempty"`          // 参加考勤的人员、部门变动生效时间，精确到秒的时间戳
 	RestClockInNeedApproval *bool                    `json:"rest_clockIn_need_approval,omitempty"`  // 休息日打卡需审批
 	ClockInNeedPhoto        *bool                    `json:"clockIn_need_photo,omitempty"`          // 每次打卡均需拍照
+	MemberStatusChange      *MemberStatusChange      `json:"member_status_change,omitempty"`        // 人员异动打卡设置
+	LeaveNeedPunch          *bool                    `json:"leave_need_punch,omitempty"`            // 请假离岗或返岗是否需打卡
+	LeaveNeedPunchCfg       *LeaveNeedPunchCfg       `json:"leave_need_punch_cfg,omitempty"`        // 请假离岗或返岗打卡规则
+	GoOutNeedPunch          *int                     `json:"go_out_need_punch,omitempty"`           // 外出期间是否需打卡
+	GoOutNeedPunchCfg       *LeaveNeedPunchCfg       `json:"go_out_need_punch_cfg,omitempty"`       // 外出期间打卡规则
+	TravelNeedPunch         *int                     `json:"travel_need_punch,omitempty"`           // 出差期间是否需打卡
+	TravelNeedPunchCfg      *LeaveNeedPunchCfg       `json:"travel_need_punch_cfg,omitempty"`       // 出差期间打卡规则
+	NeedPunchMembers        []*PunchMember           `json:"need_punch_members,omitempty"`          // 需要打卡的人员配置（新）
+	NoNeedPunchMembers      []*PunchMember           `json:"no_need_punch_members,omitempty"`       // 无需打卡的人员配置（新）
 }
 
 type GetGroupResp struct {
@@ -6031,8 +7038,8 @@ type ListGroupReq struct {
 
 type ListGroupRespData struct {
 	GroupList []*GroupMeta `json:"group_list,omitempty"` // 考勤组列表
-	PageToken *string      `json:"page_token,omitempty"` //
-	HasMore   *bool        `json:"has_more,omitempty"`   //
+	PageToken *string      `json:"page_token,omitempty"` // 分页标记，当 has_more 为 true 时，会同时返回新的 page_token，否则不返回 page_token
+	HasMore   *bool        `json:"has_more,omitempty"`   // 是否还有更多项
 }
 
 type ListGroupResp struct {
@@ -6149,6 +7156,522 @@ type SearchGroupResp struct {
 }
 
 func (resp *SearchGroupResp) Success() bool {
+	return resp.Code == 0
+}
+
+type PatchLeaveAccrualRecordReqBodyBuilder struct {
+	leaveGrantingRecordId     string // 授予记录的唯一ID
+	leaveGrantingRecordIdFlag bool
+	employmentId              string // 员工ID
+	employmentIdFlag          bool
+	leaveTypeId               string // 假期类型ID
+	leaveTypeIdFlag           bool
+	reason                    []*LangText // 修改授予记录原因
+	reasonFlag                bool
+	timeOffset                int // 时间偏移，东八区：480	8*60
+	timeOffsetFlag            bool
+	expirationDate            string // 失效日期，格式"2020-01-01"
+	expirationDateFlag        bool
+	quantity                  string // 修改source 余额
+	quantityFlag              bool
+}
+
+func NewPatchLeaveAccrualRecordReqBodyBuilder() *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder := &PatchLeaveAccrualRecordReqBodyBuilder{}
+	return builder
+}
+
+// 授予记录的唯一ID
+//
+//示例值：1
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) LeaveGrantingRecordId(leaveGrantingRecordId string) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.leaveGrantingRecordId = leaveGrantingRecordId
+	builder.leaveGrantingRecordIdFlag = true
+	return builder
+}
+
+// 员工ID
+//
+//示例值：1
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) EmploymentId(employmentId string) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+//示例值：1
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) LeaveTypeId(leaveTypeId string) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 修改授予记录原因
+//
+//示例值：
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) Reason(reason []*LangText) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.reason = reason
+	builder.reasonFlag = true
+	return builder
+}
+
+// 时间偏移，东八区：480	8*60
+//
+//示例值：480
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) TimeOffset(timeOffset int) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.timeOffset = timeOffset
+	builder.timeOffsetFlag = true
+	return builder
+}
+
+// 失效日期，格式"2020-01-01"
+//
+//示例值：2020-01-01
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) ExpirationDate(expirationDate string) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.expirationDate = expirationDate
+	builder.expirationDateFlag = true
+	return builder
+}
+
+// 修改source 余额
+//
+//示例值：1
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) Quantity(quantity string) *PatchLeaveAccrualRecordReqBodyBuilder {
+	builder.quantity = quantity
+	builder.quantityFlag = true
+	return builder
+}
+
+func (builder *PatchLeaveAccrualRecordReqBodyBuilder) Build() *PatchLeaveAccrualRecordReqBody {
+	req := &PatchLeaveAccrualRecordReqBody{}
+	if builder.leaveGrantingRecordIdFlag {
+		req.LeaveGrantingRecordId = &builder.leaveGrantingRecordId
+	}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+	}
+	if builder.reasonFlag {
+		req.Reason = builder.reason
+	}
+	if builder.timeOffsetFlag {
+		req.TimeOffset = &builder.timeOffset
+	}
+	if builder.expirationDateFlag {
+		req.ExpirationDate = &builder.expirationDate
+	}
+	if builder.quantityFlag {
+		req.Quantity = &builder.quantity
+	}
+	return req
+}
+
+type PatchLeaveAccrualRecordPathReqBodyBuilder struct {
+	leaveGrantingRecordId     string // 授予记录的唯一ID
+	leaveGrantingRecordIdFlag bool
+	employmentId              string // 员工ID
+	employmentIdFlag          bool
+	leaveTypeId               string // 假期类型ID
+	leaveTypeIdFlag           bool
+	reason                    []*LangText // 修改授予记录原因
+	reasonFlag                bool
+	timeOffset                int // 时间偏移，东八区：480	8*60
+	timeOffsetFlag            bool
+	expirationDate            string // 失效日期，格式"2020-01-01"
+	expirationDateFlag        bool
+	quantity                  string // 修改source 余额
+	quantityFlag              bool
+}
+
+func NewPatchLeaveAccrualRecordPathReqBodyBuilder() *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder := &PatchLeaveAccrualRecordPathReqBodyBuilder{}
+	return builder
+}
+
+// 授予记录的唯一ID
+//
+// 示例值：1
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) LeaveGrantingRecordId(leaveGrantingRecordId string) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.leaveGrantingRecordId = leaveGrantingRecordId
+	builder.leaveGrantingRecordIdFlag = true
+	return builder
+}
+
+// 员工ID
+//
+// 示例值：1
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) EmploymentId(employmentId string) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) LeaveTypeId(leaveTypeId string) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 修改授予记录原因
+//
+// 示例值：
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) Reason(reason []*LangText) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.reason = reason
+	builder.reasonFlag = true
+	return builder
+}
+
+// 时间偏移，东八区：480	8*60
+//
+// 示例值：480
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) TimeOffset(timeOffset int) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.timeOffset = timeOffset
+	builder.timeOffsetFlag = true
+	return builder
+}
+
+// 失效日期，格式"2020-01-01"
+//
+// 示例值：2020-01-01
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) ExpirationDate(expirationDate string) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.expirationDate = expirationDate
+	builder.expirationDateFlag = true
+	return builder
+}
+
+// 修改source 余额
+//
+// 示例值：1
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) Quantity(quantity string) *PatchLeaveAccrualRecordPathReqBodyBuilder {
+	builder.quantity = quantity
+	builder.quantityFlag = true
+	return builder
+}
+
+func (builder *PatchLeaveAccrualRecordPathReqBodyBuilder) Build() (*PatchLeaveAccrualRecordReqBody, error) {
+	req := &PatchLeaveAccrualRecordReqBody{}
+	if builder.leaveGrantingRecordIdFlag {
+		req.LeaveGrantingRecordId = &builder.leaveGrantingRecordId
+	}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+	}
+	if builder.reasonFlag {
+		req.Reason = builder.reason
+	}
+	if builder.timeOffsetFlag {
+		req.TimeOffset = &builder.timeOffset
+	}
+	if builder.expirationDateFlag {
+		req.ExpirationDate = &builder.expirationDate
+	}
+	if builder.quantityFlag {
+		req.Quantity = &builder.quantity
+	}
+	return req, nil
+}
+
+type PatchLeaveAccrualRecordReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *PatchLeaveAccrualRecordReqBody
+}
+
+func NewPatchLeaveAccrualRecordReqBuilder() *PatchLeaveAccrualRecordReqBuilder {
+	builder := &PatchLeaveAccrualRecordReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *PatchLeaveAccrualRecordReqBuilder) LeaveId(leaveId string) *PatchLeaveAccrualRecordReqBuilder {
+	builder.apiReq.PathParams.Set("leave_id", fmt.Sprint(leaveId))
+	return builder
+}
+
+//
+func (builder *PatchLeaveAccrualRecordReqBuilder) Body(body *PatchLeaveAccrualRecordReqBody) *PatchLeaveAccrualRecordReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *PatchLeaveAccrualRecordReqBuilder) Build() *PatchLeaveAccrualRecordReq {
+	req := &PatchLeaveAccrualRecordReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type PatchLeaveAccrualRecordReqBody struct {
+	LeaveGrantingRecordId *string     `json:"leave_granting_record_id,omitempty"` // 授予记录的唯一ID
+	EmploymentId          *string     `json:"employment_id,omitempty"`            // 员工ID
+	LeaveTypeId           *string     `json:"leave_type_id,omitempty"`            // 假期类型ID
+	Reason                []*LangText `json:"reason,omitempty"`                   // 修改授予记录原因
+	TimeOffset            *int        `json:"time_offset,omitempty"`              // 时间偏移，东八区：480	8*60
+	ExpirationDate        *string     `json:"expiration_date,omitempty"`          // 失效日期，格式"2020-01-01"
+	Quantity              *string     `json:"quantity,omitempty"`                 // 修改source 余额
+}
+
+type PatchLeaveAccrualRecordReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *PatchLeaveAccrualRecordReqBody `body:""`
+}
+
+type PatchLeaveAccrualRecordRespData struct {
+	Record *LeaveAccrualRecord `json:"record,omitempty"` // 员工过期日期的授予记录
+}
+
+type PatchLeaveAccrualRecordResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *PatchLeaveAccrualRecordRespData `json:"data"` // 业务数据
+}
+
+func (resp *PatchLeaveAccrualRecordResp) Success() bool {
+	return resp.Code == 0
+}
+
+type GetLeaveEmployExpireRecordReqBodyBuilder struct {
+	employmentId            string // 员工ID
+	employmentIdFlag        bool
+	leaveTypeId             string // 假期类型ID
+	leaveTypeIdFlag         bool
+	startExpirationDate     string // 失效最早日期  2023-04-10 格式
+	startExpirationDateFlag bool
+	endExpirationDate       string // 失效最晚日期 2023-05-10 格式
+	endExpirationDateFlag   bool
+	timeOffset              int // 时间偏移，东八区：480	8*60， 如果没有这个参数，默认东八区
+	timeOffsetFlag          bool
+}
+
+func NewGetLeaveEmployExpireRecordReqBodyBuilder() *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder := &GetLeaveEmployExpireRecordReqBodyBuilder{}
+	return builder
+}
+
+// 员工ID
+//
+//示例值：1
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) EmploymentId(employmentId string) *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+//示例值：1
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) LeaveTypeId(leaveTypeId string) *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 失效最早日期  2023-04-10 格式
+//
+//示例值：2023-04-10
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) StartExpirationDate(startExpirationDate string) *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder.startExpirationDate = startExpirationDate
+	builder.startExpirationDateFlag = true
+	return builder
+}
+
+// 失效最晚日期 2023-05-10 格式
+//
+//示例值：2023-05-10
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) EndExpirationDate(endExpirationDate string) *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder.endExpirationDate = endExpirationDate
+	builder.endExpirationDateFlag = true
+	return builder
+}
+
+// 时间偏移，东八区：480	8*60， 如果没有这个参数，默认东八区
+//
+//示例值：480
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) TimeOffset(timeOffset int) *GetLeaveEmployExpireRecordReqBodyBuilder {
+	builder.timeOffset = timeOffset
+	builder.timeOffsetFlag = true
+	return builder
+}
+
+func (builder *GetLeaveEmployExpireRecordReqBodyBuilder) Build() *GetLeaveEmployExpireRecordReqBody {
+	req := &GetLeaveEmployExpireRecordReqBody{}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+	}
+	if builder.startExpirationDateFlag {
+		req.StartExpirationDate = &builder.startExpirationDate
+	}
+	if builder.endExpirationDateFlag {
+		req.EndExpirationDate = &builder.endExpirationDate
+	}
+	if builder.timeOffsetFlag {
+		req.TimeOffset = &builder.timeOffset
+	}
+	return req
+}
+
+type GetLeaveEmployExpireRecordPathReqBodyBuilder struct {
+	employmentId            string // 员工ID
+	employmentIdFlag        bool
+	leaveTypeId             string // 假期类型ID
+	leaveTypeIdFlag         bool
+	startExpirationDate     string // 失效最早日期  2023-04-10 格式
+	startExpirationDateFlag bool
+	endExpirationDate       string // 失效最晚日期 2023-05-10 格式
+	endExpirationDateFlag   bool
+	timeOffset              int // 时间偏移，东八区：480	8*60， 如果没有这个参数，默认东八区
+	timeOffsetFlag          bool
+}
+
+func NewGetLeaveEmployExpireRecordPathReqBodyBuilder() *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder := &GetLeaveEmployExpireRecordPathReqBodyBuilder{}
+	return builder
+}
+
+// 员工ID
+//
+// 示例值：1
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) EmploymentId(employmentId string) *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder.employmentId = employmentId
+	builder.employmentIdFlag = true
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) LeaveTypeId(leaveTypeId string) *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder.leaveTypeId = leaveTypeId
+	builder.leaveTypeIdFlag = true
+	return builder
+}
+
+// 失效最早日期  2023-04-10 格式
+//
+// 示例值：2023-04-10
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) StartExpirationDate(startExpirationDate string) *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder.startExpirationDate = startExpirationDate
+	builder.startExpirationDateFlag = true
+	return builder
+}
+
+// 失效最晚日期 2023-05-10 格式
+//
+// 示例值：2023-05-10
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) EndExpirationDate(endExpirationDate string) *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder.endExpirationDate = endExpirationDate
+	builder.endExpirationDateFlag = true
+	return builder
+}
+
+// 时间偏移，东八区：480	8*60， 如果没有这个参数，默认东八区
+//
+// 示例值：480
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) TimeOffset(timeOffset int) *GetLeaveEmployExpireRecordPathReqBodyBuilder {
+	builder.timeOffset = timeOffset
+	builder.timeOffsetFlag = true
+	return builder
+}
+
+func (builder *GetLeaveEmployExpireRecordPathReqBodyBuilder) Build() (*GetLeaveEmployExpireRecordReqBody, error) {
+	req := &GetLeaveEmployExpireRecordReqBody{}
+	if builder.employmentIdFlag {
+		req.EmploymentId = &builder.employmentId
+	}
+	if builder.leaveTypeIdFlag {
+		req.LeaveTypeId = &builder.leaveTypeId
+	}
+	if builder.startExpirationDateFlag {
+		req.StartExpirationDate = &builder.startExpirationDate
+	}
+	if builder.endExpirationDateFlag {
+		req.EndExpirationDate = &builder.endExpirationDate
+	}
+	if builder.timeOffsetFlag {
+		req.TimeOffset = &builder.timeOffset
+	}
+	return req, nil
+}
+
+type GetLeaveEmployExpireRecordReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *GetLeaveEmployExpireRecordReqBody
+}
+
+func NewGetLeaveEmployExpireRecordReqBuilder() *GetLeaveEmployExpireRecordReqBuilder {
+	builder := &GetLeaveEmployExpireRecordReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 假期类型ID
+//
+// 示例值：1
+func (builder *GetLeaveEmployExpireRecordReqBuilder) LeaveId(leaveId string) *GetLeaveEmployExpireRecordReqBuilder {
+	builder.apiReq.PathParams.Set("leave_id", fmt.Sprint(leaveId))
+	return builder
+}
+
+//
+func (builder *GetLeaveEmployExpireRecordReqBuilder) Body(body *GetLeaveEmployExpireRecordReqBody) *GetLeaveEmployExpireRecordReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *GetLeaveEmployExpireRecordReqBuilder) Build() *GetLeaveEmployExpireRecordReq {
+	req := &GetLeaveEmployExpireRecordReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type GetLeaveEmployExpireRecordReqBody struct {
+	EmploymentId        *string `json:"employment_id,omitempty"`         // 员工ID
+	LeaveTypeId         *string `json:"leave_type_id,omitempty"`         // 假期类型ID
+	StartExpirationDate *string `json:"start_expiration_date,omitempty"` // 失效最早日期  2023-04-10 格式
+	EndExpirationDate   *string `json:"end_expiration_date,omitempty"`   // 失效最晚日期 2023-05-10 格式
+	TimeOffset          *int    `json:"time_offset,omitempty"`           // 时间偏移，东八区：480	8*60， 如果没有这个参数，默认东八区
+}
+
+type GetLeaveEmployExpireRecordReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *GetLeaveEmployExpireRecordReqBody `body:""`
+}
+
+type GetLeaveEmployExpireRecordRespData struct {
+	Records []*LeaveEmployExpireRecord `json:"records,omitempty"` // 员工过期日期的授予记录
+}
+
+type GetLeaveEmployExpireRecordResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *GetLeaveEmployExpireRecordRespData `json:"data"` // 业务数据
+}
+
+func (resp *GetLeaveEmployExpireRecordResp) Success() bool {
 	return resp.Code == 0
 }
 
@@ -8018,7 +9541,8 @@ type QueryUserStatsDataReq struct {
 }
 
 type QueryUserStatsDataRespData struct {
-	UserDatas []*UserStatsData `json:"user_datas,omitempty"` // 用户统计数据（限制1000条，超过1000条会截断）
+	UserDatas       []*UserStatsData `json:"user_datas,omitempty"`        // 用户统计数据（限制1000条，超过1000条会截断）
+	InvalidUserList []string         `json:"invalid_user_list,omitempty"` // 无权限获取的用户列表
 }
 
 type QueryUserStatsDataResp struct {

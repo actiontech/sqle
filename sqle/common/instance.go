@@ -23,7 +23,7 @@ func CheckInstanceIsConnectable(instance *model.Instance) error {
 	return nil
 }
 
-func CheckDeleteInstance(instanceId uint) error {
+func CheckDeleteInstance(instanceId int64) error {
 	s := model.GetStorage()
 
 	isUnFinished, err := s.IsWorkflowUnFinishedByInstanceId(instanceId)

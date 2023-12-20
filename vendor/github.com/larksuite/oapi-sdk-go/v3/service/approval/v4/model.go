@@ -114,6 +114,12 @@ const (
 )
 
 const (
+	TitleDisplayMethodDisplayAll           = 0 // 如果都有title，展示approval 和instance的title，竖线分割。
+	TitleDisplayMethodDisplayInstanceTitle = 1 // 如果都有title，只展示instance的title
+
+)
+
+const (
 	LocaleGetInstanceZhcn = "zh-CN" // 中文
 	LocaleGetInstanceEnus = "en-US" // 英文
 	LocaleGetInstanceJajp = "ja-JP" // 日文
@@ -1554,18 +1560,21 @@ func (builder *ApprovalNodeInfoBuilder) Build() *ApprovalNodeInfo {
 }
 
 type ApprovalSetting struct {
-	RevertInterval *int `json:"revert_interval,omitempty"` // 审批实例通过后允许撤回的时间，以秒为单位，默认 31 天，0 为不可撤回
-	RevertOption   *int `json:"revert_option,omitempty"`   // 是否支持审批通过第一个节点后撤回，默认为1，0为不支持
-	RejectOption   *int `json:"reject_option,omitempty"`   // 拒绝设置
+	RevertInterval      *int `json:"revert_interval,omitempty"`       // 审批实例通过后允许撤回的时间，以秒为单位，默认 31 天，0 为不可撤回
+	RevertOption        *int `json:"revert_option,omitempty"`         // 是否支持审批通过第一个节点后撤回，默认为1，0为不支持
+	RejectOption        *int `json:"reject_option,omitempty"`         // 拒绝设置
+	QuickApprovalOption *int `json:"quick_approval_option,omitempty"` // 快捷审批配置项，开启后可在卡片上直接审批。默认值1为启用， 0为禁用
 }
 
 type ApprovalSettingBuilder struct {
-	revertInterval     int // 审批实例通过后允许撤回的时间，以秒为单位，默认 31 天，0 为不可撤回
-	revertIntervalFlag bool
-	revertOption       int // 是否支持审批通过第一个节点后撤回，默认为1，0为不支持
-	revertOptionFlag   bool
-	rejectOption       int // 拒绝设置
-	rejectOptionFlag   bool
+	revertInterval          int // 审批实例通过后允许撤回的时间，以秒为单位，默认 31 天，0 为不可撤回
+	revertIntervalFlag      bool
+	revertOption            int // 是否支持审批通过第一个节点后撤回，默认为1，0为不支持
+	revertOptionFlag        bool
+	rejectOption            int // 拒绝设置
+	rejectOptionFlag        bool
+	quickApprovalOption     int // 快捷审批配置项，开启后可在卡片上直接审批。默认值1为启用， 0为禁用
+	quickApprovalOptionFlag bool
 }
 
 func NewApprovalSettingBuilder() *ApprovalSettingBuilder {
@@ -1600,6 +1609,15 @@ func (builder *ApprovalSettingBuilder) RejectOption(rejectOption int) *ApprovalS
 	return builder
 }
 
+// 快捷审批配置项，开启后可在卡片上直接审批。默认值1为启用， 0为禁用
+//
+// 示例值：1
+func (builder *ApprovalSettingBuilder) QuickApprovalOption(quickApprovalOption int) *ApprovalSettingBuilder {
+	builder.quickApprovalOption = quickApprovalOption
+	builder.quickApprovalOptionFlag = true
+	return builder
+}
+
 func (builder *ApprovalSettingBuilder) Build() *ApprovalSetting {
 	req := &ApprovalSetting{}
 	if builder.revertIntervalFlag {
@@ -1612,6 +1630,10 @@ func (builder *ApprovalSettingBuilder) Build() *ApprovalSetting {
 	}
 	if builder.rejectOptionFlag {
 		req.RejectOption = &builder.rejectOption
+
+	}
+	if builder.quickApprovalOptionFlag {
+		req.QuickApprovalOption = &builder.quickApprovalOption
 
 	}
 	return req
@@ -2869,6 +2891,165 @@ func (builder *CommentRequestBuilder) Build() *CommentRequest {
 	return req
 }
 
+type ConnectorLog struct {
+	LogData []*ConnectorLogData `json:"log_data,omitempty"` // 日志数据
+}
+
+type ConnectorLogBuilder struct {
+	logData     []*ConnectorLogData // 日志数据
+	logDataFlag bool
+}
+
+func NewConnectorLogBuilder() *ConnectorLogBuilder {
+	builder := &ConnectorLogBuilder{}
+	return builder
+}
+
+// 日志数据
+//
+// 示例值：
+func (builder *ConnectorLogBuilder) LogData(logData []*ConnectorLogData) *ConnectorLogBuilder {
+	builder.logData = logData
+	builder.logDataFlag = true
+	return builder
+}
+
+func (builder *ConnectorLogBuilder) Build() *ConnectorLog {
+	req := &ConnectorLog{}
+	if builder.logDataFlag {
+		req.LogData = builder.logData
+	}
+	return req
+}
+
+type ConnectorLogData struct {
+	DateTime *string `json:"date_time,omitempty"` // 时间
+	Data     *string `json:"data,omitempty"`      // 数据（脱敏）
+	Level    *string `json:"level,omitempty"`     // 数据等级
+	Pod      *string `json:"pod,omitempty"`       // 机器名称
+	Location *string `json:"location,omitempty"`  // 打印位置（脱敏）
+	Type     *string `json:"type,omitempty"`      // 数据类型
+	Version  *string `json:"version,omitempty"`   // 版本号
+}
+
+type ConnectorLogDataBuilder struct {
+	dateTime     string // 时间
+	dateTimeFlag bool
+	data         string // 数据（脱敏）
+	dataFlag     bool
+	level        string // 数据等级
+	levelFlag    bool
+	pod          string // 机器名称
+	podFlag      bool
+	location     string // 打印位置（脱敏）
+	locationFlag bool
+	type_        string // 数据类型
+	typeFlag     bool
+	version      string // 版本号
+	versionFlag  bool
+}
+
+func NewConnectorLogDataBuilder() *ConnectorLogDataBuilder {
+	builder := &ConnectorLogDataBuilder{}
+	return builder
+}
+
+// 时间
+//
+// 示例值：2023-03-23 10:05:11
+func (builder *ConnectorLogDataBuilder) DateTime(dateTime string) *ConnectorLogDataBuilder {
+	builder.dateTime = dateTime
+	builder.dateTimeFlag = true
+	return builder
+}
+
+// 数据（脱敏）
+//
+// 示例值：cwyFtNZSO7wKZ2Bi+WHJVbb6uZ3G2hlsje
+func (builder *ConnectorLogDataBuilder) Data(data string) *ConnectorLogDataBuilder {
+	builder.data = data
+	builder.dataFlag = true
+	return builder
+}
+
+// 数据等级
+//
+// 示例值：INFO
+func (builder *ConnectorLogDataBuilder) Level(level string) *ConnectorLogDataBuilder {
+	builder.level = level
+	builder.levelFlag = true
+	return builder
+}
+
+// 机器名称
+//
+// 示例值：C02GD65CMD6R
+func (builder *ConnectorLogDataBuilder) Pod(pod string) *ConnectorLogDataBuilder {
+	builder.pod = pod
+	builder.podFlag = true
+	return builder
+}
+
+// 打印位置（脱敏）
+//
+// 示例值：K+GFMIO+2aTIX8yXkPLK2hoEPof4
+func (builder *ConnectorLogDataBuilder) Location(location string) *ConnectorLogDataBuilder {
+	builder.location = location
+	builder.locationFlag = true
+	return builder
+}
+
+// 数据类型
+//
+// 示例值：MONITOR
+func (builder *ConnectorLogDataBuilder) Type(type_ string) *ConnectorLogDataBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 版本号
+//
+// 示例值：2.0.1
+func (builder *ConnectorLogDataBuilder) Version(version string) *ConnectorLogDataBuilder {
+	builder.version = version
+	builder.versionFlag = true
+	return builder
+}
+
+func (builder *ConnectorLogDataBuilder) Build() *ConnectorLogData {
+	req := &ConnectorLogData{}
+	if builder.dateTimeFlag {
+		req.DateTime = &builder.dateTime
+
+	}
+	if builder.dataFlag {
+		req.Data = &builder.data
+
+	}
+	if builder.levelFlag {
+		req.Level = &builder.level
+
+	}
+	if builder.podFlag {
+		req.Pod = &builder.pod
+
+	}
+	if builder.locationFlag {
+		req.Location = &builder.location
+
+	}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.versionFlag {
+		req.Version = &builder.version
+
+	}
+	return req
+}
+
 type Count struct {
 	Total   *int  `json:"total,omitempty"`    // 总数，大于等于 1000 个项目时将返回 999
 	HasMore *bool `json:"has_more,omitempty"` // 还有更多，当大于等于 1000 时将返回 true
@@ -2918,15 +3099,36 @@ func (builder *CountBuilder) Build() *Count {
 }
 
 type Definition struct {
-	ApprovalCode *string `json:"approval_code,omitempty"` // 审批定义 code  示例值："7C468A54-8745-2245-9675-08B7C63E7A85"
-	ApprovalName *string `json:"approval_name,omitempty"` // 审批名称，根据传入的local字段返回对应的国际化文案，未设置该国际化文案时返回默认语言对应文案
+	ApprovalCode     *string `json:"approval_code,omitempty"`      // 审批定义 code  示例值："7C468A54-8745-2245-9675-08B7C63E7A85"
+	ApprovalName     *string `json:"approval_name,omitempty"`      // 审批名称，根据传入的local字段返回对应的国际化文案，未设置该国际化文案时返回默认语言对应文案
+	GroupName        *string `json:"group_name,omitempty"`         // 分组名称，值的格式是 i18n key，文案放在 i18n_resource
+	Description      *string `json:"description,omitempty"`        // 审批定义的说明，值的格式是 i18n key，文案放在 i18n_resource； 审批发起页 审批定义的说明内容来自该字段
+	IconUrl          *string `json:"icon_url,omitempty"`           // 审批图标链接
+	GroupCode        *string `json:"group_code,omitempty"`         // 审批定义所属审批分组
+	IsExternal       *bool   `json:"is_external,omitempty"`        // 是否为第三方审批
+	CreateLinkPc     *string `json:"create_link_pc,omitempty"`     // PC端发起页链接
+	CreateLinkMobile *string `json:"create_link_mobile,omitempty"` // 移动端发起页链接
 }
 
 type DefinitionBuilder struct {
-	approvalCode     string // 审批定义 code  示例值："7C468A54-8745-2245-9675-08B7C63E7A85"
-	approvalCodeFlag bool
-	approvalName     string // 审批名称，根据传入的local字段返回对应的国际化文案，未设置该国际化文案时返回默认语言对应文案
-	approvalNameFlag bool
+	approvalCode         string // 审批定义 code  示例值："7C468A54-8745-2245-9675-08B7C63E7A85"
+	approvalCodeFlag     bool
+	approvalName         string // 审批名称，根据传入的local字段返回对应的国际化文案，未设置该国际化文案时返回默认语言对应文案
+	approvalNameFlag     bool
+	groupName            string // 分组名称，值的格式是 i18n key，文案放在 i18n_resource
+	groupNameFlag        bool
+	description          string // 审批定义的说明，值的格式是 i18n key，文案放在 i18n_resource； 审批发起页 审批定义的说明内容来自该字段
+	descriptionFlag      bool
+	iconUrl              string // 审批图标链接
+	iconUrlFlag          bool
+	groupCode            string // 审批定义所属审批分组
+	groupCodeFlag        bool
+	isExternal           bool // 是否为第三方审批
+	isExternalFlag       bool
+	createLinkPc         string // PC端发起页链接
+	createLinkPcFlag     bool
+	createLinkMobile     string // 移动端发起页链接
+	createLinkMobileFlag bool
 }
 
 func NewDefinitionBuilder() *DefinitionBuilder {
@@ -2952,6 +3154,69 @@ func (builder *DefinitionBuilder) ApprovalName(approvalName string) *DefinitionB
 	return builder
 }
 
+// 分组名称，值的格式是 i18n key，文案放在 i18n_resource
+//
+// 示例值：分组名称
+func (builder *DefinitionBuilder) GroupName(groupName string) *DefinitionBuilder {
+	builder.groupName = groupName
+	builder.groupNameFlag = true
+	return builder
+}
+
+// 审批定义的说明，值的格式是 i18n key，文案放在 i18n_resource； 审批发起页 审批定义的说明内容来自该字段
+//
+// 示例值：审批定义说明
+func (builder *DefinitionBuilder) Description(description string) *DefinitionBuilder {
+	builder.description = description
+	builder.descriptionFlag = true
+	return builder
+}
+
+// 审批图标链接
+//
+// 示例值：https://lf3-ea.bytetos.com/obj/goofy/ee/approval/approval-admin/image/iconLib/v3/person.png
+func (builder *DefinitionBuilder) IconUrl(iconUrl string) *DefinitionBuilder {
+	builder.iconUrl = iconUrl
+	builder.iconUrlFlag = true
+	return builder
+}
+
+// 审批定义所属审批分组
+//
+// 示例值：work_group
+func (builder *DefinitionBuilder) GroupCode(groupCode string) *DefinitionBuilder {
+	builder.groupCode = groupCode
+	builder.groupCodeFlag = true
+	return builder
+}
+
+// 是否为第三方审批
+//
+// 示例值：false
+func (builder *DefinitionBuilder) IsExternal(isExternal bool) *DefinitionBuilder {
+	builder.isExternal = isExternal
+	builder.isExternalFlag = true
+	return builder
+}
+
+// PC端发起页链接
+//
+// 示例值：https://applink.feishu.cn/client/mini_program/open?mode=appCenter&appId=cli_9c90fc38e07a9101&path=pc/pages/create-form/index?id=9999
+func (builder *DefinitionBuilder) CreateLinkPc(createLinkPc string) *DefinitionBuilder {
+	builder.createLinkPc = createLinkPc
+	builder.createLinkPcFlag = true
+	return builder
+}
+
+// 移动端发起页链接
+//
+// 示例值：https://applink.feishu.cn/client/mini_program/open?appId=cli_9c90fc38e07a9101&path=pages/approval-form/index?id=9999
+func (builder *DefinitionBuilder) CreateLinkMobile(createLinkMobile string) *DefinitionBuilder {
+	builder.createLinkMobile = createLinkMobile
+	builder.createLinkMobileFlag = true
+	return builder
+}
+
 func (builder *DefinitionBuilder) Build() *Definition {
 	req := &Definition{}
 	if builder.approvalCodeFlag {
@@ -2960,6 +3225,34 @@ func (builder *DefinitionBuilder) Build() *Definition {
 	}
 	if builder.approvalNameFlag {
 		req.ApprovalName = &builder.approvalName
+
+	}
+	if builder.groupNameFlag {
+		req.GroupName = &builder.groupName
+
+	}
+	if builder.descriptionFlag {
+		req.Description = &builder.description
+
+	}
+	if builder.iconUrlFlag {
+		req.IconUrl = &builder.iconUrl
+
+	}
+	if builder.groupCodeFlag {
+		req.GroupCode = &builder.groupCode
+
+	}
+	if builder.isExternalFlag {
+		req.IsExternal = &builder.isExternal
+
+	}
+	if builder.createLinkPcFlag {
+		req.CreateLinkPc = &builder.createLinkPc
+
+	}
+	if builder.createLinkMobileFlag {
+		req.CreateLinkMobile = &builder.createLinkMobile
 
 	}
 	return req
@@ -3248,78 +3541,81 @@ func (builder *ExternalApprovalBuilder) Build() *ExternalApproval {
 }
 
 type ExternalInstance struct {
-	ApprovalCode          *string                     `json:"approval_code,omitempty"`            // 审批定义 code， 创建审批定义返回的值，表示该实例属于哪个流程；该字段会影响到列表中该实例的标题，标题取自对应定义的 name 字段
-	Status                *string                     `json:"status,omitempty"`                   // 审批实例状态
-	Extra                 *string                     `json:"extra,omitempty"`                    // 审批实例扩展 JSON
-	InstanceId            *string                     `json:"instance_id,omitempty"`              // 审批实例唯一标识，用户自定义，需确保证租户下唯一
-	Links                 *ExternalInstanceLink       `json:"links,omitempty"`                    // 审批实例链接集合 ，用于【已发起】列表的跳转，跳转回三方系统； pc_link 和 mobile_link 必须填一个，填写的是哪一端的链接，即会跳转到该链接，不受平台影响
-	Title                 *string                     `json:"title,omitempty"`                    // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
-	Form                  []*ExternalInstanceForm     `json:"form,omitempty"`                     // 用户提交审批时填写的表单数据，用于所有审批列表中展示。可传多个值，但审批中心pc展示前2个,移动端展示前3个,长度不超过2048字符
-	UserId                *string                     `json:"user_id,omitempty"`                  // 审批发起人 user_id，发起人可在【已发起】列表中看到所有已发起的审批; 在【待审批】，【已审批】【抄送我】列表中，该字段展示审批是谁发起的。审批发起人 open id，和 user id 二者至少填一个。
-	UserName              *string                     `json:"user_name,omitempty"`                // 审批发起人 用户名，如果发起人不是真实的用户（例如是某个部门），没有 user_id，则可以使用该字段传名称
-	OpenId                *string                     `json:"open_id,omitempty"`                  // 审批发起人 open id，和 user id 二者至少填一个
-	DepartmentId          *string                     `json:"department_id,omitempty"`            // 发起人部门，用于列表中展示发起人所属部门。不传则不展示。如果用户没加入任何部门，传 ""，将展示租户名称传 department_name 展示部门名称
-	DepartmentName        *string                     `json:"department_name,omitempty"`          // 审批发起人 部门，如果发起人不是真实的用户（例如是某个部门），没有 department_id，则可以使用该字段传名称
-	StartTime             *string                     `json:"start_time,omitempty"`               // 审批发起时间，Unix毫秒时间戳
-	EndTime               *string                     `json:"end_time,omitempty"`                 // 审批实例结束时间：未结束的审批为 0，Unix毫秒时间戳
-	UpdateTime            *string                     `json:"update_time,omitempty"`              // 审批实例最近更新时间；用于推送数据版本控制如果 update_mode 值为 UPDATE，则只有传过来的 update_time 有变化时（变大），才会更新审批中心中的审批实例信息。使用该字段主要用来避免并发时老的数据更新了新的数据
-	DisplayMethod         *string                     `json:"display_method,omitempty"`           // 列表页打开审批实例的方式
-	UpdateMode            *string                     `json:"update_mode,omitempty"`              // 更新方式， 当 update_mode=REPLACE时，每次都以当前推送的数据为最终数据，会删掉审批中心中多余的任务、抄送数据（不在这次推送的数据中）; 当 update_mode=UPDATE时，则不会删除审批中心的数据，而只是进行新增和更新实例、任务数据
-	TaskList              []*ExternalInstanceTaskNode `json:"task_list,omitempty"`                // 任务列表
-	CcList                []*CcNode                   `json:"cc_list,omitempty"`                  // 抄送列表
-	I18nResources         []*I18nResource             `json:"i18n_resources,omitempty"`           // 国际化文案
-	TrusteeshipUrlToken   *string                     `json:"trusteeship_url_token,omitempty"`    // 单据托管认证token，托管回调会附带此token，帮助业务方认证
-	TrusteeshipUserIdType *string                     `json:"trusteeship_user_id_type,omitempty"` // 用户的类型，会影响请求参数用户标识域的选择，包括加签操作回传的目标用户， 目前仅支持 "user_id"
-	TrusteeshipUrls       *TrusteeshipUrls            `json:"trusteeship_urls,omitempty"`         // 单据托管回调接入方的接口的URL地址
+	ApprovalCode           *string                         `json:"approval_code,omitempty"`            // 审批定义 code， 创建审批定义返回的值，表示该实例属于哪个流程；该字段会影响到列表中该实例的标题，标题取自对应定义的 name 字段
+	Status                 *string                         `json:"status,omitempty"`                   // 审批实例状态
+	Extra                  *string                         `json:"extra,omitempty"`                    // 审批实例扩展 JSON
+	InstanceId             *string                         `json:"instance_id,omitempty"`              // 审批实例唯一标识，用户自定义，需确保证租户下唯一
+	Links                  *ExternalInstanceLink           `json:"links,omitempty"`                    // 审批实例链接集合 ，用于【已发起】列表的跳转，跳转回三方系统； pc_link 和 mobile_link 必须填一个，填写的是哪一端的链接，即会跳转到该链接，不受平台影响
+	Title                  *string                         `json:"title,omitempty"`                    // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
+	Form                   []*ExternalInstanceForm         `json:"form,omitempty"`                     // 用户提交审批时填写的表单数据，用于所有审批列表中展示。可传多个值，但审批中心pc展示前2个,移动端展示前3个,长度不超过2048字符
+	UserId                 *string                         `json:"user_id,omitempty"`                  // 审批发起人 user_id，发起人可在【已发起】列表中看到所有已发起的审批; 在【待审批】，【已审批】【抄送我】列表中，该字段展示审批是谁发起的。审批发起人 open id，和 user id 二者至少填一个。
+	UserName               *string                         `json:"user_name,omitempty"`                // 审批发起人 用户名，如果发起人不是真实的用户（例如是某个部门），没有 user_id，则可以使用该字段传名称
+	OpenId                 *string                         `json:"open_id,omitempty"`                  // 审批发起人 open id，和 user id 二者至少填一个
+	DepartmentId           *string                         `json:"department_id,omitempty"`            // 发起人部门，用于列表中展示发起人所属部门。不传则不展示。如果用户没加入任何部门，传 ""，将展示租户名称传 department_name 展示部门名称
+	DepartmentName         *string                         `json:"department_name,omitempty"`          // 审批发起人 部门，如果发起人不是真实的用户（例如是某个部门），没有 department_id，则可以使用该字段传名称
+	StartTime              *string                         `json:"start_time,omitempty"`               // 审批发起时间，Unix毫秒时间戳
+	EndTime                *string                         `json:"end_time,omitempty"`                 // 审批实例结束时间：未结束的审批为 0，Unix毫秒时间戳
+	UpdateTime             *string                         `json:"update_time,omitempty"`              // 审批实例最近更新时间；用于推送数据版本控制如果 update_mode 值为 UPDATE，则只有传过来的 update_time 有变化时（变大），才会更新审批中心中的审批实例信息。使用该字段主要用来避免并发时老的数据更新了新的数据
+	DisplayMethod          *string                         `json:"display_method,omitempty"`           // 列表页打开审批实例的方式
+	UpdateMode             *string                         `json:"update_mode,omitempty"`              // 更新方式， 当 update_mode=REPLACE时，每次都以当前推送的数据为最终数据，会删掉审批中心中多余的任务、抄送数据（不在这次推送的数据中）; 当 update_mode=UPDATE时，则不会删除审批中心的数据，而只是进行新增和更新实例、任务数据
+	TaskList               []*ExternalInstanceTaskNode     `json:"task_list,omitempty"`                // 任务列表
+	CcList                 []*CcNode                       `json:"cc_list,omitempty"`                  // 抄送列表
+	I18nResources          []*I18nResource                 `json:"i18n_resources,omitempty"`           // 国际化文案
+	TrusteeshipUrlToken    *string                         `json:"trusteeship_url_token,omitempty"`    // 单据托管认证token，托管回调会附带此token，帮助业务方认证
+	TrusteeshipUserIdType  *string                         `json:"trusteeship_user_id_type,omitempty"` // 用户的类型，会影响请求参数用户标识域的选择，包括加签操作回传的目标用户， 目前仅支持 "user_id"
+	TrusteeshipUrls        *TrusteeshipUrls                `json:"trusteeship_urls,omitempty"`         // 单据托管回调接入方的接口的URL地址
+	TrusteeshipCacheConfig *TrusteeshipInstanceCacheConfig `json:"trusteeship_cache_config,omitempty"` // 托管预缓存策略
 }
 
 type ExternalInstanceBuilder struct {
-	approvalCode              string // 审批定义 code， 创建审批定义返回的值，表示该实例属于哪个流程；该字段会影响到列表中该实例的标题，标题取自对应定义的 name 字段
-	approvalCodeFlag          bool
-	status                    string // 审批实例状态
-	statusFlag                bool
-	extra                     string // 审批实例扩展 JSON
-	extraFlag                 bool
-	instanceId                string // 审批实例唯一标识，用户自定义，需确保证租户下唯一
-	instanceIdFlag            bool
-	links                     *ExternalInstanceLink // 审批实例链接集合 ，用于【已发起】列表的跳转，跳转回三方系统； pc_link 和 mobile_link 必须填一个，填写的是哪一端的链接，即会跳转到该链接，不受平台影响
-	linksFlag                 bool
-	title                     string // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
-	titleFlag                 bool
-	form                      []*ExternalInstanceForm // 用户提交审批时填写的表单数据，用于所有审批列表中展示。可传多个值，但审批中心pc展示前2个,移动端展示前3个,长度不超过2048字符
-	formFlag                  bool
-	userId                    string // 审批发起人 user_id，发起人可在【已发起】列表中看到所有已发起的审批; 在【待审批】，【已审批】【抄送我】列表中，该字段展示审批是谁发起的。审批发起人 open id，和 user id 二者至少填一个。
-	userIdFlag                bool
-	userName                  string // 审批发起人 用户名，如果发起人不是真实的用户（例如是某个部门），没有 user_id，则可以使用该字段传名称
-	userNameFlag              bool
-	openId                    string // 审批发起人 open id，和 user id 二者至少填一个
-	openIdFlag                bool
-	departmentId              string // 发起人部门，用于列表中展示发起人所属部门。不传则不展示。如果用户没加入任何部门，传 ""，将展示租户名称传 department_name 展示部门名称
-	departmentIdFlag          bool
-	departmentName            string // 审批发起人 部门，如果发起人不是真实的用户（例如是某个部门），没有 department_id，则可以使用该字段传名称
-	departmentNameFlag        bool
-	startTime                 string // 审批发起时间，Unix毫秒时间戳
-	startTimeFlag             bool
-	endTime                   string // 审批实例结束时间：未结束的审批为 0，Unix毫秒时间戳
-	endTimeFlag               bool
-	updateTime                string // 审批实例最近更新时间；用于推送数据版本控制如果 update_mode 值为 UPDATE，则只有传过来的 update_time 有变化时（变大），才会更新审批中心中的审批实例信息。使用该字段主要用来避免并发时老的数据更新了新的数据
-	updateTimeFlag            bool
-	displayMethod             string // 列表页打开审批实例的方式
-	displayMethodFlag         bool
-	updateMode                string // 更新方式， 当 update_mode=REPLACE时，每次都以当前推送的数据为最终数据，会删掉审批中心中多余的任务、抄送数据（不在这次推送的数据中）; 当 update_mode=UPDATE时，则不会删除审批中心的数据，而只是进行新增和更新实例、任务数据
-	updateModeFlag            bool
-	taskList                  []*ExternalInstanceTaskNode // 任务列表
-	taskListFlag              bool
-	ccList                    []*CcNode // 抄送列表
-	ccListFlag                bool
-	i18nResources             []*I18nResource // 国际化文案
-	i18nResourcesFlag         bool
-	trusteeshipUrlToken       string // 单据托管认证token，托管回调会附带此token，帮助业务方认证
-	trusteeshipUrlTokenFlag   bool
-	trusteeshipUserIdType     string // 用户的类型，会影响请求参数用户标识域的选择，包括加签操作回传的目标用户， 目前仅支持 "user_id"
-	trusteeshipUserIdTypeFlag bool
-	trusteeshipUrls           *TrusteeshipUrls // 单据托管回调接入方的接口的URL地址
-	trusteeshipUrlsFlag       bool
+	approvalCode               string // 审批定义 code， 创建审批定义返回的值，表示该实例属于哪个流程；该字段会影响到列表中该实例的标题，标题取自对应定义的 name 字段
+	approvalCodeFlag           bool
+	status                     string // 审批实例状态
+	statusFlag                 bool
+	extra                      string // 审批实例扩展 JSON
+	extraFlag                  bool
+	instanceId                 string // 审批实例唯一标识，用户自定义，需确保证租户下唯一
+	instanceIdFlag             bool
+	links                      *ExternalInstanceLink // 审批实例链接集合 ，用于【已发起】列表的跳转，跳转回三方系统； pc_link 和 mobile_link 必须填一个，填写的是哪一端的链接，即会跳转到该链接，不受平台影响
+	linksFlag                  bool
+	title                      string // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
+	titleFlag                  bool
+	form                       []*ExternalInstanceForm // 用户提交审批时填写的表单数据，用于所有审批列表中展示。可传多个值，但审批中心pc展示前2个,移动端展示前3个,长度不超过2048字符
+	formFlag                   bool
+	userId                     string // 审批发起人 user_id，发起人可在【已发起】列表中看到所有已发起的审批; 在【待审批】，【已审批】【抄送我】列表中，该字段展示审批是谁发起的。审批发起人 open id，和 user id 二者至少填一个。
+	userIdFlag                 bool
+	userName                   string // 审批发起人 用户名，如果发起人不是真实的用户（例如是某个部门），没有 user_id，则可以使用该字段传名称
+	userNameFlag               bool
+	openId                     string // 审批发起人 open id，和 user id 二者至少填一个
+	openIdFlag                 bool
+	departmentId               string // 发起人部门，用于列表中展示发起人所属部门。不传则不展示。如果用户没加入任何部门，传 ""，将展示租户名称传 department_name 展示部门名称
+	departmentIdFlag           bool
+	departmentName             string // 审批发起人 部门，如果发起人不是真实的用户（例如是某个部门），没有 department_id，则可以使用该字段传名称
+	departmentNameFlag         bool
+	startTime                  string // 审批发起时间，Unix毫秒时间戳
+	startTimeFlag              bool
+	endTime                    string // 审批实例结束时间：未结束的审批为 0，Unix毫秒时间戳
+	endTimeFlag                bool
+	updateTime                 string // 审批实例最近更新时间；用于推送数据版本控制如果 update_mode 值为 UPDATE，则只有传过来的 update_time 有变化时（变大），才会更新审批中心中的审批实例信息。使用该字段主要用来避免并发时老的数据更新了新的数据
+	updateTimeFlag             bool
+	displayMethod              string // 列表页打开审批实例的方式
+	displayMethodFlag          bool
+	updateMode                 string // 更新方式， 当 update_mode=REPLACE时，每次都以当前推送的数据为最终数据，会删掉审批中心中多余的任务、抄送数据（不在这次推送的数据中）; 当 update_mode=UPDATE时，则不会删除审批中心的数据，而只是进行新增和更新实例、任务数据
+	updateModeFlag             bool
+	taskList                   []*ExternalInstanceTaskNode // 任务列表
+	taskListFlag               bool
+	ccList                     []*CcNode // 抄送列表
+	ccListFlag                 bool
+	i18nResources              []*I18nResource // 国际化文案
+	i18nResourcesFlag          bool
+	trusteeshipUrlToken        string // 单据托管认证token，托管回调会附带此token，帮助业务方认证
+	trusteeshipUrlTokenFlag    bool
+	trusteeshipUserIdType      string // 用户的类型，会影响请求参数用户标识域的选择，包括加签操作回传的目标用户， 目前仅支持 "user_id"
+	trusteeshipUserIdTypeFlag  bool
+	trusteeshipUrls            *TrusteeshipUrls // 单据托管回调接入方的接口的URL地址
+	trusteeshipUrlsFlag        bool
+	trusteeshipCacheConfig     *TrusteeshipInstanceCacheConfig // 托管预缓存策略
+	trusteeshipCacheConfigFlag bool
 }
 
 func NewExternalInstanceBuilder() *ExternalInstanceBuilder {
@@ -3534,6 +3830,15 @@ func (builder *ExternalInstanceBuilder) TrusteeshipUrls(trusteeshipUrls *Trustee
 	return builder
 }
 
+// 托管预缓存策略
+//
+// 示例值：
+func (builder *ExternalInstanceBuilder) TrusteeshipCacheConfig(trusteeshipCacheConfig *TrusteeshipInstanceCacheConfig) *ExternalInstanceBuilder {
+	builder.trusteeshipCacheConfig = trusteeshipCacheConfig
+	builder.trusteeshipCacheConfigFlag = true
+	return builder
+}
+
 func (builder *ExternalInstanceBuilder) Build() *ExternalInstance {
 	req := &ExternalInstance{}
 	if builder.approvalCodeFlag {
@@ -3621,6 +3926,9 @@ func (builder *ExternalInstanceBuilder) Build() *ExternalInstance {
 	}
 	if builder.trusteeshipUrlsFlag {
 		req.TrusteeshipUrls = builder.trusteeshipUrls
+	}
+	if builder.trusteeshipCacheConfigFlag {
+		req.TrusteeshipCacheConfig = builder.trusteeshipCacheConfig
 	}
 	return req
 }
@@ -4961,6 +5269,8 @@ type InstanceCreate struct {
 	CancelBotNotification  *string         `json:"cancel_bot_notification,omitempty"`    // 配置bot是否取消通知结果
 	ForbidRevoke           *bool           `json:"forbid_revoke,omitempty"`              // 配置是否可以禁止撤销
 	I18nResources          []*I18nResource `json:"i18n_resources,omitempty"`             // 国际化文案
+	Title                  *string         `json:"title,omitempty"`                      // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
+	TitleDisplayMethod     *int            `json:"title_display_method,omitempty"`       // 详情页title展示模式
 }
 
 type InstanceCreateBuilder struct {
@@ -4994,6 +5304,10 @@ type InstanceCreateBuilder struct {
 	forbidRevokeFlag           bool
 	i18nResources              []*I18nResource // 国际化文案
 	i18nResourcesFlag          bool
+	title                      string // 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
+	titleFlag                  bool
+	titleDisplayMethod         int // 详情页title展示模式
+	titleDisplayMethodFlag     bool
 }
 
 func NewInstanceCreateBuilder() *InstanceCreateBuilder {
@@ -5136,6 +5450,24 @@ func (builder *InstanceCreateBuilder) I18nResources(i18nResources []*I18nResourc
 	return builder
 }
 
+// 审批展示名称，如果填写了该字段，则审批列表中的审批名称使用该字段，如果不填该字段，则审批名称使用审批定义的名称
+//
+// 示例值：@i18n@1
+func (builder *InstanceCreateBuilder) Title(title string) *InstanceCreateBuilder {
+	builder.title = title
+	builder.titleFlag = true
+	return builder
+}
+
+// 详情页title展示模式
+//
+// 示例值：0
+func (builder *InstanceCreateBuilder) TitleDisplayMethod(titleDisplayMethod int) *InstanceCreateBuilder {
+	builder.titleDisplayMethod = titleDisplayMethod
+	builder.titleDisplayMethodFlag = true
+	return builder
+}
+
 func (builder *InstanceCreateBuilder) Build() *InstanceCreate {
 	req := &InstanceCreate{}
 	if builder.approvalCodeFlag {
@@ -5192,6 +5524,14 @@ func (builder *InstanceCreateBuilder) Build() *InstanceCreate {
 	}
 	if builder.i18nResourcesFlag {
 		req.I18nResources = builder.i18nResources
+	}
+	if builder.titleFlag {
+		req.Title = &builder.title
+
+	}
+	if builder.titleDisplayMethodFlag {
+		req.TitleDisplayMethod = &builder.titleDisplayMethod
+
 	}
 	return req
 }
@@ -9099,6 +9439,70 @@ func (builder *TripGroupScheduleBuilder) Build() *TripGroupSchedule {
 	return req
 }
 
+type TrusteeshipInstanceCacheConfig struct {
+	FormPolicy         *string `json:"form_policy,omitempty"`           // 托管预缓存策略
+	FormVaryWithLocale *bool   `json:"form_vary_with_locale,omitempty"` // 表单是否随国际化改变
+	FormVersion        *string `json:"form_version,omitempty"`          // 当前使用的表单版本号，保证表单改变后，版本号增加，实际值为int64整数
+}
+
+type TrusteeshipInstanceCacheConfigBuilder struct {
+	formPolicy             string // 托管预缓存策略
+	formPolicyFlag         bool
+	formVaryWithLocale     bool // 表单是否随国际化改变
+	formVaryWithLocaleFlag bool
+	formVersion            string // 当前使用的表单版本号，保证表单改变后，版本号增加，实际值为int64整数
+	formVersionFlag        bool
+}
+
+func NewTrusteeshipInstanceCacheConfigBuilder() *TrusteeshipInstanceCacheConfigBuilder {
+	builder := &TrusteeshipInstanceCacheConfigBuilder{}
+	return builder
+}
+
+// 托管预缓存策略
+//
+// 示例值：DISABLE
+func (builder *TrusteeshipInstanceCacheConfigBuilder) FormPolicy(formPolicy string) *TrusteeshipInstanceCacheConfigBuilder {
+	builder.formPolicy = formPolicy
+	builder.formPolicyFlag = true
+	return builder
+}
+
+// 表单是否随国际化改变
+//
+// 示例值：false
+func (builder *TrusteeshipInstanceCacheConfigBuilder) FormVaryWithLocale(formVaryWithLocale bool) *TrusteeshipInstanceCacheConfigBuilder {
+	builder.formVaryWithLocale = formVaryWithLocale
+	builder.formVaryWithLocaleFlag = true
+	return builder
+}
+
+// 当前使用的表单版本号，保证表单改变后，版本号增加，实际值为int64整数
+//
+// 示例值："1"
+func (builder *TrusteeshipInstanceCacheConfigBuilder) FormVersion(formVersion string) *TrusteeshipInstanceCacheConfigBuilder {
+	builder.formVersion = formVersion
+	builder.formVersionFlag = true
+	return builder
+}
+
+func (builder *TrusteeshipInstanceCacheConfigBuilder) Build() *TrusteeshipInstanceCacheConfig {
+	req := &TrusteeshipInstanceCacheConfig{}
+	if builder.formPolicyFlag {
+		req.FormPolicy = &builder.formPolicy
+
+	}
+	if builder.formVaryWithLocaleFlag {
+		req.FormVaryWithLocale = &builder.formVaryWithLocale
+
+	}
+	if builder.formVersionFlag {
+		req.FormVersion = &builder.formVersion
+
+	}
+	return req
+}
+
 type TrusteeshipUrls struct {
 	FormDetailUrl       *string `json:"form_detail_url,omitempty"`        // 获取表单schema相关数据的url地址
 	ActionDefinitionUrl *string `json:"action_definition_url,omitempty"`  // 表示获取审批操作区数据的url地址
@@ -9523,80 +9927,6 @@ type GetApprovalResp struct {
 }
 
 func (resp *GetApprovalResp) Success() bool {
-	return resp.Code == 0
-}
-
-type ListApprovalReqBuilder struct {
-	apiReq *larkcore.ApiReq
-	limit  int // 最大返回多少记录，当使用迭代器访问时才有效
-}
-
-func NewListApprovalReqBuilder() *ListApprovalReqBuilder {
-	builder := &ListApprovalReqBuilder{}
-	builder.apiReq = &larkcore.ApiReq{
-		PathParams:  larkcore.PathParams{},
-		QueryParams: larkcore.QueryParams{},
-	}
-	return builder
-}
-
-// 最大返回多少记录，当使用迭代器访问时才有效
-func (builder *ListApprovalReqBuilder) Limit(limit int) *ListApprovalReqBuilder {
-	builder.limit = limit
-	return builder
-}
-
-// 分页大小
-//
-// 示例值：10
-func (builder *ListApprovalReqBuilder) PageSize(pageSize int) *ListApprovalReqBuilder {
-	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
-	return builder
-}
-
-// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该 page_token 获取查询结果
-//
-// 示例值：ASDJHA1323_sda1JSASDFD
-func (builder *ListApprovalReqBuilder) PageToken(pageToken string) *ListApprovalReqBuilder {
-	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
-	return builder
-}
-
-// - zh-CN：中文 ;- en-US：英文 ;- ja-JP：日文
-//
-// 示例值：zh-CN
-func (builder *ListApprovalReqBuilder) Locale(locale string) *ListApprovalReqBuilder {
-	builder.apiReq.QueryParams.Set("locale", fmt.Sprint(locale))
-	return builder
-}
-
-func (builder *ListApprovalReqBuilder) Build() *ListApprovalReq {
-	req := &ListApprovalReq{}
-	req.apiReq = &larkcore.ApiReq{}
-	req.Limit = builder.limit
-	req.apiReq.QueryParams = builder.apiReq.QueryParams
-	return req
-}
-
-type ListApprovalReq struct {
-	apiReq *larkcore.ApiReq
-	Limit  int // 最多返回多少记录，只有在使用迭代器访问时，才有效
-
-}
-
-type ListApprovalRespData struct {
-	Items     []*Definition `json:"items,omitempty"`      // 审批定义列表
-	PageToken *string       `json:"page_token,omitempty"` // 分页标记，当 has_more 为 true 时，会同时返回新的 page_token，否则不返回 page_token
-	HasMore   *bool         `json:"has_more,omitempty"`   // 是否还有更多项
-}
-
-type ListApprovalResp struct {
-	*larkcore.ApiResp `json:"-"`
-	larkcore.CodeError
-	Data *ListApprovalRespData `json:"data"` // 业务数据
-}
-
-func (resp *ListApprovalResp) Success() bool {
 	return resp.Code == 0
 }
 
@@ -11888,7 +12218,7 @@ func (resp *TransferTaskResp) Success() bool {
 }
 
 type P2ApprovalUpdatedV4Data struct {
-	Object *ApprovalEvent `json:"object,omitempty"` //
+	Object *ApprovalEvent `json:"object,omitempty"` // 事件详情数据
 }
 
 type P2ApprovalUpdatedV4 struct {
@@ -11899,60 +12229,6 @@ type P2ApprovalUpdatedV4 struct {
 
 func (m *P2ApprovalUpdatedV4) RawReq(req *larkevent.EventReq) {
 	m.EventReq = req
-}
-
-type ListApprovalIterator struct {
-	nextPageToken *string
-	items         []*Definition
-	index         int
-	limit         int
-	ctx           context.Context
-	req           *ListApprovalReq
-	listFunc      func(ctx context.Context, req *ListApprovalReq, options ...larkcore.RequestOptionFunc) (*ListApprovalResp, error)
-	options       []larkcore.RequestOptionFunc
-	curlNum       int
-}
-
-func (iterator *ListApprovalIterator) Next() (bool, *Definition, error) {
-	// 达到最大量，则返回
-	if iterator.limit > 0 && iterator.curlNum >= iterator.limit {
-		return false, nil, nil
-	}
-
-	// 为0则拉取数据
-	if iterator.index == 0 || iterator.index >= len(iterator.items) {
-		if iterator.index != 0 && iterator.nextPageToken == nil {
-			return false, nil, nil
-		}
-		if iterator.nextPageToken != nil {
-			iterator.req.apiReq.QueryParams.Set("page_token", *iterator.nextPageToken)
-		}
-		resp, err := iterator.listFunc(iterator.ctx, iterator.req, iterator.options...)
-		if err != nil {
-			return false, nil, err
-		}
-
-		if resp.Code != 0 {
-			return false, nil, errors.New(fmt.Sprintf("Code:%d,Msg:%s", resp.Code, resp.Msg))
-		}
-
-		if len(resp.Data.Items) == 0 {
-			return false, nil, nil
-		}
-
-		iterator.nextPageToken = resp.Data.PageToken
-		iterator.items = resp.Data.Items
-		iterator.index = 0
-	}
-
-	block := iterator.items[iterator.index]
-	iterator.index++
-	iterator.curlNum++
-	return true, block, nil
-}
-
-func (iterator *ListApprovalIterator) NextPageToken() *string {
-	return iterator.nextPageToken
 }
 
 type ListExternalTaskIterator struct {

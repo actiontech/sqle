@@ -156,3 +156,23 @@ func (h *P2ApplicationVisibilityAddedV6Handler) Event() interface{} {
 func (h *P2ApplicationVisibilityAddedV6Handler) Handle(ctx context.Context, event interface{}) error {
 	return h.handler(ctx, event.(*P2ApplicationVisibilityAddedV6))
 }
+
+// 消息处理器定义
+type P2BotMenuV6Handler struct {
+	handler func(context.Context, *P2BotMenuV6) error
+}
+
+func NewP2BotMenuV6Handler(handler func(context.Context, *P2BotMenuV6) error) *P2BotMenuV6Handler {
+	h := &P2BotMenuV6Handler{handler: handler}
+	return h
+}
+
+// 返回事件的消息体的实例，用于反序列化用
+func (h *P2BotMenuV6Handler) Event() interface{} {
+	return &P2BotMenuV6{}
+}
+
+// 回调开发者注册的handle
+func (h *P2BotMenuV6Handler) Handle(ctx context.Context, event interface{}) error {
+	return h.handler(ctx, event.(*P2BotMenuV6))
+}

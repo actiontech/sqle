@@ -5,16 +5,15 @@ import (
 	"io/ioutil"
 	"os"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/config"
-	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func genSecretPasswordCmd() *cobra.Command {
 	run := func() error {
-		var cfg = &config.Config{}
+		var cfg = &config.SqleOptions{}
 		if configPath != "" {
 			b, err := ioutil.ReadFile(configPath)
 			if err != nil {
@@ -25,23 +24,23 @@ func genSecretPasswordCmd() *cobra.Command {
 				return fmt.Errorf("unmarshal config file error %v", err)
 			}
 
-			secretKey := cfg.Server.SqleCnf.SecretKey
+			secretKey := cfg.SecretKey
 			if secretKey != "" {
-				if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
+				if err = dmsCommonAes.ResetAesSecretKey(secretKey); err != nil {
 					return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
 				}
 			}
 
-			password := cfg.Server.DBCnf.MysqlCnf.Password
+			password := cfg.Service.Database.Password
 			if password == "" {
 				return fmt.Errorf("mysql_password is empty")
 			}
-			secretPassword, err := utils.AesEncrypt(password)
+			secretPassword, err := dmsCommonAes.AesEncrypt(password)
 			if err != nil {
 				return fmt.Errorf("gen secret password error, %d", err)
 			}
-			cfg.Server.DBCnf.MysqlCnf.SecretPassword = secretPassword
-			cfg.Server.DBCnf.MysqlCnf.Password = ""
+			cfg.Service.Database.SecretPassword = secretPassword
+			cfg.Service.Database.Password = ""
 		} else {
 			return fmt.Errorf("--config is required")
 		}

@@ -224,6 +224,8 @@ type Block struct {
 	OkrKeyResult   *OkrKeyResult   `json:"okr_key_result,omitempty"`  // OKR Key Result
 	OkrProgress    *OkrProgress    `json:"okr_progress,omitempty"`    // OKR 进展信息
 	CommentIds     []string        `json:"comment_ids,omitempty"`     // 评论 id 列表
+	JiraIssue      *JiraIssue      `json:"jira_issue,omitempty"`      // Jira Issue
+	WikiCatalog    *WikiCatalog    `json:"wiki_catalog,omitempty"`    // Wiki 子目录 Block
 }
 
 type BlockBuilder struct {
@@ -319,6 +321,10 @@ type BlockBuilder struct {
 	okrProgressFlag    bool
 	commentIds         []string // 评论 id 列表
 	commentIdsFlag     bool
+	jiraIssue          *JiraIssue // Jira Issue
+	jiraIssueFlag      bool
+	wikiCatalog        *WikiCatalog // Wiki 子目录 Block
+	wikiCatalogFlag    bool
 }
 
 func NewBlockBuilder() *BlockBuilder {
@@ -740,6 +746,24 @@ func (builder *BlockBuilder) CommentIds(commentIds []string) *BlockBuilder {
 	return builder
 }
 
+// Jira Issue
+//
+// 示例值：
+func (builder *BlockBuilder) JiraIssue(jiraIssue *JiraIssue) *BlockBuilder {
+	builder.jiraIssue = jiraIssue
+	builder.jiraIssueFlag = true
+	return builder
+}
+
+// Wiki 子目录 Block
+//
+// 示例值：
+func (builder *BlockBuilder) WikiCatalog(wikiCatalog *WikiCatalog) *BlockBuilder {
+	builder.wikiCatalog = wikiCatalog
+	builder.wikiCatalogFlag = true
+	return builder
+}
+
 func (builder *BlockBuilder) Build() *Block {
 	req := &Block{}
 	if builder.blockIdFlag {
@@ -882,6 +906,12 @@ func (builder *BlockBuilder) Build() *Block {
 	}
 	if builder.commentIdsFlag {
 		req.CommentIds = builder.commentIds
+	}
+	if builder.jiraIssueFlag {
+		req.JiraIssue = builder.jiraIssue
+	}
+	if builder.wikiCatalogFlag {
+		req.WikiCatalog = builder.wikiCatalog
 	}
 	return req
 }
@@ -1289,15 +1319,18 @@ func (builder *EquationBuilder) Build() *Equation {
 }
 
 type File struct {
-	Token *string `json:"token,omitempty"` // 附件 Token
-	Name  *string `json:"name,omitempty"`  // 文件名
+	Token    *string `json:"token,omitempty"`     // 附件 Token
+	Name     *string `json:"name,omitempty"`      // 文件名
+	ViewType *int    `json:"view_type,omitempty"` // 视图类型，卡片视图（默认）或预览视图
 }
 
 type FileBuilder struct {
-	token     string // 附件 Token
-	tokenFlag bool
-	name      string // 文件名
-	nameFlag  bool
+	token        string // 附件 Token
+	tokenFlag    bool
+	name         string // 文件名
+	nameFlag     bool
+	viewType     int // 视图类型，卡片视图（默认）或预览视图
+	viewTypeFlag bool
 }
 
 func NewFileBuilder() *FileBuilder {
@@ -1323,6 +1356,15 @@ func (builder *FileBuilder) Name(name string) *FileBuilder {
 	return builder
 }
 
+// 视图类型，卡片视图（默认）或预览视图
+//
+// 示例值：1
+func (builder *FileBuilder) ViewType(viewType int) *FileBuilder {
+	builder.viewType = viewType
+	builder.viewTypeFlag = true
+	return builder
+}
+
 func (builder *FileBuilder) Build() *File {
 	req := &File{}
 	if builder.tokenFlag {
@@ -1331,6 +1373,10 @@ func (builder *FileBuilder) Build() *File {
 	}
 	if builder.nameFlag {
 		req.Name = &builder.name
+
+	}
+	if builder.viewTypeFlag {
+		req.ViewType = &builder.viewType
 
 	}
 	return req
@@ -1792,6 +1838,54 @@ func (builder *IsvBuilder) Build() *Isv {
 	}
 	if builder.componentTypeIdFlag {
 		req.ComponentTypeId = &builder.componentTypeId
+
+	}
+	return req
+}
+
+type JiraIssue struct {
+	Id  *string `json:"id,omitempty"`  // Jira issue ID
+	Key *string `json:"key,omitempty"` // Jira issue key
+}
+
+type JiraIssueBuilder struct {
+	id      string // Jira issue ID
+	idFlag  bool
+	key     string // Jira issue key
+	keyFlag bool
+}
+
+func NewJiraIssueBuilder() *JiraIssueBuilder {
+	builder := &JiraIssueBuilder{}
+	return builder
+}
+
+// Jira issue ID
+//
+// 示例值：37159
+func (builder *JiraIssueBuilder) Id(id string) *JiraIssueBuilder {
+	builder.id = id
+	builder.idFlag = true
+	return builder
+}
+
+// Jira issue key
+//
+// 示例值：Project-8317
+func (builder *JiraIssueBuilder) Key(key string) *JiraIssueBuilder {
+	builder.key = key
+	builder.keyFlag = true
+	return builder
+}
+
+func (builder *JiraIssueBuilder) Build() *JiraIssue {
+	req := &JiraIssue{}
+	if builder.idFlag {
+		req.Id = &builder.id
+
+	}
+	if builder.keyFlag {
+		req.Key = &builder.key
 
 	}
 	return req
@@ -4222,6 +4316,38 @@ func (builder *ViewBuilder) Build() *View {
 	req := &View{}
 	if builder.viewTypeFlag {
 		req.ViewType = &builder.viewType
+
+	}
+	return req
+}
+
+type WikiCatalog struct {
+	WikiToken *string `json:"wiki_token,omitempty"` // 知识库 token
+}
+
+type WikiCatalogBuilder struct {
+	wikiToken     string // 知识库 token
+	wikiTokenFlag bool
+}
+
+func NewWikiCatalogBuilder() *WikiCatalogBuilder {
+	builder := &WikiCatalogBuilder{}
+	return builder
+}
+
+// 知识库 token
+//
+// 示例值：Ub47wVl7AikG9wkgnpSbFy4EcAc
+func (builder *WikiCatalogBuilder) WikiToken(wikiToken string) *WikiCatalogBuilder {
+	builder.wikiToken = wikiToken
+	builder.wikiTokenFlag = true
+	return builder
+}
+
+func (builder *WikiCatalogBuilder) Build() *WikiCatalog {
+	req := &WikiCatalog{}
+	if builder.wikiTokenFlag {
+		req.WikiToken = &builder.wikiToken
 
 	}
 	return req
