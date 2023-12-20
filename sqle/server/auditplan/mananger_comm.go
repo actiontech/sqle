@@ -25,11 +25,11 @@ func NewSyncFromAuditPlan(auditReport *model.AuditPlanReportV2, filterSqls []*mo
 type SyncFromSqlAuditRecord struct {
 	Task             *model.Task
 	SqlFpMap         map[string]string
-	ProjectId        uint
+	ProjectId        string
 	SqlAuditRecordID uint
 }
 
-func NewSyncFromSqlAudit(task *model.Task, fpMap map[string]string, projectID uint, sqlAuditID uint) SqlManager {
+func NewSyncFromSqlAudit(task *model.Task, fpMap map[string]string, projectID string, sqlAuditID uint) SqlManager {
 	return &SyncFromSqlAuditRecord{
 		Task:             task,
 		ProjectId:        projectID,

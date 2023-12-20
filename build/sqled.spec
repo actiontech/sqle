@@ -38,11 +38,14 @@ Acitontech Sqle
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
 mkdir -p %{_builddir}/%{buildsubdir}/sqle/plugins
+mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/scripts
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
-cp -R %{_builddir}/%{buildsubdir}/sqle/scripts $RPM_BUILD_ROOT/usr/local/sqle/scripts
-cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.systemd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.systemd
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.initd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.initd
+cp %{_builddir}/%{buildsubdir}/sqle/scripts/pt-online-schema-change.template $RPM_BUILD_ROOT/usr/local/sqle/scripts/pt-online-schema-change.template
+# cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
 
 ##########
 
@@ -102,25 +105,30 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 mkdir -p $RPM_INSTALL_PREFIX/etc
 
 cat > $RPM_INSTALL_PREFIX/etc/sqled.yml.template<<EOF
-server:
- sqle_config:
-  server_port: 10000
-  auto_migrate_table: true
-  debug_log: false
-  log_path: './logs'
-  log_max_size_mb: 1024
-  log_max_backup_number: 2
-  plugin_path: './plugins'
-  enable_https: false
-  cert_file_path: './etc/cert.pem'
-  key_file_path: './etc/key.pem'
- db_config:
-  mysql_cnf:
-   mysql_host: '127.0.0.1'
-   mysql_port: '3306'
-   mysql_user: 'root'
-   mysql_password: 'pass'
-   mysql_schema: 'sqle'
+sqle:
+  id: 1
+  dms_server_address: http://127.0.0.1:7601
+  api:
+    addr: 127.0.0.1
+    port: 10000
+    enable_https: false
+    cert_file_path: './etc/cert.pem'
+    key_file_path: './etc/key.pem'  
+  secret_key:     
+  service:
+    auto_migrate_table: true   
+    debug_log: false
+    log_path: './logs'
+    log_max_size_mb: 1024
+    log_max_backup_number: 2
+    plugin_path: './plugins'    
+    enable_cluster_mode:
+    database:
+      mysql_host: '127.0.0.1'
+      mysql_port: '3306'
+      mysql_user: 'root'
+      mysql_password: 'pass'
+      mysql_schema: 'sqle'
 EOF
 
 cat > $RPM_INSTALL_PREFIX/etc/gh-ost.ini<<EOF
@@ -212,4 +220,4 @@ fi
 /usr/local/sqle/scripts/sqled.systemd
 /usr/local/sqle/scripts/sqled.initd
 /usr/local/sqle/scripts/pt-online-schema-change.template
-/usr/local/sqle/ui/*
+# /usr/local/sqle/ui/*

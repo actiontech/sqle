@@ -1,9 +1,11 @@
 package v1
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
 
@@ -348,7 +350,21 @@ type GetLicenseUsageResV1 struct {
 // @Success 200 {object} v1.GetLicenseUsageResV1
 // @router /v1/statistic/license/usage [get]
 func GetLicenseUsageV1(c echo.Context) error {
-	return getLicenseUsageV1(c)
+	// dms-todo: 移除 license
+	return c.JSON(http.StatusOK, &GetLicenseUsageResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &LicenseUsageV1{
+			UsersUsage: LicenseUsageItem{
+				ResourceType:     "user",
+				ResourceTypeDesc: "用户",
+				Used:             0,
+				Limit:            0,
+				IsLimited:        false,
+			},
+			InstancesUsage: []LicenseUsageItem{},
+		},
+	})
+	// return getLicenseUsageV1(c)
 }
 
 type GetSqlExecutionFailPercentReqV1 struct {
@@ -402,44 +418,45 @@ type GetProjectStatisticsResDataV1 struct {
 // @Success 200 {object} v1.GetProjectStatisticsResV1
 // @router /v1/projects/{project_name}/statistics [get]
 func GetProjectStatisticsV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// TODO 暂时不处理,解决页面报错
+	// projectName := c.Param("project_name")
+	// err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
 	resp := GetProjectStatisticsResDataV1{}
-	s := model.GetStorage()
+	// s := model.GetStorage()
 
-	resp.MemberTotal, err = s.GetUserTotalInProjectByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.MemberTotal, err = s.GetUserTotalInProjectByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	resp.WhitelistTotal, err = s.GetSqlWhitelistTotalByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.WhitelistTotal, err = s.GetSqlWhitelistTotalByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	resp.RuleTemplateTotal, err = s.GetRuleTemplateTotalByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.RuleTemplateTotal, err = s.GetRuleTemplateTotalByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	resp.InstanceTotal, err = s.GetInstanceTotalByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.InstanceTotal, err = s.GetInstanceTotalByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	resp.AuditPlanTotal, err = s.GetAuditPlanTotalByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.AuditPlanTotal, err = s.GetAuditPlanTotalByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	resp.WorkflowTotal, err = s.GetWorkflowTotalByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// resp.WorkflowTotal, err = s.GetWorkflowTotalByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
 	return c.JSON(http.StatusOK, GetProjectStatisticsResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -468,18 +485,16 @@ type StatisticsAuditedSQLResV1 struct {
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
 // @router /v1/projects/{project_name}/statistic/audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
-	workflowSqlCount, err := s.GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName)
+	workflowSqlCount, err := s.GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectName)
+	auditPlanSqlCount, err := s.GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -506,12 +521,12 @@ type dbErr struct {
 	err error
 }
 
-func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectName string) (count int) {
+func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectUid string) (count int) {
 	if d.err != nil {
 		return 0
 	}
 
-	count, d.err = d.s.GetWorkflowCountByStatusAndProject(status, projectName)
+	count, d.err = d.s.GetWorkflowCountByStatusAndProject(status, projectUid)
 
 	return count
 }
@@ -526,20 +541,19 @@ func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectName strin
 // @Success 200 {object} v1.GetWorkflowStatusCountResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	d := &dbErr{s: model.GetStorage()}
-	waitingForAuditCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForAudit, projectName)
-	waitingForExecutionCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForExecution, projectName)
-	executingCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecuting, projectName)
-	executionSuccessCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusFinish, projectName)
-	executingFailedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecFailed, projectName)
-	rejectedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusReject, projectName)
-	closedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusCancel, projectName)
+	waitingForAuditCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForAudit, projectUid)
+	waitingForExecutionCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusWaitForExecution, projectUid)
+	executingCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecuting, projectUid)
+	executionSuccessCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusFinish, projectUid)
+	executingFailedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusExecFailed, projectUid)
+	rejectedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusReject, projectUid)
+	closedCount := d.getWorkFlowStatusCountByProject(model.WorkflowStatusCancel, projectUid)
 
 	return c.JSON(http.StatusOK, &GetWorkflowStatusCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -578,25 +592,33 @@ type StatisticRiskWorkflowResV1 struct {
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
 // @router /v1/projects/{project_name}/statistic/risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
-	projectWorkflowStatusDetails, err := s.GetProjectWorkflowStatusDetail(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	projectWorkflowStatusDetails, err := s.GetProjectWorkflowStatusDetail(projectUid, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
 	for i, info := range projectWorkflowStatusDetails {
+		user, err := func() (*model.User, error) {
+			ctx, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
+			defer cancel()
+
+			return dms.GetUser(ctx, info.CreateUserId, controller.GetDMSServerAddress())
+		}()
+
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
 			WorkflowID: info.WorkflowId,
 			Status:     info.Status,
-			CreateUser: info.LoginName,
+			CreateUser: user.Name,
 			UpdateTime: info.UpdatedAt,
 		}
 	}
@@ -633,14 +655,13 @@ type StatisticAuditPlanResV1 struct {
 // @Success 200 {object} v1.StatisticAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	dBTypeAuditPlanCounts, err := s.GetDBTypeAuditPlanCountByProject(projectName)
+	dBTypeAuditPlanCounts, err := s.GetDBTypeAuditPlanCountByProject(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -700,14 +721,13 @@ type GetRiskAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetRiskAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/risk_audit_plans [get]
 func GetRiskAuditPlanV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	riskAuditPlanInfos, err := s.GetRiskAuditPlan(projectName)
+	riskAuditPlanInfos, err := s.GetRiskAuditPlan(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -749,51 +769,47 @@ type GetRoleUserCountResV1 struct {
 // @Success 200 {object} v1.GetRoleUserCountResV1
 // @router /v1/projects/{project_name}/statistic/role_user [get]
 func GetRoleUserCountV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// projectName := c.Param("project_name")
 
-	s := model.GetStorage()
-	userRoles, err := s.GetUserRoleByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	userRoleFromUserGroup, err := s.GetUserRoleFromUserGroupByProjectName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	// s := model.GetStorage()
+	// userRoles, err := s.GetUserRoleByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
+	// userRoleFromUserGroup, err := s.GetUserRoleFromUserGroupByProjectName(projectName)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 
-	// 若成员和成员组重复绑定相同角色，需要去重
-	userRoleMap := make(map[string]map[string]struct{}) // key 1: role_name, key 2: username
-	for i := range userRoles {
-		userRole := userRoles[i]
-		subMap, exist := userRoleMap[userRole.RoleName]
-		if !exist {
-			subMap = make(map[string]struct{})
-			userRoleMap[userRole.RoleName] = subMap
-		}
-		subMap[userRole.UserName] = struct{}{}
-	}
-	for i := range userRoleFromUserGroup {
-		userRole := userRoleFromUserGroup[i]
-		subMap, exist := userRoleMap[userRole.RoleName]
-		if !exist {
-			subMap = make(map[string]struct{})
-			userRoleMap[userRole.RoleName] = subMap
-		}
-		subMap[userRole.UserName] = struct{}{}
-	}
+	// // 若成员和成员组重复绑定相同角色，需要去重
+	// userRoleMap := make(map[string]map[string]struct{}) // key 1: role_name, key 2: username
+	// for i := range userRoles {
+	// 	userRole := userRoles[i]
+	// 	subMap, exist := userRoleMap[userRole.RoleName]
+	// 	if !exist {
+	// 		subMap = make(map[string]struct{})
+	// 		userRoleMap[userRole.RoleName] = subMap
+	// 	}
+	// 	subMap[userRole.UserName] = struct{}{}
+	// }
+	// for i := range userRoleFromUserGroup {
+	// 	userRole := userRoleFromUserGroup[i]
+	// 	subMap, exist := userRoleMap[userRole.RoleName]
+	// 	if !exist {
+	// 		subMap = make(map[string]struct{})
+	// 		userRoleMap[userRole.RoleName] = subMap
+	// 	}
+	// 	subMap[userRole.UserName] = struct{}{}
+	// }
 
-	roleUserCountSlice := []*RoleUserCount{}
-	for k, v := range userRoleMap {
-		roleUserCountSlice = append(roleUserCountSlice, &RoleUserCount{Role: k, Count: uint(len(v))})
-	}
+	// roleUserCountSlice := []*RoleUserCount{}
+	// for k, v := range userRoleMap {
+	// 	roleUserCountSlice = append(roleUserCountSlice, &RoleUserCount{Role: k, Count: uint(len(v))})
+	// }
 
 	return c.JSON(http.StatusOK, GetRoleUserCountResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    roleUserCountSlice,
+		Data:    nil,
 	})
 }
 
@@ -816,19 +832,17 @@ type GetProjectScoreResV1 struct {
 // @Success 200 {object} v1.GetProjectScoreResV1
 // @router /v1/projects/{project_name}/statistic/project_score [get]
 func GetProjectScoreV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
 	execFailedStatus := []string{model.WorkflowStatusExecFailed, model.WorkflowStatusFinish, model.WorkflowStatusExecuting}
-	workflowsStatuses, err := s.GetProjectWorkflowStatusDetail(projectName, execFailedStatus)
+	workflowsStatuses, err := s.GetProjectWorkflowStatusDetail(projectUid, execFailedStatus)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditReports, err := s.GetAuditPlanReportByProjectName(projectName)
+	auditReports, err := s.GetAuditPlanReportByProjectName(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -946,18 +960,26 @@ func generateMaps(instanceWorkFlowFailedStatus []*model.InstanceWorkFlowStatusCo
 // @Success 200 {object} v1.GetInstanceHealthResV1
 // @router /v1/projects/{project_name}/statistic/instance_health [get]
 func GetInstanceHealthV1(c echo.Context) error {
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(projectName, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	instances, err := dms.GetInstancesInProject(c.Request().Context(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectName)
+	instanceWorkFlowFailedStatus, err := s.GetInstanceWorkFlowStatusCountByProject(instances, []string{model.WorkflowStatusReject, model.WorkflowStatusExecFailed})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceNames, err := dms.GetInstanceNamesInProject(c.Request().Context(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	latestAuditPlanReportScores, err := s.GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid, instanceNames)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

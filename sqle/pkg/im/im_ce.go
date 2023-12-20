@@ -20,10 +20,10 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
+func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string, user *model.User, status string, reason string) error {
 	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
+func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []string, user *model.User) error {
 	return ErrCommunityEditionNotSupportFeishuAudit
 }

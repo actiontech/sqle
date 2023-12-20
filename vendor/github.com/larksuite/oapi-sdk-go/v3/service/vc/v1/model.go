@@ -29,6 +29,12 @@ import (
 )
 
 const (
+	QueryTypeRoom = 1 // 会议室
+	QueryTypeErc  = 2 // erc
+
+)
+
+const (
 	UserIdTypeUserId  = "user_id"  // 以user_id来识别用户
 	UserIdTypeUnionId = "union_id" // 以union_id来识别用户
 	UserIdTypeOpenId  = "open_id"  // 以open_id来识别用户（推荐）
@@ -68,6 +74,12 @@ const (
 	UserIdTypeSetHostMeetingUserId  = "user_id"  // 以user_id来识别用户
 	UserIdTypeSetHostMeetingUnionId = "union_id" // 以union_id来识别用户
 	UserIdTypeSetHostMeetingOpenId  = "open_id"  // 以open_id来识别用户（推荐）
+)
+
+const (
+	ActionTypeAuthorize = 0 // 授权
+	ActionTypeRevoke    = 1 // 取消授权
+
 )
 
 const (
@@ -152,6 +164,18 @@ const (
 	UserIdTypePatchReserveConfigAdminUserId  = "user_id"  // 以user_id来识别用户
 	UserIdTypePatchReserveConfigAdminUnionId = "union_id" // 以union_id来识别用户
 	UserIdTypePatchReserveConfigAdminOpenId  = "open_id"  // 以open_id来识别用户
+)
+
+const (
+	UserIdTypeGetReserveConfigFormUserId  = "user_id"  // 以user_id来识别用户
+	UserIdTypeGetReserveConfigFormUnionId = "union_id" // 以union_id来识别用户
+	UserIdTypeGetReserveConfigFormOpenId  = "open_id"  // 以open_id来识别用户
+)
+
+const (
+	UserIdTypePatchReserveConfigFormUserId  = "user_id"  // 以user_id来识别用户
+	UserIdTypePatchReserveConfigFormUnionId = "union_id" // 以union_id来识别用户
+	UserIdTypePatchReserveConfigFormOpenId  = "open_id"  // 以open_id来识别用户
 )
 
 const (
@@ -256,6 +280,9 @@ type Alert struct {
 	Contacts      []*Contact `json:"contacts,omitempty"`       // 告警联系人
 	NotifyMethods []int      `json:"notifyMethods,omitempty"`  // 通知方式
 	AlertRule     *string    `json:"alertRule,omitempty"`      // 规则名称
+	ProcessTime   *string    `json:"process_time,omitempty"`   // 处理时间
+	RecoverTime   *string    `json:"recover_time,omitempty"`   // 恢复时间
+	ProcessStatus *int       `json:"process_status,omitempty"` // 处理状态：待处理/处理中/已恢复
 }
 
 type AlertBuilder struct {
@@ -277,6 +304,12 @@ type AlertBuilder struct {
 	notifyMethodsFlag bool
 	alertRule         string // 规则名称
 	alertRuleFlag     bool
+	processTime       string // 处理时间
+	processTimeFlag   bool
+	recoverTime       string // 恢复时间
+	recoverTimeFlag   bool
+	processStatus     int // 处理状态：待处理/处理中/已恢复
+	processStatusFlag bool
 }
 
 func NewAlertBuilder() *AlertBuilder {
@@ -365,6 +398,33 @@ func (builder *AlertBuilder) AlertRule(alertRule string) *AlertBuilder {
 	return builder
 }
 
+// 处理时间
+//
+// 示例值：1656914944
+func (builder *AlertBuilder) ProcessTime(processTime string) *AlertBuilder {
+	builder.processTime = processTime
+	builder.processTimeFlag = true
+	return builder
+}
+
+// 恢复时间
+//
+// 示例值：1656914944
+func (builder *AlertBuilder) RecoverTime(recoverTime string) *AlertBuilder {
+	builder.recoverTime = recoverTime
+	builder.recoverTimeFlag = true
+	return builder
+}
+
+// 处理状态：待处理/处理中/已恢复
+//
+// 示例值：2
+func (builder *AlertBuilder) ProcessStatus(processStatus int) *AlertBuilder {
+	builder.processStatus = processStatus
+	builder.processStatusFlag = true
+	return builder
+}
+
 func (builder *AlertBuilder) Build() *Alert {
 	req := &Alert{}
 	if builder.alertIdFlag {
@@ -399,6 +459,18 @@ func (builder *AlertBuilder) Build() *Alert {
 	}
 	if builder.alertRuleFlag {
 		req.AlertRule = &builder.alertRule
+
+	}
+	if builder.processTimeFlag {
+		req.ProcessTime = &builder.processTime
+
+	}
+	if builder.recoverTimeFlag {
+		req.RecoverTime = &builder.recoverTime
+
+	}
+	if builder.processStatusFlag {
+		req.ProcessStatus = &builder.processStatus
 
 	}
 	return req
@@ -811,6 +883,68 @@ func (builder *DeviceBuilder) Build() *Device {
 	if builder.nameFlag {
 		req.Name = &builder.name
 
+	}
+	return req
+}
+
+type DisableInformConfig struct {
+	IfInform      *bool                  `json:"if_inform,omitempty"`      // 禁用状态变更通知开关
+	InformedUsers []*SubscribeUser       `json:"informed_users,omitempty"` // 通知成员列表
+	InformedDepts []*SubscribeDepartment `json:"informed_depts,omitempty"` // 通知部门列表
+}
+
+type DisableInformConfigBuilder struct {
+	ifInform          bool // 禁用状态变更通知开关
+	ifInformFlag      bool
+	informedUsers     []*SubscribeUser // 通知成员列表
+	informedUsersFlag bool
+	informedDepts     []*SubscribeDepartment // 通知部门列表
+	informedDeptsFlag bool
+}
+
+func NewDisableInformConfigBuilder() *DisableInformConfigBuilder {
+	builder := &DisableInformConfigBuilder{}
+	return builder
+}
+
+// 禁用状态变更通知开关
+//
+// 示例值：false
+func (builder *DisableInformConfigBuilder) IfInform(ifInform bool) *DisableInformConfigBuilder {
+	builder.ifInform = ifInform
+	builder.ifInformFlag = true
+	return builder
+}
+
+// 通知成员列表
+//
+// 示例值：
+func (builder *DisableInformConfigBuilder) InformedUsers(informedUsers []*SubscribeUser) *DisableInformConfigBuilder {
+	builder.informedUsers = informedUsers
+	builder.informedUsersFlag = true
+	return builder
+}
+
+// 通知部门列表
+//
+// 示例值：
+func (builder *DisableInformConfigBuilder) InformedDepts(informedDepts []*SubscribeDepartment) *DisableInformConfigBuilder {
+	builder.informedDepts = informedDepts
+	builder.informedDeptsFlag = true
+	return builder
+}
+
+func (builder *DisableInformConfigBuilder) Build() *DisableInformConfig {
+	req := &DisableInformConfig{}
+	if builder.ifInformFlag {
+		req.IfInform = &builder.ifInform
+
+	}
+	if builder.informedUsersFlag {
+		req.InformedUsers = builder.informedUsers
+	}
+	if builder.informedDeptsFlag {
+		req.InformedDepts = builder.informedDepts
 	}
 	return req
 }
@@ -1501,33 +1635,36 @@ func (builder *MeetingAbilityBuilder) Build() *MeetingAbility {
 }
 
 type MeetingEventMeeting struct {
-	Id            *string           `json:"id,omitempty"`             // 会议ID（视频会议的唯一标识，视频会议开始后才会产生）
-	Topic         *string           `json:"topic,omitempty"`          // 会议主题
-	MeetingNo     *string           `json:"meeting_no,omitempty"`     // 9位会议号（飞书用户可通过输入9位会议号快捷入会）
-	MeetingSource *int              `json:"meeting_source,omitempty"` // 会议创建源
-	StartTime     *string           `json:"start_time,omitempty"`     // 会议开始时间（unix时间，单位sec）
-	EndTime       *string           `json:"end_time,omitempty"`       // 会议结束时间（unix时间，单位sec）
-	HostUser      *MeetingEventUser `json:"host_user,omitempty"`      // 会议主持人
-	Owner         *MeetingEventUser `json:"owner,omitempty"`          // 会议拥有者
+	Id              *string           `json:"id,omitempty"`                // 会议ID（视频会议的唯一标识，视频会议开始后才会产生）
+	Topic           *string           `json:"topic,omitempty"`             // 会议主题
+	MeetingNo       *string           `json:"meeting_no,omitempty"`        // 9位会议号（飞书用户可通过输入9位会议号快捷入会）
+	MeetingSource   *int              `json:"meeting_source,omitempty"`    // 会议创建源
+	StartTime       *string           `json:"start_time,omitempty"`        // 会议开始时间（unix时间，单位sec）
+	EndTime         *string           `json:"end_time,omitempty"`          // 会议结束时间（unix时间，单位sec）
+	HostUser        *MeetingEventUser `json:"host_user,omitempty"`         // 会议主持人
+	Owner           *MeetingEventUser `json:"owner,omitempty"`             // 会议拥有者
+	CalendarEventId *string           `json:"calendar_event_id,omitempty"` // 日程实体的唯一标志
 }
 
 type MeetingEventMeetingBuilder struct {
-	id                string // 会议ID（视频会议的唯一标识，视频会议开始后才会产生）
-	idFlag            bool
-	topic             string // 会议主题
-	topicFlag         bool
-	meetingNo         string // 9位会议号（飞书用户可通过输入9位会议号快捷入会）
-	meetingNoFlag     bool
-	meetingSource     int // 会议创建源
-	meetingSourceFlag bool
-	startTime         string // 会议开始时间（unix时间，单位sec）
-	startTimeFlag     bool
-	endTime           string // 会议结束时间（unix时间，单位sec）
-	endTimeFlag       bool
-	hostUser          *MeetingEventUser // 会议主持人
-	hostUserFlag      bool
-	owner             *MeetingEventUser // 会议拥有者
-	ownerFlag         bool
+	id                  string // 会议ID（视频会议的唯一标识，视频会议开始后才会产生）
+	idFlag              bool
+	topic               string // 会议主题
+	topicFlag           bool
+	meetingNo           string // 9位会议号（飞书用户可通过输入9位会议号快捷入会）
+	meetingNoFlag       bool
+	meetingSource       int // 会议创建源
+	meetingSourceFlag   bool
+	startTime           string // 会议开始时间（unix时间，单位sec）
+	startTimeFlag       bool
+	endTime             string // 会议结束时间（unix时间，单位sec）
+	endTimeFlag         bool
+	hostUser            *MeetingEventUser // 会议主持人
+	hostUserFlag        bool
+	owner               *MeetingEventUser // 会议拥有者
+	ownerFlag           bool
+	calendarEventId     string // 日程实体的唯一标志
+	calendarEventIdFlag bool
 }
 
 func NewMeetingEventMeetingBuilder() *MeetingEventMeetingBuilder {
@@ -1607,6 +1744,15 @@ func (builder *MeetingEventMeetingBuilder) Owner(owner *MeetingEventUser) *Meeti
 	return builder
 }
 
+// 日程实体的唯一标志
+//
+// 示例值：efa67a98-06a8-4df5-8559-746c8f4477ef_0
+func (builder *MeetingEventMeetingBuilder) CalendarEventId(calendarEventId string) *MeetingEventMeetingBuilder {
+	builder.calendarEventId = calendarEventId
+	builder.calendarEventIdFlag = true
+	return builder
+}
+
 func (builder *MeetingEventMeetingBuilder) Build() *MeetingEventMeeting {
 	req := &MeetingEventMeeting{}
 	if builder.idFlag {
@@ -1638,6 +1784,10 @@ func (builder *MeetingEventMeetingBuilder) Build() *MeetingEventMeeting {
 	}
 	if builder.ownerFlag {
 		req.Owner = builder.owner
+	}
+	if builder.calendarEventIdFlag {
+		req.CalendarEventId = &builder.calendarEventId
+
 	}
 	return req
 }
@@ -6374,6 +6524,104 @@ func (builder *UserIdBuilder) Build() *UserId {
 	return req
 }
 
+type ListAlertReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	limit  int // 最大返回多少记录，当使用迭代器访问时才有效
+}
+
+func NewListAlertReqBuilder() *ListAlertReqBuilder {
+	builder := &ListAlertReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 最大返回多少记录，当使用迭代器访问时才有效
+func (builder *ListAlertReqBuilder) Limit(limit int) *ListAlertReqBuilder {
+	builder.limit = limit
+	return builder
+}
+
+// 开始时间（unix时间，单位sec）
+//
+// 示例值：1608888867
+func (builder *ListAlertReqBuilder) StartTime(startTime string) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("start_time", fmt.Sprint(startTime))
+	return builder
+}
+
+// 结束时间（unix时间，单位sec）
+//
+// 示例值：1608888867
+func (builder *ListAlertReqBuilder) EndTime(endTime string) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("end_time", fmt.Sprint(endTime))
+	return builder
+}
+
+// 查询对象类型，不填返回所有
+//
+// 示例值：1
+func (builder *ListAlertReqBuilder) QueryType(queryType int) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("query_type", fmt.Sprint(queryType))
+	return builder
+}
+
+// 查询对象ID
+//
+// 示例值：6911188411932033028
+func (builder *ListAlertReqBuilder) QueryValue(queryValue string) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("query_value", fmt.Sprint(queryValue))
+	return builder
+}
+
+// 请求期望返回的告警记录数量，不足则返回全部，该值默认为 100，最大为 1000
+//
+// 示例值：100
+func (builder *ListAlertReqBuilder) PageSize(pageSize int) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
+	return builder
+}
+
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该 page_token 获取查询结果
+//
+// 示例值：100
+func (builder *ListAlertReqBuilder) PageToken(pageToken string) *ListAlertReqBuilder {
+	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
+	return builder
+}
+
+func (builder *ListAlertReqBuilder) Build() *ListAlertReq {
+	req := &ListAlertReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.Limit = builder.limit
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	return req
+}
+
+type ListAlertReq struct {
+	apiReq *larkcore.ApiReq
+	Limit  int // 最多返回多少记录，只有在使用迭代器访问时，才有效
+
+}
+
+type ListAlertRespData struct {
+	HasMore   *bool    `json:"has_more,omitempty"`   // 是否还有数据
+	PageToken *string  `json:"page_token,omitempty"` // 下一页分页的token，下次请求时传入
+	Items     []*Alert `json:"items,omitempty"`      // 告警记录
+}
+
+type ListAlertResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *ListAlertRespData `json:"data"` // 业务数据
+}
+
+func (resp *ListAlertResp) Success() bool {
+	return resp.Code == 0
+}
+
 type DownloadExportReqBuilder struct {
 	apiReq *larkcore.ApiReq
 }
@@ -7844,7 +8092,7 @@ func (builder *ListByNoMeetingReqBuilder) EndTime(endTime string) *ListByNoMeeti
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：5
 func (builder *ListByNoMeetingReqBuilder) PageToken(pageToken string) *ListByNoMeetingReqBuilder {
@@ -7852,7 +8100,7 @@ func (builder *ListByNoMeetingReqBuilder) PageToken(pageToken string) *ListByNoM
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListByNoMeetingReqBuilder) PageSize(pageSize int) *ListByNoMeetingReqBuilder {
@@ -8090,6 +8338,8 @@ func (resp *GetMeetingRecordingResp) Success() bool {
 type SetPermissionMeetingRecordingReqBodyBuilder struct {
 	permissionObjects     []*RecordingPermissionObject // 授权对象列表
 	permissionObjectsFlag bool
+	actionType            int // 授权或者取消授权，默认授权
+	actionTypeFlag        bool
 }
 
 func NewSetPermissionMeetingRecordingReqBodyBuilder() *SetPermissionMeetingRecordingReqBodyBuilder {
@@ -8106,10 +8356,22 @@ func (builder *SetPermissionMeetingRecordingReqBodyBuilder) PermissionObjects(pe
 	return builder
 }
 
+// 授权或者取消授权，默认授权
+//
+//示例值：1
+func (builder *SetPermissionMeetingRecordingReqBodyBuilder) ActionType(actionType int) *SetPermissionMeetingRecordingReqBodyBuilder {
+	builder.actionType = actionType
+	builder.actionTypeFlag = true
+	return builder
+}
+
 func (builder *SetPermissionMeetingRecordingReqBodyBuilder) Build() *SetPermissionMeetingRecordingReqBody {
 	req := &SetPermissionMeetingRecordingReqBody{}
 	if builder.permissionObjectsFlag {
 		req.PermissionObjects = builder.permissionObjects
+	}
+	if builder.actionTypeFlag {
+		req.ActionType = &builder.actionType
 	}
 	return req
 }
@@ -8117,6 +8379,8 @@ func (builder *SetPermissionMeetingRecordingReqBodyBuilder) Build() *SetPermissi
 type SetPermissionMeetingRecordingPathReqBodyBuilder struct {
 	permissionObjects     []*RecordingPermissionObject // 授权对象列表
 	permissionObjectsFlag bool
+	actionType            int // 授权或者取消授权，默认授权
+	actionTypeFlag        bool
 }
 
 func NewSetPermissionMeetingRecordingPathReqBodyBuilder() *SetPermissionMeetingRecordingPathReqBodyBuilder {
@@ -8133,10 +8397,22 @@ func (builder *SetPermissionMeetingRecordingPathReqBodyBuilder) PermissionObject
 	return builder
 }
 
+// 授权或者取消授权，默认授权
+//
+// 示例值：1
+func (builder *SetPermissionMeetingRecordingPathReqBodyBuilder) ActionType(actionType int) *SetPermissionMeetingRecordingPathReqBodyBuilder {
+	builder.actionType = actionType
+	builder.actionTypeFlag = true
+	return builder
+}
+
 func (builder *SetPermissionMeetingRecordingPathReqBodyBuilder) Build() (*SetPermissionMeetingRecordingReqBody, error) {
 	req := &SetPermissionMeetingRecordingReqBody{}
 	if builder.permissionObjectsFlag {
 		req.PermissionObjects = builder.permissionObjects
+	}
+	if builder.actionTypeFlag {
+		req.ActionType = &builder.actionType
 	}
 	return req, nil
 }
@@ -8188,6 +8464,7 @@ func (builder *SetPermissionMeetingRecordingReqBuilder) Build() *SetPermissionMe
 
 type SetPermissionMeetingRecordingReqBody struct {
 	PermissionObjects []*RecordingPermissionObject `json:"permission_objects,omitempty"` // 授权对象列表
+	ActionType        *int                         `json:"action_type,omitempty"`        // 授权或者取消授权，默认授权
 }
 
 type SetPermissionMeetingRecordingReq struct {
@@ -9792,6 +10069,215 @@ type PatchReserveConfigAdminResp struct {
 }
 
 func (resp *PatchReserveConfigAdminResp) Success() bool {
+	return resp.Code == 0
+}
+
+type GetReserveConfigFormReqBuilder struct {
+	apiReq *larkcore.ApiReq
+}
+
+func NewGetReserveConfigFormReqBuilder() *GetReserveConfigFormReqBuilder {
+	builder := &GetReserveConfigFormReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 会议室或层级id
+//
+// 示例值：omm_3c5dd7e09bac0c1758fcf9511bd1a771
+func (builder *GetReserveConfigFormReqBuilder) ReserveConfigId(reserveConfigId string) *GetReserveConfigFormReqBuilder {
+	builder.apiReq.PathParams.Set("reserve_config_id", fmt.Sprint(reserveConfigId))
+	return builder
+}
+
+// 1代表层级，2代表会议室
+//
+// 示例值：2
+func (builder *GetReserveConfigFormReqBuilder) ScopeType(scopeType int) *GetReserveConfigFormReqBuilder {
+	builder.apiReq.QueryParams.Set("scope_type", fmt.Sprint(scopeType))
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *GetReserveConfigFormReqBuilder) UserIdType(userIdType string) *GetReserveConfigFormReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+func (builder *GetReserveConfigFormReqBuilder) Build() *GetReserveConfigFormReq {
+	req := &GetReserveConfigFormReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	return req
+}
+
+type GetReserveConfigFormReq struct {
+	apiReq *larkcore.ApiReq
+}
+
+type GetReserveConfigFormRespData struct {
+	ReserveFormConfig *ReserveFormConfig `json:"reserve_form_config,omitempty"` // 预定表单
+}
+
+type GetReserveConfigFormResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *GetReserveConfigFormRespData `json:"data"` // 业务数据
+}
+
+func (resp *GetReserveConfigFormResp) Success() bool {
+	return resp.Code == 0
+}
+
+type PatchReserveConfigFormReqBodyBuilder struct {
+	scopeType             int // 1代表层级，2代表会议室
+	scopeTypeFlag         bool
+	reserveFormConfig     *ReserveFormConfig // 预定表单设置
+	reserveFormConfigFlag bool
+}
+
+func NewPatchReserveConfigFormReqBodyBuilder() *PatchReserveConfigFormReqBodyBuilder {
+	builder := &PatchReserveConfigFormReqBodyBuilder{}
+	return builder
+}
+
+// 1代表层级，2代表会议室
+//
+//示例值：2
+func (builder *PatchReserveConfigFormReqBodyBuilder) ScopeType(scopeType int) *PatchReserveConfigFormReqBodyBuilder {
+	builder.scopeType = scopeType
+	builder.scopeTypeFlag = true
+	return builder
+}
+
+// 预定表单设置
+//
+//示例值：
+func (builder *PatchReserveConfigFormReqBodyBuilder) ReserveFormConfig(reserveFormConfig *ReserveFormConfig) *PatchReserveConfigFormReqBodyBuilder {
+	builder.reserveFormConfig = reserveFormConfig
+	builder.reserveFormConfigFlag = true
+	return builder
+}
+
+func (builder *PatchReserveConfigFormReqBodyBuilder) Build() *PatchReserveConfigFormReqBody {
+	req := &PatchReserveConfigFormReqBody{}
+	if builder.scopeTypeFlag {
+		req.ScopeType = &builder.scopeType
+	}
+	if builder.reserveFormConfigFlag {
+		req.ReserveFormConfig = builder.reserveFormConfig
+	}
+	return req
+}
+
+type PatchReserveConfigFormPathReqBodyBuilder struct {
+	scopeType             int // 1代表层级，2代表会议室
+	scopeTypeFlag         bool
+	reserveFormConfig     *ReserveFormConfig // 预定表单设置
+	reserveFormConfigFlag bool
+}
+
+func NewPatchReserveConfigFormPathReqBodyBuilder() *PatchReserveConfigFormPathReqBodyBuilder {
+	builder := &PatchReserveConfigFormPathReqBodyBuilder{}
+	return builder
+}
+
+// 1代表层级，2代表会议室
+//
+// 示例值：2
+func (builder *PatchReserveConfigFormPathReqBodyBuilder) ScopeType(scopeType int) *PatchReserveConfigFormPathReqBodyBuilder {
+	builder.scopeType = scopeType
+	builder.scopeTypeFlag = true
+	return builder
+}
+
+// 预定表单设置
+//
+// 示例值：
+func (builder *PatchReserveConfigFormPathReqBodyBuilder) ReserveFormConfig(reserveFormConfig *ReserveFormConfig) *PatchReserveConfigFormPathReqBodyBuilder {
+	builder.reserveFormConfig = reserveFormConfig
+	builder.reserveFormConfigFlag = true
+	return builder
+}
+
+func (builder *PatchReserveConfigFormPathReqBodyBuilder) Build() (*PatchReserveConfigFormReqBody, error) {
+	req := &PatchReserveConfigFormReqBody{}
+	if builder.scopeTypeFlag {
+		req.ScopeType = &builder.scopeType
+	}
+	if builder.reserveFormConfigFlag {
+		req.ReserveFormConfig = builder.reserveFormConfig
+	}
+	return req, nil
+}
+
+type PatchReserveConfigFormReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *PatchReserveConfigFormReqBody
+}
+
+func NewPatchReserveConfigFormReqBuilder() *PatchReserveConfigFormReqBuilder {
+	builder := &PatchReserveConfigFormReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 会议室或层级id
+//
+// 示例值：omm_3c5dd7e09bac0c1758fcf9511bd1a771
+func (builder *PatchReserveConfigFormReqBuilder) ReserveConfigId(reserveConfigId string) *PatchReserveConfigFormReqBuilder {
+	builder.apiReq.PathParams.Set("reserve_config_id", fmt.Sprint(reserveConfigId))
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *PatchReserveConfigFormReqBuilder) UserIdType(userIdType string) *PatchReserveConfigFormReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+//
+func (builder *PatchReserveConfigFormReqBuilder) Body(body *PatchReserveConfigFormReqBody) *PatchReserveConfigFormReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *PatchReserveConfigFormReqBuilder) Build() *PatchReserveConfigFormReq {
+	req := &PatchReserveConfigFormReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type PatchReserveConfigFormReqBody struct {
+	ScopeType         *int               `json:"scope_type,omitempty"`          // 1代表层级，2代表会议室
+	ReserveFormConfig *ReserveFormConfig `json:"reserve_form_config,omitempty"` // 预定表单设置
+}
+
+type PatchReserveConfigFormReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *PatchReserveConfigFormReqBody `body:""`
+}
+
+type PatchReserveConfigFormResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+}
+
+func (resp *PatchReserveConfigFormResp) Success() bool {
 	return resp.Code == 0
 }
 
@@ -11831,6 +12317,60 @@ type P2RoomLevelUpdatedV1 struct {
 
 func (m *P2RoomLevelUpdatedV1) RawReq(req *larkevent.EventReq) {
 	m.EventReq = req
+}
+
+type ListAlertIterator struct {
+	nextPageToken *string
+	items         []*Alert
+	index         int
+	limit         int
+	ctx           context.Context
+	req           *ListAlertReq
+	listFunc      func(ctx context.Context, req *ListAlertReq, options ...larkcore.RequestOptionFunc) (*ListAlertResp, error)
+	options       []larkcore.RequestOptionFunc
+	curlNum       int
+}
+
+func (iterator *ListAlertIterator) Next() (bool, *Alert, error) {
+	// 达到最大量，则返回
+	if iterator.limit > 0 && iterator.curlNum >= iterator.limit {
+		return false, nil, nil
+	}
+
+	// 为0则拉取数据
+	if iterator.index == 0 || iterator.index >= len(iterator.items) {
+		if iterator.index != 0 && iterator.nextPageToken == nil {
+			return false, nil, nil
+		}
+		if iterator.nextPageToken != nil {
+			iterator.req.apiReq.QueryParams.Set("page_token", *iterator.nextPageToken)
+		}
+		resp, err := iterator.listFunc(iterator.ctx, iterator.req, iterator.options...)
+		if err != nil {
+			return false, nil, err
+		}
+
+		if resp.Code != 0 {
+			return false, nil, errors.New(fmt.Sprintf("Code:%d,Msg:%s", resp.Code, resp.Msg))
+		}
+
+		if len(resp.Data.Items) == 0 {
+			return false, nil, nil
+		}
+
+		iterator.nextPageToken = resp.Data.PageToken
+		iterator.items = resp.Data.Items
+		iterator.index = 0
+	}
+
+	block := iterator.items[iterator.index]
+	iterator.index++
+	iterator.curlNum++
+	return true, block, nil
+}
+
+func (iterator *ListAlertIterator) NextPageToken() *string {
+	return iterator.nextPageToken
 }
 
 type ListByNoMeetingIterator struct {

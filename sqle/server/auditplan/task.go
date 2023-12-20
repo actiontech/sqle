@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -261,9 +262,23 @@ func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 }
 
 func (at *DefaultTask) Audit() (*AuditResultResp, error) {
-	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
-	if err != nil {
-		return nil, err
+	var task *model.Task
+	if at.ap.InstanceName == "" {
+		task = &model.Task{
+			DBType: at.ap.DBType,
+		}
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancel()
+		instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+		if err != nil {
+			return nil, err
+		}
+		task = &model.Task{
+			Instance: instance,
+			Schema:   at.ap.InstanceDatabase,
+			DBType:   at.ap.DBType,
+		}
 	}
 	return at.baseTask.audit(task)
 }
@@ -358,7 +373,7 @@ func getTaskWithInstanceByAuditPlan(ap *model.AuditPlan, persist *model.Storage)
 			DBType: ap.DBType,
 		}
 	} else {
-		instance, _, err := persist.GetInstanceByNameAndProjectID(ap.InstanceName, ap.ProjectId)
+		instance, _, err := dms.GetInstanceInProjectByName(context.TODO(), string(ap.ProjectId), ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -393,7 +408,10 @@ func (at *SchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
 		return
 	}
@@ -512,7 +530,10 @@ func (at *OracleTopSQLTask) collectorDo() {
 		return
 	}
 
-	inst, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+
 	if err != nil {
 		at.logger.Warnf("get instance fail, error: %v", err)
 		return
@@ -536,7 +557,7 @@ func (at *OracleTopSQLTask) collectorDo() {
 	}
 	defer db.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 
 	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int(), at.ap.Params.GetParam("order_by_column").String())
@@ -645,7 +666,10 @@ func (at *TiDBAuditLogTask) Audit() (*AuditResultResp, error) {
 			DBType: at.ap.DBType,
 		}
 	} else {
-		instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+		defer cancel()
+
+		instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 		if err != nil {
 			return nil, err
 		}
@@ -1230,7 +1254,11 @@ func (at *MySQLProcesslistTask) collectorDo() {
 		at.logger.Warnf("instance is not configured")
 		return
 	}
-	instance, _, err := at.persist.GetInstanceByNameAndProjectID(at.ap.InstanceName, at.ap.ProjectId)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+
 	if err != nil {
 		return
 	}

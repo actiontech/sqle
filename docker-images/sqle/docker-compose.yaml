@@ -14,12 +14,14 @@ services:
       - sqle_net
     ports:
       - 10000:10000
+      - 10001:10001
     environment:
       - MYSQL_HOST=20.20.20.2
       - MYSQL_PORT=3306
       - MYSQL_USER=root
       - MYSQL_PASSWORD=mysqlpass
-      - MYSQL_SCHEMA=sqle
+      - MYSQL_SQLE_SCHEMA=sqle
+      - MYSQL_DMS_SCHEMA=dms
     depends_on:
       - mysql-for-sqle
     command: bash -c "sleep 10 && /opt/start.sh"
@@ -41,6 +43,8 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=mysqlpass
       - MYSQL_DATABASE=sqle
+    volumes: 
+      - ./init:/docker-entrypoint-initdb.d            
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
 
 networks:

@@ -138,3 +138,7 @@ func NewNotSupportGetTaskAnalysisDataErr() error {
 func NewTaskNoExistOrNoAccessErr() error {
 	return New(DataNotExist, fmt.Errorf("task is not exist or you can't access it"))
 }
+
+func NewInstanceNoExistErr() error {
+	return New(DataNotExist, fmt.Errorf("instance is not exist"))
+}

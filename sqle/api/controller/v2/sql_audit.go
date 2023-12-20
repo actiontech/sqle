@@ -2,13 +2,12 @@ package v2
 
 import (
 	e "errors"
-	"fmt"
 	"net/http"
-	"strings"
 
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -69,7 +68,7 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField(c.Path(), "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType)
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
@@ -137,11 +136,16 @@ func DirectAuditFiles(c echo.Context) error {
 		return err
 	}
 
-	user := controller.GetUserName(c)
-	s := model.GetStorage()
-	if yes, err := s.IsProjectMember(user, req.ProjectName); err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-	} else if !yes {
+	userId := controller.GetUserID(c)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.ProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !up.IsProjectMember() {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 	}
 
@@ -151,11 +155,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == v1.SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, false)
+		sqls, err = v1.ConvertXmlFileContentToSQLs(req.FileContents)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		sqls = strings.Join(ss, ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
@@ -166,7 +169,7 @@ func DirectAuditFiles(c echo.Context) error {
 	var instance *model.Instance
 	var exist bool
 	if req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, req.ProjectName)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -184,7 +187,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, nil, "")
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType)
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)

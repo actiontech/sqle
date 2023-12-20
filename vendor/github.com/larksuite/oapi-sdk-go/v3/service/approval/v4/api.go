@@ -34,13 +34,13 @@ func NewService(config *larkcore.Config) *ApprovalService {
 
 type ApprovalService struct {
 	config           *larkcore.Config
-	Approval         *approval         // 事件
+	Approval         *approval         // 原生审批定义
 	ExternalApproval *externalApproval // 三方审批定义
 	ExternalInstance *externalInstance // 三方审批实例
 	ExternalTask     *externalTask     // 三方审批任务
-	Instance         *instance         // 审批查询
+	Instance         *instance         // 原生审批实例
 	InstanceComment  *instanceComment  // 原生审批评论
-	Task             *task             // 审批查询
+	Task             *task             // 原生审批任务
 }
 
 type approval struct {
@@ -117,40 +117,6 @@ func (a *approval) Get(ctx context.Context, req *GetApprovalReq, options ...lark
 		return nil, err
 	}
 	return resp, err
-}
-
-// 查询审批定义列表
-//
-// - 查询当前用户可发起的审批定义列表。
-//
-// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/approval-v4/approval/list
-//
-// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/approvalv4/list_approval.go
-func (a *approval) List(ctx context.Context, req *ListApprovalReq, options ...larkcore.RequestOptionFunc) (*ListApprovalResp, error) {
-	// 发起请求
-	apiReq := req.apiReq
-	apiReq.ApiPath = "/open-apis/approval/v4/approvals"
-	apiReq.HttpMethod = http.MethodGet
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser}
-	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
-	if err != nil {
-		return nil, err
-	}
-	// 反序列响应结果
-	resp := &ListApprovalResp{ApiResp: apiResp}
-	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
-	if err != nil {
-		return nil, err
-	}
-	return resp, err
-}
-func (a *approval) ListByIterator(ctx context.Context, req *ListApprovalReq, options ...larkcore.RequestOptionFunc) (*ListApprovalIterator, error) {
-	return &ListApprovalIterator{
-		ctx:      ctx,
-		req:      req,
-		listFunc: a.List,
-		options:  options,
-		limit:    req.Limit}, nil
 }
 
 // 订阅审批事件

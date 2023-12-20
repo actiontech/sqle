@@ -196,6 +196,52 @@ func (builder *ClassificationBuilder) Build() *Classification {
 	return req
 }
 
+type ClassificationFilter struct {
+	Include []string `json:"include,omitempty"` // 需要获取的分类
+	Exclude []string `json:"exclude,omitempty"` // 需要排除的分类
+}
+
+type ClassificationFilterBuilder struct {
+	include     []string // 需要获取的分类
+	includeFlag bool
+	exclude     []string // 需要排除的分类
+	excludeFlag bool
+}
+
+func NewClassificationFilterBuilder() *ClassificationFilterBuilder {
+	builder := &ClassificationFilterBuilder{}
+	return builder
+}
+
+// 需要获取的分类
+//
+// 示例值：
+func (builder *ClassificationFilterBuilder) Include(include []string) *ClassificationFilterBuilder {
+	builder.include = include
+	builder.includeFlag = true
+	return builder
+}
+
+// 需要排除的分类
+//
+// 示例值：
+func (builder *ClassificationFilterBuilder) Exclude(exclude []string) *ClassificationFilterBuilder {
+	builder.exclude = exclude
+	builder.excludeFlag = true
+	return builder
+}
+
+func (builder *ClassificationFilterBuilder) Build() *ClassificationFilter {
+	req := &ClassificationFilter{}
+	if builder.includeFlag {
+		req.Include = builder.include
+	}
+	if builder.excludeFlag {
+		req.Exclude = builder.exclude
+	}
+	return req
+}
+
 type CorrectError struct {
 	Type         *int           `json:"type,omitempty"`          //
 	Total        *int           `json:"total,omitempty"`         // 该类型错误在请求时间周期内的累计数量
@@ -531,12 +577,15 @@ type Entity struct {
 
 	Aliases     []*Term      `json:"aliases,omitempty"`      // 别名
 	Description *string      `json:"description,omitempty"`  // 词条释义（纯文本格式）
+	Creator     *string      `json:"creator,omitempty"`      // 创建者
 	CreateTime  *string      `json:"create_time,omitempty"`  // 词条创建时间
+	Updater     *string      `json:"updater,omitempty"`      // 最近一次更新者
 	UpdateTime  *string      `json:"update_time,omitempty"`  // 词条最近更新时间
 	RelatedMeta *RelatedMeta `json:"related_meta,omitempty"` // 更多相关信息
 	Statistics  *Statistics  `json:"statistics,omitempty"`   // 当前词条收到的反馈数据
 	OuterInfo   *OuterInfo   `json:"outer_info,omitempty"`   // 外部系统关联数据
 	RichText    *string      `json:"rich_text,omitempty"`    // 富文本格式（当填写富文本内容时，description字段将会失效可不填写），支持的格式参考[企业百科指南](https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/baike-v1/overview)中的释义部分
+	Source      *int         `json:"source,omitempty"`       // 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
 }
 
 type EntityBuilder struct {
@@ -549,8 +598,12 @@ type EntityBuilder struct {
 	aliasesFlag     bool
 	description     string // 词条释义（纯文本格式）
 	descriptionFlag bool
+	creator         string // 创建者
+	creatorFlag     bool
 	createTime      string // 词条创建时间
 	createTimeFlag  bool
+	updater         string // 最近一次更新者
+	updaterFlag     bool
 	updateTime      string // 词条最近更新时间
 	updateTimeFlag  bool
 	relatedMeta     *RelatedMeta // 更多相关信息
@@ -561,6 +614,8 @@ type EntityBuilder struct {
 	outerInfoFlag   bool
 	richText        string // 富文本格式（当填写富文本内容时，description字段将会失效可不填写），支持的格式参考[企业百科指南](https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/baike-v1/overview)中的释义部分
 	richTextFlag    bool
+	source          int // 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+	sourceFlag      bool
 }
 
 func NewEntityBuilder() *EntityBuilder {
@@ -604,12 +659,30 @@ func (builder *EntityBuilder) Description(description string) *EntityBuilder {
 	return builder
 }
 
+// 创建者
+//
+// 示例值：ou_30b07b63089ea46518789914dac63d36
+func (builder *EntityBuilder) Creator(creator string) *EntityBuilder {
+	builder.creator = creator
+	builder.creatorFlag = true
+	return builder
+}
+
 // 词条创建时间
 //
 // 示例值：1649318125
 func (builder *EntityBuilder) CreateTime(createTime string) *EntityBuilder {
 	builder.createTime = createTime
 	builder.createTimeFlag = true
+	return builder
+}
+
+// 最近一次更新者
+//
+// 示例值：ou_30b07b63089ea46518789914dac63d36
+func (builder *EntityBuilder) Updater(updater string) *EntityBuilder {
+	builder.updater = updater
+	builder.updaterFlag = true
 	return builder
 }
 
@@ -658,6 +731,15 @@ func (builder *EntityBuilder) RichText(richText string) *EntityBuilder {
 	return builder
 }
 
+// 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+//
+// 示例值：1
+func (builder *EntityBuilder) Source(source int) *EntityBuilder {
+	builder.source = source
+	builder.sourceFlag = true
+	return builder
+}
+
 func (builder *EntityBuilder) Build() *Entity {
 	req := &Entity{}
 	if builder.idFlag {
@@ -675,8 +757,16 @@ func (builder *EntityBuilder) Build() *Entity {
 		req.Description = &builder.description
 
 	}
+	if builder.creatorFlag {
+		req.Creator = &builder.creator
+
+	}
 	if builder.createTimeFlag {
 		req.CreateTime = &builder.createTime
+
+	}
+	if builder.updaterFlag {
+		req.Updater = &builder.updater
 
 	}
 	if builder.updateTimeFlag {
@@ -694,6 +784,10 @@ func (builder *EntityBuilder) Build() *Entity {
 	}
 	if builder.richTextFlag {
 		req.RichText = &builder.richText
+
+	}
+	if builder.sourceFlag {
+		req.Source = &builder.source
 
 	}
 	return req
@@ -2342,8 +2436,14 @@ func (resp *MatchEntityResp) Success() bool {
 }
 
 type SearchEntityReqBodyBuilder struct {
-	query     string // 搜索关键词
-	queryFlag bool
+	query                    string // 搜索关键词
+	queryFlag                bool
+	classificationFilter     *ClassificationFilter // 分类筛选
+	classificationFilterFlag bool
+	sources                  []int // 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+	sourcesFlag              bool
+	creators                 []string // 创建者
+	creatorsFlag             bool
 }
 
 func NewSearchEntityReqBodyBuilder() *SearchEntityReqBodyBuilder {
@@ -2360,17 +2460,59 @@ func (builder *SearchEntityReqBodyBuilder) Query(query string) *SearchEntityReqB
 	return builder
 }
 
+// 分类筛选
+//
+//示例值：
+func (builder *SearchEntityReqBodyBuilder) ClassificationFilter(classificationFilter *ClassificationFilter) *SearchEntityReqBodyBuilder {
+	builder.classificationFilter = classificationFilter
+	builder.classificationFilterFlag = true
+	return builder
+}
+
+// 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+//
+//示例值：
+func (builder *SearchEntityReqBodyBuilder) Sources(sources []int) *SearchEntityReqBodyBuilder {
+	builder.sources = sources
+	builder.sourcesFlag = true
+	return builder
+}
+
+// 创建者
+//
+//示例值：ou_30b07b63089ea46518789914dac63d36
+func (builder *SearchEntityReqBodyBuilder) Creators(creators []string) *SearchEntityReqBodyBuilder {
+	builder.creators = creators
+	builder.creatorsFlag = true
+	return builder
+}
+
 func (builder *SearchEntityReqBodyBuilder) Build() *SearchEntityReqBody {
 	req := &SearchEntityReqBody{}
 	if builder.queryFlag {
 		req.Query = &builder.query
 	}
+	if builder.classificationFilterFlag {
+		req.ClassificationFilter = builder.classificationFilter
+	}
+	if builder.sourcesFlag {
+		req.Sources = builder.sources
+	}
+	if builder.creatorsFlag {
+		req.Creators = builder.creators
+	}
 	return req
 }
 
 type SearchEntityPathReqBodyBuilder struct {
-	query     string // 搜索关键词
-	queryFlag bool
+	query                    string // 搜索关键词
+	queryFlag                bool
+	classificationFilter     *ClassificationFilter // 分类筛选
+	classificationFilterFlag bool
+	sources                  []int // 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+	sourcesFlag              bool
+	creators                 []string // 创建者
+	creatorsFlag             bool
 }
 
 func NewSearchEntityPathReqBodyBuilder() *SearchEntityPathReqBodyBuilder {
@@ -2387,10 +2529,46 @@ func (builder *SearchEntityPathReqBodyBuilder) Query(query string) *SearchEntity
 	return builder
 }
 
+// 分类筛选
+//
+// 示例值：
+func (builder *SearchEntityPathReqBodyBuilder) ClassificationFilter(classificationFilter *ClassificationFilter) *SearchEntityPathReqBodyBuilder {
+	builder.classificationFilter = classificationFilter
+	builder.classificationFilterFlag = true
+	return builder
+}
+
+// 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+//
+// 示例值：
+func (builder *SearchEntityPathReqBodyBuilder) Sources(sources []int) *SearchEntityPathReqBodyBuilder {
+	builder.sources = sources
+	builder.sourcesFlag = true
+	return builder
+}
+
+// 创建者
+//
+// 示例值：ou_30b07b63089ea46518789914dac63d36
+func (builder *SearchEntityPathReqBodyBuilder) Creators(creators []string) *SearchEntityPathReqBodyBuilder {
+	builder.creators = creators
+	builder.creatorsFlag = true
+	return builder
+}
+
 func (builder *SearchEntityPathReqBodyBuilder) Build() (*SearchEntityReqBody, error) {
 	req := &SearchEntityReqBody{}
 	if builder.queryFlag {
 		req.Query = &builder.query
+	}
+	if builder.classificationFilterFlag {
+		req.ClassificationFilter = builder.classificationFilter
+	}
+	if builder.sourcesFlag {
+		req.Sources = builder.sources
+	}
+	if builder.creatorsFlag {
+		req.Creators = builder.creators
 	}
 	return req, nil
 }
@@ -2416,19 +2594,19 @@ func (builder *SearchEntityReqBuilder) Limit(limit int) *SearchEntityReqBuilder 
 	return builder
 }
 
-//
-//
-// 示例值：b152fa6e6f62a291019a04c3a93f365f8ac641910506ff15ff4cad6534e087cb4ed8fa2c
-func (builder *SearchEntityReqBuilder) PageToken(pageToken string) *SearchEntityReqBuilder {
-	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
-	return builder
-}
-
-//
+// 每页返回的词条量
 //
 // 示例值：10
 func (builder *SearchEntityReqBuilder) PageSize(pageSize int) *SearchEntityReqBuilder {
 	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
+	return builder
+}
+
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该 page_token 获取查询结果
+//
+// 示例值：b152fa6e6f62a291019a04c3a93f365f8ac641910506ff15ff4cad6534e087cb4ed8fa2c
+func (builder *SearchEntityReqBuilder) PageToken(pageToken string) *SearchEntityReqBuilder {
+	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
 	return builder
 }
 
@@ -2456,7 +2634,10 @@ func (builder *SearchEntityReqBuilder) Build() *SearchEntityReq {
 }
 
 type SearchEntityReqBody struct {
-	Query *string `json:"query,omitempty"` // 搜索关键词
+	Query                *string               `json:"query,omitempty"`                 // 搜索关键词
+	ClassificationFilter *ClassificationFilter `json:"classification_filter,omitempty"` // 分类筛选
+	Sources              []int                 `json:"sources,omitempty"`               // 词条的创建来源，1：用户主动创建，2：批量导入，3：官方词，4：OpenAPI 创建
+	Creators             []string              `json:"creators,omitempty"`              // 创建者
 }
 
 type SearchEntityReq struct {

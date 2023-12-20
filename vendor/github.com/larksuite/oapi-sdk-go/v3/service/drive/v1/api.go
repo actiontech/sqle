@@ -30,28 +30,32 @@ func NewService(config *larkcore.Config) *DriveService {
 	d.FileStatistics = &fileStatistics{service: d}
 	d.FileSubscription = &fileSubscription{service: d}
 	d.FileVersion = &fileVersion{service: d}
+	d.FileViewRecord = &fileViewRecord{service: d}
 	d.ImportTask = &importTask{service: d}
 	d.Media = &media{service: d}
 	d.Meta = &meta{service: d}
 	d.PermissionMember = &permissionMember{service: d}
 	d.PermissionPublic = &permissionPublic{service: d}
+	d.PermissionPublicPassword = &permissionPublicPassword{service: d}
 	return d
 }
 
 type DriveService struct {
-	config           *larkcore.Config
-	ExportTask       *exportTask       // 导出
-	File             *file             // 文件
-	FileComment      *fileComment      // 评论
-	FileCommentReply *fileCommentReply // 评论
-	FileStatistics   *fileStatistics   // file.statistics
-	FileSubscription *fileSubscription // 订阅
-	FileVersion      *fileVersion      // 文档版本
-	ImportTask       *importTask       // 导入
-	Media            *media            // 素材
-	Meta             *meta             // meta
-	PermissionMember *permissionMember // 成员
-	PermissionPublic *permissionPublic // 设置
+	config                   *larkcore.Config
+	ExportTask               *exportTask               // 导出
+	File                     *file                     // 异步任务状态
+	FileComment              *fileComment              // 评论
+	FileCommentReply         *fileCommentReply         // 评论
+	FileStatistics           *fileStatistics           // file.statistics
+	FileSubscription         *fileSubscription         // 订阅
+	FileVersion              *fileVersion              // 文档版本
+	FileViewRecord           *fileViewRecord           // file.view_record
+	ImportTask               *importTask               // 导入
+	Media                    *media                    // 素材
+	Meta                     *meta                     // meta
+	PermissionMember         *permissionMember         // 成员
+	PermissionPublic         *permissionPublic         // 设置
+	PermissionPublicPassword *permissionPublicPassword // permission.public.password
 }
 
 type exportTask struct {
@@ -75,6 +79,9 @@ type fileSubscription struct {
 type fileVersion struct {
 	service *DriveService
 }
+type fileViewRecord struct {
+	service *DriveService
+}
 type importTask struct {
 	service *DriveService
 }
@@ -88,6 +95,9 @@ type permissionMember struct {
 	service *DriveService
 }
 type permissionPublic struct {
+	service *DriveService
+}
+type permissionPublicPassword struct {
 	service *DriveService
 }
 
@@ -224,6 +234,32 @@ func (f *file) CreateFolder(ctx context.Context, req *CreateFolderFileReq, optio
 	}
 	// 反序列响应结果
 	resp := &CreateFolderFileResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create_shortcut&project=drive&resource=file&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/createShortcut_file.go
+func (f *file) CreateShortcut(ctx context.Context, req *CreateShortcutFileReq, options ...larkcore.RequestOptionFunc) (*CreateShortcutFileResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/files/create_shortcut"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateShortcutFileResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
 	if err != nil {
 		return nil, err
@@ -510,6 +546,32 @@ func (f *file) UploadPrepare(ctx context.Context, req *UploadPrepareFileReq, opt
 	}
 	// 反序列响应结果
 	resp := &UploadPrepareFileResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 批量获取评论
+//
+// - 该接口用于根据评论 ID 列表批量获取评论。
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/drive-v1/file-comment/batch_query
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/batchQuery_fileComment.go
+func (f *fileComment) BatchQuery(ctx context.Context, req *BatchQueryFileCommentReq, options ...larkcore.RequestOptionFunc) (*BatchQueryFileCommentResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/files/:file_token/comments/batch_query"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &BatchQueryFileCommentResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
 	if err != nil {
 		return nil, err
@@ -823,7 +885,7 @@ func (f *fileVersion) Delete(ctx context.Context, req *DeleteFileVersionReq, opt
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/drive/v1/files/:file_token/versions/:version_id"
 	apiReq.HttpMethod = http.MethodDelete
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
 	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -875,7 +937,7 @@ func (f *fileVersion) List(ctx context.Context, req *ListFileVersionReq, options
 	apiReq := req.apiReq
 	apiReq.ApiPath = "/open-apis/drive/v1/files/:file_token/versions"
 	apiReq.HttpMethod = http.MethodGet
-	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeUser, larkcore.AccessTokenTypeTenant}
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
 	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
 	if err != nil {
 		return nil, err
@@ -890,6 +952,40 @@ func (f *fileVersion) List(ctx context.Context, req *ListFileVersionReq, options
 }
 func (f *fileVersion) ListByIterator(ctx context.Context, req *ListFileVersionReq, options ...larkcore.RequestOptionFunc) (*ListFileVersionIterator, error) {
 	return &ListFileVersionIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: f.List,
+		options:  options,
+		limit:    req.Limit}, nil
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=list&project=drive&resource=file.view_record&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/list_fileViewRecord.go
+func (f *fileViewRecord) List(ctx context.Context, req *ListFileViewRecordReq, options ...larkcore.RequestOptionFunc) (*ListFileViewRecordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/files/:file_token/view_records"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListFileViewRecordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (f *fileViewRecord) ListByIterator(ctx context.Context, req *ListFileViewRecordReq, options ...larkcore.RequestOptionFunc) (*ListFileViewRecordIterator, error) {
+	return &ListFileViewRecordIterator{
 		ctx:      ctx,
 		req:      req,
 		listFunc: f.List,
@@ -1360,6 +1456,84 @@ func (p *permissionPublic) Patch(ctx context.Context, req *PatchPermissionPublic
 	}
 	// 反序列响应结果
 	resp := &PatchPermissionPublicResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=drive&resource=permission.public.password&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/create_permissionPublicPassword.go
+func (p *permissionPublicPassword) Create(ctx context.Context, req *CreatePermissionPublicPasswordReq, options ...larkcore.RequestOptionFunc) (*CreatePermissionPublicPasswordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/permissions/:token/public/password"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreatePermissionPublicPasswordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=delete&project=drive&resource=permission.public.password&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/delete_permissionPublicPassword.go
+func (p *permissionPublicPassword) Delete(ctx context.Context, req *DeletePermissionPublicPasswordReq, options ...larkcore.RequestOptionFunc) (*DeletePermissionPublicPasswordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/permissions/:token/public/password"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeletePermissionPublicPasswordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=update&project=drive&resource=permission.public.password&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/drivev1/update_permissionPublicPassword.go
+func (p *permissionPublicPassword) Update(ctx context.Context, req *UpdatePermissionPublicPasswordReq, options ...larkcore.RequestOptionFunc) (*UpdatePermissionPublicPasswordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/drive/v1/permissions/:token/public/password"
+	apiReq.HttpMethod = http.MethodPut
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant, larkcore.AccessTokenTypeUser}
+	apiResp, err := larkcore.Request(ctx, apiReq, p.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &UpdatePermissionPublicPasswordResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, p.service.config)
 	if err != nil {
 		return nil, err

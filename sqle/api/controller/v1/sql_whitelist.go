@@ -1,11 +1,13 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -33,28 +35,14 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectName := c.Param("project_name")
-
-	userName := controller.GetUserName(c)
-	err := CheckIsProjectManager(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-	if project.IsArchived() {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
 
 	sqlWhitelist := &model.SqlWhitelist{
-		ProjectId: project.ID,
+		ProjectId: model.ProjectUID(projectUid),
 		Value:     req.Value,
 		Desc:      req.Desc,
 		MatchType: req.MatchType,
@@ -90,24 +78,15 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
-	err := CheckIsProjectManager(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	archived, err := s.IsProjectArchived(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
 
 	whitelistId := c.Param("audit_whitelist_id")
-	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectName(whitelistId, projectName)
+	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectUID(whitelistId, model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -151,22 +130,14 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 func DeleteAuditWhitelistById(c echo.Context) error {
 	s := model.GetStorage()
 	whitelistId := c.Param("audit_whitelist_id")
-	projectName := c.Param("project_name")
-	archived, err := s.IsProjectArchived(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if archived {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
+	// projectName := c.Param("project_name")
 
-	userName := controller.GetUserName(c)
-	err = CheckIsProjectManager(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectName(whitelistId, projectName)
+	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectUID(whitelistId, model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -214,15 +185,13 @@ func GetSqlWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
-	err := CheckIsProjectMember(userName, projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectName(req.PageIndex, req.PageSize, projectName)
+	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectUID(req.PageIndex, req.PageSize, model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

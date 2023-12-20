@@ -2,6 +2,7 @@ package v1
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"encoding/json"
 	e "errors"
@@ -16,9 +17,11 @@ import (
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
+	xmlAst "github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -86,34 +89,21 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if req.DbType == "" && req.InstanceName == "" {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, e.New("db_type and instance_name can't both be empty")))
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	sqls := getSQLFromFileResp{}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-	if project.IsArchived() {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var sqls string
-	var source string
 	if req.Sqls != "" {
-		sqls, source = req.Sqls, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{model.TaskSQLSourceFromFormData, []SQLsFromFile{{SQLs: req.Sqls}}}
 	} else {
-		sqls, source, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -121,24 +111,26 @@ func CreateSQLAuditRecord(c echo.Context) error {
 
 	var task *model.Task
 	if req.InstanceName != "" {
-		task, err = buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, source, sqls)
+		task, err = buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
-		task, err = buildOfflineTaskForAudit(user.ID, req.DbType, source, sqls)
+		task, err = buildOfflineTaskForAudit(uint64(user.ID), req.DbType, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+	// if task instance is not nil, gorm will update instance when save task.
+	task.Instance = nil
 
 	recordId, err := utils.GenUid()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("generate audit record id failed: %v", err))
 	}
 	record := model.SQLAuditRecord{
-		ProjectId:     project.ID,
-		CreatorId:     user.ID,
+		ProjectId:     projectUid,
+		CreatorId:     user.GetIDStr(),
 		AuditRecordId: recordId,
 		TaskId:        task.ID,
 		Task:          task,
@@ -173,15 +165,46 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	})
 }
 
-func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, instanceName, instanceSchema, projectName, sourceType, sqls string) (*model.Task, error) {
-	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
+type getSQLFromFileResp struct {
+	SourceType string
+	SQLs       []SQLsFromFile
+}
+
+type SQLsFromFile struct {
+	FilePath string
+	SQLs     string
+}
+
+func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin driver.Plugin) error {
+	var num uint = 1
+	for _, sqlsFromOneFile := range sqls.SQLs {
+		nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
+		if err != nil {
+			return fmt.Errorf("parse sqls failed: %v", err)
+		}
+		for _, node := range nodes {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:     num,
+					Content:    node.Text,
+					SourceFile: sqlsFromOneFile.FilePath,
+				},
+			})
+			num++
+		}
+	}
+	return nil
+}
+
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls getSQLFromFileResp) (*model.Task, error) {
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return nil, err
 	}
 	if !exist {
 		return nil, ErrInstanceNoAccess
 	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +218,7 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, inst
 	}
 	defer plugin.Close(context.TODO())
 
-	if err := plugin.Ping(context.TODO()); err != nil {
+	if err = plugin.Ping(context.TODO()); err != nil {
 		return nil, err
 	}
 
@@ -205,91 +228,72 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, inst
 		Instance:     instance,
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    sourceType,
+		SQLSource:    sqls.SourceType,
 		DBType:       instance.DbType,
 	}
 	createAt := time.Now()
 	task.CreatedAt = createAt
-
-	nodes, err := plugin.Parse(context.TODO(), sqls)
+	err = addSQLsFromFileToTasks(sqls, task, plugin)
 	if err != nil {
 		return nil, err
-	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
 	}
 
 	return task, nil
 }
 
-func buildOfflineTaskForAudit(userId uint, dbType, sourceType, sqls string) (*model.Task, error) {
+func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileResp) (*model.Task, error) {
 	task := &model.Task{
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
-		SQLSource:    sourceType,
+		SQLSource:    sqls.SourceType,
 		DBType:       dbType,
 	}
 	var err error
-	var nodes []driverV2.Node
 	plugin, err := common.NewDriverManagerWithoutCfg(log.NewEntry(), dbType)
 	if err != nil {
 		return nil, fmt.Errorf("open plugin failed: %v", err)
 	}
 	defer plugin.Close(context.TODO())
 
-	nodes, err = plugin.Parse(context.TODO(), sqls)
+	err = addSQLsFromFileToTasks(sqls, task, plugin)
 	if err != nil {
-		return nil, fmt.Errorf("parse sqls failed: %v", err)
+		return nil, err
 	}
 
 	createAt := time.Now()
 	task.CreatedAt = createAt
 
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-			},
-		})
-	}
-
 	return task, nil
 }
 
-func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
+func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
-		return "", false, nil
+		return nil, false, nil
 	}
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	f, err := file.Open()
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	defer f.Close()
 
 	currentPos, err := f.Seek(0, io.SeekEnd) // get size of zip file
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	size := currentPos + 1
 	if size > maxZipFileSize {
-		return "", false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+		return nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
 	}
 	r, err := zip.NewReader(f, size)
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
-	var sqlBuffer strings.Builder
-	xmlContents := make([]string, len(r.File))
+
+	var xmlContents []xmlParser.XmlFile
 	for i := range r.File {
 		srcFile := r.File[i]
 		if srcFile == nil {
@@ -301,52 +305,94 @@ func getSqlsFromZip(c echo.Context) (sqls string, exist bool, err error) {
 
 		r, err := srcFile.Open()
 		if err != nil {
-			return "", false, fmt.Errorf("open src file failed:  %v", err)
+			return nil, false, fmt.Errorf("open src file failed:  %v", err)
 		}
 		content, err := io.ReadAll(r)
 		if err != nil {
-			return "", false, fmt.Errorf("read src file failed:  %v", err)
+			return nil, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
 		if strings.HasSuffix(srcFile.Name, ".xml") {
-			xmlContents[i] = string(content)
+			xmlContents = append(xmlContents, xmlParser.XmlFile{
+				FilePath: srcFile.Name,
+				Content:  string(content),
+			})
 		} else if strings.HasSuffix(srcFile.Name, ".sql") {
-			if _, err = sqlBuffer.Write(content); err != nil {
-				return "", false, fmt.Errorf("gather sqls from sql file failed: %v", err)
-			}
+			sqls = append(sqls, SQLsFromFile{
+				FilePath: srcFile.Name,
+				SQLs:     string(content),
+			})
 		}
 	}
 
 	// parse xml content
-	ss, err := xmlParser.ParseXMLs(xmlContents, false)
-	if err != nil {
-		return "", false, fmt.Errorf("parse sqls from xml failed: %v", err)
-	}
-	for i := range ss {
-		if !strings.HasSuffix(sqlBuffer.String(), ";") {
-			if _, err = sqlBuffer.WriteString(";"); err != nil {
-				return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
-			}
+	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
+	{
+		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
+		if err != nil {
+			return nil, false, err
 		}
-		if _, err = sqlBuffer.WriteString(ss[i]); err != nil {
-			return "", false, fmt.Errorf("gather sqls from xml file failed: %v", err)
-		}
+		sqls = append(sqls, sqlsFromXmls...)
 	}
 
-	return sqlBuffer.String(), true, nil
+	return sqls, true, nil
 }
 
-func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
+func getSQLsByFilePath(filePath string, stmtsInfo []xmlAst.StmtInfo) []string {
+	sqls := []string{}
+	for _, info := range stmtsInfo {
+		if info.FilePath != filePath {
+			continue
+		}
+		sqls = append(sqls, info.SQL)
+	}
+	return sqls
+}
+
+func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLsFromFile, error) {
+	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, false)
+	if err != nil {
+		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
+	}
+
+	sqls := []SQLsFromFile{}
+	for _, xmlContent := range xmlContents {
+		var sqlBuffer bytes.Buffer
+		ss := getSQLsByFilePath(xmlContent.FilePath, allStmtsFromXml)
+		if ss == nil {
+			continue
+		}
+
+		for _, sql := range ss {
+			if sqlBuffer.String() != "" && !strings.HasSuffix(sqlBuffer.String(), ";") {
+				if _, err = sqlBuffer.WriteString(";"); err != nil {
+					return nil, fmt.Errorf("gather sqls from xml file failed: %v", err)
+				}
+			}
+			if _, err = sqlBuffer.WriteString(sql); err != nil {
+				return nil, fmt.Errorf("gather sqls from xml file failed: %v", err)
+			}
+		}
+
+		sqls = append(sqls, SQLsFromFile{
+			FilePath: xmlContent.FilePath,
+			SQLs:     sqlBuffer.String(),
+		})
+	}
+	return sqls, nil
+}
+
+func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
 	defer os.RemoveAll(dir)
 	// read http url from form and check if it's a git url
 	url := c.FormValue(GitHttpURL)
 	if !utils.IsGitHttpURL(url) {
-		return "", false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+		return nil, false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
 	cloneOpts := &goGit.CloneOptions{
 		URL: url,
@@ -363,48 +409,38 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 	// clone from git
 	_, err = goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
+	l := log.NewEntry().WithField("function", "getSqlsFromGit")
+	var xmlContents []xmlParser.XmlFile
 	// traverse the repository, parse and put SQL into sqlBuffer
-	var sqlBuffer strings.Builder
 	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		gitPath := strings.TrimPrefix(path, strings.TrimPrefix(dir, "./"))
 		if !info.IsDir() {
+			var sqlBuffer strings.Builder
+			var sqlsFromOneFile string
 			switch {
 			case strings.HasSuffix(path, ".xml"):
 				content, err := os.ReadFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
-				ss, err := xmlParser.ParseXMLs([]string{string(content)}, false)
-				if err != nil {
-					return nil
-				}
-				if len(ss) == 0 {
-					return nil
-				}
-				if sqlBuffer.Len() > 0 && !strings.HasSuffix(sqlBuffer.String(), ";") {
-					if _, err = sqlBuffer.WriteString(";"); err != nil {
-						return fmt.Errorf("gather sqls from xml file failed: %v", err)
-					}
-				}
-				for i := range ss {
-					_, err = sqlBuffer.WriteString(ss[i] + ";")
-					if err != nil {
-						return fmt.Errorf("gather sqls from xml file failed: %v", err)
-					}
-				}
+				xmlContents = append(xmlContents, xmlParser.XmlFile{
+					FilePath: gitPath,
+					Content:  string(content),
+				})
 			case strings.HasSuffix(path, ".sql"):
 				content, err := os.ReadFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
-				_, err = sqlBuffer.Write(content)
-				if err != nil {
-					return fmt.Errorf("gather sqls from sql file failed: %v", err)
-				}
+				sqlsFromOneFile = string(content)
 			case strings.HasSuffix(path, ".java"):
 				sqls, err := javaParser.GetSqlFromJavaFile(path)
 				if err != nil {
+					l.Errorf("skip file [%v]. because get sql from java file failed: %v", path, err)
 					return nil
 				}
 				for _, sql := range sqls {
@@ -416,14 +452,31 @@ func getSqlsFromGit(c echo.Context) (sqls string, exist bool, err error) {
 						return fmt.Errorf("gather sqls from java file failed: %v", err)
 					}
 				}
+				sqlsFromOneFile = sqlBuffer.String()
 			}
+
+			sqls = append(sqls, SQLsFromFile{
+				FilePath: gitPath,
+				SQLs:     sqlsFromOneFile,
+			})
 		}
 		return nil
 	})
 	if err != nil {
-		return "", false, err
+		return nil, false, err
 	}
-	return sqlBuffer.String(), true, nil
+
+	// parse xml content
+	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
+	{
+		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
+		if err != nil {
+			return nil, false, err
+		}
+		sqls = append(sqls, sqlsFromXmls...)
+	}
+
+	return sqls, true, nil
 }
 
 type UpdateSQLAuditRecordReqV1 struct {
@@ -447,36 +500,49 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	auditRecordId := c.Param("sql_audit_record_id")
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
+	record, exist, err := s.GetSQLAuditRecordById(projectUid, auditRecordId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, fmt.Errorf("sql audit record id %v not exist", auditRecordId)))
 	}
+	instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		record.Task.Instance = instance
+	}
 
 	if req.Tags != nil {
-		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-		} else if !yes {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+		up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusForbidden)
+		}
+		if err != nil {
+			return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
+		}
+		if !up.IsProjectAdmin() {
+			if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
+				return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+			} else if !yes {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+			}
 		}
 
 		data := model.SQLAuditRecordUpdateData{Tags: req.Tags}
@@ -498,7 +564,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 type GetSQLAuditRecordsReqV1 struct {
 	FuzzySearchTags         string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
 	FilterSQLAuditStatus    string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterInstanceName      string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterInstanceId        uint64 `json:"filter_instance_id" query:"filter_instance_id"`
 	FilterCreateTimeFrom    string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo      string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterSqlAuditRecordIDs string `json:"filter_sql_audit_record_ids" query:"filter_sql_audit_record_ids" example:"1711247438821462016,1711246967037759488"`
@@ -540,7 +606,7 @@ const (
 // @Security ApiKeyAuth
 // @Param fuzzy_search_tags query string false "fuzzy search tags"
 // @Param filter_sql_audit_status query string false "filter sql audit status" Enums(auditing,successfully)
-// @Param filter_instance_name query string false "filter instance name"
+// @Param filter_instance_id query uint64 false "filter instance id"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_sql_audit_record_ids query string false "filter sql audit record ids"
@@ -554,24 +620,22 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	_, exist, err := s.GetProjectByName(projectName)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	isManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
 	}
 
 	var offset uint32
@@ -580,13 +644,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"filter_project_name":     projectName,
+		"filter_project_id":       projectUid,
 		"filter_creator_id":       user.ID,
 		"fuzzy_search_tags":       req.FuzzySearchTags,
-		"filter_instance_name":    req.FilterInstanceName,
+		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !isManager,
+		"check_user_can_access":   !up.IsProjectAdmin(),
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
@@ -602,6 +666,20 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// batch get instance info
+	instanceIds := make([]uint64, 0)
+	for _, record := range records {
+		instanceIds = append(instanceIds, record.InstanceId)
+	}
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	idInstMap := make(map[uint64] /*instance id*/ *model.Instance /*instance */, 0)
+	for _, instance := range instances {
+		idInstMap[instance.ID] = instance
+	}
+
 	resData := make([]SQLAuditRecord, len(records))
 	for i := range records {
 		record := records[i]
@@ -615,19 +693,15 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 				log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
 			}
 		}
+
 		resData[i] = SQLAuditRecord{
-			Creator:          record.CreatorName,
+			Creator:          dms.GetUserNameWithDelTag(record.CreatorId),
 			SQLAuditRecordId: record.AuditRecordId,
 			SQLAuditStatus:   status,
 			Tags:             tags,
 			CreatedAt:        record.RecordCreatedAt,
-			Instance: &SQLAuditRecordInstance{
-				Host: record.InstanceHost.String,
-				Port: record.InstancePort.String,
-			},
 			Task: &AuditTaskResV1{
 				Id:             record.TaskId,
-				InstanceName:   record.InstanceName.String,
 				InstanceDbType: record.DbType,
 				InstanceSchema: record.InstanceSchema,
 				AuditLevel:     record.AuditLevel.String,
@@ -636,6 +710,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 				Status:         record.TaskStatus,
 				SQLSource:      record.SQLSource,
 			},
+		}
+		if inst, ok := idInstMap[record.InstanceId]; ok {
+			resData[i].Instance = &SQLAuditRecordInstance{
+				Host: inst.Host,
+				Port: inst.Port,
+			}
+			resData[i].Task.InstanceName = idInstMap[record.InstanceId].Name
 		}
 	}
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordsResV1{
@@ -661,54 +742,78 @@ type GetSQLAuditRecordResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	auditRecordId := c.Param("sql_audit_record_id")
 
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusForbidden)
+	}
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
+	}
+
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+
+	if !up.IsProjectAdmin() {
+		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+		} else if !yes {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
+		}
 	}
 
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-	} else if !yes {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
-	}
-
-	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
+	record, exist, err := s.GetSQLAuditRecordById(projectUid, auditRecordId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
 	}
+	// build ret info
+	status := SQLAuditRecordStatusAuditing
+	if record.Task.Status == model.TaskStatusAudited {
+		status = SQLAuditRecordStatusSuccessfully
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(record.Tags), &tags); err != nil {
+		log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+	}
+	task := &AuditTaskResV1{
+		Id:             record.Task.ID,
+		InstanceDbType: record.Task.DBType,
+		InstanceSchema: record.Task.Schema,
+		AuditLevel:     record.Task.AuditLevel,
+		Score:          record.Task.Score,
+		PassRate:       record.Task.PassRate,
+		Status:         record.Task.Status,
+		SQLSource:      record.Task.SQLSource,
+		ExecStartTime:  record.Task.ExecStartAt,
+		ExecEndTime:    record.Task.ExecEndAt,
+	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		task.InstanceName = instance.Name
+	}
 
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SQLAuditRecord{
+			SQLAuditStatus:   status,
+			Tags:             tags,
 			SQLAuditRecordId: auditRecordId,
-			Task: &AuditTaskResV1{
-				Id:             record.Task.ID,
-				InstanceName:   record.Task.InstanceName(),
-				InstanceDbType: record.Task.DBType,
-				InstanceSchema: record.Task.Schema,
-				AuditLevel:     record.Task.AuditLevel,
-				Score:          record.Task.Score,
-				PassRate:       record.Task.PassRate,
-				Status:         record.Task.Status,
-				SQLSource:      record.Task.SQLSource,
-				ExecStartTime:  record.Task.ExecStartAt,
-				ExecEndTime:    record.Task.ExecEndAt,
-			},
+			Task:             task,
 		},
 	})
 }

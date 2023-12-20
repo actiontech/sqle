@@ -1,6 +1,13 @@
-<img align="right" src="./SQLE_logo.png">
+<div align="center">
+<img src="./SQLE_logo.png">
+
+
+<p align="center">一个支持多种不同类型数据库，覆盖事前控制、事后监督、标准发布场景，帮助您建立质量规范的SQL全生命周期质量管理平台。</p>
+<p align="center">每周发版，快速迭代中</p>
+
 
 简体中文 | [English](./README_en.md)
+
 
 [![Release](https://img.shields.io/github/release/actiontech/sqle.svg?style=flat-square)](https://github.com/actiontech/sqle/releases)
 [![GitHub license](https://img.shields.io/github/license/actiontech/sqle.svg)](https://github.com/actiontech/sqle/blob/main/LICENSE)
@@ -9,52 +16,150 @@
 [![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/actiontech/sqle.svg)](https://github.com/actiontech/sqle/issues?q=is%3Aissue+is%3Aclosed)
 [![Docker Pulls](https://img.shields.io/docker/pulls/actiontech/sqle-ce.svg)](https://hub.docker.com/r/actiontech/sqle-ce)
 
-SQLE 由上海爱可生信息技术股份有限公司（以下简称爱可生公司）出品和维护，是爱可生公司[云树®SQL质量管理软件SQLE](https://www.actionsky.com/sqle)（简称：CTREE SQLE）软件产品的开源版本。SQLE 是一个支持多场景，原生支持 MySQL 审核且数据库类型可扩展的 SQL 审核工具。
+<img src="./image.png">
 
-[官方网站](https://opensource.actionsky.com/sqle/) | [文档](https://actiontech.github.io/sqle-docs/docs/intro/) | [安装](https://actiontech.github.io/sqle-docs/docs/deploy-manual/intro) | [在线体验](https://actiontech.github.io/sqle-docs/docs/online-demo)
 
-## 产品展示
-![product_show](./SQLE_product_show.gif)
+</div>
 
-[更多产品展示](https://actiontech.github.io/sqle-docs-cn/0.overview/2_product_show.html)
 
-## 产品特色
+# 🔍 SQLE是什么
+SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。应用于开发、测试、上线发布、生产运行阶段的 SQL 质量治理。通过 “建立规范、事前控制、事后监督、标准发布” 的方式，为企业提供 SQL 全生命周期质量管控能力，规避业务 SQL 不规范引起的生产事故，提高业务稳定性，也可推动企业内部开发规范快速落地。
 
-|特色|说明|
-|--|--|
-|SQL审核规范 |1. 审核规则自定义（700+）<br/>2. 支持审核结果分级展示，支持生成下载审核报告<br/>3. 支持规则模版，灵活组合规则<br/>4. 审核白名单，跳过特例 SQL<br/>5. 支持集成 IDE 自助审核<br/> |
-| 多场景审核 | 支持事前事后审核，覆盖开发、测试、上线、生产等环节
-| 标准化上线流程 | 1. SQL 审核流程按需自定义，满足企业内部不同流程管理要求<br/>2. 支持定时上线<br/>3. 支持设置运维时间<br/>4. 支持 Online DDL |
-| 多数据库类型支持 | 1. 统一接口，可通过插件进行多数据库审核扩展<br/> 2. 内置 MySQL 审核插件，官方支持常用数据库类型（包括：PostgreSQL、DB2、SQL Server、Oracle、TiDB、OceanBase） |
-| 统一的 SQL 客户端入口 | 提供审核管控的 SQL 客户端，杜绝执行不合规 SQL|
-| 丰富的集成能力 | 1. 标准 HTTP API 接口可与客户内部流程系统对接<br/> 2. 支持 LDAP，OAuth2.0 用户对接<br/> 3. 支持邮件、微信企业号、webhook 告警对接 |
+# 📌 功能特性
+### 更丰富的数据源支持
 
-## 应用场景
-|场景|介绍|
-| --- | --- |
-| 上线前控制 | 1. SQLE 赋能开发，在代码开发阶段检查 SQL 质量<br/> 2. SQLE 集成专家经验，形成可复用的 SQL 规范标准规则，用户在平台提交工单后，平台将基于审核规则模板对提交的 SQL 语句进行初审，用以解决事前审核规范不标准难题|
-|上线后监督| 1. SQLE 提供智能扫描审核功能，实现生产环境下的 SQL 审核优化 <br/> 2. SQLE 支持多种类型的扫描任务，基于任务需求执行周期性的扫描任务，并生成扫描结果报告，及时告警|
+  支持主流商业和开源数据库，包括 MySQL、PostgreSQL、Oracle、SQL Server、DB2、TiDB、OceanBase 等，持续增加新的数据源类型，以满足您不同的需求。
+  
+### 更全面的审核规则
 
-## 在线体验
+  审核规则源自我们经验丰富的 DBA 运维专家团队多年的技术积累。您可以借助我们的审核规则快速达到专家级的 SQL 诊断能力，并且我们的规则库目前已经拥有规则 700+，并在不断增加中。
+  
+### 更智能的 SQL 采集
 
-| 社区版 | 企业版 |
-| --- | --- |
-| [SQLE 社区版](http://demo.sqle.actionsky.com/) | [SQLE 企业版](http://demo.sqle.actionsky.com:8889/) |
-| 超级管理员: admin <br/> 密码： admin | 超级管理员: admin <br/> 密码： admin | 
+  提供多种智能扫描方式，例如慢日志、JAVA 应用等，以满足您的事前和事后 SQL 采集需求。一旦配置完成，我们的系统会自动持续采集各业务库中的 SQL，极大地减轻了您对 SQL 监督的压力，并及时发现问题 SQL。
+  
+### 更高效的审批流转路径
 
-### 测试 MySQL
-|配置项|值|
+  提供标准化的工作流，化解了在沟通和进度追踪上的难题，从而提升了上线效率。您可以通过与飞书、钉钉等多种消息通道的对接，及时了解更新进度，减少了沟通交流的成本。
+  
+### 更便捷的 SQL 数据操作
+
+  集成了在线数据库客户端 CloudBeaver，无需安装，通过可视化界面进行数据库管理和查询，提升了数据操作的易用性和效率。
+  
+### 全生命周期的 SQL 管控
+
+  提供 SQL 全流程的管控视角，帮助您统一管理SQL质量。您可以追踪问题SQL的解决进度，并提供快捷的优化功能，以提升 SQL 的效率。
+
+查看更多[社区版与企业版对比](https://actiontech.github.io/sqle-docs/docs/support/compare)。
+
+# 💡 使用场景
+
+<details>
+  <summary>SQL 太复杂，执行性能低，如何优化？</summary>
+    
+  知识赋能，助您构建质量规范、提升 SQL 质量。提供审核规则及规则知识库，将专家经验赋能开发，快速提升问题 SQL 诊断能力，并支持私有云用户自主沉淀。
+
+- **从审核结果看 SQL 优化方向**
+
+  平台提供丰富的审核规则，用以覆盖不同 SQL 审核场景，您可以根据触发的规则，有针对性地优化 SQL。
+  
+- **从知识库了解问题解决经验**
+
+  每个规则包含对应的知识库，是运维专家的经验沉淀，您可以借鉴并强化自身的运维认知。
+  
+- **对知识库做自主沉淀**
+
+  除了平台提供的知识库信息，我们还支持私有云用户在知识库中进行自主沉淀，建立您的质量规范。
+  
+</details>
+
+<details>
+  <summary>应用数量多，SQL 采集难，如何摆脱重复劳动？</summary>
+
+提供智能扫描任务，可以自动持续采集不同来源的 SQL，帮助您摆脱重复劳动，极大地降低 SQL 采集难度。同时，根据不同业务要求定期巡检和生成审核报告，快速发现问题并提供优化建议。
+
+- **配置扫描任务，释放 SQL 采集负担**
+
+  平台支持十余种扫描任务类型，支持采集不同来源的 SQL，如：JAVA 应用程序、慢日志文件、TopSQL、MyBatis 文件等。
+
+- **定期持续巡检，提前发现问题 SQL**
+  
+  平台将根据配置的采集周期，为您自动、持续采集相应 SQL。
+  
+  平台将根据配置的审核规则模板，定期巡检和生成审核报告，有助于您及时发现问题 SQL，并提供优化方向。
+  
+</details>
+
+<details>
+  <summary>公司规模大，流程周转长，如何有效追踪进度？</summary>
+  
+提供标准化工作流，帮助提高工作透明度和上线效率。您可以根据实际组织架构配置自定义审批流程模板，化解沟通和进度追踪难题。同时，平台支持与多种消息通道对接，可以及时更新进度，减少沟通成本。
+
+- **生成您的自定义审批流程**
+
+  平台支持您根据自身实际业务，配置SQL审批、上线流程，适配不同业务的上线节奏，提升业务响应效率。
+  
+- **配置消息推送渠道，快捷订阅变更**
+
+  平台支持对接多种主流IM应用，您可以将 SQL 审核集成到日常工作流中，协同办公，提升工作效率。
+  
+</details>
+
+<details>
+  <summary>SQL 变更频，审批瓶颈大，如何分散审核压力？</summary>
+  
+将审核环节灵活嵌入到研发流程，从研发环节入手，减轻 DBA 审核压力。平台支持多种事前审核场景，将 SQL 审核前置到代码阶段，从源头实现降本增效。
+
+- **使用 IDE 插件，前置规范检查**
+
+  可以使用 IDE 审核插件，在代码编写过程中进行实时审核和规范检查，实现编码即审核的效果。
+  
+- **对接 CI/CD 流程，保证应用代码上线无忧**
+
+  可以配置 CI/CD 审核流程，自动抓取代码变更中的 SQL，减少人工错误和代码缺陷，提高开发团队的效率和代码质量。
+  
+</details>
+
+
+
+# 🧩 快速开始
+
+## 在线试用
+ 我们同时提供了 SQLE 社区版 和  SQLE 企业版 的线上 DEMO 环境，登录后您可以轻松体验 SQLE 的丰富功能。
+ 
+- [SQLE 社区版](http://demo.sqle.actionsky.com/)
+- [SQLE 企业版](http://demo.sqle.actionsky.com:8889/)
+
+**登录信息**
+|user|password|
 |---|---|
-| 地址 | 20.20.20.3 |
-| 端口 | 3306 |
-| 用户 | root |
-| 密码 | test 
+|admin|admin|
+
+**您可以连接MySQL实例，进行测试**
+
+|variable|value|
+|---|---|
+|地址| 20.20.20.3|
+|端口| 3306|
+|用户| root|
+|密码| test|
 
 > 注意事项
 > 1. 该服务仅用于在线功能体验，请勿在生产环境使用；
 > 2. 该测试服务数据会定期清理。
 
-## SQL 审核插件
+
+## 本地安装
+SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和现状选择。初次体验或者测试使用的话建议使用docker-compose 或 docker 快速部署。
+
+部署方式：
+
+1. [源码安装](https://actiontech.github.io/sqle-docs/docs/deploy-manual/source)
+2. [RPM 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/rpm)
+3. [Docker 部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/Docker)
+4. [Docker Compose部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/DockerCompose)
+
+## 插件开发
 目前支持其他种类数据库的审核插件:
 * [PostgreSQL](https://github.com/actiontech/sqle-pg-plugin)
 * [Oracle](https://github.com/actiontech/sqle-oracle-plugin)
@@ -63,20 +168,22 @@ SQLE 由上海爱可生信息技术股份有限公司（以下简称爱可生公
 
 更多了解：《[功能说明及开发手册](https://actiontech.github.io/sqle-docs/docs/dev-manual/plugins/intro) 》
 
-## 官方技术支持
 
-|渠道 | 链接 |
-| -- | -- |
-| 代码库 | [github.com/actiontech/sqle](https://github.com/actiontech/sqle) |
-| UI 库 | [github.com/actiontech/sqle-ui](https://github.com/actiontech/sqle-ui) |
-| 文档库 | [github.com/actiontech/sqle-docs](https://github.com/actiontech/sqle-docs) |
-| 文档主页 | [actiontech.github.io/sqle-docs](https://actiontech.github.io/sqle-docs/) |
-| 社区网站 | [opensource.actionsky.com](https://opensource.actionsky.com) |
-| 微信技术交流群 | 添加管理员：ActionOpenSource |
-| 开源社区微信公众号 | ![QR_code](./QR_code.png) |
+# 🧑🏻‍💻社区支持
+我们感谢您的关注与贡献，社区将引导您了解如何使用和贡献。欢迎以下方式加入社区：
+* [官方网站](https://opensource.actionsky.com/sqle/)
+* [文档手册](https://actiontech.github.io/sqle-docs/)
+* 微信交流群：请添加管理员微信 ActionOpenSource
+* 微信公众号：爱可生开源社区
+  
+  ![QR_code](./QR_code.png)
+  
+* 其他媒体 [Gitee](https://gitee.com/mirrors/SQLE?_from=gitee_search) | [思否](https://segmentfault.com/blog/sqle) | [开源中国](https://www.oschina.net/p/sqle) | [墨天轮](https://www.modb.pro/wiki/2759) | [CSDN](https://blog.csdn.net/ActionTech) | [稀土掘金](https://juejin.cn/column/7241238544252829753) | [知乎](https://www.zhihu.com/people/Actionsky-86-50/columns)
 
-## 联系我们
-如果想获得 SQLE 的商业支持, 您可以联系我们：
+🤗 欢迎将体验中产生的 Bug、问题和需求提交到 [SQLE GitHub Issue](https://github.com/actiontech/sqle/issues)。
+
+# 📞 商业支持
+如果您想获得 SQLE 的商业支持, 您可以联系我们：
 * 全国支持: 400-820-6580
 * 华北地区: 86-13910506562, 汪先生
 * 华南地区: 86-18503063188, 曹先生
