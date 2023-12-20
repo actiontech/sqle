@@ -412,6 +412,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config config.SqleConfi
 	v1Router.PATCH("/projects/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
 	v1Router.GET("/projects/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
 	v1Router.GET("/projects/:project_name/sql_manages/rule_tips", v1.GetSqlManageRuleTips)
+	v1Router.GET("/projects/:project_name/sql_manages/:sql_manage_id/sql_analysis", v1.GetSqlManageSqlAnalysisV1)
 
 	// sql audit record
 	v1Router.POST("/projects/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
