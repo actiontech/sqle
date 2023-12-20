@@ -7439,11 +7439,22 @@ func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
 		return nil
 	}
 
+	isAllSubquery := true
+	for _, table := range tables {
+		if _, ok := table.Source.(*ast.TableName); ok {
+			isAllSubquery = false
+			break
+		}
+	}
+	if isAllSubquery {
+		return nil
+	}
+
 	for alias, cols := range tablesFromCondition {
 		table, err := util.ConvertAliasToTable(alias, tables)
 		if err != nil {
 			log.NewEntry().Errorf("convert table alias failed, sqle: %v, error: %v", input.Node.Text(), err)
-			return fmt.Errorf("convert table alias failed: %v", err)
+			return nil
 		}
 		createTable, exist, err := input.Ctx.GetCreateTableStmt(table)
 		if err != nil {
