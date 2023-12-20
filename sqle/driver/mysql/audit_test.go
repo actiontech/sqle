@@ -7029,6 +7029,37 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 			Sql:         `select * from exist_tb_9 where v2 = 1 union select * from exist_tb_8 where v2 = 1`,
 			TriggerRule: false,
 		},
+		// select subquery
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t where t.v1 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t where t.v1 in (1,2,3)`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t left join exist_tb_8 t1 on t.id=t1.id where t1.v1 in (1,2,3)`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t left join exist_tb_8 t1 on t.id=t1.id where t1.v1 > 1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_8) t left join exist_tb_9 t1 on t.id=t1.id where t1.v3 > 1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_8) t left join exist_tb_9 t1 on t.id=t1.id where t1.v3 in (1, 2, 3)`,
+			TriggerRule: false,
+		},
 	}
 
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Rule
@@ -7281,6 +7312,22 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 			Name:        "select-union",
 			Sql:         `select * from exist_tb_9 where v2 = 1 union select * from exist_tb_8 where v2 = 1`,
 			TriggerRule: true,
+		},
+		// select subquery
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t where v3=1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_8) t left join exist_tb_9 t1 on t.id=t1.id where t1.v3=1`,
+			TriggerRule: true,
+		},
+		{
+			Name:        "select-subquery",
+			Sql:         `select * from (select * from exist_tb_9) t left join exist_tb_8 t1 on t.id=t1.id where t.v3=1`,
+			TriggerRule: false,
 		},
 	}
 
