@@ -775,7 +775,7 @@ func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackLi
 	filteredSQLs := []*AuditPlanSQLReqV1{}
 	filter := ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		if filter.IsEndpointInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+		if filter.HasEndpointInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
 			continue
 		}
 		filteredSQLs = append(filteredSQLs, sql)
@@ -827,7 +827,8 @@ func (f BlackFilter) IsSqlInBlackList(checkSql string) bool {
 	return false
 }
 
-func (f BlackFilter) IsEndpointInBlackList(checkIps []string) bool {
+// 输入一组ip若其中有一个ip在黑名单中则返回true
+func (f BlackFilter) HasEndpointInBlackList(checkIps []string) bool {
 	var checkNetIp net.IP
 	for _, checkIp := range checkIps {
 		checkNetIp = net.ParseIP(checkIp)
