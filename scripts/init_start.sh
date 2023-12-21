@@ -4,7 +4,7 @@
 
 detectSystemServiceStatus() {
     detectedRunningTimes=0
-    for i in {1..10}; do
+    for i in {1..30}; do
         sleep 1
     	  if systemctl status "$1" &>/dev/null; then
             ((detectedRunningTimes++))
@@ -26,7 +26,7 @@ systemctl start dms.service
 if detectSystemServiceStatus "dms.service"; then
     echo "init and start dms success!"
 else
-    echo "duration 10 seconds; start dms failed"
+    echo "duration 30 seconds; start dms failed"
     exit 3
 fi
 
@@ -36,5 +36,5 @@ systemctl start sqled.service
 if detectSystemServiceStatus "sqled.service"; then
     echo "init and start sqled success!"
 else
-    echo "duration 10 seconds; start sqled failed"
+    echo "duration 30 seconds; start sqled failed"
 fi
