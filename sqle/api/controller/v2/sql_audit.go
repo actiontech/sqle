@@ -4,7 +4,6 @@ import (
 	e "errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -151,11 +150,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == v1.SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, false)
+		sqls, err = v1.ConvertXmlFileContentToSQLs(req.FileContents)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		sqls = strings.Join(ss, ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
