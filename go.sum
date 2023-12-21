@@ -988,8 +988,8 @@ github.com/swaggo/swag v1.6.7/go.mod h1:xDhTyuFIujYiN3DKWC/H/83xcfHp+UE/IzWWampG
 github.com/syndtr/goleveldb v0.0.0-20180815032940-ae2bd5eed72d/go.mod h1:Z4AUp2Km+PwemOoO/VB5AOx9XSsIItzFjoJlOSiYmn0=
 github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285 h1:uSDYjYejelKyceA6DiCsngFof9jAyeaSyX9XC5a1a7Q=
 github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285/go.mod h1:9OrXJhf154huy1nPWmuSrkgjPUtUNhA+Zmy+6AESzuA=
-github.com/taolx0/pmm-agent v0.0.0-20230614092412-936a5cff4635 h1:VXv90v2Dencraekj625KDM+qM5XF5Avw6kwWi+kCBWc=
-github.com/taolx0/pmm-agent v0.0.0-20230614092412-936a5cff4635/go.mod h1:uIuRIUYsx3ex1X6i9G39Cz0BIIXiJsaTiSdJRcXKFeg=
+github.com/taolx0/pmm-agent v0.0.0-20231221020848-96469ebf303a h1:kpwcAC3F5svKPXEa0AT/2t2hrnIFf1bDjTM1vtoMrwo=
+github.com/taolx0/pmm-agent v0.0.0-20231221020848-96469ebf303a/go.mod h1:uIuRIUYsx3ex1X6i9G39Cz0BIIXiJsaTiSdJRcXKFeg=
 github.com/tiancaiamao/appdash v0.0.0-20181126055449-889f96f722a2/go.mod h1:2PfKggNGDuadAa0LElHrByyrz4JPZ9fFx6Gs7nx7ZZU=
 github.com/tidwall/gjson v1.3.5/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/match v1.0.1/go.mod h1:LujAq0jyVjBy028G1WhWfIzbpQfMO8bBZ6Tyb0+pL9E=
