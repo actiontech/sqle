@@ -161,6 +161,10 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+	err = s.db.Model(&SqlManage{}).AddIndex("idx_project_id_status_deleted_at", "project_id", "status", "deleted_at").Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 
 	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
 		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
