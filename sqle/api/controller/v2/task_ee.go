@@ -229,7 +229,7 @@ func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
 	}
 	schema := task.Schema
 	if task.Schema == "" {
-		schema = getSchemaFromJoin(tableRefs)
+		schema = getSchemaFromTableRefs(tableRefs)
 	}
 
 	dsn, err := common.NewDSN(task.Instance, schema)
@@ -265,8 +265,8 @@ func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map
 					return false
 				}
 				stmt.R = defaultValue
-				// 可能存在列名在比较符号左侧的情况 `where ?=name`
 			} else if column, ok := stmt.R.(*ast.ColumnNameExpr); ok {
+				// 存在列名在比较符号左侧的情况 `where ?=name`
 				if _, ok := stmt.L.(*parserdriver.ParamMarkerExpr); !ok {
 					return true
 				}
@@ -338,7 +338,7 @@ func restore(node ast.Node) (string, error) {
 	return sql, nil
 }
 
-func getSchemaFromJoin(stmt *ast.Join) string {
+func getSchemaFromTableRefs(stmt *ast.Join) string {
 	schema := ""
 	if stmt == nil {
 		return schema
