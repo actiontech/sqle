@@ -534,7 +534,7 @@ func (a *threeStarIndexAdvisor) Enter(in ast.Node) (out ast.Node, skipChildren b
 			}
 		case opcode.LogicOr:
 			a.usingOr = true
-		case opcode.GE, opcode.GT, opcode.LE, opcode.LT, opcode.NE:
+		case opcode.GE, opcode.GT, opcode.LE, opcode.LT:
 			if _, ok := currentNode.R.(*parser_driver.ValueExpr); !ok {
 				return in, false
 			}
