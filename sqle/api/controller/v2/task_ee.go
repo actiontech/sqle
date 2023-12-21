@@ -287,7 +287,7 @@ func fillParamMarker(l *logrus.Entry, where ast.ExprNode, tableCreateStmtMap map
 func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[string]*ast.CreateTableStmt) (ast.ExprNode, error) {
 	tableName := column.Name.Table.L
 	columnName := column.Name.Name.L
-	// tablename为空，代表没有进行连表查询也没有使用别名 e.g: select * from users where id=?
+	// table name为空，代表没有进行连表查询也没有使用别名 e.g: select * from users where id=?
 	if tableName == "" {
 		for k := range tableCreateStmtMap {
 			tableName = k
@@ -295,7 +295,7 @@ func fillColumnDefaultValue(column *ast.ColumnNameExpr, tableCreateStmtMap map[s
 	}
 	createTableStmt, ok := tableCreateStmtMap[tableName]
 	if !ok {
-		return nil, fmt.Errorf("fillxmlsql get create table sql failed, table:%v", tableName)
+		return nil, fmt.Errorf("fillXmlSql get create table sql failed, table:%v", tableName)
 	}
 	currentTime := time.Now()
 	for _, col := range createTableStmt.Cols {
