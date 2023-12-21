@@ -4,20 +4,15 @@
 package v2
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/driver"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 )
 
 func getTaskAnalysisData(c echo.Context) error {
@@ -43,7 +38,7 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
 
-	res, err := getSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, taskSql.Content)
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, taskSql.Content)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -54,34 +49,34 @@ func getTaskAnalysisData(c echo.Context) error {
 	})
 }
 
-func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnalysisDataV2 {
+func convertSQLAnalysisResultToRes(res *v1.AnalysisResult, rawSQL string) *TaskAnalysisDataV2 {
 
 	data := &TaskAnalysisDataV2{}
 
 	// explain
 	{
 		data.SQLExplain = &SQLExplain{SQL: rawSQL}
-		if res.explainResultErr != nil {
-			data.SQLExplain.ErrMessage = res.explainResultErr.Error()
+		if res.ExplainResultErr != nil {
+			data.SQLExplain.ErrMessage = res.ExplainResultErr.Error()
 		} else {
 			classicResult := &v1.ExplainClassicResult{
-				Head: make([]v1.TableMetaItemHeadResV1, len(res.explainResult.ClassicResult.Columns)),
-				Rows: make([]map[string]string, len(res.explainResult.ClassicResult.Rows)),
+				Head: make([]v1.TableMetaItemHeadResV1, len(res.ExplainResult.ClassicResult.Columns)),
+				Rows: make([]map[string]string, len(res.ExplainResult.ClassicResult.Rows)),
 			}
 
 			// head
-			for i := range res.explainResult.ClassicResult.Columns {
-				col := res.explainResult.ClassicResult.Columns[i]
+			for i := range res.ExplainResult.ClassicResult.Columns {
+				col := res.ExplainResult.ClassicResult.Columns[i]
 				classicResult.Head[i].FieldName = col.Name
 				classicResult.Head[i].Desc = col.Desc
 			}
 
 			// rows
-			for i := range res.explainResult.ClassicResult.Rows {
-				row := res.explainResult.ClassicResult.Rows[i]
+			for i := range res.ExplainResult.ClassicResult.Rows {
+				row := res.ExplainResult.ClassicResult.Rows[i]
 				classicResult.Rows[i] = make(map[string]string, len(row))
 				for k := range row {
-					colName := res.explainResult.ClassicResult.Columns[k].Name
+					colName := res.ExplainResult.ClassicResult.Columns[k].Name
 					classicResult.Rows[i][colName] = row[k]
 				}
 			}
@@ -92,12 +87,12 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 	// table_metas
 	{
 		data.TableMetas = &TableMetas{}
-		if res.tableMetaResultErr != nil {
-			data.TableMetas.ErrMessage = res.tableMetaResultErr.Error()
+		if res.TableMetaResultErr != nil {
+			data.TableMetas.ErrMessage = res.TableMetaResultErr.Error()
 		} else {
-			tableMetaItemsData := make([]*v1.TableMeta, len(res.tableMetaResult.TableMetas))
-			for i := range res.tableMetaResult.TableMetas {
-				tableMeta := res.tableMetaResult.TableMetas[i]
+			tableMetaItemsData := make([]*v1.TableMeta, len(res.TableMetaResult.TableMetas))
+			for i := range res.TableMetaResult.TableMetas {
+				tableMeta := res.TableMetaResult.TableMetas[i]
 				tableMetaColumnsInfo := tableMeta.ColumnsInfo
 				tableMetaIndexInfo := tableMeta.IndexesInfo
 				tableMetaItemsData[i] = &v1.TableMeta{}
@@ -155,81 +150,14 @@ func convertSQLAnalysisResultToRes(res *analysisResult, rawSQL string) *TaskAnal
 
 		// affect_rows
 		data.PerformanceStatistics.AffectRows = &AffectRows{}
-		if res.affectRowsResultErr != nil {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.affectRowsResultErr.Error()
+		if res.AffectRowsResultErr != nil {
+			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResultErr.Error()
 		} else {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.affectRowsResult.ErrMessage
-			data.PerformanceStatistics.AffectRows.Count = int(res.affectRowsResult.Count)
+			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResult.ErrMessage
+			data.PerformanceStatistics.AffectRows.Count = int(res.AffectRowsResult.Count)
 		}
 
 	}
 
 	return data
-}
-
-type analysisResult struct {
-	explainResult    *driverV2.ExplainResult
-	explainResultErr error
-
-	tableMetaResult    *driver.GetTableMetaBySQLResult
-	tableMetaResultErr error
-
-	affectRowsResult    *driverV2.EstimatedAffectRows
-	affectRowsResultErr error
-}
-
-func getSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql string) (
-	res *analysisResult, err error) {
-
-	dsn, err := common.NewDSN(instance, schema)
-	if err != nil {
-		return nil, err
-	}
-
-	plugin, err := driver.GetPluginManager().
-		OpenPlugin(l, instance.DbType, &driverV2.Config{DSN: dsn})
-	if err != nil {
-		return nil, err
-	}
-	defer plugin.Close(context.TODO())
-
-	res = &analysisResult{}
-	res.explainResult, res.explainResultErr = explain(instance.DbType, plugin, sql)
-	res.tableMetaResult, res.tableMetaResultErr = getTableMetas(instance.DbType, plugin, sql)
-	res.affectRowsResult, res.affectRowsResultErr = getRowsAffected(instance.DbType, plugin, sql)
-
-	return res, nil
-}
-
-func explain(dbType string, plugin driver.Plugin, sql string) (
-	res *driverV2.ExplainResult, err error) {
-
-	if !driver.GetPluginManager().
-		IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleExplain) {
-		return nil, driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleExplain)
-	}
-
-	return plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sql})
-}
-
-func getTableMetas(dbType string, plugin driver.Plugin, sql string) (
-	res *driver.GetTableMetaBySQLResult, err error) {
-
-	if !driver.GetPluginManager().
-		IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGetTableMeta) {
-		return nil, driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGetTableMeta)
-	}
-
-	return plugin.GetTableMetaBySQL(context.TODO(), &driver.GetTableMetaBySQLConf{Sql: sql})
-}
-
-func getRowsAffected(dbType string, plugin driver.Plugin, sql string) (
-	res *driverV2.EstimatedAffectRows, err error) {
-
-	if !driver.GetPluginManager().
-		IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleEstimateSQLAffectRows) {
-		return nil, driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleEstimateSQLAffectRows)
-	}
-
-	return plugin.EstimateSQLAffectRows(context.TODO(), sql)
 }

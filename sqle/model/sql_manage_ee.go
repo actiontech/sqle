@@ -507,6 +507,20 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 	})
 }
 
+func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
+	sqlManage := new(SqlManage)
+	err := s.db.Preload("Instance", func(db *gorm.DB) *gorm.DB {
+		return db.Where("project_id = ?", sqlManage.ProjectId)
+	}).Where("id = ?", id).First(&sqlManage).Error
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return sqlManage, false, nil
+		}
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return sqlManage, true, nil
+}
+
 func (s *Storage) GetSqlManageListByIDs(ids []*uint64) ([]*SqlManage, error) {
 	sqlManageList := []*SqlManage{}
 	err := s.db.Model(SqlManage{}).Where("id IN (?)", ids).Find(&sqlManageList).Error
