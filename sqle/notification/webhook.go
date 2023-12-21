@@ -1,15 +1,13 @@
 package notification
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"time"
 
-	"github.com/actiontech/sqle/sqle/notification/webhook"
-	"github.com/actiontech/sqle/sqle/utils/retry"
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/sqle/sqle/api/controller"
 )
 
 type webHookRequestBody struct {
@@ -30,21 +28,13 @@ type httpBodyPayload struct {
 	Workflow *workflowPayload `json:"workflow"`
 }
 
-func TestWorkflowConfig() (err error) {
-	return workflowSendRequest("create",
-		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
-}
+// func TestWorkflowConfig() (err error) {
+// 	return workflowSendRequest("create",
+// 		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
+// }
 
 func workflowSendRequest(action,
 	projectName, workflowID, workflowSubject, workflowStatus string) (err error) {
-	cfg := webhook.WorkflowCfg
-	if cfg == nil {
-		return fmt.Errorf("workflow webhook config missing")
-	}
-
-	if cfg.URL == "" {
-		return fmt.Errorf("url is missing, please check webhook config")
-	}
 
 	reqBody := &webHookRequestBody{
 		Event:     "workflow",
@@ -65,32 +55,11 @@ func workflowSendRequest(action,
 		return err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, cfg.URL, bytes.NewBuffer(b))
-	if err != nil {
-		return
-	}
-	if cfg.Token != "" {
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", cfg.Token))
-	}
-
-	doneChan := make(chan struct{})
-	return retry.Do(func() error {
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			return nil
-		}
-		respBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		return fmt.Errorf("response status_code(%v) body(%s)", resp.StatusCode, respBytes)
-	}, doneChan,
-		retry.Delay(time.Duration(cfg.RetryIntervalSeconds)*time.Second),
-		retry.Attempts(uint(cfg.MaxRetryTimes)))
+	return dmsobject.WebHookSendMessage(context.TODO(), controller.GetDMSServerAddress(), &v1.WebHookSendMessageReq{
+		WebHookMessage: &v1.WebHooksMessage{
+			Message:          string(b),
+			TriggerEventType: v1.TriggerEventTypeWorkflow,
+		},
+	})
 
 }

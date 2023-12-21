@@ -1,9 +1,11 @@
 server:
   sqle_config:
+    server_host: 127.0.0.1
     server_port: 10000
     auto_migrate_table: true
     debug_log: true
     log_path: './logs'
+    dms_server_address: 'http://127.0.0.1:7601'
   db_config:
     mysql_cnf:
       mysql_host: '20.20.20.2'

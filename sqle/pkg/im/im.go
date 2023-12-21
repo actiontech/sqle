@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
@@ -56,25 +59,40 @@ func CreateApprovalTemplate(imType string) {
 	}
 }
 
-func CreateApprove(id string) {
+func CreateApprove(projectId, workflowId string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(id)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
-		newLog.Error("get workflow detail error: ", err)
-		return
-	}
-	if !exist {
 		newLog.Error("workflow not exist")
 		return
 	}
 
+	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		newLog.Errorf("get user phone failed err: %v", err)
+		return
+	}
+	if user.Phone == "" {
+		newLog.Error("create user phone is empty")
+		return
+	}
 	if workflow.CurrentStep() == nil {
-		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.ID)
+		newLog.Infof("workflow %v has no current step, no need to create approve instance", workflow.WorkflowId)
+	}
+
+	if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
+		newLog.Infof("workflow %v only has one approve step or has been approved, no need to create approve instance", workflow.WorkflowId)
 		return
 	}
 
-	users := workflow.CurrentAssigneeUser()
+	assignUserIds := workflow.CurrentAssigneeUser()
+
+	assignUsers, err := dms.GetUsers(context.TODO(), assignUserIds, controller.GetDMSServerAddress())
+	if err != nil {
+		newLog.Errorf("get user error: %v", err)
+		return
+	}
 
 	ims, err := s.GetAllIMConfig()
 	if err != nil {
@@ -94,7 +112,7 @@ func CreateApprove(id string) {
 		}
 
 		sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
-		workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.Project.Name, workflow.WorkflowId)
+		workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
 		if sqleUrl == "" {
 			newLog.Errorf("sqle url is empty")
 			workflowUrl = ""
@@ -103,14 +121,14 @@ func CreateApprove(id string) {
 		switch im.Type {
 		case model.ImTypeDingTalk:
 			if len(workflow.Record.Steps) == 1 || workflow.CurrentStep() == workflow.Record.Steps[len(workflow.Record.Steps)-1] {
-				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.ID)
+				newLog.Infof("workflow %v is the last step, no need to create approve instance", workflow.WorkflowId)
 				return
 			}
 
-			if workflow.CreateUser.Phone == "" {
-				newLog.Error("create user phone is empty")
-				return
-			}
+			// if workflow.CreateUser.Phone == "" {
+			// 	newLog.Error("create user phone is empty")
+			// 	return
+			// }
 
 			var tableRows []string
 			for _, record := range workflow.Record.InstanceRecords {
@@ -126,35 +144,37 @@ func CreateApprove(id string) {
 				AppSecret:   im.AppSecret,
 				ProcessCode: im.ProcessCode,
 			}
-
-			createUserId, err := dingTalk.GetUserIDByPhone(workflow.CreateUser.Phone)
+			workflowCreateUser, err := dmsobject.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
+			if err != nil {
+				newLog.Errorf("get user error: %v", err)
+				return
+			}
+			createUserId, err := dingTalk.GetUserIDByPhone(workflowCreateUser.Phone)
 			if err != nil {
 				newLog.Errorf("get origin user id by phone error: %v", err)
 				continue
 			}
 
-			userIds := make([]*string, 0, len(users))
-			for _, user := range users {
+			var userIds []*string
+			for _, assignUser := range assignUsers {
 				if user.Phone == "" {
-					newLog.Infof("user %v phone is empty, skip", user.ID)
+					newLog.Infof("user %v phone is empty, skip", assignUser)
 					continue
 				}
-
-				userId, err := dingTalk.GetUserIDByPhone(user.Phone)
+				userId, err := dingTalk.GetUserIDByPhone(assignUser.Phone)
 				if err != nil {
 					newLog.Errorf("get user id by phone error: %v", err)
 					continue
 				}
-
 				userIds = append(userIds, userId)
 			}
 
-			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.ID, createUserId, userIds, auditResult, workflow.Project.Name, workflow.Desc, workflowUrl); err != nil {
+			if err := dingTalk.CreateApprovalInstance(workflow.Subject, workflow.WorkflowId, createUserId, userIds, auditResult, string(workflow.ProjectId), workflow.Desc, workflowUrl); err != nil {
 				newLog.Errorf("create dingtalk approval instance error: %v", err)
 				continue
 			}
 		case model.ImTypeFeishuAudit:
-			if err := CreateFeishuAuditInst(context.TODO(), im, workflow, users, workflowUrl); err != nil {
+			if err := CreateFeishuAuditInst(context.TODO(), im, workflow, assignUsers, workflowUrl); err != nil {
 				newLog.Errorf("create feishu audit instance error: %v", err)
 				continue
 			}
@@ -164,7 +184,7 @@ func CreateApprove(id string) {
 	}
 }
 
-func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
+func UpdateApprove(workflowId string, user *model.User, status, reason string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -205,7 +225,7 @@ func UpdateApprove(workflowId uint, user *model.User, status, reason string) {
 	}
 }
 
-func BatchCancelApprove(workflowIds []uint, user *model.User) {
+func BatchCancelApprove(workflowIds []string, user *model.User) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 	ims, err := s.GetAllIMConfig()

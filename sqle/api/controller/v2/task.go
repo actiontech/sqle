@@ -5,7 +5,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -27,15 +26,16 @@ type GetAuditTaskSQLsResV2 struct {
 }
 
 type AuditTaskSQLResV2 struct {
-	Number      uint           `json:"number"`
-	ExecSQL     string         `json:"exec_sql"`
-	AuditResult []*AuditResult `json:"audit_result"`
-	AuditLevel  string         `json:"audit_level"`
-	AuditStatus string         `json:"audit_status"`
-	ExecResult  string         `json:"exec_result"`
-	ExecStatus  string         `json:"exec_status"`
-	RollbackSQL string         `json:"rollback_sql,omitempty"`
-	Description string         `json:"description"`
+	Number        uint           `json:"number"`
+	ExecSQL       string         `json:"exec_sql"`
+	SQLSourceFile string         `json:"sql_source_file"`
+	AuditResult   []*AuditResult `json:"audit_result"`
+	AuditLevel    string         `json:"audit_level"`
+	AuditStatus   string         `json:"audit_status"`
+	ExecResult    string         `json:"exec_result"`
+	ExecStatus    string         `json:"exec_status"`
+	RollbackSQL   string         `json:"rollback_sql,omitempty"`
+	Description   string         `json:"description"`
 }
 
 type AuditResult struct {
@@ -66,13 +66,11 @@ func GetTaskSQLs(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = v1.CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -100,14 +98,15 @@ func GetTaskSQLs(c echo.Context) error {
 	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV2{
-			Number:      taskSQL.Number,
-			Description: taskSQL.Description,
-			ExecSQL:     taskSQL.ExecSQL,
-			AuditLevel:  taskSQL.AuditLevel,
-			AuditStatus: taskSQL.AuditStatus,
-			ExecResult:  taskSQL.ExecResult,
-			ExecStatus:  taskSQL.ExecStatus,
-			RollbackSQL: taskSQL.RollbackSQL.String,
+			Number:        taskSQL.Number,
+			Description:   taskSQL.Description,
+			ExecSQL:       taskSQL.ExecSQL,
+			SQLSourceFile: taskSQL.SQLSourceFile.String,
+			AuditLevel:    taskSQL.AuditLevel,
+			AuditStatus:   taskSQL.AuditStatus,
+			ExecResult:    taskSQL.ExecResult,
+			ExecStatus:    taskSQL.ExecStatus,
+			RollbackSQL:   taskSQL.RollbackSQL.String,
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]

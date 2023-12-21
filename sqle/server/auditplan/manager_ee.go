@@ -82,7 +82,7 @@ func (sap *SyncFromAuditPlan) SyncSqlManager() error {
 			lastReceiveTime = &lastReceiveTimeStamp
 		}
 
-		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, ap.ProjectId, ap.ID, firstAppearTime, lastReceiveTime, fpCount, reportSQL.AuditResults, nil)
+		sqlManage, err := NewSqlManage(fp, reportSQL.BaseSQL.Content, schema, instName, source, reportSQL.AuditLevel, string(ap.ProjectId), ap.ID, firstAppearTime, lastReceiveTime, fpCount, reportSQL.AuditResults, nil)
 		if err != nil {
 			return fmt.Errorf("create or update sql manage failed, error: %v", err)
 		}
@@ -138,10 +138,10 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 	return nil
 }
 
-func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, source string, apID uint) (string, error) {
+func GetSqlMangeMd5(projectId string, fp string, schema string, instName string, source string, apID uint) (string, error) {
 	md5Json, err := json.Marshal(
 		struct {
-			ProjectId   uint
+			ProjectId   string
 			Fingerprint string
 			Schema      string
 			InstName    string
@@ -163,7 +163,7 @@ func GetSqlMangeMd5(projectId uint, fp string, schema string, instName string, s
 	return utils.Md5String(string(md5Json)), nil
 }
 
-func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel string, projectId, apId uint, createAt, LastReceiveAt *time.Time, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
+func NewSqlManage(fp, sql, schemaName, instName, source, auditLevel, projectId string, apId uint, createAt, LastReceiveAt *time.Time, fpCount uint, auditResult model.AuditResults, md5SqlManageMap map[string]*model.SqlManage) (*model.SqlManage, error) {
 	md5Str, err := GetSqlMangeMd5(projectId, fp, schemaName, instName, source, apId)
 	if err != nil {
 		return nil, fmt.Errorf("get sql manage md5 failed, error: %v", err)
@@ -237,7 +237,7 @@ func SyncToSqlManage(sqls []*SQL, ap *model.AuditPlan) error {
 		endpoints := sql.Info["endpoints"].([]string)
 
 		// todo: 更新审核等级
-		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "", ap.ProjectId, ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
+		sqlManage, err := NewSqlManage(sql.Fingerprint, sql.SQLContent, sql.Schema, ap.InstanceName, model.SQLManageSourceAuditPlan, "", string(ap.ProjectId), ap.ID, firstQueryAtPtrFormat, lastReceiveAtPtrFormat, uint(countFormat), model.AuditResults{model.AuditResult{Message: "未审核"}}, nil)
 		if err != nil {
 			return err
 		}

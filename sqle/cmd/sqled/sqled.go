@@ -5,11 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	dmsCommonConf "github.com/actiontech/dms/pkg/dms-common/conf"
 	sqled "github.com/actiontech/sqle/sqle"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -17,7 +17,7 @@ import (
 var version string
 var port int
 
-//var user string
+// var user string
 var mysqlUser string
 var mysqlPass string
 var mysqlHost string
@@ -77,7 +77,7 @@ func main() {
 }
 
 func run(cmd *cobra.Command, _ []string) error {
-	var cfg = &config.Config{}
+	var cfg = &config.Options{}
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
@@ -89,28 +89,29 @@ func run(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("unmarshal config file error %v", err)
 		}
-
 	} else {
 		mysqlPass, err := utils.DecodeString(mysqlPass)
 		if err != nil {
 			return fmt.Errorf("decode mysql password to string error : %v", err)
 		}
-		cfg = &config.Config{
-			Server: config.Server{
-				SqleCnf: config.SqleConfig{
-					SqleServerPort:     port,
+		cfg = &config.Options{
+			SqleOptions: config.SqleOptions{
+				BaseOptions: dmsCommonConf.BaseOptions{
+					APIServiceOpts: &dmsCommonConf.APIServerOpts{
+						Port:         port,
+						EnableHttps:  httpsEnable,
+						CertFilePath: certFilePath,
+						KeyFilePath:  keyFilePath,
+					},
+				},
+				Service: config.SeviceOpts{
 					AutoMigrateTable:   autoMigrateTable,
 					DebugLog:           debug,
 					LogPath:            logPath,
 					LogMaxSizeMB:       logMaxSizeMB,
 					LogMaxBackupNumber: logMaxBackupNumber,
-					EnableHttps:        httpsEnable,
-					CertFilePath:       certFilePath,
-					KeyFilePath:        keyFilePath,
 					PluginPath:         pluginPath,
-				},
-				DBCnf: config.DatabaseConfig{
-					MysqlCnf: config.MysqlConfig{
+					Database: config.Database{
 						Host:     mysqlHost,
 						Port:     mysqlPort,
 						User:     mysqlUser,
@@ -132,5 +133,5 @@ func run(cmd *cobra.Command, _ []string) error {
 			os.Remove(pidFile)
 		}()
 	}
-	return sqled.Run(cfg)
+	return sqled.Run(&cfg.SqleOptions)
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -44,12 +45,17 @@ func (w *ResponseBodyWrite) WriteString(s string) (int, error) {
 func OperationLogRecord() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
-			reqIP := c.Request().RemoteAddr
+			reqIP := c.RealIP()
 			path := c.Path()
 			newLog := log.NewEntry()
 			for _, interfaceInfo := range ApiInterfaceInfoList {
 				if c.Request().Method == interfaceInfo.Method && interfaceInfo.RouterPath == path {
-					userName := controller.GetUserName(c)
+					user, err := controller.GetCurrentUser(c, dms.GetUser)
+					if err != nil {
+						newLog.Errorf("get current error: %s", err)
+						return nil
+					}
+					userName := user.Name
 
 					operationRecord := &model.OperationRecord{
 						OperationTime:     time.Now(),

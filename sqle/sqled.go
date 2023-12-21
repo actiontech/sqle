@@ -6,55 +6,63 @@ import (
 	"os/signal"
 	"syscall"
 
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	"github.com/actiontech/dms/pkg/dms-common/pkg/http"
 	"github.com/actiontech/sqle/sqle/api"
-	"github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
+	"github.com/actiontech/sqle/sqle/dms"
+
+	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/notification/webhook"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
-	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/facebookgo/grace/gracenet"
 )
 
-func Run(config *config.Config) error {
+func Run(options *config.SqleOptions) error {
 	// init logger
-	sqleCnf := config.Server.SqleCnf
+	sqleCnf := options.Service
 	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSizeMB, sqleCnf.LogMaxBackupNumber)
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")
 	defer log.Logger().Info("stop sqled server")
 
-	if sqleCnf.EnableClusterMode && sqleCnf.ServerId == "" {
+	if sqleCnf.EnableClusterMode && options.ID == 0 {
 		return fmt.Errorf("server id is required on cluster mode")
 	}
 
-	secretKey := sqleCnf.SecretKey
+	secretKey := options.SecretKey
 	if secretKey != "" {
-		if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
-			return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
+		// reset jwt singing key, default dms token
+		if err := http.ResetJWTSigningKeyAndDefaultToken(secretKey); err != nil {
+			return err
+		}
+
+		// reset aes secret key
+		if err := dmsCommonAes.ResetAesSecretKey(secretKey); err != nil {
+			return err
 		}
 	}
 
 	defer driver.GetPluginManager().Stop()
-	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath, config.Server.PluginConfig); err != nil {
+	if err := driver.GetPluginManager().Start(sqleCnf.PluginPath, options.Service.PluginConfig); err != nil {
 		return fmt.Errorf("init plugins error: %v", err)
 	}
 
-	service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
+	// service.InitSQLQueryConfig(sqleCnf.SqleServerPort, sqleCnf.EnableHttps, config.Server.SQLQueryConfig)
 
-	dbConfig := config.Server.DBCnf.MysqlCnf
+	dbConfig := options.Service.Database
 
 	dbPassword := dbConfig.Password
 	// Support using secret mysql password in sqled config, read secret_mysql_password first,
 	// but you can still use mysql_password to be compatible with older versions.
 	secretPassword := dbConfig.SecretPassword
 	if secretPassword != "" {
-		password, err := utils.AesDecrypt(secretPassword)
+		password, err := dmsCommonAes.AesDecrypt(secretPassword)
 		if err != nil {
 			return fmt.Errorf("read db info from config file error, %d", err)
 		}
@@ -68,24 +76,26 @@ func Run(config *config.Config) error {
 	}
 	model.InitStorage(s)
 
+	err = dms.RegisterAsDMSTarget(options)
+	if err != nil {
+		return fmt.Errorf("register to dms failed :%v", err)
+	}
+
 	if sqleCnf.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
+		
+		err := s.CreateDefaultWorkflowTemplateIfNotExist()
+		if err != nil {
+			return fmt.Errorf("create workflow template failed: %v", err)
+		}
 		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.CreateDefaultTemplate(driver.GetPluginManager().GetAllRules()); err != nil {
+
+		if err := s.CreateDefaultTemplateIfNotExist(model.ProjectIdForGlobalRuleTemplate, driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateAdminUser(); err != nil {
-			return fmt.Errorf("create default admin user failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultProject(); err != nil {
-			return fmt.Errorf("create default project failed while auto migrating table: %v", err)
-		}
-		if err := s.CreateDefaultRole(); err != nil {
-			return fmt.Errorf("create default rule failed while auto migrating table: %v", err)
 		}
 	}
 	exitChan := make(chan struct{})
@@ -96,20 +106,10 @@ func Run(config *config.Config) error {
 		cluster.IsClusterMode = true
 		log.Logger().Infoln("running sqled server on cluster mode")
 		node = cluster.DefaultNode
-		node.Join(sqleCnf.ServerId)
+		node.Join(fmt.Sprintf("%v", options.ID))
 		defer node.Leave()
 	} else {
 		node = &cluster.NoClusterNode{}
-	}
-
-	// webhook
-	{
-		cfg, _, err := s.GetWorkflowWebHookConfig()
-		if err != nil {
-			return fmt.Errorf("get workflow webhook config failed: %v", err)
-		}
-		webhook.UpdateWorkflowConfig(cfg.Enable,
-			cfg.MaxRetryTimes, cfg.RetryIntervalSeconds, cfg.URL, cfg.Token)
 	}
 
 	jm := server.NewServerJobManger(node)
@@ -117,7 +117,7 @@ func Run(config *config.Config) error {
 	defer jm.Stop()
 
 	net := &gracenet.Net{}
-	go api.StartApi(net, exitChan, sqleCnf)
+	go api.StartApi(net, exitChan, options)
 
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught

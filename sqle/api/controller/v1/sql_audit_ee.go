@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -19,9 +20,11 @@ func directGetSQLAnalysis(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	s := model.GetStorage()
-	inst, exist, err := s.GetInstanceByNameAndProjectName(req.InstanceName, req.ProjectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), req.ProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	inst, exist, err := dms.GetInstanceInProjectByName(context.Background(), projectUid, req.InstanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -29,7 +32,7 @@ func directGetSQLAnalysis(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	can, err := checkCurrentUserCanAccessInstance(c, inst)
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{inst})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

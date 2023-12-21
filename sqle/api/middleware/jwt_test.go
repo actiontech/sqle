@@ -2,13 +2,18 @@ package middleware
 
 import (
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	dmsCommon "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/jinzhu/gorm"
@@ -17,12 +22,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func mockServer() *httptest.Server {
+	f := func(w http.ResponseWriter, r *http.Request) {
+		response := dmsCommon.ListProjectReply{
+			Data: []*dmsCommon.ListProject{{
+				ProjectUid: "700300",
+				Name:       "default",
+				Archived:   false,
+			}},
+			Total: 1,
+		}
+		res, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("response err %v", err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		_, err = w.Write(res)
+		if err != nil {
+			log.Printf("response err %v ", err)
+		}
+	}
+	return httptest.NewServer(http.HandlerFunc(f))
+}
+
 func TestScannerVerifier(t *testing.T) {
+	server := mockServer()
+	defer server.Close()
+	controller.InitDMSServerAddress(server.URL)
+
 	e := echo.New()
 
-	jwt := utils.NewJWT(utils.JWTSecretKey)
 	apName := "test_audit_plan"
-	projectName := "test_project"
+	projectUID := "700300"
 	testUser := "test_user"
 
 	h := func(c echo.Context) error {
@@ -37,12 +72,12 @@ func TestScannerVerifier(t *testing.T) {
 		res := httptest.NewRecorder()
 		ctx := e.NewContext(req, res)
 		ctx.SetParamNames("audit_plan_name", "project_name")
-		ctx.SetParamValues(apName, projectName)
+		ctx.SetParamValues(apName, projectUID)
 		return ctx, res
 	}
 
 	{ // test audit plan name don't match the token
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, fmt.Sprintf("%s_modified", apName))
 		err = mw(h)(ctx)
@@ -50,7 +85,7 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test unknown token
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix())
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, apName)
 		err = mw(h)(ctx)
@@ -58,14 +93,14 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan token incorrect
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(driver.Value(testUser), "test-token"))
 		mock.ExpectClose()
 
@@ -79,14 +114,14 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan not found
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnError(gorm.ErrRecordNotFound)
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
@@ -102,14 +137,14 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test check success
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
 
@@ -124,14 +159,14 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test default auth scheme success
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(testUser), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
 
@@ -148,11 +183,14 @@ func TestScannerVerifier(t *testing.T) {
 }
 
 func TestScannerVerifierIssue1758(t *testing.T) {
+	server := mockServer()
+	defer server.Close()
+	controller.InitDMSServerAddress(server.URL)
 	e := echo.New()
 
 	jwt := utils.NewJWT(utils.JWTSecretKey)
 	apName120 := "test_name_length_120_000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	projectName := "default"
+	projectUid := "700300"
 	userName := "admin"
 	assert.Equal(t, 120, len(apName120))
 	h := func(c echo.Context) error {
@@ -166,18 +204,18 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		res := httptest.NewRecorder()
 		ctx := e.NewContext(req, res)
 		ctx.SetParamNames("audit_plan_name", "project_name")
-		ctx.SetParamValues(apName, projectName)
+		ctx.SetParamValues(apName, projectUid)
 		return ctx, res
 	}
 	{ // test check success
-		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
+		token, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserName(utils.Md5(userName)), dmsCommonJwt.WithExpiredTime(1*time.Hour), dmsCommonJwt.WithAuditPlanName(utils.Md5(apName120)))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName120).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUid, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
 		mock.ExpectClose()
 
@@ -210,8 +248,8 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
-			WithArgs(projectName, apName120).
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+			WithArgs(projectUid, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
 		mock.ExpectClose()
 

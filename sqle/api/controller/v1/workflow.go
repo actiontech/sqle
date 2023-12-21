@@ -1,18 +1,24 @@
 package v1
 
 import (
+	"context"
 	"database/sql"
 	e "errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -41,7 +47,7 @@ type WorkflowTemplateDetailResV1 struct {
 	Desc                          string                       `json:"desc,omitempty"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
-	Instances                     []string                     `json:"instance_name_list,omitempty"`
+	UpdateTime                    time.Time                    `json:"update_time"`
 }
 
 type WorkFlowStepTemplateResV1 struct {
@@ -50,7 +56,7 @@ type WorkFlowStepTemplateResV1 struct {
 	Desc                 string   `json:"desc,omitempty"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
-	Users                []string `json:"assignee_user_name_list"`
+	Users                []string `json:"assignee_user_id_list"`
 }
 
 // @Summary 获取审批流程模板详情
@@ -64,55 +70,54 @@ type WorkFlowStepTemplateResV1 struct {
 func GetWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 
-	projectName := c.Param("project_name")
-
-	err := CheckIsProjectMember(controller.GetUserName(c), projectName)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	var td *model.WorkflowTemplate
 
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	template, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
+	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("workflow template is not exist")))
-	}
-
-	res, err := getWorkflowTemplateDetailByTemplate(template)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		td = model.DefaultWorkflowTemplate(projectUid)
+		err = s.SaveWorkflowTemplate(td)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		td, err = getWorkflowTemplateDetailByTemplate(template)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    res,
+		Data:    convertWorkflowTemplateToRes(td),
 	})
 }
 
-func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*WorkflowTemplateDetailResV1, error) {
+func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*model.WorkflowTemplate, error) {
 	s := model.GetStorage()
 	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
 	if err != nil {
 		return nil, err
 	}
 	template.Steps = steps
+	return template, nil
+}
+
+func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
 	res := &WorkflowTemplateDetailResV1{
 		Name:                          template.Name,
 		Desc:                          template.Desc,
 		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
+		UpdateTime:                    template.UpdatedAt,
 	}
-	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(steps))
-	for _, step := range steps {
+	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
+	for _, step := range template.Steps {
 		stepRes := &WorkFlowStepTemplateResV1{
 			Number:               int(step.Number),
 			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
@@ -120,23 +125,20 @@ func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*Wor
 			Typ:                  step.Typ,
 			Desc:                 step.Desc,
 		}
-		users := []string{}
-		if step.Users != nil {
-			for _, user := range step.Users {
-				users = append(users, user.Name)
-			}
+		stepRes.Users = make([]string, 0)
+		if step.Users != "" {
+			stepRes.Users = strings.Split(step.Users, ",")
 		}
-		stepRes.Users = users
 		stepsRes = append(stepsRes, stepRes)
 	}
 	res.Steps = stepsRes
 
-	instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
-	if err != nil {
-		return nil, err
-	}
-	res.Instances = instanceNames
-	return res, nil
+	// instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// res.Instances = instanceNames
+	return res
 }
 
 type WorkFlowStepTemplateReqV1 struct {
@@ -144,7 +146,7 @@ type WorkFlowStepTemplateReqV1 struct {
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
-	Users                []string `json:"assignee_user_name_list" form:"assignee_user_name_list"`
+	Users                []string `json:"assignee_user_id_list" form:"assignee_user_id_list"`
 }
 
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
@@ -177,7 +179,6 @@ type UpdateWorkflowTemplateReqV1 struct {
 	Desc                          *string                      `json:"desc" form:"desc"`
 	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
-	Instances                     []string                     `json:"instance_name_list" form:"instance_name_list"`
 }
 
 // @Summary 更新Sql审批流程模板
@@ -197,27 +198,14 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 		return err
 	}
 
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-	if project.IsArchived() {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-	userName := controller.GetUserName(c)
 
-	err = CheckIsProjectManager(userName, project.Name)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	workflowTemplate, exist, err := s.GetWorkflowTemplateById(project.WorkflowTemplateId)
+	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -226,32 +214,13 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 			fmt.Errorf("workflow template is not exist")))
 	}
 
-	var instances []*model.Instance
-	if req.Instances != nil && len(req.Instances) > 0 {
-		instances, err = s.GetAndCheckInstanceExist(req.Instances, project.Name)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
 	if req.Steps != nil {
 		err = validWorkflowTemplateReq(req.Steps)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 		}
-		userNames := []string{}
-		for _, step := range req.Steps {
-			userNames = append(userNames, step.Users...)
-		}
 
-		users, err := s.GetAndCheckUserExist(userNames)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		userMap := map[string]*model.User{}
-		for _, user := range users {
-			userMap[user.Name] = user
-		}
+		// dms-todo: 校验step.Users用户是否存在
 
 		steps := make([]*model.WorkflowStepTemplate, 0, len(req.Steps))
 		for i, step := range req.Steps {
@@ -268,11 +237,7 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 				Typ:  step.Type,
 				Desc: step.Desc,
 			}
-			stepUsers := make([]*model.User, 0, len(step.Users))
-			for _, userName := range step.Users {
-				stepUsers = append(stepUsers, userMap[userName])
-			}
-			s.Users = stepUsers
+			s.Users = strings.Join(step.Users, ",")
 			steps = append(steps, s)
 		}
 		err = s.UpdateWorkflowTemplateSteps(workflowTemplate.ID, steps)
@@ -292,13 +257,6 @@ func UpdateWorkflowTemplate(c echo.Context) error {
 	err = s.Save(workflowTemplate)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if req.Instances != nil {
-		err = s.UpdateWorkflowTemplateInstances(workflowTemplate, instances...)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
@@ -445,12 +403,9 @@ func ExecuteOneTaskOnWorkflowV1(c echo.Context) error {
 }
 
 func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(context.Background(), taskId)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskId=%v err=%v", taskId, err)
-	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskId=%v", taskId)
 	}
 
 	if task.Instance == nil {
@@ -474,12 +429,64 @@ func IsTaskCanExecute(s *model.Storage, taskId string) (bool, error) {
 	return true, nil
 }
 
-func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model.Workflow, user *model.User, TaskId int) error {
+func GetNeedExecTaskIds(workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
+	instances := make([]*model.Instance, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instances = append(instances, item.Instance)
+	}
+
+	// 有不在运维时间内的instances报错
+	var cannotExecuteInstanceNames []string
+	for _, inst := range instances {
+		if len(inst.MaintenancePeriod) != 0 && !inst.MaintenancePeriod.IsWithinScope(time.Now()) {
+			cannotExecuteInstanceNames = append(cannotExecuteInstanceNames, inst.Name)
+		}
+	}
+	if len(cannotExecuteInstanceNames) > 0 {
+		return nil, errors.New(errors.TaskActionInvalid,
+			fmt.Errorf("please go online during instance operation and maintenance time. these instances are not in maintenance time[%v]", strings.Join(cannotExecuteInstanceNames, ",")))
+	}
+
+	// 定时的instances和已上线的跳过
+	needExecTaskIds := make(map[uint]string)
+	for _, instRecord := range workflow.Record.InstanceRecords {
+		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
+			continue
+		}
+		needExecTaskIds[instRecord.TaskId] = user.GetIDStr()
+	}
+	return needExecTaskIds, nil
+}
+
+func PrepareForWorkflowExecution(c echo.Context, projectUid string, workflow *model.Workflow, user *model.User) error {
+	err := CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{})
+	if err != nil {
+		return err
+	}
+
+	currentStep := workflow.CurrentStep()
+	if currentStep == nil {
+		return errors.New(errors.DataInvalid, fmt.Errorf("workflow current step not found"))
+	}
+
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
+		return errors.New(errors.DataInvalid,
+			fmt.Errorf("workflow need to be approved first"))
+	}
+
+	err = server.CheckUserCanOperateStep(user, workflow, int(currentStep.ID))
+	if err != nil {
+		return errors.New(errors.DataInvalid, err)
+	}
+	return nil
+}
+
+func PrepareForTaskExecution(c echo.Context, projectID string, workflow *model.Workflow, user *model.User, TaskId int) error {
 	if workflow.Record.Status != model.WorkflowStatusWaitForExecution {
 		return errors.New(errors.DataInvalid, e.New("workflow need to be approved first"))
 	}
 
-	err := CheckCurrentUserCanOperateTasks(c, &model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE}, []uint{uint(TaskId)})
+	err := CheckCurrentUserCanOperateTasks(c, projectID, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow}, []uint{uint(TaskId)})
 	if err != nil {
 		return err
 	}
@@ -489,8 +496,8 @@ func PrepareForTaskExecution(c echo.Context, projectName string, workflow *model
 			continue
 		}
 
-		for _, u := range record.ExecutionAssignees {
-			if u.ID == user.ID {
+		for _, u := range strings.Split(record.ExecutionAssignees, ",") {
+			if u == user.GetIDStr() {
 				return nil
 			}
 		}
@@ -614,19 +621,19 @@ func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 }
 
 type GetWorkflowsReqV1 struct {
-	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
-	FilterWorkflowID                  string `json:"filter_workflow_id" query:"filter_workflow_id"`
-	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
-	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
-	FilterTaskExecuteStartTimeFrom    string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
-	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
-	PageIndex                         uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                          uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterSubject                   string `json:"filter_subject" query:"filter_subject"`
+	FilterWorkflowID                string `json:"filter_workflow_id" query:"filter_workflow_id"`
+	FilterCreateTimeFrom            string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo              string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserId              string `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatus                    string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
+	FilterTaskInstanceName          string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                        uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 type GetWorkflowsResV1 struct {
@@ -658,10 +665,10 @@ type WorkflowDetailResV1 struct {
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
-// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
-// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
-// @Param filter_task_instance_name query string false "filter instance name"
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
+// @Param filter_task_instance_name query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
@@ -672,7 +679,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -683,38 +690,43 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"filter_subject":                         req.FilterSubject,
-		"filter_create_time_from":                req.FilterCreateTimeFrom,
-		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"current_user_id":                        user.ID,
-		"check_user_can_access":                  user.Name != model.DefaultAdminUser,
-		"limit":                                  req.PageSize,
-		"offset":                                 offset,
+		"filter_subject":                       req.FilterSubject,
+		"filter_create_time_from":              req.FilterCreateTimeFrom,
+		"filter_create_time_to":                req.FilterCreateTimeTo,
+		"filter_create_user_id":                req.FilterCreateUserId,
+		"filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
+		"filter_status":                        req.FilterStatus,
+		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
+		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"current_user_id":                      user.GetIDStr(),
+		"check_user_can_access":                user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
+		"limit":                                req.PageSize,
+		"offset":                               offset,
 	}
 
 	s := model.GetStorage()
-	workflows, count, err := s.GetWorkflowsByReq(data, user)
+	workflows, count, err := s.GetWorkflowsByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	/*
+	 TODO 全局工单暂时不使用
+	 1. viewable_instance_ids,check_user_can_access 调用 AddFilterInstanceAndUserAdmin 添加筛选项
+	 2. 用户相关代码需要从DMS获取
+	*/
 
 	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
 		workflowRes := &WorkflowDetailResV1{
-			ProjectName:             workflow.ProjectName,
+			ProjectName:             workflow.ProjectId, // dms-todo: 临时使用id代替name
 			Name:                    workflow.Subject,
 			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
-			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
+			CurrentStepAssigneeUser: strings.Split(workflow.CurrentStepAssigneeUserIds.String, ","),
 			Status:                  workflow.Status,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
@@ -740,13 +752,14 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
-// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
-// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
+// @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id"
 // @Success 200 {object} v1.GetWorkflowsResV1
 // @router /v1/projects/{project_name}/workflows [get]
 func GetWorkflowsV1(c echo.Context) error {
@@ -754,68 +767,74 @@ func GetWorkflowsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
 
-	project, exist, err := s.GetProjectByName(projectName)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	var offset uint32
 	if req.PageIndex > 0 {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
-
 	data := map[string]interface{}{
-		"filter_workflow_id":                     req.FilterWorkflowID,
-		"fuzzy_search_workflow_desc":             req.FuzzySearchWorkflowDesc,
-		"filter_subject":                         req.FilterSubject,
-		"filter_create_time_from":                req.FilterCreateTimeFrom,
-		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"filter_project_name":                    project.Name,
-		"current_user_id":                        user.ID,
-		"check_user_can_access":                  CheckIsProjectManager(user.Name, project.Name) != nil,
-		"limit":                                  req.PageSize,
-		"offset":                                 offset,
+		"filter_workflow_id":                   req.FilterWorkflowID,
+		"filter_subject":                       req.FilterSubject,
+		"filter_create_time_from":              req.FilterCreateTimeFrom,
+		"filter_create_time_to":                req.FilterCreateTimeTo,
+		"filter_create_user_id":                req.FilterCreateUserId,
+		"filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
+		"filter_status":                        req.FilterStatus,
+		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
+		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_project_id":                    projectUid,
+		"current_user_id":                      user.ID,
+		"check_user_can_access":                !up.IsAdmin(),
+		"limit":                                req.PageSize,
+		"offset":                               offset,
+	}
+	if req.FuzzyKeyword != "" {
+		data["fuzzy_keyword"] = fmt.Sprintf("%%%s%%", req.FuzzyKeyword)
 	}
 
-	workflows, count, err := s.GetWorkflowsByReq(data, user)
+	if !up.IsAdmin() {
+		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersWorkflow), ",")
+	}
+
+	workflows, count, err := s.GetWorkflowsByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
+		// TODO DMS提供根据ID批量查询用户接口，demo阶段使用GetUser实现
+		CurrentStepAssigneeUserNames := make([]string, 0)
+		for _, currentStepAssigneeUser := range strings.Split(workflow.CurrentStepAssigneeUserIds.String, ",") {
+			if currentStepAssigneeUser == "" {
+				continue
+			}
+			CurrentStepAssigneeUserNames = append(CurrentStepAssigneeUserNames, dms.GetUserNameWithDelTag(currentStepAssigneeUser))
+		}
 		workflowRes := &WorkflowDetailResV1{
-			ProjectName:             workflow.ProjectName,
+			ProjectName:             workflow.ProjectId, // dms-todo: 暂时使用id代替name
 			Name:                    workflow.Subject,
 			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
-			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
+			CreateUser:              dms.GetUserNameWithDelTag(workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
-			CurrentStepAssigneeUser: workflow.CurrentStepAssigneeUser,
+			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
@@ -930,16 +949,16 @@ func GetWorkflowV1(c echo.Context) error {
 }
 
 type ExportWorkflowReqV1 struct {
-	FilterSubject                     string `json:"filter_subject" query:"filter_subject"`
-	FuzzySearchWorkflowDesc           string `json:"fuzzy_search_workflow_desc" query:"fuzzy_search_workflow_desc"`
-	FilterCreateTimeFrom              string `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo                string `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterCreateUserName              string `json:"filter_create_user_name" query:"filter_create_user_name"`
-	FilterStatus                      string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterCurrentStepAssigneeUserName string `json:"filter_current_step_assignee_user_name" query:"filter_current_step_assignee_user_name"`
-	FilterTaskInstanceName            string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
-	FilterTaskExecuteStartTimeFrom    string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
-	FilterTaskExecuteStartTimeTo      string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FilterSubject                   string `json:"filter_subject" query:"filter_subject"`
+	FilterCreateTimeFrom            string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo              string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserID              string `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatus                    string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
+	FilterTaskInstanceName          string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 // ExportWorkflowV1
@@ -954,11 +973,12 @@ type ExportWorkflowReqV1 struct {
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
-// @Param filter_create_user_name query string false "filter create user name"
+// @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
-// @Param filter_current_step_assignee_user_name query string false "filter current step assignee user name"
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_name query string false "filter instance name"
 // @Param project_name path string true "project name"
+// @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id/desc"
 // @Success 200 {file} file "export workflow"
 // @Router /v1/projects/{project_name}/workflows/exports [get]
 func ExportWorkflowV1(c echo.Context) error {
@@ -977,20 +997,23 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	workflowID := c.Param("workflow_id")
+	// user, err := controller.GetCurrentUser(c,dms.GetUser)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 	s := model.GetStorage()
 
 	var workflow *model.Workflow
-	var err error
 	{
-		var exist bool
-		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 		}
 	}
 
@@ -998,7 +1021,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
 	// check workflow permission
 	{
-		err := checkBeforeTasksTermination(c, projectName, workflow, terminatingTaskIDs)
+		err := checkBeforeTasksTermination(c, projectUid, workflow, terminatingTaskIDs)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1022,30 +1045,35 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
 func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	workflowID := c.Param("workflow_id")
 	taskIDStr := c.Param("task_id")
 	taskID, err := strconv.Atoi(taskIDStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	// user, err := controller.GetCurrentUser(c,dms.GetUser)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
 	s := model.GetStorage()
 
 	var workflow *model.Workflow
 	{
-		var exist bool
-		workflow, exist, err = s.GetWorkflowDetailByWorkflowID(projectName, workflowID)
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !exist {
-			return controller.JSONBaseErrorReq(c, ErrWorkflowNoAccess)
 		}
 	}
 
 	// check workflow permission
 	{
-		err := checkBeforeTasksTermination(c, projectName, workflow, []uint{uint(taskID)})
+		err := checkBeforeTasksTermination(c, projectUid, workflow, []uint{uint(taskID)})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1069,7 +1097,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
 
-func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *model.Workflow, needTerminatedTaskIdList []uint) error {
+func checkBeforeTasksTermination(c echo.Context, projectId string, workflow *model.Workflow, needTerminatedTaskIdList []uint) error {
 	needTerminatedTaskIdMap := make(map[uint]struct{}, len(needTerminatedTaskIdList))
 	for _, taskID := range needTerminatedTaskIdList {
 		needTerminatedTaskIdMap[taskID] = struct{}{}
@@ -1096,7 +1124,7 @@ func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *m
 	}
 
 	err := CheckCurrentUserCanOperateTasks(c,
-		&model.Project{Name: projectName}, workflow, []uint{model.OP_WORKFLOW_EXECUTE}, needTerminatedTaskIdList)
+		projectId, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow}, needTerminatedTaskIdList)
 	if err != nil {
 		return err
 	}
@@ -1105,13 +1133,11 @@ func checkBeforeTasksTermination(c echo.Context, projectName string, workflow *m
 }
 
 func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
-	task, exist, err := s.GetTaskById(taskID)
+	task, err := getTaskById(context.Background(), taskID)
 	if err != nil {
 		return false, fmt.Errorf("get task by id failed. taskID=%v err=%v", taskID, err)
 	}
-	if !exist {
-		return false, fmt.Errorf("task not exist. taskID=%v", taskID)
-	}
+
 	if task.Instance == nil {
 		return false, fmt.Errorf("task instance is nil. taskID=%v", taskID)
 	}

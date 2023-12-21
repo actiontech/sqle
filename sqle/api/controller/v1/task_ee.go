@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -29,6 +30,15 @@ func getTaskAnalysisData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
+	}
+
+	task.Instance = instance
 
 	if err := CheckCurrentUserCanViewTask(c, task); err != nil {
 		return controller.JSONBaseErrorReq(c, err)

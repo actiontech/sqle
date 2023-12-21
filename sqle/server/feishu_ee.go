@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
@@ -60,20 +61,21 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 
 		switch *instDetail.Status {
 		case model.FeishuAuditStatusApprove:
-			workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
+			workflow, err := dms.GetWorkflowDetailByWorkflowId("", inst.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 			if err != nil {
 				entry.Errorf("get workflow detail error: %v", err)
-				continue
-			}
-			if !exist {
-				entry.Errorf("workflow not exist, id: %d", inst.WorkflowId)
 				continue
 			}
 
 			nextStep := workflow.NextStep()
 
 			openId := instDetail.TaskList[0].OpenId
-			user, err := getSqleUserByFeishuUserID(client, *openId, workflow.CurrentAssigneeUser())
+			assigneesUsers, err := dms.GetUsers(context.Background(), workflow.CurrentAssigneeUser(), dms.GetDMSServerAddress())
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
+			user, err := getSqleUserByFeishuUserID(client, *openId, assigneesUsers)
 			if err != nil {
 				entry.Errorf("get user by user id error: %v", err)
 				continue
@@ -85,7 +87,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 					continue
 				}
 			} else if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
-				if err := ExecuteTasksProcess(strconv.Itoa(int(workflow.ID)), workflow.Project.Name, user); err != nil {
+				if err := ExecuteTasksProcess(strconv.Itoa(int(workflow.ID)), string(workflow.ProjectId), user); err != nil {
 					entry.Errorf("execute workflow process error: %v", err)
 					continue
 				}
@@ -101,16 +103,12 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 			}
 
 			if nextStep != nil {
-				imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
+				imPkg.CreateApprove(string(workflow.ProjectId), strconv.Itoa(int(workflow.ID)))
 			}
 		case model.FeishuAuditStatusRejected:
-			workflow, exist, err := s.GetWorkflowDetailById(strconv.Itoa(int(inst.WorkflowId)))
+			workflow, err := dms.GetWorkflowDetailByWorkflowId("", inst.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 			if err != nil {
 				entry.Errorf("get workflow detail error: %v", err)
-				continue
-			}
-			if !exist {
-				entry.Errorf("workflow not exist, id: %d", inst.WorkflowId)
 				continue
 			}
 
@@ -123,7 +121,12 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 			}
 
 			openId := instDetail.TaskList[0].OpenId
-			user, err := getSqleUserByFeishuUserID(client, *openId, workflow.CurrentAssigneeUser())
+			assigneesUsers, err := dms.GetUsers(context.Background(), workflow.CurrentAssigneeUser(), dms.GetDMSServerAddress())
+			if err != nil {
+				entry.Errorf("get user by user id error: %v", err)
+				continue
+			}
+			user, err := getSqleUserByFeishuUserID(client, *openId, assigneesUsers)
 			if err != nil {
 				entry.Errorf("get user by user id error: %v", err)
 				continue
