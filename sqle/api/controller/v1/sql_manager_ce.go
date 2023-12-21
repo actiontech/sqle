@@ -27,3 +27,7 @@ func exportSqlManagesV1(c echo.Context) error {
 func getSqlManageRuleTips(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func getSqlManageSqlAnalysisV1(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
