@@ -296,8 +296,6 @@ const (
 	DefaultMultiParamsSecondKeyName = "multi_params_second_key"
 )
 
-var RuleHandlers = []RuleHandler{}
-
 func checkMathComputationOrFuncOnIndex(input *RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
