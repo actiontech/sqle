@@ -4,21 +4,19 @@
 package v2
 
 import (
-	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -35,6 +33,7 @@ const (
 	MybatisXMLCharDefaultValue  = "1"
 	MybatisXMLIntDefaultValue   = 1
 	MybatisXMLFloatDefaultValue = 1.0
+	XMLFileExtension            = ".XML"
 )
 
 func getTaskAnalysisData(c echo.Context) error {
@@ -63,13 +62,13 @@ func getTaskAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
 	sqlContent := taskSql.Content
-	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || strings.ToUpper(filepath.Ext(taskSql.SourceFile)) == XMLFileExtension {
 		sqlContent, err = fillingMybatisXmlSQL(sqlContent, task)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, taskSql.Content)
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
