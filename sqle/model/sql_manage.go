@@ -27,6 +27,8 @@ type SqlManage struct {
 
 	AuditPlanId uint       `json:"audit_plan_id"`
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`
+
+	Instance *Instance `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
 }
 
 type SqlManageSqlAuditRecord struct {
