@@ -45,7 +45,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		schema = auditPlanReportSQLV2.Schema
 	}
 
-	res, err := getSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL)
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
