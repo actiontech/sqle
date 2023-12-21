@@ -16,7 +16,10 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -331,13 +334,6 @@ func convertRuleTipsToResp(tips []*model.SqlManageRuleTips) []RuleTips {
 }
 
 func getSqlManageSqlAnalysisV1(c echo.Context) error {
-	userName := controller.GetUserName(c)
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(userName, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	mgID := c.Param("sql_manage_id")
 
 	s := model.GetStorage()
