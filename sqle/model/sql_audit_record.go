@@ -15,8 +15,8 @@ type SQLAuditRecordTags struct {
 
 type SQLAuditRecord struct {
 	Model
-	ProjectId     uint   `gorm:"index;not null"`
-	CreatorId     uint   `gorm:"not null"`
+	ProjectId     string `gorm:"index;not null"`
+	CreatorId     string `gorm:"not null"`
 	AuditRecordId string `gorm:"unique;not null"`
 	Tags          JSON
 
@@ -44,15 +44,7 @@ func (s *Storage) UpdateSQLAuditRecordById(SQLAuditRecordId string, data SQLAudi
 	return errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId uint, SQLAuditRecordId string) (bool, error) {
-	isManager, err := s.IsProjectManagerByID(userId, projectId)
-	if err != nil {
-		return false, errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
-	}
-	if isManager {
-		return true, nil
-	}
-
+func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId string, SQLAuditRecordId string) (bool, error) {
 	count := 0
 	if err := s.db.Table("sql_audit_records").
 		Where("audit_record_id = ?", SQLAuditRecordId).
@@ -63,9 +55,9 @@ func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId uint, SQ
 	return count == 1, nil
 }
 
-func (s *Storage) GetSQLAuditRecordById(projectId uint, SQLAuditRecordId string) (record *SQLAuditRecord, exist bool, err error) {
+func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId string) (record *SQLAuditRecord, exist bool, err error) {
 	record = &SQLAuditRecord{}
-	if err = s.db.Preload("Task").Preload("Task.Instance").Preload("Task.ExecuteSQLs").
+	if err = s.db.Preload("Task").Preload("Task.ExecuteSQLs").
 		Where("project_id = ?", projectId).Where("audit_record_id = ?", SQLAuditRecordId).
 		Find(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
 		return nil, false, nil

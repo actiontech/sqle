@@ -1832,7 +1832,7 @@ func NewCalendarEventRespBuilder() *CalendarEventRespBuilder {
 
 // 日程ID
 //
-// 示例值：
+// 示例值：75d28f9b-e35c-4230-8a83-4a661497db54_0
 func (builder *CalendarEventRespBuilder) EventId(eventId string) *CalendarEventRespBuilder {
 	builder.eventId = eventId
 	builder.eventIdFlag = true
@@ -1841,7 +1841,7 @@ func (builder *CalendarEventRespBuilder) EventId(eventId string) *CalendarEventR
 
 // 日程组织者日历ID
 //
-// 示例值：
+// 示例值：feishu.cn_HF9U2MbibE8PPpjro6xjqa@group.calendar.feishu.cn
 func (builder *CalendarEventRespBuilder) OrganizerCalendarId(organizerCalendarId string) *CalendarEventRespBuilder {
 	builder.organizerCalendarId = organizerCalendarId
 	builder.organizerCalendarIdFlag = true
@@ -1850,7 +1850,7 @@ func (builder *CalendarEventRespBuilder) OrganizerCalendarId(organizerCalendarId
 
 // 日程标题
 //
-// 示例值：
+// 示例值：日程主题
 func (builder *CalendarEventRespBuilder) Summary(summary string) *CalendarEventRespBuilder {
 	builder.summary = summary
 	builder.summaryFlag = true
@@ -1859,7 +1859,7 @@ func (builder *CalendarEventRespBuilder) Summary(summary string) *CalendarEventR
 
 // 日程描述
 //
-// 示例值：
+// 示例值：日程描述
 func (builder *CalendarEventRespBuilder) Description(description string) *CalendarEventRespBuilder {
 	builder.description = description
 	builder.descriptionFlag = true
@@ -1868,7 +1868,7 @@ func (builder *CalendarEventRespBuilder) Description(description string) *Calend
 
 // 是否发送通知消息
 //
-// 示例值：
+// 示例值：true
 func (builder *CalendarEventRespBuilder) NeedNotification(needNotification bool) *CalendarEventRespBuilder {
 	builder.needNotification = needNotification
 	builder.needNotificationFlag = true
@@ -1940,7 +1940,7 @@ func (builder *CalendarEventRespBuilder) Location(location *EventLocation) *Cale
 
 // 日程颜色，颜色RGB值的int32表示。仅对当前身份生效；客户端展示时会映射到色板上最接近的一种颜色；值为0或-1时默认跟随日历颜色。
 //
-// 示例值：
+// 示例值：-1
 func (builder *CalendarEventRespBuilder) Color(color int) *CalendarEventRespBuilder {
 	builder.color = color
 	builder.colorFlag = true
@@ -1958,7 +1958,7 @@ func (builder *CalendarEventRespBuilder) Reminders(reminders []*Reminder) *Calen
 
 // 重复日程的重复性规则
 //
-// 示例值：
+// 示例值：FREQ=DAILY;INTERVAL=1
 func (builder *CalendarEventRespBuilder) Recurrence(recurrence string) *CalendarEventRespBuilder {
 	builder.recurrence = recurrence
 	builder.recurrenceFlag = true
@@ -1976,7 +1976,7 @@ func (builder *CalendarEventRespBuilder) Status(status string) *CalendarEventRes
 
 // 日程是否是一个重复日程的例外日程
 //
-// 示例值：
+// 示例值：true
 func (builder *CalendarEventRespBuilder) IsException(isException bool) *CalendarEventRespBuilder {
 	builder.isException = isException
 	builder.isExceptionFlag = true
@@ -1985,7 +1985,7 @@ func (builder *CalendarEventRespBuilder) IsException(isException bool) *Calendar
 
 // 例外日程的原重复日程的event_id
 //
-// 示例值：
+// 示例值：75d28f9b-e35c-4230-8a83-4a661497db54_0
 func (builder *CalendarEventRespBuilder) RecurringEventId(recurringEventId string) *CalendarEventRespBuilder {
 	builder.recurringEventId = recurringEventId
 	builder.recurringEventIdFlag = true
@@ -1994,7 +1994,7 @@ func (builder *CalendarEventRespBuilder) RecurringEventId(recurringEventId strin
 
 // 日程的创建时间戳
 //
-// 示例值：
+// 示例值：1682585100
 func (builder *CalendarEventRespBuilder) CreateTime(createTime string) *CalendarEventRespBuilder {
 	builder.createTime = createTime
 	builder.createTimeFlag = true
@@ -2998,11 +2998,60 @@ func (builder *UserIdBuilder) Build() *UserId {
 	return req
 }
 
+type VcInfo struct {
+	UniqueId  *string `json:"unique_id,omitempty"`  // 会议唯一ID
+	MeetingNo *string `json:"meeting_no,omitempty"` // 会议号
+}
+
+type VcInfoBuilder struct {
+	uniqueId      string // 会议唯一ID
+	uniqueIdFlag  bool
+	meetingNo     string // 会议号
+	meetingNoFlag bool
+}
+
+func NewVcInfoBuilder() *VcInfoBuilder {
+	builder := &VcInfoBuilder{}
+	return builder
+}
+
+// 会议唯一ID
+//
+// 示例值：7226647229510582291
+func (builder *VcInfoBuilder) UniqueId(uniqueId string) *VcInfoBuilder {
+	builder.uniqueId = uniqueId
+	builder.uniqueIdFlag = true
+	return builder
+}
+
+// 会议号
+//
+// 示例值：808056935
+func (builder *VcInfoBuilder) MeetingNo(meetingNo string) *VcInfoBuilder {
+	builder.meetingNo = meetingNo
+	builder.meetingNoFlag = true
+	return builder
+}
+
+func (builder *VcInfoBuilder) Build() *VcInfo {
+	req := &VcInfo{}
+	if builder.uniqueIdFlag {
+		req.UniqueId = &builder.uniqueId
+
+	}
+	if builder.meetingNoFlag {
+		req.MeetingNo = &builder.meetingNo
+
+	}
+	return req
+}
+
 type Vchat struct {
 	VcType      *string `json:"vc_type,omitempty"`     // 视频会议类型
 	IconType    *string `json:"icon_type,omitempty"`   // 第三方视频会议icon类型；可以为空，为空展示默认icon。
 	Description *string `json:"description,omitempty"` // 第三方视频会议文案，可以为空，为空展示默认文案
 	MeetingUrl  *string `json:"meeting_url,omitempty"` // 视频会议URL
+
 }
 
 type VchatBuilder struct {
@@ -3075,6 +3124,7 @@ func (builder *VchatBuilder) Build() *Vchat {
 		req.MeetingUrl = &builder.meetingUrl
 
 	}
+
 	return req
 }
 
@@ -3461,7 +3511,7 @@ func (builder *SearchCalendarReqBuilder) Limit(limit int) *SearchCalendarReqBuil
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：10
 func (builder *SearchCalendarReqBuilder) PageToken(pageToken string) *SearchCalendarReqBuilder {
@@ -3469,7 +3519,7 @@ func (builder *SearchCalendarReqBuilder) PageToken(pageToken string) *SearchCale
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *SearchCalendarReqBuilder) PageSize(pageSize int) *SearchCalendarReqBuilder {
@@ -3774,7 +3824,7 @@ func (builder *ListCalendarAclReqBuilder) UserIdType(userIdType string) *ListCal
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListCalendarAclReqBuilder) PageToken(pageToken string) *ListCalendarAclReqBuilder {
@@ -3782,7 +3832,7 @@ func (builder *ListCalendarAclReqBuilder) PageToken(pageToken string) *ListCalen
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10，小于10取10
 func (builder *ListCalendarAclReqBuilder) PageSize(pageSize int) *ListCalendarAclReqBuilder {
@@ -3925,6 +3975,14 @@ func (builder *CreateCalendarEventReqBuilder) CalendarId(calendarId string) *Cre
 	return builder
 }
 
+// 幂等唯一key
+//
+// 示例值：25fdf41b-8c80-2ce1-e94c-de8b5e7aa7e6
+func (builder *CreateCalendarEventReqBuilder) IdempotencyKey(idempotencyKey string) *CreateCalendarEventReqBuilder {
+	builder.apiReq.QueryParams.Set("idempotency_key", fmt.Sprint(idempotencyKey))
+	return builder
+}
+
 // 该接口用于以当前身份（应用 / 用户）在日历上创建一个日程。;;身份由 Header Authorization 的 Token 类型决定。
 func (builder *CreateCalendarEventReqBuilder) CalendarEvent(calendarEvent *CalendarEvent) *CreateCalendarEventReqBuilder {
 	builder.calendarEvent = calendarEvent
@@ -3935,6 +3993,7 @@ func (builder *CreateCalendarEventReqBuilder) Build() *CreateCalendarEventReq {
 	req := &CreateCalendarEventReq{}
 	req.apiReq = &larkcore.ApiReq{}
 	req.apiReq.PathParams = builder.apiReq.PathParams
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
 	req.apiReq.Body = builder.calendarEvent
 	return req
 }
@@ -4350,7 +4409,7 @@ func (builder *SearchCalendarEventReqBuilder) UserIdType(userIdType string) *Sea
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxxxx
 func (builder *SearchCalendarEventReqBuilder) PageToken(pageToken string) *SearchCalendarEventReqBuilder {
@@ -4358,7 +4417,7 @@ func (builder *SearchCalendarEventReqBuilder) PageToken(pageToken string) *Searc
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *SearchCalendarEventReqBuilder) PageSize(pageSize int) *SearchCalendarEventReqBuilder {
@@ -4741,6 +4800,8 @@ type CreateCalendarEventAttendeeReqBodyBuilder struct {
 	instanceStartTimeAdminFlag bool
 	isEnableAdmin              bool // 是否启用管理员身份(需先在管理后台设置某人为会议室管理员)
 	isEnableAdminFlag          bool
+	addOperatorToAttendee      bool // 是否添加会议室operate_id标识的用户到参与人
+	addOperatorToAttendeeFlag  bool
 }
 
 func NewCreateCalendarEventAttendeeReqBodyBuilder() *CreateCalendarEventAttendeeReqBodyBuilder {
@@ -4784,6 +4845,15 @@ func (builder *CreateCalendarEventAttendeeReqBodyBuilder) IsEnableAdmin(isEnable
 	return builder
 }
 
+// 是否添加会议室operate_id标识的用户到参与人
+//
+//示例值：false
+func (builder *CreateCalendarEventAttendeeReqBodyBuilder) AddOperatorToAttendee(addOperatorToAttendee bool) *CreateCalendarEventAttendeeReqBodyBuilder {
+	builder.addOperatorToAttendee = addOperatorToAttendee
+	builder.addOperatorToAttendeeFlag = true
+	return builder
+}
+
 func (builder *CreateCalendarEventAttendeeReqBodyBuilder) Build() *CreateCalendarEventAttendeeReqBody {
 	req := &CreateCalendarEventAttendeeReqBody{}
 	if builder.attendeesFlag {
@@ -4798,6 +4868,9 @@ func (builder *CreateCalendarEventAttendeeReqBodyBuilder) Build() *CreateCalenda
 	if builder.isEnableAdminFlag {
 		req.IsEnableAdmin = &builder.isEnableAdmin
 	}
+	if builder.addOperatorToAttendeeFlag {
+		req.AddOperatorToAttendee = &builder.addOperatorToAttendee
+	}
 	return req
 }
 
@@ -4810,6 +4883,8 @@ type CreateCalendarEventAttendeePathReqBodyBuilder struct {
 	instanceStartTimeAdminFlag bool
 	isEnableAdmin              bool // 是否启用管理员身份(需先在管理后台设置某人为会议室管理员)
 	isEnableAdminFlag          bool
+	addOperatorToAttendee      bool // 是否添加会议室operate_id标识的用户到参与人
+	addOperatorToAttendeeFlag  bool
 }
 
 func NewCreateCalendarEventAttendeePathReqBodyBuilder() *CreateCalendarEventAttendeePathReqBodyBuilder {
@@ -4853,6 +4928,15 @@ func (builder *CreateCalendarEventAttendeePathReqBodyBuilder) IsEnableAdmin(isEn
 	return builder
 }
 
+// 是否添加会议室operate_id标识的用户到参与人
+//
+// 示例值：false
+func (builder *CreateCalendarEventAttendeePathReqBodyBuilder) AddOperatorToAttendee(addOperatorToAttendee bool) *CreateCalendarEventAttendeePathReqBodyBuilder {
+	builder.addOperatorToAttendee = addOperatorToAttendee
+	builder.addOperatorToAttendeeFlag = true
+	return builder
+}
+
 func (builder *CreateCalendarEventAttendeePathReqBodyBuilder) Build() (*CreateCalendarEventAttendeeReqBody, error) {
 	req := &CreateCalendarEventAttendeeReqBody{}
 	if builder.attendeesFlag {
@@ -4866,6 +4950,9 @@ func (builder *CreateCalendarEventAttendeePathReqBodyBuilder) Build() (*CreateCa
 	}
 	if builder.isEnableAdminFlag {
 		req.IsEnableAdmin = &builder.isEnableAdmin
+	}
+	if builder.addOperatorToAttendeeFlag {
+		req.AddOperatorToAttendee = &builder.addOperatorToAttendee
 	}
 	return req, nil
 }
@@ -4928,6 +5015,7 @@ type CreateCalendarEventAttendeeReqBody struct {
 	NeedNotification       *bool                    `json:"need_notification,omitempty"`         // 是否给参与人发送bot通知 默认为true
 	InstanceStartTimeAdmin *string                  `json:"instance_start_time_admin,omitempty"` // 使用管理员身份访问时要修改的实例(仅用于重复日程修改其中的一个实例，非重复日程无需填此字段)
 	IsEnableAdmin          *bool                    `json:"is_enable_admin,omitempty"`           // 是否启用管理员身份(需先在管理后台设置某人为会议室管理员)
+	AddOperatorToAttendee  *bool                    `json:"add_operator_to_attendee,omitempty"`  // 是否添加会议室operate_id标识的用户到参与人
 }
 
 type CreateCalendarEventAttendeeReq struct {
@@ -4993,7 +5081,7 @@ func (builder *ListCalendarEventAttendeeReqBuilder) UserIdType(userIdType string
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：780TRhwXXXXX
 func (builder *ListCalendarEventAttendeeReqBuilder) PageToken(pageToken string) *ListCalendarEventAttendeeReqBuilder {
@@ -5001,7 +5089,7 @@ func (builder *ListCalendarEventAttendeeReqBuilder) PageToken(pageToken string) 
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListCalendarEventAttendeeReqBuilder) PageSize(pageSize int) *ListCalendarEventAttendeeReqBuilder {
@@ -5084,7 +5172,7 @@ func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) AttendeeId(attende
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：23jhysaxxxxsysy
 func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) PageToken(pageToken string) *ListCalendarEventAttendeeChatMemberReqBuilder {
@@ -5092,7 +5180,7 @@ func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) PageToken(pageToke
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) PageSize(pageSize int) *ListCalendarEventAttendeeChatMemberReqBuilder {
@@ -5102,7 +5190,7 @@ func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) PageSize(pageSize 
 
 // 此次调用中使用的用户ID的类型
 //
-// 示例值：user_id
+// 示例值：
 func (builder *ListCalendarEventAttendeeChatMemberReqBuilder) UserIdType(userIdType string) *ListCalendarEventAttendeeChatMemberReqBuilder {
 	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
 	return builder
@@ -5155,7 +5243,7 @@ func NewCreateExchangeBindingReqBuilder() *CreateExchangeBindingReqBuilder {
 
 // 此次调用中使用的用户ID的类型
 //
-// 示例值：user_id
+// 示例值：
 func (builder *CreateExchangeBindingReqBuilder) UserIdType(userIdType string) *CreateExchangeBindingReqBuilder {
 	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
 	return builder
@@ -5262,7 +5350,7 @@ func (builder *GetExchangeBindingReqBuilder) ExchangeBindingId(exchangeBindingId
 
 // 此次调用中使用的用户ID的类型
 //
-// 示例值：user_id
+// 示例值：
 func (builder *GetExchangeBindingReqBuilder) UserIdType(userIdType string) *GetExchangeBindingReqBuilder {
 	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
 	return builder

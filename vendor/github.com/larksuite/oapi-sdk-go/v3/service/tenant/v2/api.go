@@ -23,15 +23,20 @@ import (
 func NewService(config *larkcore.Config) *TenantService {
 	t := &TenantService{config: config}
 	t.Tenant = &tenant{service: t}
+	t.TenantProductAssignInfo = &tenantProductAssignInfo{service: t}
 	return t
 }
 
 type TenantService struct {
-	config *larkcore.Config
-	Tenant *tenant // 企业信息
+	config                  *larkcore.Config
+	Tenant                  *tenant                  // 企业信息
+	TenantProductAssignInfo *tenantProductAssignInfo // tenant.product_assign_info
 }
 
 type tenant struct {
+	service *TenantService
+}
+type tenantProductAssignInfo struct {
 	service *TenantService
 }
 
@@ -59,6 +64,35 @@ func (t *tenant) Query(ctx context.Context, options ...larkcore.RequestOptionFun
 	}
 	// 反序列响应结果
 	resp := &QueryTenantResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, t.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=query&project=tenant&resource=tenant.product_assign_info&version=v2
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/tenantv2/query_tenantProductAssignInfo.go
+func (t *tenantProductAssignInfo) Query(ctx context.Context, options ...larkcore.RequestOptionFunc) (*QueryTenantProductAssignInfoResp, error) {
+	// 发起请求
+	apiReq := &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	apiReq.ApiPath = "/open-apis/tenant/v2/tenant/assign_info_list/query"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, t.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &QueryTenantProductAssignInfoResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, t.service.config)
 	if err != nil {
 		return nil, err

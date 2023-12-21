@@ -28,6 +28,7 @@ func NewService(config *larkcore.Config) *ApplicationService {
 	a.ApplicationAppVersion = &applicationAppVersion{service: a}
 	a.ApplicationFeedback = &applicationFeedback{service: a}
 	a.ApplicationVisibility = &applicationVisibility{service: a}
+	a.Bot = &bot{service: a}
 	return a
 }
 
@@ -39,6 +40,7 @@ type ApplicationService struct {
 	ApplicationAppVersion *applicationAppVersion // 事件
 	ApplicationFeedback   *applicationFeedback   // 应用反馈
 	ApplicationVisibility *applicationVisibility // 事件
+	Bot                   *bot                   // 事件
 }
 
 type appRecommendRule struct {
@@ -57,6 +59,9 @@ type applicationFeedback struct {
 	service *ApplicationService
 }
 type applicationVisibility struct {
+	service *ApplicationService
+}
+type bot struct {
 	service *ApplicationService
 }
 
@@ -92,6 +97,32 @@ func (a *appRecommendRule) ListByIterator(ctx context.Context, req *ListAppRecom
 		listFunc: a.List,
 		options:  options,
 		limit:    req.Limit}, nil
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=contacts_range_configuration&project=application&resource=application&version=v6
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/applicationv6/contactsRangeConfiguration_application.go
+func (a *application) ContactsRangeConfiguration(ctx context.Context, req *ContactsRangeConfigurationApplicationReq, options ...larkcore.RequestOptionFunc) (*ContactsRangeConfigurationApplicationResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/application/v6/applications/:app_id/contacts_range_configuration"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ContactsRangeConfigurationApplicationResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
 }
 
 // 获取应用信息
@@ -201,6 +232,32 @@ func (a *applicationAppUsage) Overview(ctx context.Context, req *OverviewApplica
 	}
 	// 反序列响应结果
 	resp := &OverviewApplicationAppUsageResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// - 获取应用版本通讯录权限范围建议
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=contacts_range_suggest&project=application&resource=application.app_version&version=v6
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/applicationv6/contactsRangeSuggest_applicationAppVersion.go
+func (a *applicationAppVersion) ContactsRangeSuggest(ctx context.Context, req *ContactsRangeSuggestApplicationAppVersionReq, options ...larkcore.RequestOptionFunc) (*ContactsRangeSuggestApplicationAppVersionResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/application/v6/applications/:app_id/app_versions/:version_id/contacts_range_suggest"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ContactsRangeSuggestApplicationAppVersionResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
 	if err != nil {
 		return nil, err
@@ -339,6 +396,32 @@ func (a *applicationFeedback) Patch(ctx context.Context, req *PatchApplicationFe
 	}
 	// 反序列响应结果
 	resp := &PatchApplicationFeedbackResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=check_white_black_list&project=application&resource=application.visibility&version=v6
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/applicationv6/checkWhiteBlackList_applicationVisibility.go
+func (a *applicationVisibility) CheckWhiteBlackList(ctx context.Context, req *CheckWhiteBlackListApplicationVisibilityReq, options ...larkcore.RequestOptionFunc) (*CheckWhiteBlackListApplicationVisibilityResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/application/v6/applications/:app_id/visibility/check_white_black_list"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, a.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CheckWhiteBlackListApplicationVisibilityResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, a.service.config)
 	if err != nil {
 		return nil, err

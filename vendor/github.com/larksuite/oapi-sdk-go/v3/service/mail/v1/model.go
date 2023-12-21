@@ -230,6 +230,54 @@ func (builder *EmailAliasBuilder) Build() *EmailAlias {
 	return req
 }
 
+type MailAddress struct {
+	MailAddress *string `json:"mail_address,omitempty"` // 邮件地址
+	Name        *string `json:"name,omitempty"`         // 名称
+}
+
+type MailAddressBuilder struct {
+	mailAddress     string // 邮件地址
+	mailAddressFlag bool
+	name            string // 名称
+	nameFlag        bool
+}
+
+func NewMailAddressBuilder() *MailAddressBuilder {
+	builder := &MailAddressBuilder{}
+	return builder
+}
+
+// 邮件地址
+//
+// 示例值：mike@outlook.com
+func (builder *MailAddressBuilder) MailAddress(mailAddress string) *MailAddressBuilder {
+	builder.mailAddress = mailAddress
+	builder.mailAddressFlag = true
+	return builder
+}
+
+// 名称
+//
+// 示例值：Mike
+func (builder *MailAddressBuilder) Name(name string) *MailAddressBuilder {
+	builder.name = name
+	builder.nameFlag = true
+	return builder
+}
+
+func (builder *MailAddressBuilder) Build() *MailAddress {
+	req := &MailAddress{}
+	if builder.mailAddressFlag {
+		req.MailAddress = &builder.mailAddress
+
+	}
+	if builder.nameFlag {
+		req.Name = &builder.name
+
+	}
+	return req
+}
+
 type Mailgroup struct {
 	MailgroupId             *string `json:"mailgroup_id,omitempty"`               // 邮件组ID
 	Email                   *string `json:"email,omitempty"`                      // 邮件组地址
@@ -599,12 +647,45 @@ func (builder *MailgroupPermissionMemberBuilder) Build() *MailgroupPermissionMem
 }
 
 type Message struct {
-	Raw *string `json:"raw,omitempty"` // MIME邮件数据，基于base64url编码
+	Raw           *string        `json:"raw,omitempty"`             // MIME邮件数据，基于base64url编码
+	Subject       *string        `json:"subject,omitempty"`         // 主题
+	To            []*MailAddress `json:"to,omitempty"`              // 收件人
+	Cc            []*MailAddress `json:"cc,omitempty"`              // 抄送
+	Bcc           []*MailAddress `json:"bcc,omitempty"`             // 秘送
+	HeadFrom      *MailAddress   `json:"head_from,omitempty"`       // 发件人
+	BodyHtml      *string        `json:"body_html,omitempty"`       // 正文(base64url)
+	InternalDate  *string        `json:"internal_date,omitempty"`   // 创建/收/发信时间（毫秒）
+	MessageState  *int           `json:"message_state,omitempty"`   // 邮件状态
+	SmtpMessageId *string        `json:"smtp_message_id,omitempty"` // RFC协议id
+	MessageId     *string        `json:"message_id,omitempty"`      // 邮件id
+	BodyPlainText *string        `json:"body_plain_text,omitempty"` // 正文纯文本(base64url)
 }
 
 type MessageBuilder struct {
-	raw     string // MIME邮件数据，基于base64url编码
-	rawFlag bool
+	raw               string // MIME邮件数据，基于base64url编码
+	rawFlag           bool
+	subject           string // 主题
+	subjectFlag       bool
+	to                []*MailAddress // 收件人
+	toFlag            bool
+	cc                []*MailAddress // 抄送
+	ccFlag            bool
+	bcc               []*MailAddress // 秘送
+	bccFlag           bool
+	headFrom          *MailAddress // 发件人
+	headFromFlag      bool
+	bodyHtml          string // 正文(base64url)
+	bodyHtmlFlag      bool
+	internalDate      string // 创建/收/发信时间（毫秒）
+	internalDateFlag  bool
+	messageState      int // 邮件状态
+	messageStateFlag  bool
+	smtpMessageId     string // RFC协议id
+	smtpMessageIdFlag bool
+	messageId         string // 邮件id
+	messageIdFlag     bool
+	bodyPlainText     string // 正文纯文本(base64url)
+	bodyPlainTextFlag bool
 }
 
 func NewMessageBuilder() *MessageBuilder {
@@ -621,10 +702,149 @@ func (builder *MessageBuilder) Raw(raw string) *MessageBuilder {
 	return builder
 }
 
+// 主题
+//
+// 示例值：邮件标题
+func (builder *MessageBuilder) Subject(subject string) *MessageBuilder {
+	builder.subject = subject
+	builder.subjectFlag = true
+	return builder
+}
+
+// 收件人
+//
+// 示例值：
+func (builder *MessageBuilder) To(to []*MailAddress) *MessageBuilder {
+	builder.to = to
+	builder.toFlag = true
+	return builder
+}
+
+// 抄送
+//
+// 示例值：
+func (builder *MessageBuilder) Cc(cc []*MailAddress) *MessageBuilder {
+	builder.cc = cc
+	builder.ccFlag = true
+	return builder
+}
+
+// 秘送
+//
+// 示例值：
+func (builder *MessageBuilder) Bcc(bcc []*MailAddress) *MessageBuilder {
+	builder.bcc = bcc
+	builder.bccFlag = true
+	return builder
+}
+
+// 发件人
+//
+// 示例值：
+func (builder *MessageBuilder) HeadFrom(headFrom *MailAddress) *MessageBuilder {
+	builder.headFrom = headFrom
+	builder.headFromFlag = true
+	return builder
+}
+
+// 正文(base64url)
+//
+// 示例值：xxxx
+func (builder *MessageBuilder) BodyHtml(bodyHtml string) *MessageBuilder {
+	builder.bodyHtml = bodyHtml
+	builder.bodyHtmlFlag = true
+	return builder
+}
+
+// 创建/收/发信时间（毫秒）
+//
+// 示例值：1682377086000
+func (builder *MessageBuilder) InternalDate(internalDate string) *MessageBuilder {
+	builder.internalDate = internalDate
+	builder.internalDateFlag = true
+	return builder
+}
+
+// 邮件状态
+//
+// 示例值：1（收信）2（发信）3（草稿）
+func (builder *MessageBuilder) MessageState(messageState int) *MessageBuilder {
+	builder.messageState = messageState
+	builder.messageStateFlag = true
+	return builder
+}
+
+// RFC协议id
+//
+// 示例值：ay0azrJDvbs3FJAg@outlook.com
+func (builder *MessageBuilder) SmtpMessageId(smtpMessageId string) *MessageBuilder {
+	builder.smtpMessageId = smtpMessageId
+	builder.smtpMessageIdFlag = true
+	return builder
+}
+
+// 邮件id
+//
+// 示例值：tfuh9N4WnzU6jdDw=
+func (builder *MessageBuilder) MessageId(messageId string) *MessageBuilder {
+	builder.messageId = messageId
+	builder.messageIdFlag = true
+	return builder
+}
+
+// 正文纯文本(base64url)
+//
+// 示例值：xxxxx
+func (builder *MessageBuilder) BodyPlainText(bodyPlainText string) *MessageBuilder {
+	builder.bodyPlainText = bodyPlainText
+	builder.bodyPlainTextFlag = true
+	return builder
+}
+
 func (builder *MessageBuilder) Build() *Message {
 	req := &Message{}
 	if builder.rawFlag {
 		req.Raw = &builder.raw
+
+	}
+	if builder.subjectFlag {
+		req.Subject = &builder.subject
+
+	}
+	if builder.toFlag {
+		req.To = builder.to
+	}
+	if builder.ccFlag {
+		req.Cc = builder.cc
+	}
+	if builder.bccFlag {
+		req.Bcc = builder.bcc
+	}
+	if builder.headFromFlag {
+		req.HeadFrom = builder.headFrom
+	}
+	if builder.bodyHtmlFlag {
+		req.BodyHtml = &builder.bodyHtml
+
+	}
+	if builder.internalDateFlag {
+		req.InternalDate = &builder.internalDate
+
+	}
+	if builder.messageStateFlag {
+		req.MessageState = &builder.messageState
+
+	}
+	if builder.smtpMessageIdFlag {
+		req.SmtpMessageId = &builder.smtpMessageId
+
+	}
+	if builder.messageIdFlag {
+		req.MessageId = &builder.messageId
+
+	}
+	if builder.bodyPlainTextFlag {
+		req.BodyPlainText = &builder.bodyPlainText
 
 	}
 	return req
@@ -1005,7 +1225,7 @@ func (builder *ListMailgroupReqBuilder) UserIdType(userIdType string) *ListMailg
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListMailgroupReqBuilder) PageToken(pageToken string) *ListMailgroupReqBuilder {
@@ -1013,7 +1233,7 @@ func (builder *ListMailgroupReqBuilder) PageToken(pageToken string) *ListMailgro
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListMailgroupReqBuilder) PageSize(pageSize int) *ListMailgroupReqBuilder {
@@ -1807,7 +2027,7 @@ func (builder *ListMailgroupMemberReqBuilder) DepartmentIdType(departmentIdType 
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListMailgroupMemberReqBuilder) PageToken(pageToken string) *ListMailgroupMemberReqBuilder {
@@ -1815,7 +2035,7 @@ func (builder *ListMailgroupMemberReqBuilder) PageToken(pageToken string) *ListM
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListMailgroupMemberReqBuilder) PageSize(pageSize int) *ListMailgroupMemberReqBuilder {
@@ -2336,7 +2556,7 @@ func (builder *ListMailgroupPermissionMemberReqBuilder) DepartmentIdType(departm
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListMailgroupPermissionMemberReqBuilder) PageToken(pageToken string) *ListMailgroupPermissionMemberReqBuilder {
@@ -2344,7 +2564,7 @@ func (builder *ListMailgroupPermissionMemberReqBuilder) PageToken(pageToken stri
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListMailgroupPermissionMemberReqBuilder) PageSize(pageSize int) *ListMailgroupPermissionMemberReqBuilder {
@@ -2540,7 +2760,7 @@ func (builder *ListPublicMailboxReqBuilder) Limit(limit int) *ListPublicMailboxR
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListPublicMailboxReqBuilder) PageToken(pageToken string) *ListPublicMailboxReqBuilder {
@@ -2548,7 +2768,7 @@ func (builder *ListPublicMailboxReqBuilder) PageToken(pageToken string) *ListPub
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListPublicMailboxReqBuilder) PageSize(pageSize int) *ListPublicMailboxReqBuilder {
@@ -3337,7 +3557,7 @@ func (builder *ListPublicMailboxMemberReqBuilder) UserIdType(userIdType string) 
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListPublicMailboxMemberReqBuilder) PageToken(pageToken string) *ListPublicMailboxMemberReqBuilder {
@@ -3345,7 +3565,7 @@ func (builder *ListPublicMailboxMemberReqBuilder) PageToken(pageToken string) *L
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListPublicMailboxMemberReqBuilder) PageSize(pageSize int) *ListPublicMailboxMemberReqBuilder {
@@ -3663,7 +3883,7 @@ func (builder *ListUserMailboxAliasReqBuilder) UserMailboxId(userMailboxId strin
 	return builder
 }
 
-//
+// 分页标记，第一次请求不填，表示从头开始遍历；分页查询结果还有更多项时会同时返回新的 page_token，下次遍历可采用该page_token 获取查询结果
 //
 // 示例值：xxx
 func (builder *ListUserMailboxAliasReqBuilder) PageToken(pageToken string) *ListUserMailboxAliasReqBuilder {
@@ -3671,7 +3891,7 @@ func (builder *ListUserMailboxAliasReqBuilder) PageToken(pageToken string) *List
 	return builder
 }
 
-//
+// 分页大小
 //
 // 示例值：10
 func (builder *ListUserMailboxAliasReqBuilder) PageSize(pageSize int) *ListUserMailboxAliasReqBuilder {
