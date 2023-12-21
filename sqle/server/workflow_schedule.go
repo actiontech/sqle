@@ -1,13 +1,16 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -37,13 +40,9 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 	now := time.Now()
 	for _, workflow := range workflows {
-		w, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
+		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			entry.Errorf("get workflow from storage error: %v", err)
-			return
-		}
-		if !exist {
-			entry.Errorf("workflow %s not found", workflow.Subject)
 			return
 		}
 
@@ -58,7 +57,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 		}
 
 		entry.Infof("start to execute scheduled workflow %s", w.Subject)
-		needExecuteTaskIds := map[uint]uint{}
+		needExecuteTaskIds := map[uint]string{}
 		for _, ir := range w.Record.InstanceRecords {
 			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
 				needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
@@ -76,7 +75,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]uint) error {
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) error {
 	s := model.GetStorage()
 
 	// get task and check connection before to execute it.
@@ -89,6 +88,14 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 		if !exist {
 			return errors.New(errors.DataNotExist, fmt.Errorf("task is not exist. taskID=%v", taskId))
 		}
+		instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. instanceId=%v", task.InstanceId))
+		}
+		task.Instance = instance
 		if task.Instance == nil {
 			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 		}
@@ -152,9 +159,9 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]u
 			}
 
 			if err != nil || task.Status == model.TaskStatusExecuteFailed {
-				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteFail)
+				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
 			} else {
-				go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeExecuteSuccess)
+				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
 			}
 
 		}()
@@ -225,7 +232,7 @@ func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model
 	currentStep.State = model.WorkflowStepStateApprove
 	now := time.Now()
 	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
+	currentStep.OperationUserId = user.GetIDStr()
 	nextStep := workflow.NextStep()
 	workflow.Record.CurrentWorkflowStepId = nextStep.ID
 	if nextStep.Template.Typ == model.WorkflowStepTypeSQLExecute {
@@ -237,7 +244,7 @@ func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model
 		return fmt.Errorf("update workflow status failed, %v", err)
 	}
 
-	go notification.NotifyWorkflow(strconv.Itoa(int(workflow.ID)), notification.WorkflowNotifyTypeApprove)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeApprove)
 
 	return nil
 }
@@ -248,7 +255,7 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	currentStep.Reason = reason
 	now := time.Now()
 	currentStep.OperateAt = &now
-	currentStep.OperationUserId = user.ID
+	currentStep.OperationUserId = user.GetIDStr()
 
 	workflow.Record.Status = model.WorkflowStatusReject
 	workflow.Record.CurrentWorkflowStepId = 0
@@ -257,26 +264,23 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 		return fmt.Errorf("update workflow status failed, %v", err)
 	}
 
-	go notification.NotifyWorkflow(fmt.Sprintf("%v", workflow.ID), notification.WorkflowNotifyTypeReject)
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeReject)
 
 	return nil
 }
 
-func ExecuteTasksProcess(workflowId string, projectName string, user *model.User) error {
+func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) error {
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowDetailById(workflowId)
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return err
 	}
-	if !exist {
+
+	if err = PrepareForWorkflowExecution(projectUid, workflow, user); err != nil {
 		return err
 	}
 
-	if err := PrepareForWorkflowExecution(projectName, workflow, user); err != nil {
-		return err
-	}
-
-	needExecTaskIds, err := GetNeedExecTaskIds(s, workflow, user)
+	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
 	if err != nil {
 		return err
 	}
@@ -289,8 +293,8 @@ func ExecuteTasksProcess(workflowId string, projectName string, user *model.User
 	return nil
 }
 
-func PrepareForWorkflowExecution(projectName string, workflow *model.Workflow, user *model.User) error {
-	err := CheckCurrentUserCanOperateWorkflowByUser(user, &model.Project{Name: projectName}, workflow, []uint{})
+func PrepareForWorkflowExecution(projectUid string, workflow *model.Workflow, user *model.User) error {
+	err := CheckCurrentUserCanOperateWorkflowByUser(user, projectUid, workflow, []dmsV1.OpPermissionType{})
 	if err != nil {
 		return err
 	}
@@ -312,10 +316,10 @@ func PrepareForWorkflowExecution(projectName string, workflow *model.Workflow, u
 	return nil
 }
 
-func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ uint /*user id*/, err error) {
-	instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-	if err != nil {
-		return nil, err
+func GetNeedExecTaskIds(workflow *model.Workflow, user *model.User) (taskIds map[uint] /*task id*/ string /*user id*/, err error) {
+	instances := make([]*model.Instance, 0, len(workflow.Record.InstanceRecords))
+	for _, item := range workflow.Record.InstanceRecords {
+		instances = append(instances, item.Instance)
 	}
 	// 有不在运维时间内的instances报错
 	var cannotExecuteInstanceNames []string
@@ -330,32 +334,32 @@ func GetNeedExecTaskIds(s *model.Storage, workflow *model.Workflow, user *model.
 	}
 
 	// 定时的instances和已上线的跳过
-	needExecTaskIds := make(map[uint]uint)
+	needExecTaskIds := make(map[uint]string)
 	for _, instRecord := range workflow.Record.InstanceRecords {
 		if instRecord.ScheduledAt != nil || instRecord.IsSQLExecuted {
 			continue
 		}
-		needExecTaskIds[instRecord.TaskId] = user.ID
+		needExecTaskIds[instRecord.TaskId] = user.GetIDStr()
 	}
 	return needExecTaskIds, nil
 }
 
-func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, project *model.Project, workflow *model.Workflow, ops []uint) error {
+func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid string, workflow *model.Workflow, ops []dmsV1.OpPermissionType) error {
 	if user.Name == model.DefaultAdminUser {
 		return nil
 	}
 
 	s := model.GetStorage()
-
-	isManager, err := s.IsProjectManager(user.Name, project.Name)
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
 		return err
 	}
+	isManager := up.IsProjectAdmin()
 	if isManager {
 		return nil
 	}
 
-	access, err := s.UserCanAccessWorkflow(user, workflow)
+	access, err := s.UserCanAccessWorkflow(user.GetIDStr(), workflow)
 	if err != nil {
 		return err
 	}
@@ -363,16 +367,10 @@ func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, project *model.P
 		return nil
 	}
 	if len(ops) > 0 {
-		instances, err := s.GetInstancesByWorkflowID(workflow.ID)
-		if err != nil {
-			return err
-		}
-		ok, err := s.CheckUserHasOpToInstances(user, instances, ops)
-		if err != nil {
-			return err
-		}
-		if ok {
-			return nil
+		for _, item := range workflow.Record.InstanceRecords {
+			if !up.CanOpInstanceNoAdmin(item.Instance.GetIDStr(), ops...) {
+				return ErrWorkflowNoAccess
+			}
 		}
 	}
 

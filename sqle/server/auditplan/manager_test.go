@@ -26,16 +26,16 @@ func TestManager(t *testing.T) {
 	nextTime := m.lastSyncTime.Add(5 * time.Second)
 
 	// test init
-	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active'))").
-		WithArgs().
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?))").
+		WithArgs("active").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(1, "test_ap_1", "default", "*/1 * * * *"))
 
 	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE (updated_at > ?) ORDER BY updated_at").
 		WithArgs(m.lastSyncTime).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(2, nextTime))
 
-	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
-		WithArgs(2).
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?)) ").
+		WithArgs("active", 2).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(2, "test_ap_2", "default", "*/2 * * * *"))
 
 	assert.NoError(t, m.sync())
@@ -65,8 +65,8 @@ func TestManager(t *testing.T) {
 		WithArgs(nextTime).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(3, nextTimeMore))
 
-	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
-		WithArgs(3).
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?))").
+		WithArgs("active", 3).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(3, "test_ap_3", "default", "*/3 * * * *"))
 
 	m.sync()
@@ -87,8 +87,8 @@ func TestManager(t *testing.T) {
 		WithArgs(nextTimeMore).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(3, nextTimeMore2))
 
-	mockHandle.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.status = 'active') AND (audit_plans.id = ?))").
-		WithArgs(3).
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?))").
+		WithArgs("active", 3).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}))
 
 	m.sync()

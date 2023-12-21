@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"bytes"
+	"context"
 	e "errors"
 	"fmt"
 	"net/http"
@@ -8,6 +10,7 @@ import (
 
 	parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -69,11 +72,16 @@ func DirectAudit(c echo.Context) error {
 	}
 
 	if req.ProjectName != nil {
-		user := controller.GetUserName(c)
-		s := model.GetStorage()
-		if yes, err := s.IsProjectMember(user, *req.ProjectName); err != nil {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-		} else if !yes {
+		userUid := controller.GetUserID(c)
+		projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), *req.ProjectName)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		up, err := dms.NewUserPermission(userUid, projectUid)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusForbidden)
+		}
+		if up.IsProjectMember() {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 		}
 	}
@@ -85,14 +93,16 @@ func DirectAudit(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), *req.ProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
-	s := model.GetStorage()
 	var instance *model.Instance
 	var exist bool
 	if req.ProjectName != nil && req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, *req.ProjectName)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -110,7 +120,7 @@ func DirectAudit(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, nil, "")
+		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType)
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
@@ -166,12 +176,16 @@ func DirectAuditFiles(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	user := controller.GetUserName(c)
-	s := model.GetStorage()
-	if yes, err := s.IsProjectMember(user, req.ProjectName); err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-	} else if !yes {
+	userUid := controller.GetUserID(c)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.ProjectName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	up, err := dms.NewUserPermission(userUid, projectUid)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusForbidden)
+	}
+	if up.IsProjectMember() {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 	}
 
@@ -181,11 +195,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, false)
+		sqls, err = ConvertXmlFileContentToSQLs(req.FileContents)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		sqls = strings.Join(ss, ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
@@ -196,7 +209,7 @@ func DirectAuditFiles(c echo.Context) error {
 	var instance *model.Instance
 	var exist bool
 	if req.InstanceName != nil {
-		instance, exist, err = s.GetInstanceByNameAndProjectName(*req.InstanceName, req.ProjectName)
+		instance, exist, err = dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -214,7 +227,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, nil, "")
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType)
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
@@ -225,6 +238,24 @@ func DirectAuditFiles(c echo.Context) error {
 		BaseRes: controller.BaseRes{},
 		Data:    convertTaskResultToAuditResV1(task),
 	})
+}
+
+func ConvertXmlFileContentToSQLs(fileContent []string) (sqls string, err error) {
+	data := make([]parser.XmlFile, len(fileContent))
+	for i, content := range fileContent {
+		data[i] = parser.XmlFile{Content: content}
+	}
+	sqlsInfo, err := parser.ParseXMLs(data, false)
+	if err != nil {
+		return "", err
+	}
+	buf := bytes.Buffer{}
+	for _, info := range sqlsInfo {
+		buf.WriteString(info.SQL)
+		buf.WriteString(";")
+	}
+	sqls = strings.TrimSuffix(buf.String(), ";")
+	return sqls, nil
 }
 
 type GetSQLAnalysisReq struct {

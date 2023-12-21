@@ -26,6 +26,8 @@ func NewService(config *larkcore.Config) *AttendanceService {
 	a.ApprovalInfo = &approvalInfo{service: a}
 	a.File = &file{service: a}
 	a.Group = &group{service: a}
+	a.LeaveAccrualRecord = &leaveAccrualRecord{service: a}
+	a.LeaveEmployExpireRecord = &leaveEmployExpireRecord{service: a}
 	a.Shift = &shift{service: a}
 	a.UserApproval = &userApproval{service: a}
 	a.UserDailyShift = &userDailyShift{service: a}
@@ -40,20 +42,22 @@ func NewService(config *larkcore.Config) *AttendanceService {
 }
 
 type AttendanceService struct {
-	config         *larkcore.Config
-	ApprovalInfo   *approvalInfo   // approval_info
-	File           *file           // 文件
-	Group          *group          // 考勤组管理
-	Shift          *shift          // 考勤班次
-	UserApproval   *userApproval   // 假勤审批
-	UserDailyShift *userDailyShift // 考勤排班
-	UserFlow       *userFlow       // user_flow
-	UserSetting    *userSetting    // 用户设置
-	UserStatsData  *userStatsData  // 考勤统计
-	UserStatsField *userStatsField // user_stats_field
-	UserStatsView  *userStatsView  // user_stats_view
-	UserTask       *userTask       // 考勤记录
-	UserTaskRemedy *userTaskRemedy // 考勤补卡
+	config                  *larkcore.Config
+	ApprovalInfo            *approvalInfo            // approval_info
+	File                    *file                    // 文件
+	Group                   *group                   // 考勤组管理
+	LeaveAccrualRecord      *leaveAccrualRecord      // leave_accrual_record
+	LeaveEmployExpireRecord *leaveEmployExpireRecord // leave_employ_expire_record
+	Shift                   *shift                   // 考勤班次
+	UserApproval            *userApproval            // 假勤审批
+	UserDailyShift          *userDailyShift          // 考勤排班
+	UserFlow                *userFlow                // user_flow
+	UserSetting             *userSetting             // 用户设置
+	UserStatsData           *userStatsData           // 考勤统计
+	UserStatsField          *userStatsField          // user_stats_field
+	UserStatsView           *userStatsView           // user_stats_view
+	UserTask                *userTask                // 考勤记录
+	UserTaskRemedy          *userTaskRemedy          // 考勤补卡
 }
 
 type approvalInfo struct {
@@ -63,6 +67,12 @@ type file struct {
 	service *AttendanceService
 }
 type group struct {
+	service *AttendanceService
+}
+type leaveAccrualRecord struct {
+	service *AttendanceService
+}
+type leaveEmployExpireRecord struct {
 	service *AttendanceService
 }
 type shift struct {
@@ -319,6 +329,58 @@ func (g *group) Search(ctx context.Context, req *SearchGroupReq, options ...lark
 	// 反序列响应结果
 	resp := &SearchGroupResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, g.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=patch&project=attendance&resource=leave_accrual_record&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/attendancev1/patch_leaveAccrualRecord.go
+func (l *leaveAccrualRecord) Patch(ctx context.Context, req *PatchLeaveAccrualRecordReq, options ...larkcore.RequestOptionFunc) (*PatchLeaveAccrualRecordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/attendance/v1/leave_accrual_record/:leave_id"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &PatchLeaveAccrualRecordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=attendance&resource=leave_employ_expire_record&version=v1
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/attendancev1/get_leaveEmployExpireRecord.go
+func (l *leaveEmployExpireRecord) Get(ctx context.Context, req *GetLeaveEmployExpireRecordReq, options ...larkcore.RequestOptionFunc) (*GetLeaveEmployExpireRecordResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/attendance/v1/leave_employ_expire_records/:leave_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, l.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetLeaveEmployExpireRecordResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, l.service.config)
 	if err != nil {
 		return nil, err
 	}

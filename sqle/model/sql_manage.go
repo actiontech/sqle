@@ -18,12 +18,11 @@ type SqlManage struct {
 	InstanceName              string       `json:"instance_name"`
 	SchemaName                string       `json:"schema_name"`
 
-	Assignees []*User `gorm:"many2many:sql_manage_assignees;"`
-	Status    string  `json:"status" gorm:"default:\"unhandled\""`
-	Remark    string  `json:"remark" gorm:"type:varchar(4000)"`
+	Assignees string `json:"assignees"`
+	Status    string `json:"status" gorm:"default:\"unhandled\""`
+	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
 
-	ProjectId uint     `json:"project_id"`
-	Project   *Project `gorm:"foreignkey:ProjectId"`
+	ProjectId string `json:"project_id"`
 
 	AuditPlanId uint       `json:"audit_plan_id"`
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`

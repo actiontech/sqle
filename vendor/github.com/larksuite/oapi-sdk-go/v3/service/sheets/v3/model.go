@@ -73,6 +73,54 @@ func (builder *AddSheetBuilder) Build() *AddSheet {
 	return req
 }
 
+type AlignmentStyle struct {
+	HorizontalAlignment *string `json:"horizontal_alignment,omitempty"` // 水平对齐策略
+	VerticalAlignment   *string `json:"vertical_alignment,omitempty"`   // 垂直对齐策略
+}
+
+type AlignmentStyleBuilder struct {
+	horizontalAlignment     string // 水平对齐策略
+	horizontalAlignmentFlag bool
+	verticalAlignment       string // 垂直对齐策略
+	verticalAlignmentFlag   bool
+}
+
+func NewAlignmentStyleBuilder() *AlignmentStyleBuilder {
+	builder := &AlignmentStyleBuilder{}
+	return builder
+}
+
+// 水平对齐策略
+//
+// 示例值：Left
+func (builder *AlignmentStyleBuilder) HorizontalAlignment(horizontalAlignment string) *AlignmentStyleBuilder {
+	builder.horizontalAlignment = horizontalAlignment
+	builder.horizontalAlignmentFlag = true
+	return builder
+}
+
+// 垂直对齐策略
+//
+// 示例值：Top
+func (builder *AlignmentStyleBuilder) VerticalAlignment(verticalAlignment string) *AlignmentStyleBuilder {
+	builder.verticalAlignment = verticalAlignment
+	builder.verticalAlignmentFlag = true
+	return builder
+}
+
+func (builder *AlignmentStyleBuilder) Build() *AlignmentStyle {
+	req := &AlignmentStyle{}
+	if builder.horizontalAlignmentFlag {
+		req.HorizontalAlignment = &builder.horizontalAlignment
+
+	}
+	if builder.verticalAlignmentFlag {
+		req.VerticalAlignment = &builder.verticalAlignment
+
+	}
+	return req
+}
+
 type AppendDimension struct {
 	MajorDimension    *string `json:"major_dimension,omitempty"`     // 操作行还是列，取值：ROWS、COLUMNS
 	Length            *int    `json:"length,omitempty"`              // 数量
@@ -180,6 +228,462 @@ func (builder *BitablePropertiesBuilder) Build() *BitableProperties {
 	}
 	if builder.tableIdFlag {
 		req.TableId = &builder.tableId
+
+	}
+	return req
+}
+
+type BoolRuleValue struct {
+	Type       *string `json:"type,omitempty"`        // 条件值类型
+	Number     *string `json:"number,omitempty"`      // 数值，当type=Number时必须有
+	Text       *string `json:"text,omitempty"`        // 文本，当type=Text时必须有
+	TimePeriod *string `json:"time_period,omitempty"` // 时间区间
+}
+
+type BoolRuleValueBuilder struct {
+	type_          string // 条件值类型
+	typeFlag       bool
+	number         string // 数值，当type=Number时必须有
+	numberFlag     bool
+	text           string // 文本，当type=Text时必须有
+	textFlag       bool
+	timePeriod     string // 时间区间
+	timePeriodFlag bool
+}
+
+func NewBoolRuleValueBuilder() *BoolRuleValueBuilder {
+	builder := &BoolRuleValueBuilder{}
+	return builder
+}
+
+// 条件值类型
+//
+// 示例值：Number
+func (builder *BoolRuleValueBuilder) Type(type_ string) *BoolRuleValueBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 数值，当type=Number时必须有
+//
+// 示例值：12
+func (builder *BoolRuleValueBuilder) Number(number string) *BoolRuleValueBuilder {
+	builder.number = number
+	builder.numberFlag = true
+	return builder
+}
+
+// 文本，当type=Text时必须有
+//
+// 示例值：abc
+func (builder *BoolRuleValueBuilder) Text(text string) *BoolRuleValueBuilder {
+	builder.text = text
+	builder.textFlag = true
+	return builder
+}
+
+// 时间区间
+//
+// 示例值：Today
+func (builder *BoolRuleValueBuilder) TimePeriod(timePeriod string) *BoolRuleValueBuilder {
+	builder.timePeriod = timePeriod
+	builder.timePeriodFlag = true
+	return builder
+}
+
+func (builder *BoolRuleValueBuilder) Build() *BoolRuleValue {
+	req := &BoolRuleValue{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.numberFlag {
+		req.Number = &builder.number
+
+	}
+	if builder.textFlag {
+		req.Text = &builder.text
+
+	}
+	if builder.timePeriodFlag {
+		req.TimePeriod = &builder.timePeriod
+
+	}
+	return req
+}
+
+type BooleanRuleCondition struct {
+	Type                     *string          `json:"type,omitempty"`                       // 条件格式类型
+	BooleanConditionalValues []*BoolRuleValue `json:"boolean_conditional_values,omitempty"` // 条件格式值，根据条件格式类型传入相应的值
+}
+
+type BooleanRuleConditionBuilder struct {
+	type_                        string // 条件格式类型
+	typeFlag                     bool
+	booleanConditionalValues     []*BoolRuleValue // 条件格式值，根据条件格式类型传入相应的值
+	booleanConditionalValuesFlag bool
+}
+
+func NewBooleanRuleConditionBuilder() *BooleanRuleConditionBuilder {
+	builder := &BooleanRuleConditionBuilder{}
+	return builder
+}
+
+// 条件格式类型
+//
+// 示例值：CellEqual
+func (builder *BooleanRuleConditionBuilder) Type(type_ string) *BooleanRuleConditionBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 条件格式值，根据条件格式类型传入相应的值
+//
+// 示例值：
+func (builder *BooleanRuleConditionBuilder) BooleanConditionalValues(booleanConditionalValues []*BoolRuleValue) *BooleanRuleConditionBuilder {
+	builder.booleanConditionalValues = booleanConditionalValues
+	builder.booleanConditionalValuesFlag = true
+	return builder
+}
+
+func (builder *BooleanRuleConditionBuilder) Build() *BooleanRuleCondition {
+	req := &BooleanRuleCondition{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.booleanConditionalValuesFlag {
+		req.BooleanConditionalValues = builder.booleanConditionalValues
+	}
+	return req
+}
+
+type BorderStyle struct {
+	Top    *TopBorderStyle    `json:"top,omitempty"`    // 上边框样式
+	Left   *LeftBorderStyle   `json:"left,omitempty"`   // 左边框样式
+	Right  *RightBorderStyle  `json:"right,omitempty"`  // 右边框样式
+	Bottom *BottomBorderStyle `json:"bottom,omitempty"` // 下边框样式
+}
+
+type BorderStyleBuilder struct {
+	top        *TopBorderStyle // 上边框样式
+	topFlag    bool
+	left       *LeftBorderStyle // 左边框样式
+	leftFlag   bool
+	right      *RightBorderStyle // 右边框样式
+	rightFlag  bool
+	bottom     *BottomBorderStyle // 下边框样式
+	bottomFlag bool
+}
+
+func NewBorderStyleBuilder() *BorderStyleBuilder {
+	builder := &BorderStyleBuilder{}
+	return builder
+}
+
+// 上边框样式
+//
+// 示例值：
+func (builder *BorderStyleBuilder) Top(top *TopBorderStyle) *BorderStyleBuilder {
+	builder.top = top
+	builder.topFlag = true
+	return builder
+}
+
+// 左边框样式
+//
+// 示例值：
+func (builder *BorderStyleBuilder) Left(left *LeftBorderStyle) *BorderStyleBuilder {
+	builder.left = left
+	builder.leftFlag = true
+	return builder
+}
+
+// 右边框样式
+//
+// 示例值：
+func (builder *BorderStyleBuilder) Right(right *RightBorderStyle) *BorderStyleBuilder {
+	builder.right = right
+	builder.rightFlag = true
+	return builder
+}
+
+// 下边框样式
+//
+// 示例值：
+func (builder *BorderStyleBuilder) Bottom(bottom *BottomBorderStyle) *BorderStyleBuilder {
+	builder.bottom = bottom
+	builder.bottomFlag = true
+	return builder
+}
+
+func (builder *BorderStyleBuilder) Build() *BorderStyle {
+	req := &BorderStyle{}
+	if builder.topFlag {
+		req.Top = builder.top
+	}
+	if builder.leftFlag {
+		req.Left = builder.left
+	}
+	if builder.rightFlag {
+		req.Right = builder.right
+	}
+	if builder.bottomFlag {
+		req.Bottom = builder.bottom
+	}
+	return req
+}
+
+type BottomBorderStyle struct {
+	Style *string `json:"style,omitempty"` // 边框样式
+	Color *string `json:"color,omitempty"` // 边框颜色
+}
+
+type BottomBorderStyleBuilder struct {
+	style     string // 边框样式
+	styleFlag bool
+	color     string // 边框颜色
+	colorFlag bool
+}
+
+func NewBottomBorderStyleBuilder() *BottomBorderStyleBuilder {
+	builder := &BottomBorderStyleBuilder{}
+	return builder
+}
+
+// 边框样式
+//
+// 示例值：
+func (builder *BottomBorderStyleBuilder) Style(style string) *BottomBorderStyleBuilder {
+	builder.style = style
+	builder.styleFlag = true
+	return builder
+}
+
+// 边框颜色
+//
+// 示例值：#ff00ff
+func (builder *BottomBorderStyleBuilder) Color(color string) *BottomBorderStyleBuilder {
+	builder.color = color
+	builder.colorFlag = true
+	return builder
+}
+
+func (builder *BottomBorderStyleBuilder) Build() *BottomBorderStyle {
+	req := &BottomBorderStyle{}
+	if builder.styleFlag {
+		req.Style = &builder.style
+
+	}
+	if builder.colorFlag {
+		req.Color = &builder.color
+
+	}
+	return req
+}
+
+type CellFontStyle struct {
+	Bold            *bool   `json:"bold,omitempty"`             // 是否加粗
+	Italic          *bool   `json:"italic,omitempty"`           // 是否斜体
+	Strikethrough   *bool   `json:"strikethrough,omitempty"`    // 是否设置删除线
+	Underline       *bool   `json:"underline,omitempty"`        // 是否展示下划线
+	ForegroundColor *string `json:"foreground_color,omitempty"` // 字体颜色
+	BackgroundColor *string `json:"background_color,omitempty"` // 背景颜色
+}
+
+type CellFontStyleBuilder struct {
+	bold                bool // 是否加粗
+	boldFlag            bool
+	italic              bool // 是否斜体
+	italicFlag          bool
+	strikethrough       bool // 是否设置删除线
+	strikethroughFlag   bool
+	underline           bool // 是否展示下划线
+	underlineFlag       bool
+	foregroundColor     string // 字体颜色
+	foregroundColorFlag bool
+	backgroundColor     string // 背景颜色
+	backgroundColorFlag bool
+}
+
+func NewCellFontStyleBuilder() *CellFontStyleBuilder {
+	builder := &CellFontStyleBuilder{}
+	return builder
+}
+
+// 是否加粗
+//
+// 示例值：true
+func (builder *CellFontStyleBuilder) Bold(bold bool) *CellFontStyleBuilder {
+	builder.bold = bold
+	builder.boldFlag = true
+	return builder
+}
+
+// 是否斜体
+//
+// 示例值：true
+func (builder *CellFontStyleBuilder) Italic(italic bool) *CellFontStyleBuilder {
+	builder.italic = italic
+	builder.italicFlag = true
+	return builder
+}
+
+// 是否设置删除线
+//
+// 示例值：true
+func (builder *CellFontStyleBuilder) Strikethrough(strikethrough bool) *CellFontStyleBuilder {
+	builder.strikethrough = strikethrough
+	builder.strikethroughFlag = true
+	return builder
+}
+
+// 是否展示下划线
+//
+// 示例值：true
+func (builder *CellFontStyleBuilder) Underline(underline bool) *CellFontStyleBuilder {
+	builder.underline = underline
+	builder.underlineFlag = true
+	return builder
+}
+
+// 字体颜色
+//
+// 示例值：#ff00ff
+func (builder *CellFontStyleBuilder) ForegroundColor(foregroundColor string) *CellFontStyleBuilder {
+	builder.foregroundColor = foregroundColor
+	builder.foregroundColorFlag = true
+	return builder
+}
+
+// 背景颜色
+//
+// 示例值：#ff00ff
+func (builder *CellFontStyleBuilder) BackgroundColor(backgroundColor string) *CellFontStyleBuilder {
+	builder.backgroundColor = backgroundColor
+	builder.backgroundColorFlag = true
+	return builder
+}
+
+func (builder *CellFontStyleBuilder) Build() *CellFontStyle {
+	req := &CellFontStyle{}
+	if builder.boldFlag {
+		req.Bold = &builder.bold
+
+	}
+	if builder.italicFlag {
+		req.Italic = &builder.italic
+
+	}
+	if builder.strikethroughFlag {
+		req.Strikethrough = &builder.strikethrough
+
+	}
+	if builder.underlineFlag {
+		req.Underline = &builder.underline
+
+	}
+	if builder.foregroundColorFlag {
+		req.ForegroundColor = &builder.foregroundColor
+
+	}
+	if builder.backgroundColorFlag {
+		req.BackgroundColor = &builder.backgroundColor
+
+	}
+	return req
+}
+
+type CellStyle struct {
+	FontStyle      *CellFontStyle  `json:"font_style,omitempty"`      // 字体样式
+	BorderStyle    *BorderStyle    `json:"border_style,omitempty"`    // 边框颜色
+	AlignmentStyle *AlignmentStyle `json:"alignment_style,omitempty"` // 对齐方式
+	WrapStrategy   *string         `json:"wrap_strategy,omitempty"`   // 文本换行
+	Format         *string         `json:"format,omitempty"`          // 数字格式
+}
+
+type CellStyleBuilder struct {
+	fontStyle          *CellFontStyle // 字体样式
+	fontStyleFlag      bool
+	borderStyle        *BorderStyle // 边框颜色
+	borderStyleFlag    bool
+	alignmentStyle     *AlignmentStyle // 对齐方式
+	alignmentStyleFlag bool
+	wrapStrategy       string // 文本换行
+	wrapStrategyFlag   bool
+	format             string // 数字格式
+	formatFlag         bool
+}
+
+func NewCellStyleBuilder() *CellStyleBuilder {
+	builder := &CellStyleBuilder{}
+	return builder
+}
+
+// 字体样式
+//
+// 示例值：
+func (builder *CellStyleBuilder) FontStyle(fontStyle *CellFontStyle) *CellStyleBuilder {
+	builder.fontStyle = fontStyle
+	builder.fontStyleFlag = true
+	return builder
+}
+
+// 边框颜色
+//
+// 示例值：
+func (builder *CellStyleBuilder) BorderStyle(borderStyle *BorderStyle) *CellStyleBuilder {
+	builder.borderStyle = borderStyle
+	builder.borderStyleFlag = true
+	return builder
+}
+
+// 对齐方式
+//
+// 示例值：
+func (builder *CellStyleBuilder) AlignmentStyle(alignmentStyle *AlignmentStyle) *CellStyleBuilder {
+	builder.alignmentStyle = alignmentStyle
+	builder.alignmentStyleFlag = true
+	return builder
+}
+
+// 文本换行
+//
+// 示例值：Overflow
+func (builder *CellStyleBuilder) WrapStrategy(wrapStrategy string) *CellStyleBuilder {
+	builder.wrapStrategy = wrapStrategy
+	builder.wrapStrategyFlag = true
+	return builder
+}
+
+// 数字格式
+//
+// 示例值：yyyy/MM/dd
+func (builder *CellStyleBuilder) Format(format string) *CellStyleBuilder {
+	builder.format = format
+	builder.formatFlag = true
+	return builder
+}
+
+func (builder *CellStyleBuilder) Build() *CellStyle {
+	req := &CellStyle{}
+	if builder.fontStyleFlag {
+		req.FontStyle = builder.fontStyle
+	}
+	if builder.borderStyleFlag {
+		req.BorderStyle = builder.borderStyle
+	}
+	if builder.alignmentStyleFlag {
+		req.AlignmentStyle = builder.alignmentStyle
+	}
+	if builder.wrapStrategyFlag {
+		req.WrapStrategy = &builder.wrapStrategy
+
+	}
+	if builder.formatFlag {
+		req.Format = &builder.format
 
 	}
 	return req
@@ -367,6 +871,147 @@ func (builder *CellValueBuilder) Build() *CellValue {
 	return req
 }
 
+type Checkbox struct {
+	DataValidationId   *int    `json:"data_validation_id,omitempty"`   // 数据校验ID
+	DataValiditonValue *string `json:"data_validiton_value,omitempty"` // 复选框值
+}
+
+type CheckboxBuilder struct {
+	dataValidationId       int // 数据校验ID
+	dataValidationIdFlag   bool
+	dataValiditonValue     string // 复选框值
+	dataValiditonValueFlag bool
+}
+
+func NewCheckboxBuilder() *CheckboxBuilder {
+	builder := &CheckboxBuilder{}
+	return builder
+}
+
+// 数据校验ID
+//
+// 示例值：1
+func (builder *CheckboxBuilder) DataValidationId(dataValidationId int) *CheckboxBuilder {
+	builder.dataValidationId = dataValidationId
+	builder.dataValidationIdFlag = true
+	return builder
+}
+
+// 复选框值
+//
+// 示例值：TRUE
+func (builder *CheckboxBuilder) DataValiditonValue(dataValiditonValue string) *CheckboxBuilder {
+	builder.dataValiditonValue = dataValiditonValue
+	builder.dataValiditonValueFlag = true
+	return builder
+}
+
+func (builder *CheckboxBuilder) Build() *Checkbox {
+	req := &Checkbox{}
+	if builder.dataValidationIdFlag {
+		req.DataValidationId = &builder.dataValidationId
+
+	}
+	if builder.dataValiditonValueFlag {
+		req.DataValiditonValue = &builder.dataValiditonValue
+
+	}
+	return req
+}
+
+type ClearDataValidation struct {
+	Ranges []string `json:"ranges,omitempty"` // 清除数据检验的范围
+}
+
+type ClearDataValidationBuilder struct {
+	ranges     []string // 清除数据检验的范围
+	rangesFlag bool
+}
+
+func NewClearDataValidationBuilder() *ClearDataValidationBuilder {
+	builder := &ClearDataValidationBuilder{}
+	return builder
+}
+
+// 清除数据检验的范围
+//
+// 示例值：
+func (builder *ClearDataValidationBuilder) Ranges(ranges []string) *ClearDataValidationBuilder {
+	builder.ranges = ranges
+	builder.rangesFlag = true
+	return builder
+}
+
+func (builder *ClearDataValidationBuilder) Build() *ClearDataValidation {
+	req := &ClearDataValidation{}
+	if builder.rangesFlag {
+		req.Ranges = builder.ranges
+	}
+	return req
+}
+
+type ClearStyleMultiRange struct {
+	Ranges []string `json:"ranges,omitempty"` // 范围
+}
+
+type ClearStyleMultiRangeBuilder struct {
+	ranges     []string // 范围
+	rangesFlag bool
+}
+
+func NewClearStyleMultiRangeBuilder() *ClearStyleMultiRangeBuilder {
+	builder := &ClearStyleMultiRangeBuilder{}
+	return builder
+}
+
+// 范围
+//
+// 示例值：
+func (builder *ClearStyleMultiRangeBuilder) Ranges(ranges []string) *ClearStyleMultiRangeBuilder {
+	builder.ranges = ranges
+	builder.rangesFlag = true
+	return builder
+}
+
+func (builder *ClearStyleMultiRangeBuilder) Build() *ClearStyleMultiRange {
+	req := &ClearStyleMultiRange{}
+	if builder.rangesFlag {
+		req.Ranges = builder.ranges
+	}
+	return req
+}
+
+type ClearStyleRanges struct {
+	Ranges []string `json:"ranges,omitempty"` // 范围
+}
+
+type ClearStyleRangesBuilder struct {
+	ranges     []string // 范围
+	rangesFlag bool
+}
+
+func NewClearStyleRangesBuilder() *ClearStyleRangesBuilder {
+	builder := &ClearStyleRangesBuilder{}
+	return builder
+}
+
+// 范围
+//
+// 示例值：["sheet1!A1:A1"]
+func (builder *ClearStyleRangesBuilder) Ranges(ranges []string) *ClearStyleRangesBuilder {
+	builder.ranges = ranges
+	builder.rangesFlag = true
+	return builder
+}
+
+func (builder *ClearStyleRangesBuilder) Build() *ClearStyleRanges {
+	req := &ClearStyleRanges{}
+	if builder.rangesFlag {
+		req.Ranges = builder.ranges
+	}
+	return req
+}
+
 type Condition struct {
 	FilterType  *string  `json:"filter_type,omitempty"`  // 筛选类型
 	CompareType *string  `json:"compare_type,omitempty"` // 比较类型
@@ -430,6 +1075,386 @@ func (builder *ConditionBuilder) Build() *Condition {
 	return req
 }
 
+type ConditionalFormat struct {
+	ConditionalFormatId   *string                 `json:"conditional_format_id,omitempty"`   // 条件格式ID
+	ConditionalFormatRule *ConditionalFormatRule  `json:"conditional_format_rule,omitempty"` // 条件格式
+	Index                 *int                    `json:"index,omitempty"`                   // 规则索引位置，默认为最后一个
+	Ranges                *ConditionalFormatRange `json:"ranges,omitempty"`                  // 条件格式应用范围
+}
+
+type ConditionalFormatBuilder struct {
+	conditionalFormatId       string // 条件格式ID
+	conditionalFormatIdFlag   bool
+	conditionalFormatRule     *ConditionalFormatRule // 条件格式
+	conditionalFormatRuleFlag bool
+	index                     int // 规则索引位置，默认为最后一个
+	indexFlag                 bool
+	ranges                    *ConditionalFormatRange // 条件格式应用范围
+	rangesFlag                bool
+}
+
+func NewConditionalFormatBuilder() *ConditionalFormatBuilder {
+	builder := &ConditionalFormatBuilder{}
+	return builder
+}
+
+// 条件格式ID
+//
+// 示例值：hKc9HDZhrJ
+func (builder *ConditionalFormatBuilder) ConditionalFormatId(conditionalFormatId string) *ConditionalFormatBuilder {
+	builder.conditionalFormatId = conditionalFormatId
+	builder.conditionalFormatIdFlag = true
+	return builder
+}
+
+// 条件格式
+//
+// 示例值：
+func (builder *ConditionalFormatBuilder) ConditionalFormatRule(conditionalFormatRule *ConditionalFormatRule) *ConditionalFormatBuilder {
+	builder.conditionalFormatRule = conditionalFormatRule
+	builder.conditionalFormatRuleFlag = true
+	return builder
+}
+
+// 规则索引位置，默认为最后一个
+//
+// 示例值：
+func (builder *ConditionalFormatBuilder) Index(index int) *ConditionalFormatBuilder {
+	builder.index = index
+	builder.indexFlag = true
+	return builder
+}
+
+// 条件格式应用范围
+//
+// 示例值：
+func (builder *ConditionalFormatBuilder) Ranges(ranges *ConditionalFormatRange) *ConditionalFormatBuilder {
+	builder.ranges = ranges
+	builder.rangesFlag = true
+	return builder
+}
+
+func (builder *ConditionalFormatBuilder) Build() *ConditionalFormat {
+	req := &ConditionalFormat{}
+	if builder.conditionalFormatIdFlag {
+		req.ConditionalFormatId = &builder.conditionalFormatId
+
+	}
+	if builder.conditionalFormatRuleFlag {
+		req.ConditionalFormatRule = builder.conditionalFormatRule
+	}
+	if builder.indexFlag {
+		req.Index = &builder.index
+
+	}
+	if builder.rangesFlag {
+		req.Ranges = builder.ranges
+	}
+	return req
+}
+
+type ConditionalFormatRange struct {
+	SheetId          *string `json:"sheet_id,omitempty"`           // 工作表ID
+	StartRowIndex    *int    `json:"start_row_index,omitempty"`    // 起始行索引
+	EndRowIndex      *int    `json:"end_row_index,omitempty"`      // 结束行索引
+	StartColumnIndex *int    `json:"start_column_index,omitempty"` // 起始列索引
+	EndColumnIndex   *int    `json:"end_column_index,omitempty"`   // 结束列索引
+}
+
+type ConditionalFormatRangeBuilder struct {
+	sheetId              string // 工作表ID
+	sheetIdFlag          bool
+	startRowIndex        int // 起始行索引
+	startRowIndexFlag    bool
+	endRowIndex          int // 结束行索引
+	endRowIndexFlag      bool
+	startColumnIndex     int // 起始列索引
+	startColumnIndexFlag bool
+	endColumnIndex       int // 结束列索引
+	endColumnIndexFlag   bool
+}
+
+func NewConditionalFormatRangeBuilder() *ConditionalFormatRangeBuilder {
+	builder := &ConditionalFormatRangeBuilder{}
+	return builder
+}
+
+// 工作表ID
+//
+// 示例值：
+func (builder *ConditionalFormatRangeBuilder) SheetId(sheetId string) *ConditionalFormatRangeBuilder {
+	builder.sheetId = sheetId
+	builder.sheetIdFlag = true
+	return builder
+}
+
+// 起始行索引
+//
+// 示例值：0
+func (builder *ConditionalFormatRangeBuilder) StartRowIndex(startRowIndex int) *ConditionalFormatRangeBuilder {
+	builder.startRowIndex = startRowIndex
+	builder.startRowIndexFlag = true
+	return builder
+}
+
+// 结束行索引
+//
+// 示例值：0
+func (builder *ConditionalFormatRangeBuilder) EndRowIndex(endRowIndex int) *ConditionalFormatRangeBuilder {
+	builder.endRowIndex = endRowIndex
+	builder.endRowIndexFlag = true
+	return builder
+}
+
+// 起始列索引
+//
+// 示例值：0
+func (builder *ConditionalFormatRangeBuilder) StartColumnIndex(startColumnIndex int) *ConditionalFormatRangeBuilder {
+	builder.startColumnIndex = startColumnIndex
+	builder.startColumnIndexFlag = true
+	return builder
+}
+
+// 结束列索引
+//
+// 示例值：0
+func (builder *ConditionalFormatRangeBuilder) EndColumnIndex(endColumnIndex int) *ConditionalFormatRangeBuilder {
+	builder.endColumnIndex = endColumnIndex
+	builder.endColumnIndexFlag = true
+	return builder
+}
+
+func (builder *ConditionalFormatRangeBuilder) Build() *ConditionalFormatRange {
+	req := &ConditionalFormatRange{}
+	if builder.sheetIdFlag {
+		req.SheetId = &builder.sheetId
+
+	}
+	if builder.startRowIndexFlag {
+		req.StartRowIndex = &builder.startRowIndex
+
+	}
+	if builder.endRowIndexFlag {
+		req.EndRowIndex = &builder.endRowIndex
+
+	}
+	if builder.startColumnIndexFlag {
+		req.StartColumnIndex = &builder.startColumnIndex
+
+	}
+	if builder.endColumnIndexFlag {
+		req.EndColumnIndex = &builder.endColumnIndex
+
+	}
+	return req
+}
+
+type ConditionalFormatRule struct {
+	BooleanRule *BooleanRuleCondition `json:"boolean_rule,omitempty"` // 布尔类型条件格式
+	Type        *string               `json:"type,omitempty"`         // 条件格式类型
+}
+
+type ConditionalFormatRuleBuilder struct {
+	booleanRule     *BooleanRuleCondition // 布尔类型条件格式
+	booleanRuleFlag bool
+	type_           string // 条件格式类型
+	typeFlag        bool
+}
+
+func NewConditionalFormatRuleBuilder() *ConditionalFormatRuleBuilder {
+	builder := &ConditionalFormatRuleBuilder{}
+	return builder
+}
+
+// 布尔类型条件格式
+//
+// 示例值：
+func (builder *ConditionalFormatRuleBuilder) BooleanRule(booleanRule *BooleanRuleCondition) *ConditionalFormatRuleBuilder {
+	builder.booleanRule = booleanRule
+	builder.booleanRuleFlag = true
+	return builder
+}
+
+// 条件格式类型
+//
+// 示例值：BooleanRuleCondition
+func (builder *ConditionalFormatRuleBuilder) Type(type_ string) *ConditionalFormatRuleBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+func (builder *ConditionalFormatRuleBuilder) Build() *ConditionalFormatRule {
+	req := &ConditionalFormatRule{}
+	if builder.booleanRuleFlag {
+		req.BooleanRule = builder.booleanRule
+	}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	return req
+}
+
+type ConditionalFormatStyle struct {
+	BackgroundColor *string `json:"background_color,omitempty"` // 背景颜色
+	ForegroundColor *string `json:"foreground_color,omitempty"` // 字体颜色
+	Underline       *bool   `json:"underline,omitempty"`        // 是否设置下划线
+	Bold            *bool   `json:"bold,omitempty"`             // 是否加粗
+	Italic          *bool   `json:"italic,omitempty"`           // 是否设置斜体
+	Strikethrough   *bool   `json:"strikethrough,omitempty"`    // 是否设置删除线
+}
+
+type ConditionalFormatStyleBuilder struct {
+	backgroundColor     string // 背景颜色
+	backgroundColorFlag bool
+	foregroundColor     string // 字体颜色
+	foregroundColorFlag bool
+	underline           bool // 是否设置下划线
+	underlineFlag       bool
+	bold                bool // 是否加粗
+	boldFlag            bool
+	italic              bool // 是否设置斜体
+	italicFlag          bool
+	strikethrough       bool // 是否设置删除线
+	strikethroughFlag   bool
+}
+
+func NewConditionalFormatStyleBuilder() *ConditionalFormatStyleBuilder {
+	builder := &ConditionalFormatStyleBuilder{}
+	return builder
+}
+
+// 背景颜色
+//
+// 示例值：#ff00ff
+func (builder *ConditionalFormatStyleBuilder) BackgroundColor(backgroundColor string) *ConditionalFormatStyleBuilder {
+	builder.backgroundColor = backgroundColor
+	builder.backgroundColorFlag = true
+	return builder
+}
+
+// 字体颜色
+//
+// 示例值：#ff00ff
+func (builder *ConditionalFormatStyleBuilder) ForegroundColor(foregroundColor string) *ConditionalFormatStyleBuilder {
+	builder.foregroundColor = foregroundColor
+	builder.foregroundColorFlag = true
+	return builder
+}
+
+// 是否设置下划线
+//
+// 示例值：true
+func (builder *ConditionalFormatStyleBuilder) Underline(underline bool) *ConditionalFormatStyleBuilder {
+	builder.underline = underline
+	builder.underlineFlag = true
+	return builder
+}
+
+// 是否加粗
+//
+// 示例值：true
+func (builder *ConditionalFormatStyleBuilder) Bold(bold bool) *ConditionalFormatStyleBuilder {
+	builder.bold = bold
+	builder.boldFlag = true
+	return builder
+}
+
+// 是否设置斜体
+//
+// 示例值：true
+func (builder *ConditionalFormatStyleBuilder) Italic(italic bool) *ConditionalFormatStyleBuilder {
+	builder.italic = italic
+	builder.italicFlag = true
+	return builder
+}
+
+// 是否设置删除线
+//
+// 示例值：true
+func (builder *ConditionalFormatStyleBuilder) Strikethrough(strikethrough bool) *ConditionalFormatStyleBuilder {
+	builder.strikethrough = strikethrough
+	builder.strikethroughFlag = true
+	return builder
+}
+
+func (builder *ConditionalFormatStyleBuilder) Build() *ConditionalFormatStyle {
+	req := &ConditionalFormatStyle{}
+	if builder.backgroundColorFlag {
+		req.BackgroundColor = &builder.backgroundColor
+
+	}
+	if builder.foregroundColorFlag {
+		req.ForegroundColor = &builder.foregroundColor
+
+	}
+	if builder.underlineFlag {
+		req.Underline = &builder.underline
+
+	}
+	if builder.boldFlag {
+		req.Bold = &builder.bold
+
+	}
+	if builder.italicFlag {
+		req.Italic = &builder.italic
+
+	}
+	if builder.strikethroughFlag {
+		req.Strikethrough = &builder.strikethrough
+
+	}
+	return req
+}
+
+type CreateDataValidation struct {
+	Range *string         `json:"range,omitempty"` // 数据校验设置的范围
+	Rule  *DataValidation `json:"rule,omitempty"`  // 数据校验规则
+}
+
+type CreateDataValidationBuilder struct {
+	range_    string // 数据校验设置的范围
+	rangeFlag bool
+	rule      *DataValidation // 数据校验规则
+	ruleFlag  bool
+}
+
+func NewCreateDataValidationBuilder() *CreateDataValidationBuilder {
+	builder := &CreateDataValidationBuilder{}
+	return builder
+}
+
+// 数据校验设置的范围
+//
+// 示例值：sjls29!A1:B2
+func (builder *CreateDataValidationBuilder) Range(range_ string) *CreateDataValidationBuilder {
+	builder.range_ = range_
+	builder.rangeFlag = true
+	return builder
+}
+
+// 数据校验规则
+//
+// 示例值：
+func (builder *CreateDataValidationBuilder) Rule(rule *DataValidation) *CreateDataValidationBuilder {
+	builder.rule = rule
+	builder.ruleFlag = true
+	return builder
+}
+
+func (builder *CreateDataValidationBuilder) Build() *CreateDataValidation {
+	req := &CreateDataValidation{}
+	if builder.rangeFlag {
+		req.Range = &builder.range_
+
+	}
+	if builder.ruleFlag {
+		req.Rule = builder.rule
+	}
+	return req
+}
+
 type CreateSheetFilter struct {
 	Range     *string    `json:"range,omitempty"`     // 筛选应用范围
 	Col       *string    `json:"col,omitempty"`       // 设置筛选条件的列
@@ -489,6 +1514,195 @@ func (builder *CreateSheetFilterBuilder) Build() *CreateSheetFilter {
 	}
 	if builder.conditionFlag {
 		req.Condition = builder.condition
+	}
+	return req
+}
+
+type DataValidation struct {
+	DataValidationId   *int                `json:"data_validation_id,omitempty"`   // 数据校验ID
+	DataValidationRule *DataValidationRule `json:"data_validation_rule,omitempty"` // 数据校验规则
+	Strict             *string             `json:"strict,omitempty"`               // 校验模式，数据非法时是否拒绝输入
+	HelpText           *string             `json:"help_text,omitempty"`            // 输入提示
+}
+
+type DataValidationBuilder struct {
+	dataValidationId       int // 数据校验ID
+	dataValidationIdFlag   bool
+	dataValidationRule     *DataValidationRule // 数据校验规则
+	dataValidationRuleFlag bool
+	strict                 string // 校验模式，数据非法时是否拒绝输入
+	strictFlag             bool
+	helpText               string // 输入提示
+	helpTextFlag           bool
+}
+
+func NewDataValidationBuilder() *DataValidationBuilder {
+	builder := &DataValidationBuilder{}
+	return builder
+}
+
+// 数据校验ID
+//
+// 示例值：1
+func (builder *DataValidationBuilder) DataValidationId(dataValidationId int) *DataValidationBuilder {
+	builder.dataValidationId = dataValidationId
+	builder.dataValidationIdFlag = true
+	return builder
+}
+
+// 数据校验规则
+//
+// 示例值：
+func (builder *DataValidationBuilder) DataValidationRule(dataValidationRule *DataValidationRule) *DataValidationBuilder {
+	builder.dataValidationRule = dataValidationRule
+	builder.dataValidationRuleFlag = true
+	return builder
+}
+
+// 校验模式，数据非法时是否拒绝输入
+//
+// 示例值：true
+func (builder *DataValidationBuilder) Strict(strict string) *DataValidationBuilder {
+	builder.strict = strict
+	builder.strictFlag = true
+	return builder
+}
+
+// 输入提示
+//
+// 示例值：number between 1 and 2
+func (builder *DataValidationBuilder) HelpText(helpText string) *DataValidationBuilder {
+	builder.helpText = helpText
+	builder.helpTextFlag = true
+	return builder
+}
+
+func (builder *DataValidationBuilder) Build() *DataValidation {
+	req := &DataValidation{}
+	if builder.dataValidationIdFlag {
+		req.DataValidationId = &builder.dataValidationId
+
+	}
+	if builder.dataValidationRuleFlag {
+		req.DataValidationRule = builder.dataValidationRule
+	}
+	if builder.strictFlag {
+		req.Strict = &builder.strict
+
+	}
+	if builder.helpTextFlag {
+		req.HelpText = &builder.helpText
+
+	}
+	return req
+}
+
+type DataValidationRule struct {
+	Type           *string         `json:"type,omitempty"`            // 数据校验类型
+	SingleOption   *SingleOption   `json:"single_option,omitempty"`   // 单选
+	MultipleOption *MultipleOption `json:"multiple_option,omitempty"` // 多选
+}
+
+type DataValidationRuleBuilder struct {
+	type_              string // 数据校验类型
+	typeFlag           bool
+	singleOption       *SingleOption // 单选
+	singleOptionFlag   bool
+	multipleOption     *MultipleOption // 多选
+	multipleOptionFlag bool
+}
+
+func NewDataValidationRuleBuilder() *DataValidationRuleBuilder {
+	builder := &DataValidationRuleBuilder{}
+	return builder
+}
+
+// 数据校验类型
+//
+// 示例值：SingleOption
+func (builder *DataValidationRuleBuilder) Type(type_ string) *DataValidationRuleBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 单选
+//
+// 示例值：
+func (builder *DataValidationRuleBuilder) SingleOption(singleOption *SingleOption) *DataValidationRuleBuilder {
+	builder.singleOption = singleOption
+	builder.singleOptionFlag = true
+	return builder
+}
+
+// 多选
+//
+// 示例值：
+func (builder *DataValidationRuleBuilder) MultipleOption(multipleOption *MultipleOption) *DataValidationRuleBuilder {
+	builder.multipleOption = multipleOption
+	builder.multipleOptionFlag = true
+	return builder
+}
+
+func (builder *DataValidationRuleBuilder) Build() *DataValidationRule {
+	req := &DataValidationRule{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.singleOptionFlag {
+		req.SingleOption = builder.singleOption
+	}
+	if builder.multipleOptionFlag {
+		req.MultipleOption = builder.multipleOption
+	}
+	return req
+}
+
+type DataValidationValue struct {
+	OptionValue *string `json:"option_value,omitempty"` // 选项值
+	OptionColor *string `json:"option_color,omitempty"` // 选项颜色
+}
+
+type DataValidationValueBuilder struct {
+	optionValue     string // 选项值
+	optionValueFlag bool
+	optionColor     string // 选项颜色
+	optionColorFlag bool
+}
+
+func NewDataValidationValueBuilder() *DataValidationValueBuilder {
+	builder := &DataValidationValueBuilder{}
+	return builder
+}
+
+// 选项值
+//
+// 示例值：Option1
+func (builder *DataValidationValueBuilder) OptionValue(optionValue string) *DataValidationValueBuilder {
+	builder.optionValue = optionValue
+	builder.optionValueFlag = true
+	return builder
+}
+
+// 选项颜色
+//
+// 示例值：#ff00ff
+func (builder *DataValidationValueBuilder) OptionColor(optionColor string) *DataValidationValueBuilder {
+	builder.optionColor = optionColor
+	builder.optionColorFlag = true
+	return builder
+}
+
+func (builder *DataValidationValueBuilder) Build() *DataValidationValue {
+	req := &DataValidationValue{}
+	if builder.optionValueFlag {
+		req.OptionValue = &builder.optionValue
+
+	}
+	if builder.optionColorFlag {
+		req.OptionColor = &builder.optionColor
+
 	}
 	return req
 }
@@ -1526,6 +2740,54 @@ func (builder *InsertDimensionBuilder) Build() *InsertDimension {
 	return req
 }
 
+type LeftBorderStyle struct {
+	Style *string `json:"style,omitempty"` // 边框样式
+	Color *string `json:"color,omitempty"` // 边框颜色
+}
+
+type LeftBorderStyleBuilder struct {
+	style     string // 边框样式
+	styleFlag bool
+	color     string // 边框颜色
+	colorFlag bool
+}
+
+func NewLeftBorderStyleBuilder() *LeftBorderStyleBuilder {
+	builder := &LeftBorderStyleBuilder{}
+	return builder
+}
+
+// 边框样式
+//
+// 示例值：
+func (builder *LeftBorderStyleBuilder) Style(style string) *LeftBorderStyleBuilder {
+	builder.style = style
+	builder.styleFlag = true
+	return builder
+}
+
+// 边框颜色
+//
+// 示例值：#ff00ff
+func (builder *LeftBorderStyleBuilder) Color(color string) *LeftBorderStyleBuilder {
+	builder.color = color
+	builder.colorFlag = true
+	return builder
+}
+
+func (builder *LeftBorderStyleBuilder) Build() *LeftBorderStyle {
+	req := &LeftBorderStyle{}
+	if builder.styleFlag {
+		req.Style = &builder.style
+
+	}
+	if builder.colorFlag {
+		req.Color = &builder.color
+
+	}
+	return req
+}
+
 type Link struct {
 	Text          *string         `json:"text,omitempty"`           // 文本
 	Link          *string         `json:"link,omitempty"`           // 链接
@@ -1952,6 +3214,365 @@ func (builder *MultiRangeBuilder) Build() *MultiRange {
 	return req
 }
 
+type MultipleOption struct {
+	Type                 *string                `json:"type,omitempty"`                   // 多选类型
+	Range                *string                `json:"range,omitempty"`                  // 数据引用范围，当type=MultipleOfRange时必须有
+	DataValidationValues []*DataValidationValue `json:"data_validation_values,omitempty"` // 多选列表，当type=MultipleOfList时必须有
+	Properties           *OptionProperties      `json:"properties,omitempty"`             // 属性
+}
+
+type MultipleOptionBuilder struct {
+	type_                    string // 多选类型
+	typeFlag                 bool
+	range_                   string // 数据引用范围，当type=MultipleOfRange时必须有
+	rangeFlag                bool
+	dataValidationValues     []*DataValidationValue // 多选列表，当type=MultipleOfList时必须有
+	dataValidationValuesFlag bool
+	properties               *OptionProperties // 属性
+	propertiesFlag           bool
+}
+
+func NewMultipleOptionBuilder() *MultipleOptionBuilder {
+	builder := &MultipleOptionBuilder{}
+	return builder
+}
+
+// 多选类型
+//
+// 示例值：OneOfList
+func (builder *MultipleOptionBuilder) Type(type_ string) *MultipleOptionBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 数据引用范围，当type=MultipleOfRange时必须有
+//
+// 示例值：a8KL0B!A2:B3
+func (builder *MultipleOptionBuilder) Range(range_ string) *MultipleOptionBuilder {
+	builder.range_ = range_
+	builder.rangeFlag = true
+	return builder
+}
+
+// 多选列表，当type=MultipleOfList时必须有
+//
+// 示例值：
+func (builder *MultipleOptionBuilder) DataValidationValues(dataValidationValues []*DataValidationValue) *MultipleOptionBuilder {
+	builder.dataValidationValues = dataValidationValues
+	builder.dataValidationValuesFlag = true
+	return builder
+}
+
+// 属性
+//
+// 示例值：
+func (builder *MultipleOptionBuilder) Properties(properties *OptionProperties) *MultipleOptionBuilder {
+	builder.properties = properties
+	builder.propertiesFlag = true
+	return builder
+}
+
+func (builder *MultipleOptionBuilder) Build() *MultipleOption {
+	req := &MultipleOption{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.rangeFlag {
+		req.Range = &builder.range_
+
+	}
+	if builder.dataValidationValuesFlag {
+		req.DataValidationValues = builder.dataValidationValues
+	}
+	if builder.propertiesFlag {
+		req.Properties = builder.properties
+	}
+	return req
+}
+
+type OptionProperties struct {
+	ShowDropdownIcon *bool `json:"show_dropdown_icon,omitempty"` // 是否展示下拉按钮
+}
+
+type OptionPropertiesBuilder struct {
+	showDropdownIcon     bool // 是否展示下拉按钮
+	showDropdownIconFlag bool
+}
+
+func NewOptionPropertiesBuilder() *OptionPropertiesBuilder {
+	builder := &OptionPropertiesBuilder{}
+	return builder
+}
+
+// 是否展示下拉按钮
+//
+// 示例值：true
+func (builder *OptionPropertiesBuilder) ShowDropdownIcon(showDropdownIcon bool) *OptionPropertiesBuilder {
+	builder.showDropdownIcon = showDropdownIcon
+	builder.showDropdownIconFlag = true
+	return builder
+}
+
+func (builder *OptionPropertiesBuilder) Build() *OptionProperties {
+	req := &OptionProperties{}
+	if builder.showDropdownIconFlag {
+		req.ShowDropdownIcon = &builder.showDropdownIcon
+
+	}
+	return req
+}
+
+type PatchConditionalFormat struct {
+	Ranges                []*ConditionalFormatRange `json:"ranges,omitempty"`                  // 条件格式应用范围
+	ConditionalFormatRule *ConditionalFormatRule    `json:"conditional_format_rule,omitempty"` // 条件格式规则
+	Index                 *int                      `json:"index,omitempty"`                   // 条件格式索引位置
+}
+
+type PatchConditionalFormatBuilder struct {
+	ranges                    []*ConditionalFormatRange // 条件格式应用范围
+	rangesFlag                bool
+	conditionalFormatRule     *ConditionalFormatRule // 条件格式规则
+	conditionalFormatRuleFlag bool
+	index                     int // 条件格式索引位置
+	indexFlag                 bool
+}
+
+func NewPatchConditionalFormatBuilder() *PatchConditionalFormatBuilder {
+	builder := &PatchConditionalFormatBuilder{}
+	return builder
+}
+
+// 条件格式应用范围
+//
+// 示例值：
+func (builder *PatchConditionalFormatBuilder) Ranges(ranges []*ConditionalFormatRange) *PatchConditionalFormatBuilder {
+	builder.ranges = ranges
+	builder.rangesFlag = true
+	return builder
+}
+
+// 条件格式规则
+//
+// 示例值：
+func (builder *PatchConditionalFormatBuilder) ConditionalFormatRule(conditionalFormatRule *ConditionalFormatRule) *PatchConditionalFormatBuilder {
+	builder.conditionalFormatRule = conditionalFormatRule
+	builder.conditionalFormatRuleFlag = true
+	return builder
+}
+
+// 条件格式索引位置
+//
+// 示例值：0
+func (builder *PatchConditionalFormatBuilder) Index(index int) *PatchConditionalFormatBuilder {
+	builder.index = index
+	builder.indexFlag = true
+	return builder
+}
+
+func (builder *PatchConditionalFormatBuilder) Build() *PatchConditionalFormat {
+	req := &PatchConditionalFormat{}
+	if builder.rangesFlag {
+		req.Ranges = builder.ranges
+	}
+	if builder.conditionalFormatRuleFlag {
+		req.ConditionalFormatRule = builder.conditionalFormatRule
+	}
+	if builder.indexFlag {
+		req.Index = &builder.index
+
+	}
+	return req
+}
+
+type PatchDataValidation struct {
+	DataValidationRule *DataValidationRule `json:"data_validation_rule,omitempty"` // 数据校验规则
+	Strict             *bool               `json:"strict,omitempty"`               // 校验模式，数据非法时是否拒绝输入
+	HelpText           *string             `json:"help_text,omitempty"`            // 帮助文本
+}
+
+type PatchDataValidationBuilder struct {
+	dataValidationRule     *DataValidationRule // 数据校验规则
+	dataValidationRuleFlag bool
+	strict                 bool // 校验模式，数据非法时是否拒绝输入
+	strictFlag             bool
+	helpText               string // 帮助文本
+	helpTextFlag           bool
+}
+
+func NewPatchDataValidationBuilder() *PatchDataValidationBuilder {
+	builder := &PatchDataValidationBuilder{}
+	return builder
+}
+
+// 数据校验规则
+//
+// 示例值：
+func (builder *PatchDataValidationBuilder) DataValidationRule(dataValidationRule *DataValidationRule) *PatchDataValidationBuilder {
+	builder.dataValidationRule = dataValidationRule
+	builder.dataValidationRuleFlag = true
+	return builder
+}
+
+// 校验模式，数据非法时是否拒绝输入
+//
+// 示例值：true
+func (builder *PatchDataValidationBuilder) Strict(strict bool) *PatchDataValidationBuilder {
+	builder.strict = strict
+	builder.strictFlag = true
+	return builder
+}
+
+// 帮助文本
+//
+// 示例值：
+func (builder *PatchDataValidationBuilder) HelpText(helpText string) *PatchDataValidationBuilder {
+	builder.helpText = helpText
+	builder.helpTextFlag = true
+	return builder
+}
+
+func (builder *PatchDataValidationBuilder) Build() *PatchDataValidation {
+	req := &PatchDataValidation{}
+	if builder.dataValidationRuleFlag {
+		req.DataValidationRule = builder.dataValidationRule
+	}
+	if builder.strictFlag {
+		req.Strict = &builder.strict
+
+	}
+	if builder.helpTextFlag {
+		req.HelpText = &builder.helpText
+
+	}
+	return req
+}
+
+type PatchProtectedRange struct {
+	Description      *string           `json:"description,omitempty"`       // 保护范围描述
+	ProtectedRows    *ProtectedRows    `json:"protected_rows,omitempty"`    // 保护行范围
+	ProtectedColumns *ProtectedColumns `json:"protected_columns,omitempty"` // 保护列范围
+}
+
+type PatchProtectedRangeBuilder struct {
+	description          string // 保护范围描述
+	descriptionFlag      bool
+	protectedRows        *ProtectedRows // 保护行范围
+	protectedRowsFlag    bool
+	protectedColumns     *ProtectedColumns // 保护列范围
+	protectedColumnsFlag bool
+}
+
+func NewPatchProtectedRangeBuilder() *PatchProtectedRangeBuilder {
+	builder := &PatchProtectedRangeBuilder{}
+	return builder
+}
+
+// 保护范围描述
+//
+// 示例值：这是一个保护范围
+func (builder *PatchProtectedRangeBuilder) Description(description string) *PatchProtectedRangeBuilder {
+	builder.description = description
+	builder.descriptionFlag = true
+	return builder
+}
+
+// 保护行范围
+//
+// 示例值：
+func (builder *PatchProtectedRangeBuilder) ProtectedRows(protectedRows *ProtectedRows) *PatchProtectedRangeBuilder {
+	builder.protectedRows = protectedRows
+	builder.protectedRowsFlag = true
+	return builder
+}
+
+// 保护列范围
+//
+// 示例值：
+func (builder *PatchProtectedRangeBuilder) ProtectedColumns(protectedColumns *ProtectedColumns) *PatchProtectedRangeBuilder {
+	builder.protectedColumns = protectedColumns
+	builder.protectedColumnsFlag = true
+	return builder
+}
+
+func (builder *PatchProtectedRangeBuilder) Build() *PatchProtectedRange {
+	req := &PatchProtectedRange{}
+	if builder.descriptionFlag {
+		req.Description = &builder.description
+
+	}
+	if builder.protectedRowsFlag {
+		req.ProtectedRows = builder.protectedRows
+	}
+	if builder.protectedColumnsFlag {
+		req.ProtectedColumns = builder.protectedColumns
+	}
+	return req
+}
+
+type PatchProtectedRangeEditors struct {
+	Type          *string                `json:"type,omitempty"`           // 修改类型
+	AddEditors    *ProtectedRangeEditors `json:"add_editors,omitempty"`    // 增加可编辑人员
+	RemoveEditors *ProtectedRangeEditors `json:"remove_editors,omitempty"` // 删除可编辑人员
+}
+
+type PatchProtectedRangeEditorsBuilder struct {
+	type_             string // 修改类型
+	typeFlag          bool
+	addEditors        *ProtectedRangeEditors // 增加可编辑人员
+	addEditorsFlag    bool
+	removeEditors     *ProtectedRangeEditors // 删除可编辑人员
+	removeEditorsFlag bool
+}
+
+func NewPatchProtectedRangeEditorsBuilder() *PatchProtectedRangeEditorsBuilder {
+	builder := &PatchProtectedRangeEditorsBuilder{}
+	return builder
+}
+
+// 修改类型
+//
+// 示例值：AddEditors
+func (builder *PatchProtectedRangeEditorsBuilder) Type(type_ string) *PatchProtectedRangeEditorsBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 增加可编辑人员
+//
+// 示例值：
+func (builder *PatchProtectedRangeEditorsBuilder) AddEditors(addEditors *ProtectedRangeEditors) *PatchProtectedRangeEditorsBuilder {
+	builder.addEditors = addEditors
+	builder.addEditorsFlag = true
+	return builder
+}
+
+// 删除可编辑人员
+//
+// 示例值：
+func (builder *PatchProtectedRangeEditorsBuilder) RemoveEditors(removeEditors *ProtectedRangeEditors) *PatchProtectedRangeEditorsBuilder {
+	builder.removeEditors = removeEditors
+	builder.removeEditorsFlag = true
+	return builder
+}
+
+func (builder *PatchProtectedRangeEditorsBuilder) Build() *PatchProtectedRangeEditors {
+	req := &PatchProtectedRangeEditors{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.addEditorsFlag {
+		req.AddEditors = builder.addEditors
+	}
+	if builder.removeEditorsFlag {
+		req.RemoveEditors = builder.removeEditors
+	}
+	return req
+}
+
 type PlainTextValueRange struct {
 	Range  *string    `json:"range,omitempty"`  // 范围
 	Values [][]string `json:"values,omitempty"` // 数据
@@ -1995,6 +3616,351 @@ func (builder *PlainTextValueRangeBuilder) Build() *PlainTextValueRange {
 	}
 	if builder.valuesFlag {
 		req.Values = builder.values
+	}
+	return req
+}
+
+type ProtectedColumns struct {
+	SheetId    *string `json:"sheet_id,omitempty"`    // 工作表ID
+	StartIndex *int    `json:"start_index,omitempty"` // 起始列
+	EndIndex   *int    `json:"end_index,omitempty"`   // 结束列
+}
+
+type ProtectedColumnsBuilder struct {
+	sheetId        string // 工作表ID
+	sheetIdFlag    bool
+	startIndex     int // 起始列
+	startIndexFlag bool
+	endIndex       int // 结束列
+	endIndexFlag   bool
+}
+
+func NewProtectedColumnsBuilder() *ProtectedColumnsBuilder {
+	builder := &ProtectedColumnsBuilder{}
+	return builder
+}
+
+// 工作表ID
+//
+// 示例值：ah9IJ2
+func (builder *ProtectedColumnsBuilder) SheetId(sheetId string) *ProtectedColumnsBuilder {
+	builder.sheetId = sheetId
+	builder.sheetIdFlag = true
+	return builder
+}
+
+// 起始列
+//
+// 示例值：0
+func (builder *ProtectedColumnsBuilder) StartIndex(startIndex int) *ProtectedColumnsBuilder {
+	builder.startIndex = startIndex
+	builder.startIndexFlag = true
+	return builder
+}
+
+// 结束列
+//
+// 示例值：2
+func (builder *ProtectedColumnsBuilder) EndIndex(endIndex int) *ProtectedColumnsBuilder {
+	builder.endIndex = endIndex
+	builder.endIndexFlag = true
+	return builder
+}
+
+func (builder *ProtectedColumnsBuilder) Build() *ProtectedColumns {
+	req := &ProtectedColumns{}
+	if builder.sheetIdFlag {
+		req.SheetId = &builder.sheetId
+
+	}
+	if builder.startIndexFlag {
+		req.StartIndex = &builder.startIndex
+
+	}
+	if builder.endIndexFlag {
+		req.EndIndex = &builder.endIndex
+
+	}
+	return req
+}
+
+type ProtectedRange struct {
+	ProtectedId        *string                `json:"protected_id,omitempty"`        // 保护范围ID
+	Description        *string                `json:"description,omitempty"`         // 保护范围描述
+	ProtectedDimension *string                `json:"protected_dimension,omitempty"` // 保护类型
+	ProtectedRows      *ProtectedRows         `json:"protected_rows,omitempty"`      // 保护行范围
+	ProtectedColumns   *ProtectedColumns      `json:"protected_columns,omitempty"`   // 保护列范围
+	ProtectedSheet     *ProtectedSheet        `json:"protected_sheet,omitempty"`     // 保护工作表范围
+	Editors            *ProtectedRangeEditors `json:"editors,omitempty"`             // 保护范围可编辑用户
+}
+
+type ProtectedRangeBuilder struct {
+	protectedId            string // 保护范围ID
+	protectedIdFlag        bool
+	description            string // 保护范围描述
+	descriptionFlag        bool
+	protectedDimension     string // 保护类型
+	protectedDimensionFlag bool
+	protectedRows          *ProtectedRows // 保护行范围
+	protectedRowsFlag      bool
+	protectedColumns       *ProtectedColumns // 保护列范围
+	protectedColumnsFlag   bool
+	protectedSheet         *ProtectedSheet // 保护工作表范围
+	protectedSheetFlag     bool
+	editors                *ProtectedRangeEditors // 保护范围可编辑用户
+	editorsFlag            bool
+}
+
+func NewProtectedRangeBuilder() *ProtectedRangeBuilder {
+	builder := &ProtectedRangeBuilder{}
+	return builder
+}
+
+// 保护范围ID
+//
+// 示例值：1650435126216662
+func (builder *ProtectedRangeBuilder) ProtectedId(protectedId string) *ProtectedRangeBuilder {
+	builder.protectedId = protectedId
+	builder.protectedIdFlag = true
+	return builder
+}
+
+// 保护范围描述
+//
+// 示例值：这是一个保护范围
+func (builder *ProtectedRangeBuilder) Description(description string) *ProtectedRangeBuilder {
+	builder.description = description
+	builder.descriptionFlag = true
+	return builder
+}
+
+// 保护类型
+//
+// 示例值：Rows
+func (builder *ProtectedRangeBuilder) ProtectedDimension(protectedDimension string) *ProtectedRangeBuilder {
+	builder.protectedDimension = protectedDimension
+	builder.protectedDimensionFlag = true
+	return builder
+}
+
+// 保护行范围
+//
+// 示例值：
+func (builder *ProtectedRangeBuilder) ProtectedRows(protectedRows *ProtectedRows) *ProtectedRangeBuilder {
+	builder.protectedRows = protectedRows
+	builder.protectedRowsFlag = true
+	return builder
+}
+
+// 保护列范围
+//
+// 示例值：
+func (builder *ProtectedRangeBuilder) ProtectedColumns(protectedColumns *ProtectedColumns) *ProtectedRangeBuilder {
+	builder.protectedColumns = protectedColumns
+	builder.protectedColumnsFlag = true
+	return builder
+}
+
+// 保护工作表范围
+//
+// 示例值：
+func (builder *ProtectedRangeBuilder) ProtectedSheet(protectedSheet *ProtectedSheet) *ProtectedRangeBuilder {
+	builder.protectedSheet = protectedSheet
+	builder.protectedSheetFlag = true
+	return builder
+}
+
+// 保护范围可编辑用户
+//
+// 示例值：
+func (builder *ProtectedRangeBuilder) Editors(editors *ProtectedRangeEditors) *ProtectedRangeBuilder {
+	builder.editors = editors
+	builder.editorsFlag = true
+	return builder
+}
+
+func (builder *ProtectedRangeBuilder) Build() *ProtectedRange {
+	req := &ProtectedRange{}
+	if builder.protectedIdFlag {
+		req.ProtectedId = &builder.protectedId
+
+	}
+	if builder.descriptionFlag {
+		req.Description = &builder.description
+
+	}
+	if builder.protectedDimensionFlag {
+		req.ProtectedDimension = &builder.protectedDimension
+
+	}
+	if builder.protectedRowsFlag {
+		req.ProtectedRows = builder.protectedRows
+	}
+	if builder.protectedColumnsFlag {
+		req.ProtectedColumns = builder.protectedColumns
+	}
+	if builder.protectedSheetFlag {
+		req.ProtectedSheet = builder.protectedSheet
+	}
+	if builder.editorsFlag {
+		req.Editors = builder.editors
+	}
+	return req
+}
+
+type ProtectedRangeEditors struct {
+	Users       []string `json:"users,omitempty"`       // 可编辑人员
+	Departments []string `json:"departments,omitempty"` // 可编辑部门
+	Chats       []string `json:"chats,omitempty"`       // 可编辑群
+}
+
+type ProtectedRangeEditorsBuilder struct {
+	users           []string // 可编辑人员
+	usersFlag       bool
+	departments     []string // 可编辑部门
+	departmentsFlag bool
+	chats           []string // 可编辑群
+	chatsFlag       bool
+}
+
+func NewProtectedRangeEditorsBuilder() *ProtectedRangeEditorsBuilder {
+	builder := &ProtectedRangeEditorsBuilder{}
+	return builder
+}
+
+// 可编辑人员
+//
+// 示例值：o
+func (builder *ProtectedRangeEditorsBuilder) Users(users []string) *ProtectedRangeEditorsBuilder {
+	builder.users = users
+	builder.usersFlag = true
+	return builder
+}
+
+// 可编辑部门
+//
+// 示例值：
+func (builder *ProtectedRangeEditorsBuilder) Departments(departments []string) *ProtectedRangeEditorsBuilder {
+	builder.departments = departments
+	builder.departmentsFlag = true
+	return builder
+}
+
+// 可编辑群
+//
+// 示例值：
+func (builder *ProtectedRangeEditorsBuilder) Chats(chats []string) *ProtectedRangeEditorsBuilder {
+	builder.chats = chats
+	builder.chatsFlag = true
+	return builder
+}
+
+func (builder *ProtectedRangeEditorsBuilder) Build() *ProtectedRangeEditors {
+	req := &ProtectedRangeEditors{}
+	if builder.usersFlag {
+		req.Users = builder.users
+	}
+	if builder.departmentsFlag {
+		req.Departments = builder.departments
+	}
+	if builder.chatsFlag {
+		req.Chats = builder.chats
+	}
+	return req
+}
+
+type ProtectedRows struct {
+	SheetId    *string `json:"sheet_id,omitempty"`    // 工作表ID
+	StartIndex *int    `json:"start_index,omitempty"` // 起始行
+	EndIndex   *int    `json:"end_index,omitempty"`   // 结束行
+}
+
+type ProtectedRowsBuilder struct {
+	sheetId        string // 工作表ID
+	sheetIdFlag    bool
+	startIndex     int // 起始行
+	startIndexFlag bool
+	endIndex       int // 结束行
+	endIndexFlag   bool
+}
+
+func NewProtectedRowsBuilder() *ProtectedRowsBuilder {
+	builder := &ProtectedRowsBuilder{}
+	return builder
+}
+
+// 工作表ID
+//
+// 示例值：s92jkL
+func (builder *ProtectedRowsBuilder) SheetId(sheetId string) *ProtectedRowsBuilder {
+	builder.sheetId = sheetId
+	builder.sheetIdFlag = true
+	return builder
+}
+
+// 起始行
+//
+// 示例值：0
+func (builder *ProtectedRowsBuilder) StartIndex(startIndex int) *ProtectedRowsBuilder {
+	builder.startIndex = startIndex
+	builder.startIndexFlag = true
+	return builder
+}
+
+// 结束行
+//
+// 示例值：0
+func (builder *ProtectedRowsBuilder) EndIndex(endIndex int) *ProtectedRowsBuilder {
+	builder.endIndex = endIndex
+	builder.endIndexFlag = true
+	return builder
+}
+
+func (builder *ProtectedRowsBuilder) Build() *ProtectedRows {
+	req := &ProtectedRows{}
+	if builder.sheetIdFlag {
+		req.SheetId = &builder.sheetId
+
+	}
+	if builder.startIndexFlag {
+		req.StartIndex = &builder.startIndex
+
+	}
+	if builder.endIndexFlag {
+		req.EndIndex = &builder.endIndex
+
+	}
+	return req
+}
+
+type ProtectedSheet struct {
+	SheetId *string `json:"sheet_id,omitempty"` // 工作表ID
+}
+
+type ProtectedSheetBuilder struct {
+	sheetId     string // 工作表ID
+	sheetIdFlag bool
+}
+
+func NewProtectedSheetBuilder() *ProtectedSheetBuilder {
+	builder := &ProtectedSheetBuilder{}
+	return builder
+}
+
+// 工作表ID
+//
+// 示例值：Kd7L09
+func (builder *ProtectedSheetBuilder) SheetId(sheetId string) *ProtectedSheetBuilder {
+	builder.sheetId = sheetId
+	builder.sheetIdFlag = true
+	return builder
+}
+
+func (builder *ProtectedSheetBuilder) Build() *ProtectedSheet {
+	req := &ProtectedSheet{}
+	if builder.sheetIdFlag {
+		req.SheetId = &builder.sheetId
+
 	}
 	return req
 }
@@ -2215,6 +4181,54 @@ func (builder *RichValueBuilder) Build() *RichValue {
 	req := &RichValue{}
 	if builder.valuesFlag {
 		req.Values = builder.values
+	}
+	return req
+}
+
+type RightBorderStyle struct {
+	Style *string `json:"style,omitempty"` // 边框样式
+	Color *string `json:"color,omitempty"` // 边框颜色
+}
+
+type RightBorderStyleBuilder struct {
+	style     string // 边框样式
+	styleFlag bool
+	color     string // 边框颜色
+	colorFlag bool
+}
+
+func NewRightBorderStyleBuilder() *RightBorderStyleBuilder {
+	builder := &RightBorderStyleBuilder{}
+	return builder
+}
+
+// 边框样式
+//
+// 示例值：
+func (builder *RightBorderStyleBuilder) Style(style string) *RightBorderStyleBuilder {
+	builder.style = style
+	builder.styleFlag = true
+	return builder
+}
+
+// 边框颜色
+//
+// 示例值：#ff00ff
+func (builder *RightBorderStyleBuilder) Color(color string) *RightBorderStyleBuilder {
+	builder.color = color
+	builder.colorFlag = true
+	return builder
+}
+
+func (builder *RightBorderStyleBuilder) Build() *RightBorderStyle {
+	req := &RightBorderStyle{}
+	if builder.styleFlag {
+		req.Style = &builder.style
+
+	}
+	if builder.colorFlag {
+		req.Color = &builder.color
+
 	}
 	return req
 }
@@ -2646,6 +4660,84 @@ func (builder *SheetPropertiesBuilder) Build() *SheetProperties {
 	return req
 }
 
+type SingleOption struct {
+	Type                 *string                `json:"type,omitempty"`                   // 单选类型
+	Range                *string                `json:"range,omitempty"`                  // 引用数据的范围，当type=OneOfRange时必须存在
+	DataValidationValues []*DataValidationValue `json:"data_validation_values,omitempty"` // 选项
+	Properties           *OptionProperties      `json:"properties,omitempty"`             // 属性
+}
+
+type SingleOptionBuilder struct {
+	type_                    string // 单选类型
+	typeFlag                 bool
+	range_                   string // 引用数据的范围，当type=OneOfRange时必须存在
+	rangeFlag                bool
+	dataValidationValues     []*DataValidationValue // 选项
+	dataValidationValuesFlag bool
+	properties               *OptionProperties // 属性
+	propertiesFlag           bool
+}
+
+func NewSingleOptionBuilder() *SingleOptionBuilder {
+	builder := &SingleOptionBuilder{}
+	return builder
+}
+
+// 单选类型
+//
+// 示例值：OneOfList
+func (builder *SingleOptionBuilder) Type(type_ string) *SingleOptionBuilder {
+	builder.type_ = type_
+	builder.typeFlag = true
+	return builder
+}
+
+// 引用数据的范围，当type=OneOfRange时必须存在
+//
+// 示例值：as8jJ0!A1:B2
+func (builder *SingleOptionBuilder) Range(range_ string) *SingleOptionBuilder {
+	builder.range_ = range_
+	builder.rangeFlag = true
+	return builder
+}
+
+// 选项
+//
+// 示例值：
+func (builder *SingleOptionBuilder) DataValidationValues(dataValidationValues []*DataValidationValue) *SingleOptionBuilder {
+	builder.dataValidationValues = dataValidationValues
+	builder.dataValidationValuesFlag = true
+	return builder
+}
+
+// 属性
+//
+// 示例值：
+func (builder *SingleOptionBuilder) Properties(properties *OptionProperties) *SingleOptionBuilder {
+	builder.properties = properties
+	builder.propertiesFlag = true
+	return builder
+}
+
+func (builder *SingleOptionBuilder) Build() *SingleOption {
+	req := &SingleOption{}
+	if builder.typeFlag {
+		req.Type = &builder.type_
+
+	}
+	if builder.rangeFlag {
+		req.Range = &builder.range_
+
+	}
+	if builder.dataValidationValuesFlag {
+		req.DataValidationValues = builder.dataValidationValues
+	}
+	if builder.propertiesFlag {
+		req.Properties = builder.properties
+	}
+	return req
+}
+
 type Spreadsheet struct {
 	Title            *string `json:"title,omitempty"`             // 表格标题
 	FolderToken      *string `json:"folder_token,omitempty"`      // 文件夹token，获取方式见[如何获取云文档资源相关 token](https://open.feishu.cn/document/ukTMukTMukTM/uczNzUjL3czM14yN3MTN)
@@ -2726,6 +4818,84 @@ func (builder *SpreadsheetBuilder) Build() *Spreadsheet {
 	return req
 }
 
+type Style struct {
+	Range  *string        `json:"range,omitempty"`  // 范围
+	Styles [][]*CellStyle `json:"styles,omitempty"` // 单元格样式
+}
+
+type StyleBuilder struct {
+	range_     string // 范围
+	rangeFlag  bool
+	styles     [][]*CellStyle // 单元格样式
+	stylesFlag bool
+}
+
+func NewStyleBuilder() *StyleBuilder {
+	builder := &StyleBuilder{}
+	return builder
+}
+
+// 范围
+//
+// 示例值：aokNvv
+func (builder *StyleBuilder) Range(range_ string) *StyleBuilder {
+	builder.range_ = range_
+	builder.rangeFlag = true
+	return builder
+}
+
+// 单元格样式
+//
+// 示例值：
+func (builder *StyleBuilder) Styles(styles [][]*CellStyle) *StyleBuilder {
+	builder.styles = styles
+	builder.stylesFlag = true
+	return builder
+}
+
+func (builder *StyleBuilder) Build() *Style {
+	req := &Style{}
+	if builder.rangeFlag {
+		req.Range = &builder.range_
+
+	}
+	if builder.stylesFlag {
+		req.Styles = builder.styles
+	}
+	return req
+}
+
+type StyleRanges struct {
+	StyleRanges []*Style `json:"style_ranges,omitempty"` // 单元格样式
+}
+
+type StyleRangesBuilder struct {
+	styleRanges     []*Style // 单元格样式
+	styleRangesFlag bool
+}
+
+func NewStyleRangesBuilder() *StyleRangesBuilder {
+	builder := &StyleRangesBuilder{}
+	return builder
+}
+
+// 单元格样式
+//
+// 示例值：
+func (builder *StyleRangesBuilder) StyleRanges(styleRanges []*Style) *StyleRangesBuilder {
+	builder.styleRanges = styleRanges
+	builder.styleRangesFlag = true
+	return builder
+}
+
+func (builder *StyleRangesBuilder) Build() *StyleRanges {
+	req := &StyleRanges{}
+	if builder.styleRangesFlag {
+		req.StyleRanges = builder.styleRanges
+	}
+	return req
+}
+
 type Text struct {
 	Text         *string       `json:"text,omitempty"`          // 文本值
 	SegmentStyle *SegmentStyle `json:"segment_style,omitempty"` //
@@ -2769,6 +4939,54 @@ func (builder *TextBuilder) Build() *Text {
 	}
 	if builder.segmentStyleFlag {
 		req.SegmentStyle = builder.segmentStyle
+	}
+	return req
+}
+
+type TopBorderStyle struct {
+	Style *string `json:"style,omitempty"` // 边框样式
+	Color *string `json:"color,omitempty"` // 边框颜色
+}
+
+type TopBorderStyleBuilder struct {
+	style     string // 边框样式
+	styleFlag bool
+	color     string // 边框颜色
+	colorFlag bool
+}
+
+func NewTopBorderStyleBuilder() *TopBorderStyleBuilder {
+	builder := &TopBorderStyleBuilder{}
+	return builder
+}
+
+// 边框样式
+//
+// 示例值：
+func (builder *TopBorderStyleBuilder) Style(style string) *TopBorderStyleBuilder {
+	builder.style = style
+	builder.styleFlag = true
+	return builder
+}
+
+// 边框颜色
+//
+// 示例值：#ff00ff
+func (builder *TopBorderStyleBuilder) Color(color string) *TopBorderStyleBuilder {
+	builder.color = color
+	builder.colorFlag = true
+	return builder
+}
+
+func (builder *TopBorderStyleBuilder) Build() *TopBorderStyle {
+	req := &TopBorderStyle{}
+	if builder.styleFlag {
+		req.Style = &builder.style
+
+	}
+	if builder.colorFlag {
+		req.Color = &builder.color
+
 	}
 	return req
 }
@@ -3020,6 +5238,54 @@ func (builder *ValueElementBuilder) Build() *ValueElement {
 	req := &ValueElement{}
 	if builder.valueFlag {
 		req.Value = &builder.value
+
+	}
+	return req
+}
+
+type ValueElementSingleOption struct {
+	DataValidationId   *int    `json:"data_validation_id,omitempty"`   // 数据校验ID
+	DataValiditonValue *string `json:"data_validiton_value,omitempty"` // 选项值
+}
+
+type ValueElementSingleOptionBuilder struct {
+	dataValidationId       int // 数据校验ID
+	dataValidationIdFlag   bool
+	dataValiditonValue     string // 选项值
+	dataValiditonValueFlag bool
+}
+
+func NewValueElementSingleOptionBuilder() *ValueElementSingleOptionBuilder {
+	builder := &ValueElementSingleOptionBuilder{}
+	return builder
+}
+
+// 数据校验ID
+//
+// 示例值：1
+func (builder *ValueElementSingleOptionBuilder) DataValidationId(dataValidationId int) *ValueElementSingleOptionBuilder {
+	builder.dataValidationId = dataValidationId
+	builder.dataValidationIdFlag = true
+	return builder
+}
+
+// 选项值
+//
+// 示例值：option1
+func (builder *ValueElementSingleOptionBuilder) DataValiditonValue(dataValiditonValue string) *ValueElementSingleOptionBuilder {
+	builder.dataValiditonValue = dataValiditonValue
+	builder.dataValiditonValueFlag = true
+	return builder
+}
+
+func (builder *ValueElementSingleOptionBuilder) Build() *ValueElementSingleOption {
+	req := &ValueElementSingleOption{}
+	if builder.dataValidationIdFlag {
+		req.DataValidationId = &builder.dataValidationId
+
+	}
+	if builder.dataValiditonValueFlag {
+		req.DataValiditonValue = &builder.dataValiditonValue
 
 	}
 	return req

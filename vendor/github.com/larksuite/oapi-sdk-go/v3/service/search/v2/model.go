@@ -23,6 +23,12 @@ import (
 )
 
 const (
+	UserIdTypeUserId  = "user_id"  // 以 user_id 来识别用户
+	UserIdTypeUnionId = "union_id" // 以 union_id 来识别用户
+	UserIdTypeOpenId  = "open_id"  // 以 open_id 来识别用户
+)
+
+const (
 	StateOnline  = 0 // 已上线
 	StateOffline = 1 // 未上线
 
@@ -38,6 +44,28 @@ const (
 	StatePatchDataSourceOnline  = 0 // 已上线
 	StatePatchDataSourceOffline = 1 // 未上线
 
+)
+
+const (
+	MessageTypeFile  = "file"  // 文件
+	MessageTypeImage = "image" // 图片
+	MessageTypeMedia = "media" // 视频
+)
+
+const (
+	FromTypeBot  = "bot"  // 机器人
+	FromTypeUser = "user" // 用户
+)
+
+const (
+	ChatTypeGroupChat = "group_chat" // 群聊
+	ChatTypeP2pChat   = "p2p_chat"   // 单聊
+)
+
+const (
+	UserIdTypeCreateMessageUserId  = "user_id"  // 以 user_id 来识别用户
+	UserIdTypeCreateMessageUnionId = "union_id" // 以 union_id 来识别用户
+	UserIdTypeCreateMessageOpenId  = "open_id"  // 以 open_id 来识别用户
 )
 
 type Acl struct {
@@ -1705,6 +1733,137 @@ func (builder *SchemaTypeDefinitionsBuilder) Build() *SchemaTypeDefinitions {
 	return req
 }
 
+type CreateAppReqBodyBuilder struct {
+	query     string // 搜索关键词
+	queryFlag bool
+}
+
+func NewCreateAppReqBodyBuilder() *CreateAppReqBodyBuilder {
+	builder := &CreateAppReqBodyBuilder{}
+	return builder
+}
+
+// 搜索关键词
+//
+//示例值：测试应用
+func (builder *CreateAppReqBodyBuilder) Query(query string) *CreateAppReqBodyBuilder {
+	builder.query = query
+	builder.queryFlag = true
+	return builder
+}
+
+func (builder *CreateAppReqBodyBuilder) Build() *CreateAppReqBody {
+	req := &CreateAppReqBody{}
+	if builder.queryFlag {
+		req.Query = &builder.query
+	}
+	return req
+}
+
+type CreateAppPathReqBodyBuilder struct {
+	query     string // 搜索关键词
+	queryFlag bool
+}
+
+func NewCreateAppPathReqBodyBuilder() *CreateAppPathReqBodyBuilder {
+	builder := &CreateAppPathReqBodyBuilder{}
+	return builder
+}
+
+// 搜索关键词
+//
+// 示例值：测试应用
+func (builder *CreateAppPathReqBodyBuilder) Query(query string) *CreateAppPathReqBodyBuilder {
+	builder.query = query
+	builder.queryFlag = true
+	return builder
+}
+
+func (builder *CreateAppPathReqBodyBuilder) Build() (*CreateAppReqBody, error) {
+	req := &CreateAppReqBody{}
+	if builder.queryFlag {
+		req.Query = &builder.query
+	}
+	return req, nil
+}
+
+type CreateAppReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *CreateAppReqBody
+}
+
+func NewCreateAppReqBuilder() *CreateAppReqBuilder {
+	builder := &CreateAppReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *CreateAppReqBuilder) UserIdType(userIdType string) *CreateAppReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+// 分页大小
+//
+// 示例值：
+func (builder *CreateAppReqBuilder) PageSize(pageSize int) *CreateAppReqBuilder {
+	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
+	return builder
+}
+
+// 分页token
+//
+// 示例值：
+func (builder *CreateAppReqBuilder) PageToken(pageToken string) *CreateAppReqBuilder {
+	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
+	return builder
+}
+
+//
+func (builder *CreateAppReqBuilder) Body(body *CreateAppReqBody) *CreateAppReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *CreateAppReqBuilder) Build() *CreateAppReq {
+	req := &CreateAppReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type CreateAppReqBody struct {
+	Query *string `json:"query,omitempty"` // 搜索关键词
+}
+
+type CreateAppReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *CreateAppReqBody `body:""`
+}
+
+type CreateAppRespData struct {
+	Items     []string `json:"items,omitempty"`      // app_id列表
+	PageToken *string  `json:"page_token,omitempty"` // 翻页 token，传入返回下一页，首页不需要传入
+	HasMore   *bool    `json:"has_more,omitempty"`   // 是否还有下一页
+}
+
+type CreateAppResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *CreateAppRespData `json:"data"` // 业务数据
+}
+
+func (resp *CreateAppResp) Success() bool {
+	return resp.Code == 0
+}
+
 type CreateDataSourceReqBuilder struct {
 	apiReq     *larkcore.ApiReq
 	dataSource *DataSource
@@ -2320,6 +2479,369 @@ type GetDataSourceItemResp struct {
 }
 
 func (resp *GetDataSourceItemResp) Success() bool {
+	return resp.Code == 0
+}
+
+type CreateMessageReqBodyBuilder struct {
+	query            string // 搜索关键词
+	queryFlag        bool
+	fromIds          []string // 消息来自user_id列表
+	fromIdsFlag      bool
+	chatIds          []string // 消息所在chat_id列表
+	chatIdsFlag      bool
+	messageType      string // 消息类型(file/image/media)
+	messageTypeFlag  bool
+	atChatterIds     []string // at用户user_id列表
+	atChatterIdsFlag bool
+	fromType         string // 消息来自类型(bot/user)
+	fromTypeFlag     bool
+	chatType         string // 会话类型(group_chat/p2p_chat)
+	chatTypeFlag     bool
+	startTime        string // 消息发送起始时间
+	startTimeFlag    bool
+	endTime          string // 消息发送结束时间
+	endTimeFlag      bool
+}
+
+func NewCreateMessageReqBodyBuilder() *CreateMessageReqBodyBuilder {
+	builder := &CreateMessageReqBodyBuilder{}
+	return builder
+}
+
+// 搜索关键词
+//
+//示例值：测试消息
+func (builder *CreateMessageReqBodyBuilder) Query(query string) *CreateMessageReqBodyBuilder {
+	builder.query = query
+	builder.queryFlag = true
+	return builder
+}
+
+// 消息来自user_id列表
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) FromIds(fromIds []string) *CreateMessageReqBodyBuilder {
+	builder.fromIds = fromIds
+	builder.fromIdsFlag = true
+	return builder
+}
+
+// 消息所在chat_id列表
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) ChatIds(chatIds []string) *CreateMessageReqBodyBuilder {
+	builder.chatIds = chatIds
+	builder.chatIdsFlag = true
+	return builder
+}
+
+// 消息类型(file/image/media)
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) MessageType(messageType string) *CreateMessageReqBodyBuilder {
+	builder.messageType = messageType
+	builder.messageTypeFlag = true
+	return builder
+}
+
+// at用户user_id列表
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) AtChatterIds(atChatterIds []string) *CreateMessageReqBodyBuilder {
+	builder.atChatterIds = atChatterIds
+	builder.atChatterIdsFlag = true
+	return builder
+}
+
+// 消息来自类型(bot/user)
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) FromType(fromType string) *CreateMessageReqBodyBuilder {
+	builder.fromType = fromType
+	builder.fromTypeFlag = true
+	return builder
+}
+
+// 会话类型(group_chat/p2p_chat)
+//
+//示例值：
+func (builder *CreateMessageReqBodyBuilder) ChatType(chatType string) *CreateMessageReqBodyBuilder {
+	builder.chatType = chatType
+	builder.chatTypeFlag = true
+	return builder
+}
+
+// 消息发送起始时间
+//
+//示例值：1609296809
+func (builder *CreateMessageReqBodyBuilder) StartTime(startTime string) *CreateMessageReqBodyBuilder {
+	builder.startTime = startTime
+	builder.startTimeFlag = true
+	return builder
+}
+
+// 消息发送结束时间
+//
+//示例值：1609296809
+func (builder *CreateMessageReqBodyBuilder) EndTime(endTime string) *CreateMessageReqBodyBuilder {
+	builder.endTime = endTime
+	builder.endTimeFlag = true
+	return builder
+}
+
+func (builder *CreateMessageReqBodyBuilder) Build() *CreateMessageReqBody {
+	req := &CreateMessageReqBody{}
+	if builder.queryFlag {
+		req.Query = &builder.query
+	}
+	if builder.fromIdsFlag {
+		req.FromIds = builder.fromIds
+	}
+	if builder.chatIdsFlag {
+		req.ChatIds = builder.chatIds
+	}
+	if builder.messageTypeFlag {
+		req.MessageType = &builder.messageType
+	}
+	if builder.atChatterIdsFlag {
+		req.AtChatterIds = builder.atChatterIds
+	}
+	if builder.fromTypeFlag {
+		req.FromType = &builder.fromType
+	}
+	if builder.chatTypeFlag {
+		req.ChatType = &builder.chatType
+	}
+	if builder.startTimeFlag {
+		req.StartTime = &builder.startTime
+	}
+	if builder.endTimeFlag {
+		req.EndTime = &builder.endTime
+	}
+	return req
+}
+
+type CreateMessagePathReqBodyBuilder struct {
+	query            string // 搜索关键词
+	queryFlag        bool
+	fromIds          []string // 消息来自user_id列表
+	fromIdsFlag      bool
+	chatIds          []string // 消息所在chat_id列表
+	chatIdsFlag      bool
+	messageType      string // 消息类型(file/image/media)
+	messageTypeFlag  bool
+	atChatterIds     []string // at用户user_id列表
+	atChatterIdsFlag bool
+	fromType         string // 消息来自类型(bot/user)
+	fromTypeFlag     bool
+	chatType         string // 会话类型(group_chat/p2p_chat)
+	chatTypeFlag     bool
+	startTime        string // 消息发送起始时间
+	startTimeFlag    bool
+	endTime          string // 消息发送结束时间
+	endTimeFlag      bool
+}
+
+func NewCreateMessagePathReqBodyBuilder() *CreateMessagePathReqBodyBuilder {
+	builder := &CreateMessagePathReqBodyBuilder{}
+	return builder
+}
+
+// 搜索关键词
+//
+// 示例值：测试消息
+func (builder *CreateMessagePathReqBodyBuilder) Query(query string) *CreateMessagePathReqBodyBuilder {
+	builder.query = query
+	builder.queryFlag = true
+	return builder
+}
+
+// 消息来自user_id列表
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) FromIds(fromIds []string) *CreateMessagePathReqBodyBuilder {
+	builder.fromIds = fromIds
+	builder.fromIdsFlag = true
+	return builder
+}
+
+// 消息所在chat_id列表
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) ChatIds(chatIds []string) *CreateMessagePathReqBodyBuilder {
+	builder.chatIds = chatIds
+	builder.chatIdsFlag = true
+	return builder
+}
+
+// 消息类型(file/image/media)
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) MessageType(messageType string) *CreateMessagePathReqBodyBuilder {
+	builder.messageType = messageType
+	builder.messageTypeFlag = true
+	return builder
+}
+
+// at用户user_id列表
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) AtChatterIds(atChatterIds []string) *CreateMessagePathReqBodyBuilder {
+	builder.atChatterIds = atChatterIds
+	builder.atChatterIdsFlag = true
+	return builder
+}
+
+// 消息来自类型(bot/user)
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) FromType(fromType string) *CreateMessagePathReqBodyBuilder {
+	builder.fromType = fromType
+	builder.fromTypeFlag = true
+	return builder
+}
+
+// 会话类型(group_chat/p2p_chat)
+//
+// 示例值：
+func (builder *CreateMessagePathReqBodyBuilder) ChatType(chatType string) *CreateMessagePathReqBodyBuilder {
+	builder.chatType = chatType
+	builder.chatTypeFlag = true
+	return builder
+}
+
+// 消息发送起始时间
+//
+// 示例值：1609296809
+func (builder *CreateMessagePathReqBodyBuilder) StartTime(startTime string) *CreateMessagePathReqBodyBuilder {
+	builder.startTime = startTime
+	builder.startTimeFlag = true
+	return builder
+}
+
+// 消息发送结束时间
+//
+// 示例值：1609296809
+func (builder *CreateMessagePathReqBodyBuilder) EndTime(endTime string) *CreateMessagePathReqBodyBuilder {
+	builder.endTime = endTime
+	builder.endTimeFlag = true
+	return builder
+}
+
+func (builder *CreateMessagePathReqBodyBuilder) Build() (*CreateMessageReqBody, error) {
+	req := &CreateMessageReqBody{}
+	if builder.queryFlag {
+		req.Query = &builder.query
+	}
+	if builder.fromIdsFlag {
+		req.FromIds = builder.fromIds
+	}
+	if builder.chatIdsFlag {
+		req.ChatIds = builder.chatIds
+	}
+	if builder.messageTypeFlag {
+		req.MessageType = &builder.messageType
+	}
+	if builder.atChatterIdsFlag {
+		req.AtChatterIds = builder.atChatterIds
+	}
+	if builder.fromTypeFlag {
+		req.FromType = &builder.fromType
+	}
+	if builder.chatTypeFlag {
+		req.ChatType = &builder.chatType
+	}
+	if builder.startTimeFlag {
+		req.StartTime = &builder.startTime
+	}
+	if builder.endTimeFlag {
+		req.EndTime = &builder.endTime
+	}
+	return req, nil
+}
+
+type CreateMessageReqBuilder struct {
+	apiReq *larkcore.ApiReq
+	body   *CreateMessageReqBody
+}
+
+func NewCreateMessageReqBuilder() *CreateMessageReqBuilder {
+	builder := &CreateMessageReqBuilder{}
+	builder.apiReq = &larkcore.ApiReq{
+		PathParams:  larkcore.PathParams{},
+		QueryParams: larkcore.QueryParams{},
+	}
+	return builder
+}
+
+// 此次调用中使用的用户ID的类型
+//
+// 示例值：
+func (builder *CreateMessageReqBuilder) UserIdType(userIdType string) *CreateMessageReqBuilder {
+	builder.apiReq.QueryParams.Set("user_id_type", fmt.Sprint(userIdType))
+	return builder
+}
+
+// 分页大小
+//
+// 示例值：
+func (builder *CreateMessageReqBuilder) PageSize(pageSize int) *CreateMessageReqBuilder {
+	builder.apiReq.QueryParams.Set("page_size", fmt.Sprint(pageSize))
+	return builder
+}
+
+// 分页token
+//
+// 示例值：
+func (builder *CreateMessageReqBuilder) PageToken(pageToken string) *CreateMessageReqBuilder {
+	builder.apiReq.QueryParams.Set("page_token", fmt.Sprint(pageToken))
+	return builder
+}
+
+//
+func (builder *CreateMessageReqBuilder) Body(body *CreateMessageReqBody) *CreateMessageReqBuilder {
+	builder.body = body
+	return builder
+}
+
+func (builder *CreateMessageReqBuilder) Build() *CreateMessageReq {
+	req := &CreateMessageReq{}
+	req.apiReq = &larkcore.ApiReq{}
+	req.apiReq.QueryParams = builder.apiReq.QueryParams
+	req.apiReq.Body = builder.body
+	return req
+}
+
+type CreateMessageReqBody struct {
+	Query        *string  `json:"query,omitempty"`          // 搜索关键词
+	FromIds      []string `json:"from_ids,omitempty"`       // 消息来自user_id列表
+	ChatIds      []string `json:"chat_ids,omitempty"`       // 消息所在chat_id列表
+	MessageType  *string  `json:"message_type,omitempty"`   // 消息类型(file/image/media)
+	AtChatterIds []string `json:"at_chatter_ids,omitempty"` // at用户user_id列表
+	FromType     *string  `json:"from_type,omitempty"`      // 消息来自类型(bot/user)
+	ChatType     *string  `json:"chat_type,omitempty"`      // 会话类型(group_chat/p2p_chat)
+	StartTime    *string  `json:"start_time,omitempty"`     // 消息发送起始时间
+	EndTime      *string  `json:"end_time,omitempty"`       // 消息发送结束时间
+}
+
+type CreateMessageReq struct {
+	apiReq *larkcore.ApiReq
+	Body   *CreateMessageReqBody `body:""`
+}
+
+type CreateMessageRespData struct {
+	Items     []string `json:"items,omitempty"`      // 消息id列表
+	PageToken *string  `json:"page_token,omitempty"` // 翻页 token，传入返回下一页，首页不需要传入
+	HasMore   *bool    `json:"has_more,omitempty"`   // 是否还有下一页
+}
+
+type CreateMessageResp struct {
+	*larkcore.ApiResp `json:"-"`
+	larkcore.CodeError
+	Data *CreateMessageRespData `json:"data"` // 业务数据
+}
+
+func (resp *CreateMessageResp) Success() bool {
 	return resp.Code == 0
 }
 

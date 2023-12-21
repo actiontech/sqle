@@ -1,16 +1,28 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
+	dmsJWT "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
 )
+
+var dmsServerAddress string
+
+func GetDMSServerAddress() string {
+	return dmsServerAddress
+}
+func InitDMSServerAddress(addr string) {
+	dmsServerAddress = addr
+}
 
 type BaseRes struct {
 	Code    int    `json:"code" example:"0"`
@@ -59,7 +71,19 @@ func GetUserName(c echo.Context) string {
 	return claims["name"].(string)
 }
 
-func GetCurrentUser(c echo.Context) (*model.User, error) {
+func GetUserID(c echo.Context) string {
+	uidStr, err := dmsJWT.GetUserUidStrFromContextWithOldJwt(c)
+	if err != nil {
+		return ""
+	}
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%d", uid)
+}
+
+func GetCurrentUser(c echo.Context, getUser func(context.Context, string, string) (*model.User, error)) (*model.User, error) {
 	key := "current_user"
 	currentUser := c.Get(key)
 	if currentUser != nil {
@@ -67,14 +91,10 @@ func GetCurrentUser(c echo.Context) (*model.User, error) {
 			return user, nil
 		}
 	}
-	s := model.GetStorage()
-	user, exist, err := s.GetUserByName(GetUserName(c))
+	uidStr := GetUserID(c)
+	user, err := getUser(c.Request().Context(), uidStr, GetDMSServerAddress())
 	if err != nil {
 		return nil, err
-	}
-	if !exist {
-		return nil, errors.New(errors.DataNotExist,
-			fmt.Errorf("current user is not exist"))
 	}
 	c.Set(key, user)
 	return user, nil

@@ -21,6 +21,7 @@ bigint
 binlog
 blkid
 btree
+brazil
 chinese
 cidr
 cardinalities
@@ -88,6 +89,8 @@ gracenet
 grpc
 gtids
 gzipped
+huawei
+huaweicloud
 hashicorp
 hclog
 hostname
@@ -128,6 +131,7 @@ longtext
 looper
 maxvalue
 mdriver
+mexico
 mediumblob
 mediumint
 mediumtext

@@ -84,6 +84,10 @@ type Model struct {
 	DeletedAt *time.Time `json:"-" sql:"index"`
 }
 
+func (m Model) GetIDStr() string {
+	return fmt.Sprintf("%d", m.ID)
+}
+
 func NewStorage(user, password, host, port, schema string, debug bool) (*Storage, error) {
 	log.Logger().Infof("connecting to storage, host: %s, port: %s, user: %s, schema: %s",
 		host, port, user, schema)
@@ -111,22 +115,14 @@ var autoMigrateList = []interface{}{
 	&AuditPlanSQLV2{},
 	&AuditPlan{},
 	&ExecuteSQL{},
-	&Instance{},
-	&WeChatConfiguration{},
-	&LDAPConfiguration{},
-	&Oauth2Configuration{},
 	&RoleOperation{},
-	&Role{},
 	&RollbackSQL{},
 	&RuleTemplateRule{},
 	&RuleTemplate{},
 	&Rule{},
-	&SMTPConfiguration{},
 	&SqlWhitelist{},
 	&SystemVariable{},
 	&Task{},
-	&UserGroup{},
-	&User{},
 	&WorkflowRecord{},
 	&WorkflowStepTemplate{},
 	&WorkflowStep{},
@@ -136,20 +132,10 @@ var autoMigrateList = []interface{}{
 	&SqlQueryHistory{},
 	&TaskGroup{},
 	&WorkflowInstanceRecord{},
-	&CloudBeaverUserCache{},
-	&CloudBeaverInstanceCache{},
-	&Project{},
-	&ProjectMemberRole{},
-	&ProjectMemberGroupRole{},
-	&ManagementPermission{},
+	&FeishuInstance{},
 	&IM{},
 	&DingTalkInstance{},
-	&FeishuInstance{},
-	&SyncInstanceTask{},
 	&OperationRecord{},
-	&PersonaliseConfig{},
-	&LogoConfig{},
-	&WebHookConfig{},
 	&CustomRule{},
 	&RuleTemplateCustomRule{},
 	&SQLAuditRecord{},
@@ -166,26 +152,12 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Model(&User{}).AddIndex("idx_users_id_name", "id", "login_name").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(&Instance{}).AddIndex("idx_instances_id_name", "id", "name").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
 	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
 		"audit_plan_id", "fingerprint_md5").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-	err = s.db.Model(&ProjectMemberRole{}).AddUniqueIndex("uniq_project_member_roles_user_id_instance_id_role_id",
-		"user_id", "instance_id", "role_id").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(&ProjectMemberGroupRole{}).AddUniqueIndex("uniq_project_user_group_role_user_group_id_instance_id_role_id",
-		"user_group_id", "instance_id", "role_id").Error
+	err = s.db.Model(BlackListAuditPlanSQL{}).AddUniqueIndex("uniq_type_content", "filter_type", "filter_content").Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
@@ -194,10 +166,6 @@ func (s *Storage) AutoMigrate() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
-	err = s.db.Model(BlackListAuditPlanSQL{}).AddUniqueIndex("uniq_type_content", "filter_type", "filter_content").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
 	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
 		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
 			return errors.New(errors.ConnectStorageError, err)
@@ -264,39 +232,56 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 	return nil
 }
 
-func (s *Storage) CreateDefaultRole() error {
-	roles, err := s.GetAllRoleTip()
+// func (s *Storage) CreateDefaultRole() error {
+// 	roles, err := s.GetAllRoleTip()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if len(roles) > 0 {
+// 		return nil
+// 	}
+
+// 	// dev
+// 	err = s.SaveRoleAndAssociations(&Role{
+// 		Name: "dev",
+// 		Desc: "dev",
+// 	}, []uint{OP_WORKFLOW_SAVE, OP_AUDIT_PLAN_SAVE, OP_SQL_QUERY_QUERY})
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	// dba
+// 	err = s.SaveRoleAndAssociations(&Role{
+// 		Name: "dba",
+// 		Desc: "dba",
+// 	}, []uint{OP_WORKFLOW_AUDIT, OP_SQL_QUERY_QUERY})
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+const DefaultProjectUid string = "700300"
+
+func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
+	_, exist, err := s.GetWorkflowTemplateByProjectId(ProjectUID(DefaultProjectUid))
 	if err != nil {
 		return err
 	}
-	if len(roles) > 0 {
-		return nil
+	if !exist {
+		td := DefaultWorkflowTemplate(DefaultProjectUid)
+		err = s.SaveWorkflowTemplate(td)
+		if err != nil {
+			return err
+		}
 	}
-
-	// dev
-	err = s.SaveRoleAndAssociations(&Role{
-		Name: "dev",
-		Desc: "dev",
-	}, []uint{OP_WORKFLOW_SAVE, OP_AUDIT_PLAN_SAVE, OP_SQL_QUERY_QUERY})
-	if err != nil {
-		return err
-	}
-
-	// dba
-	err = s.SaveRoleAndAssociations(&Role{
-		Name: "dba",
-		Desc: "dba",
-	}, []uint{OP_WORKFLOW_AUDIT, OP_SQL_QUERY_QUERY})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
-func (s *Storage) CreateDefaultTemplate(rules map[string][]*driverV2.Rule) error {
+func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
-		exist, err := s.IsRuleTemplateExistFromAnyProject(templateName)
+		exist, err := s.IsRuleTemplateExistFromAnyProject(projectId, templateName)
 		if err != nil {
 			return xerrors.Wrap(err, "get rule template failed")
 		}
@@ -305,9 +290,10 @@ func (s *Storage) CreateDefaultTemplate(rules map[string][]*driverV2.Rule) error
 		}
 
 		t := &RuleTemplate{
-			Name:   templateName,
-			Desc:   "默认规则模板",
-			DBType: dbType,
+			ProjectId: projectId,
+			Name:      templateName,
+			Desc:      "默认规则模板",
+			DBType:    dbType,
 		}
 		if err := s.Save(t); err != nil {
 			return err
@@ -339,42 +325,34 @@ func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
 	return fmt.Sprintf("default_%v", dbType)
 }
 
-func (s *Storage) CreateAdminUser() error {
-	_, exist, err := s.GetUserByName(DefaultAdminUser)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return s.Save(&User{
-			Name:     DefaultAdminUser,
-			Password: "admin",
-		})
-	}
-	return nil
-}
+// func (s *Storage) CreateAdminUser() error {
+// 	_, exist, err := s.GetUserByName(DefaultAdminUser)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if !exist {
+// 		return s.Save(&User{
+// 			Name:     DefaultAdminUser,
+// 			Password: "admin",
+// 		})
+// 	}
+// 	return nil
+// }
 
 const DefaultProject = "default"
 
-func (s *Storage) CreateDefaultProject() error {
-	exist, err := s.IsProjectExist()
-	if err != nil {
-		return err
-	}
-	if exist {
-		return nil
-	}
+// func (s *Storage) CreateDefaultProject() error {
+// 	exist, err := s.IsProjectExist()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if exist {
+// 		return nil
+// 	}
 
-	defaultUser, exist, err := s.GetUserByName(DefaultAdminUser)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return fmt.Errorf("admin not exist, unable to create project")
-	}
-
-	err = s.CreateProject(DefaultProject, "", defaultUser.ID)
-	return err
-}
+// 	err = s.CreateProject(DefaultProject, "", 700200 /* TODO 从公共包传？*/)
+// 	return err
+// }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {
 	var count int

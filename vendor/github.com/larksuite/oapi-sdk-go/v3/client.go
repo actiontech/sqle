@@ -27,6 +27,7 @@ import (
 	"github.com/larksuite/oapi-sdk-go/v3/service/application/v6"
 	"github.com/larksuite/oapi-sdk-go/v3/service/approval/v4"
 	"github.com/larksuite/oapi-sdk-go/v3/service/attendance/v1"
+	"github.com/larksuite/oapi-sdk-go/v3/service/auth/v3"
 	"github.com/larksuite/oapi-sdk-go/v3/service/authen/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/service/baike/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
@@ -48,6 +49,7 @@ import (
 	"github.com/larksuite/oapi-sdk-go/v3/service/okr/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/service/optical_char_recognition/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/service/passport/v1"
+	"github.com/larksuite/oapi-sdk-go/v3/service/personal_settings/v1"
 	"github.com/larksuite/oapi-sdk-go/v3/service/search/v2"
 	"github.com/larksuite/oapi-sdk-go/v3/service/sheets/v3"
 	"github.com/larksuite/oapi-sdk-go/v3/service/speech_to_text/v1"
@@ -65,6 +67,7 @@ type Client struct {
 	Application            *larkapplication.ApplicationService                         // 应用信息
 	Approval               *larkapproval.ApprovalService                               // 审批
 	Attendance             *larkattendance.AttendanceService                           // 打卡
+	Auth                   *larkauth.AuthService                                       //
 	Authen                 *larkauthen.AuthenService                                   //
 	Baike                  *larkbaike.BaikeService                                     // 企业百科
 	Bitable                *larkbitable.BitableService                                 // 云文档-多维表格
@@ -85,6 +88,7 @@ type Client struct {
 	Okr                    *larkokr.OkrService                                         // OKR
 	OpticalCharRecognition *larkoptical_char_recognition.OpticalCharRecognitionService // AI能力
 	Passport               *larkpassport.PassportService                               // 帐号
+	PersonalSettings       *larkpersonal_settings.PersonalSettingsService              // 个人设置
 	Search                 *larksearch.SearchService                                   // 搜索
 	Sheets                 *larksheets.SheetsService                                   // 云文档-电子表格
 	SpeechToText           *larkspeech_to_text.SpeechToTextService                     // AI能力
@@ -221,6 +225,7 @@ func initService(client *Client, config *larkcore.Config) {
 	client.Application = larkapplication.NewService(config)
 	client.Approval = larkapproval.NewService(config)
 	client.Attendance = larkattendance.NewService(config)
+	client.Auth = larkauth.NewService(config)
 	client.Authen = larkauthen.NewService(config)
 	client.Baike = larkbaike.NewService(config)
 	client.Bitable = larkbitable.NewService(config)
@@ -241,6 +246,7 @@ func initService(client *Client, config *larkcore.Config) {
 	client.Okr = larkokr.NewService(config)
 	client.OpticalCharRecognition = larkoptical_char_recognition.NewService(config)
 	client.Passport = larkpassport.NewService(config)
+	client.PersonalSettings = larkpersonal_settings.NewService(config)
 	client.Search = larksearch.NewService(config)
 	client.Sheets = larksheets.NewService(config)
 	client.SpeechToText = larkspeech_to_text.NewService(config)

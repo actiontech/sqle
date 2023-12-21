@@ -3,23 +3,24 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+
 	"github.com/jinzhu/gorm"
 )
 
-var UnScopedFunc = func(db *gorm.DB) *gorm.DB { return db.Unscoped() }
-
 type WorkflowTemplate struct {
 	Model
+	ProjectId                     ProjectUID `gorm:"index; not null"`
 	Name                          string
 	Desc                          string
 	AllowSubmitWhenLessAuditLevel string
 
-	Steps     []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:workflowTemplateId"`
-	Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
+	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:workflowTemplateId"`
+	// Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
 const (
@@ -38,7 +39,34 @@ type WorkflowStepTemplate struct {
 	ApprovedByAuthorized sql.NullBool `gorm:"column:approved_by_authorized"`
 	ExecuteByAuthorized  sql.NullBool `gorm:"column:execute_by_authorized"`
 
-	Users []*User `gorm:"many2many:workflow_step_template_user"`
+	Users string // `gorm:"many2many:workflow_step_template_user"` // dms-todo: 调整存储格式
+}
+
+func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
+	return &WorkflowTemplate{
+		ProjectId:                     ProjectUID(projectId),
+		Name:                          fmt.Sprintf("%s-WorkflowTemplate", projectId),
+		Desc:                          fmt.Sprintf("%s 默认模板", projectId),
+		AllowSubmitWhenLessAuditLevel: string(driverV2.RuleLevelWarn),
+		Steps: []*WorkflowStepTemplate{
+			{
+				Number: 1,
+				Typ:    WorkflowStepTypeSQLReview,
+				ApprovedByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
+			},
+			{
+				Number: 2,
+				Typ:    WorkflowStepTypeSQLExecute,
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
+			},
+		},
+	}
 }
 
 func (s *Storage) GetWorkflowTemplateByName(name string) (*WorkflowTemplate, bool, error) {
@@ -59,15 +87,24 @@ func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, err
 	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetWorkflowTemplateByProjectId(projectId ProjectUID) (*WorkflowTemplate, bool, error) {
+	workflowTemplate := &WorkflowTemplate{}
+	err := s.db.Where("project_id = ?", projectId).First(workflowTemplate).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflowTemplate, false, nil
+	}
+	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetWorkflowStepsByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
-	err := s.db.Preload("Users").Where("workflow_template_id = ?", id).Find(&steps).Error
+	err := s.db.Where("workflow_template_id = ?", id).Find(&steps).Error
 	return steps, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetWorkflowStepsDetailByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
-	err := s.db.Preload("Users").Where("workflow_template_id = ?", id).Find(&steps).Error
+	err := s.db.Where("workflow_template_id = ?", id).Find(&steps).Error
 	return steps, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -79,8 +116,8 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 }
 
 func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId int64, err error) {
-	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`) values (?, ?, ?)",
-		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel)
+	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`, `project_id`) values (?, ?, ?, ?)",
+		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel, template.ProjectId)
 	if err != nil {
 		return 0, err
 	}
@@ -90,8 +127,8 @@ func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId in
 	}
 	template.ID = uint(templateId)
 	for _, step := range template.Steps {
-		result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?)",
-			step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
+		result, err = tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, users, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?,?)",
+			step.Number, templateId, step.Typ, step.Users, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
 		if err != nil {
 			return 0, err
 		}
@@ -100,13 +137,6 @@ func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId in
 			return 0, err
 		}
 		step.ID = uint(stepId)
-		for _, user := range step.Users {
-			_, err = tx.Exec("INSERT INTO workflow_step_template_user (workflow_step_template_id, user_id) values (?,?)",
-				stepId, user.ID)
-			if err != nil {
-				return 0, err
-			}
-		}
 	}
 	return templateId, nil
 }
@@ -119,8 +149,8 @@ func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*Workflow
 			return err
 		}
 		for _, step := range steps {
-			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?)",
-				step.Number, templateId, step.Typ, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
+			result, err := tx.Exec("INSERT INTO workflow_step_templates (step_number, workflow_template_id, type,users, `desc`, approved_by_authorized,execute_by_authorized) values (?,?,?,?,?,?,?)",
+				step.Number, templateId, step.Typ, step.Users, step.Desc, step.ApprovedByAuthorized, step.ExecuteByAuthorized)
 			if err != nil {
 				return err
 			}
@@ -129,23 +159,16 @@ func (s *Storage) UpdateWorkflowTemplateSteps(templateId uint, steps []*Workflow
 				return err
 			}
 			step.ID = uint(stepId)
-			for _, user := range step.Users {
-				_, err = tx.Exec("INSERT INTO workflow_step_template_user (workflow_step_template_id, user_id) values (?,?)",
-					stepId, user.ID)
-				if err != nil {
-					return err
-				}
-			}
 		}
 		return nil
 	})
 }
 
-func (s *Storage) UpdateWorkflowTemplateInstances(workflowTemplate *WorkflowTemplate,
-	instances ...*Instance) error {
-	err := s.db.Model(workflowTemplate).Association("Instances").Replace(instances).Error
-	return errors.New(errors.ConnectStorageError, err)
-}
+// func (s *Storage) UpdateWorkflowTemplateInstances(workflowTemplate *WorkflowTemplate,
+// 	instances ...*Instance) error {
+// 	err := s.db.Model(workflowTemplate).Association("Instances").Replace(instances).Error
+// 	return errors.New(errors.ConnectStorageError, err)
+// }
 
 func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 	templates := []*WorkflowTemplate{}
@@ -158,15 +181,15 @@ type Workflow struct {
 	Subject          string
 	WorkflowId       string `gorm:"unique"`
 	Desc             string `gorm:"type:varchar(3000)"`
-	CreateUserId     uint
+	CreateUserId     string
 	WorkflowRecordId uint
-	ProjectId        uint `gorm:"index; not null"`
+	ProjectId        ProjectUID `gorm:"index; not null"`
 
-	CreateUser    *User             `gorm:"foreignkey:CreateUserId"`
-	Record        *WorkflowRecord   `gorm:"foreignkey:WorkflowRecordId"`
-	Project       *Project          `gorm:"foreignkey:ProjectId"`
-	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history;"`
-	Mode          string
+	Record *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
+	// Project       *Project          `gorm:"foreignkey:ProjectId"`
+	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history"`
+
+	Mode string
 }
 
 const (
@@ -207,42 +230,31 @@ type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
 	WorkflowRecordId uint `gorm:"index; not null"`
-	InstanceId       uint
+	InstanceId       uint64
 	ScheduledAt      *time.Time
-	ScheduleUserId   uint
+	ScheduleUserId   string
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
-	ExecutionUserId uint
+	ExecutionUserId string
 
-	ExecutionAssignees []*User   `gorm:"many2many:workflow_instance_record_user"`
-	Instance           *Instance `gorm:"foreignkey:InstanceId"`
-	Task               *Task     `gorm:"foreignkey:TaskId"`
-	User               *User     `gorm:"foreignkey:ExecutionUserId"`
-}
-
-func (wir *WorkflowInstanceRecord) ExecuteUserName() string {
-	if wir.User == nil {
-		return ""
-	}
-	return wir.User.Name
+	Instance *Instance `gorm:"foreignkey:InstanceId"`
+	Task     *Task     `gorm:"foreignkey:TaskId"`
+	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
+	ExecutionAssignees string
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
 }
 
-func (s *Storage) GetInstanceByTaskIDList(taskIds []uint) (instances []*Instance, err error) {
-	var instanceRecords []*WorkflowInstanceRecord
-	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("Instance").Where("task_id in (?)", taskIds).Find(&instanceRecords).Error
+func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowInstanceRecord, error) {
+	var workflowInstanceRecords []*WorkflowInstanceRecord
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("task_id in (?)", taskIds).Find(&workflowInstanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
 
-	for _, instanceRecord := range instanceRecords {
-		instances = append(instances, instanceRecord.Instance)
-	}
-
-	return instances, nil
+	return workflowInstanceRecords, nil
 }
 
 const (
@@ -253,17 +265,17 @@ const (
 
 type WorkflowStep struct {
 	Model
-	OperationUserId        uint
+	OperationUserId        string
 	OperateAt              *time.Time
-	WorkflowId             uint   `gorm:"index; not null"`
+	WorkflowId             string `gorm:"index; not null"`
 	WorkflowRecordId       uint   `gorm:"index; not null"`
 	WorkflowStepTemplateId uint   `gorm:"index; not null"`
 	State                  string `gorm:"default:\"initialized\""`
 	Reason                 string
 
-	Assignees     []*User               `gorm:"many2many:workflow_step_user"`
-	Template      *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
-	OperationUser *User                 `gorm:"foreignkey:OperationUserId"`
+	Assignees string                // `gorm:"many2many:workflow_step_user"`
+	Template  *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
+	// OperationUser string                // `gorm:"foreignkey:OperationUserId"`
 }
 
 func (ws *WorkflowStep) OperationTime() string {
@@ -271,13 +283,6 @@ func (ws *WorkflowStep) OperationTime() string {
 		return ""
 	}
 	return ws.OperateAt.Format("2006-01-02 15:04:05")
-}
-
-func (ws *WorkflowStep) OperationUserName() string {
-	if ws.OperationUser == nil {
-		return ""
-	}
-	return ws.OperationUser.Name
 }
 
 func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User, allExecutor []*User) []*WorkflowStep {
@@ -289,10 +294,10 @@ func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allIn
 			Assignees:              st.Users,
 		}
 		if st.ApprovedByAuthorized.Bool {
-			step.Assignees = allInspector
+			step.Assignees = genIdsByUsers(allInspector)
 		}
 		if i == len(stepsTemplate)-1 && st.ExecuteByAuthorized.Bool {
-			step.Assignees = allExecutor
+			step.Assignees = genIdsByUsers(allExecutor)
 		}
 
 		steps = append(steps, step)
@@ -305,30 +310,23 @@ func (w *Workflow) cloneWorkflowStep() []*WorkflowStep {
 	for _, step := range w.Record.Steps {
 		steps = append(steps, &WorkflowStep{
 			WorkflowStepTemplateId: step.Template.ID,
-			WorkflowId:             w.ID,
+			WorkflowId:             w.WorkflowId,
 			Assignees:              step.Assignees,
 		})
 	}
 	return steps
 }
 
-func (w *Workflow) CreateUserName() string {
-	if w.CreateUser != nil {
-		return w.CreateUser.Name
-	}
-	return ""
-}
-
 func (w *Workflow) CurrentStep() *WorkflowStep {
 	return w.Record.CurrentStep
 }
 
-func (w *Workflow) CurrentAssigneeUser() []*User {
+func (w *Workflow) CurrentAssigneeUser() []string {
 	currentStep := w.CurrentStep()
 	if currentStep == nil {
-		return []*User{}
+		return []string{}
 	}
-	return currentStep.Assignees
+	return strings.Split(currentStep.Assignees, ",")
 }
 
 func (w *Workflow) NextStep() *WorkflowStep {
@@ -361,8 +359,8 @@ func (w *Workflow) IsOperationUser(user *User) bool {
 	if w.CurrentStep() == nil {
 		return false
 	}
-	for _, assUser := range w.CurrentStep().Assignees {
-		if user.ID == assUser.ID {
+	for _, assUser := range strings.Split(w.CurrentStep().Assignees, ",") {
+		if user.GetIDStr() == assUser {
 			return true
 		}
 	}
@@ -389,7 +387,7 @@ func (w *Workflow) GetTaskIds() []uint {
 	return taskIds
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId uint) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -431,7 +429,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		WorkflowId:       workflowId,
 		Desc:             desc,
 		ProjectId:        projectId,
-		CreateUserId:     user.ID,
+		CreateUserId:     user.GetIDStr(),
 		Mode:             workflowMode,
 		WorkflowRecordId: record.ID,
 	}
@@ -442,22 +440,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
-	allUsers := make([][]*User, len(tasks))
-	allExecutor := make([][]*User, len(tasks))
-	for i, task := range tasks {
-		users, err := s.GetCanAuditWorkflowUsers(task.Instance)
-		if err != nil {
-			return err
-		}
-		allUsers[i] = users
-
-		executor, err := s.GetCanExecuteWorkflowUsers(task.Instance)
-		if err != nil {
-			return err
-		}
-		allExecutor[i] = executor
-	}
-
+	allUsers, allExecutor := getOpExecUser(tasks)
 	canOptUsers := allUsers[0]
 	canExecUsers := allExecutor[0]
 	for i := 1; i < len(allUsers); i++ {
@@ -466,9 +449,12 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
-		adminUser, _, err := s.GetUserByName(DefaultAdminUser)
-		if err != nil {
-			return err
+		// TODO 获取管理用户
+		adminUser := &User{
+			Model: Model{
+				ID: 700200,
+			},
+			Name: "admin",
 		}
 		if len(canOptUsers) == 0 {
 			canOptUsers = append(canOptUsers, adminUser)
@@ -486,17 +472,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		for _, instanceRecord := range instanceRecords {
 			instRecord := instanceRecord
 			instRecord.WorkflowRecordId = record.ID
-			assignees := instRecord.ExecutionAssignees
-			// 置为nil,防止用户被更新
-			// 相关issue:https://github.com/actiontech/sqle/issues/1775
-			instRecord.ExecutionAssignees = nil
 			err = tx.Save(instRecord).Error
-			if err != nil {
-				tx.Rollback()
-				return errors.New(errors.ConnectStorageError, err)
-			}
-
-			err = tx.Model(instRecord).Association("ExecutionAssignees").Replace(assignees).Error
 			if err != nil {
 				tx.Rollback()
 				return errors.New(errors.ConnectStorageError, err)
@@ -510,15 +486,8 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		for _, step := range steps {
 			currentStep := step
 			currentStep.WorkflowRecordId = record.ID
-			currentStep.WorkflowId = workflow.ID
-			users := currentStep.Assignees
-			currentStep.Assignees = nil
+			currentStep.WorkflowId = workflow.WorkflowId
 			err = tx.Save(currentStep).Error
-			if err != nil {
-				tx.Rollback()
-				return errors.New(errors.ConnectStorageError, err)
-			}
-			err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 			if err != nil {
 				tx.Rollback()
 				return errors.New(errors.ConnectStorageError, err)
@@ -550,7 +519,7 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 
 		if isExecuteByAuthorized {
 			distinctOfUsers := GetDistinctOfUsers(stepExecUsers, allExecutor[i])
-			instanceRecords[i].ExecutionAssignees = distinctOfUsers
+			instanceRecords[i].ExecutionAssignees = strings.Join(distinctOfUsers, ",")
 		} else {
 			instanceRecords[i].ExecutionAssignees = stepTemplateAssignees
 		}
@@ -587,14 +556,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 	for _, step := range steps {
 		currentStep := step
 		currentStep.WorkflowRecordId = record.ID
-		users := currentStep.Assignees
-		currentStep.Assignees = nil
 		err = tx.Save(currentStep).Error
-		if err != nil {
-			tx.Rollback()
-			return errors.New(errors.ConnectStorageError, err)
-		}
-		err = tx.Model(currentStep).Association("Assignees").Replace(users).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
@@ -616,7 +578,7 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 	}
 
 	// update workflow record to new
-	if err := tx.Model(&Workflow{}).Where("id = ?", w.ID).
+	if err := tx.Model(&Workflow{}).Where("workflow_id = ?", w.WorkflowId).
 		Update("workflow_record_id", record.ID).Error; err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
@@ -670,8 +632,8 @@ func updateWorkflowStatus(tx *gorm.DB, w *Workflow) error {
 
 func updateWorkflowStep(tx *gorm.DB, operateStep *WorkflowStep) error {
 	// 必须保证更新前的操作用户未填写，通过数据库的特性保证数据不会重复写
-	db := tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ? AND operation_user_id = 0",
-		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID)
+	db := tx.Exec("UPDATE workflow_steps SET operation_user_id = ?, operate_at = ?, state = ?, reason = ? WHERE id = ? AND operation_user_id = ?",
+		operateStep.OperationUserId, operateStep.OperateAt, operateStep.State, operateStep.Reason, operateStep.ID, "")
 	if db.Error != nil {
 		return db.Error
 	}
@@ -734,7 +696,7 @@ func (s *Storage) UpdateWorkflowRecordByID(id uint, workFlow map[string]interfac
 	return s.db.Model(&WorkflowRecord{}).Where("id = ?", id).Updates(workFlow).Error
 }
 
-func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId uint, scheduleTime *time.Time) error {
+func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId string, scheduleTime *time.Time) error {
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
 		"schedule_user_id": userId,
@@ -745,11 +707,11 @@ func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userI
 func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, error) {
 	steps := []*WorkflowStep{}
 	err := s.db.Where("workflow_record_id in (?)", ids).
-		Preload("Assignees").
-		Preload("OperationUser").Find(&steps).Error
+		Find(&steps).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
+
 	stepTemplateIds := make([]uint, 0, len(steps))
 	for _, step := range steps {
 		stepTemplateIds = append(stepTemplateIds, step.WorkflowStepTemplateId)
@@ -771,7 +733,7 @@ func (s *Storage) getWorkflowStepsByRecordIds(ids []uint) ([]*WorkflowStep, erro
 
 func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInstanceRecord, error) {
 	instanceRecords := []*WorkflowInstanceRecord{}
-	err := s.db.Preload("Instance").Preload("Task").Preload("ExecutionAssignees").Where("workflow_record_id = ?", id).
+	err := s.db.Preload("Task").Where("workflow_record_id = ?", id).
 		Find(&instanceRecords).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
@@ -779,64 +741,20 @@ func (s *Storage) getWorkflowInstanceRecordsByRecordId(id uint) ([]*WorkflowInst
 	return instanceRecords, nil
 }
 
-func (s *Storage) GetWorkflowDetailByTaskID(taskID uint) (*Workflow, error) {
-	workflow, exist, err := s.GetWorkflowByTaskId(taskID)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, fmt.Errorf("workflow not exist by task_id(%v)", taskID)
-	}
-
-	workflow, exist, err = s.GetWorkflowDetailById(strconv.Itoa(int(workflow.ID)))
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, fmt.Errorf("workflow not exist by workflow.id(%v)", workflow.ID)
-	}
-
-	return workflow, nil
-}
-
-func (s *Storage) GetWorkflowDetailById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
-		Preload("Record").Preload("Project").
-		Where("id = ?", id).First(workflow).Error
+	err := s.db.Preload("Record").Where("project_id = ?", projectId).Where("workflow_id = ?", workflowId).
+		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	if workflow.Record == nil {
-		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
+		return workflow, false, nil
 	}
 
-	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.InstanceRecords = instanceRecords
-
-	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.Steps = steps
-	for _, step := range steps {
-		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
-		}
-	}
-	return workflow, true, nil
+	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowExportById(workflowId string) (*Workflow, bool, error) {
 	w := new(Workflow)
-	err := s.db.Preload("CreateUser", UnScopedFunc).
-		Preload("Record").Where("id = ?", id).First(&w).Error
+	err := s.db.Preload("Record").Where("workflow_id = ?", workflowId).First(&w).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -849,8 +767,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	}
 
 	instanceRecordList := make([]*WorkflowInstanceRecord, 0)
-	err = s.db.Preload("Instance", UnScopedFunc).Preload("Task").
-		Preload("User", UnScopedFunc).
+	err = s.db.Preload("Task").
 		Where("workflow_record_id = ?", w.Record.ID).
 		Find(&instanceRecordList).Error
 	if err != nil {
@@ -867,9 +784,7 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	w.Record.InstanceRecords = instanceRecordList
 
 	steps := make([]*WorkflowStep, 0)
-	err = s.db.Where("workflow_record_id = ?", w.Record.ID).
-		Preload("OperationUser", UnScopedFunc).
-		Find(&steps).Error
+	err = s.db.Where("workflow_record_id = ?", w.Record.ID).Find(&steps).Error
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
@@ -878,13 +793,13 @@ func (s *Storage) GetWorkflowExportById(id string) (*Workflow, bool, error) {
 	return w, true, nil
 }
 
-func (s *Storage) GetWorkflowDetailBySubject(projectName, workflowName string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowDetailWithoutInstancesByWorkflowID(projectId, workflowID string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
-		Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
-		Where("subject = ?", workflowName).
-		Where("projects.name = ?", projectName).
-		First(workflow).Error
+	db := s.db.Model(&Workflow{}).Preload("Record").Where("workflow_id = ?", workflowID)
+	if projectId != "" {
+		db = db.Where("project_id = ?", projectId)
+	}
+	err := db.First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -914,43 +829,7 @@ func (s *Storage) GetWorkflowDetailBySubject(projectName, workflowName string) (
 	return workflow, true, nil
 }
 
-func (s *Storage) GetWorkflowDetailByWorkflowID(projectName, workflowID string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Preload("CreateUser", func(db *gorm.DB) *gorm.DB { return db.Unscoped() }).
-		Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
-		Where("workflow_id = ?", workflowID).
-		Where("projects.name = ?", projectName).
-		First(workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	if workflow.Record == nil {
-		return nil, false, errors.New(errors.DataConflict, fmt.Errorf("workflow record not exist"))
-	}
-
-	instanceRecords, err := s.getWorkflowInstanceRecordsByRecordId(workflow.Record.ID)
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.InstanceRecords = instanceRecords
-
-	steps, err := s.getWorkflowStepsByRecordIds([]uint{workflow.Record.ID})
-	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	workflow.Record.Steps = steps
-	for _, step := range steps {
-		if step.ID == workflow.Record.CurrentWorkflowStepId {
-			workflow.Record.CurrentStep = step
-		}
-	}
-	return workflow, true, nil
-}
-
-func (s *Storage) GetWorkflowHistoryById(id string) ([]*WorkflowRecord, error) {
+func (s *Storage) GetWorkflowHistoryById(id uint) ([]*WorkflowRecord, error) {
 	records := []*WorkflowRecord{}
 	err := s.db.Model(&WorkflowRecord{}).Select("workflow_records.*").
 		Joins("JOIN workflow_record_history AS wrh ON workflow_records.id = wrh.workflow_record_id").
@@ -1029,7 +908,7 @@ func (s *Storage) DeleteWorkflow(workflow *Workflow) error {
 }
 
 func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
-	err := tx.Exec("DELETE FROM workflows WHERE id = ?", workflow.ID).Error
+	err := tx.Exec("DELETE FROM workflows WHERE workflow_id = ?", workflow.WorkflowId).Error
 	if err != nil {
 		return err
 	}
@@ -1037,7 +916,7 @@ func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
 	if err != nil {
 		return err
 	}
-	err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.ID).Error
+	err = tx.Exec("DELETE FROM workflow_steps WHERE workflow_id = ?", workflow.WorkflowId).Error
 	if err != nil {
 		return err
 	}
@@ -1054,7 +933,7 @@ func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
 
 func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 	workflows := []*Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+	err := s.db.Model(&Workflow{}).Select("workflows.id,workflows.workflow_id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflows.created_at < ? "+
 			"AND (workflow_records.status = 'finished' "+
@@ -1067,7 +946,7 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 
 func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
 	workflows := []*Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+	err := s.db.Model(&Workflow{}).Select("workflows.id,workflows.workflow_id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
 		Where("workflow_records.status = 'wait_for_execution' "+
@@ -1087,7 +966,7 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error) {
+func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, error) {
 	count := 0
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
@@ -1098,21 +977,26 @@ func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetInstancesByWorkflowID(workflowID uint) ([]*Instance, error) {
+func (s *Storage) GetInstanceIdsByWorkflowID(workflowID string) ([]uint64, error) {
 	query := `
-SELECT instances.id ,instances.maintenance_period
+SELECT wir.instance_id id
 FROM workflows AS w
 LEFT JOIN workflow_records AS wr ON wr.id = w.workflow_record_id
 LEFT JOIN workflow_instance_records AS wir ON wr.id = wir.workflow_record_id
-LEFT JOIN instances ON instances.id = wir.instance_id
 WHERE 
-w.id = ?`
+w.workflow_id = ?`
 	instances := []*Instance{}
 	err := s.db.Raw(query, workflowID).Scan(&instances).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)
 	}
-	return instances, err
+
+	instanceIds := make([]uint64, 0, len(instances))
+	for _, instance := range instances {
+		instanceIds = append(instanceIds, instance.ID)
+	}
+
+	return instanceIds, err
 }
 
 // GetWorkFlowStepIdsHasAudit 返回走完所有审核流程的workflow_steps的id
@@ -1201,15 +1085,14 @@ func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 }
 
 // 执行成功, 执行失败, 已取消三种工单会被当作已结束工单
-func (s *Storage) HasNotEndWorkflowByProjectName(projectName string) (bool, error) {
+func (s *Storage) HasNotEndWorkflowByProjectId(projectId string) (bool, error) {
 	endStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusCancel}
 
 	var count int
 	err := s.db.Table("workflows").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
-		Joins("LEFT JOIN projects ON projects.id = workflows.project_id").
 		Where("workflow_records.status NOT IN (?)", endStatus).
-		Where("projects.name = ?", projectName).
+		Where("workflows.project_id = ?", projectId).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -1259,20 +1142,20 @@ func (s *Storage) GetWorkflowDailyCountBetweenStartTimeAndEndTime(startTime, end
 }
 
 type WorkflowTasksSummaryDetail struct {
-	WorkflowRecordStatus      string     `json:"workflow_record_status"`
-	TaskId                    uint       `json:"task_id"`
-	TaskExecStartAt           *time.Time `json:"task_exec_start_at"`
-	TaskExecEndAt             *time.Time `json:"task_exec_end_at"`
-	TaskPassRate              float64    `json:"task_pass_rate"`
-	TaskScore                 int32      `json:"task_score"`
-	TaskStatus                string     `json:"task_status"`
-	InstanceName              string     `json:"instance_name"`
-	InstanceDeletedAt         *time.Time `json:"instance_deleted_at"`
-	InstanceMaintenancePeriod Periods    `json:"instance_maintenance_period" gorm:"text"`
-	InstanceScheduledAt       *time.Time `json:"instance_scheduled_at"`
-	ExecutionUserDeletedAt    *time.Time `json:"execution_user_deleted_at"`
-	ExecutionUserName         string     `json:"execution_user_name"`
-	CurrentStepAssigneeUsers  RowList    `json:"current_step_assignee_users"`
+	WorkflowRecordStatus       string         `json:"workflow_record_status"`
+	TaskId                     uint           `json:"task_id"`
+	TaskExecStartAt            *time.Time     `json:"task_exec_start_at"`
+	TaskExecEndAt              *time.Time     `json:"task_exec_end_at"`
+	TaskPassRate               float64        `json:"task_pass_rate"`
+	TaskScore                  int32          `json:"task_score"`
+	TaskStatus                 string         `json:"task_status"`
+	InstanceId                 uint64         `json:"instance_id"`
+	InstanceName               string         `json:"instance_name"`
+	InstanceDeletedAt          *time.Time     `json:"instance_deleted_at"`
+	InstanceMaintenancePeriod  Periods        `json:"instance_maintenance_period" gorm:"text"`
+	InstanceScheduledAt        *time.Time     `json:"instance_scheduled_at"`
+	ExecutionUserId            string         `json:"execution_user_id"`
+	CurrentStepAssigneeUserIds sql.NullString `json:"current_step_assignee_user_ids"`
 }
 
 var workflowStepSummaryQueryTpl = `
@@ -1283,16 +1166,16 @@ SELECT wr.status                                                     AS workflow
        tasks.pass_rate                                               AS task_pass_rate,
        tasks.score                                                   AS task_score,
        tasks.status                                                  AS task_status,
-       inst.name                                                     AS instance_name,
-       inst.deleted_at                                               AS instance_deleted_at,
-       inst.maintenance_period                                       AS instance_maintenance_period,
+       tasks.instance_id                                             AS instance_id,
        wir.scheduled_at                                              AS instance_scheduled_at,
-       exec_user.deleted_at                                          AS execution_user_deleted_at,
-       COALESCE(exec_user.login_name, '')                            AS execution_user_name,
-       GROUP_CONCAT(DISTINCT COALESCE(curr_ass_user.login_name, '')) AS current_step_assignee_users
+       wir.execution_user_id			                             AS execution_user_id,
+       curr_ws.assignees											 AS current_step_assignee_user_ids
 
 {{- template "body" . -}}
-GROUP BY tasks.id, wir.id
+{{- if .is_executing }}
+ORDER BY curr_ws.id DESC
+LIMIT 1
+{{- end }}
 `
 
 var workflowStepSummaryQueryBodyTplV2 = `
@@ -1300,18 +1183,14 @@ var workflowStepSummaryQueryBodyTplV2 = `
 FROM workflow_instance_records AS wir
 LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
 LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
-LEFT JOIN projects ON projects.id = w.project_id
-LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
-LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id	
-LEFT JOIN workflow_step_user AS curr_ws_user ON curr_ws.id = curr_ws_user.workflow_step_id
-LEFT JOIN users AS curr_ass_user ON curr_ws_user.user_id = curr_ass_user.id
+
 
 WHERE
 w.deleted_at IS NULL
 AND w.workflow_id = :workflow_id
-AND projects.name = :project_name
+AND w.project_id = :project_id
 
 {{ end }}
 `
@@ -1319,8 +1198,8 @@ AND projects.name = :project_name
 func (s *Storage) GetWorkflowStepSummaryByReqV2(data map[string]interface{}) (
 	result []*WorkflowTasksSummaryDetail, err error) {
 
-	if data["workflow_id"] == nil || data["project_name"] == nil {
-		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
+	if data["workflow_id"] == nil || data["project_id"] == nil {
+		return result, errors.New(errors.DataInvalid, fmt.Errorf("project id and workflow name must be specified"))
 	}
 
 	err = s.getListResult(workflowStepSummaryQueryBodyTplV2, workflowStepSummaryQueryTpl, data, &result)
@@ -1339,16 +1218,12 @@ SELECT wr.status                                                               A
        tasks.pass_rate                                                         AS task_pass_rate,
        tasks.score                                                             AS task_score,
        tasks.status                                                            AS task_status,
-       inst.name                                                               AS instance_name,
-       inst.deleted_at                                                         AS instance_deleted_at,
-       inst.maintenance_period                                                 AS instance_maintenance_period,
+       tasks.instance_id                                             		   AS instance_id,
        wir.scheduled_at                                                        AS instance_scheduled_at,
-       exec_user.deleted_at                                                    AS execution_user_deleted_at,
-       COALESCE(exec_user.login_name, '')                                      AS execution_user_name,
+	   wir.execution_user_id			                             AS execution_user_id,
        IF(tasks.status = 'audited' || tasks.status = 'executing' ||
-          tasks.status = 'terminating', GROUP_CONCAT(ass_user.login_name), '') AS current_step_assignee_users
+          tasks.status = 'terminating', wir.execution_assignees, '') AS current_step_assignee_user_ids
 {{- template "body" . -}}
-GROUP BY tasks.id, wir.id
 `
 
 var workflowTaskSummaryQueryBodyTpl = `
@@ -1356,20 +1231,15 @@ var workflowTaskSummaryQueryBodyTpl = `
 FROM workflow_instance_records AS wir
          LEFT JOIN workflow_records AS wr ON wir.workflow_record_id = wr.id
          LEFT JOIN workflows AS w ON w.workflow_record_id = wr.id
-         LEFT JOIN projects ON projects.id = w.project_id
-         LEFT JOIN users AS exec_user ON wir.execution_user_id = exec_user.id
          LEFT JOIN tasks ON wir.task_id = tasks.id
-         LEFT JOIN instances AS inst ON tasks.instance_id = inst.id
-         LEFT JOIN workflow_instance_record_user wiru ON wir.id = wiru.workflow_instance_record_id
-         LEFT JOIN users ass_user ON ass_user.id = wiru.user_id
-WHERE w.deleted_at IS NULL
-	AND w.workflow_id = :workflow_id
-	AND projects.name = :project_name
+		 WHERE w.deleted_at IS NULL
+			AND w.workflow_id = :workflow_id
+			AND w.project_id = :project_id
 {{ end }}
 `
 
 func (s *Storage) GetWorkflowTaskSummaryByReq(data map[string]interface{}) (result []*WorkflowTasksSummaryDetail, err error) {
-	if data["workflow_id"] == nil || data["project_name"] == nil {
+	if data["workflow_id"] == nil || data["project_id"] == nil {
 		return result, errors.New(errors.DataInvalid, fmt.Errorf("project name and workflow name must be specified"))
 	}
 
@@ -1393,11 +1263,10 @@ func (s *Storage) GetTasksByWorkFlowRecordID(id uint) ([]*Task, error) {
 	return tasks, nil
 }
 
-func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName string) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectId, workflowName string) (*Workflow, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Joins("left join projects on workflows.project_id = projects.id").
-		Where("projects.name = ?", projectName).
-		Where("workflows.subject = ?", workflowName).
+	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectId).
+		Where("subject = ?", workflowName).
 		First(&workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflow, false, nil
@@ -1406,20 +1275,7 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowName(projectName, workflowName 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId string) (*Workflow, bool, error) {
-	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Preload("Record").Joins("left join projects on workflows.project_id = projects.id").
-		Where("projects.name = ?", projectName).
-		Where("workflows.workflow_id = ?", workflowId).
-		First(&workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return workflow, false, nil
-	}
-
-	return workflow, true, errors.New(errors.ConnectStorageError, err)
-}
-
-func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
+func (s *Storage) GetWorkflowsByProjectID(projectID ProjectUID) ([]*Workflow, error) {
 	workflows := []*Workflow{}
 	err := s.db.Model(&Workflow{}).Where("project_id = ?", projectID).Scan(&workflows).Error
 	return workflows, errors.ConnectStorageErrWrapper(err)
@@ -1436,22 +1292,21 @@ func (s *Storage) GetWorkflowNamesByIDs(ids []string) ([]string, error) {
 }
 
 type WorkflowStatusDetail struct {
-	Subject    string     `json:"subject"`
-	WorkflowId string     `json:"workflow_id"`
-	Status     string     `json:"status"`
-	LoginName  string     `json:"login_name"`
-	UpdatedAt  *time.Time `json:"updated_at"`
+	Subject      string     `json:"subject"`
+	WorkflowId   string     `json:"workflow_id"`
+	Status       string     `json:"status"`
+	CreateUserId string     `json:"create_user_id"`
+	LoginName    string     `json:"login_name"`
+	UpdatedAt    *time.Time `json:"updated_at"`
 }
 
-func (s *Storage) GetProjectWorkflowStatusDetail(projectName string, queryStatus []string) ([]WorkflowStatusDetail, error) {
+func (s *Storage) GetProjectWorkflowStatusDetail(projectUid string, queryStatus []string) ([]WorkflowStatusDetail, error) {
 	WorkflowStatusDetails := []WorkflowStatusDetail{}
 
 	err := s.db.Model(&Workflow{}).
-		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, users.login_name").
+		Select("workflows.subject, workflows.workflow_id, wr.status, wr.updated_at, workflows.create_user_id").
 		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join users on users.id=workflows.create_user_id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("wr.status in (?) and projects.name=?", queryStatus, projectName).
+		Where("wr.status in (?) and workflows.project_id=?", queryStatus, projectUid).
 		Order("wr.updated_at desc").
 		Scan(&WorkflowStatusDetails).Error
 	if err != nil {
@@ -1465,25 +1320,23 @@ type SqlCountAndTriggerRuleCount struct {
 	TriggerRuleCount uint `json:"trigger_rule_count"`
 }
 
-func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectName string) (SqlCountAndTriggerRuleCount, error) {
+func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectUid string) (SqlCountAndTriggerRuleCount, error) {
 	sqlCountAndTriggerRuleCount := SqlCountAndTriggerRuleCount{}
 	err := s.db.Model(&Workflow{}).
 		Select("count(1) sql_count, count(case when JSON_TYPE(execute_sql_detail.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
 		Joins("left join workflow_instance_records on workflows.workflow_record_id=workflow_instance_records.workflow_record_id").
 		Joins("left join tasks on workflow_instance_records.task_id=tasks.id").
 		Joins("left join execute_sql_detail on execute_sql_detail.task_id=tasks.id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("projects.name=?", projectName).
+		Where("workflows.project_id=?", projectUid).
 		Scan(&sqlCountAndTriggerRuleCount).Error
 	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectName string) (int, error) {
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int, error) {
 	var count int
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
-		Joins("left join projects on projects.id=workflows.project_id").
-		Where("workflow_records.status = ? and projects.name=?", status, projectName).
+		Where("workflow_records.status = ? and workflows.project_id=?", status, projectUid).
 		Count(&count).Error
 	if err != nil {
 		return 0, errors.New(errors.ConnectStorageError, err)
