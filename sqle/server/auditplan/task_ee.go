@@ -700,6 +700,10 @@ func (at *DB2TopSQLTask) indicator() (string, error) {
 		DB2IndicatorTotalElapsedTime,
 		DB2IndicatorAverageElapsedTime,
 		DB2IndicatorAverageCPUTime,
+		DB2IndicatorLockWaitTime,
+		DB2IndicatorLockWaitNum,
+		DB2IndicatorSQLWaitTime,
+		DB2IndicatorTotalActTime,
 	}) {
 		return "", fmt.Errorf("invalid indicator: %v", indicator)
 	}
@@ -708,15 +712,23 @@ func (at *DB2TopSQLTask) indicator() (string, error) {
 
 // ref: https://www.ibm.com/docs/zh/db2/11.1?topic=views-snap-get-dyn-sql-dynsql-snapshot
 func (at *DB2TopSQLTask) collectSQL() (string, error) {
+	// SET TENANT ?是用于设置当前会话的租户标识的语句
+	// MON_GET_PKG_CACHE_STMT表函数中可能会存在两次`SET TENANT ?`。因为指纹唯一性导致存表失败，所以过滤对`SET TENANT ?`语句的采集
 	sql := `
-SELECT 
-    stmt_text,   
-	num_executions,   
-    real(total_exec_time)*1000+DECIMAL(real(total_exec_time_ms)/1000,18,3) AS total_elapsed_time,   
-	DECIMAL((real(total_exec_time)*1000+real(total_exec_time_ms)/1000)/real(num_executions),18,3) AS avg_elapsed_time_ms,   
-    DECIMAL((real(total_sys_cpu_time)*1000+real(total_sys_cpu_time_ms)/1000+real(total_usr_cpu_time)*1000+real(total_usr_cpu_time_ms)/1000)/real(num_executions),18,3) as avg_cpu_time_ms    
-FROM sysibmadm.snapdyn_sql     
-WHERE stmt_text !='' AND num_executions > 0    
+	SELECT
+	num_executions,
+	total_act_time,
+	total_act_wait_time,
+	lock_wait_time,
+	lock_waits,
+	stmt_exec_time,
+	total_cpu_time / NUM_EXEC_WITH_METRICS AS avg_cpu_time,
+	STMT_EXEC_TIME/NUM_EXECUTIONS AS avg_elapsed_time_ms,
+	substr(stmt_text, 1, 300) AS stmt_text
+	FROM
+	TABLE(MON_GET_PKG_CACHE_STMT(NULL, NULL, NULL, -2)) T
+	WHERE
+	upper(stmt_text) NOT LIKE '%%MON_GET_PKG_CACHE_STMT%%' AND NUM_EXEC_WITH_METRICS <> 0 AND upper(stmt_text) <> 'SET TENANT ?'
 ORDER BY %s DESC   
 `
 	indicator, err := at.indicator()
@@ -740,9 +752,13 @@ ORDER BY %s DESC
 
 const (
 	DB2IndicatorNumExecutions      = "num_executions"      // 执行次数
-	DB2IndicatorTotalElapsedTime   = "total_elapsed_time"  // 总执行时间
+	DB2IndicatorTotalElapsedTime   = "stmt_exec_time"      // 总执行时间
 	DB2IndicatorAverageElapsedTime = "avg_elapsed_time_ms" // 平均执行时间
-	DB2IndicatorAverageCPUTime     = "avg_cpu_time_ms"     // 平均 CPU 时间
+	DB2IndicatorAverageCPUTime     = "avg_cpu_time"        // 平均 CPU 时间
+	DB2IndicatorLockWaitTime       = "lock_wait_time"      // 锁等待时间
+	DB2IndicatorLockWaitNum        = "lock_waits"          // 锁等待次数
+	DB2IndicatorSQLWaitTime        = "total_act_wait_time" // 活动等待总时间
+	DB2IndicatorTotalActTime       = "total_act_time"      // 活动总时间
 )
 
 func (at *DB2TopSQLTask) collectorDo() {
@@ -773,7 +789,7 @@ func (at *DB2TopSQLTask) collectorDo() {
 				User:             inst.User,
 				Password:         inst.Password,
 				AdditionalParams: inst.AdditionalParams,
-				DatabaseName:     at.ap.InstanceName,
+				DatabaseName:     at.ap.InstanceDatabase,
 			},
 		})
 	if err != nil {
@@ -846,7 +862,23 @@ func (at *DB2TopSQLTask) getSQLHead() []Head {
 		},
 		{
 			Name: DB2IndicatorAverageCPUTime,
-			Desc: "平均 CPU 时间(ms)",
+			Desc: "平均 CPU 时间(μs)",
+		},
+		{
+			Name: DB2IndicatorLockWaitTime,
+			Desc: "锁等待时间(ms)",
+		},
+		{
+			Name: DB2IndicatorLockWaitNum,
+			Desc: "锁等待次数",
+		},
+		{
+			Name: DB2IndicatorSQLWaitTime,
+			Desc: "活动等待总时间(ms)",
+		},
+		{
+			Name: DB2IndicatorTotalActTime,
+			Desc: "活动总时间(ms)",
 		},
 	}
 }
