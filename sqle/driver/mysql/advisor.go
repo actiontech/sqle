@@ -116,10 +116,10 @@ var AdvisorMetaList []AdvisorMeta = []AdvisorMeta{
 		advisorName: "join_index_advisor",
 		newFunction: newJoinIndexAdvisor,
 	},
-	{
-		advisorName: "extremal_index_advisor",
-		newFunction: newExtremalIndexAdvisor,
-	},
+	// {
+	// 	advisorName: "extremal_index_advisor",
+	// 	newFunction: newExtremalIndexAdvisor,
+	// },
 	{
 		advisorName: "function_index_advisor",
 		newFunction: newFunctionIndexAdvisor,
