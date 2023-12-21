@@ -223,5 +223,5 @@ type GetSqlManageSqlAnalysisResp struct {
 // @Success 200 {object} GetSqlManageSqlAnalysisResp
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
 func GetSqlManageSqlAnalysisV1(c echo.Context) error {
-	return nil
+	return getSqlManageSqlAnalysisV1(c)
 }
