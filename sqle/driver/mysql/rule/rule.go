@@ -493,19 +493,19 @@ func getCreateTableAndOnCondition(input *RuleHandlerInput) (map[string]*ast.Crea
 		if stmt.From == nil {
 			return nil, nil
 		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.From.TableRefs)
+		tableNameCreateTableStmtMap = input.Ctx.GetTableNameCreateTableStmtMap(stmt.From.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.From.TableRefs)
 	case *ast.UpdateStmt:
 		if stmt.TableRefs == nil {
 			return nil, nil
 		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		tableNameCreateTableStmtMap = input.Ctx.GetTableNameCreateTableStmtMap(stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	case *ast.DeleteStmt:
 		if stmt.TableRefs == nil {
 			return nil, nil
 		}
-		tableNameCreateTableStmtMap = getTableNameCreateTableStmtMap(input.Ctx, stmt.TableRefs.TableRefs)
+		tableNameCreateTableStmtMap = input.Ctx.GetTableNameCreateTableStmtMap(stmt.TableRefs.TableRefs)
 		onConditions = util.GetTableFromOnCondition(stmt.TableRefs.TableRefs)
 	default:
 		return nil, nil
@@ -691,28 +691,6 @@ func getTableNameCreateTableStmtMapForJoinType(sessionContext *session.Context, 
 				tableNameCreateTableStmtMap[tableSource.AsName.String()] = createTableStmt
 			}
 			// TODO: 跨库的 JOIN 无法区分
-		}
-	}
-	return tableNameCreateTableStmtMap
-}
-
-func getTableNameCreateTableStmtMap(sessionContext *session.Context, joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
-	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
-	tableSources := util.GetTableSources(joinStmt)
-	for _, tableSource := range tableSources {
-		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
-			tableName := tableNameStmt.Name.L
-			if tableSource.AsName.L != "" {
-				// 如果使用别名，则需要用别名引用
-				tableName = tableSource.AsName.L
-			}
-
-			createTableStmt, exist, err := sessionContext.GetCreateTableStmt(tableNameStmt)
-			if err != nil || !exist {
-				continue
-			}
-			// TODO: 跨库的 JOIN 无法区分
-			tableNameCreateTableStmtMap[tableName] = createTableStmt
 		}
 	}
 	return tableNameCreateTableStmtMap
@@ -3259,7 +3237,7 @@ func checkWhereConditionUseIndex(ctx *session.Context, whereVisitor *util.WhereW
 			continue
 		}
 
-		tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(ctx, whereExpr.TableRef)
+		tableNameCreateTableStmtMap := ctx.GetTableNameCreateTableStmtMap(whereExpr.TableRef)
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 			switch x := expr.(type) {
 			case *ast.ColumnNameExpr:
@@ -5465,7 +5443,7 @@ func judgeJoinFieldUseIndex(input *RuleHandlerInput) (bool, error) {
 		// 如果SQL没有JOIN多表，则不需要审核
 		return true, fmt.Errorf("sql have not join node")
 	}
-	tableNameCreateTableStmtMap := getTableNameCreateTableStmtMap(input.Ctx, joinNode)
+	tableNameCreateTableStmtMap := input.Ctx.GetTableNameCreateTableStmtMap(joinNode)
 	tableIndexes := make(map[string][]*ast.Constraint, len(tableNameCreateTableStmtMap))
 	for tableName, createTableStmt := range tableNameCreateTableStmtMap {
 		tableIndexes[tableName] = createTableStmt.Constraints
