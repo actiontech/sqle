@@ -453,3 +453,4 @@ multilinestring
 multipolygon
 geometrycollection
 charlength
+xmls
