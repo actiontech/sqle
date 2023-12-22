@@ -35,7 +35,6 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 		return
 	}
 	if !exist {
-		entry.Errorf("im config not exist")
 		return
 	}
 
