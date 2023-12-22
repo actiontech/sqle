@@ -1121,3 +1121,25 @@ func (c *Context) GetExecutor() *executor.Executor {
 func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
 	return c.e.GetTableIndexesInfo(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(tableName))
 }
+
+func (c *Context) GetTableNameCreateTableStmtMap(joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	tableSources := util.GetTableSources(joinStmt)
+	for _, tableSource := range tableSources {
+		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+			tableName := tableNameStmt.Name.L
+			if tableSource.AsName.L != "" {
+				// 如果使用别名，则需要用别名引用
+				tableName = tableSource.AsName.L
+			}
+
+			createTableStmt, exist, err := c.GetCreateTableStmt(tableNameStmt)
+			if err != nil || !exist {
+				continue
+			}
+			// TODO: 跨库的 JOIN 无法区分
+			tableNameCreateTableStmtMap[tableName] = createTableStmt
+		}
+	}
+	return tableNameCreateTableStmtMap
+}
