@@ -54,6 +54,9 @@ type SlowLogParser struct {
 	lineOffset  uint64
 	endOffset   uint64
 	event       *log.Event
+
+	// when match use <schema> or # Schema: <schema>. the defaultDB will change to <schema>
+	defaultDB string
 }
 
 // NewSlowLogParser returns a new SlowLogParser that reads from the given reader.
@@ -221,6 +224,9 @@ func (p *SlowLogParser) parseHeader(line string) {
 		submatch := schema.FindStringSubmatch(line)
 		if len(submatch) == 2 {
 			p.event.Db = submatch[1]
+			if submatch[1] != "" {
+				p.defaultDB = submatch[1]
+			}
 		}
 
 		m := metricsRe.FindAllStringSubmatch(line, -1)
@@ -242,7 +248,9 @@ func (p *SlowLogParser) parseHeader(line string) {
 
 			case smv[1] == "Schema":
 				p.event.Db = smv[2]
-
+				if smv[2] != "" {
+					p.defaultDB = smv[2]
+				}
 			case smv[1] == "Log_slow_rate_type":
 				p.event.RateType = smv[2]
 
@@ -285,6 +293,9 @@ func (p *SlowLogParser) parseQuery(line string) {
 		db = strings.TrimRight(db, ";")
 		db = strings.Trim(db, "`")
 		p.event.Db = db
+		if db != "" {
+			p.defaultDB = db
+		}
 		// Set the 'use' as the query itself.
 		// In case we are on a group of lines like in test 23, lines 6~8, the
 		// query will be replaced by the real query "select field...."
@@ -347,7 +358,9 @@ func (p *SlowLogParser) sendEvent(inHeader bool, inQuery bool) {
 		p.logf("No Query_time in event at %d: %#v", p.lineOffset, p.event)
 		return
 	}
-
+	if p.event.Db == "" {
+		p.event.Db = p.defaultDB
+	}
 	// Clean up the event.
 	p.event.Db = strings.TrimSuffix(p.event.Db, ";\n")
 	p.event.Query = strings.TrimSuffix(p.event.Query, ";")
