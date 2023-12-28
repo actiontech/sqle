@@ -345,12 +345,16 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v not exist", mgID)))
 	}
 
-	if mg.Instance == nil {
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), mg.ProjectId, mg.InstanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v instance not exist", mgID)))
 	}
 
 	entry := log.NewEntry().WithField("sql_manage_analysis", mgID)
-	analysisResp, err := GetSQLAnalysisResult(entry, mg.Instance, mg.SchemaName, mg.SqlText)
+	analysisResp, err := GetSQLAnalysisResult(entry, instance, mg.SchemaName, mg.SqlText)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
