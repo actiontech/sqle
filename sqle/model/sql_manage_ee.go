@@ -509,9 +509,7 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 
 func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
 	sqlManage := new(SqlManage)
-	err := s.db.Preload("Instance", func(db *gorm.DB) *gorm.DB {
-		return db.Where("project_id = ?", sqlManage.ProjectId)
-	}).Where("id = ?", id).First(&sqlManage).Error
+	err := s.db.Where("id = ?", id).First(&sqlManage).Error
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return sqlManage, false, nil
