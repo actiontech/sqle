@@ -751,8 +751,8 @@ type SystemFields struct {
 	CancelOnboardingReason  *int                `json:"cancel_onboarding_reason,omitempty"`  // 取消入职原因
 	CancelOnboardingNotes   *string             `json:"cancel_onboarding_notes,omitempty"`   // 取消入职备注
 	EmployeeFormStatus      *int                `json:"employee_form_status,omitempty"`      // 入职登记表状态
-	CreateTime              *int                `json:"create_time,omitempty"`               // 创建时间
-	UpdateTime              *int                `json:"update_time,omitempty"`               // 更新时间
+	CreateTime              *int64              `json:"create_time,omitempty"`               // 创建时间
+	UpdateTime              *int64              `json:"update_time,omitempty"`               // 更新时间
 }
 
 type SystemFieldsBuilder struct {
@@ -874,9 +874,9 @@ type SystemFieldsBuilder struct {
 	cancelOnboardingNotesFlag   bool
 	employeeFormStatus          int // 入职登记表状态
 	employeeFormStatusFlag      bool
-	createTime                  int // 创建时间
+	createTime                  int64 // 创建时间
 	createTimeFlag              bool
-	updateTime                  int // 更新时间
+	updateTime                  int64 // 更新时间
 	updateTimeFlag              bool
 }
 
@@ -1419,7 +1419,7 @@ func (builder *SystemFieldsBuilder) EmployeeFormStatus(employeeFormStatus int) *
 // 创建时间
 //
 // 示例值：1608690517811
-func (builder *SystemFieldsBuilder) CreateTime(createTime int) *SystemFieldsBuilder {
+func (builder *SystemFieldsBuilder) CreateTime(createTime int64) *SystemFieldsBuilder {
 	builder.createTime = createTime
 	builder.createTimeFlag = true
 	return builder
@@ -1428,7 +1428,7 @@ func (builder *SystemFieldsBuilder) CreateTime(createTime int) *SystemFieldsBuil
 // 更新时间
 //
 // 示例值：1608690517811
-func (builder *SystemFieldsBuilder) UpdateTime(updateTime int) *SystemFieldsBuilder {
+func (builder *SystemFieldsBuilder) UpdateTime(updateTime int64) *SystemFieldsBuilder {
 	builder.updateTime = updateTime
 	builder.updateTimeFlag = true
 	return builder

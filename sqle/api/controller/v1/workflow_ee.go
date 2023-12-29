@@ -5,6 +5,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"mime"
@@ -12,7 +13,9 @@ import (
 	"strings"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -25,43 +28,44 @@ func exportWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	data := map[string]interface{}{
-		"filter_subject":                         req.FilterSubject,
-		"fuzzy_search_workflow_desc":             req.FuzzySearchWorkflowDesc,
-		"filter_create_time_from":                req.FilterCreateTimeFrom,
-		"filter_create_time_to":                  req.FilterCreateTimeTo,
-		"filter_create_user_name":                req.FilterCreateUserName,
-		"filter_task_execute_start_time_from":    req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":      req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                          req.FilterStatus,
-		"filter_current_step_assignee_user_name": req.FilterCurrentStepAssigneeUserName,
-		"filter_task_instance_name":              req.FilterTaskInstanceName,
-		"filter_project_name":                    project.Name,
-		"current_user_id":                        user.ID,
-		"check_user_can_access":                  CheckIsProjectManager(user.Name, project.Name) != nil,
+		"filter_subject":                       req.FilterSubject,
+		"filter_create_time_from":              req.FilterCreateTimeFrom,
+		"filter_create_time_to":                req.FilterCreateTimeTo,
+		"filter_create_user_id":                req.FilterCreateUserID,
+		"filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
+		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
+		"filter_status":                        req.FilterStatus,
+		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
+		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_project_id":                    projectUid,
+		"current_user_id":                      user.ID,
+		"check_user_can_access":                !up.IsAdmin(),
 	}
 
-	idList, err := s.GetExportWorkflowIDListByReq(data, user)
+	if req.FuzzyKeyword != "" {
+		data["fuzzy_keyword"] = fmt.Sprintf("%%%s%%", req.FuzzyKeyword)
+	}
+	if !up.IsAdmin() {
+		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersWorkflow), ",")
+	}
+
+	idList, err := s.GetExportWorkflowIDListByReq(data, nil)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -110,17 +114,36 @@ func exportWorkflowV1(c echo.Context) error {
 			continue
 		}
 
+		instanceIds := make([]uint64, 0, len(workflow.Record.InstanceRecords))
+		for _, item := range workflow.Record.InstanceRecords {
+			instanceIds = append(instanceIds, item.InstanceId)
+		}
+
+		instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(workflow.ProjectId), instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instanceMap := map[uint64]*model.Instance{}
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
+		for i, item := range workflow.Record.InstanceRecords {
+			if instance, ok := instanceMap[item.InstanceId]; ok {
+				workflow.Record.InstanceRecords[i].Instance = instance
+			}
+		}
+
 		var exportWorkflowRecord []string
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
 			exportWorkflowRecord = []string{
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
-				utils.AddDelTag(instanceRecord.Instance.DeletedAt, instanceRecord.Instance.Name),
+				utils.AddDelTag(nil, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
-				addDelUserTag(workflow.CreateUser),
+				dms.GetUserNameWithDelTag(workflow.CreateUserId),
 				model.WorkflowStatus[workflow.Record.Status],
-				addDelUserTag(instanceRecord.User),
+				dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 				instanceRecord.Task.TaskExecEndAt(),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
 			}
@@ -160,7 +183,7 @@ func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.Work
 	auditAndExecuteList = append(auditAndExecuteList, getAuditList(workflow)...)
 	// 上线节点
 	auditAndExecuteList = append(auditAndExecuteList,
-		addDelUserTag(instanceRecord.User),
+		dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
 		executeStateMap[instanceRecord.Task.Status],
@@ -183,7 +206,7 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
 		stepIndex := i * stepSize
-		auditNodeList[stepIndex] = addDelUserTag(step.OperationUser)
+		auditNodeList[stepIndex] = dms.GetUserNameWithDelTag(step.OperationUserId)
 		auditNodeList[stepIndex+1] = step.OperationTime()
 		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
 	}

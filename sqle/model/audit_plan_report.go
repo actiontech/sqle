@@ -48,12 +48,11 @@ func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number ui
 	return auditPlanReportSQLV2, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanReportByProjectName(projectName string) ([]*AuditPlanReportV2, error) {
+func (s *Storage) GetAuditPlanReportByProjectName(projectUid string) ([]*AuditPlanReportV2, error) {
 	auditPlanReportV2Slice := []*AuditPlanReportV2{}
 	err := s.db.Model(&AuditPlanReportV2{}).
 		Joins("left join audit_plans on audit_plans.id=audit_plan_reports_v2.audit_plan_id").
-		Joins("left join projects on projects.id=audit_plans.project_id").
-		Where("projects.name=? and audit_plans.deleted_at is NULL", projectName).Find(&auditPlanReportV2Slice).Error
+		Where("audit_plans.project_id=? and audit_plans.deleted_at is NULL", projectUid).Find(&auditPlanReportV2Slice).Error
 	return auditPlanReportV2Slice, errors.ConnectStorageErrWrapper(err)
 }
 
@@ -64,23 +63,25 @@ type LatestAuditPlanReportScore struct {
 }
 
 // 使用子查询获取最新的report的生成时间，再去获取report相关信息
-func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName string) ([]*LatestAuditPlanReportScore, error) {
+func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid string, instanceNames []string) ([]*LatestAuditPlanReportScore, error) {
+	if len(instanceNames) == 0 {
+		return nil, nil
+	}
+
 	var latestAuditPlanReportScore []*LatestAuditPlanReportScore
 	subQuery := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
-		Joins("left join projects on audit_plans.project_id=projects.id").
-		Where("projects.name=?", projectName).
+		Where("audit_plans.project_id=?", projectUid).
+		Where("audit_plans.instance_name in (?)", instanceNames).
 		Group("audit_plans.db_type, audit_plans.instance_name").
 		SubQuery()
 
 	err := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, audit_plan_reports_v2.score").
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
-		Joins("left join projects on audit_plans.project_id=projects.id").
-		Joins("left join instances on audit_plans.instance_name=instances.name").
 		Joins("join (?) as sq on audit_plans.db_type=sq.db_type and audit_plans.instance_name=sq.instance_name and audit_plan_reports_v2.created_at=sq.latest_created_at", subQuery).
-		Where("projects.name=? and instances.deleted_at is null and audit_plans.deleted_at is null and instances.id is not null", projectName).
+		Where("audit_plans.project_id=? and audit_plans.deleted_at is null", projectUid).
 		Scan(&latestAuditPlanReportScore).Error
 
 	return latestAuditPlanReportScore, errors.ConnectStorageErrWrapper(err)
@@ -88,7 +89,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectName
 
 func (s *Storage) GetReportWithAuditPlanByReportID(reportId int) (auditPlanReportV2 *AuditPlanReportV2, exist bool, err error) {
 	auditPlanReportV2 = &AuditPlanReportV2{}
-	err = s.db.Preload("AuditPlan").Preload("AuditPlan.CreateUser", UnScopedFunc).Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(auditPlanReportV2).Error
+	err = s.db.Preload("AuditPlan").Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(auditPlanReportV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportV2, false, nil
 	}

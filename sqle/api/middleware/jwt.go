@@ -1,14 +1,16 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
+	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -25,11 +27,10 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 			}
 			// sqle-token为空时，可能是cookie过期被清理了，希望返回的错误是http.StatusUnauthorized
 			// 但sqle-token为空时jwt返回的错误是http.StatusBadRequest
-			_, err := c.Cookie("sqle-token")
+			_, err := c.Cookie("dms-token")
 			if err == http.ErrNoCookie && auth == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "can not find sqle-token")
+				return echo.NewHTTPError(http.StatusUnauthorized, "can not find dms-token")
 			}
-
 			return next(c)
 		}
 	}
@@ -38,7 +39,7 @@ func JWTTokenAdapter() echo.MiddlewareFunc {
 func JWTWithConfig(key interface{}) echo.MiddlewareFunc {
 	c := middleware.DefaultJWTConfig
 	c.SigningKey = key
-	c.TokenLookup = "cookie:sqle-token,header:Authorization" // tell the middleware where to get token: from cookie and header
+	c.TokenLookup = "cookie:dms-token,header:Authorization" // tell the middleware where to get token: from cookie and header
 	return middleware.JWTWithConfig(c)
 }
 
@@ -58,11 +59,15 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				token = parts[1]
 			}
 
-			apnInToken, err := utils.ParseAuditPlanName(token)
+			apnInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			projectName := c.Param("project_name")
+
+			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
 			apnInParam := c.Param("audit_plan_name")
 			// 由于对生成的JWT Token的负载使用MD5算法进行预处理，因此在验证的时候也需要对param中的apn使用MD5处理
 			// 为了兼容老版本的JWT Token需要增加不经MD5处理的apnInParam和apnInToken的判断
@@ -70,7 +75,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectName, apnInParam)
+			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectUid, apnInParam)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}

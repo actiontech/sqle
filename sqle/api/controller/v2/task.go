@@ -5,7 +5,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
-	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -67,13 +66,11 @@ func GetTaskSQLs(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = v1.CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

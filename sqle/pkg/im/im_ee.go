@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
@@ -53,8 +54,12 @@ func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 }
 
 func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
+	createUser, err := dms.GetUser(ctx, workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		return err
+	}
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
-	originUser, err := client.GetFeishuUserIdList([]*model.User{workflow.CreateUser}, larkContact.UserIdTypeOpenId)
+	originUser, err := client.GetFeishuUserIdList([]*model.User{createUser}, larkContact.UserIdTypeOpenId)
 	if err != nil {
 		return err
 	}
@@ -75,7 +80,7 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	auditResult := strings.Join(tableRows, ",")
 
 	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
-		assignUserIDs, auditResult, workflow.Project.Name, workflow.Desc, url)
+		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url)
 	if err != nil {
 		return err
 	}
@@ -88,7 +93,7 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	s := model.GetStorage()
 	feishuInst := &model.FeishuInstance{
 		ApproveInstanceCode: *approvalInstCode,
-		WorkflowId:          workflow.ID,
+		WorkflowId:          workflow.WorkflowId,
 		TaskID:              *instDetail.TaskList[0].Id,
 	}
 
@@ -99,7 +104,7 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	return nil
 }
 
-func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, user *model.User, status string, reason string) error {
+func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string, user *model.User, status string, reason string) error {
 	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
 	userId, err := client.GetFeishuUserIdList([]*model.User{user}, larkContact.UserIdTypeOpenId)
 	if err != nil {
@@ -141,7 +146,7 @@ func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId uint, 
 	return nil
 }
 
-func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []uint, user *model.User) error {
+func CancelFeishuAuditInst(ctx context.Context, im model.IM, workflowIDs []string, user *model.User) error {
 	s := model.GetStorage()
 	err := s.BatchUpdateStatusOfFeishuInstance(workflowIDs, model.WorkflowStatusCancel)
 	if err != nil {

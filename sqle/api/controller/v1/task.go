@@ -10,9 +10,11 @@ import (
 	"strconv"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -174,19 +176,19 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	}
 
-	projectName := c.Param("project_name")
-
-	user, err := controller.GetCurrentUser(c)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = CheckIsProjectMember(user.Name, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	s := model.GetStorage()
-	task, err := buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, sqls)
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -220,15 +222,12 @@ func CreateAndAuditTask(c echo.Context) error {
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/tasks/audits/{task_id}/ [get]
 func GetTask(c echo.Context) error {
-	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -238,6 +237,28 @@ func GetTask(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
+}
+func GetTaskById(ctx context.Context, taskId string) (*model.Task, error) {
+	return getTaskById(ctx, taskId)
+}
+
+func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
+	s := model.GetStorage()
+	task, exist, err := s.GetTaskById(taskId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.NewTaskNoExistOrNoAccessErr()
+	}
+
+	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	task.Instance = instance
+
+	return task, nil
 }
 
 type GetAuditTaskSQLsReqV1 struct {
@@ -288,14 +309,12 @@ func GetTaskSQLs(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
-	err = CheckCurrentUserCanViewTask(c, task)
+
+	err = CheckCurrentUserCanViewTaskDMS(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -362,13 +381,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -428,13 +445,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 func DownloadTaskSQLFile(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -471,13 +486,12 @@ type AuditTaskSQLContentResV1 struct {
 func GetAuditTaskSQLContent(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -519,13 +533,11 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 	number := c.Param("number")
 
 	s := model.GetStorage()
-	task, exist, err := s.GetTaskById(taskId)
+	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
+
 	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -544,7 +556,16 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 }
 
 func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
-	return checkCurrentUserCanAccessTask(c, task, []uint{model.OP_WORKFLOW_VIEW_OTHERS})
+	return checkCurrentUserCanAccessTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+}
+
+// TODO 使用DMS的权限校验
+func CheckCurrentUserCanViewTaskDMS(c echo.Context, task *model.Task) error {
+	_, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type SQLExplain struct {
@@ -620,26 +641,38 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	// 数据源个数最大为10
 	if len(req.Instances) > MaximumDataSourceNum {
 		return controller.JSONBaseErrorReq(c, ErrTooManyDataSource)
 	}
 
-	projectName := c.Param("project_name")
-	userName := controller.GetUserName(c)
+	instNames := make([]string, len(req.Instances))
+	for i, instance := range req.Instances {
+		instNames[i] = instance.InstanceName
+	}
 
-	err := CheckIsProjectMember(userName, projectName)
+	distinctInstNames := utils.RemoveDuplicate(instNames)
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
-	distinctInstNameList := getDistinctInstNameList(req.Instances)
+
+	instances, err := dms.GetInstancesInProjectByNames(c.Request().Context(), projectUid, distinctInstNames)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	nameInstanceMap := make(map[string]*model.Instance, len(req.Instances))
-	for _, instName := range distinctInstNameList {
+	for _, inst := range instances {
 		// https://github.com/actiontech/sqle/issues/1673
-		inst, exist, err := s.GetInstanceByNameAndProjectName(instName, projectName)
+		inst, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, inst.Name)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -647,7 +680,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 		}
 
-		can, err := checkCurrentUserCanAccessInstance(c, inst)
+		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, user.GetIDStr(), instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -659,12 +692,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		nameInstanceMap[instName] = inst
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		nameInstanceMap[inst.Name] = inst
 	}
 
 	tasks := make([]*model.Task, len(req.Instances))
@@ -672,7 +700,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		tasks[i] = &model.Task{
 			Schema:       reqInstance.InstanceSchema,
 			InstanceId:   nameInstanceMap[reqInstance.InstanceName].ID,
-			CreateUserId: user.ID,
+			CreateUserId: uint64(user.ID),
 			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
 		}
 		tasks[i].CreatedAt = time.Now()
@@ -689,15 +717,6 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			TaskGroupId: taskGroup.ID,
 		},
 	})
-}
-
-func getDistinctInstNameList(instList []*InstanceForCreatingTask) []string {
-	instNames := make([]string, len(instList))
-	for i, inst := range instList {
-		instNames[i] = inst.InstanceName
-	}
-
-	return utils.RemoveDuplicate(instNames)
 }
 
 type AuditTaskGroupReqV1 struct {
@@ -768,12 +787,19 @@ func AuditTaskGroupV1(c echo.Context) error {
 	tasks := taskGroup.Tasks
 
 	{
-		instances := make([]*model.Instance, 0)
+		instanceIds := make([]uint64, 0, len(tasks))
 		for _, task := range tasks {
-			instances = append(instances, task.Instance)
+			instanceIds = append(instanceIds, task.InstanceId)
 		}
 
-		can, err := checkCurrentUserCanAccessInstances(c, instances)
+		instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
+		projectId := instances[0].ProjectId
+		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

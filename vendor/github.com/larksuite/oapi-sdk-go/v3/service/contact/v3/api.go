@@ -26,8 +26,12 @@ func NewService(config *larkcore.Config) *ContactService {
 	c.CustomAttrEvent = &customAttrEvent{service: c}
 	c.Department = &department{service: c}
 	c.EmployeeTypeEnum = &employeeTypeEnum{service: c}
+	c.FunctionalRole = &functionalRole{service: c}
+	c.FunctionalRoleMember = &functionalRoleMember{service: c}
 	c.Group = &group{service: c}
 	c.GroupMember = &groupMember{service: c}
+	c.JobFamily = &jobFamily{service: c}
+	c.JobLevel = &jobLevel{service: c}
 	c.Scope = &scope{service: c}
 	c.Unit = &unit{service: c}
 	c.User = &user{service: c}
@@ -35,16 +39,20 @@ func NewService(config *larkcore.Config) *ContactService {
 }
 
 type ContactService struct {
-	config           *larkcore.Config
-	CustomAttr       *customAttr       // 自定义用户字段
-	CustomAttrEvent  *customAttrEvent  // 事件
-	Department       *department       // 部门
-	EmployeeTypeEnum *employeeTypeEnum // 人员类型
-	Group            *group            // 用户组
-	GroupMember      *groupMember      // 用户组成员
-	Scope            *scope            // 通讯录权限范围
-	Unit             *unit             // 单位
-	User             *user             // 用户
+	config               *larkcore.Config
+	CustomAttr           *customAttr           // 自定义用户字段
+	CustomAttrEvent      *customAttrEvent      // 事件
+	Department           *department           // 部门
+	EmployeeTypeEnum     *employeeTypeEnum     // 人员类型
+	FunctionalRole       *functionalRole       // functional_role
+	FunctionalRoleMember *functionalRoleMember // functional_role.member
+	Group                *group                // 用户组
+	GroupMember          *groupMember          // 用户组成员
+	JobFamily            *jobFamily            // job_family
+	JobLevel             *jobLevel             // job_level
+	Scope                *scope                // 通讯录权限范围
+	Unit                 *unit                 // 单位
+	User                 *user                 // 用户
 }
 
 type customAttr struct {
@@ -59,10 +67,22 @@ type department struct {
 type employeeTypeEnum struct {
 	service *ContactService
 }
+type functionalRole struct {
+	service *ContactService
+}
+type functionalRoleMember struct {
+	service *ContactService
+}
 type group struct {
 	service *ContactService
 }
 type groupMember struct {
+	service *ContactService
+}
+type jobFamily struct {
+	service *ContactService
+}
+type jobLevel struct {
 	service *ContactService
 }
 type scope struct {
@@ -531,6 +551,222 @@ func (e *employeeTypeEnum) Update(ctx context.Context, req *UpdateEmployeeTypeEn
 	return resp, err
 }
 
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=contact&resource=functional_role&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/create_functionalRole.go
+func (f *functionalRole) Create(ctx context.Context, req *CreateFunctionalRoleReq, options ...larkcore.RequestOptionFunc) (*CreateFunctionalRoleResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateFunctionalRoleResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=delete&project=contact&resource=functional_role&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/delete_functionalRole.go
+func (f *functionalRole) Delete(ctx context.Context, req *DeleteFunctionalRoleReq, options ...larkcore.RequestOptionFunc) (*DeleteFunctionalRoleResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteFunctionalRoleResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=update&project=contact&resource=functional_role&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/update_functionalRole.go
+func (f *functionalRole) Update(ctx context.Context, req *UpdateFunctionalRoleReq, options ...larkcore.RequestOptionFunc) (*UpdateFunctionalRoleResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id"
+	apiReq.HttpMethod = http.MethodPut
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &UpdateFunctionalRoleResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=batch_create&project=contact&resource=functional_role.member&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/batchCreate_functionalRoleMember.go
+func (f *functionalRoleMember) BatchCreate(ctx context.Context, req *BatchCreateFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*BatchCreateFunctionalRoleMemberResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id/members/batch_create"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &BatchCreateFunctionalRoleMemberResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=batch_delete&project=contact&resource=functional_role.member&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/batchDelete_functionalRoleMember.go
+func (f *functionalRoleMember) BatchDelete(ctx context.Context, req *BatchDeleteFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*BatchDeleteFunctionalRoleMemberResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id/members/batch_delete"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &BatchDeleteFunctionalRoleMemberResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=contact&resource=functional_role.member&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/get_functionalRoleMember.go
+func (f *functionalRoleMember) Get(ctx context.Context, req *GetFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*GetFunctionalRoleMemberResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id/members/:member_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetFunctionalRoleMemberResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=list&project=contact&resource=functional_role.member&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/list_functionalRoleMember.go
+func (f *functionalRoleMember) List(ctx context.Context, req *ListFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*ListFunctionalRoleMemberResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id/members"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListFunctionalRoleMemberResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (f *functionalRoleMember) ListByIterator(ctx context.Context, req *ListFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*ListFunctionalRoleMemberIterator, error) {
+	return &ListFunctionalRoleMemberIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: f.List,
+		options:  options,
+		limit:    req.Limit}, nil
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=scopes&project=contact&resource=functional_role.member&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/scopes_functionalRoleMember.go
+func (f *functionalRoleMember) Scopes(ctx context.Context, req *ScopesFunctionalRoleMemberReq, options ...larkcore.RequestOptionFunc) (*ScopesFunctionalRoleMemberResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/functional_roles/:role_id/members/scopes"
+	apiReq.HttpMethod = http.MethodPatch
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, f.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ScopesFunctionalRoleMemberResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, f.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
 // 创建用户组
 //
 // - 使用该接口创建用户组，请注意创建用户组时应用的通讯录权限范围需为“全部员工”，否则会创建失败，[点击了解通讯录权限范围](https://open.feishu.cn/document/ukTMukTMukTM/uETNz4SM1MjLxUzM/v3/guides/scope_authority)。
@@ -823,6 +1059,282 @@ func (g *groupMember) Simplelist(ctx context.Context, req *SimplelistGroupMember
 	// 反序列响应结果
 	resp := &SimplelistGroupMemberResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, g.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=contact&resource=job_family&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/create_jobFamily.go
+func (j *jobFamily) Create(ctx context.Context, req *CreateJobFamilyReq, options ...larkcore.RequestOptionFunc) (*CreateJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_families"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=delete&project=contact&resource=job_family&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/delete_jobFamily.go
+func (j *jobFamily) Delete(ctx context.Context, req *DeleteJobFamilyReq, options ...larkcore.RequestOptionFunc) (*DeleteJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=contact&resource=job_family&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/get_jobFamily.go
+func (j *jobFamily) Get(ctx context.Context, req *GetJobFamilyReq, options ...larkcore.RequestOptionFunc) (*GetJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=list&project=contact&resource=job_family&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/list_jobFamily.go
+func (j *jobFamily) List(ctx context.Context, req *ListJobFamilyReq, options ...larkcore.RequestOptionFunc) (*ListJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_families"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (j *jobFamily) ListByIterator(ctx context.Context, req *ListJobFamilyReq, options ...larkcore.RequestOptionFunc) (*ListJobFamilyIterator, error) {
+	return &ListJobFamilyIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: j.List,
+		options:  options,
+		limit:    req.Limit}, nil
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=update&project=contact&resource=job_family&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/update_jobFamily.go
+func (j *jobFamily) Update(ctx context.Context, req *UpdateJobFamilyReq, options ...larkcore.RequestOptionFunc) (*UpdateJobFamilyResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_families/:job_family_id"
+	apiReq.HttpMethod = http.MethodPut
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &UpdateJobFamilyResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=create&project=contact&resource=job_level&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/create_jobLevel.go
+func (j *jobLevel) Create(ctx context.Context, req *CreateJobLevelReq, options ...larkcore.RequestOptionFunc) (*CreateJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_levels"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &CreateJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=delete&project=contact&resource=job_level&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/delete_jobLevel.go
+func (j *jobLevel) Delete(ctx context.Context, req *DeleteJobLevelReq, options ...larkcore.RequestOptionFunc) (*DeleteJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodDelete
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &DeleteJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=get&project=contact&resource=job_level&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/get_jobLevel.go
+func (j *jobLevel) Get(ctx context.Context, req *GetJobLevelReq, options ...larkcore.RequestOptionFunc) (*GetJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &GetJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=list&project=contact&resource=job_level&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/list_jobLevel.go
+func (j *jobLevel) List(ctx context.Context, req *ListJobLevelReq, options ...larkcore.RequestOptionFunc) (*ListJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_levels"
+	apiReq.HttpMethod = http.MethodGet
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ListJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+func (j *jobLevel) ListByIterator(ctx context.Context, req *ListJobLevelReq, options ...larkcore.RequestOptionFunc) (*ListJobLevelIterator, error) {
+	return &ListJobLevelIterator{
+		ctx:      ctx,
+		req:      req,
+		listFunc: j.List,
+		options:  options,
+		limit:    req.Limit}, nil
+}
+
+//
+//
+// -
+//
+// - 官网API文档链接:https://open.feishu.cn/api-explorer?from=op_doc_tab&apiName=update&project=contact&resource=job_level&version=v3
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/update_jobLevel.go
+func (j *jobLevel) Update(ctx context.Context, req *UpdateJobLevelReq, options ...larkcore.RequestOptionFunc) (*UpdateJobLevelResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/job_levels/:job_level_id"
+	apiReq.HttpMethod = http.MethodPut
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, j.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &UpdateJobLevelResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, j.service.config)
 	if err != nil {
 		return nil, err
 	}
@@ -1262,6 +1774,34 @@ func (u *user) Patch(ctx context.Context, req *PatchUserReq, options ...larkcore
 	}
 	// 反序列响应结果
 	resp := &PatchUserResp{ApiResp: apiResp}
+	err = apiResp.JSONUnmarshalBody(resp, u.service.config)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// 恢复已删除用户
+//
+// - 该接口用于恢复已删除用户（已离职的成员），仅自建应用可申请，应用商店应用无权调用接口。
+//
+// - - 仅支持恢复离职 30 天内的成员。恢复后，部分用户数据仍不可恢复，请谨慎调用。;- 待恢复成员的用户 ID 不能被企业内其他成员使用。如有重复，请先离职对应的成员，否则接口会报错。;- 待恢复成员的手机号和邮箱不能被企业内其他成员使用。如有重复，请先修改对应成员的信息，否则接口会报错。
+//
+// - 官网API文档链接:https://open.feishu.cn/document/uAjLw4CM/ukTMukTMukTM/reference/contact-v3/user/resurrect
+//
+// - 使用Demo链接:https://github.com/larksuite/oapi-sdk-go/tree/v3_main/sample/apiall/contactv3/resurrect_user.go
+func (u *user) Resurrect(ctx context.Context, req *ResurrectUserReq, options ...larkcore.RequestOptionFunc) (*ResurrectUserResp, error) {
+	// 发起请求
+	apiReq := req.apiReq
+	apiReq.ApiPath = "/open-apis/contact/v3/users/:user_id/resurrect"
+	apiReq.HttpMethod = http.MethodPost
+	apiReq.SupportedAccessTokenTypes = []larkcore.AccessTokenType{larkcore.AccessTokenTypeTenant}
+	apiResp, err := larkcore.Request(ctx, apiReq, u.service.config, options...)
+	if err != nil {
+		return nil, err
+	}
+	// 反序列响应结果
+	resp := &ResurrectUserResp{ApiResp: apiResp}
 	err = apiResp.JSONUnmarshalBody(resp, u.service.config)
 	if err != nil {
 		return nil, err

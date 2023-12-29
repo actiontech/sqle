@@ -9,6 +9,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 
@@ -41,9 +42,7 @@ func getWorkflowCounts(c echo.Context) error {
 }
 
 func getInstancesTypePercentV1(c echo.Context) error {
-	s := model.GetStorage()
-
-	typeCounts, err := s.GetAllInstanceCount()
+	typeCounts, err := dms.GetInstanceCountGroupType(c.Request().Context())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -187,17 +186,16 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 		return err
 	}
 
-	s := model.GetStorage()
-	users, err := s.GetAllUserTip()
+	users, err := dms.GetAllUsers(c.Request().Context(), controller.GetDMSServerAddress())
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return err
 	}
-
+	s := model.GetStorage()
 	var percents []CreatorRejectedPercent
 	for _, user := range users {
 		rejected, err := s.GetWorkflowCountByReq(map[string]interface{}{
-			"filter_create_user_name": user.Name,
-			"filter_status":           model.WorkflowStatusReject,
+			"filter_create_user_id": user.GetIDStr(),
+			"filter_status":         model.WorkflowStatusReject,
 		})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -208,7 +206,7 @@ func getWorkflowRejectedPercentGroupByCreatorV1(c echo.Context) error {
 		}
 
 		total, err := s.GetWorkflowCountByReq(map[string]interface{}{
-			"filter_create_user_name": user.Name,
+			"filter_create_user_id": user.GetIDStr(),
 		})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -369,13 +367,8 @@ func (d *dbErr) getWorkFlowStatusCount(status string) (count int) {
 }
 
 func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	s := model.GetStorage()
-	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{}, user)
+	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
 	}
@@ -420,17 +413,17 @@ func getSqlAverageExecutionTimeV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instIds := make([]uint, 0, len(sqlExecuteStatistics))
+	instIds := make([]uint64, 0, len(sqlExecuteStatistics))
 	for _, statistic := range sqlExecuteStatistics {
-		instIds = append(instIds, statistic.InstanceID)
+		instIds = append(instIds, uint64(statistic.InstanceID))
 	}
 
-	instances, err := s.GetInstancesByIds(instIds)
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	InstIdNameMap := make(map[uint] /*instance id*/ string /*instance name*/, 0)
+	InstIdNameMap := make(map[uint64] /*instance id*/ string /*instance name*/, 0)
 	for _, instance := range instances {
 		InstIdNameMap[instance.ID] = instance.Name
 	}
@@ -438,7 +431,7 @@ func getSqlAverageExecutionTimeV1(c echo.Context) error {
 	sqlAverageExecutionTimes := make([]SqlAverageExecutionTime, len(sqlExecuteStatistics))
 	for i, executeStatistic := range sqlExecuteStatistics {
 		sqlAverageExecutionTimes[i] = SqlAverageExecutionTime{
-			InstanceName:            InstIdNameMap[executeStatistic.InstanceID],
+			InstanceName:            InstIdNameMap[uint64(executeStatistic.InstanceID)],
 			AverageExecutionSeconds: sqlExecuteStatistics[i].AvgExecutionTime,
 			MaxExecutionSeconds:     sqlExecuteStatistics[i].MaxExecutionTime,
 			MinExecutionSeconds:     sqlExecuteStatistics[i].MinExecutionTime,
@@ -482,22 +475,36 @@ func getSqlExecutionFailPercentV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	instanceIds := make([]uint64, 0, len(sqlExecFailCount))
+	for _, item := range append(sqlExecFailCount, sqlExecTotalCount...) {
+		instanceIds = append(instanceIds, item.InstanceId)
+	}
+
+	instanceIdNameMap, err := dms.GetInstanceIdNameMapByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	instNameExecTotalCountMap := make(map[string] /*instance name*/ uint /*execute fail total count*/, 0)
 	for _, totalCount := range sqlExecTotalCount {
-		instNameExecTotalCountMap[totalCount.InstanceName] = totalCount.Count
+		if instanceName, ok := instanceIdNameMap[totalCount.InstanceId]; ok {
+			instNameExecTotalCountMap[instanceName] = totalCount.Count
+		}
 	}
 
 	executionFailPercents := make([]SqlExecutionFailPercent, 0, len(sqlExecFailCount))
 	for _, failCount := range sqlExecFailCount {
-		execTotalCount, ok := instNameExecTotalCountMap[failCount.InstanceName]
-		if !ok {
-			continue
-		}
+		if instanceName, ok := instanceIdNameMap[failCount.InstanceId]; ok {
+			execTotalCount, ok := instNameExecTotalCountMap[instanceName]
+			if !ok {
+				continue
+			}
 
-		executionFailPercents = append(executionFailPercents, SqlExecutionFailPercent{
-			InstanceName: failCount.InstanceName,
-			Percent:      float64(failCount.Count) / float64(execTotalCount) * 100,
-		})
+			executionFailPercents = append(executionFailPercents, SqlExecutionFailPercent{
+				InstanceName: instanceName,
+				Percent:      float64(failCount.Count) / float64(execTotalCount) * 100,
+			})
+		}
 	}
 
 	sort.Slice(executionFailPercents, func(i, j int) bool {

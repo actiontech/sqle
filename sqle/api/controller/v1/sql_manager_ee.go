@@ -17,8 +17,9 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
-	"github.com/actiontech/sqle/sqle/driver/v2"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -33,14 +34,9 @@ func getSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectName := c.Param("project_name")
-	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
 	}
 
 	var offset uint32
@@ -62,7 +58,7 @@ func getSqlManageList(c echo.Context) error {
 		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
-		"project_id":                        project.ID,
+		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
@@ -73,22 +69,30 @@ func getSqlManageList(c echo.Context) error {
 		"offset":                            offset,
 	}
 
+	s := model.GetStorage()
 	sqlManage, err := s.GetSqlManageListByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	sqlManageRet, err := convertToGetSqlManageListResp(sqlManage.SqlManageList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, &GetSqlManageListResp{
 		BaseRes:               controller.NewBaseReq(nil),
-		Data:                  convertToGetSqlManageListResp(sqlManage.SqlManageList),
+		Data:                  sqlManageRet,
 		SqlManageTotalNum:     sqlManage.SqlManageTotalNum,
 		SqlManageBadNum:       sqlManage.SqlManageBadNum,
 		SqlManageOptimizedNum: sqlManage.SqlManageOptimizedNum,
 	})
 }
 
-func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*SqlManage {
+func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
+	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
+	if err != nil {
+		return nil, err
+	}
 	for _, sqlManage := range sqlManageList {
 		sqlMgr := new(SqlManage)
 		sqlMgr.Id = uint64(sqlManage.ID)
@@ -122,9 +126,12 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 			sqlMgr.LastAppearTime = sqlManage.LastReceiveTimestamp.Format("2006-01-02 15:04:05")
 		}
 		sqlMgr.AppearNum = sqlManage.FpCount
-
-		for _, assignee := range sqlManage.Assignees {
-			sqlMgr.Assignees = append(sqlMgr.Assignees, assignee)
+		if sqlManage.Assignees != nil {
+			for _, assignees := range strings.Split(*sqlManage.Assignees, ",") {
+				if v, ok := users[assignees]; ok {
+					sqlMgr.Assignees = append(sqlMgr.Assignees, v.Name)
+				}
+			}
 		}
 
 		sqlMgr.Status = sqlManage.Status
@@ -133,7 +140,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) []*Sq
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
-	return sqlManageRespList
+	return sqlManageRespList, nil
 }
 
 func batchUpdateSqlManage(c echo.Context) error {
@@ -147,13 +154,6 @@ func batchUpdateSqlManage(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-
-	currentUserName := controller.GetUserName(c)
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(currentUserName, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	distinctSqlManageIDs := utils.RemoveDuplicatePtrUint64(req.SqlManageIdList)
 	sqlManages, err := s.GetSqlManageListByIDs(distinctSqlManageIDs)
@@ -179,25 +179,12 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	searchSqlFingerprint := ""
 	if req.FuzzySearchSqlFingerprint != nil {
@@ -213,7 +200,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
 		"filter_last_audit_start_time_to":   req.FilterLastAuditStartTimeTo,
 		"filter_status":                     req.FilterStatus,
-		"project_id":                        project.ID,
+		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
@@ -257,13 +244,19 @@ func exportSqlManagesV1(c echo.Context) error {
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	users, err := dms.GetMapUsers(c.Request().Context(), nil, dms.GetDMSServerAddress())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	for _, sqlManage := range sqlManageResp.SqlManageList {
 		var assignees []string
-		for _, assignee := range sqlManage.Assignees {
-			assignees = append(assignees, assignee)
+		if sqlManage.Assignees != nil {
+			for _, assignee := range strings.Split(*sqlManage.Assignees, ",") {
+				if user, ok := users[assignee]; ok {
+					assignees = append(assignees, user.Name)
+				}
+			}
 		}
-
 		var newRow []string
 		newRow = append(
 			newRow,
@@ -302,26 +295,14 @@ func exportSqlManagesV1(c echo.Context) error {
 }
 
 func getSqlManageRuleTips(c echo.Context) error {
-	projectName := c.Param("project_name")
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
 
-	user, err := controller.GetCurrentUser(c)
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	sqlManageRuleTips, err := s.GetSqlManageRuleTips(project.ID)
+	sqlManageRuleTips, err := s.GetSqlManageRuleTips(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -353,13 +334,6 @@ func convertRuleTipsToResp(tips []*model.SqlManageRuleTips) []RuleTips {
 }
 
 func getSqlManageSqlAnalysisV1(c echo.Context) error {
-	userName := controller.GetUserName(c)
-	projectName := c.Param("project_name")
-	err := CheckIsProjectMember(userName, projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	mgID := c.Param("sql_manage_id")
 
 	s := model.GetStorage()
@@ -371,12 +345,16 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v not exist", mgID)))
 	}
 
-	if mg.Instance == nil {
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), mg.ProjectId, mg.InstanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v instance not exist", mgID)))
 	}
 
 	entry := log.NewEntry().WithField("sql_manage_analysis", mgID)
-	analysisResp, err := GetSQLAnalysisResult(entry, mg.Instance, mg.SchemaName, mg.SqlText)
+	analysisResp, err := GetSQLAnalysisResult(entry, instance, mg.SchemaName, mg.SqlText)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

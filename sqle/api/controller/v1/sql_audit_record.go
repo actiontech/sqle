@@ -20,6 +20,7 @@ import (
 	xmlAst "github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -88,29 +89,17 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if req.DbType == "" && req.InstanceName == "" {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, e.New("db_type and instance_name can't both be empty")))
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
+	sqls := getSQLFromFileResp{}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-	if project.IsArchived() {
-		return controller.JSONBaseErrorReq(c, ErrProjectArchived)
-	}
-
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if err := CheckIsProjectMember(user.Name, project.Name); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var sqls getSQLFromFileResp
 	if req.Sqls != "" {
 		sqls = getSQLFromFileResp{model.TaskSQLSourceFromFormData, []SQLsFromFile{{SQLs: req.Sqls}}}
 	} else {
@@ -122,24 +111,26 @@ func CreateSQLAuditRecord(c echo.Context) error {
 
 	var task *model.Task
 	if req.InstanceName != "" {
-		task, err = buildOnlineTaskForAudit(c, s, user.ID, req.InstanceName, req.InstanceSchema, projectName, sqls)
+		task, err = buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
-		task, err = buildOfflineTaskForAudit(user.ID, req.DbType, sqls)
+		task, err = buildOfflineTaskForAudit(uint64(user.ID), req.DbType, sqls)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+	// if task instance is not nil, gorm will update instance when save task.
+	task.Instance = nil
 
 	recordId, err := utils.GenUid()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("generate audit record id failed: %v", err))
 	}
 	record := model.SQLAuditRecord{
-		ProjectId:     project.ID,
-		CreatorId:     user.ID,
+		ProjectId:     projectUid,
+		CreatorId:     user.GetIDStr(),
 		AuditRecordId: recordId,
 		TaskId:        task.ID,
 		Task:          task,
@@ -205,15 +196,15 @@ func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin dr
 	return nil
 }
 
-func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, instanceName, instanceSchema, projectName string, sqls getSQLFromFileResp) (*model.Task, error) {
-	instance, exist, err := s.GetInstanceByNameAndProjectName(instanceName, projectName)
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls getSQLFromFileResp) (*model.Task, error) {
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return nil, err
 	}
 	if !exist {
 		return nil, ErrInstanceNoAccess
 	}
-	can, err := checkCurrentUserCanAccessInstance(c, instance)
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return nil, err
 	}
@@ -250,7 +241,7 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint, inst
 	return task, nil
 }
 
-func buildOfflineTaskForAudit(userId uint, dbType string, sqls getSQLFromFileResp) (*model.Task, error) {
+func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileResp) (*model.Task, error) {
 	task := &model.Task{
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
@@ -509,36 +500,49 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	auditRecordId := c.Param("sql_audit_record_id")
 
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
+	record, exist, err := s.GetSQLAuditRecordById(projectUid, auditRecordId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, fmt.Errorf("sql audit record id %v not exist", auditRecordId)))
 	}
+	instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		record.Task.Instance = instance
+	}
 
 	if req.Tags != nil {
-		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-		} else if !yes {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+		up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusForbidden)
+		}
+		if err != nil {
+			return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
+		}
+		if !up.IsProjectAdmin() {
+			if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
+				return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+			} else if !yes {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't update SQL audit record that created by others")))
+			}
 		}
 
 		data := model.SQLAuditRecordUpdateData{Tags: req.Tags}
@@ -560,7 +564,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 type GetSQLAuditRecordsReqV1 struct {
 	FuzzySearchTags         string `json:"fuzzy_search_tags" query:"fuzzy_search_tags"` // todo issue1811
 	FilterSQLAuditStatus    string `json:"filter_sql_audit_status" query:"filter_sql_audit_status" enums:"auditing,successfully,"`
-	FilterInstanceName      string `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterInstanceId        uint64 `json:"filter_instance_id" query:"filter_instance_id"`
 	FilterCreateTimeFrom    string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo      string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterSqlAuditRecordIDs string `json:"filter_sql_audit_record_ids" query:"filter_sql_audit_record_ids" example:"1711247438821462016,1711246967037759488"`
@@ -602,7 +606,7 @@ const (
 // @Security ApiKeyAuth
 // @Param fuzzy_search_tags query string false "fuzzy search tags"
 // @Param filter_sql_audit_status query string false "filter sql audit status" Enums(auditing,successfully)
-// @Param filter_instance_name query string false "filter instance name"
+// @Param filter_instance_id query uint64 false "filter instance id"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
 // @Param filter_sql_audit_record_ids query string false "filter sql audit record ids"
@@ -616,24 +620,22 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	s := model.GetStorage()
-	_, exist, err := s.GetProjectByName(projectName)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
-	}
-
-	user, err := controller.GetCurrentUser(c)
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	isManager, err := s.IsProjectManager(user.Name, projectName)
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
 	}
 
 	var offset uint32
@@ -642,13 +644,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
-		"filter_project_name":     projectName,
+		"filter_project_id":       projectUid,
 		"filter_creator_id":       user.ID,
 		"fuzzy_search_tags":       req.FuzzySearchTags,
-		"filter_instance_name":    req.FilterInstanceName,
+		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !isManager,
+		"check_user_can_access":   !up.IsProjectAdmin(),
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
@@ -664,6 +666,20 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// batch get instance info
+	instanceIds := make([]uint64, 0)
+	for _, record := range records {
+		instanceIds = append(instanceIds, record.InstanceId)
+	}
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	idInstMap := make(map[uint64] /*instance id*/ *model.Instance /*instance */, 0)
+	for _, instance := range instances {
+		idInstMap[instance.ID] = instance
+	}
+
 	resData := make([]SQLAuditRecord, len(records))
 	for i := range records {
 		record := records[i]
@@ -677,19 +693,15 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 				log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
 			}
 		}
+
 		resData[i] = SQLAuditRecord{
-			Creator:          record.CreatorName,
+			Creator:          dms.GetUserNameWithDelTag(record.CreatorId),
 			SQLAuditRecordId: record.AuditRecordId,
 			SQLAuditStatus:   status,
 			Tags:             tags,
 			CreatedAt:        record.RecordCreatedAt,
-			Instance: &SQLAuditRecordInstance{
-				Host: record.InstanceHost.String,
-				Port: record.InstancePort.String,
-			},
 			Task: &AuditTaskResV1{
 				Id:             record.TaskId,
-				InstanceName:   record.InstanceName.String,
 				InstanceDbType: record.DbType,
 				InstanceSchema: record.InstanceSchema,
 				AuditLevel:     record.AuditLevel.String,
@@ -698,6 +710,13 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 				Status:         record.TaskStatus,
 				SQLSource:      record.SQLSource,
 			},
+		}
+		if inst, ok := idInstMap[record.InstanceId]; ok {
+			resData[i].Instance = &SQLAuditRecordInstance{
+				Host: inst.Host,
+				Port: inst.Port,
+			}
+			resData[i].Task.InstanceName = idInstMap[record.InstanceId].Name
 		}
 	}
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordsResV1{
@@ -723,54 +742,78 @@ type GetSQLAuditRecordResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
-	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	auditRecordId := c.Param("sql_audit_record_id")
 
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusForbidden)
+	}
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
+	}
+
 	s := model.GetStorage()
-	project, exist, err := s.GetProjectByName(projectName)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrProjectNotExist(projectName))
+
+	if !up.IsProjectAdmin() {
+		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
+		} else if !yes {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
+		}
 	}
 
-	user, err := controller.GetCurrentUser(c)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.ID, project.ID, auditRecordId); err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
-	} else if !yes {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, errors.NewAccessDeniedErr("you can't see the SQL audit record because it isn't created by you")))
-	}
-
-	record, exist, err := s.GetSQLAuditRecordById(project.ID, auditRecordId)
+	record, exist, err := s.GetSQLAuditRecordById(projectUid, auditRecordId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("can not find record")))
 	}
+	// build ret info
+	status := SQLAuditRecordStatusAuditing
+	if record.Task.Status == model.TaskStatusAudited {
+		status = SQLAuditRecordStatusSuccessfully
+	}
+	var tags []string
+	if err := json.Unmarshal([]byte(record.Tags), &tags); err != nil {
+		log.NewEntry().Errorf("parse tags failed,tags:%v , err: %v", record.Tags, err)
+	}
+	task := &AuditTaskResV1{
+		Id:             record.Task.ID,
+		InstanceDbType: record.Task.DBType,
+		InstanceSchema: record.Task.Schema,
+		AuditLevel:     record.Task.AuditLevel,
+		Score:          record.Task.Score,
+		PassRate:       record.Task.PassRate,
+		Status:         record.Task.Status,
+		SQLSource:      record.Task.SQLSource,
+		ExecStartTime:  record.Task.ExecStartAt,
+		ExecEndTime:    record.Task.ExecEndAt,
+	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), record.Task.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		task.InstanceName = instance.Name
+	}
 
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SQLAuditRecord{
+			SQLAuditStatus:   status,
+			Tags:             tags,
 			SQLAuditRecordId: auditRecordId,
-			Task: &AuditTaskResV1{
-				Id:             record.Task.ID,
-				InstanceName:   record.Task.InstanceName(),
-				InstanceDbType: record.Task.DBType,
-				InstanceSchema: record.Task.Schema,
-				AuditLevel:     record.Task.AuditLevel,
-				Score:          record.Task.Score,
-				PassRate:       record.Task.PassRate,
-				Status:         record.Task.Status,
-				SQLSource:      record.Task.SQLSource,
-				ExecStartTime:  record.Task.ExecStartAt,
-				ExecEndTime:    record.Task.ExecEndAt,
-			},
+			Task:             task,
 		},
 	})
 }

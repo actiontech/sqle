@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	imPkg "github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
@@ -53,23 +55,21 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 
 				switch *approval.Result {
 				case model.ApproveStatusAgree:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
+
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 
 					nextStep := workflow.NextStep()
 
 					userId := *approval.OperationRecords[1].UserId
+
 					user, err := getUserByUserId(d, userId, workflow.CurrentStep().Assignees)
 					if err != nil {
 						entry.Errorf("get user by user id error: %v", err)
@@ -88,21 +88,18 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 					}
 
 					if nextStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-						imPkg.CreateApprove(strconv.Itoa(int(workflow.ID)))
+						imPkg.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 					}
 
 				case model.ApproveStatusRefuse:
-					workflow, exist, err := st.GetWorkflowDetailById(strconv.Itoa(int(dingTalkInstance.WorkflowId)))
+					workflow, err := dms.GetWorkflowDetailByWorkflowId("", dingTalkInstance.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 					if err != nil {
 						entry.Errorf("get workflow detail error: %v", err)
 						continue
 					}
-					if !exist {
-						entry.Errorf("workflow not exist, id: %d", dingTalkInstance.WorkflowId)
-						continue
-					}
+
 					if workflow.Record.Status == model.WorkflowStatusCancel {
-						entry.Errorf("workflow has canceled skip, id: %d", dingTalkInstance.WorkflowId)
+						entry.Errorf("workflow has canceled skip, id: %s", dingTalkInstance.WorkflowId)
 						continue
 					}
 
@@ -138,15 +135,19 @@ func (j *DingTalkJob) dingTalkRotation(entry *logrus.Entry) {
 	}
 }
 
-func getUserByUserId(d *dingding.DingTalk, userId string, assignees []*model.User) (*model.User, error) {
+func getUserByUserId(d *dingding.DingTalk, userId string, assigneesUsers string) (*model.User, error) {
+	userMaps, err := dms.GetMapUsers(context.TODO(), strings.Split(assigneesUsers, ","), dms.GetDMSServerAddress())
+	if err != nil {
+		return nil, err
+	}
 	phone, err := d.GetMobileByUserID(userId)
 	if err != nil {
 		return nil, fmt.Errorf("get user mobile error: %v", err)
 	}
 
-	for _, assignee := range assignees {
-		if assignee.Phone == phone {
-			return assignee, nil
+	for _, assigneeUser := range userMaps {
+		if assigneeUser.Phone == phone {
+			return assigneeUser, nil
 		}
 	}
 

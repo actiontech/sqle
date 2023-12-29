@@ -2,7 +2,7 @@
 override GIT_VERSION    		= $(shell git rev-parse --abbrev-ref HEAD)${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
-override LDFLAGS 				= -ldflags "-X 'main.version=\"${GIT_VERSION}\"'"
+override LDFLAGS 				= -ldflags "-X 'main.version=${GIT_VERSION}'"
 override DOCKER         		= $(shell which docker)
 override GOOS           		= linux
 override OS_VERSION 			= el7
@@ -31,6 +31,8 @@ EDITION ?= ce
 GO_BUILD_TAGS = dummyhead
 ifeq ($(EDITION),ee)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
+else ifeq ($(EDITION),trial)
+    GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise,trial
 endif
 RELEASE = qa
 ifeq ($(RELEASE),rel)
@@ -63,8 +65,8 @@ vet: swagger
 	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
 
 ## Unit Test
-test: swagger
-	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./...
+test: 
+	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./... -count 1
 
 clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
@@ -77,6 +79,8 @@ install_sqled: swagger
 install_scannerd:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/scannerd ./$(PROJECT_NAME)/cmd/scannerd
 
+dlv_install:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -gcflags "all=-N -l" $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 swagger:
 	GOARCH=amd64 go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
 	rm -rf ${shell pwd}/sqle/docs
@@ -141,15 +145,25 @@ docker_rpm: docker_install
 
 override SQLE_DOCKER_IMAGE ?= actiontech/$(PROJECT_NAME)-$(EDITION):$(PROJECT_VERSION)
 
-docker_image: fill_ui_dir docker_rpm
+docker_image:
 	cp $(shell pwd)/$(RPM_NAME) $(shell pwd)/sqle.rpm
-	$(DOCKER) build -t $(SQLE_DOCKER_IMAGE) -f ./docker-images/sqle/Dockerfile .
+	$(DOCKER) build  -t $(SQLE_DOCKER_IMAGE) -f ./docker-images/sqle/Dockerfile .
 
 docker_start:
 	cd ./docker-images/sqle && SQLE_IMAGE=$(SQLE_DOCKER_IMAGE) docker-compose up -d
 
 docker_stop:
 	cd ./docker-images/sqle && docker-compose down
+
+docker_rpm_with_dms: docker_install 
+	$(DOCKER) run -v  $(dir $(CURDIR))dms:/universe/dms -v $(shell pwd):/universe/sqle --user root --rm $(RPM_BUILD_IMAGE) sh -c "(mkdir -p /root/rpmbuild/SOURCES >/dev/null 2>&1);cd /root/rpmbuild/SOURCES; \
+	(tar zcf ${PROJECT_NAME}.tar.gz /universe/sqle /universe/dms --transform 's/universe/${PROJECT_NAME}-$(GIT_COMMIT)/' > /tmp/build.log 2>&1) && \
+	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
+	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
+	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled_with_dms.spec >> /tmp/build.log 2>&1) && \
+	(cat ~/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(RPM_NAME) && \
+	md5sum $(RPM_NAME) > $(RPM_NAME).md5
+
 
 ###################################### ui #####################################################
 fill_ui_dir:

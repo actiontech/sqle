@@ -40,7 +40,7 @@ const TaskExecResultOK = "OK"
 
 type Task struct {
 	Model
-	InstanceId   uint    `json:"instance_id"`
+	InstanceId   uint64  `json:"instance_id"`
 	Schema       string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
 	PassRate     float64 `json:"pass_rate"`
 	Score        int32   `json:"score"`
@@ -49,12 +49,11 @@ type Task struct {
 	DBType       string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
 	Status       string  `json:"status" gorm:"default:\"initialized\""`
 	GroupId      uint    `json:"group_id" gorm:"column:group_id"`
-	CreateUserId uint
+	CreateUserId uint64
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
 
-	CreateUser   *User          `gorm:"foreignkey:CreateUserId"`
-	Instance     *Instance      `json:"-" gorm:"foreignkey:InstanceId"`
+	Instance     *Instance
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 }
@@ -280,7 +279,7 @@ func (s *Storage) GetTaskStatusByID(id string) (string, error) {
 
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Where("id = ?", taskId).Preload("Instance").First(task).Error
+	err := s.db.Where("id = ?", taskId).First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -289,7 +288,7 @@ func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 
 func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool, err error) {
 	taskIds = utils.RemoveDuplicateUint(taskIds)
-	err = s.db.Where("id IN (?)", taskIds).Preload("Instance").Find(&tasks).Error
+	err = s.db.Where("id IN (?)", taskIds).Find(&tasks).Error
 	if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
@@ -301,7 +300,7 @@ func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool
 
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	task := &Task{}
-	err := s.db.Where("id = ?", taskId).Preload("Instance").
+	err := s.db.Where("id = ?", taskId).
 		Preload("ExecuteSQLs").Preload("RollbackSQLs").First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
@@ -425,11 +424,11 @@ func (s *Storage) GetRelatedDDLTask(task *Task) ([]Task, error) {
 		Schema:     task.Schema,
 		PassRate:   1,
 		Status:     TaskStatusAudited,
-	}).Preload("Instance").Preload("ExecuteSQLs").Find(&tasks).Error
+	}).Preload("ExecuteSQLs").Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetTaskByInstanceId(instanceId uint) ([]Task, error) {
+func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 	tasks := []Task{}
 	err := s.db.Where(&Task{InstanceId: instanceId}).Find(&tasks).Error
 	return tasks, errors.New(errors.ConnectStorageError, err)
@@ -564,7 +563,7 @@ type TaskGroup struct {
 
 func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
 	taskGroup := &TaskGroup{}
-	err := s.db.Preload("Tasks").Preload("Tasks.Instance").
+	err := s.db.Preload("Tasks").
 		Where("id = ?", groupId).Find(&taskGroup).Error
 	return taskGroup, errors.New(errors.ConnectStorageError, err)
 }
@@ -596,48 +595,6 @@ func (s *Storage) GetSqlAvgExecutionTimeStatistic(limit uint) ([]*SqlExecuteStat
 }
 
 type SqlExecutionCount struct {
-	InstanceName string `json:"instance_name"`
-	Count        uint   `json:"count"`
-}
-
-// GetSqlExecutionFailCount 获取sql上线失败统计
-func (s *Storage) GetSqlExecutionFailCount() ([]SqlExecutionCount, error) {
-	var sqlExecutionFailCount []SqlExecutionCount
-
-	err := s.db.Model(&Workflow{}).Select("i.name as instance_name, count(*) as count").
-		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
-		Joins("left join tasks t on wir.task_id = t.id").
-		Joins("left join instances i on t.instance_id = i.id").
-		Where("t.status = ?", TaskStatusExecuteFailed).
-		Where("t.exec_start_at is not null").
-		Where("t.exec_end_at is not null").
-		Group("t.instance_id").
-		Scan(&sqlExecutionFailCount).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	return sqlExecutionFailCount, nil
-}
-
-// GetSqlExecutionTotalCount 获取sql上线总数统计
-// 上线总数(根据数据源划分)是指：正在上线,上线成功,上线失败 task的总数
-func (s *Storage) GetSqlExecutionTotalCount() ([]SqlExecutionCount, error) {
-	var sqlExecutionTotalCount []SqlExecutionCount
-
-	err := s.db.Model(&Workflow{}).Select("i.name as instance_name, count(*) as count").
-		Joins("left join workflow_records wr on workflows.workflow_record_id = wr.id").
-		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
-		Joins("left join tasks t on wir.task_id = t.id").
-		Joins("left join instances i on t.instance_id = i.id").
-		Where("t.status not in (?)", []string{TaskStatusInit, TaskStatusAudited}).
-		Where("t.exec_start_at is not null").
-		Group("t.instance_id").
-		Scan(&sqlExecutionTotalCount).Error
-	if err != nil {
-		return nil, errors.ConnectStorageErrWrapper(err)
-	}
-
-	return sqlExecutionTotalCount, nil
+	Count      uint   `json:"count"`
+	InstanceId uint64 `json:"instance_id"`
 }
