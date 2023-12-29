@@ -288,6 +288,9 @@ IsIndex
 		3. 否则返回false
 */
 func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.Constraint) bool {
+	if len(columnMap) == 0 {
+		return false
+	}
 	for _, constraint := range constraints {
 		if len(columnMap) > len(constraint.Keys) {
 			// 若符合索引的列数小于关联列的列数 一定不满足多列索引
