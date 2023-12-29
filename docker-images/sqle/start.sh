@@ -19,6 +19,7 @@ dms:
       port: ${MYSQL_PORT}
       database: ${MYSQL_DMS_SCHEMA}
       debug: ${DEBUG}
+      auto_migrate: true
     log:
       level: DEBUG
       path: logs
