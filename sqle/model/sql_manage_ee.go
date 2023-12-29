@@ -372,7 +372,7 @@ func (s *Storage) InsertOrUpdateSqlManageWithNotUpdateFpCount(sqlManageList []*S
 		sqlManageEndpointArgs := make([]interface{}, 0, len(sqlManageList))
 		sqlManageEndpointPattern := make([]string, 0, len(sqlManageList))
 
-		now := time.Now().Format(time.DateTime)
+		now := time.Now().Format("2006-01-02 15:04:05")
 		for _, sqlManage := range sqlManageList {
 			pattern = append(pattern, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 			args = append(args, sqlManage.SqlFingerprint, sqlManage.ProjFpSourceInstSchemaMd5, sqlManage.SqlText,
