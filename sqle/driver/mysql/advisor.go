@@ -616,6 +616,7 @@ func (a *threeStarIndexAdvisor) giveAdvice() {
 				continue
 			}
 			a.adviceColumns.add(column)
+			break
 		}
 	}
 }
