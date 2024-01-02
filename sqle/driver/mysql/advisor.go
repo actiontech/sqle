@@ -25,7 +25,7 @@ const (
 	MIN_COLUMN_SELECTIVITY_DEFAULT_VALUE float64 = 2
 
 	threeStarIndexAdviceFormat   string = "索引建议 | 根据三星索引设计规范，建议对表%s添加%s索引：【%s】"
-	prefixIndexAdviceFormat      string = "索引建议 | SQL使用了前缀模式匹配，数据量大时，可建立翻转函数索引"
+	prefixIndexAdviceFormat      string = "索引建议 | SQL使用了前模糊匹配，数据量大时，可建立翻转函数索引"
 	extremalIndexAdviceFormat    string = "索引建议 | SQL使用了最值函数，可以利用索引有序的性质快速找到最值，建议对表%s添加单列索引，参考列：%s"
 	functionIndexAdviceFormatV80 string = "索引建议 | SQL使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引，建议对表%s添加函数索引，参考列：%s"
 	functionIndexAdviceFormatV57 string = "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，建议对表%s添加虚拟列索引，参考列：%s"
@@ -1111,11 +1111,11 @@ func (a *extremalIndexAdvisor) giveAdvice() {
 }
 
 /*
-prefixIndexAdvisor 前缀索引建议者
+prefixIndexAdvisor 前模糊匹配索引建议者
 
 	触发条件:
 		1. WHERE语句中等值条件包含Like子句
-		2. Like子句使用了前缀匹配
+		2. Like子句使用了前模糊匹配
 */
 type prefixIndexAdvisor struct {
 	sqlContext         *session.Context
