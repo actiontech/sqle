@@ -3061,6 +3061,10 @@ func TestCheckMultiSelectWhereExistImplicitConversion(t *testing.T) {
 		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 t2 where t2.v1 in (3)`,
 		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 in (3);`,
 		`select t1.v1 from exist_db.exist_tb_1 t1, exist_db.exist_tb_9 where exist_tb_9.v1 in (3, 2, 1);`,
+
+		`select * from exist_db.exist_tb_11 where create_time = '2020-01-01 00:00:00'`,
+		`select * from exist_db.exist_tb_11 where create_time >= 2020-01-01`,
+		`select * from exist_db.exist_tb_11 where year_time >= '2020'`,
 	} {
 		runSingleRuleInspectCase(rule, t, "multi select: check where exist implicit conversion", DefaultMysqlInspect(), sql, newTestResult())
 	}
