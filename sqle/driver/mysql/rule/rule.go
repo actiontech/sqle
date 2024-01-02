@@ -4949,6 +4949,14 @@ func checkWhereColumnImplicitConversionFunc(ctx *session.Context, rule driverV2.
 				if col.Name.Name.L != cn.Name.L {
 					continue
 				}
+
+				// datetime, date, timestamp, time, year 类型的列不做检查
+				// 因为这些类型的列不会发生隐式转换,mysql可以自动识别各种日期格式
+				switch col.Tp.Tp {
+				case mysql.TypeDatetime, mysql.TypeDate, mysql.TypeTimestamp, mysql.TypeDuration, mysql.TypeYear:
+					continue
+				}
+
 				for _, v := range values {
 					if !checkColumnTypeIsMatch(v, col.Tp.Tp) {
 						addResult(res, rule, DMLCheckWhereExistImplicitConversion)
