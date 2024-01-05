@@ -494,6 +494,19 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 3,
 	}
+	testCases["test13-exclude unsuitable types in unequal columns"] = optimizerTestContent{
+		sql: `SELECT * FROM exist_tb_10 t10 WHERE t10.v3 in ("1","2")`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_10 t10 WHERE t10.v3 in ("1","2")`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 22, 23.4, 30.1),
+			},
+		},
+		maxColumn: 3,
+	}
 	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
 

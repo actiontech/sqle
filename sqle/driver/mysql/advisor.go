@@ -611,8 +611,12 @@ func (a *threeStarIndexAdvisor) giveAdvice() {
 	}
 	// 最后添加一列WHERE中的非等值列
 	if a.canAddUnequalColumn() {
-		if a.drivingTableColumn.unequalColumnInWhere.len() > 0 {
-			a.adviceColumns.add(a.drivingTableColumn.unequalColumnInWhere.columns[0])
+		for _, column := range a.drivingTableColumn.unequalColumnInWhere.columns {
+			if !isColumnTypeRecommended(column.columnDefine) {
+				continue
+			}
+			a.adviceColumns.add(column)
+			break
 		}
 	}
 }
@@ -660,9 +664,7 @@ func (a threeStarIndexAdvisor) shouldSkipColumn(column *column) bool {
 		// 跳过选择性小于最低阈值的列
 		return true
 	}
-	switch column.columnDefine.Tp.Tp {
-	case mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeJSON:
-		// 跳过列类型不适合作为索引的列
+	if !isColumnTypeRecommended(column.columnDefine) {
 		return true
 	}
 	return false
@@ -715,13 +717,20 @@ func (a threeStarIndexAdvisor) canGiveCoverIndex() bool {
 	}
 	// 如果备选列中存在列类型是不合适作为索引的列的，不添加覆盖索引
 	for _, column := range a.possibleColumns.columns {
-		switch column.columnDefine.Tp.Tp {
-		case mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeJSON:
+		if !isColumnTypeRecommended(column.columnDefine) {
 			return false
 		}
 	}
 	// 当备选列大于索引列的上限时，覆盖索引不满足该限制，不添加覆盖索引
 	return a.possibleColumns.len() <= a.maxColumns
+}
+
+func isColumnTypeRecommended(columnDefine *ast.ColumnDef) bool {
+	switch columnDefine.Tp.Tp {
+	case mysql.TypeBlob, mysql.TypeLongBlob, mysql.TypeTinyBlob, mysql.TypeMediumBlob, mysql.TypeJSON:
+		return false
+	}
+	return true
 }
 
 /*
