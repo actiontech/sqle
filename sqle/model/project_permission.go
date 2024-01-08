@@ -324,7 +324,7 @@ AND (w.create_user_id = ? OR cur_ass_user.id = ? OR op_ass_user.id = ?)
 	return count > 0, nil
 }
 
-// GetCanAuditWorkflowUsers will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
+// GetCanAuditWorkflowUsers will return supper admin and project admin user if no qualified user is found, preventing the process from being stuck because no user can operate
 func (s *Storage) GetCanAuditWorkflowUsers(instance *Instance) (users []*User, err error) {
 	users, err = s.GetWithOperationUserFromInstance(instance, OP_WORKFLOW_AUDIT)
 	if err != nil {
@@ -333,10 +333,10 @@ func (s *Storage) GetCanAuditWorkflowUsers(instance *Instance) (users []*User, e
 	if len(users) != 0 {
 		return
 	}
-	return s.GetUsersByNames([]string{DefaultAdminUser})
+	return s.GetManageUsersByProjectID(instance.ProjectId)
 }
 
-// GetCanExecuteWorkflowUsers will return admin user if no qualified user is found, preventing the process from being stuck because no user can operate
+// GetCanExecuteWorkflowUsers will return supper admin and project admin if no qualified user is found, preventing the process from being stuck because no user can operate
 func (s *Storage) GetCanExecuteWorkflowUsers(instance *Instance) (users []*User, err error) {
 	users, err = s.GetWithOperationUserFromInstance(instance, OP_WORKFLOW_EXECUTE)
 	if err != nil {
@@ -345,7 +345,7 @@ func (s *Storage) GetCanExecuteWorkflowUsers(instance *Instance) (users []*User,
 	if len(users) != 0 {
 		return
 	}
-	return s.GetUsersByNames([]string{DefaultAdminUser})
+	return s.GetManageUsersByProjectID(instance.ProjectId)
 }
 
 /*

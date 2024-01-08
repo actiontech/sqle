@@ -327,6 +327,16 @@ func (s *Storage) GetMemberTips(projectName string) ([]*User, error) {
 	return users, errors.ConnectStorageErrWrapper(err)
 }
 
+func (s *Storage) GetManageUsersByProjectID(projectID uint) ([]*User, error) {
+	var users []*User
+	err := s.db.Model(&User{}).
+		Joins("LEFT JOIN project_manager pm ON pm.user_id = users.id").
+		Where("pm.project_id = ?", projectID).
+		Where("users.deleted_at IS NULL").
+		Find(&users).Error
+	return users, errors.ConnectStorageErrWrapper(err)
+}
+
 type UserRole struct {
 	UserName string `json:"user_name"`
 	RoleName string `json:"role_name"`
