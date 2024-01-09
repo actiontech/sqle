@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	e "errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -560,11 +561,17 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
+	instRecords := w.Record.InstanceRecords
+	if len(instRecords) != len(tasks) {
+		return e.New("task and instRecord are not equal in length")
+	}
+
 	instanceRecords := make([]*WorkflowInstanceRecord, len(tasks))
 	for i, task := range tasks {
 		instanceRecords[i] = &WorkflowInstanceRecord{
-			TaskId:     task.ID,
-			InstanceId: task.InstanceId,
+			TaskId:             task.ID,
+			InstanceId:         task.InstanceId,
+			ExecutionAssignees: instRecords[i].ExecutionAssignees,
 		}
 	}
 
@@ -1412,11 +1419,27 @@ func (s *Storage) GetWorkflowByProjectNameAndWorkflowId(projectName, workflowId 
 		Where("projects.name = ?", projectName).
 		Where("workflows.workflow_id = ?", workflowId).
 		First(&workflow).Error
-	if err == gorm.ErrRecordNotFound {
-		return workflow, false, nil
+	if err != nil {
+		if e.Is(err, gorm.ErrRecordNotFound) {
+			return workflow, false, nil
+		}
+		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 
-	return workflow, true, errors.New(errors.ConnectStorageError, err)
+	if workflow.Record == nil {
+		return nil, false, errors.New(errors.ConnectStorageError, e.New("workflow record is not exist"))
+	}
+
+	var workflowInstRecords []*WorkflowInstanceRecord
+	err = s.db.Model(&WorkflowInstanceRecord{}).Preload("ExecutionAssignees").
+		Where("workflow_record_id = ?", workflow.Record.ID).
+		Find(&workflowInstRecords).Error
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	workflow.Record.InstanceRecords = workflowInstRecords
+
+	return workflow, true, nil
 }
 
 func (s *Storage) GetWorkflowsByProjectID(projectID uint) ([]*Workflow, error) {
