@@ -109,10 +109,10 @@ cat >> $RPM_INSTALL_PREFIX/etc/config.yaml<<EOF
 
 sqle:
   id: 1
-  dms_server_address: http://127.0.0.1:7601
+  dms_server_address: http://127.0.0.1:10000
   api:
     addr: 127.0.0.1
-    port: 10000
+    port: 10001
     enable_https: false
     cert_file_path: './etc/cert.pem'
     key_file_path: './etc/key.pem'  
