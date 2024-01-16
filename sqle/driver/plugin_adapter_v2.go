@@ -3,9 +3,9 @@ package driver
 import (
 	"context"
 	sqlDriver "database/sql/driver"
+	"errors"
 	"fmt"
 	"sync"
-	"errors"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
@@ -211,6 +211,7 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.No
 			Type:        node.Type,
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
+			StartLine:   node.StartLine,
 		}
 	}
 	return nodes, nil
