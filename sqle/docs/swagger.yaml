@@ -3167,6 +3167,8 @@ definitions:
         type: string
       sql_source_file:
         type: string
+      sql_start_line:
+        type: integer
     type: object
   v2.BatchCancelWorkflowsReqV2:
     properties:
