@@ -12095,6 +12095,9 @@ var doc = `{
                 },
                 "sql_source_file": {
                     "type": "string"
+                },
+                "sql_start_line": {
+                    "type": "integer"
                 }
             }
         },

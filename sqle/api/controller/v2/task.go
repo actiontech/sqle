@@ -29,6 +29,7 @@ type AuditTaskSQLResV2 struct {
 	Number        uint           `json:"number"`
 	ExecSQL       string         `json:"exec_sql"`
 	SQLSourceFile string         `json:"sql_source_file"`
+	SQLStartLine  uint64         `json:"sql_start_line"`
 	AuditResult   []*AuditResult `json:"audit_result"`
 	AuditLevel    string         `json:"audit_level"`
 	AuditStatus   string         `json:"audit_status"`
