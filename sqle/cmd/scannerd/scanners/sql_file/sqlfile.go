@@ -2,7 +2,7 @@ package sqlFile
 
 import (
 	"context"
-
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
@@ -48,7 +48,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
 }
 
 func (sf *SQLFile) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, scanners.SQLFileSuffix)
+	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, utils.SQLFileSuffix)
 	if err != nil {
 		return err
 	}
