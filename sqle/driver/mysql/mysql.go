@@ -261,6 +261,7 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 		}
 		n.Fingerprint = fingerprint
 		n.Text = nodes[i].Text()
+		n.StartLine = uint64(nodes[i].StartLine())
 		switch nodes[i].(type) {
 		case ast.DMLNode:
 			n.Type = driverV2.SQLTypeDML
