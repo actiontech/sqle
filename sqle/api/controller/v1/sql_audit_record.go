@@ -170,11 +170,11 @@ func CreateSQLAuditRecord(c echo.Context) error {
 type getSQLFromFileResp struct {
 	SourceType       string
 	SQLsFromFormData string
-	SQLsFromSQLFiles []SQLsFromFile
+	SQLsFromSQLFiles []SQLsFromSQLFile
 	SQLsFromXMLs     []SQLFromXML
 }
 
-type SQLsFromFile struct {
+type SQLsFromSQLFile struct {
 	FilePath string
 	SQLs     string
 }
@@ -305,7 +305,7 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	return task, nil
 }
 
-func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
 		return nil, nil, false, nil
@@ -357,7 +357,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromFile, sqlsFromXML
 				Content:  string(content),
 			})
 		} else if strings.HasSuffix(srcFile.Name, ".sql") {
-			sqlsFromSQLFile = append(sqlsFromSQLFile, SQLsFromFile{
+			sqlsFromSQLFile = append(sqlsFromSQLFile, SQLsFromSQLFile{
 				FilePath: srcFile.Name,
 				SQLs:     string(content),
 			})
@@ -405,7 +405,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 	return sqls, nil
 }
 
-func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
+func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
 	if err != nil {
@@ -458,7 +458,7 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
-				sqlsFromSQLFiles = append(sqlsFromSQLFiles, SQLsFromFile{
+				sqlsFromSQLFiles = append(sqlsFromSQLFiles, SQLsFromSQLFile{
 					FilePath: gitPath,
 					SQLs:     string(content),
 				})
@@ -477,7 +477,7 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 						return fmt.Errorf("gather sqls from java file failed: %v", err)
 					}
 				}
-				sqlsFromJavaFiles = append(sqlsFromJavaFiles, SQLsFromFile{
+				sqlsFromJavaFiles = append(sqlsFromJavaFiles, SQLsFromSQLFile{
 					FilePath: gitPath,
 					SQLs:     sqlBuffer.String(),
 				})
