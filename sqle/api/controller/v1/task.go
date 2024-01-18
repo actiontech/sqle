@@ -78,19 +78,21 @@ const (
 
 func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	// Read it from sql file.
-	sqlsFromSQLFile, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
 	if exist {
 		return getSQLFromFileResp{
-			SourceType:       model.TaskSQLSourceFromSQLFile,
-			SQLsFromSQLFiles: []SQLsFromSQLFile{{SQLs: sqlsFromSQLFile}},
+			SourceType: model.TaskSQLSourceFromSQLFile,
+			SQLsFromSQLFiles: []SQLsFromSQLFile{{
+				FilePath: fileName,
+				SQLs:     sqlsFromSQLFile}},
 		}, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
-	data, exist, err := controller.ReadFileContent(c, InputMyBatisXMLFileName)
+	fileName, data, exist, err := controller.ReadFile(c, InputMyBatisXMLFileName)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
@@ -102,7 +104,9 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 		sqlsFromXMLs := make([]SQLFromXML, len(sqls))
 		for i := range sqls {
 			sqlsFromXMLs[i] = SQLFromXML{
-				SQL: sqls[i].SQL,
+				FilePath:  fileName,
+				StartLine: sqls[i].StartLine,
+				SQL:       sqls[i].SQL,
 			}
 		}
 		return getSQLFromFileResp{
