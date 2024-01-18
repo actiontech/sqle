@@ -68,8 +68,14 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	// 2. SELECT COUNT(1) FROM test LIMIT 10,10 类型的SQL结果集为空
 	// 已上两种情况,使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
 	if cannotConvert {
+		// 将select语句中的查询字段替换为数字1
+		// https://github.com/actiontech/sqle/issues/2175
+		newSql, err := useIntReplaceSelectFields(node)
+		if err != nil {
+			return 0, err
+		}
 		// 移除后缀分号，避免sql语法错误
-		trimSuffix := strings.TrimRight(originSql, ";")
+		trimSuffix := strings.TrimRight(newSql, ";")
 		affectRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
 	} else {
 		sqlBuilder := new(strings.Builder)
@@ -110,6 +116,25 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	}
 
 	return affectCount, nil
+}
+
+func useIntReplaceSelectFields(node ast.StmtNode) (string, error) {
+	stmt, ok := node.(*ast.SelectStmt)
+	if !ok {
+		return "", errors.New("")
+	}
+	newValue := &driver.ValueExpr{}
+	newValue.SetInt64(1)
+	selectFields := &ast.SelectField{Expr: newValue}
+	stmt.Fields.Fields = []*ast.SelectField{selectFields}
+
+	sqlBuilder := new(strings.Builder)
+	err := stmt.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, sqlBuilder))
+	if err != nil {
+		return "", err
+	}
+	affectRowSql := sqlBuilder.String()
+	return affectRowSql, nil
 }
 
 func getSelectNodeFromDelete(stmt *ast.DeleteStmt) *ast.SelectStmt {
