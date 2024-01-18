@@ -123,26 +123,26 @@ func JSONOnlySupportForEnterpriseVersionErr(c echo.Context) error {
 	return c.JSON(http.StatusOK, NewBaseReq(errors.NewOnlySupportForEnterpriseVersion()))
 }
 
-// ReadFileContent read content from http body by name if file exist,
+// ReadFile read content from http body by name if file exist,
 // the name is a http form data key, not file name.
-func ReadFileContent(c echo.Context, name string) (content string, fileExist bool, err error) {
+func ReadFile(c echo.Context, name string) (fileName, content string, fileExist bool, err error) {
 	file, err := c.FormFile(name)
 	if err == http.ErrMissingFile {
-		return "", false, nil
+		return "", "", false, nil
 	}
 	if err != nil {
-		return "", false, errors.New(errors.ReadUploadFileError, err)
+		return "", "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	src, err := file.Open()
 	if err != nil {
-		return "", false, errors.New(errors.ReadUploadFileError, err)
+		return "", "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	defer src.Close()
 	data, err := ioutil.ReadAll(src)
 	if err != nil {
-		return "", false, errors.New(errors.ReadUploadFileError, err)
+		return "", "", false, errors.New(errors.ReadUploadFileError, err)
 	}
-	return string(data), true, nil
+	return file.Filename, string(data), true, nil
 }
 
 // subjectUser should be admin user.

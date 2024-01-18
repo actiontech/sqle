@@ -1211,7 +1211,7 @@ type ParseProjectRuleTemplateFileResDataV1 struct {
 // @router /v1/rule_templates/parse [post]
 func ParseProjectRuleTemplateFile(c echo.Context) error {
 	// 读取+解析文件
-	file, exist, err := controller.ReadFileContent(c, "rule_template_file")
+	_, file, exist, err := controller.ReadFile(c, "rule_template_file")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
