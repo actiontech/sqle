@@ -85,7 +85,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	if exist {
 		return getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromSQLFile,
-			SQLsFromSQLFiles: []SQLsFromFile{{SQLs: sqlsFromSQLFile}},
+			SQLsFromSQLFiles: []SQLsFromSQLFile{{SQLs: sqlsFromSQLFile}},
 		}, nil
 	}
 
