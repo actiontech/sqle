@@ -121,7 +121,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 func useIntReplaceSelectFields(node ast.StmtNode) (string, error) {
 	stmt, ok := node.(*ast.SelectStmt)
 	if !ok {
-		return "", errors.New("")
+		return "", errors.New("pass parameter is not select node")
 	}
 	newValue := &driver.ValueExpr{}
 	newValue.SetInt64(1)
