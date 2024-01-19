@@ -6376,6 +6376,62 @@ func TestDMLCheckSelectRows(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect6, "select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
 
+	inspect7 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 limit 10, 10")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("100000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect7, "select id, v1 as id from exist_tb_2 limit 10, 10", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
+	inspect8 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 group by id, v1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("100000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect8, "select id, v1 as id from exist_tb_2 group by id, v1", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
+	inspect9 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 limit 10, 10")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
+	runSingleRuleInspectCase(rule, t, "", inspect9, "select id, v1 as id from exist_tb_2 limit 10, 10", newTestResult())
+
+	inspect10 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 group by id, v1")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
+	runSingleRuleInspectCase(rule, t, "", inspect10, "select id, v1 as id from exist_tb_2 group by id, v1", newTestResult())
+
+	inspect11 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) from exist_tb_2 group by id")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
+	runSingleRuleInspectCase(rule, t, "", inspect11, "select max(v1) from exist_tb_2 group by id", newTestResult())
+
+	inspect12 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) from exist_tb_2 group by id")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect12, "select max(v1) from exist_tb_2 group by id", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
+	inspect13 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) as id, id from exist_tb_2 group by id")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
+	runSingleRuleInspectCase(rule, t, "", inspect13, "select max(v1) as id, id from exist_tb_2 group by id", newTestResult())
+
+	inspect14 := NewMockInspect(e)
+	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) as id, id from exist_tb_2 group by id")).
+		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
+		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10000000"))
+	runSingleRuleInspectCase(rule, t, "", inspect14, "select max(v1) as id, id from exist_tb_2 group by id", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
 }
 
 func TestDMLCheckScanRows(t *testing.T) {
@@ -7142,7 +7198,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-without-equal",
@@ -7157,7 +7213,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-subquery",
@@ -7218,7 +7274,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "update-without-equal",
@@ -7233,7 +7289,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		// delete
 		{
@@ -7274,7 +7330,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-without-equal",
@@ -7294,7 +7350,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		// select union
 		{
@@ -7326,11 +7382,21 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-subquery",
 			Sql:         `select * from (select * from exist_tb_8) t left join exist_tb_9 t1 on t.id=t1.id where t1.v3=1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-subquery",
 			Sql:         `select * from (select * from exist_tb_9) t left join exist_tb_8 t1 on t.id=t1.id where t.v3=1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select use single index",
+			Sql:         `select * from exist_tb_9 where v3=100`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select use single index",
+			Sql:         `select * from exist_tb_9 where v3 > 100`,
 			TriggerRule: false,
 		},
 	}
