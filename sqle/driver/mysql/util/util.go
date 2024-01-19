@@ -72,7 +72,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		// https://github.com/actiontech/sqle/issues/2175
 		newSql, err := useIntReplaceSelectFields(node)
 		if err != nil {
-			return 0, err
+			log.NewEntry().Errorf("replace select fields failed, err: %v", err)
+			newSql = originSql
 		}
 		// 移除后缀分号，避免sql语法错误
 		trimSuffix := strings.TrimRight(newSql, ";")
