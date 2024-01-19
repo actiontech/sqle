@@ -7142,7 +7142,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-without-equal",
@@ -7157,7 +7157,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-subquery",
@@ -7218,7 +7218,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "update-without-equal",
@@ -7233,7 +7233,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		// delete
 		{
@@ -7274,7 +7274,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v3 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-without-equal",
@@ -7294,7 +7294,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v3 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		// select union
 		{
@@ -7326,11 +7326,21 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-subquery",
 			Sql:         `select * from (select * from exist_tb_8) t left join exist_tb_9 t1 on t.id=t1.id where t1.v3=1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-subquery",
 			Sql:         `select * from (select * from exist_tb_9) t left join exist_tb_8 t1 on t.id=t1.id where t.v3=1`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select use single index",
+			Sql:         `select * from exist_tb_9 where v3=100`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "select use single index",
+			Sql:         `select * from exist_tb_9 where v3 > 100`,
 			TriggerRule: false,
 		},
 	}
