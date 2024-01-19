@@ -99,6 +99,9 @@ type Node struct {
 
 	// Fingerprint is fingerprint of Node's raw SQL.
 	Fingerprint string
+
+	// StartLine is the starting row number of the Node's raw SQL.
+	StartLine uint64
 }
 
 type RuleLevel string

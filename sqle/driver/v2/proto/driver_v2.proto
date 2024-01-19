@@ -123,6 +123,7 @@ message Node {
   string text = 1;
   string type = 2;
   string fingerprint = 3;
+  uint64 startLine = 4;
 }
 
 message ParseResponse {

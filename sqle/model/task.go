@@ -115,6 +115,7 @@ type BaseSQL struct {
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
 	Schema          string `json:"schema"`
 	SourceFile      string `json:"source_file"`
+	StartLine       uint64 `json:"start_line"`
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
@@ -439,6 +440,7 @@ type TaskSQLDetail struct {
 	Description   string         `json:"description"`
 	ExecSQL       string         `json:"exec_sql"`
 	SQLSourceFile sql.NullString `json:"sql_source_file"`
+	SQLStartLine  uint64         `json:"sql_start_line"`
 	AuditResults  AuditResults   `json:"audit_results"`
 	AuditLevel    string         `json:"audit_level"`
 	AuditStatus   string         `json:"audit_status"`
@@ -455,7 +457,7 @@ func (t *TaskSQLDetail) GetAuditResults() string {
 	return t.AuditResults.String()
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, r_sql.content AS rollback_sql,
 e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}

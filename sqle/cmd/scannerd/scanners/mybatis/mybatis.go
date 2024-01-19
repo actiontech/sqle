@@ -3,10 +3,12 @@ package mybatis
 import (
 	"context"
 
+	"github.com/actiontech/sqle/sqle/utils"
+
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
 
 	"github.com/sirupsen/logrus"
 )
@@ -49,7 +51,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, scanners.MybatisFileSuffix)
+	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, utils.MybatisFileSuffix)
 	if err != nil {
 		return err
 	}
