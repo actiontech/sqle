@@ -3,7 +3,6 @@ package common
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/utils"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,6 +11,7 @@ import (
 
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuffix string) (allSQL []driverV2.Node, err error) {
