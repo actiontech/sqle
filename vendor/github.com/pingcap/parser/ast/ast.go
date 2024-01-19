@@ -41,6 +41,10 @@ type Node interface {
 	Text() string
 	// SetText sets original text to the Node.
 	SetText(text string)
+	// StartLine returns the start line of original text of the element.
+	StartLine() int
+	// SetStartLine sets the start line of original text of the element.
+	SetStartLine(startLine int)
 }
 
 // Flags indicates whether an expression contains certain types of expression.

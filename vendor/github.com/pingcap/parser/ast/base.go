@@ -18,7 +18,8 @@ import "github.com/pingcap/parser/types"
 // node is the struct implements node interface except for Accept method.
 // Node implementations should embed it in.
 type node struct {
-	text string
+	text      string
+	startLine int
 }
 
 // SetText implements Node interface.
@@ -29,6 +30,16 @@ func (n *node) SetText(text string) {
 // Text implements Node interface.
 func (n *node) Text() string {
 	return n.text
+}
+
+// SetText implements Node interface.
+func (n *node) SetStartLine(startLine int) {
+	n.startLine = startLine
+}
+
+// Text implements Node interface.
+func (n *node) StartLine() int {
+	return n.startLine
 }
 
 // stmtNode implements StmtNode interface.

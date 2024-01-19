@@ -9,12 +9,15 @@ import (
 
 type QueryNode struct {
 	*ChildrenNode
-	Id   string
-	Type string
+	Id        string
+	Type      string
+	StartLine uint64
 }
 
-func NewQueryNode() *QueryNode {
-	n := &QueryNode{}
+func NewQueryNode(startLine uint64) *QueryNode {
+	n := &QueryNode{
+		StartLine: startLine,
+	}
 	n.ChildrenNode = NewNode()
 	return n
 }
