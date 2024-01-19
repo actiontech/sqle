@@ -5390,10 +5390,23 @@ func isColumnMatchedALeftMostPrefix(allCols []string, colsWithEQ, colsWithOr []s
 	return true
 }
 
+func checkSingleIndex(allCols []string, constraint *ast.Constraint) bool {
+	singleIndexColumn := constraint.Keys[0].Column.Name.L
+	for _, col := range allCols {
+		if col == singleIndexColumn {
+			return true
+		}
+	}
+	return false
+}
+
 func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) bool {
 	multiConstraints := make([]*ast.Constraint, 0)
 	for _, constraint := range constraints {
 		if len(constraint.Keys) == 1 {
+			if checkSingleIndex(allCols, constraint) {
+				return true
+			}
 			continue
 		}
 		multiConstraints = append(multiConstraints, constraint)
