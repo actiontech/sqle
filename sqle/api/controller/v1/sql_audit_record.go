@@ -16,7 +16,6 @@ import (
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
-	xmlAst "github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -375,17 +374,6 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	}
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
-}
-
-func getSQLsByFilePath(filePath string, stmtsInfo []xmlAst.StmtInfo) []string {
-	sqls := []string{}
-	for _, info := range stmtsInfo {
-		if info.FilePath != filePath {
-			continue
-		}
-		sqls = append(sqls, info.SQL)
-	}
-	return sqls
 }
 
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
