@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/dms v0.0.0-20231214070254-f5cbf6d30d45
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.5.0
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
@@ -191,6 +191,6 @@ replace (
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20231221020848-96469ebf303a
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231122073510-03e191068cf1
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240119100847-3235e2338d0e
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

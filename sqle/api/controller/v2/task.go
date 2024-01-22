@@ -103,6 +103,7 @@ func GetTaskSQLs(c echo.Context) error {
 			Description:   taskSQL.Description,
 			ExecSQL:       taskSQL.ExecSQL,
 			SQLSourceFile: taskSQL.SQLSourceFile.String,
+			SQLStartLine:  taskSQL.SQLStartLine,
 			AuditLevel:    taskSQL.AuditLevel,
 			AuditStatus:   taskSQL.AuditStatus,
 			ExecResult:    taskSQL.ExecResult,
