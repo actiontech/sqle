@@ -101,7 +101,7 @@ func getSQLELicenseInfo(c echo.Context) error {
 }
 
 func setLicense(c echo.Context) error {
-	file, exist, err := controller.ReadFileContent(c, LicenseFileParamKey)
+	_, file, exist, err := controller.ReadFile(c, LicenseFileParamKey)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -138,7 +138,7 @@ func setLicense(c echo.Context) error {
 }
 
 func checkLicense(c echo.Context) error {
-	file, exist, err := controller.ReadFileContent(c, LicenseFileParamKey)
+	_, file, exist, err := controller.ReadFile(c, LicenseFileParamKey)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
