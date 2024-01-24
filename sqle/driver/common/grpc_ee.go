@@ -1,5 +1,5 @@
-//go:build enterprise
-// +build enterprise
+//go:build enterprise || trial
+// +build enterprise trial
 
 package common
 
