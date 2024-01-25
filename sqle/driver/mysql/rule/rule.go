@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
@@ -3019,14 +3020,51 @@ func checkNeedlessFunc(input *RuleHandlerInput) error {
 	funcArrStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	needlessFuncArr := strings.Split(funcArrStr, ",")
 	sql := strings.ToLower(input.Node.Text())
+	functions, err := extractFunctions(sql)
+	if err != nil {
+		log.NewEntry().Errorf("rule: %v; SQL: %v; parsing a function in sql failed: %v", input.Rule.Name, input.Node.Text(), err)
+	}
 	for _, needlessFunc := range needlessFuncArr {
-		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
-		if strings.Contains(sql, needlessFunc) {
-			addResult(input.Res, input.Rule, DMLCheckNeedlessFunc, funcArrStr)
-			return nil
+		for _, sqlFunc := range functions {
+			needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, "()"))
+			if needlessFunc == sqlFunc {
+				addResult(input.Res, input.Rule, DMLCheckNeedlessFunc, funcArrStr)
+				return nil
+			}
 		}
 	}
 	return nil
+}
+
+func extractFunctions(sql string) ([]string, error) {
+	p := parser.New()
+	stmtNodes, _, err := p.Parse(sql, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	funcExtractor := &functionVisitor{}
+	for _, stmtNode := range stmtNodes {
+		stmtNode.Accept(funcExtractor)
+	}
+
+	return funcExtractor.functions, nil
+}
+
+type functionVisitor struct {
+	functions []string
+}
+
+func (v *functionVisitor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch node := in.(type) {
+	case *ast.FuncCallExpr:
+		v.functions = append(v.functions, node.FnName.O)
+	}
+	return in, false
+}
+
+func (v *functionVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
 
 func checkDatabaseSuffix(input *RuleHandlerInput) error {
