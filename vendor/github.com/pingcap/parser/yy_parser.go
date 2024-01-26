@@ -74,6 +74,8 @@ type Parser struct {
 	cache  []yySymType
 	yylval yySymType
 	yyVAL  *yySymType
+
+	startLineOffset int
 }
 
 type stmtTexter interface {
