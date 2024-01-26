@@ -6,7 +6,6 @@ package v2
 import (
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -58,12 +57,11 @@ func getTaskAnalysisData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
-	sqlContent := taskSql.Content
-	if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || strings.ToUpper(filepath.Ext(taskSql.SourceFile)) == XMLFileExtension {
-		sqlContent, err = fillingMybatisXmlSQL(sqlContent, task)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+
+	sqlContent, err := fillingSQLWithParamMarker(taskSql.Content, task)
+	if err != nil {
+		log.NewEntry().Errorf("fill param marker sql failed: %v", err)
+		sqlContent = taskSql.Content
 	}
 	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent)
 	if err != nil {
@@ -188,7 +186,7 @@ func convertSQLAnalysisResultToRes(res *v1.AnalysisResult, rawSQL string) *TaskA
 
 	return data
 }
-func fillingMybatisXmlSQL(sqlContent string, task *model.Task) (string, error) {
+func fillingSQLWithParamMarker(sqlContent string, task *model.Task) (string, error) {
 	l := log.NewEntry()
 	driver := mysql.MysqlDriverImpl{}
 	nodes, err := driver.ParseSql(sqlContent)
