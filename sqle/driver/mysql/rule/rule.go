@@ -3018,15 +3018,36 @@ func checkDecimalTypeColumn(input *RuleHandlerInput) error {
 func checkNeedlessFunc(input *RuleHandlerInput) error {
 	funcArrStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	needlessFuncArr := strings.Split(funcArrStr, ",")
-	sql := strings.ToLower(input.Node.Text())
+	funcExtractor := &functionVisitor{}
+	input.Node.Accept(funcExtractor)
+	functions := funcExtractor.functions
 	for _, needlessFunc := range needlessFuncArr {
-		needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, ")"))
-		if strings.Contains(sql, needlessFunc) {
-			addResult(input.Res, input.Rule, DMLCheckNeedlessFunc, funcArrStr)
-			return nil
+		for _, sqlFunc := range functions {
+			needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, "()"))
+			sqlFunc = strings.ToLower(sqlFunc)
+			if needlessFunc == sqlFunc {
+				addResult(input.Res, input.Rule, DMLCheckNeedlessFunc, funcArrStr)
+				return nil
+			}
 		}
 	}
 	return nil
+}
+
+type functionVisitor struct {
+	functions []string
+}
+
+func (v *functionVisitor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch node := in.(type) {
+	case *ast.FuncCallExpr:
+		v.functions = append(v.functions, node.FnName.O)
+	}
+	return in, false
+}
+
+func (v *functionVisitor) Leave(n ast.Node) (node ast.Node, ok bool) {
+	return n, true
 }
 
 func checkDatabaseSuffix(input *RuleHandlerInput) error {
