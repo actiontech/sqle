@@ -19,7 +19,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
 
-	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
@@ -3019,11 +3018,9 @@ func checkDecimalTypeColumn(input *RuleHandlerInput) error {
 func checkNeedlessFunc(input *RuleHandlerInput) error {
 	funcArrStr := input.Rule.Params.GetParam(DefaultSingleParamKeyName).String()
 	needlessFuncArr := strings.Split(funcArrStr, ",")
-	sql := strings.ToLower(input.Node.Text())
-	functions, err := extractFunctions(sql)
-	if err != nil {
-		log.NewEntry().Errorf("rule: %v; SQL: %v; parsing a function in sql failed: %v", input.Rule.Name, input.Node.Text(), err)
-	}
+	funcExtractor := &functionVisitor{}
+	input.Node.Accept(funcExtractor)
+	functions := funcExtractor.functions
 	for _, needlessFunc := range needlessFuncArr {
 		for _, sqlFunc := range functions {
 			needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, "()"))
@@ -3034,21 +3031,6 @@ func checkNeedlessFunc(input *RuleHandlerInput) error {
 		}
 	}
 	return nil
-}
-
-func extractFunctions(sql string) ([]string, error) {
-	p := parser.New()
-	stmtNodes, _, err := p.Parse(sql, "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	funcExtractor := &functionVisitor{}
-	for _, stmtNode := range stmtNodes {
-		stmtNode.Accept(funcExtractor)
-	}
-
-	return funcExtractor.functions, nil
 }
 
 type functionVisitor struct {
