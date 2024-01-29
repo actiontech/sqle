@@ -12098,6 +12098,9 @@ var doc = `{
                 },
                 "sql_start_line": {
                     "type": "integer"
+                },
+                "sql_type": {
+                    "type": "string"
                 }
             }
         },
