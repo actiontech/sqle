@@ -264,7 +264,12 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 		n.StartLine = uint64(nodes[i].StartLine())
 		switch nodes[i].(type) {
 		case ast.DMLNode:
-			n.Type = driverV2.SQLTypeDML
+			switch nodes[i].(type) {
+			case *ast.SelectStmt:
+				n.Type = driverV2.SQLTypeDQL
+			default:
+				n.Type = driverV2.SQLTypeDML
+			}
 		default:
 			n.Type = driverV2.SQLTypeDDL
 		}
