@@ -72,14 +72,12 @@ func (s *Storage) GetSqlWhitelistByProjectName(pageIndex, pageSize uint32, proje
 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 }
 
-
-func (s *Storage) GetSqlWhitelistByInstanceId(instanceId uint) ([]SqlWhitelist,  error) {
+func (s *Storage) GetSqlWhitelistByProjectId(projectId uint) ([]SqlWhitelist, error) {
 	sqlWhitelist := []SqlWhitelist{}
 	err := s.db.Table("sql_whitelist").
-		Joins("LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id").
-		Where("instances.id = ?", instanceId).
+		Where("sql_whitelist.project_id = ?", projectId).
 		Find(&sqlWhitelist).Error
-	return sqlWhitelist,  errors.New(errors.ConnectStorageError, err)
+	return sqlWhitelist, errors.New(errors.ConnectStorageError, err)
 }
 
 
