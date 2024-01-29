@@ -22,6 +22,20 @@ create table t1(id int);
 	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), "select * from t1")
 	assert.NoError(t, err)
 	assert.Len(t, nodes, 1)
+	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDQL)
+
+	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), "insert into tb1 values(1)")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDML)
+
+	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), `
+INSERT INTO customers (customer_name, email)
+SELECT first_name, email
+FROM contacts
+WHERE last_name = 'Smith';`)
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 1)
 	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDML)
 }
 

@@ -17,6 +17,7 @@ const (
 const (
 	SQLTypeDML = "dml"
 	SQLTypeDDL = "ddl"
+	SQLTypeDQL = "dql"
 )
 
 const (
