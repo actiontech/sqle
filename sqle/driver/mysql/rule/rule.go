@@ -3024,6 +3024,7 @@ func checkNeedlessFunc(input *RuleHandlerInput) error {
 	for _, needlessFunc := range needlessFuncArr {
 		for _, sqlFunc := range functions {
 			needlessFunc = strings.ToLower(strings.TrimRight(needlessFunc, "()"))
+			sqlFunc = strings.ToLower(sqlFunc)
 			if needlessFunc == sqlFunc {
 				addResult(input.Res, input.Rule, DMLCheckNeedlessFunc, funcArrStr)
 				return nil
