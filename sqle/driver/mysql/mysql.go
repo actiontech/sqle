@@ -253,25 +253,34 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 	}
 
 	ns := make([]driverV2.Node, len(nodes))
-	for i := range nodes {
+	for idx := range nodes {
 		n := driverV2.Node{}
-		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
+		fingerprint, err := util.Fingerprint(nodes[idx].Text(), lowerCaseTableNames == "0")
 		if err != nil {
 			return nil, err
 		}
 		n.Fingerprint = fingerprint
-		n.Text = nodes[i].Text()
-		n.StartLine = uint64(nodes[i].StartLine())
-		switch nodes[i].(type) {
-		case ast.DMLNode:
-			n.Type = driverV2.SQLTypeDML
-		default:
-			n.Type = driverV2.SQLTypeDDL
-		}
+		n.Text = nodes[idx].Text()
+		n.StartLine = uint64(nodes[idx].StartLine())
+		n.Type = i.assertSQLType(nodes[idx])
 
-		ns[i] = n
+		ns[idx] = n
 	}
 	return ns, nil
+}
+
+func (i *MysqlDriverImpl) assertSQLType(stmt ast.Node) string {
+	switch stmt.(type) {
+	case ast.DMLNode:
+		switch stmt.(type) {
+		case *ast.SelectStmt, *ast.UnionStmt:
+			return driverV2.SQLTypeDQL
+		default:
+			return driverV2.SQLTypeDML
+		}
+	default:
+		return driverV2.SQLTypeDDL
+	}
 }
 
 func (i *MysqlDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {

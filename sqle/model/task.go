@@ -116,6 +116,7 @@ type BaseSQL struct {
 	Schema          string `json:"schema"`
 	SourceFile      string `json:"source_file"`
 	StartLine       uint64 `json:"start_line"`
+	SQLType         string `json:"sql_type"` // such as DDL,DML,DQL...
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
@@ -447,6 +448,7 @@ type TaskSQLDetail struct {
 	ExecResult    string         `json:"exec_result"`
 	ExecStatus    string         `json:"exec_status"`
 	RollbackSQL   sql.NullString `json:"rollback_sql"`
+	SQLType       sql.NullString `json:"sql_type"`
 }
 
 func (t *TaskSQLDetail) GetAuditResults() string {
@@ -457,7 +459,7 @@ func (t *TaskSQLDetail) GetAuditResults() string {
 	return t.AuditResults.String()
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type, r_sql.content AS rollback_sql,
 e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
