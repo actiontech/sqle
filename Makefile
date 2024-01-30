@@ -32,7 +32,7 @@ GO_BUILD_TAGS = dummyhead
 ifeq ($(EDITION),ee)
     GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise
 else ifeq ($(EDITION),trial)
-    GO_BUILD_TAGS :=$(GO_BUILD_TAGS),enterprise,trial
+    GO_BUILD_TAGS :=$(GO_BUILD_TAGS),trial
 endif
 RELEASE = qa
 ifeq ($(RELEASE),rel)
