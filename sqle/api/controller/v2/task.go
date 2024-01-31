@@ -37,6 +37,7 @@ type AuditTaskSQLResV2 struct {
 	ExecStatus    string         `json:"exec_status"`
 	RollbackSQL   string         `json:"rollback_sql,omitempty"`
 	Description   string         `json:"description"`
+	SQLType       string         `json:"sql_type"`
 }
 
 type AuditResult struct {
@@ -109,6 +110,7 @@ func GetTaskSQLs(c echo.Context) error {
 			ExecResult:    taskSQL.ExecResult,
 			ExecStatus:    taskSQL.ExecStatus,
 			RollbackSQL:   taskSQL.RollbackSQL.String,
+			SQLType:       taskSQL.SQLType.String,
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]

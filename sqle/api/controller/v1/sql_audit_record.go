@@ -203,6 +203,7 @@ func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin dr
 					Content:    node.Text,
 					SourceFile: filePath,
 					StartLine:  startLine,
+					SQLType:    node.Type,
 				},
 			})
 			num++

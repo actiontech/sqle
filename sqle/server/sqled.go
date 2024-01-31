@@ -469,7 +469,7 @@ func (a *action) execTask() (err error) {
 		}
 
 		switch nodes[0].Type {
-		case driverV2.SQLTypeDML:
+		case driverV2.SQLTypeDML, driverV2.SQLTypeDQL:
 			txSQLs = append(txSQLs, executeSQL)
 			if i == len(task.ExecuteSQLs)-1 {
 				if err = a.execSQLs(txSQLs); err != nil {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,6 +22,20 @@ create table t1(id int);
 	}
 
 	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), "select * from t1")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDQL)
+
+	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), "insert into tb1 values(1)")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDML)
+
+	nodes, err = DefaultMysqlInspect().Parse(context.TODO(), `
+INSERT INTO customers (customer_name, email)
+SELECT first_name, email
+FROM contacts
+WHERE last_name = 'Smith';`)
 	assert.NoError(t, err)
 	assert.Len(t, nodes, 1)
 	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDML)
@@ -161,4 +177,64 @@ func TestInspect_GenRollbackSQL(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", reason)
 	assert.Equal(t, "ALTER TABLE `exist_db`.`t1`\nDROP COLUMN `c1`;", rollback)
+}
+func TestInspect_assertSQLType(t *testing.T) {
+	args := []struct {
+		Name string
+		SQL  string
+		Want string
+	}{
+		{
+			"case 1",
+			`select * from tb`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"case 2",
+			`
+(SELECT a FROM t1 WHERE a=10 AND B=1 ORDER BY a LIMIT 10)
+UNION
+(SELECT a FROM t2 WHERE a=11 AND B=2 ORDER BY a LIMIT 10);`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"case 3",
+			`
+DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3
+WHERE t1.id=t2.id AND t2.id=t3.id;`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"case 4",
+			`
+INSERT INTO tbl_name (a,b,c) VALUES(1,2,3,4,5,6,7,8,9);`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"case 5",
+			`
+UPDATE t SET id = id + 1;`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"case 6",
+			`
+CREATE TABLE new_tbl AS SELECT * FROM orig_tbl;`,
+			driverV2.SQLTypeDDL,
+		},
+		{
+			"case 7",  // unparsed
+			`
+CREATEaa TABLE new_tbl AS SELECT * FROM orig_tbl;`,
+			driverV2.SQLTypeDDL,
+		},
+	}
+	i := &MysqlDriverImpl{}
+	for _, arg := range args {
+		t.Run(arg.Name, func(t *testing.T) {
+			stmt, err := util.ParseSql(arg.SQL)
+			assert.NoError(t, err)
+			assert.Equal(t, arg.Want, i.assertSQLType(stmt[0]))
+		})
+	}
 }
