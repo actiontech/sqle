@@ -164,8 +164,8 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT `sql_whitelist`.* FROM `sql_whitelist` LEFT JOIN instances ON sql_whitelist.project_id = instances.project_id WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((instances.id = ?))")).
-		WithArgs(1).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist` WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((sql_whitelist.project_id = ?))")).
+		WithArgs(0).
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 
 	mock.ExpectBegin()

@@ -33,6 +33,11 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uin
 	}
 	defer plugin.Close(context.TODO())
 
+	// possible task is self build object, not model.Task{}
+	if task.Instance == nil {
+		task.Instance = &model.Instance{ProjectId: *projectId}
+	}
+
 	return hookAudit(l, task, plugin, hook, customRules)
 }
 

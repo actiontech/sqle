@@ -80,7 +80,6 @@ func (s *Storage) GetSqlWhitelistByProjectId(projectId uint) ([]SqlWhitelist, er
 	return sqlWhitelist, errors.New(errors.ConnectStorageError, err)
 }
 
-
 func (s *Storage) GetSqlWhitelistTotalByProjectName(projectName string) (uint64, error) {
 	var count uint64
 	err := s.db.
