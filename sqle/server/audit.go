@@ -33,6 +33,11 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *uin
 	}
 	defer plugin.Close(context.TODO())
 
+	// possible task is self build object, not model.Task{}
+	if task.Instance == nil {
+		task.Instance = &model.Instance{ProjectId: *projectId}
+	}
+
 	return hookAudit(l, task, plugin, hook, customRules)
 }
 
@@ -125,7 +130,11 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	}()
 
 	st := model.GetStorage()
-	whitelist, err := st.GetSqlWhitelistByInstanceId(task.InstanceId)
+	var projectId uint
+	if task.Instance != nil {
+		projectId = task.Instance.ProjectId
+	}
+	whitelist, err := st.GetSqlWhitelistByProjectId(projectId)
 	if err != nil {
 		return err
 	}
