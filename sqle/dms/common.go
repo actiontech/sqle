@@ -176,7 +176,7 @@ func RegisterAsDMSTarget(sqleConfig *config.SqleOptions) error {
 	ctx := context.Background()
 
 	// 向DMS注册反向代理
-	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle", fmt.Sprintf("http://%v:%v", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port) /* TODO https的处理*/, config.Version, []string{"/sqle/v"}); nil != err {
+	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle", fmt.Sprintf("http://%v:%v", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port) /* TODO https的处理*/, config.Version, []string{"/sqle/v"}, dmsV1.ProxyScenarioInternalService); nil != err {
 		return fmt.Errorf("failed to register dms proxy target: %v", err)
 	}
 	// 注册校验接口
