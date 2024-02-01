@@ -77,23 +77,26 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 		},
 	}
 	for _, record := range workflow.Record.InstanceRecords {
-		if record.Instance != nil {
-			info := InstanceInfo{
-				Host: record.Instance.Host,
-				Port: record.Instance.Port,
-				Desc: record.Instance.Desc,
-			}
-			if record.Task != nil {
-				info.Schema = record.Task.Schema
-				reqBody.Payload.Workflow.WorkflowTaskID = record.Task.ID
-				for _, executeSql := range record.Task.ExecuteSQLs {
-					if executeSql.SQLType != "" {
-						reqBody.Payload.Workflow.SqlTypeMap[executeSql.SQLType] = true
-					}
-				}
-			}
-			reqBody.Payload.Workflow.InstanceInfo = append(reqBody.Payload.Workflow.InstanceInfo, info)
+		if record.Instance == nil {
+			continue
 		}
+		info := InstanceInfo{
+			Host: record.Instance.Host,
+			Port: record.Instance.Port,
+			Desc: record.Instance.Desc,
+		}
+		if record.Task == nil {
+			reqBody.Payload.Workflow.InstanceInfo = append(reqBody.Payload.Workflow.InstanceInfo, info)
+			continue
+		}
+		info.Schema = record.Task.Schema
+		reqBody.Payload.Workflow.WorkflowTaskID = record.Task.ID
+		for _, executeSql := range record.Task.ExecuteSQLs {
+			if executeSql.SQLType != "" {
+				reqBody.Payload.Workflow.SqlTypeMap[executeSql.SQLType] = true
+			}
+		}
+		reqBody.Payload.Workflow.InstanceInfo = append(reqBody.Payload.Workflow.InstanceInfo, info)
 	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
