@@ -8,6 +8,8 @@ import (
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/model"
 )
 
 type webHookRequestBody struct {
@@ -22,6 +24,8 @@ type workflowPayload struct {
 	WorkflowID      string `json:"workflow_id"`
 	WorkflowSubject string `json:"workflow_subject"`
 	WorkflowStatus  string `json:"workflow_status"`
+
+	ThirdPartyUserInfo string `json:"third_party_user_info"`
 }
 
 type httpBodyPayload struct {
@@ -33,19 +37,22 @@ type httpBodyPayload struct {
 // 		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
 // }
 
-func workflowSendRequest(action,
-	projectName, workflowID, workflowSubject, workflowStatus string) (err error) {
-
+func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
+	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		return err
+	}
 	reqBody := &webHookRequestBody{
 		Event:     "workflow",
 		Action:    action,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &httpBodyPayload{
 			Workflow: &workflowPayload{
-				ProjectName:     projectName,
-				WorkflowID:      workflowID,
-				WorkflowSubject: workflowSubject,
-				WorkflowStatus:  workflowStatus,
+				ProjectName:        string(workflow.ProjectId),
+				WorkflowID:         workflow.WorkflowId,
+				WorkflowSubject:    workflow.Subject,
+				WorkflowStatus:     workflow.Record.Status,
+				ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 			},
 		},
 	}

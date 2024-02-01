@@ -93,11 +93,12 @@ func convertUserToModel(user *dmsV1.GetUser) *model.User {
 	id, _ := strconv.Atoi(user.UserUid)
 	model_ := model.Model{ID: uint(id)}
 	ret := &model.User{
-		Model:    model_,
-		Name:     user.Name,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		WeChatID: user.WxID,
+		Model:              model_,
+		Name:               user.Name,
+		Email:              user.Email,
+		Phone:              user.Phone,
+		WeChatID:           user.WxID,
+		ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 	}
 	if user.Stat != dmsV1.StatOK {
 		ret.Stat = 1
