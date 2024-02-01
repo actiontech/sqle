@@ -9,6 +9,7 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
@@ -25,11 +26,12 @@ type workflowPayload struct {
 	WorkflowSubject string `json:"workflow_subject"`
 	WorkflowStatus  string `json:"workflow_status"`
 
-	ThirdPartyUserInfo string         `json:"third_party_user_info"`
-	CurrentStepID      uint           `json:"current_step_info"`
-	WorkflowTaskID     uint           `json:"workflow_task_id"`
-	InstanceInfo       []InstanceInfo `json:"instanceInfo"`
-	WorkflowDesc       string         `json:"workflow_desc"`
+	ThirdPartyUserInfo string          `json:"third_party_user_info"`
+	CurrentStepID      uint            `json:"current_step_info"`
+	WorkflowTaskID     uint            `json:"workflow_task_id"`
+	InstanceInfo       []InstanceInfo  `json:"instanceInfo"`
+	WorkflowDesc       string          `json:"workflow_desc"`
+	SqlTypeMap         map[string]bool `json:"sql_type_map"` // DDL DML DQL
 }
 
 type InstanceInfo struct {
@@ -66,6 +68,11 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 				ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 				CurrentStepID:      workflow.CurrentStep().ID,
 				WorkflowDesc:       workflow.Desc,
+				SqlTypeMap: map[string]bool{
+					driverV2.SQLTypeDDL: false,
+					driverV2.SQLTypeDML: false,
+					driverV2.SQLTypeDQL: false,
+				},
 			},
 		},
 	}
@@ -79,6 +86,11 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 			if record.Task != nil {
 				info.Schema = record.Task.Schema
 				reqBody.Payload.Workflow.WorkflowTaskID = record.Task.ID
+				for _, executeSql := range record.Task.ExecuteSQLs {
+					if executeSql.SQLType != "" {
+						reqBody.Payload.Workflow.SqlTypeMap[executeSql.SQLType] = true
+					}
+				}
 			}
 			reqBody.Payload.Workflow.InstanceInfo = append(reqBody.Payload.Workflow.InstanceInfo, info)
 		}
