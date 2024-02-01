@@ -26,6 +26,7 @@ type workflowPayload struct {
 	WorkflowStatus  string `json:"workflow_status"`
 
 	ThirdPartyUserInfo string `json:"third_party_user_info"`
+	CurrentStepID      uint   `json:"current_step_info"`
 }
 
 type httpBodyPayload struct {
@@ -53,6 +54,7 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 				WorkflowSubject:    workflow.Subject,
 				WorkflowStatus:     workflow.Record.Status,
 				ThirdPartyUserInfo: user.ThirdPartyUserInfo,
+				CurrentStepID:      workflow.CurrentStep().ID,
 			},
 		},
 	}
