@@ -34,11 +34,11 @@ fi
 echo "start sqle server..."
 cd ${SQLE_BASE}
 # 启动dms
-./bin/dms -conf ${CONF} &
+./bin/dms -conf ${CONF}  >> std_dms.log 2>&1  &
 sleep 3
 # 检查dms进程是否存在
 while ! pgrep -x "dms" > /dev/null; do
     sleep 1
 done
 # 启动sqle
-./bin/sqled --config ${CONF}
+./bin/sqled --config ${CONF} >> std.log 2>&1
