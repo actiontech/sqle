@@ -25,8 +25,18 @@ type workflowPayload struct {
 	WorkflowSubject string `json:"workflow_subject"`
 	WorkflowStatus  string `json:"workflow_status"`
 
-	ThirdPartyUserInfo string `json:"third_party_user_info"`
-	CurrentStepID      uint   `json:"current_step_info"`
+	ThirdPartyUserInfo string         `json:"third_party_user_info"`
+	CurrentStepID      uint           `json:"current_step_info"`
+	WorkflowTaskID     uint           `json:"workflow_task_id"`
+	InstanceInfo       []InstanceInfo `json:"instanceInfo"`
+	WorkflowDesc       string         `json:"workflow_desc"`
+}
+
+type InstanceInfo struct {
+	Host   string `json:"host"`
+	Schema string `json:"schema"`
+	Port   string `json:"port"`
+	Desc   string `json:"desc"`
 }
 
 type httpBodyPayload struct {
@@ -55,10 +65,24 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 				WorkflowStatus:     workflow.Record.Status,
 				ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 				CurrentStepID:      workflow.CurrentStep().ID,
+				WorkflowDesc:       workflow.Desc,
 			},
 		},
 	}
-
+	for _, record := range workflow.Record.InstanceRecords {
+		if record.Instance != nil {
+			info := InstanceInfo{
+				Host: record.Instance.Host,
+				Port: record.Instance.Port,
+				Desc: record.Instance.Desc,
+			}
+			if record.Task != nil {
+				info.Schema = record.Task.Schema
+				reqBody.Payload.Workflow.WorkflowTaskID = record.Task.ID
+			}
+			reqBody.Payload.Workflow.InstanceInfo = append(reqBody.Payload.Workflow.InstanceInfo, info)
+		}
+	}
 	b, err := json.Marshal(reqBody)
 	if err != nil {
 		return err
