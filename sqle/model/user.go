@@ -37,8 +37,9 @@ type User struct {
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
 
 	// UserGroups       []*UserGroup `gorm:"many2many:user_group_users"`
-	Stat             uint   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
-	ThirdPartyUserID string `json:"third_party_user_id"`
+	Stat               uint   `json:"stat" gorm:"not null; default: 0; comment:'0:正常 1:被禁用'"`
+	ThirdPartyUserID   string `json:"third_party_user_id"`   // used to retrieve sqle user based on third-party user ID
+	ThirdPartyUserInfo string `json:"third_party_user_info"` // used to save original third-party user information
 
 	WorkflowStepTemplates   []*WorkflowStepTemplate   `gorm:"many2many:workflow_step_template_user"`
 	WorkflowInstanceRecords []*WorkflowInstanceRecord `gorm:"many2many:workflow_instance_record_user"`

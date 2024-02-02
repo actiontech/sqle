@@ -255,8 +255,7 @@ func (w *WorkflowNotification) notifyUser() []string {
 
 func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {
 	// dms-todo 使用projectid代替name
-	err := workflowSendRequest(getWorkflowNotifyTypeAction(wt), string(workflow.ProjectId), workflow.
-		WorkflowId, workflow.Subject, workflow.Record.Status)
+	err := workflowSendRequest(getWorkflowNotifyTypeAction(wt), workflow)
 	if err != nil {
 		log.NewEntry().Errorf("workflow webhook failed: %v", err)
 	}
