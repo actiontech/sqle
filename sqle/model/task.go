@@ -115,7 +115,7 @@ type BaseSQL struct {
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
 	Schema          string `json:"schema"`
 	SourceFile      string `json:"source_file"`
-	StartLine       uint64 `json:"start_line"`
+	StartLine       uint64 `json:"start_line" gorm:"not null"`
 	SQLType         string `json:"sql_type"` // such as DDL,DML,DQL...
 }
 
