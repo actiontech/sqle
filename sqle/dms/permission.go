@@ -119,5 +119,7 @@ func GetAllOpPermissions() []v1.OpPermissionType {
 		v1.OpPermissionTypeSaveAuditPlan,
 		v1.OpPermissionTypeViewOtherAuditPlan,
 		v1.OpPermissionTypeSQLQuery,
+		v1.OpPermissionTypeExportCreate,
+		v1.OpPermissionTypeAuditExportWorkflow,
 	}
 }
