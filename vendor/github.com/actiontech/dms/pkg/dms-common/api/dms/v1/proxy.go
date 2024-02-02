@@ -23,7 +23,17 @@ type DMSProxyTarget struct {
 	// url prefix that need to be proxy, eg: /v1/user
 	// Required: true
 	ProxyUrlPrefixs []string `json:"proxy_url_prefixs" validate:"required"`
+	// the scenario is used to differentiate scenarios
+	Scenario ProxyScenario `json:"scenario"`
 }
+
+// swagger:enum ProxyScenario
+type ProxyScenario string
+
+const (
+	ProxyScenarioInternalService     ProxyScenario = "internal_service"
+	ProxyScenarioThirdPartyIntegrate ProxyScenario = "thrid_party_integrate"
+)
 
 // swagger:model RegisterDMSProxyTargetReply
 type RegisterDMSProxyTargetReply struct {
