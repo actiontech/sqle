@@ -214,7 +214,7 @@ func (i *MysqlDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *driver.Ge
 		return nil, err
 	}
 
-	var tableMetas []*driver.TableMeta
+	tableMetas := make([]*driver.TableMeta, 0, len(schemaTableList))
 	for _, schemaTable := range schemaTableList {
 		tableMeta := i.GetTableMeta(ctx, schemaTable)
 		tableMetas = append(tableMetas, tableMeta)
