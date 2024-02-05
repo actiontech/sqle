@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 
-	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -189,43 +188,4 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 	}
 
 	return analysisDataResItemV1
-}
-
-func GetAuditPlantReportAndInstance(c echo.Context, projectId, auditPlanName string, reportID, sqlNumber int) (
-	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
-	err error) {
-
-	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !exist {
-		return nil, nil, nil, errors.NewAuditPlanNotExistErr()
-	}
-
-	s := model.GetStorage()
-	auditPlanReport, exist, err = s.GetAuditPlanReportByID(ap.ID, uint(reportID))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !exist {
-		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report not exist")
-	}
-
-	auditPlanReportSQLV2, exist, err = s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportID), uint(sqlNumber))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !exist {
-		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report sql v2 not exist")
-	}
-	instance, exist, err = dms.GetInstanceInProjectByName(context.Background(), projectId, auditPlanReport.AuditPlan.InstanceName)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	if !exist {
-		return nil, nil, nil, errors.NewDataNotExistErr("instance not exist")
-	}
-
-	return auditPlanReport, auditPlanReportSQLV2, instance, nil
 }
