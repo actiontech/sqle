@@ -289,19 +289,20 @@ func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 		c.Db.Logger().Error(err)
 		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
+
 	var queryCreate sql.NullString
 	var ok bool
-	if queryCreate, ok = result[0]["Create Table"]; !ok {
-		if queryCreate, ok = result[0]["Create View"]; !ok {
-			err := fmt.Errorf("show create table error, column \"Create Table\" and \"Create View\" not found")
-			c.Db.Logger().Error(err)
-			return "", errors.New(errors.ConnectRemoteDatabaseError, err)
-		} else {
-			return queryCreate.String, nil
-		}
-	} else {
+	if queryCreate, ok = result[0]["Create Table"]; ok {
 		return queryCreate.String, nil
 	}
+
+	if queryCreate, ok = result[0]["Create View"]; ok {
+		return queryCreate.String, nil
+	}
+
+	err = fmt.Errorf("show create table error, column \"Create Table\" or \"Create View\" not found")
+	c.Db.Logger().Error(err)
+	return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 }
 
 /*
