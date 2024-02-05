@@ -259,7 +259,46 @@ type GetAuditPlanAnalysisDataResV2 struct {
 // @Success 200 {object} v2.GetAuditPlanAnalysisDataResV2
 // @router /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls/{number}/analysis [get]
 func GetAuditPlanAnalysisData(c echo.Context) error {
-	return getAuditPlanAnalysisData(c)
+	reportId := c.Param("audit_plan_report_id")
+	sqlNumber := c.Param("number")
+	apName := c.Param("audit_plan_name")
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	var schema string
+
+	reportIdInt, err := strconv.Atoi(reportId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
+	}
+
+	sqlNumberInt, err := strconv.Atoi(sqlNumber)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
+	}
+
+	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectUid, apName, reportIdInt, sqlNumberInt)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if auditPlanReport.AuditPlan.InstanceDatabase != "" {
+		schema = auditPlanReport.AuditPlan.InstanceDatabase
+	} else {
+		schema = auditPlanReportSQLV2.Schema
+	}
+
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertSQLAnalysisResultToRes(res, auditPlanReportSQLV2.SQL),
+	})
 }
 
 type AuditPlanSQLReqV2 struct {
