@@ -55,6 +55,10 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 	if err != nil {
 		return err
 	}
+	currentStepID := uint(0)
+	if workflow.CurrentStep() != nil {
+		currentStepID = workflow.CurrentStep().ID
+	}
 	reqBody := &webHookRequestBody{
 		Event:     "workflow",
 		Action:    action,
@@ -66,7 +70,7 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 				WorkflowSubject:    workflow.Subject,
 				WorkflowStatus:     workflow.Record.Status,
 				ThirdPartyUserInfo: user.ThirdPartyUserInfo,
-				CurrentStepID:      workflow.CurrentStep().ID,
+				CurrentStepID:      currentStepID,
 				WorkflowDesc:       workflow.Desc,
 				SqlTypeMap: map[string]bool{
 					driverV2.SQLTypeDDL: false,
