@@ -18,6 +18,11 @@ import (
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
+var (
+	approvalTableLayout = "[%v]"
+	approvalTableRow    = "[{\"name\":\"数据源\",\"value\":\"%s\"},{\"name\":\"审核得分\",\"value\":\"%v\"},{\"name\":\"审核通过率\",\"value\":\"%v%%\"}]"
+)
+
 var FeishuAuditResultLayout = `
       [
         {
