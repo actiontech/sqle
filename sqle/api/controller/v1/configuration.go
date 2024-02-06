@@ -10,9 +10,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/model"
 
-	"github.com/actiontech/sqle/sqle/pkg/im"
-	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -35,25 +32,7 @@ type DingTalkConfigurationV1 struct {
 // @Success 200 {object} v1.GetDingTalkConfigurationResV1
 // @router /v1/configurations/ding_talk [get]
 func GetDingTalkConfigurationV1(c echo.Context) error {
-	s := model.GetStorage()
-	dingTalk, exist, err := s.GetImConfigByType(model.ImTypeDingTalk)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, &GetDingTalkConfigurationResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data:    DingTalkConfigurationV1{},
-		})
-	}
-
-	return c.JSON(http.StatusOK, &GetDingTalkConfigurationResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: DingTalkConfigurationV1{
-			AppKey:                 dingTalk.AppKey,
-			IsEnableDingTalkNotify: dingTalk.IsEnable,
-		},
-	})
+	return getDingTalkConfigurationV1(c)
 }
 
 type UpdateDingTalkConfigurationReqV1 struct {
@@ -73,43 +52,7 @@ type UpdateDingTalkConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/ding_talk [patch]
 func UpdateDingTalkConfigurationV1(c echo.Context) error {
-	req := new(UpdateDingTalkConfigurationReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	s := model.GetStorage()
-	dingTalk, _, err := s.GetImConfigByType(model.ImTypeDingTalk)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	{ // disable
-		if req.IsEnableDingTalkNotify != nil && !(*req.IsEnableDingTalkNotify) {
-			dingTalk.IsEnable = false
-			return controller.JSONBaseErrorReq(c, s.Save(dingTalk))
-		}
-	}
-
-	if req.AppKey != nil {
-		dingTalk.AppKey = *req.AppKey
-	}
-	if req.AppSecret != nil {
-		dingTalk.AppSecret = *req.AppSecret
-	}
-	if req.IsEnableDingTalkNotify != nil {
-		dingTalk.IsEnable = *req.IsEnableDingTalkNotify
-	}
-
-	dingTalk.Type = model.ImTypeDingTalk
-
-	if err := s.Save(dingTalk); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	go im.CreateApprovalTemplate(model.ImTypeDingTalk)
-
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return updateDingTalkConfigurationV1(c)
 }
 
 type TestDingTalkConfigResDataV1 struct {
@@ -132,38 +75,7 @@ type TestDingTalkConfigResV1 struct {
 // @Success 200 {object} v1.TestDingTalkConfigResV1
 // @router /v1/configurations/ding_talk/test [post]
 func TestDingTalkConfigV1(c echo.Context) error {
-	s := model.GetStorage()
-	dingTalk, exist, err := s.GetImConfigByType(model.ImTypeDingTalk)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: TestDingTalkConfigResDataV1{
-				IsDingTalkSendNormal: false,
-				SendErrorMessage:     "dingTalk config not exist",
-			},
-		})
-	}
-
-	_, err = dingding.GetToken(dingTalk.AppKey, dingTalk.AppSecret)
-	if err != nil {
-		return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: TestDingTalkConfigResDataV1{
-				IsDingTalkSendNormal: false,
-				SendErrorMessage:     err.Error(),
-			},
-		})
-	}
-
-	return c.JSON(http.StatusOK, &TestDingTalkConfigResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: TestDingTalkConfigResDataV1{
-			IsDingTalkSendNormal: true,
-		},
-	})
+	return testDingTalkConfigV1(c)
 }
 
 type UpdateSystemVariablesReqV1 struct {
