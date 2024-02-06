@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	errCommunityEditionNotSupportFeishuAudit = errors.New(errors.EnterpriseEditionFeatures, e.New("feishu audit is enterprise version feature"))
+	errCommunityEditionNotSupportFeishuAudit   = errors.New(errors.EnterpriseEditionFeatures, e.New("feishu audit is enterprise version feature"))
+	errCommunityEditionNotSupportDingDingAudit = errors.New(errors.EnterpriseEditionFeatures, e.New("dingding audit is enterprise version feature"))
 )
 
 func updateFeishuAuditConfigurationV1(c echo.Context) error {
@@ -26,4 +27,16 @@ func getFeishuAuditConfigurationV1(c echo.Context) error {
 
 func testFeishuAuditConfigV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportFeishuAudit)
+}
+
+func getDingTalkConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportDingDingAudit)
+}
+
+func updateDingTalkConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportDingDingAudit)
+}
+
+func testDingTalkConfigV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportDingDingAudit)
 }
