@@ -10,11 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-var (
-	approvalTableLayout = "[%v]"
-	approvalTableRow    = "[{\"name\":\"数据源\",\"value\":\"%s\"},{\"name\":\"审核得分\",\"value\":\"%v\"},{\"name\":\"审核通过率\",\"value\":\"%v%%\"}]"
-)
-
 func CreateApprovalTemplate(imType string) {
 	s := model.GetStorage()
 	ims, err := s.GetAllIMConfig()
