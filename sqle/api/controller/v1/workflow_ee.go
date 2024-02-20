@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"database/sql"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -20,6 +21,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/actiontech/sqle/sqle/errors"
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -218,4 +220,174 @@ func addDelUserTag(user *model.User) string {
 		return utils.AddDelTag(user.DeletedAt, user.Name)
 	}
 	return ""
+}
+
+func getWorkflowTemplate(c echo.Context) error {
+	s := model.GetStorage()
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	var td *model.WorkflowTemplate
+
+	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		td = model.DefaultWorkflowTemplate(projectUid)
+		err = s.SaveWorkflowTemplate(td)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		td, err = getWorkflowTemplateDetailByTemplate(template)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowTemplateToRes(td),
+	})
+}
+
+func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*model.WorkflowTemplate, error) {
+	s := model.GetStorage()
+	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
+	if err != nil {
+		return nil, err
+	}
+	template.Steps = steps
+	return template, nil
+}
+
+func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
+	res := &WorkflowTemplateDetailResV1{
+		Name:                          template.Name,
+		Desc:                          template.Desc,
+		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
+		UpdateTime:                    template.UpdatedAt,
+	}
+	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
+	for _, step := range template.Steps {
+		stepRes := &WorkFlowStepTemplateResV1{
+			Number:               int(step.Number),
+			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
+			ExecuteByAuthorized:  step.ExecuteByAuthorized.Bool,
+			Typ:                  step.Typ,
+			Desc:                 step.Desc,
+		}
+		stepRes.Users = make([]string, 0)
+		if step.Users != "" {
+			stepRes.Users = strings.Split(step.Users, ",")
+		}
+		stepsRes = append(stepsRes, stepRes)
+	}
+	res.Steps = stepsRes
+
+	// instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// res.Instances = instanceNames
+	return res
+}
+
+func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
+	if len(steps) == 0 {
+		return fmt.Errorf("workflow steps cannot be empty")
+	}
+	if len(steps) > 5 {
+		return fmt.Errorf("workflow steps length must be less than 6")
+	}
+
+	for i, step := range steps {
+		isLastStep := i == len(steps)-1
+		if isLastStep && step.Type != model.WorkflowStepTypeSQLExecute {
+			return fmt.Errorf("the last workflow step type must be sql_execute")
+		}
+		if !isLastStep && step.Type == model.WorkflowStepTypeSQLExecute {
+			return fmt.Errorf("workflow step type sql_execute just be used in last step")
+		}
+		if len(step.Users) == 0 && !step.ApprovedByAuthorized && !step.ExecuteByAuthorized {
+			return fmt.Errorf("the assignee is empty for step %s", step.Desc)
+		}
+		if len(step.Users) > 3 {
+			return fmt.Errorf("the assignee for step cannot be more than 3")
+		}
+	}
+	return nil
+}
+
+func updateWorkflowTemplate(c echo.Context) error {
+	req := new(UpdateWorkflowTemplateReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+
+	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("workflow template is not exist")))
+	}
+
+	if req.Steps != nil {
+		err = validWorkflowTemplateReq(req.Steps)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+		}
+
+		// dms-todo: 校验step.Users用户是否存在
+
+		steps := make([]*model.WorkflowStepTemplate, 0, len(req.Steps))
+		for i, step := range req.Steps {
+			s := &model.WorkflowStepTemplate{
+				Number: uint(i + 1),
+				ApprovedByAuthorized: sql.NullBool{
+					Bool:  step.ApprovedByAuthorized,
+					Valid: true,
+				},
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  step.ExecuteByAuthorized,
+					Valid: true,
+				},
+				Typ:  step.Type,
+				Desc: step.Desc,
+			}
+			s.Users = strings.Join(step.Users, ",")
+			steps = append(steps, s)
+		}
+		err = s.UpdateWorkflowTemplateSteps(workflowTemplate.ID, steps)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	if req.Desc != nil {
+		workflowTemplate.Desc = *req.Desc
+	}
+
+	if req.AllowSubmitWhenLessAuditLevel != nil {
+		workflowTemplate.AllowSubmitWhenLessAuditLevel = *req.AllowSubmitWhenLessAuditLevel
+	}
+
+	err = s.Save(workflowTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
