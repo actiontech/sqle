@@ -342,7 +342,7 @@ func (c *Executor) ShowDatabases(ignoreSysDatabase bool) ([]string, error) {
 			return dbs, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
 		for key, value := range v {
-			if key != "Database" {
+			if strings.ToLower(key) != "database" {
 				continue
 			}
 			dbs[n] = value.String
