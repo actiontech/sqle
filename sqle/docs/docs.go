@@ -9602,6 +9602,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "normal",
                             "notice",
@@ -13375,6 +13381,7 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
+                    "description": "V1版本不能引用V2版本的结构体,所以只能复制一份",
                     "type": "object",
                     "$ref": "#/definitions/v1.SqlAnalysis"
                 },
@@ -17180,6 +17187,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "rollback_sql": {
+                    "type": "string"
+                },
+                "sql_source_file": {
                     "type": "string"
                 }
             }

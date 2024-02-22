@@ -10,6 +10,7 @@ type GetSqlManageListReq struct {
 	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	FilterInstanceName           *string `query:"filter_instance_name" json:"filter_instance_name,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
+	FuzzySearchAuditPlanName     *string `query:"fuzzy_search_audit_plan_name" json:"fuzzy_search_audit_plan_name,omitempty"`
 	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
 	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
 	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
