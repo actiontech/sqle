@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"testing"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -98,6 +99,10 @@ func (d *mockDriver) Query(ctx context.Context, sql string, conf *driverV2.Query
 }
 
 func (d *mockDriver) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
+	return nil, nil
+}
+
+func (d *mockDriver) GetSQLOp(ctx context.Context, sqls string) ([]*dmsCommonSQLOp.SQLObjectOps, error) {
 	return nil, nil
 }
 

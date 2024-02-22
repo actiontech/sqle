@@ -449,3 +449,18 @@ func (d *DriverGrpcServer) KillProcess(ctx context.Context, req *protoV2.KillPro
 		ErrMessage: info.ErrMessage,
 	}, nil
 }
+
+func (d *DriverGrpcServer) GetSQLOp(ctx context.Context, req *protoV2.GetSQLOpRequest) (*protoV2.GetSQLOpResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.GetSQLOpResponse{}, err
+	}
+	if req.GetSqlText() == nil {
+		return &protoV2.GetSQLOpResponse{}, ErrSQLisEmpty
+	}
+	ops, err := driver.GetSQLOp(ctx, req.GetSqlText().Sql)
+	if err != nil {
+		return &protoV2.GetSQLOpResponse{}, err
+	}
+	return ConvertDriverSQLOpsResponseToProto(ops)
+}
