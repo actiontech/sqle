@@ -4949,6 +4949,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "fuzzy search audit plan name",
+                        "name": "fuzzy_search_audit_plan_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "assignee",
                         "name": "filter_assignee",
                         "in": "query"

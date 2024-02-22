@@ -8381,6 +8381,10 @@ paths:
         in: query
         name: fuzzy_search_sql_fingerprint
         type: string
+      - description: fuzzy search audit plan name
+        in: query
+        name: fuzzy_search_audit_plan_name
+        type: string
       - description: assignee
         in: query
         name: filter_assignee
