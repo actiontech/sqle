@@ -117,6 +117,7 @@ func BatchUpdateSqlManage(c echo.Context) error {
 
 type ExportSqlManagesReq struct {
 	FuzzySearchSqlFingerprint    *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
+	FuzzySearchAuditPlanName     *string `query:"fuzzy_search_audit_plan_name" json:"fuzzy_search_audit_plan_name,omitempty"`
 	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	FilterInstanceName           *string `query:"filter_instance_name" json:"filter_instance_name,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
@@ -140,6 +141,7 @@ type ExportSqlManagesReq struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
+// @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_assignee query string false "assignee"
 // @Param filter_instance_name query string false "instance name"
 // @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
