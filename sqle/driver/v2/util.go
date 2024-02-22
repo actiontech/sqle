@@ -284,9 +284,10 @@ func ConvertProtoSqlObjectToDriver(object *protoV2.SQLObject) (*dmsCommonSQLOp.S
 		return nil, err
 	}
 	return &dmsCommonSQLOp.SQLObject{
-		Type:       typ,
-		SchemaName: object.GetSchemaName(),
-		TableName:  object.GetTableName(),
+		Type:         typ,
+		DatabaseName: object.GetDatabaseName(),
+		SchemaName:   object.GetSchemaName(),
+		TableName:    object.GetTableName(),
 	}, nil
 }
 
@@ -294,6 +295,8 @@ func ConvertProtoSqlObjectTypeToDriver(objectType protoV2.SQLObjectType) (dmsCom
 	switch objectType {
 	case protoV2.SQLObjectType_SQLObjectTypeInstance:
 		return dmsCommonSQLOp.SQLObjectTypeInstance, nil
+	case protoV2.SQLObjectType_SQLObjectTypeDatabase:
+		return dmsCommonSQLOp.SQLObjectTypeDatabase, nil
 	case protoV2.SQLObjectType_SQLObjectTypeSchema:
 		return dmsCommonSQLOp.SQLObjectTypeSchema, nil
 	case protoV2.SQLObjectType_SQLObjectTypeTable:
@@ -356,9 +359,10 @@ func ConvertDriverSqlObjectToProto(object *dmsCommonSQLOp.SQLObject) (*protoV2.S
 		return nil, err
 	}
 	return &protoV2.SQLObject{
-		Type:       typ,
-		SchemaName: object.SchemaName,
-		TableName:  object.TableName,
+		Type:         typ,
+		DatabaseName: object.DatabaseName,
+		SchemaName:   object.SchemaName,
+		TableName:    object.TableName,
 	}, nil
 }
 
@@ -366,6 +370,8 @@ func ConvertDriverSqlObjectTypeToProto(objectType dmsCommonSQLOp.SQLObjectType) 
 	switch objectType {
 	case dmsCommonSQLOp.SQLObjectTypeInstance:
 		return protoV2.SQLObjectType_SQLObjectTypeInstance, nil
+	case dmsCommonSQLOp.SQLObjectTypeDatabase:
+		return protoV2.SQLObjectType_SQLObjectTypeDatabase, nil
 	case dmsCommonSQLOp.SQLObjectTypeSchema:
 		return protoV2.SQLObjectType_SQLObjectTypeSchema, nil
 	case dmsCommonSQLOp.SQLObjectTypeTable:
