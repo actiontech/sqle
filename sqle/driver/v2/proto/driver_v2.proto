@@ -364,6 +364,7 @@ enum SQLObjectType {
   SQLObjectTypeDatabase = 1;
   SQLObjectTypeSchema = 2;
   SQLObjectTypeInstance = 3;
+  SQLObjectTypeServer = 4;
 }
 
 // GetSQLOp
