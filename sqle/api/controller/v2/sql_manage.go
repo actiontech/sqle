@@ -42,6 +42,7 @@ type SqlManage struct {
 // @Param filter_assignee query string false "assignee"
 // @Param filter_instance_name query string false "instance name"
 // @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
+// @Param fuzzy_search_audit_plan_name query string false "fuzzy search audit plan name"
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
