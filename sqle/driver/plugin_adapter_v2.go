@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sync"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/log"
@@ -483,6 +484,22 @@ func (s *PluginImplV2) EstimateSQLAffectRows(ctx context.Context, sql string) (*
 		Count:      ar.Count,
 		ErrMessage: ar.ErrMessage,
 	}, nil
+}
+
+func (s *PluginImplV2) GetSQLOp(ctx context.Context, sqls string) ([]*dmsCommonSQLOp.SQLObjectOps, error) {
+	api := "GetSQLOp"
+	s.preLog(api)
+	resp, err := s.client.GetSQLOp(ctx, &protoV2.GetSQLOpRequest{
+		Session: s.Session,
+		SqlText: &protoV2.GetSQLOpSQL{
+			Sql: sqls,
+		},
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	return driverV2.ConvertProtoSQLOpsResponseToDriver(resp)
 }
 
 type dbDriverResult struct {

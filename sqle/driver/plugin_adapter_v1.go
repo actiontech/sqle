@@ -4,6 +4,7 @@ import (
 	"context"
 	sqlDriver "database/sql/driver"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -313,4 +314,8 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 
 func (p *PluginImplV1) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
 	return nil, NewErrPluginAPINotImplement(driverV2.OptionalModuleEstimateSQLAffectRows)
+}
+
+func (p *PluginImplV1) GetSQLOp(ctx context.Context, sqls string) ([]*dmsCommonSQLOp.SQLObjectOps, error) {
+	return nil, NewErrPluginAPINotImplement(driverV2.OptionalModuleProvision)
 }
