@@ -24,8 +24,9 @@ func (s *Mappers) AddMapper(ms ...*Mapper) error {
 }
 
 type StmtInfo struct {
-	FilePath string
-	SQL      string
+	FilePath  string
+	StartLine uint64
+	SQL       string
 }
 
 func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
@@ -43,10 +44,11 @@ func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get sqls from mapper failed, namespace: %v, err: %v", m.NameSpace, err)
 		}
-		for _, sql := range stmt {
+		for _, info := range stmt {
 			stmts = append(stmts, StmtInfo{
-				FilePath: m.FilePath,
-				SQL:      sql,
+				FilePath:  m.FilePath,
+				StartLine: info.StartLine,
+				SQL:       info.SQL,
 			})
 		}
 	}
