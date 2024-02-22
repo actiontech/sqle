@@ -293,6 +293,8 @@ func ConvertProtoSqlObjectToDriver(object *protoV2.SQLObject) (*dmsCommonSQLOp.S
 
 func ConvertProtoSqlObjectTypeToDriver(objectType protoV2.SQLObjectType) (dmsCommonSQLOp.SQLObjectType, error) {
 	switch objectType {
+	case protoV2.SQLObjectType_SQLObjectTypeServer:
+		return dmsCommonSQLOp.SQLObjectTypeServer, nil
 	case protoV2.SQLObjectType_SQLObjectTypeInstance:
 		return dmsCommonSQLOp.SQLObjectTypeInstance, nil
 	case protoV2.SQLObjectType_SQLObjectTypeDatabase:
@@ -368,6 +370,8 @@ func ConvertDriverSqlObjectToProto(object *dmsCommonSQLOp.SQLObject) (*protoV2.S
 
 func ConvertDriverSqlObjectTypeToProto(objectType dmsCommonSQLOp.SQLObjectType) (protoV2.SQLObjectType, error) {
 	switch objectType {
+	case dmsCommonSQLOp.SQLObjectTypeServer:
+		return protoV2.SQLObjectType_SQLObjectTypeServer, nil
 	case dmsCommonSQLOp.SQLObjectTypeInstance:
 		return protoV2.SQLObjectType_SQLObjectTypeInstance, nil
 	case dmsCommonSQLOp.SQLObjectTypeDatabase:
