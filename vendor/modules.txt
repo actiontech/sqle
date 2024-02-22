@@ -74,8 +74,8 @@ github.com/acomagu/bufpipe
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
 github.com/actiontech/java-sql-extractor/parser
-# github.com/actiontech/mybatis-mapper-2-sql v0.5.0
-## explicit; go 1.14
+# github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240222083508-62cd3b3ee78d
+## explicit; go 1.17
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
 github.com/actiontech/mybatis-mapper-2-sql/sqlfmt
@@ -716,11 +716,10 @@ golang.org/x/net/proxy
 golang.org/x/net/trace
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.12.0
-## explicit; go 1.17
+# golang.org/x/sys v0.15.0
+## explicit; go 1.18
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
-golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.13.0
