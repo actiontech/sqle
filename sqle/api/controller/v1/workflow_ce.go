@@ -25,7 +25,6 @@ func exportWorkflowV1(c echo.Context) error {
 }
 
 func getWorkflowTemplate(c echo.Context) error {
-	s := model.GetStorage()
 
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
