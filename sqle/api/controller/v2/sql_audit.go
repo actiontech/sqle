@@ -19,8 +19,10 @@ import (
 type DirectAuditReqV2 struct {
 	InstanceType string `json:"instance_type" form:"instance_type" example:"MySQL" valid:"required"`
 	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
-	SQLContent string `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
-	SQLType    string `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
+	SQLContent       string `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
+	SQLType          string `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
+	ProjectId        string `json:"project_id" form:"project_id" example:"700300" valid:"required"`
+	RuleTemplateName string `json:"rule_template_name" form:"rule_template_name" example:"default" valid:"required"`
 }
 
 type AuditResDataV2 struct {
@@ -42,7 +44,6 @@ type DirectAuditResV2 struct {
 	Data *AuditResDataV2 `json:"data"`
 }
 
-// @Deprecated
 // @Summary 直接审核SQL
 // @Description Direct audit sql
 // @Id directAuditV2
@@ -68,7 +69,7 @@ func DirectAudit(c echo.Context) error {
 
 	l := log.NewEntry().WithField(c.Path(), "direct audit failed")
 
-	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType)
+	task, err := server.AuditSQLByDBType(l, sql, req.InstanceType, req.ProjectId, req.RuleTemplateName)
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
@@ -187,7 +188,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType)
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, "", "")
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
