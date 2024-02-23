@@ -33,10 +33,6 @@ func getWorkflowTemplate(c echo.Context) error {
 	}
 
 	td := model.DefaultWorkflowTemplate(projectUid)
-	err = s.SaveWorkflowTemplate(td)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
