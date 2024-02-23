@@ -264,38 +264,6 @@ func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*mod
 	return template, nil
 }
 
-func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
-	res := &WorkflowTemplateDetailResV1{
-		Name:                          template.Name,
-		Desc:                          template.Desc,
-		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
-		UpdateTime:                    template.UpdatedAt,
-	}
-	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
-	for _, step := range template.Steps {
-		stepRes := &WorkFlowStepTemplateResV1{
-			Number:               int(step.Number),
-			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
-			ExecuteByAuthorized:  step.ExecuteByAuthorized.Bool,
-			Typ:                  step.Typ,
-			Desc:                 step.Desc,
-		}
-		stepRes.Users = make([]string, 0)
-		if step.Users != "" {
-			stepRes.Users = strings.Split(step.Users, ",")
-		}
-		stepsRes = append(stepsRes, stepRes)
-	}
-	res.Steps = stepsRes
-
-	// instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// res.Instances = instanceNames
-	return res
-}
-
 func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
 	if len(steps) == 0 {
 		return fmt.Errorf("workflow steps cannot be empty")
