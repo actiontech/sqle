@@ -22,6 +22,7 @@ type webHookRequestBody struct {
 
 type workflowPayload struct {
 	ProjectName     string `json:"project_name"`
+	ProjectUID      string `json:"project_uid"`
 	WorkflowID      string `json:"workflow_id"`
 	WorkflowSubject string `json:"workflow_subject"`
 	WorkflowStatus  string `json:"workflow_status"`
@@ -55,6 +56,18 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 	if err != nil {
 		return err
 	}
+	ret, _, err := dmsobject.ListProjects(context.TODO(), dms.GetDMSServerAddress(), v1.ListProjectReq{
+		PageSize:    1,
+		PageIndex:   1,
+		FilterByUID: string(workflow.ProjectId),
+	})
+	if err != nil {
+		return err
+	}
+	var projectName string
+	if len(ret) > 0 {
+		projectName = ret[0].Name
+	}
 	currentStepID := uint(0)
 	if workflow.CurrentStep() != nil {
 		currentStepID = workflow.CurrentStep().ID
@@ -65,7 +78,8 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &httpBodyPayload{
 			Workflow: &workflowPayload{
-				ProjectName:        string(workflow.ProjectId),
+				ProjectName:        projectName,
+				ProjectUID:         string(workflow.ProjectId),
 				WorkflowID:         workflow.WorkflowId,
 				WorkflowSubject:    workflow.Subject,
 				WorkflowStatus:     workflow.Record.Status,
