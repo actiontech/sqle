@@ -70,6 +70,38 @@ func GetWorkflowTemplate(c echo.Context) error {
 	return getWorkflowTemplate(c)
 }
 
+func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
+	res := &WorkflowTemplateDetailResV1{
+		Name:                          template.Name,
+		Desc:                          template.Desc,
+		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
+		UpdateTime:                    template.UpdatedAt,
+	}
+	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
+	for _, step := range template.Steps {
+		stepRes := &WorkFlowStepTemplateResV1{
+			Number:               int(step.Number),
+			ApprovedByAuthorized: step.ApprovedByAuthorized.Bool,
+			ExecuteByAuthorized:  step.ExecuteByAuthorized.Bool,
+			Typ:                  step.Typ,
+			Desc:                 step.Desc,
+		}
+		stepRes.Users = make([]string, 0)
+		if step.Users != "" {
+			stepRes.Users = strings.Split(step.Users, ",")
+		}
+		stepsRes = append(stepsRes, stepRes)
+	}
+	res.Steps = stepsRes
+
+	// instanceNames, err := s.GetInstanceNamesByWorkflowTemplateId(template.ID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// res.Instances = instanceNames
+	return res
+}
+
 type WorkFlowStepTemplateReqV1 struct {
 	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
 	Desc                 string   `json:"desc" form:"desc"`
