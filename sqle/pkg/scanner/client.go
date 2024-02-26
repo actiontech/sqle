@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -244,7 +243,7 @@ func (c *client) post(ctx context.Context, url, token string, body io.Reader) ([
 
 // checkHTTPResponse checks if an HTTP response is with normal status codes
 func checkHTTPResponse(res *http.Response) ([]byte, error) {
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -167,7 +167,7 @@ func (d *DingTalk) CreateApprovalTemplate() error {
 					processCode = *resp.Body.Result.ProcessCode
 				}
 				goto End
-			// https://github.com/actiontech/sqle/issues/1487
+				// https://github.com/actiontech/sqle/issues/1487
 			} else if !tea.BoolValue(util.Empty(sdkErr.Code)) && *sdkErr.Code == "formName.error" {
 				getProcessCodeByNameHeaders := &dingTalkWorkflow.GetProcessCodeByNameHeaders{}
 				getProcessCodeByNameHeaders.XAcsDingtalkAccessToken = tea.String(token)
@@ -500,7 +500,7 @@ func Requester(url, method, token string, body []byte) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
-	body, err = ioutil.ReadAll(res.Body)
+	body, err = io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}

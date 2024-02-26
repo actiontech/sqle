@@ -212,9 +212,7 @@ func DashboardProjectTipsV1(c echo.Context) error {
 	sort.Sort(projectTips)
 
 	data := make([]*DashboardProjectTipV1, len(projectTips))
-	for j, projectTip := range projectTips {
-		data[j] = projectTip
-	}
+	copy(data, projectTips)
 
 	return c.JSON(http.StatusOK, &GetDashboardProjectTipsResV1{
 		BaseRes: controller.NewBaseReq(nil),

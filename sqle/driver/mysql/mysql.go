@@ -233,6 +233,7 @@ func (i *MysqlDriverImpl) KillProcess(ctx context.Context) error {
 	return err
 }
 
+//nolint:unused
 func (i *MysqlDriverImpl) query(ctx context.Context, query string, args ...interface{}) ([]map[string]sql.NullString, error) {
 	conn, err := i.getDbConn()
 	if err != nil {

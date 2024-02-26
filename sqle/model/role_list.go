@@ -111,6 +111,7 @@ func (s *Storage) getListResult(bodyTpl, queryTpl string, data map[string]interf
 	}
 
 	sqlxDb := GetSqlxDb()
+	//nolint:sqlclosecheck
 	nameStmtTasksQuery, err := sqlxDb.PrepareNamed(selectQuery)
 	if err != nil {
 		return err
@@ -128,6 +129,7 @@ func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]inter
 	if err != nil {
 		return 0, err
 	}
+	//nolint:sqlclosecheck
 	nameStmtCountQuery, err := sqlxDb.PrepareNamed(countQuery)
 	if err != nil {
 		return 0, err
