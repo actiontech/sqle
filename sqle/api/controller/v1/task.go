@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
+	mybatisparser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -94,7 +94,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		sql, err := mybatis_parser.ParseXML(data)
+		sql, err := mybatisparser.ParseXML(data)
 		if err != nil {
 			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}

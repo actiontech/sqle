@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	sqled "github.com/actiontech/sqle/sqle"
@@ -17,7 +16,7 @@ import (
 var version string
 var port int
 
-//var user string
+// var user string
 var mysqlUser string
 var mysqlPass string
 var mysqlHost string
@@ -81,7 +80,7 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
-		b, err := ioutil.ReadFile(configPath)
+		b, err := os.ReadFile(configPath)
 		if err != nil {
 			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}

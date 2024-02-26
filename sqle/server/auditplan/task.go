@@ -891,12 +891,14 @@ func (at *aliRdsMySQLTask) isFirstScrap() bool {
 }
 
 type sqlInfo struct {
-	counter          int
-	fingerprint      string
-	sql              string
-	schema           string
+	counter     int
+	fingerprint string
+	sql         string
+	schema      string
+	//nolint:unused
 	queryTimeSeconds int
-	startTime        string
+	//nolint:unused
+	startTime string
 }
 
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
