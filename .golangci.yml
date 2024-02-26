@@ -15,7 +15,7 @@ linters:
     - staticcheck
     # - forcetypeassert
     - prealloc
-    - deadcode
+    - unused
     - gosimple
     - unconvert
     - errname
