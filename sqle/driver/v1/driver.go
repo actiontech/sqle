@@ -222,6 +222,7 @@ type Config struct {
 }
 
 type PluginClient struct {
+	//nolint:unused
 	path string
 	c    *goPlugin.Client
 }

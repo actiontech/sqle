@@ -2,7 +2,7 @@ package controller
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -170,7 +170,7 @@ func ReadFileContent(c echo.Context, name string) (content string, fileExist boo
 		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}
 	defer src.Close()
-	data, err := ioutil.ReadAll(src)
+	data, err := io.ReadAll(src)
 	if err != nil {
 		return "", false, errors.New(errors.ReadUploadFileError, err)
 	}

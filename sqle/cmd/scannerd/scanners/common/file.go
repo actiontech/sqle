@@ -3,15 +3,14 @@ package common
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	mybatisParser "github.com/actiontech/mybatis-mapper-2-sql"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
 func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuffix string) (allSQL []driverV2.Node, err error) {
@@ -23,7 +22,7 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuf
 		pathName = path.Join(pwd, pathName)
 	}
 
-	fileInfos, err := ioutil.ReadDir(pathName)
+	fileInfos, err := os.ReadDir(pathName)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +77,7 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []dr
 }
 
 func ReadFileContent(file string) (content string, err error) {
-	data, err := ioutil.ReadFile(filepath.Clean(file))
+	data, err := os.ReadFile(filepath.Clean(file))
 	if err != nil {
 		return "", err
 	}

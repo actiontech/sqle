@@ -3,7 +3,6 @@ package mysql
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -17,7 +16,7 @@ var ptTemplate = `pt-online-schema-change D={{.Schema}},t={{.Table}} --alter='{{
 var ptTemplateMutex sync.Mutex
 
 func LoadPtTemplateFromFile(fileName string) error {
-	b, err := ioutil.ReadFile(fileName)
+	b, err := os.ReadFile(fileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil

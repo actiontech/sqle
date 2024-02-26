@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	//nolint:typecheck
 	"github.com/agiledragon/gomonkey"
 	"github.com/stretchr/testify/assert"
 )

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
@@ -15,7 +14,7 @@ func genSecretPasswordCmd() *cobra.Command {
 	run := func() error {
 		var cfg = &config.SqleOptions{}
 		if configPath != "" {
-			b, err := ioutil.ReadFile(configPath)
+			b, err := os.ReadFile(configPath)
 			if err != nil {
 				return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 			}
@@ -49,7 +48,7 @@ func genSecretPasswordCmd() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("marshal sqle config error %v", err)
 		}
-		err = ioutil.WriteFile(configPath, data, 0666)
+		err = os.WriteFile(configPath, data, 0666)
 		if err != nil {
 			return fmt.Errorf("%v write sqle config file error %v", configPath, err)
 		}

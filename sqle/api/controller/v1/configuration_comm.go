@@ -4,7 +4,7 @@ import (
 	e "errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -28,7 +28,7 @@ func GetDefaultLogoUrl() (string, error) {
 }
 
 func getLogoFileInfo() (fs.FileInfo, error) {
-	fileInfos, err := ioutil.ReadDir(LogoDir)
+	fileInfos, err := os.ReadDir(LogoDir)
 	if err != nil {
 		return nil, e.New("read logo dir failed")
 	}
@@ -38,7 +38,10 @@ func getLogoFileInfo() (fs.FileInfo, error) {
 	for _, fileInfo := range fileInfos {
 		if strings.HasPrefix(fileInfo.Name(), "logo.") {
 			hasLogoFile = true
-			logoFileInfo = fileInfo
+			logoFileInfo, err = fileInfo.Info()
+			if err != nil {
+				return nil, e.New("get logo file info failed")
+			}
 			break
 		}
 	}

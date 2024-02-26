@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	dmsCommonConf "github.com/actiontech/dms/pkg/dms-common/conf"
@@ -81,7 +80,7 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
-		b, err := ioutil.ReadFile(configPath)
+		b, err := os.ReadFile(configPath)
 		if err != nil {
 			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
 		}
