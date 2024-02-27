@@ -26,6 +26,8 @@ var storage *Storage
 
 var storageMutex sync.Mutex
 
+var pluginRules map[string][]*driverV2.Rule
+
 const dbDriver = "mysql"
 
 func InitStorage(s *Storage) {
@@ -221,6 +223,13 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
 						rule.Knowledge.Content = existedRule.Knowledge.Content
 					}
+					if !isParamSame {
+						// 更新模板里的规则参数
+						err = s.UpdateRuleTemplateRulesParams(existedRule, rule)
+						if err != nil {
+							return err
+						}
+					}
 					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
 					if err != nil {
 						return err
@@ -230,6 +239,128 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 		}
 	}
 	return nil
+}
+
+// 更新规则模板参数
+func (s *Storage) UpdateRuleTemplateRulesParams(existedRule *Rule, pluginRule *driverV2.Rule) error {
+	existParams := existedRule.Params
+	pluginParams := pluginRule.Params
+	for _, pluginParam := range pluginParams {
+		found := false
+		for _, existParam := range existParams {
+			if existParam.Key == pluginParam.Key {
+				found = true
+				if (existParam.Desc != pluginParam.Desc) || (existParam.Type != pluginParam.Type) {
+					// 若修改过描述,同步更新到模板表
+					existParam.Desc = pluginParam.Desc
+					existParam.Type = pluginParam.Type
+
+				}
+			}
+		}
+		if !found {
+			// 插件规则参数有模板表中不存在的key则为新增的参数
+			existParams = append(existParams, pluginParam)
+		}
+	}
+	// 删除模板表中已不存在的参数
+	for i := 0; i < len(existParams); {
+		found := false
+		for _, pluginParam := range pluginParams {
+			if existParams[i].Key == pluginParam.Key {
+				found = true
+				break
+			}
+		}
+		if !found {
+			existParams = append(existParams[:i], existParams[i+1:]...)
+		} else {
+			i++
+		}
+	}
+	ruleTemplateRules, err := s.GetRuleTemplateRuleByName(existedRule.Name, existedRule.DBType)
+	if err != nil {
+		return err
+	}
+	for _, ruleTemplateRule := range *ruleTemplateRules {
+		ruleTemplateRuleParamsMap := make(map[string]string)
+		for _, p := range ruleTemplateRule.RuleParams {
+			ruleTemplateRuleParamsMap[p.Key] = p.Value
+		}
+		for _, existParam := range existParams {
+			// 避免参数的值被还原成默认
+			if value, ok := ruleTemplateRuleParamsMap[existParam.Key]; ok {
+				existParam.Value = value
+			}
+		}
+		ruleTemplateRule.RuleParams = existParams
+		err = s.Save(&ruleTemplateRule)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 为所有模板删除插件中已不存在的规则
+func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
+	pluginRules = rules
+	// 避免清空规则
+	if len(pluginRules) <= 0 {
+		return nil
+	}
+	rulesInDB, err := s.GetAllRules()
+	if err != nil {
+		return err
+	}
+	for _, dbRule := range rulesInDB {
+		if exist, emptyPluginFlag := DBRuleIsInPluginRule(dbRule); !exist && !emptyPluginFlag {
+			// 如果加载到插件并且规则在插件中已删除则删除规则
+			ruleTemplateRules, err := s.GetRuleTemplateRuleByName(dbRule.Name, dbRule.DBType)
+			if err != nil {
+				return err
+			}
+			tx := s.db.Begin()
+			err = tx.Delete(dbRule).Error
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			err = tx.Delete(dbRule.Knowledge).Error
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+			// 默认规则没有被创建为项目规则
+			if *ruleTemplateRules != nil && len(*ruleTemplateRules) > 0 {
+				for _, ruleTemplateRule := range *ruleTemplateRules {
+					err = tx.Delete(ruleTemplateRule).Error
+					if err != nil {
+						tx.Rollback()
+						return err
+					}
+				}
+			}
+			tx.Commit()
+		}
+	}
+	return nil
+}
+
+func DBRuleIsInPluginRule(dbRules *Rule) (bool, bool) {
+	emptyPluginFlag := false
+	for dbType, rules := range pluginRules {
+		if dbRules.DBType != dbType {
+			emptyPluginFlag = true
+			continue
+		}
+		for _, rule := range rules {
+			if dbRules.Name == rule.Name {
+				return true, false
+			}
+		}
+	}
+	return false, emptyPluginFlag
 }
 
 // func (s *Storage) CreateDefaultRole() error {
