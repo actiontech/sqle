@@ -284,6 +284,15 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
+func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) (*[]RuleTemplateRule, error) {
+	ruleTemplateRule := []RuleTemplateRule{}
+	err := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
 	return s.UpdateRuleTemplateCustomRules(destination, source.CustomRuleList...)
 }
