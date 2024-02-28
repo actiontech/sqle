@@ -309,6 +309,7 @@ type AuditPlanSQLReqV2 struct {
 	Schema               string    `json:"audit_plan_sql_schema" from:"audit_plan_sql_schema" example:"db1"`
 	QueryTimeAvg         *float64  `json:"query_time_avg" from:"query_time_avg" example:"3.22"`
 	QueryTimeMax         *float64  `json:"query_time_max" from:"query_time_max" example:"5.22"`
+	RowExaminedAvg       *float64  `json:"row_examined_avg" from:"row_examined_avg" example:"100.22"`
 	FirstQueryAt         time.Time `json:"first_query_at" from:"first_query_at" example:"2023-09-12T02:48:01.317880Z"`
 	DBUser               string    `json:"db_user" from:"db_user" example:"database_user001"`
 	Endpoints            []string  `json:"endpoints" from:"endpoints"`
@@ -388,6 +389,9 @@ func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqS
 		// 并且这里避免记录0值到数据库中，导致后续计算出的平均时间出错
 		if reqSQL.QueryTimeAvg != nil {
 			info["query_time_avg"] = utils.Round(*reqSQL.QueryTimeAvg, 4)
+		}
+		if reqSQL.RowExaminedAvg != nil {
+			info["row_examined_avg"] = utils.Round(*reqSQL.RowExaminedAvg, 4)
 		}
 		if reqSQL.QueryTimeMax != nil {
 			info["query_time_max"] = utils.Round(*reqSQL.QueryTimeMax, 4)

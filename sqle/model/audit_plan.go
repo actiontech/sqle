@@ -295,6 +295,19 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 												/ (JSON_EXTRACT(info, '$.counter') + JSON_EXTRACT(VALUES(info), '$.counter'))
 												AS UNSIGNED
 											  ),
+											  '$.row_examined_avg', CAST(
+                                                       (
+                                                           COALESCE(JSON_EXTRACT(info, '$.row_examined_avg'),
+                                                                    JSON_EXTRACT(VALUES(info), '$.row_examined_avg')) *
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               +
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.row_examined_avg'), 0) *
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 0)
+                                                           ) / (
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               + COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 1)
+                                                           )
+                                                   AS DECIMAL(12, 6)),
 											  '$.start_time',
 											  JSON_EXTRACT(values(info), '$.start_time'));`
 
