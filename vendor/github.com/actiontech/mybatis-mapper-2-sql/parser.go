@@ -353,7 +353,7 @@ func scanApStack(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 		node = ast.NewSqlNode()
 	case "include":
 		node = ast.NewIncludeNode()
-	case "select", "update", "delete", "insert", "statement", "dynamicSelect", "dynamicDelete", "dynamicUpdate":
+	case "select", "update", "delete", "insert", "statement", "dynamicSelect", "dynamicDelete", "dynamicUpdate", "procedure":
 		startLine, _ := d.InputPos()
 		node = ast.NewQueryNode(uint64(startLine))
 	case "isEqual", "isNotEqual", "isGreaterThan", "isGreaterEqual", "isLessEqual",
