@@ -22,15 +22,15 @@ import (
 // %s = audit plan name
 const (
 	// Post
-	LoginUri = "/v1/login"
+	LoginUri = "/sqle/v1/login"
 	// Post
-	TriggerAudit = "/v1/projects/%v/audit_plans/%s/trigger"
+	TriggerAudit = "/sqle/v1/projects/%v/audit_plans/%s/trigger"
 	// Post
-	FullUpload = "/v2/projects/%v/audit_plans/%s/sqls/full"
+	FullUpload = "/sqle/v2/projects/%v/audit_plans/%s/sqls/full"
 	// Post
-	PartialUpload = "/v2/projects/%v/audit_plans/%s/sqls/partial"
-	// Get										%v=report_id
-	GetAuditReport = "/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
+	PartialUpload = "/sqle/v2/projects/%v/audit_plans/%s/sqls/partial"
+	// Get										                  %v=report_id
+	GetAuditReport = "/sqle/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
 )
 
 type (
