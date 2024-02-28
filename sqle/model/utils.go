@@ -353,11 +353,16 @@ func DBRuleIsInPluginRule(dbRules *Rule) (bool, bool) {
 		if dbRules.DBType != dbType {
 			emptyPluginFlag = true
 			continue
+		} else {
+			emptyPluginFlag = false
 		}
 		for _, rule := range rules {
 			if dbRules.Name == rule.Name {
 				return true, false
 			}
+		}
+		if !emptyPluginFlag {
+			break
 		}
 	}
 	return false, emptyPluginFlag
