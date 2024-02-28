@@ -20,6 +20,7 @@ import (
 	dry "github.com/ungerik/go-dry"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -434,7 +435,7 @@ func (at *SlowLogTask) collectorDo() {
 		return
 	}
 	querySQL := `
-	SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time, start_time
+	SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time, start_time, rows_examined
 	FROM mysql.slow_log
 	WHERE sql_text != ''
 		AND db NOT IN ('information_schema','performance_schema','mysql','sys')
@@ -465,6 +466,12 @@ func (at *SlowLogTask) collectorDo() {
 				continue
 			}
 			sqlInfo.queryTimeSeconds = queryTime
+			sqlInfo.rowExamined, err = strconv.ParseFloat(res[i]["rows_examined"].String, 64)
+			if err != nil {
+				at.logger.Warnf("unexpected data format: %v, ", res[i]["rows_examined"].String)
+				continue
+			}
+
 			sqlInfos = append(sqlInfos, sqlInfo)
 		}
 
@@ -491,8 +498,8 @@ func (at *SlowLogTask) collectorDo() {
 		now := time.Now()
 		for i := range sqlFingerprintInfos {
 			fp := sqlFingerprintInfos[i]
-			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":%d,"start_time":"%v"}`,
-				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds, fp.startTime)
+			fpInfo := fmt.Sprintf(`{"counter":%v,"last_receive_timestamp":"%v","schema":"%v","average_query_time":%d,"start_time":"%v","row_examined_avg":%v}`,
+				fp.counter, now.Format(time.RFC3339), fp.schema, fp.queryTimeSeconds, fp.startTime, fp.rowExaminedAvg)
 			auditPlanSQLs[i] = &model.AuditPlanSQLV2{
 				Fingerprint: fp.fingerprint,
 				SQLContent:  fp.sql,
@@ -513,6 +520,7 @@ type sqlFromSlowLog struct {
 	schema           string
 	queryTimeSeconds int
 	startTime        string
+	rowExamined      float64
 }
 
 type sqlFromSlowLogs []*sqlFromSlowLog
@@ -523,10 +531,15 @@ type sqlFingerprintInfo struct {
 	sqlCount              int
 	totalQueryTimeSeconds int
 	startTime             string
+	totalExaminedRows     float64
 }
 
 func (s *sqlFingerprintInfo) queryTime() int {
 	return s.totalQueryTimeSeconds / s.sqlCount
+}
+
+func (s *sqlFingerprintInfo) rowExaminedAvg() float64 {
+	return s.totalExaminedRows / float64(s.sqlCount)
 }
 
 func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, error) {
@@ -550,6 +563,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, err
 			sqlInfosMap[fp].sqlCount++
 			sqlInfosMap[fp].totalQueryTimeSeconds += sqlItem.queryTimeSeconds
 			sqlInfosMap[fp].startTime = sqlItem.startTime
+			sqlInfosMap[fp].totalExaminedRows += sqlItem.rowExamined
 		} else {
 			sqlInfosMap[fp] = &sqlFingerprintInfo{
 				sqlCount:              1,
@@ -557,6 +571,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, err
 				lastSqlSchema:         sqlItem.schema,
 				totalQueryTimeSeconds: sqlItem.queryTimeSeconds,
 				startTime:             sqlItem.startTime,
+				totalExaminedRows:     sqlItem.rowExamined,
 			}
 			sqlInfos = append(sqlInfos, sqlInfo{fingerprint: fp})
 		}
@@ -571,6 +586,7 @@ func (s sqlFromSlowLogs) mergeByFingerprint(entry *logrus.Entry) ([]sqlInfo, err
 			sqlInfos[i].schema = sqlInfo.lastSqlSchema
 			sqlInfos[i].queryTimeSeconds = sqlInfo.queryTime()
 			sqlInfos[i].startTime = sqlInfo.startTime
+			sqlInfos[i].rowExaminedAvg = utils.Round(sqlInfo.rowExaminedAvg(), 6)
 		}
 	}
 
