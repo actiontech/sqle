@@ -364,6 +364,28 @@ func (t *TestNotify) NotificationBody() string {
 	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
 }
 
+func getAPNotifyConfig() (AuditPlanNotifyConfig, error) {
+	s := model.GetStorage()
+	config := AuditPlanNotifyConfig{}
+
+	url, err := s.GetSqleUrl()
+	if err != nil {
+		return config, err
+	}
+
+	if len(url) > 0 {
+		config.SQLEUrl = &url
+
+		// dms-todo: 从 dms 获取 project 名称，但最终考虑将告警移走.
+		// project, _, err := s.GetProjectByID(ap.ProjectId)
+		// if err != nil {
+		// 	return err
+		// }
+		// config.ProjectName = &project.Name
+	}
+	return config, nil
+}
+
 func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	s := model.GetStorage()
 	ap, _, err := s.GetAuditPlanById(auditPlanId)
@@ -374,21 +396,9 @@ func NotifyAuditPlan(auditPlanId uint, report *model.AuditPlanReportV2) error {
 	// if err != nil {
 	// 	return err
 	// }
-	url, err := s.GetSqleUrl()
+	config, err := getAPNotifyConfig()
 	if err != nil {
 		return err
-	}
-
-	config := AuditPlanNotifyConfig{}
-	if len(url) > 0 {
-		config.SQLEUrl = &url
-
-		// dms-todo: 从 dms 获取 project 名称，但最终考虑将告警移走.
-		// project, _, err := s.GetProjectByID(ap.ProjectId)
-		// if err != nil {
-		// 	return err
-		// }
-		// config.ProjectName = &project.Name
 	}
 
 	if driverV2.RuleLevelLessOrEqual(ap.NotifyLevel, report.AuditLevel) {
@@ -476,4 +486,16 @@ func (n *AuditPlanNotifier) updateRecord(auditPlanName string) {
 	n.mutex.Lock()
 	n.lastSend[auditPlanName] = time.Now()
 	n.mutex.Unlock()
+}
+
+func NotifySystemWebhook(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) error {
+	config, err := getAPNotifyConfig()
+	if err != nil {
+		return err
+	}
+	apNotify := NewAuditPlanNotification(auditPlan, report, config)
+
+	err = auditPlanSendRequest(apNotify)
+
+	return err
 }
