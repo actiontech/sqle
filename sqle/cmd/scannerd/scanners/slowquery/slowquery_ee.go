@@ -83,8 +83,9 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error)
 
 // parser从sql string中解析出慢日志的时间度量值
 const (
-	QueryTime string = "Query_time" //执行时间
-	LockTime  string = "Lock_time"  //加锁时间
+	QueryTime   string = "Query_time"    //执行时间
+	LockTime    string = "Lock_time"     //加锁时间
+	RowExamined string = "Rows_examined" //扫描行数
 )
 
 func (s *SlowQuery) Run(ctx context.Context) error {
@@ -155,17 +156,17 @@ func (s *SlowQuery) Run(ctx context.Context) error {
 				}
 			}
 			s.sqlCh <- scanners.SQL{
-				RawText:   e.Query,
-				Counter:   1,
-				QueryTime: e.TimeMetrics[QueryTime],
-				QueryAt:   e.Ts,
-				DBUser:    e.User,
-				Schema:    e.Db,
-				Endpoint:  e.Host,
+				RawText:     e.Query,
+				Counter:     1,
+				QueryTime:   e.TimeMetrics[QueryTime],
+				RowExamined: float64(e.NumberMetrics[RowExamined]),
+				QueryAt:     e.Ts,
+				DBUser:      e.User,
+				Schema:      e.Db,
+				Endpoint:    e.Host,
 			}
 		}
 	}
-
 }
 
 func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
@@ -221,8 +222,10 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 
 			tMax := utils.MaxFloat64(*sqlReq.QueryTimeMax, sql.QueryTime)
 			tAvg := utils.IncrementalAverageFloat64(*sqlReq.QueryTimeAvg, sql.QueryTime, atoi, 1)
+			RowExaminedAvg := utils.IncrementalAverageFloat64(*sqlReq.RowExaminedAvg, sql.RowExamined, atoi, 1)
 			sqlReq.QueryTimeMax = &tMax
 			sqlReq.QueryTimeAvg = &tAvg
+			sqlReq.RowExaminedAvg = &RowExaminedAvg
 			sqlReq.Counter = strconv.Itoa(atoi + 1)
 			sqlReq.LastReceiveText = processedRawText
 			sqlReq.LastReceiveTimestamp = now.Format(time.RFC3339)
@@ -237,6 +240,7 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 				Counter:              "1",
 				QueryTimeAvg:         &sql.QueryTime,
 				QueryTimeMax:         &sql.QueryTime,
+				RowExaminedAvg:       &sql.RowExamined,
 				FirstQueryAt:         sql.QueryAt,
 				DBUser:               sql.DBUser,
 				Schema:               sql.Schema,
