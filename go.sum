@@ -54,6 +54,8 @@ github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
+github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240228023142-824cbf84099a h1:nKKKGBp4QoKTwx2TFLRe7US/0PPEYkjoUDQiMVG7q6E=
+github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240228023142-824cbf84099a/go.mod h1:NJIap8vov24C8eFE9j4JUkT/8+nCMiC8vyjaYKBiJMs=
 github.com/agiledragon/gomonkey v2.0.2+incompatible h1:eXKi9/piiC3cjJD1658mEE2o3NjkJ5vDLgYjCQu0Xlw=
 github.com/agiledragon/gomonkey v2.0.2+incompatible/go.mod h1:2NGfXu1a80LLr2cmWXGBDaHEjb1idR6+FVlX5T3D9hw=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
@@ -861,8 +863,6 @@ github.com/swaggo/swag v1.6.7/go.mod h1:xDhTyuFIujYiN3DKWC/H/83xcfHp+UE/IzWWampG
 github.com/syndtr/goleveldb v0.0.0-20180815032940-ae2bd5eed72d/go.mod h1:Z4AUp2Km+PwemOoO/VB5AOx9XSsIItzFjoJlOSiYmn0=
 github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285 h1:uSDYjYejelKyceA6DiCsngFof9jAyeaSyX9XC5a1a7Q=
 github.com/syndtr/goleveldb v1.0.1-0.20190625010220-02440ea7a285/go.mod h1:9OrXJhf154huy1nPWmuSrkgjPUtUNhA+Zmy+6AESzuA=
-github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8 h1:kx5595LNWtkCBBsAm+0xbVSKbQGwbTVP6gR9it05FwQ=
-github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8/go.mod h1:NJIap8vov24C8eFE9j4JUkT/8+nCMiC8vyjaYKBiJMs=
 github.com/tiancaiamao/appdash v0.0.0-20181126055449-889f96f722a2/go.mod h1:2PfKggNGDuadAa0LElHrByyrz4JPZ9fFx6Gs7nx7ZZU=
 github.com/tidwall/gjson v1.3.5/go.mod h1:P256ACg0Mn+j1RXIDXoss50DeIABTYK1PULOJHhxOls=
 github.com/tidwall/match v1.0.1/go.mod h1:LujAq0jyVjBy028G1WhWfIzbpQfMO8bBZ6Tyb0+pL9E=

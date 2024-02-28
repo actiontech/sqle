@@ -176,7 +176,6 @@ require (
 )
 
 replace (
-	github.com/actiontech/mybatis-mapper-2-sql => github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231122073510-03e191068cf1
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
