@@ -920,7 +920,10 @@ type sqlInfo struct {
 	sql              string
 	schema           string
 	queryTimeSeconds int
-	startTime        string
+	//nolint:unused
+	startTime string
+	//nolint:unused
+	rowExaminedAvg float64
 }
 
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
