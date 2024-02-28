@@ -628,6 +628,10 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 			Desc: "最长执行时间",
 		},
 		{
+			Name: "row_examined_avg",
+			Desc: "平均扫描行数",
+		},
+		{
 			Name: "db_user",
 			Desc: "用户",
 		},
@@ -643,6 +647,7 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 			LastReceiveTimestamp string   `json:"last_receive_timestamp"`
 			AverageQueryTime     *float64 `json:"query_time_avg"`
 			MaxQueryTime         *float64 `json:"query_time_max"`
+			RowExaminedAvg       *float64 `json:"row_examined_avg"`
 			DBUser               string   `json:"db_user"`
 		}{}
 		err := json.Unmarshal(sql.Info, &info)
@@ -656,6 +661,10 @@ func (at *SlowLogTask) GetSQLs(args map[string]interface{}) (
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,
 			"schema":                 sql.Schema,
+		}
+
+		if info.RowExaminedAvg != nil {
+			row["row_examined_avg"] = fmt.Sprintf("%.6f", *info.RowExaminedAvg)
 		}
 		// 兼容之前没有平均执行时间和最长执行时间的数据，没有数据的时候不会在前端显示0.00000导致误解
 		if info.AverageQueryTime != nil {
