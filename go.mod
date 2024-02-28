@@ -7,7 +7,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240222083508-62cd3b3ee78d
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240228023142-824cbf84099a
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
@@ -180,6 +180,7 @@ require (
 )
 
 replace (
+	github.com/actiontech/mybatis-mapper-2-sql => github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231122073510-03e191068cf1
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0

@@ -74,7 +74,7 @@ github.com/acomagu/bufpipe
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
 github.com/actiontech/java-sql-extractor/parser
-# github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240222083508-62cd3b3ee78d
+# github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240228023142-824cbf84099a => github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8
 ## explicit; go 1.17
 github.com/actiontech/mybatis-mapper-2-sql
 github.com/actiontech/mybatis-mapper-2-sql/ast
@@ -899,6 +899,7 @@ vitess.io/vitess/go/vt/sqlparser
 vitess.io/vitess/go/vt/sysvars
 vitess.io/vitess/go/vt/vterrors
 vitess.io/vitess/go/vt/vtgate/evalengine
+# github.com/actiontech/mybatis-mapper-2-sql => github.com/taolx0/mybatis-mapper-2-sql v0.0.0-20240227053700-00e01d648ac8
 # github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 # github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231122073510-03e191068cf1
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0
