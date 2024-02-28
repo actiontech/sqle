@@ -29,7 +29,7 @@ const (
 	FullUpload = "/sqle/v2/projects/%v/audit_plans/%s/sqls/full"
 	// Post
 	PartialUpload = "/sqle/v2/projects/%v/audit_plans/%s/sqls/partial"
-	// Get										       %v=report_id
+	// Get										                  %v=report_id
 	GetAuditReport = "/sqle/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
 )
 
