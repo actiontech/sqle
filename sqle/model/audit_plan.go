@@ -238,6 +238,16 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 			)
 				AS DECIMAL(12,6)
 			),
+			'$.row_examined_avg', CAST(
+			(
+				COALESCE(JSON_EXTRACT(info, '$.row_examined_avg'), JSON_EXTRACT(values(info), '$.row_examined_avg'))*COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+				+COALESCE(JSON_EXTRACT(values(info), '$.row_examined_avg'), 0)*COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0)
+			)/(
+				COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+				+COALESCE(JSON_EXTRACT(values(info), '$.counter'), 1)
+			)
+				AS DECIMAL(12,6)
+			),
 			'$.first_query_at', IF(
 				JSON_TYPE(JSON_EXTRACT(info, '$.first_query_at'))="NULL",
 				JSON_EXTRACT(values(info), '$.first_query_at'),
