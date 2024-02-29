@@ -898,7 +898,8 @@ type sqlInfo struct {
 	//nolint:unused
 	queryTimeSeconds int
 	//nolint:unused
-	startTime string
+	startTime      string
+	rowExaminedAvg float64
 }
 
 func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
