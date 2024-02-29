@@ -31,6 +31,9 @@ service Driver {
   rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
   rpc ExtractTableFromSQL(ExtractTableFromSQLRequest) returns (ExtractTableFromSQLResponse);
   rpc EstimateSQLAffectRows(EstimateSQLAffectRowsRequest) returns (EstimateSQLAffectRowsResponse); // Introduced from SQLE v2.2304.0
+
+  // provision
+  rpc GetSQLOp(GetSQLOpRequest) returns (GetSQLOpResponse);
 }
 
 message Empty {}
@@ -47,6 +50,7 @@ enum OptionalModule {
   ExtractTableFromSQL = 4;
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
+  Provision = 7;
 }
 
 message Param {
@@ -344,3 +348,61 @@ message EstimateSQLAffectRowsResponse {
 message KillProcessResponse {
   string errMessage = 1; // 记录执行失败原因
 }
+
+// GetSQLOp
+enum SQLOp {
+  AddOrUpdate = 0;
+  Read = 1;
+  Delete = 2;
+  Grant = 3;
+  Admin = 4;
+}
+
+// GetSQLOp
+enum SQLObjectType {
+  SQLObjectTypeTable = 0;
+  SQLObjectTypeDatabase = 1;
+  SQLObjectTypeSchema = 2;
+  SQLObjectTypeInstance = 3;
+  SQLObjectTypeServer = 4;
+}
+
+// GetSQLOp
+message SQLObject {
+  SQLObjectType type = 1;
+  string databaseName = 2;
+  string schemaName = 3;
+  string tableName = 4;
+}
+
+// GetSQLOp
+message SQLObjectOp {
+  SQLOp op = 1;
+  SQLObject object = 2;
+}
+
+// GetSQLOp
+message GetSQLOpSQL {
+  string sql = 1;
+}
+
+// GetSQLOp
+message GetSQLOpSQLInfo {
+  string sql = 1;
+}
+
+// GetSQLOp
+message SQLOps {
+   repeated SQLObjectOp objectOps = 1;
+   GetSQLOpSQLInfo sql = 2;
+}
+
+message GetSQLOpRequest {
+  Session session = 1;
+  GetSQLOpSQL sqlText = 2;
+}
+
+message GetSQLOpResponse {
+  repeated SQLOps sqlOps = 1;
+}
+

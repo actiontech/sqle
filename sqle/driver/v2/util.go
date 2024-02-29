@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
@@ -49,6 +50,7 @@ const (
 	OptionalModuleExtractTableFromSQL
 	OptionalModuleEstimateSQLAffectRows
 	OptionalModuleKillProcess
+	OptionalModuleProvision // provision 权限管理需要的模块
 )
 
 func (m OptionalModule) String() string {
@@ -67,6 +69,8 @@ func (m OptionalModule) String() string {
 		return "EstimateSQLAffectRows"
 	case OptionalModuleKillProcess:
 		return "KillProcess"
+	case OptionalModuleProvision:
+		return "Provision"
 	default:
 		return "Unknown"
 	}
@@ -224,4 +228,159 @@ func RandStr(length int) string {
 		result = append(result, bytes[rand.Intn(len(bytes))])
 	}
 	return string(result)
+}
+
+func ConvertProtoSQLOpsResponseToDriver(sqlOps *protoV2.GetSQLOpResponse) ([]*dmsCommonSQLOp.SQLObjectOps, error) {
+	var sqlOpList []*dmsCommonSQLOp.SQLObjectOps
+	for _, sqlOp := range sqlOps.GetSqlOps() {
+
+		var objectOpList []*dmsCommonSQLOp.SQLObjectOp
+		for _, objectOp := range sqlOp.GetObjectOps() {
+
+			op, err := ConvertProtoSQLOpToDriver(objectOp.GetOp())
+			if err != nil {
+				return nil, err
+			}
+			object, err := ConvertProtoSqlObjectToDriver(objectOp.GetObject())
+			if err != nil {
+				return nil, err
+			}
+			objectOpList = append(objectOpList, &dmsCommonSQLOp.SQLObjectOp{
+				Op:     op,
+				Object: object,
+			})
+			if sqlOp.GetSql() == nil {
+				return nil, fmt.Errorf("sql info should not be nil")
+			}
+			sqlOpList = append(sqlOpList, &dmsCommonSQLOp.SQLObjectOps{
+				ObjectOps: objectOpList,
+				Sql:       dmsCommonSQLOp.SQLInfo{Sql: sqlOp.GetSql().GetSql()},
+			})
+		}
+	}
+	return sqlOpList, nil
+}
+
+func ConvertProtoSQLOpToDriver(op protoV2.SQLOp) (dmsCommonSQLOp.SQLOp, error) {
+	switch op {
+	case protoV2.SQLOp_AddOrUpdate:
+		return dmsCommonSQLOp.SQLOpAddOrUpdate, nil
+	case protoV2.SQLOp_Delete:
+		return dmsCommonSQLOp.SQLOpDelete, nil
+	case protoV2.SQLOp_Read:
+		return dmsCommonSQLOp.SQLOpRead, nil
+	case protoV2.SQLOp_Grant:
+		return dmsCommonSQLOp.SQLOpGrant, nil
+	case protoV2.SQLOp_Admin:
+		return dmsCommonSQLOp.SQLOpAdmin, nil
+	default:
+		return "", fmt.Errorf("unknown sql op: %v", op)
+	}
+}
+
+func ConvertProtoSqlObjectToDriver(object *protoV2.SQLObject) (*dmsCommonSQLOp.SQLObject, error) {
+	typ, err := ConvertProtoSqlObjectTypeToDriver(object.GetType())
+	if err != nil {
+		return nil, err
+	}
+	return &dmsCommonSQLOp.SQLObject{
+		Type:         typ,
+		DatabaseName: object.GetDatabaseName(),
+		SchemaName:   object.GetSchemaName(),
+		TableName:    object.GetTableName(),
+	}, nil
+}
+
+func ConvertProtoSqlObjectTypeToDriver(objectType protoV2.SQLObjectType) (dmsCommonSQLOp.SQLObjectType, error) {
+	switch objectType {
+	case protoV2.SQLObjectType_SQLObjectTypeServer:
+		return dmsCommonSQLOp.SQLObjectTypeServer, nil
+	case protoV2.SQLObjectType_SQLObjectTypeInstance:
+		return dmsCommonSQLOp.SQLObjectTypeInstance, nil
+	case protoV2.SQLObjectType_SQLObjectTypeDatabase:
+		return dmsCommonSQLOp.SQLObjectTypeDatabase, nil
+	case protoV2.SQLObjectType_SQLObjectTypeSchema:
+		return dmsCommonSQLOp.SQLObjectTypeSchema, nil
+	case protoV2.SQLObjectType_SQLObjectTypeTable:
+		return dmsCommonSQLOp.SQLObjectTypeTable, nil
+	default:
+		return "", fmt.Errorf("unknown sql object type: %v", objectType)
+	}
+}
+
+func ConvertDriverSQLOpsResponseToProto(sqlOps []*dmsCommonSQLOp.SQLObjectOps) (*protoV2.GetSQLOpResponse, error) {
+	sqlOpList := make([]*protoV2.SQLOps, 0, len(sqlOps))
+	for _, sqlOp := range sqlOps {
+
+		var objectOpList []*protoV2.SQLObjectOp
+		for _, objectOp := range sqlOp.ObjectOps {
+
+			op, err := ConvertDriverSQLOpToProto(objectOp.Op)
+			if err != nil {
+				return nil, err
+			}
+			object, err := ConvertDriverSqlObjectToProto(objectOp.Object)
+			if err != nil {
+				return nil, err
+			}
+			objectOpList = append(objectOpList, &protoV2.SQLObjectOp{
+				Op:     op,
+				Object: object,
+			})
+		}
+		sqlOpList = append(sqlOpList, &protoV2.SQLOps{
+			ObjectOps: objectOpList,
+			Sql:       &protoV2.GetSQLOpSQLInfo{Sql: sqlOp.Sql.Sql},
+		})
+	}
+	return &protoV2.GetSQLOpResponse{
+		SqlOps: sqlOpList,
+	}, nil
+}
+
+func ConvertDriverSQLOpToProto(op dmsCommonSQLOp.SQLOp) (protoV2.SQLOp, error) {
+	switch op {
+	case dmsCommonSQLOp.SQLOpAddOrUpdate:
+		return protoV2.SQLOp_AddOrUpdate, nil
+	case dmsCommonSQLOp.SQLOpDelete:
+		return protoV2.SQLOp_Delete, nil
+	case dmsCommonSQLOp.SQLOpRead:
+		return protoV2.SQLOp_Read, nil
+	case dmsCommonSQLOp.SQLOpGrant:
+		return protoV2.SQLOp_Grant, nil
+	case dmsCommonSQLOp.SQLOpAdmin:
+		return protoV2.SQLOp_Admin, nil
+	default:
+		return 0, fmt.Errorf("unknown sql op: %v", op)
+	}
+}
+
+func ConvertDriverSqlObjectToProto(object *dmsCommonSQLOp.SQLObject) (*protoV2.SQLObject, error) {
+	typ, err := ConvertDriverSqlObjectTypeToProto(object.Type)
+	if err != nil {
+		return nil, err
+	}
+	return &protoV2.SQLObject{
+		Type:         typ,
+		DatabaseName: object.DatabaseName,
+		SchemaName:   object.SchemaName,
+		TableName:    object.TableName,
+	}, nil
+}
+
+func ConvertDriverSqlObjectTypeToProto(objectType dmsCommonSQLOp.SQLObjectType) (protoV2.SQLObjectType, error) {
+	switch objectType {
+	case dmsCommonSQLOp.SQLObjectTypeServer:
+		return protoV2.SQLObjectType_SQLObjectTypeServer, nil
+	case dmsCommonSQLOp.SQLObjectTypeInstance:
+		return protoV2.SQLObjectType_SQLObjectTypeInstance, nil
+	case dmsCommonSQLOp.SQLObjectTypeDatabase:
+		return protoV2.SQLObjectType_SQLObjectTypeDatabase, nil
+	case dmsCommonSQLOp.SQLObjectTypeSchema:
+		return protoV2.SQLObjectType_SQLObjectTypeSchema, nil
+	case dmsCommonSQLOp.SQLObjectTypeTable:
+		return protoV2.SQLObjectType_SQLObjectTypeTable, nil
+	default:
+		return 0, fmt.Errorf("unknown sql object type: %v", objectType)
+	}
 }

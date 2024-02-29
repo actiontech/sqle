@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	"github.com/actiontech/sqle/sqle/driver/common"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -88,6 +89,10 @@ type Driver interface {
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
 	KillProcess(ctx context.Context) (*KillProcessInfo, error)
+
+	// 权限相关接口，目前用于provision的权限校验
+	// GetSQLOp 获取sql中涉及的对象操作，sql可以是单条语句，也可以是多条语句
+	GetSQLOp(ctx context.Context, sqls string) ([]*dmsCommonSQLOp.SQLObjectOps, error)
 }
 
 type Node struct {

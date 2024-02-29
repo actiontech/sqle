@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	dmsCommonSQLOp "github.com/actiontech/dms/pkg/dms-common/sql_op"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	hclog "github.com/hashicorp/go-hclog"
-	
+
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -279,4 +280,8 @@ func (p *DriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 
 func (p *DriverImpl) KillProcess(ctx context.Context) (*driverV2.KillProcessInfo, error) {
 	return &driverV2.KillProcessInfo{}, nil
+}
+
+func (p *DriverImpl) GetSQLOp(ctx context.Context, sqls string) ([]*dmsCommonSQLOp.SQLObjectOps, error) {
+	return []*dmsCommonSQLOp.SQLObjectOps{}, nil
 }

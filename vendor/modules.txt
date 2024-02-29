@@ -49,7 +49,7 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/actiontech/dms v0.0.0-20240201081352-532b5fece9b5
+# github.com/actiontech/dms v0.0.0-20240222054119-687fce156ab3
 ## explicit; go 1.19
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
 github.com/actiontech/dms/pkg/dms-common/api/dms/v1
@@ -59,6 +59,7 @@ github.com/actiontech/dms/pkg/dms-common/dmsobject
 github.com/actiontech/dms/pkg/dms-common/pkg/aes
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
+github.com/actiontech/dms/pkg/dms-common/sql_op
 # github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
@@ -83,14 +84,11 @@ github.com/alibabacloud-go/alibabacloud-gateway-spi/client
 github.com/alibabacloud-go/darabonba-openapi/client
 # github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
 ## explicit; go 1.14
-github.com/alibabacloud-go/darabonba-openapi/v2/client
 # github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 ## explicit
 github.com/alibabacloud-go/debug/debug
 # github.com/alibabacloud-go/dingtalk v1.4.88
 ## explicit; go 1.15
-github.com/alibabacloud-go/dingtalk/oauth2_1_0
-github.com/alibabacloud-go/dingtalk/workflow_1_0
 # github.com/alibabacloud-go/endpoint-util v1.1.0
 ## explicit
 github.com/alibabacloud-go/endpoint-util/service
@@ -109,7 +107,6 @@ github.com/alibabacloud-go/tea/utils
 github.com/alibabacloud-go/tea-utils/service
 # github.com/alibabacloud-go/tea-utils/v2 v2.0.1
 ## explicit; go 1.14
-github.com/alibabacloud-go/tea-utils/v2/service
 # github.com/alibabacloud-go/tea-xml v1.1.2
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-xml/service
