@@ -181,7 +181,7 @@ func auditPlanSendRequest(notify *AuditPlanNotification) (err error) {
 			AuditPlan: &AuditPlanPayload{
 				ProjectId:        string(notify.auditPlan.ProjectId),
 				ProjectName:      projectName,
-				ReportId:         string(strconv.Itoa(int(notify.report.ID))),
+				ReportId:         strconv.Itoa(int(notify.report.ID)),
 				AuditPlanName:    notify.auditPlan.Name,
 				AuditCreateTime:  notify.auditPlan.CreatedAt.String(),
 				AuditType:        notify.auditPlan.Type,
