@@ -225,7 +225,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 					}
 					if !isParamSame {
 						// 更新模板里的规则参数
-						err = s.UpdateRuleTemplateRulesParams(existedRule, rule)
+						err = s.UpdateRuleTemplateRulesParams(rule, dbType)
 						if err != nil {
 							return err
 						}
@@ -241,44 +241,11 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 	return nil
 }
 
-// 更新规则模板参数
-func (s *Storage) UpdateRuleTemplateRulesParams(existedRule *Rule, pluginRule *driverV2.Rule) error {
-	existParams := existedRule.Params
-	pluginParams := pluginRule.Params
-	for _, pluginParam := range pluginParams {
-		found := false
-		for _, existParam := range existParams {
-			if existParam.Key == pluginParam.Key {
-				found = true
-				if (existParam.Desc != pluginParam.Desc) || (existParam.Type != pluginParam.Type) {
-					// 若修改过描述,同步更新到模板表
-					existParam.Desc = pluginParam.Desc
-					existParam.Type = pluginParam.Type
-
-				}
-			}
-		}
-		if !found {
-			// 插件规则参数有模板表中不存在的key则为新增的参数
-			existParams = append(existParams, pluginParam)
-		}
+func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *driverV2.Rule, dbType string) error {
+	newPlugin := &driverV2.Rule{
+		Params: pluginRule.Params,
 	}
-	// 删除模板表中已不存在的参数
-	for i := 0; i < len(existParams); {
-		found := false
-		for _, pluginParam := range pluginParams {
-			if existParams[i].Key == pluginParam.Key {
-				found = true
-				break
-			}
-		}
-		if !found {
-			existParams = append(existParams[:i], existParams[i+1:]...)
-		} else {
-			i++
-		}
-	}
-	ruleTemplateRules, err := s.GetRuleTemplateRuleByName(existedRule.Name, existedRule.DBType)
+	ruleTemplateRules, err := s.GetRuleTemplateRuleByName(pluginRule.Name, dbType)
 	if err != nil {
 		return err
 	}
@@ -287,13 +254,13 @@ func (s *Storage) UpdateRuleTemplateRulesParams(existedRule *Rule, pluginRule *d
 		for _, p := range ruleTemplateRule.RuleParams {
 			ruleTemplateRuleParamsMap[p.Key] = p.Value
 		}
-		for _, existParam := range existParams {
+		for _, pluginParam := range newPlugin.Params {
 			// 避免参数的值被还原成默认
-			if value, ok := ruleTemplateRuleParamsMap[existParam.Key]; ok {
-				existParam.Value = value
+			if value, ok := ruleTemplateRuleParamsMap[pluginParam.Key]; ok {
+				pluginParam.Value = value
 			}
 		}
-		ruleTemplateRule.RuleParams = existParams
+		ruleTemplateRule.RuleParams = newPlugin.Params
 		err = s.Save(&ruleTemplateRule)
 	}
 	if err != nil {
@@ -314,8 +281,12 @@ func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 		return err
 	}
 	for _, dbRule := range rulesInDB {
-		if exist, emptyPluginFlag := DBRuleIsInPluginRule(dbRule); !exist && !emptyPluginFlag {
-			// 如果加载到插件并且规则在插件中已删除则删除规则
+		// 判断Plugin是不是读取到了，防止模板里规则被清空
+		if pluginExist := PluginIsExist(dbRule.DBType); !pluginExist {
+			continue
+		}
+		// 判断规则是否被删除
+		if ruleExist := DBRuleInPluginRule(dbRule); !ruleExist {
 			ruleTemplateRules, err := s.GetRuleTemplateRuleByName(dbRule.Name, dbRule.DBType)
 			if err != nil {
 				return err
@@ -347,25 +318,24 @@ func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 	return nil
 }
 
-func DBRuleIsInPluginRule(dbRules *Rule) (bool, bool) {
-	emptyPluginFlag := false
-	for dbType, rules := range pluginRules {
-		if dbRules.DBType != dbType {
-			emptyPluginFlag = true
-			continue
-		} else {
-			emptyPluginFlag = false
-		}
-		for _, rule := range rules {
-			if dbRules.Name == rule.Name {
-				return true, false
-			}
-		}
-		if !emptyPluginFlag {
-			break
+func PluginIsExist(dbType string) bool {
+	for pluginDBType := range pluginRules {
+		if dbType == pluginDBType {
+			return true
 		}
 	}
-	return false, emptyPluginFlag
+	return false
+}
+
+func DBRuleInPluginRule(dbRule *Rule) bool {
+	for dbType, rules := range pluginRules {
+		for _, rule := range rules {
+			if dbRule.Name == rule.Name && dbRule.DBType == dbType {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // func (s *Storage) CreateDefaultRole() error {
