@@ -223,16 +223,17 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
 						rule.Knowledge.Content = existedRule.Knowledge.Content
 					}
+					// 保存规则
+					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
+					if err != nil {
+						return err
+					}
 					if !isParamSame {
-						// 更新模板里的规则参数
+						// 同步模板规则的参数
 						err = s.UpdateRuleTemplateRulesParams(rule, dbType)
 						if err != nil {
 							return err
 						}
-					}
-					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
-					if err != nil {
-						return err
 					}
 				}
 			}
@@ -242,9 +243,6 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 }
 
 func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *driverV2.Rule, dbType string) error {
-	newPlugin := &driverV2.Rule{
-		Params: pluginRule.Params,
-	}
 	ruleTemplateRules, err := s.GetRuleTemplateRuleByName(pluginRule.Name, dbType)
 	if err != nil {
 		return err
@@ -254,17 +252,17 @@ func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *driverV2.Rule, dbTyp
 		for _, p := range ruleTemplateRule.RuleParams {
 			ruleTemplateRuleParamsMap[p.Key] = p.Value
 		}
-		for _, pluginParam := range newPlugin.Params {
+		for _, pluginParam := range pluginRule.Params {
 			// 避免参数的值被还原成默认
 			if value, ok := ruleTemplateRuleParamsMap[pluginParam.Key]; ok {
 				pluginParam.Value = value
 			}
 		}
-		ruleTemplateRule.RuleParams = newPlugin.Params
+		ruleTemplateRule.RuleParams = pluginRule.Params
 		err = s.Save(&ruleTemplateRule)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
