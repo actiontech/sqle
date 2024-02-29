@@ -898,7 +898,8 @@ type sqlInfo struct {
 	//nolint:unused
 	queryTimeSeconds int
 	//nolint:unused
-	startTime      string
+	startTime string
+	//nolint:unused
 	rowExaminedAvg float64
 }
 
