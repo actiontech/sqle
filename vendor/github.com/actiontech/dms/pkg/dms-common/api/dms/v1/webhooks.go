@@ -6,6 +6,7 @@ type TriggerEventType string
 
 const (
 	TriggerEventTypeWorkflow TriggerEventType = "workflow"
+	TriggerEventAuditPlan    TriggerEventType = "auditplan"
 )
 
 // swagger:parameters WebHookSendMessage
