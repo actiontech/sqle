@@ -201,7 +201,7 @@ func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanRep
 	return dmsobject.WebHookSendMessage(context.TODO(), controller.GetDMSServerAddress(), &v1.WebHookSendMessageReq{
 		WebHookMessage: &v1.WebHooksMessage{
 			Message:          string(b),
-			TriggerEventType: "manualTriggerAuditPlan",
+			TriggerEventType: "manual-trigger-auditPlan",
 		},
 	})
 }
