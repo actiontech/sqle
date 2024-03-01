@@ -47,8 +47,8 @@ github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdc
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ=
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
-github.com/actiontech/dms v0.0.0-20240201081352-532b5fece9b5 h1:DuCz1OdmRRTePNf/FmkYndbd0RtDhx+y54zLSi6tgN0=
-github.com/actiontech/dms v0.0.0-20240201081352-532b5fece9b5/go.mod h1:xhu4id1GnOt5Gip+xa+EGX9/0aKXxWIAn35VHE76kQQ=
+github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc h1:TAaiDlVvPQG62GqcLuT32MFr4EnjwL12pZGmQh9RKIE=
+github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc/go.mod h1:xhu4id1GnOt5Gip+xa+EGX9/0aKXxWIAn35VHE76kQQ=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
 github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2 h1:Txeii4CZzDNbvvtGoJSFNcBTHyLD0uR6Sd16waQZSxY=
@@ -64,13 +64,9 @@ github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 h1:iC9YFYKDGEy3n/FtqJ
 github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4/go.mod h1:sCavSAvdzOjul4cEqeVtvlSaSScfNsTQ+46HwlTL1hc=
 github.com/alibabacloud-go/darabonba-openapi v0.1.18 h1:3eUVmAr7WCJp7fgIvmCd9ZUyuwtJYbtUqJIed5eXCmk=
 github.com/alibabacloud-go/darabonba-openapi v0.1.18/go.mod h1:PB4HffMhJVmAgNKNq3wYbTUlFvPgxJpTzd1F5pTuUsc=
-github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2 h1:2kR1YkvQloHUstmPcG0Sjk24zTKbza7izzJfJNwBFSs=
-github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2/go.mod h1:5JHVmnHvGzR2wNdgaW1zDLQG8kOC4Uec8ubkMogW7OQ=
 github.com/alibabacloud-go/darabonba-string v1.0.0/go.mod h1:93cTfV3vuPhhEwGGpKKqhVW4jLe7tDpo3LUM0i0g6mA=
 github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 h1:NqugFkGxx1TXSh/pBcU00Y6bljgDPaFdh5MUSeJ7e50=
 github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68/go.mod h1:6pb/Qy8c+lqua8cFpEy7g39NRRqOWc3rOwAy8m5Y2BY=
-github.com/alibabacloud-go/dingtalk v1.4.88 h1:qFJZFw89cO+Rtzi+l9KjoVsp5JDuNhAxozl6FkJOM8c=
-github.com/alibabacloud-go/dingtalk v1.4.88/go.mod h1:D/bjJ/zskKHlTm3H3JgmKWoZOXEM+XOOJzdLltSksxg=
 github.com/alibabacloud-go/endpoint-util v1.1.0 h1:r/4D3VSw888XGaeNpP994zDUaxdgTSHBbVfZlzf6b5Q=
 github.com/alibabacloud-go/endpoint-util v1.1.0/go.mod h1:O5FuCALmCKs2Ff7JFJMudHs0I5EBgecXXxZRyswlEjE=
 github.com/alibabacloud-go/openapi-util v0.0.11/go.mod h1:sQuElr4ywwFRlCCberQwKRFhRzIyG4QTP/P4y1CJ6Ws=
@@ -88,9 +84,6 @@ github.com/alibabacloud-go/tea v1.1.19/go.mod h1:nXxjm6CIFkBhwW4FQkNrolwbfon8Svy
 github.com/alibabacloud-go/tea-utils v1.3.1/go.mod h1:EI/o33aBfj3hETm4RLiAxF/ThQdSngxrpF8rKUDJjPE=
 github.com/alibabacloud-go/tea-utils v1.4.3 h1:8SzwmmRrOnQ09Hf5a9GyfJc0d7Sjv6fmsZoF4UDbFjo=
 github.com/alibabacloud-go/tea-utils v1.4.3/go.mod h1:KNcT0oXlZZxOXINnZBs6YvgOd5aYp9U67G+E3R8fcQw=
-github.com/alibabacloud-go/tea-utils/v2 v2.0.0/go.mod h1:U5MTY10WwlquGPS34DOeomUGBB0gXbLueiq5Trwu0C4=
-github.com/alibabacloud-go/tea-utils/v2 v2.0.1 h1:K6kwgo+UiYx+/kr6CO0PN5ACZDzE3nnn9d77215AkTs=
-github.com/alibabacloud-go/tea-utils/v2 v2.0.1/go.mod h1:U5MTY10WwlquGPS34DOeomUGBB0gXbLueiq5Trwu0C4=
 github.com/alibabacloud-go/tea-xml v1.1.2 h1:oLxa7JUXm2EDFzMg+7oRsYc+kutgCVwm+bZlhhmvW5M=
 github.com/alibabacloud-go/tea-xml v1.1.2/go.mod h1:Rq08vgCcCAjHyRi/M7xlHKUykZCEtyBy9+DPF6GgEu8=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=

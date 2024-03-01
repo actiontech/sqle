@@ -5,18 +5,15 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20240201081352-532b5fece9b5
+	github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
-	github.com/alibabacloud-go/dingtalk v1.4.88
 	github.com/alibabacloud-go/rds-20140815/v2 v2.1.0
 	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-utils v1.4.3
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
 	github.com/baidubce/bce-sdk-go v0.9.151
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect

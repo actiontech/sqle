@@ -3,6 +3,7 @@ package notification
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -12,6 +13,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 )
+
+const ManuallyAudit = "manually-audit"
 
 type webHookRequestBody struct {
 	Event     string           `json:"event"`
@@ -51,22 +54,30 @@ type httpBodyPayload struct {
 // 		"test_project", "1658637666259832832", "test_workflow", "wait_for_audit")
 // }
 
+func getProjectNameByID(ProjectId string) (string, error) {
+	var projectName string
+	ret, _, err := dmsobject.ListProjects(context.TODO(), dms.GetDMSServerAddress(), v1.ListProjectReq{
+		PageSize:    1,
+		PageIndex:   1,
+		FilterByUID: ProjectId,
+	})
+	if err != nil {
+		return projectName, err
+	}
+	if len(ret) > 0 {
+		projectName = ret[0].Name
+	}
+	return projectName, nil
+}
+
 func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 	user, err := dms.GetUser(context.TODO(), workflow.CreateUserId, dms.GetDMSServerAddress())
 	if err != nil {
 		return err
 	}
-	ret, _, err := dmsobject.ListProjects(context.TODO(), dms.GetDMSServerAddress(), v1.ListProjectReq{
-		PageSize:    1,
-		PageIndex:   1,
-		FilterByUID: string(workflow.ProjectId),
-	})
+	projectName, err := getProjectNameByID(string(workflow.ProjectId))
 	if err != nil {
 		return err
-	}
-	var projectName string
-	if len(ret) > 0 {
-		projectName = ret[0].Name
 	}
 	currentStepID := uint(0)
 	if workflow.CurrentStep() != nil {
@@ -128,4 +139,75 @@ func workflowSendRequest(action string, workflow *model.Workflow) (err error) {
 		},
 	})
 
+}
+
+type webHookAuditPlanRequestBody struct {
+	Event     string                `json:"event"`
+	Action    string                `json:"action"`
+	Timestamp string                `json:"timestamp"` // time.RFC3339
+	Payload   *AuditPlanBodyPayload `json:"payload"`
+}
+
+type AuditPlanBodyPayload struct {
+	AuditPlan *AuditPlanPayload `json:"audit_plan"`
+}
+
+type AuditPlanPayload struct {
+	ProjectId        string  `json:"project_id"`        // 项目id
+	ProjectName      string  `json:"project_name"`      // 项目名称
+	ReportId         string  `json:"report_id"`         // 扫描报告id
+	AuditPlanName    string  `json:"audit_plan_name"`   // 扫描任务名称
+	AuditCreateTime  string  `json:"audit_create_time"` // 扫描任务触发时间
+	AuditType        string  `json:"audit_type"`        // 扫描任务类型
+	InstanceName     string  `json:"instance_name"`     // 数据源名称
+	InstanceDatabase string  `json:"instance_database"` // 数据库名称
+	Score            int32   `json:"score"`             // 审核得分
+	PassRate         float64 `json:"pass_rate"`         // 审核通过率
+	AuditLevel       string  `json:"audit_level"`       // 审核结果等级
+
+	SQLEUrl string `json:"sqle_url"` // sqle地址
+}
+
+func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config AuditPlanNotifyConfig) (err error) {
+	var s string
+	if config.SQLEUrl != nil {
+		s = *config.SQLEUrl
+	}
+
+	projectName, err := getProjectNameByID(string(auditPlan.ProjectId))
+	if err != nil {
+		return err
+	}
+
+	reqBody := &webHookAuditPlanRequestBody{
+		Event:     "auditplan",
+		Action:    ManuallyAudit,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Payload: &AuditPlanBodyPayload{
+			AuditPlan: &AuditPlanPayload{
+				ProjectId:        string(auditPlan.ProjectId),
+				ProjectName:      projectName,
+				ReportId:         strconv.Itoa(int(report.ID)),
+				AuditPlanName:    auditPlan.Name,
+				AuditCreateTime:  auditPlan.CreatedAt.String(),
+				AuditType:        auditPlan.Type,
+				InstanceName:     auditPlan.InstanceName,
+				InstanceDatabase: auditPlan.InstanceDatabase,
+				Score:            report.Score,
+				PassRate:         report.PassRate,
+				AuditLevel:       report.AuditLevel,
+				SQLEUrl:          s,
+			},
+		},
+	}
+	b, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+	return dmsobject.WebHookSendMessage(context.TODO(), controller.GetDMSServerAddress(), &v1.WebHookSendMessageReq{
+		WebHookMessage: &v1.WebHooksMessage{
+			Message:          string(b),
+			TriggerEventType: v1.TriggerEventAuditPlan,
+		},
+	})
 }
