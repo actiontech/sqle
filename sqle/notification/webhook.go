@@ -169,7 +169,10 @@ type AuditPlanPayload struct {
 }
 
 func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config AuditPlanNotifyConfig) (err error) {
-	s := *config.SQLEUrl
+	var s string
+	if config.SQLEUrl != nil {
+		s = *config.SQLEUrl
+	}
 
 	projectName, err := getProjectNameByID(string(auditPlan.ProjectId))
 	if err != nil {
