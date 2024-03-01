@@ -488,14 +488,13 @@ func (n *AuditPlanNotifier) updateRecord(auditPlanName string) {
 	n.mutex.Unlock()
 }
 
-func NotifySystemWebhook(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) error {
+func NotifyAuditPlanWebhook(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2) error {
 	config, err := getAPNotifyConfig()
 	if err != nil {
 		return err
 	}
-	apNotify := NewAuditPlanNotification(auditPlan, report, config)
 
-	err = auditPlanSendRequest(apNotify)
+	err = auditPlanSendRequest(auditPlan, report, config)
 
 	return err
 }

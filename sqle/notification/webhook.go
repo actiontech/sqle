@@ -166,10 +166,10 @@ type AuditPlanPayload struct {
 	SQLEUrl string `json:"sqle_url"` // sqle地址
 }
 
-func auditPlanSendRequest(notify *AuditPlanNotification) (err error) {
-	s := *notify.config.SQLEUrl
+func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanReportV2, config AuditPlanNotifyConfig) (err error) {
+	s := *config.SQLEUrl
 
-	projectName, err := getProjectNameByID(string(notify.auditPlan.ProjectId))
+	projectName, err := getProjectNameByID(string(auditPlan.ProjectId))
 	if err != nil {
 		return err
 	}
@@ -179,17 +179,17 @@ func auditPlanSendRequest(notify *AuditPlanNotification) (err error) {
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &AuditPlanBodyPayload{
 			AuditPlan: &AuditPlanPayload{
-				ProjectId:        string(notify.auditPlan.ProjectId),
+				ProjectId:        string(auditPlan.ProjectId),
 				ProjectName:      projectName,
-				ReportId:         strconv.Itoa(int(notify.report.ID)),
-				AuditPlanName:    notify.auditPlan.Name,
-				AuditCreateTime:  notify.auditPlan.CreatedAt.String(),
-				AuditType:        notify.auditPlan.Type,
-				InstanceName:     notify.auditPlan.InstanceName,
-				InstanceDatabase: notify.auditPlan.InstanceDatabase,
-				Score:            notify.report.Score,
-				PassRate:         notify.report.PassRate,
-				AuditLevel:       notify.report.AuditLevel,
+				ReportId:         strconv.Itoa(int(report.ID)),
+				AuditPlanName:    auditPlan.Name,
+				AuditCreateTime:  auditPlan.CreatedAt.String(),
+				AuditType:        auditPlan.Type,
+				InstanceName:     auditPlan.InstanceName,
+				InstanceDatabase: auditPlan.InstanceDatabase,
+				Score:            report.Score,
+				PassRate:         report.PassRate,
+				AuditLevel:       report.AuditLevel,
 				SQLEUrl:          s,
 			},
 		},
@@ -201,7 +201,7 @@ func auditPlanSendRequest(notify *AuditPlanNotification) (err error) {
 	return dmsobject.WebHookSendMessage(context.TODO(), controller.GetDMSServerAddress(), &v1.WebHookSendMessageReq{
 		WebHookMessage: &v1.WebHooksMessage{
 			Message:          string(b),
-			TriggerEventType: "auditplan",
+			TriggerEventType: "manualTriggerAuditPlan",
 		},
 	})
 }
