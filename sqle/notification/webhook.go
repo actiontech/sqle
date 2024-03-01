@@ -178,7 +178,7 @@ func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanRep
 
 	reqBody := &webHookAuditPlanRequestBody{
 		Event:     "auditplan",
-		Action:    ManualAudit,
+		Action:    ManuallyAudit,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &AuditPlanBodyPayload{
 			AuditPlan: &AuditPlanPayload{
