@@ -14,7 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-const ManualAudit = "manual-audit"
+const ManuallyAudit = "manually-audit"
 
 type webHookRequestBody struct {
 	Event     string           `json:"event"`
