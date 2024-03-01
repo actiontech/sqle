@@ -176,6 +176,7 @@ func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanRep
 
 	reqBody := &webHookAuditPlanRequestBody{
 		Event:     "auditplan",
+		Action:    "manual",
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &AuditPlanBodyPayload{
 			AuditPlan: &AuditPlanPayload{
@@ -201,7 +202,7 @@ func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanRep
 	return dmsobject.WebHookSendMessage(context.TODO(), controller.GetDMSServerAddress(), &v1.WebHookSendMessageReq{
 		WebHookMessage: &v1.WebHooksMessage{
 			Message:          string(b),
-			TriggerEventType: "manual-trigger-auditPlan",
+			TriggerEventType: v1.TriggerEventAuditPlan,
 		},
 	})
 }
