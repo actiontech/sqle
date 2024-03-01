@@ -14,6 +14,8 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
+const ManualAudit = "manual-audit"
+
 type webHookRequestBody struct {
 	Event     string           `json:"event"`
 	Action    string           `json:"action"`
@@ -176,7 +178,7 @@ func auditPlanSendRequest(auditPlan *model.AuditPlan, report *model.AuditPlanRep
 
 	reqBody := &webHookAuditPlanRequestBody{
 		Event:     "auditplan",
-		Action:    "manual",
+		Action:    ManualAudit,
 		Timestamp: time.Now().Format(time.RFC3339),
 		Payload: &AuditPlanBodyPayload{
 			AuditPlan: &AuditPlanPayload{
