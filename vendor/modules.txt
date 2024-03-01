@@ -75,9 +75,16 @@ github.com/alibabacloud-go/alibabacloud-gateway-spi/client
 # github.com/alibabacloud-go/darabonba-openapi v0.1.18
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-openapi/client
+# github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-openapi/v2/client
 # github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 ## explicit
 github.com/alibabacloud-go/debug/debug
+# github.com/alibabacloud-go/dingtalk v1.4.88
+## explicit; go 1.15
+github.com/alibabacloud-go/dingtalk/oauth2_1_0
+github.com/alibabacloud-go/dingtalk/workflow_1_0
 # github.com/alibabacloud-go/endpoint-util v1.1.0
 ## explicit
 github.com/alibabacloud-go/endpoint-util/service
@@ -94,6 +101,9 @@ github.com/alibabacloud-go/tea/utils
 # github.com/alibabacloud-go/tea-utils v1.4.3
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-utils/service
+# github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+## explicit; go 1.14
+github.com/alibabacloud-go/tea-utils/v2/service
 # github.com/alibabacloud-go/tea-xml v1.1.2
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-xml/service
