@@ -28,7 +28,7 @@ type WorkflowStatisticsResV1 struct {
 }
 
 type GetDashboardReqV1 struct {
-	FilterProjectName string `json:"filter_project_id" query:"filter_project_id" form:"filter_project_id"`
+	FilterProjectName string `json:"filter_project_name" query:"filter_project_name" form:"filter_project_name"`
 }
 
 // @Summary 获取 dashboard 信息
