@@ -7300,7 +7300,6 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV2",
-                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -11991,6 +11990,10 @@ var doc = `{
                 "query_time_max": {
                     "type": "number",
                     "example": 5.22
+                },
+                "row_examined_avg": {
+                    "type": "number",
+                    "example": 100.22
                 }
             }
         },
@@ -12214,6 +12217,14 @@ var doc = `{
                 "instance_type": {
                     "type": "string",
                     "example": "MySQL"
+                },
+                "project_id": {
+                    "type": "string",
+                    "example": "700300"
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default"
                 },
                 "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
