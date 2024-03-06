@@ -340,6 +340,14 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) DeleteCascadeRule(name, dbType string) error {
+	err := s.db.Exec(`delete u,t, k 
+					from rules u 
+					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
+					left join rule_knowledge k on u.knowledge_id = k.id where u.name = ? AND u.db_type = ? `, name, dbType).Error
+	return err
+}
+
 func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
 	rules := []*Rule{}
 	err := s.db.Where(&Rule{DBType: dbType}).Find(&rules).Error
