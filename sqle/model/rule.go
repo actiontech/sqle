@@ -284,6 +284,15 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
+func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) (*[]RuleTemplateRule, error) {
+	ruleTemplateRule := []RuleTemplateRule{}
+	err := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
 	return s.UpdateRuleTemplateCustomRules(destination, source.CustomRuleList...)
 }
@@ -329,6 +338,14 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 	rules := []*Rule{}
 	err := s.db.Preload("Knowledge").Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) DeleteCascadeRule(name, dbType string) error {
+	err := s.db.Exec(`delete u,t, k 
+					from rules u 
+					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
+					left join rule_knowledge k on u.knowledge_id = k.id where u.name = ? AND u.db_type = ? `, name, dbType).Error
+	return err
 }
 
 func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
