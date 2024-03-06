@@ -285,32 +285,10 @@ func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 		}
 		// 判断规则是否被删除
 		if ruleExist := DBRuleInPluginRule(dbRule); !ruleExist {
-			ruleTemplateRules, err := s.GetRuleTemplateRuleByName(dbRule.Name, dbRule.DBType)
+			err := s.DeleteCascadeRule(dbRule.Name, dbRule.DBType)
 			if err != nil {
 				return err
 			}
-			tx := s.db.Begin()
-			err = tx.Delete(dbRule).Error
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-			err = tx.Delete(dbRule.Knowledge).Error
-			if err != nil {
-				tx.Rollback()
-				return err
-			}
-			// 默认规则没有被创建为项目规则
-			if *ruleTemplateRules != nil && len(*ruleTemplateRules) > 0 {
-				for _, ruleTemplateRule := range *ruleTemplateRules {
-					err = tx.Delete(ruleTemplateRule).Error
-					if err != nil {
-						tx.Rollback()
-						return err
-					}
-				}
-			}
-			tx.Commit()
 		}
 	}
 	return nil
