@@ -381,6 +381,21 @@ func (a *threeStarIndexAdvisor) loadEssentials() (err error) {
 	if !ok {
 		return fmt.Errorf("in three star advisor driving tableSource.Source is not ast.TableName")
 	}
+	// 检查驱动表是否被该SELECT语句引用，若未被引用，则不给出三星索引建议
+	stmt, _ := a.originNode.(*ast.SelectStmt)
+	extractor := util.TableSourceExtractor{TableSources: make(map[string]*ast.TableSource)}
+	if stmt.From.TableRefs != nil {
+		stmt.From.TableRefs.Accept(&extractor)
+	}
+	var referDrivingTable bool
+	for _, tableSource := range extractor.TableSources {
+		if util.GetTableNameFromTableSource(tableSource) == util.GetTableNameFromTableSource(a.drivingTableSource) {
+			referDrivingTable = true
+		}
+	}
+	if !referDrivingTable {
+		return fmt.Errorf("the origin select statement does not refers to driving table, the three star index advisor would not give advice")
+	}
 	selectivityMap, err := a.sqlContext.GetSelectivityOfColumns(tableName, columnInTable)
 	if err != nil {
 		return err
