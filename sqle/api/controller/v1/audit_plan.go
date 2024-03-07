@@ -1091,10 +1091,8 @@ func TriggerAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = notification.NotifyAuditPlanWebhook(ap, report)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+	go notification.NotifyAuditPlanWebhook(ap, report)
+	
 	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
