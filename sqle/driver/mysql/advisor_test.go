@@ -507,6 +507,38 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 3,
 	}
+	testCases["test14 select fields contain driven_table.*"] = optimizerTestContent{
+		sql: `SELECT v5,t1.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_10 t10 on t1.id = t10.id;`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v5,t1.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_10 t10 on t1.id = t10.id;`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"v5"}, "t10"),
+		},
+		maxColumn: 3,
+	}
+	testCases["test15 select fields contain driving_table.*"] = optimizerTestContent{
+		sql: `SELECT v5,t11.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_11 t11 on t1.id = t11.id;`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v5,t11.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_11 t11 on t1.id = t11.id;`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_11"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "create_time", "upgrade_time", "year_time", "data_time", "data_time2"}).AddRow(100.00, 78.56, 72.12, 12.0, 67.9, 45.1),
+			},
+		},
+		expectResults: []*OptimizeResult{
+			newThreeStarOptimizeResult([]string{"create_time", "upgrade_time", "data_time", "data_time2", "year_time"}, "t11"),
+		},
+		maxColumn: 6,
+	}
 	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
 
