@@ -378,7 +378,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 }
 
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
-	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, false)
+	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, true)
 	if err != nil {
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
