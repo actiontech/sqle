@@ -494,6 +494,19 @@ func TestThreeStarOptimize(t *testing.T) {
 		},
 		maxColumn: 3,
 	}
+	testCases["test13 driving table in subquery"] = optimizerTestContent{
+		sql: `SELECT v1 FROM exist_tb_1 where v2 IN (SELECT v2 FROM exist_tb_10 WHERE id > 10);`,
+		queryResults: []*queryResult{
+			{
+				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 where v2 IN (SELECT v2 FROM exist_tb_10 WHERE id > 10);`)),
+				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(`SELECT COUNT`),
+				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
+			},
+		},
+		maxColumn: 3,
+	}
 	testCases.testAll(mockThreeStarOptimizeResult, t)
 }
 
