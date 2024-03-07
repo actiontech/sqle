@@ -359,7 +359,7 @@ func getSQLsByFilePath(filePath string, stmtsInfo []xmlAst.StmtInfo) []string {
 }
 
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLsFromFile, error) {
-	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, false)
+	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, true)
 	if err != nil {
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
