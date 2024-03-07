@@ -458,9 +458,19 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 	if selectStmt.Fields != nil {
 		// 遍历Select子句，存储其中属于驱动表的裸列
 		for _, field := range selectStmt.Fields.Fields {
-			// Expr is not nil, WildCard will be nil.
-			if field.WildCard != nil && field.WildCard.Table.String() == "" && field.WildCard.Schema.String() == "" {
-				// 如果是 * 则添加所有列
+			// Expr is not nil, WildCard(通配符*) will be nil.
+			if field.WildCard != nil {
+				/*
+					若field为表名.*，则需判断表是否是驱动表，若为驱动表，则应添加驱动表的所有列
+					若无表名，则SELECT语句仅引用单表，且为驱动表，则应添加驱动表的所有列
+					因为若SELECT语句未引用驱动表，三星索引在加载必须项的时候就会直接返回了
+					参考：https://dev.mysql.com/doc/refman/8.0/en/select.html
+					A select list consisting only of a single unqualified * can be used as shorthand to select all columns from all tables
+					tbl_name.* can be used as a qualified shorthand to select all columns from the named table
+				*/
+				if field.WildCard.Table.String() != "" && field.WildCard.Table.String() != util.GetTableNameFromTableSource(a.drivingTableSource) {
+					continue
+				}
 				var col *ast.ColumnNameExpr
 				for _, columnDefine := range a.drivingTableCreateStmt.Cols {
 					column = a.drivingTableColumnMap[columnDefine.Name.Name.L]
@@ -639,17 +649,32 @@ func (a *threeStarIndexAdvisor) sortColumnBySelectivity() {
 	a.drivingTableColumn.unequalColumnInWhere.sort()
 }
 
+/*
+SELECT语句中对列的表名归属存在以下规则:
+ 1. 一条SELECT语句中，如果引用单张表，则可以直接引用列名
+ 2. 一条SELECT语句中，如果引用多张表:
+    a. 若列名重复，一定要用表名.列名，则该表列所属表为列名前的表名，否则会产生歧义(模棱两可)
+    b. 若列名不重复，可以直接引用列名，则该列所属表为SELECT语句引用的表中包含列名与该列名相同的列的表。
+
+参考1：https://dev.mysql.com/doc/refman/8.0/en/identifier-qualifiers.html
+You need not specify a qualifier for an object reference in a statement unless the unqualified reference is ambiguous.
+参考2：https://dev.mysql.com/doc/refman/8.0/en/select.html
+You can refer to a table within the default database as tbl_name, or as db_name.tbl_name to specify a database explicitly. You can refer to a column as col_name, tbl_name.col_name, or db_name.tbl_name.col_name. You need not specify a tbl_name or db_name.tbl_name prefix for a column reference unless the reference would be ambiguous.
+*/
 func (a threeStarIndexAdvisor) isColumnInDrivingTable(column *ast.ColumnNameExpr) bool {
-	if column.Name.Table.L == "" {
-		// 没有表名，说明只有一张表
-		return true
-	}
-	if column.Name.Table.L != util.GetTableNameFromTableSource(a.drivingTableSource) {
-		// 表名要与驱动表相同
+	// 判断列名，若列名不在驱动表中，则该列就一定不在驱动表中
+	if _, ok := a.drivingTableColumnMap[column.Name.Name.L]; !ok {
 		return false
 	}
-	if _, ok := a.drivingTableColumnMap[column.Name.Name.L]; !ok {
-		// 列名要在驱动表中
+	// 判断表名，若表名和驱动表表名不同，则该列不在驱动表中，这里兼容别名
+	/*
+		列名在驱动表中
+		若引用的列包含表名，则可以直接判断，
+		若引用的列不包含表名，则该列在该SELECT语句中引用的表里唯一
+			若驱动表在该SELECT语句中被引用，则该列为驱动表的列，这里仅需判断该情形
+			若驱动表在该SELECT语句中未被引用，则该列不是驱动表的列，若未引用，则不给出建议
+	*/
+	if column.Name.Table.L != "" && column.Name.Table.L != util.GetTableNameFromTableSource(a.drivingTableSource) {
 		return false
 	}
 	return true
