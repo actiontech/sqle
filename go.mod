@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20231019085256-6c3ffc8b3489
+	github.com/actiontech/dms v0.0.0-20231129083427-a97a77db08e0
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.4.0
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
@@ -181,6 +181,6 @@ replace (
 	cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.1.0
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231122073510-03e191068cf1
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

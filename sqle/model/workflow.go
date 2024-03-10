@@ -933,7 +933,7 @@ func (s *Storage) deleteWorkflow(tx *gorm.DB, workflow *Workflow) error {
 
 func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 	workflows := []*Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+	err := s.db.Model(&Workflow{}).Select("workflows.id,workflows.workflow_id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflows.created_at < ? "+
 			"AND (workflow_records.status = 'finished' "+
@@ -946,7 +946,7 @@ func (s *Storage) GetExpiredWorkflows(start time.Time) ([]*Workflow, error) {
 
 func (s *Storage) GetNeedScheduledWorkflows() ([]*Workflow, error) {
 	workflows := []*Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id, workflows.workflow_record_id").
+	err := s.db.Model(&Workflow{}).Select("workflows.id,workflows.workflow_id, workflows.workflow_record_id").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
 		Where("workflow_records.status = 'wait_for_execution' "+
@@ -966,7 +966,7 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId uint) (bool, error) {
+func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, error) {
 	count := 0
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").

@@ -40,14 +40,14 @@ mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
 cp %{_builddir}/%{buildsubdir}/dms/config.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
-cp -r %{_builddir}/%{buildsubdir}/dms/build/logo $RPM_BUILD_ROOT/usr/local/%{name}/static/
+cp -R %{_builddir}/%{buildsubdir}/dms/build/logo $RPM_BUILD_ROOT/usr/local/%{name}/static/
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{name}/bin/sqled
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/dms $RPM_BUILD_ROOT/usr/local/%{name}/bin/dms
 cp -R %{_builddir}/%{buildsubdir}/%{name}/plugins $RPM_BUILD_ROOT/usr/local/%{name}/plugins
 cp -R %{_builddir}/%{buildsubdir}/%{name}/scripts $RPM_BUILD_ROOT/usr/local/%{name}/scripts
 cp %{_builddir}/%{buildsubdir}/dms/build/service-file-template/dms.systemd $RPM_BUILD_ROOT/usr/local/%{name}/scripts/dms.systemd
-cp -R %{_builddir}/%{buildsubdir}/%{name}/static $RPM_BUILD_ROOT/usr/local/%{name}/static
+cp -R %{_builddir}/%{buildsubdir}/%{name}/static/* $RPM_BUILD_ROOT/usr/local/%{name}/static/
 
 
 ##########
@@ -104,6 +104,7 @@ mkdir -p $RPM_INSTALL_PREFIX/logs
 # mkdir -p $RPM_INSTALL_PREFIX/etc
 
 
+if [ $1 -eq 1 ]; then 
 cat >> $RPM_INSTALL_PREFIX/etc/config.yaml<<EOF
 
 sqle:
@@ -131,7 +132,7 @@ sqle:
       mysql_password: 'pass'
       mysql_schema: 'sqle'
 EOF
-
+fi
 
 cat > $RPM_INSTALL_PREFIX/etc/gh-ost.ini<<EOF
 max_load=Threads_running=80,Threads_connected=1000
@@ -252,3 +253,6 @@ fi
 /usr/local/%{name}/scripts/*
 /usr/local/%{name}/static/* 
 /usr/local/%{name}/etc/config.yaml
+
+
+%config /usr/local/%{name}/etc/config.yaml
