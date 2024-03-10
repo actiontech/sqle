@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/pkg/dm"
 	"github.com/actiontech/sqle/sqle/pkg/obfororacle"
 	"net/http"
 	"strconv"
@@ -1734,6 +1735,194 @@ func (at *ObForOracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, [
 			obfororacle.DynPerformanceViewObForOracleColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
 			obfororacle.DynPerformanceViewObForOracleColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
 			obfororacle.DynPerformanceViewObForOracleColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000/1000, 3)), //视图中时间单位是微秒，所以除以1000000得到秒
+		})
+	}
+	return heads, rows, count, nil
+}
+
+// DmTopSQLTask implement the Task interface.
+//
+// DmTopSQLTask is a loop task which collect Top SQL from DM instance.
+type DmTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewDmTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &DmTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *DmTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	sqls, err := queryTopSQLsForDm(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	if len(sqls) > 0 {
+		apSQLs := make([]*SQL, 0, len(sqls))
+		for _, sql := range sqls {
+			apSQLs = append(apSQLs, &SQL{
+				SQLContent:  sql.SQLFullText,
+				Fingerprint: sql.SQLFullText,
+				Info: map[string]interface{}{
+					dm.DynPerformanceViewDmColumnExecutions:       sql.Executions,
+					dm.DynPerformanceViewDmColumnTotalExecTime:    sql.TotalExecTime,
+					dm.DynPerformanceViewDmColumnAverageExecTime:  sql.AverageExecTime,
+					dm.DynPerformanceViewDmColumnCPUTime:          sql.CPUTime,
+					dm.DynPerformanceViewDmColumnPhyReadPageCnt:   sql.PhyReadPageCnt,
+					dm.DynPerformanceViewDmColumnLogicReadPageCnt: sql.LogicReadPageCnt,
+				},
+			})
+		}
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+		if err != nil {
+			at.logger.Errorf("save top sql to storage fail, error: %v", err)
+		}
+	}
+}
+
+func queryTopSQLsForDm(inst *model.Instance, database string, orderBy string, topN int) ([]*dm.DynPerformanceDmColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	sql := fmt.Sprintf(dm.DynPerformanceViewDmTpl, topN, orderBy)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 20})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*dm.DynPerformanceDmColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) == 0 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		totalExecTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		averageExecTime, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		cpuTime, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		phyReadPageCnt, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		logicReadPageCnt, err := strconv.ParseFloat(values[6].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &dm.DynPerformanceDmColumns{
+			SQLFullText:      values[0].Value,
+			Executions:       executions,
+			TotalExecTime:    totalExecTime,
+			AverageExecTime:  averageExecTime,
+			CPUTime:          cpuTime,
+			PhyReadPageCnt:   phyReadPageCnt,
+			LogicReadPageCnt: logicReadPageCnt,
+		})
+	}
+	return ret, nil
+}
+
+func (at *DmTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *DmTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnTotalExecTime,
+			Desc: "总执行时间(s)",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnAverageExecTime,
+			Desc: "平均执行时间(s)",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnCPUTime,
+			Desc: "CPU时间占用(s)",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnPhyReadPageCnt,
+			Desc: "物理读",
+		},
+		{
+			Name: dm.DynPerformanceViewDmColumnLogicReadPageCnt,
+			Desc: "逻辑读",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &dm.DynPerformanceDmColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql":                                   sql.SQLContent,
+			dm.DynPerformanceViewDmColumnExecutions: strconv.Itoa(int(info.Executions)),
+			dm.DynPerformanceViewDmColumnTotalExecTime:    fmt.Sprintf("%v", utils.Round(float64(info.TotalExecTime)/1000, 3)),   //视图中时间单位是毫秒，所以除以1000得到秒
+			dm.DynPerformanceViewDmColumnAverageExecTime:  fmt.Sprintf("%v", utils.Round(float64(info.AverageExecTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+			dm.DynPerformanceViewDmColumnCPUTime:          fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000, 3)),         //视图中时间单位是毫秒，所以除以1000得到秒
+			dm.DynPerformanceViewDmColumnPhyReadPageCnt:   strconv.Itoa(int(info.PhyReadPageCnt)),
+			dm.DynPerformanceViewDmColumnLogicReadPageCnt: strconv.Itoa(int(info.LogicReadPageCnt)),
 		})
 	}
 	return heads, rows, count, nil
