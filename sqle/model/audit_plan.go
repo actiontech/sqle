@@ -258,7 +258,7 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 				COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
 				+COALESCE(JSON_EXTRACT(values(info), '$.counter'), 1)
 			)
-				AS DECIMAL(12,6)
+				AS DECIMAL(65,6)
 			),
 			'$.first_query_at', IF(
 				JSON_TYPE(JSON_EXTRACT(info, '$.first_query_at'))="NULL",
@@ -308,7 +308,7 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
                                                            COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
                                                                + COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 1)
                                                            )
-                                                   AS DECIMAL(12, 6)),
+                                                   AS DECIMAL(65,6)),
 											  '$.start_time',
 											  JSON_EXTRACT(values(info), '$.start_time'));`
 
