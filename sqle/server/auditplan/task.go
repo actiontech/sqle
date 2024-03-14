@@ -1768,7 +1768,7 @@ func (at *DmTopSQLTask) collectorDo() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
@@ -1784,26 +1784,29 @@ func (at *DmTopSQLTask) collectorDo() {
 		return
 	}
 
-	if len(sqls) > 0 {
-		apSQLs := make([]*SQL, 0, len(sqls))
-		for _, sql := range sqls {
-			apSQLs = append(apSQLs, &SQL{
-				SQLContent:  sql.SQLFullText,
-				Fingerprint: sql.SQLFullText,
-				Info: map[string]interface{}{
-					dm.DynPerformanceViewDmColumnExecutions:       sql.Executions,
-					dm.DynPerformanceViewDmColumnTotalExecTime:    sql.TotalExecTime,
-					dm.DynPerformanceViewDmColumnAverageExecTime:  sql.AverageExecTime,
-					dm.DynPerformanceViewDmColumnCPUTime:          sql.CPUTime,
-					dm.DynPerformanceViewDmColumnPhyReadPageCnt:   sql.PhyReadPageCnt,
-					dm.DynPerformanceViewDmColumnLogicReadPageCnt: sql.LogicReadPageCnt,
-				},
-			})
-		}
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
-		if err != nil {
-			at.logger.Errorf("save top sql to storage fail, error: %v", err)
-		}
+	if len(sqls) == 0 {
+		at.logger.Info("sql result count is 0")
+		return
+	}
+
+	apSQLs := make([]*SQL, 0, len(sqls))
+	for _, sql := range sqls {
+		apSQLs = append(apSQLs, &SQL{
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
+			Info: map[string]interface{}{
+				dm.DynPerformanceViewDmColumnExecutions:       sql.Executions,
+				dm.DynPerformanceViewDmColumnTotalExecTime:    sql.TotalExecTime,
+				dm.DynPerformanceViewDmColumnAverageExecTime:  sql.AverageExecTime,
+				dm.DynPerformanceViewDmColumnCPUTime:          sql.CPUTime,
+				dm.DynPerformanceViewDmColumnPhyReadPageCnt:   sql.PhyReadPageCnt,
+				dm.DynPerformanceViewDmColumnLogicReadPageCnt: sql.LogicReadPageCnt,
+			},
+		})
+	}
+	err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+	if err != nil {
+		at.logger.Errorf("save top sql to storage fail, error: %v", err)
 	}
 }
 
@@ -1814,11 +1817,11 @@ func queryTopSQLsForDm(inst *model.Instance, database string, orderBy string, to
 	}
 	defer plugin.Close(context.TODO())
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 
 	sql := fmt.Sprintf(dm.DynPerformanceViewDmTpl, topN, orderBy)
-	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 20})
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
 	if err != nil {
 		return nil, err
 	}
@@ -1826,7 +1829,7 @@ func queryTopSQLsForDm(inst *model.Instance, database string, orderBy string, to
 	rows := result.Rows
 	for _, row := range rows {
 		values := row.Values
-		if len(values) == 0 {
+		if len(values) < 7 {
 			continue
 		}
 		executions, err := strconv.ParseFloat(values[1].Value, 64)
@@ -1902,11 +1905,11 @@ func (at *DmTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[stri
 		},
 		{
 			Name: dm.DynPerformanceViewDmColumnPhyReadPageCnt,
-			Desc: "物理读",
+			Desc: "物理读页数",
 		},
 		{
 			Name: dm.DynPerformanceViewDmColumnLogicReadPageCnt,
-			Desc: "逻辑读",
+			Desc: "逻辑读页数",
 		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))

@@ -11,16 +11,28 @@ type DynPerformanceDmColumns struct {
 }
 
 const (
-	DynPerformanceViewDmTpl = `SELECT TOP %v * FROM (
-SELECT SQL_TXT sql_fulltext
-       ,count(*) executions
-       ,sum(EXEC_TIME) total_exec_time
-       ,sum(EXEC_TIME)/count(*) average_exec_time
-       ,ABS(sum(EXEC_TIME) - sum(PARSE_TIME) - sum(IO_WAIT_TIME)) cpu_time
-       ,sum(PHY_READ_CNT) phy_read_page_cnt
-       ,sum(LOGIC_READ_CNT) logic_read_page_cnt
-FROM V$SQL_STAT_HISTORY GROUP BY SQL_TXT
-) t WHERE executions > 0 ORDER BY %v DESC`
+	DynPerformanceViewDmTpl = `
+SELECT
+    sql_fulltext,
+    executions,
+    total_exec_time,
+    average_exec_time,
+    cpu_time,
+    phy_read_page_cnt,
+    logic_read_page_cnt
+FROM (
+    SELECT
+        SQL_TXT AS sql_fulltext,
+        COUNT(*) AS executions,
+        SUM(EXEC_TIME) AS total_exec_time,
+        SUM(EXEC_TIME) / COUNT(*) OVER () AS average_exec_time,
+        (SUM(EXEC_TIME) - SUM(PARSE_TIME) - SUM(IO_WAIT_TIME)) AS cpu_time,
+        SUM(PHY_READ_CNT) AS phy_read_page_cnt,
+        SUM(LOGIC_READ_CNT) AS logic_read_page_cnt,
+        ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS row_num
+    FROM V$SQL_STAT_HISTORY
+    GROUP BY SQL_TXT
+) t WHERE executions > 0 AND row_num <= %v ORDER BY %v DESC`
 	DynPerformanceViewDmColumnExecutions       = "executions"
 	DynPerformanceViewDmColumnTotalExecTime    = "total_exec_time"
 	DynPerformanceViewDmColumnAverageExecTime  = "average_exec_time"
