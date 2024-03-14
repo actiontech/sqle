@@ -12,12 +12,14 @@ const (
 	TypeDB2SchemaMeta            = "db2_schema_meta"
 	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
 	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
+	TypeDmTopSQL                 = "dm_top_sql"
 )
 
 const (
 	InstanceTypeOceanBaseForMySQL = "OceanBase For MySQL"
 	InstanceTypeDB2               = "DB2"
 	InstanceTypeTDSQL             = "TDSQL For InnoDB"
+	InstanceTypeDm                = "DM"
 )
 
 const (
@@ -123,6 +125,32 @@ var EEMetas = []Meta{
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
+			},
+		},
+	},
+	{
+		Type:         TypeDmTopSQL,
+		Desc:         "DM TOP SQL",
+		InstanceType: InstanceTypeDm,
+		CreateTask:   NewDmTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: DmTopSQLMetricTotalExecTime,
+				Type:  params.ParamTypeString,
 			},
 		},
 	},

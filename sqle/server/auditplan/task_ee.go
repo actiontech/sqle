@@ -11,6 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/log"
+
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -1149,4 +1152,237 @@ func (at *DB2SchemaMetaTask) getViewsFromSchema(ctx context.Context, plugin driv
 		}
 	}
 	return views, nil
+}
+
+type DynPerformanceDmColumns struct {
+	SQLFullText      string  `json:"sql_fulltext"`
+	Executions       float64 `json:"executions"`
+	TotalExecTime    float64 `json:"total_exec_time"`
+	AverageExecTime  float64 `json:"average_exec_time"`
+	CPUTime          float64 `json:"cpu_time"`
+	PhyReadPageCnt   float64 `json:"phy_read_page_cnt"`
+	LogicReadPageCnt float64 `json:"logic_read_page_cnt"`
+}
+
+// Dm Top SQL
+const (
+	DynPerformanceViewDmTpl = `
+SELECT
+    sql_fulltext,
+    executions,
+    total_exec_time,
+    average_exec_time,
+    cpu_time,
+    phy_read_page_cnt,
+    logic_read_page_cnt
+FROM (
+    SELECT
+        SQL_TXT AS sql_fulltext,
+        COUNT(*) AS executions,
+        SUM(EXEC_TIME) AS total_exec_time,
+        SUM(EXEC_TIME) / COUNT(*) OVER () AS average_exec_time,
+        (SUM(EXEC_TIME) - SUM(PARSE_TIME) - SUM(IO_WAIT_TIME)) AS cpu_time,
+        SUM(PHY_READ_CNT) AS phy_read_page_cnt,
+        SUM(LOGIC_READ_CNT) AS logic_read_page_cnt,
+        ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS row_num
+    FROM V$SQL_STAT_HISTORY
+    GROUP BY SQL_TXT
+) t WHERE executions > 0 AND row_num <= %v ORDER BY %v DESC`
+	DmTopSQLMetricExecutions       = "executions"
+	DmTopSQLMetricTotalExecTime    = "total_exec_time"
+	DmTopSQLMetricAverageExecTime  = "average_exec_time"
+	DmTopSQLMetricCPUTime          = "cpu_time"
+	DmTopSQLMetricPhyReadPageCnt   = "phy_read_page_cnt"
+	DmTopSQLMetricLogicReadPageCnt = "logic_read_page_cnt"
+)
+
+// DmTopSQLTask implement the Task interface.
+//
+// DmTopSQLTask is a loop task which collect Top SQL from DM instance.
+type DmTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewDmTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &DmTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *DmTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	sqls, err := queryTopSQLsForDm(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	if len(sqls) == 0 {
+		at.logger.Info("sql result count is 0")
+		return
+	}
+
+	apSQLs := make([]*SQL, 0, len(sqls))
+	for _, sql := range sqls {
+		apSQLs = append(apSQLs, &SQL{
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
+			Info: map[string]interface{}{
+				DmTopSQLMetricExecutions:       sql.Executions,
+				DmTopSQLMetricTotalExecTime:    sql.TotalExecTime,
+				DmTopSQLMetricAverageExecTime:  sql.AverageExecTime,
+				DmTopSQLMetricCPUTime:          sql.CPUTime,
+				DmTopSQLMetricPhyReadPageCnt:   sql.PhyReadPageCnt,
+				DmTopSQLMetricLogicReadPageCnt: sql.LogicReadPageCnt,
+			},
+		})
+	}
+	err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+	if err != nil {
+		at.logger.Errorf("save top sql to storage fail, error: %v", err)
+	}
+}
+
+func queryTopSQLsForDm(inst *model.Instance, database string, orderBy string, topN int) ([]*DynPerformanceDmColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	sql := fmt.Sprintf(DynPerformanceViewDmTpl, topN, orderBy)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*DynPerformanceDmColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) < 7 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		totalExecTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		averageExecTime, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		cpuTime, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		phyReadPageCnt, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		logicReadPageCnt, err := strconv.ParseFloat(values[6].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &DynPerformanceDmColumns{
+			SQLFullText:      values[0].Value,
+			Executions:       executions,
+			TotalExecTime:    totalExecTime,
+			AverageExecTime:  averageExecTime,
+			CPUTime:          cpuTime,
+			PhyReadPageCnt:   phyReadPageCnt,
+			LogicReadPageCnt: logicReadPageCnt,
+		})
+	}
+	return ret, nil
+}
+
+func (at *DmTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *DmTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: DmTopSQLMetricExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: DmTopSQLMetricTotalExecTime,
+			Desc: "总执行时间(s)",
+		},
+		{
+			Name: DmTopSQLMetricAverageExecTime,
+			Desc: "平均执行时间(s)",
+		},
+		{
+			Name: DmTopSQLMetricCPUTime,
+			Desc: "CPU时间占用(s)",
+		},
+		{
+			Name: DmTopSQLMetricPhyReadPageCnt,
+			Desc: "物理读页数",
+		},
+		{
+			Name: DmTopSQLMetricLogicReadPageCnt,
+			Desc: "逻辑读页数",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &DynPerformanceDmColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql":                          sql.SQLContent,
+			DmTopSQLMetricExecutions:       strconv.Itoa(int(info.Executions)),
+			DmTopSQLMetricTotalExecTime:    fmt.Sprintf("%v", utils.Round(float64(info.TotalExecTime)/1000, 3)),   //视图中时间单位是毫秒，所以除以1000得到秒
+			DmTopSQLMetricAverageExecTime:  fmt.Sprintf("%v", utils.Round(float64(info.AverageExecTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+			DmTopSQLMetricCPUTime:          fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000, 3)),         //视图中时间单位是毫秒，所以除以1000得到秒
+			DmTopSQLMetricPhyReadPageCnt:   strconv.Itoa(int(info.PhyReadPageCnt)),
+			DmTopSQLMetricLogicReadPageCnt: strconv.Itoa(int(info.LogicReadPageCnt)),
+		})
+	}
+	return heads, rows, count, nil
 }
