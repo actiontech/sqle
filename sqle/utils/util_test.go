@@ -239,3 +239,44 @@ func TestIsGitHttpURL(t *testing.T) {
 		assert.False(t, IsGitHttpURL(tc), "Expected %q to be an invalid Git Http URL", tc)
 	}
 }
+
+func TestFullFuzzySearchRegexp(t *testing.T) {
+	testCases := []struct {
+		input       string
+		wantMatch   []string
+		wantNoMatch []string
+	}{
+		{
+			"Hello",
+			[]string{"heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
+			[]string{"GoLang is awesome", "I love GOLANG", "GoLangGOLANGGolang"},
+		},
+		{
+			"Golang",
+			[]string{"GoLang is awesome", "I love GOLANG", "GoLangGOLANGGolang"},
+			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
+		}, {
+			".*(?i)",
+			[]string{"GoLang .*(?i) awesome", "I love GO^.*(?i)SING", "GoLangGO.*(?i)Golang"},
+			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
+		},
+	}
+
+	for _, tc := range testCases {
+		reg := FullFuzzySearchRegexp(tc.input)
+
+		// Positive cases
+		for _, s := range tc.wantMatch {
+			if !reg.MatchString(s) {
+				t.Errorf("Expected %q to match %v", s, reg)
+			}
+		}
+
+		// Negative cases
+		for _, s := range tc.wantNoMatch {
+			if reg.MatchString(s) {
+				t.Errorf("Expected %q NOT to match %v", s, reg)
+			}
+		}
+	}
+}

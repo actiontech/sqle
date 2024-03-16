@@ -76,90 +76,71 @@ const (
 	GitPassword             = "git_user_password"
 )
 
-func getSQLFromFile(c echo.Context) (string, string, error) {
+func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	// Read it from sql file.
-	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
+	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
-		return "", model.TaskSQLSourceFromSQLFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromSQLFile, nil
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromSQLFile,
+			SQLsFromSQLFiles: []SQLsFromSQLFile{{
+				FilePath: fileName,
+				SQLs:     sqlsFromSQLFile}},
+		}, nil
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
-	data, exist, err := controller.ReadFileContent(c, InputMyBatisXMLFileName)
+	fileName, data, exist, err := controller.ReadFile(c, InputMyBatisXMLFileName)
 	if err != nil {
-		return "", model.TaskSQLSourceFromMyBatisXMLFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		sql, err := mybatis_parser.ParseXML(data)
+		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, true)
 		if err != nil {
-			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
+			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
-		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
+		sqlsFromXMLs := make([]SQLFromXML, len(sqls))
+		for i := range sqls {
+			sqlsFromXMLs[i] = SQLFromXML{
+				FilePath:  fileName,
+				StartLine: sqls[i].StartLine,
+				SQL:       sqls[i].SQL,
+			}
+		}
+		return getSQLFromFileResp{
+			SourceType:   model.TaskSQLSourceFromMyBatisXMLFile,
+			SQLsFromXMLs: sqlsFromXMLs,
+		}, nil
 	}
 
 	// If mybatis xml file is not exist, read it from zip file.
-	sqls, exist, err = getSqlsFromZip(c)
+	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
 	if err != nil {
-		return "", model.TaskSQLSourceFromZipFile, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromZipFile, nil
+		return getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromZipFile,
+			SQLsFromSQLFiles: sqlsFromSQLFiles,
+			SQLsFromXMLs:     sqlsFromXML,
+		}, nil
 	}
 
 	// If zip file is not exist, read it from git repository
-	sqls, exist, err = getSqlsFromGit(c)
+	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c)
 	if err != nil {
-		return "", model.TaskSQLSourceFromGitRepository, err
+		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		return sqls, model.TaskSQLSourceFromGitRepository, nil
+		return getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromGitRepository,
+			SQLsFromSQLFiles: append(sqlsFromSQLFiles, sqlsFromJavaFiles...),
+			SQLsFromXMLs:     sqlsFromXMLs,
+		}, nil
 	}
-	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
-}
-
-func GetSQLFromFile(c echo.Context) (string, string, error) {
-	// Read it from sql file.
-	sqls, exist, err := controller.ReadFileContent(c, InputSQLFileName)
-	if err != nil {
-		return "", model.TaskSQLSourceFromSQLFile, err
-	}
-	if exist {
-		return sqls, model.TaskSQLSourceFromSQLFile, nil
-	}
-
-	// If sql_file is not exist, read it from mybatis xml file.
-	data, exist, err := controller.ReadFileContent(c, InputMyBatisXMLFileName)
-	if err != nil {
-		return "", model.TaskSQLSourceFromMyBatisXMLFile, err
-	}
-	if exist {
-		sql, err := mybatis_parser.ParseXML(data)
-		if err != nil {
-			return "", model.TaskSQLSourceFromMyBatisXMLFile, errors.New(errors.ParseMyBatisXMLFileError, err)
-		}
-		return sql, model.TaskSQLSourceFromMyBatisXMLFile, nil
-	}
-
-	// If mybatis xml file is not exist, read it from zip file.
-	sqls, exist, err = getSqlsFromZip(c)
-	if err != nil {
-		return "", model.TaskSQLSourceFromZipFile, err
-	}
-	if exist {
-		return sqls, model.TaskSQLSourceFromZipFile, nil
-	}
-
-	// If zip file is not exist, read it from git repository
-	sqls, exist, err = getSqlsFromGit(c)
-	if err != nil {
-		return "", model.TaskSQLSourceFromGitRepository, err
-	}
-	if exist {
-		return sqls, model.TaskSQLSourceFromGitRepository, nil
-	}
-	return "", "", errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
 // @Summary 创建Sql扫描任务并提交审核
@@ -186,14 +167,16 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	var sql string
-	var source string
+	var sqls getSQLFromFileResp
 	var err error
 
 	if req.Sql != "" {
-		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromFormData,
+			SQLsFromFormData: req.Sql,
+		}
 	} else {
-		sql, source, err = GetSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -206,12 +189,12 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, source, sql)
+	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -275,7 +258,7 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 
-	instance, _, err := dms.GetInstancesById(ctx, task.InstanceId)
+	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -584,7 +567,7 @@ func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 
 // TODO 使用DMS的权限校验
 func CheckCurrentUserCanViewTaskDMS(c echo.Context, task *model.Task) error {
-	_, err := controller.GetCurrentUser(c)
+	_, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return err
 	}
@@ -680,7 +663,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 
 	distinctInstNames := utils.RemoveDuplicate(instNames)
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -783,13 +766,14 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	var err error
-	var sql string
-	var source string
-
+	var sqls getSQLFromFileResp
 	if req.Sql != "" {
-		sql, source = req.Sql, model.TaskSQLSourceFromFormData
+		sqls = getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromFormData,
+			SQLsFromFormData: req.Sql,
+		}
 	} else {
-		sql, source, err = GetSQLFromFile(c)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -834,20 +818,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 		}
 		defer plugin.Close(context.TODO())
 
-		nodes, err := plugin.Parse(context.TODO(), sql)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-
 		for _, task := range tasks {
-			task.SQLSource = source
-			for j, node := range nodes {
-				task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-					BaseSQL: model.BaseSQL{
-						Number:  uint(j + 1),
-						Content: node.Text,
-					},
-				})
+			err := addSQLsFromFileToTasks(sqls, task, plugin)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
 			}
 		}
 	}

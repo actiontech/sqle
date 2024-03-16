@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	e "errors"
 	"fmt"
@@ -119,7 +120,7 @@ func DirectAudit(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType)
+		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, "", "")
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
@@ -194,11 +195,10 @@ func DirectAuditFiles(c echo.Context) error {
 
 	sqls := ""
 	if req.SQLType == SQLTypeMyBatis {
-		ss, err := parser.ParseXMLs(req.FileContents, false)
+		sqls, err = ConvertXmlFileContentToSQLs(req.FileContents)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		sqls = strings.Join(ss, ";")
 	} else {
 		// sql文件暂时只支持一次解析一个文件
 		sqls = req.FileContents[0]
@@ -227,7 +227,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType)
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, "", "")
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
@@ -238,6 +238,24 @@ func DirectAuditFiles(c echo.Context) error {
 		BaseRes: controller.BaseRes{},
 		Data:    convertTaskResultToAuditResV1(task),
 	})
+}
+
+func ConvertXmlFileContentToSQLs(fileContent []string) (sqls string, err error) {
+	data := make([]parser.XmlFile, len(fileContent))
+	for i, content := range fileContent {
+		data[i] = parser.XmlFile{Content: content}
+	}
+	sqlsInfo, err := parser.ParseXMLs(data, true)
+	if err != nil {
+		return "", err
+	}
+	buf := bytes.Buffer{}
+	for _, info := range sqlsInfo {
+		buf.WriteString(info.SQL)
+		buf.WriteString(";")
+	}
+	sqls = strings.TrimSuffix(buf.String(), ";")
+	return sqls, nil
 }
 
 type GetSQLAnalysisReq struct {

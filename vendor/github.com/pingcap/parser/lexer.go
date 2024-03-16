@@ -57,6 +57,8 @@ type Scanner struct {
 	// It's used to substring sql in syntax error message.
 	lastScanOffset int
 
+	textStartLine int
+
 	// lastKeyword records the previous keyword returned by scan().
 	// determine whether an optimizer hint should be parsed or ignored.
 	lastKeyword int
@@ -93,7 +95,15 @@ func (s *Scanner) stmtText() string {
 	text := s.r.s[s.stmtStartPos:endPos]
 
 	s.stmtStartPos = endPos
+
+	trimedText := strings.TrimLeftFunc(text, unicode.IsSpace)
+	LFs := strings.Count(trimedText, "\n")
+	s.textStartLine = s.r.pos().Line - LFs
 	return text
+}
+
+func (s *Scanner) startLine() int {
+	return s.textStartLine
 }
 
 // Errorf tells scanner something is wrong.

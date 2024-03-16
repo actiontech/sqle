@@ -255,6 +255,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.PATCH("/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
 		v1ProjectRouter.GET("/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
 		v1ProjectRouter.GET("/:project_name/sql_manages/rule_tips", v1.GetSqlManageRuleTips)
+		v1ProjectRouter.GET("/:project_name/sql_manages/:sql_manage_id/sql_analysis", v1.GetSqlManageSqlAnalysisV1)
 
 		// sql audit record
 		v1ProjectRouter.POST("/:project_name/sql_audit_records", v1.CreateSQLAuditRecord)
@@ -290,6 +291,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+		// sql managers
+		v2ProjectRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
+
+		// scanner token auth
+		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 
 	}
 
@@ -340,6 +347,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// sql audit
 		v1Router.POST("/sql_audit", v1.DirectAudit)
+		v2Router.POST("/sql_audit", v2.DirectAudit)
 		v1Router.POST("/audit_files", v1.DirectAuditFiles)
 		v2Router.POST("/audit_files", v2.DirectAuditFiles)
 		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)

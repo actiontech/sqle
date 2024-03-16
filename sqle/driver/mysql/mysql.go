@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
-	"github.com/actiontech/sqle/sqle/driver/mysql/optimizer/index"
+
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -94,7 +94,7 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 		}
 		if rule.Name == rulepkg.ConfigOptimizeIndexEnabled {
 			inspect.cnf.optimizeIndexEnabled = true
-			inspect.cnf.calculateCardinalityMaxRow = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Int()
+			inspect.cnf.indexSelectivityMinValue = rule.Params.GetParam(rulepkg.DefaultMultiParamsFirstKeyName).Float64()
 			inspect.cnf.compositeIndexMaxColumn = rule.Params.GetParam(rulepkg.DefaultMultiParamsSecondKeyName).Int()
 		}
 		if rule.Name == rulepkg.ConfigDMLExplainPreCheckEnable {
@@ -106,6 +106,10 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 	}
 
 	return inspect, nil
+}
+
+func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
+	i.dbConn = dbConn
 }
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
@@ -249,24 +253,34 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 	}
 
 	ns := make([]driverV2.Node, len(nodes))
-	for i := range nodes {
+	for idx := range nodes {
 		n := driverV2.Node{}
-		fingerprint, err := util.Fingerprint(nodes[i].Text(), lowerCaseTableNames == "0")
+		fingerprint, err := util.Fingerprint(nodes[idx].Text(), lowerCaseTableNames == "0")
 		if err != nil {
 			return nil, err
 		}
 		n.Fingerprint = fingerprint
-		n.Text = nodes[i].Text()
-		switch nodes[i].(type) {
-		case ast.DMLNode:
-			n.Type = driverV2.SQLTypeDML
-		default:
-			n.Type = driverV2.SQLTypeDDL
-		}
+		n.Text = nodes[idx].Text()
+		n.StartLine = uint64(nodes[idx].StartLine())
+		n.Type = i.assertSQLType(nodes[idx])
 
-		ns[i] = n
+		ns[idx] = n
 	}
 	return ns, nil
+}
+
+func (i *MysqlDriverImpl) assertSQLType(stmt ast.Node) string {
+	switch stmt.(type) {
+	case ast.DMLNode:
+		switch stmt.(type) {
+		case *ast.SelectStmt, *ast.UnionStmt:
+			return driverV2.SQLTypeDQL
+		default:
+			return driverV2.SQLTypeDML
+		}
+	default:
+		return driverV2.SQLTypeDDL
+	}
 }
 
 func (i *MysqlDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
@@ -356,24 +370,27 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 	}
 
-	if i.cnf.optimizeIndexEnabled && index.CanOptimize(i.log, i.Ctx, nodes[0]) {
-		optimizer := index.NewOptimizer(
-			i.log, i.Ctx,
-			index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
-			index.WithCompositeIndexMaxColumn(i.cnf.compositeIndexMaxColumn),
-		)
-
-		advices, err := optimizer.Optimize(ctx, nodes[0].(*ast.SelectStmt))
-		if err != nil {
-			// ignore error, source: https://github.com/actiontech/sqle/issues/416
-			i.log.Errorf("optimize sqle failed: %v", err)
+	if i.cnf.optimizeIndexEnabled {
+		params := params.Params{
+			{
+				Key:   MAX_INDEX_COLUMN,
+				Value: fmt.Sprint(i.cnf.compositeIndexMaxColumn),
+				Type:  params.ParamTypeInt,
+			}, {
+				Key:   MIN_COLUMN_SELECTIVITY,
+				Value: fmt.Sprint(i.cnf.indexSelectivityMinValue),
+				Type:  params.ParamTypeFloat64,
+			},
+		}
+		results := optimize(i.log, i.Ctx, nodes[0], params)
+		for _, advice := range results {
+			i.result.Add(
+				driverV2.RuleLevelNotice,
+				rulepkg.ConfigOptimizeIndexEnabled,
+				advice.Reason,
+			)
 		}
 
-		var buf strings.Builder
-		for _, advice := range advices {
-			buf.WriteString(fmt.Sprintf("建议从表 %s 的以下列中 [%s] 选取合适的列添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
-		}
-		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigOptimizeIndexEnabled, buf.String())
 	}
 
 	// dry run gh-ost
@@ -485,11 +502,11 @@ type Config struct {
 	DDLOSCMinSize      int64
 	DDLGhostMinSize    int64
 
-	optimizeIndexEnabled       bool
-	dmlExplainPreCheckEnable   bool
-	calculateCardinalityMaxRow int
-	compositeIndexMaxColumn    int
-	isExecutedSQL              bool
+	optimizeIndexEnabled     bool
+	dmlExplainPreCheckEnable bool
+	compositeIndexMaxColumn  int
+	indexSelectivityMinValue float64
+	isExecutedSQL            bool
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {

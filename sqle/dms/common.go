@@ -93,11 +93,12 @@ func convertUserToModel(user *dmsV1.GetUser) *model.User {
 	id, _ := strconv.Atoi(user.UserUid)
 	model_ := model.Model{ID: uint(id)}
 	ret := &model.User{
-		Model:    model_,
-		Name:     user.Name,
-		Email:    user.Email,
-		Phone:    user.Phone,
-		WeChatID: user.WxID,
+		Model:              model_,
+		Name:               user.Name,
+		Email:              user.Email,
+		Phone:              user.Phone,
+		WeChatID:           user.WxID,
+		ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 	}
 	if user.Stat != dmsV1.StatOK {
 		ret.Stat = 1
@@ -126,6 +127,7 @@ func GetUserNameWithDelTag(userId string) string {
 	return user.Name
 }
 
+// !dms-todo: 注意脚本服务调用该接口，接口修改会导致脚本服务调用原接口失败，需要通知相关开发修改接口调用
 // dms-todo: 临时方案
 func GetPorjectUIDByName(ctx context.Context, projectName string, needActive ...bool) (projectUID string, err error) {
 	project, err := GetPorjectByName(ctx, projectName)
@@ -176,7 +178,7 @@ func RegisterAsDMSTarget(sqleConfig *config.SqleOptions) error {
 	ctx := context.Background()
 
 	// 向DMS注册反向代理
-	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle", fmt.Sprintf("http://%v:%v", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port) /* TODO https的处理*/, config.Version, []string{"/sqle/v"}); nil != err {
+	if err := dmsRegister.RegisterDMSProxyTarget(ctx, controller.GetDMSServerAddress(), "sqle", fmt.Sprintf("http://%v:%v", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port) /* TODO https的处理*/, config.Version, []string{"/sqle/v"}, dmsV1.ProxyScenarioInternalService); nil != err {
 		return fmt.Errorf("failed to register dms proxy target: %v", err)
 	}
 	// 注册校验接口

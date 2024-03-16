@@ -45,7 +45,7 @@ var workflowsCountTpl = `SELECT COUNT(DISTINCT w.id)
 `
 
 var exportWorkflowIDListTpl = `
-SELECT w.id AS workflow_id
+SELECT w.workflow_id AS workflow_id
 {{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC

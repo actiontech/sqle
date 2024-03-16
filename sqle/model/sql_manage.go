@@ -36,3 +36,13 @@ type SqlManageSqlAuditRecord struct {
 func (sm SqlManageSqlAuditRecord) TableName() string {
 	return "sql_manage_sql_audit_records"
 }
+
+type SqlManageEndpoint struct {
+	Model
+	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:uniq_md5_endpoint;"`
+	Endpoint                  string `json:"endpoint" gorm:"unique_index:uniq_md5_endpoint;"`
+}
+
+func (sm SqlManageEndpoint) TableName() string {
+	return "sql_manage_endpoints"
+}

@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./SQLE_logo.png">
+<img src="img/SQLE_logo.png">
 
 
 <p align="center">一个支持多种不同类型数据库，覆盖事前控制、事后监督、标准发布场景，帮助您建立质量规范的SQL全生命周期质量管理平台。</p>
@@ -16,7 +16,7 @@
 [![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/actiontech/sqle.svg)](https://github.com/actiontech/sqle/issues?q=is%3Aissue+is%3Aclosed)
 [![Docker Pulls](https://img.shields.io/docker/pulls/actiontech/sqle-ce.svg)](https://hub.docker.com/r/actiontech/sqle-ce)
 
-<img src="./image.png">
+<img src="img/image.png">
 
 
 </div>
@@ -24,6 +24,8 @@
 
 # 🔍 SQLE是什么
 SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。应用于开发、测试、上线发布、生产运行阶段的 SQL 质量治理。通过 “建立规范、事前控制、事后监督、标准发布” 的方式，为企业提供 SQL 全生命周期质量管控能力，规避业务 SQL 不规范引起的生产事故，提高业务稳定性，也可推动企业内部开发规范快速落地。
+
+
 
 # 📌 功能特性
 ### 更丰富的数据源支持
@@ -124,6 +126,16 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
 
 # 🧩 快速开始
 
+## 版本说明
+目前SQLE提供三个不同形态的版本，以满足不同的使用需求：
+<img src="img/compare.png">
+
+* 如您需要体验社区版，可以在[试用环境](#在线试用)中体验，或直接[本地部署](#本地安装)；
+* 如您需要体验专业版功能，请在[填写问卷](https://jinshuju.net/f/daLFaG)后获取安装包部署；
+* 如您需要体验企业版功能，可以在[试用环境](#在线试用)中体验，或[联系我们的商务](#📞-商业支持)。
+
+
+
 ## 在线试用
  我们同时提供了 SQLE 社区版 和  SQLE 企业版 的线上 DEMO 环境，登录后您可以轻松体验 SQLE 的丰富功能。
  
@@ -176,16 +188,16 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 * 微信交流群：请添加管理员微信 ActionOpenSource
 * 微信公众号：爱可生开源社区
   
-  ![QR_code](./QR_code.png)
+  ![QR_code](img/QR_code.png)
   
 * 其他媒体 [Gitee](https://gitee.com/mirrors/SQLE?_from=gitee_search) | [思否](https://segmentfault.com/blog/sqle) | [开源中国](https://www.oschina.net/p/sqle) | [墨天轮](https://www.modb.pro/wiki/2759) | [CSDN](https://blog.csdn.net/ActionTech) | [稀土掘金](https://juejin.cn/column/7241238544252829753) | [知乎](https://www.zhihu.com/people/Actionsky-86-50/columns)
 
 🤗 欢迎将体验中产生的 Bug、问题和需求提交到 [SQLE GitHub Issue](https://github.com/actiontech/sqle/issues)。
 
 # 📞 商业支持
-如果您想获得 SQLE 的商业支持, 您可以联系我们：
-* 全国支持: 400-820-6580
-* 华北地区: 86-13910506562, 汪先生
-* 华南地区: 86-18503063188, 曹先生
-* 华东地区: 86-18930110869, 梁先生
-* 西南地区: 86-13540040119, 洪先生
+如果想获得 SQLE 的商业支持, 您可以扫描下方的微信扫描小程序码，进行在线咨询预约：
+![commercial-support](img/commercial.png)
+
+此外，您也可以直接联系我们的商业支持团队获取更多信息，联系方式如下：
+
+400-820-6580 / 13916131869 / 18930110869

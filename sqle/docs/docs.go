@@ -1671,6 +1671,7 @@ var doc = `{
                 ],
                 "summary": "全量同步SQL到扫描任务",
                 "operationId": "fullSyncAuditPlanSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1719,6 +1720,7 @@ var doc = `{
                 ],
                 "summary": "增量同步SQL到扫描任务",
                 "operationId": "partialSyncAuditPlanSQLsV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -2434,6 +2436,12 @@ var doc = `{
                         "name": "rule_template_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2934,6 +2942,7 @@ var doc = `{
                 ],
                 "summary": "获取管控sql列表",
                 "operationId": "GetSqlManageList",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3020,8 +3029,14 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "endpoint",
-                        "name": "filter_endpoint",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -3210,8 +3225,14 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "endpoint",
-                        "name": "filter_endpoint",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
                         "in": "query"
                     },
                     {
@@ -3273,6 +3294,45 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSqlManageRuleTipsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取SQL管控SQL分析",
+                "operationId": "GetSqlManageSqlAnalysisV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql manage id",
+                        "name": "sql_manage_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlAnalysisResp"
                         }
                     }
                 }
@@ -4969,6 +5029,12 @@ var doc = `{
                         "name": "rule_template_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5144,6 +5210,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter db type",
                         "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy rule,keyword for desc and annotation",
+                        "name": "fuzzy_keyword_rule",
                         "in": "query"
                     },
                     {
@@ -6380,6 +6452,102 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "full sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "全量同步SQL到扫描任务",
+                "operationId": "fullSyncAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "full sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.FullSyncAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "partial sync audit plan SQLs",
+                "tags": [
+                    "audit_plan"
+                ],
+                "summary": "增量同步SQL到扫描任务",
+                "operationId": "partialSyncAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan name",
+                        "name": "audit_plan_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "partial sync audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.PartialSyncAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances/{instance_name}/": {
             "get": {
                 "security": [
@@ -6414,6 +6582,161 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetInstanceResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控sql列表",
+                "operationId": "GetSqlManageListV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "sql_audit_record"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored",
+                            "manual_audited"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetSqlManageListResp"
                         }
                     }
                 }
@@ -6977,7 +7300,6 @@ var doc = `{
                 ],
                 "summary": "直接审核SQL",
                 "operationId": "directAuditV2",
-                "deprecated": true,
                 "parameters": [
                     {
                         "description": "sqls that should be audited",
@@ -7141,6 +7463,17 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.AffectRows": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "err_message": {
+                    "type": "string"
                 }
             }
         },
@@ -7338,7 +7671,7 @@ var doc = `{
                     "type": "string",
                     "example": "database_user001"
                 },
-                "end_point": {
+                "endpoint": {
                     "type": "string",
                     "example": "10.186.1.2"
                 },
@@ -9234,6 +9567,24 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageSqlAnalysisResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "V1版本不能引用V2版本的结构体,所以只能复制一份",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysis"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -9980,6 +10331,15 @@ var doc = `{
                 }
             }
         },
+        "v1.PerformanceStatistics": {
+            "type": "object",
+            "properties": {
+                "affect_rows": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AffectRows"
+                }
+            }
+        },
         "v1.ProjectRuleTemplateResV1": {
             "type": "object",
             "properties": {
@@ -10406,6 +10766,23 @@ var doc = `{
                 }
             }
         },
+        "v1.SqlAnalysis": {
+            "type": "object",
+            "properties": {
+                "performance_statistics": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.PerformanceStatistics"
+                },
+                "sql_explain": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLExplain"
+                },
+                "table_metas": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMetas"
+                }
+            }
+        },
         "v1.SqlAnalysisResDataV1": {
             "type": "object",
             "properties": {
@@ -10662,6 +11039,20 @@ var doc = `{
                 },
                 "field_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.TableMetas": {
+            "type": "object",
+            "properties": {
+                "err_message": {
+                    "type": "string"
+                },
+                "table_meta_items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TableMeta"
+                    }
                 }
             }
         },
@@ -11555,6 +11946,57 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditPlanSQLReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_counter": {
+                    "type": "string",
+                    "example": "6"
+                },
+                "audit_plan_sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from t1 where id = ?"
+                },
+                "audit_plan_sql_last_receive_text": {
+                    "type": "string",
+                    "example": "select * from t1 where id = 1"
+                },
+                "audit_plan_sql_last_receive_timestamp": {
+                    "type": "string",
+                    "example": "RFC3339"
+                },
+                "audit_plan_sql_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "db_user": {
+                    "type": "string",
+                    "example": "database_user001"
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "first_query_at": {
+                    "type": "string",
+                    "example": "2023-09-12T02:48:01.317880Z"
+                },
+                "query_time_avg": {
+                    "type": "number",
+                    "example": 3.22
+                },
+                "query_time_max": {
+                    "type": "number",
+                    "example": 5.22
+                },
+                "row_examined_avg": {
+                    "type": "number",
+                    "example": 100.22
+                }
+            }
+        },
         "v2.AuditResDataV2": {
             "type": "object",
             "properties": {
@@ -11655,6 +12097,12 @@ var doc = `{
                     "type": "string"
                 },
                 "sql_source_file": {
+                    "type": "string"
+                },
+                "sql_start_line": {
+                    "type": "integer"
+                },
+                "sql_type": {
                     "type": "string"
                 }
             }
@@ -11770,6 +12218,14 @@ var doc = `{
                     "type": "string",
                     "example": "MySQL"
                 },
+                "project_id": {
+                    "type": "string",
+                    "example": "700300"
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default"
+                },
                 "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
                     "type": "string",
@@ -11814,6 +12270,17 @@ var doc = `{
                 },
                 "logo_url": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.FullSyncAuditPlanSQLsReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
+                    }
                 }
             }
         },
@@ -11933,6 +12400,34 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v2.GetSqlManageListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.SqlManage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "sql_manage_bad_num": {
+                    "type": "integer"
+                },
+                "sql_manage_optimized_num": {
+                    "type": "integer"
+                },
+                "sql_manage_total_num": {
+                    "type": "integer"
                 }
             }
         },
@@ -12097,6 +12592,17 @@ var doc = `{
                 }
             }
         },
+        "v2.PartialSyncAuditPlanSQLsReqV2": {
+            "type": "object",
+            "properties": {
+                "audit_plan_sql_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
+                    }
+                }
+            }
+        },
         "v2.PerformanceStatistics": {
             "type": "object",
             "properties": {
@@ -12137,6 +12643,69 @@ var doc = `{
                 },
                 "sql": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.SqlManage": {
+            "type": "object",
+            "properties": {
+                "assignees": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditResult"
+                    }
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "first_appear_timestamp": {
+                    "type": "string"
+                },
+                "fp_count": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "last_receive_timestamp": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "schema_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Source"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "unhandled",
+                        "solved",
+                        "ignored",
+                        "manual_audited"
+                    ]
                 }
             }
         },

@@ -16,7 +16,8 @@ type GetSqlManageListReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
-	FilterEndpoint               *string `query:"filter_endpoint" json:"filter_endpoint,omitempty"`
+	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
@@ -61,7 +62,9 @@ type Source struct {
 	SqlAuditRecordIds []string `json:"sql_audit_record_ids"`
 }
 
+// todo : 该接口已废弃，后续会删除
 // GetSqlManageList
+// @Deprecated
 // @Summary 获取管控sql列表
 // @Description get sql manage list
 // @Tags SqlManage
@@ -78,7 +81,8 @@ type Source struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
-// @Param filter_endpoint query string false "endpoint"
+// @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Param page_index query uint32 true "page index"
@@ -121,7 +125,8 @@ type ExportSqlManagesReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
-	FilterEndpoint               *string `query:"filter_endpoint" json:"filter_endpoint,omitempty"`
+	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 }
@@ -143,7 +148,8 @@ type ExportSqlManagesReq struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_db_type query string false "db type"
 // @Param filter_rule_name query string false "rule name"
-// @Param filter_endpoint query string false "endpoint"
+// @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
 // @Success 200 {file} file "export sql manage"
@@ -178,4 +184,44 @@ type GetSqlManageRuleTipsResp struct {
 // @Router /v1/projects/{project_name}/sql_manages/rule_tips [get]
 func GetSqlManageRuleTips(c echo.Context) error {
 	return getSqlManageRuleTips(c)
+}
+
+type AffectRows struct {
+	Count      int    `json:"count"`
+	ErrMessage string `json:"err_message"`
+}
+
+type PerformanceStatistics struct {
+	AffectRows *AffectRows `json:"affect_rows"`
+}
+
+type TableMetas struct {
+	ErrMessage string       `json:"err_message"`
+	Items      []*TableMeta `json:"table_meta_items"`
+}
+
+type SqlAnalysis struct {
+	SQLExplain            *SQLExplain            `json:"sql_explain"`
+	TableMetas            *TableMetas            `json:"table_metas"`
+	PerformanceStatistics *PerformanceStatistics `json:"performance_statistics"`
+}
+
+type GetSqlManageSqlAnalysisResp struct {
+	controller.BaseRes
+	// V1版本不能引用V2版本的结构体,所以只能复制一份
+	Data *SqlAnalysis `json:"data"`
+}
+
+// GetSqlManageSqlAnalysisV1
+// @Summary 获取SQL管控SQL分析
+// @Description get sql manage analysis
+// @Id GetSqlManageSqlAnalysisV1
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param sql_manage_id path string true "sql manage id"
+// @Security ApiKeyAuth
+// @Success 200 {object} GetSqlManageSqlAnalysisResp
+// @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
+func GetSqlManageSqlAnalysisV1(c echo.Context) error {
+	return getSqlManageSqlAnalysisV1(c)
 }

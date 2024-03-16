@@ -13,6 +13,7 @@ asensitive
 atoi
 attrs
 auditplan
+armscii
 backoff
 bcda
 beeefore
@@ -20,6 +21,9 @@ bigint
 binlog
 blkid
 btree
+brazil
+chinese
+cidr
 cardinalities
 ccug
 chanxuehong
@@ -48,6 +52,7 @@ errorf
 errorln
 exprs
 facebookgo
+falsef
 fatale
 fatalf
 fatalln
@@ -84,6 +89,8 @@ gracenet
 grpc
 gtids
 gzipped
+huawei
+huaweicloud
 hashicorp
 hclog
 hostname
@@ -124,6 +131,7 @@ longtext
 looper
 maxvalue
 mdriver
+mexico
 mediumblob
 mediumint
 mediumtext
@@ -225,6 +233,7 @@ tinyint
 tinytext
 todo
 tracef
+truef
 typecheck
 unary
 ungerik
@@ -440,3 +449,12 @@ mysqldump
 datediff
 xxx
 sprintln
+sessionctx
+stmtctx
+linestring
+multipoint
+multilinestring
+multipolygon
+geometrycollection
+charlength
+xmls

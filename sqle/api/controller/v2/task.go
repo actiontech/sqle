@@ -29,6 +29,7 @@ type AuditTaskSQLResV2 struct {
 	Number        uint           `json:"number"`
 	ExecSQL       string         `json:"exec_sql"`
 	SQLSourceFile string         `json:"sql_source_file"`
+	SQLStartLine  uint64         `json:"sql_start_line"`
 	AuditResult   []*AuditResult `json:"audit_result"`
 	AuditLevel    string         `json:"audit_level"`
 	AuditStatus   string         `json:"audit_status"`
@@ -36,6 +37,7 @@ type AuditTaskSQLResV2 struct {
 	ExecStatus    string         `json:"exec_status"`
 	RollbackSQL   string         `json:"rollback_sql,omitempty"`
 	Description   string         `json:"description"`
+	SQLType       string         `json:"sql_type"`
 }
 
 type AuditResult struct {
@@ -98,14 +100,17 @@ func GetTaskSQLs(c echo.Context) error {
 	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV2{
-			Number:      taskSQL.Number,
-			Description: taskSQL.Description,
-			ExecSQL:     taskSQL.ExecSQL,
-			AuditLevel:  taskSQL.AuditLevel,
-			AuditStatus: taskSQL.AuditStatus,
-			ExecResult:  taskSQL.ExecResult,
-			ExecStatus:  taskSQL.ExecStatus,
-			RollbackSQL: taskSQL.RollbackSQL.String,
+			Number:        taskSQL.Number,
+			Description:   taskSQL.Description,
+			ExecSQL:       taskSQL.ExecSQL,
+			SQLSourceFile: taskSQL.SQLSourceFile.String,
+			SQLStartLine:  taskSQL.SQLStartLine,
+			AuditLevel:    taskSQL.AuditLevel,
+			AuditStatus:   taskSQL.AuditStatus,
+			ExecResult:    taskSQL.ExecResult,
+			ExecStatus:    taskSQL.ExecStatus,
+			RollbackSQL:   taskSQL.RollbackSQL.String,
+			SQLType:       taskSQL.SQLType.String,
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]

@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-const (
-	MybatisFileSuffix = "xml"
-	SQLFileSuffix     = "sql"
-)
-
 type SQL struct {
 	Fingerprint string
 	RawText     string
@@ -18,6 +13,8 @@ type SQL struct {
 	QueryTime   float64   // 慢日志执行时长
 	QueryAt     time.Time // 慢日志发生时间
 	DBUser      string    // 执行SQL的用户
+	Endpoint    string    // 下发SQL的端点信息
+	RowExamined float64   // 扫描行数
 }
 
 // Scanner is a interface for all Scanners.
