@@ -11,7 +11,7 @@ type DynPerformancePgColumns struct {
 }
 
 const (
-	DynPerformanceViewPgSQLTpl = `
+	DynPerformanceViewPgTpl = `
 SELECT query as sql_fulltext,
 sum(calls) as executions,
 sum(total_exec_time) AS elapsed_time,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/pkg/postgresql"
 	"net/http"
 	"strconv"
@@ -1576,7 +1577,8 @@ func (at *PostgreSQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	// 超时2分钟
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
@@ -1585,51 +1587,96 @@ func (at *PostgreSQLTopSQLTask) collectorDo() {
 		return
 	}
 
-	dsn := &postgresql.DSN{
-		Host:     inst.Host,
-		Port:     inst.Port,
-		User:     inst.User,
-		Password: inst.Password,
-		Database: at.ap.InstanceDatabase,
-	}
-	db, err := postgresql.NewDB(dsn)
-	if err != nil {
-		at.logger.Errorf("connect to instance fail, error: %v", err)
-		return
-	}
-	defer db.Close()
-
-	ctx, cancel = context.WithCancel(context.Background())
-	defer cancel()
-
-	sqls, err := db.QueryTopSQLs(ctx, at.ap.Params.GetParam("top_n").Int(),
-		at.ap.Params.GetParam("order_by_column").String())
+	sqls, err := queryTopSQLsForPg(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
 		return
 	}
-	if len(sqls) > 0 {
-		apSQLs := make([]*SQL, 0, len(sqls))
-		for _, sql := range sqls {
-			apSQLs = append(apSQLs, &SQL{
-				SQLContent:  sql.SQLFullText,
-				Fingerprint: sql.SQLFullText,
-				Info: map[string]interface{}{
-					postgresql.DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
-					postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
-					postgresql.DynPerformanceViewPgSQLColumnCPUTime:        sql.CPUTime,
-					postgresql.DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
-					postgresql.DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
-					postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
-				},
-			})
-		}
 
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
-		if err != nil {
-			at.logger.Errorf("save top sql to storage fail, error: %v", err)
-		}
+	if len(sqls) == 0 {
+		at.logger.Info("sql result count is 0")
+		return
 	}
+
+	apSQLs := make([]*SQL, 0, len(sqls))
+	for _, sql := range sqls {
+		apSQLs = append(apSQLs, &SQL{
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
+			Info: map[string]interface{}{
+				postgresql.DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
+				postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
+				postgresql.DynPerformanceViewPgSQLColumnCPUTime:        sql.CPUTime,
+				postgresql.DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
+				postgresql.DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
+				postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
+			},
+		})
+	}
+	err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+	if err != nil {
+		at.logger.Errorf("save top sql to storage fail, error: %v", err)
+	}
+}
+
+func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, topN int) ([]*postgresql.DynPerformancePgColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	sql := fmt.Sprintf(postgresql.DynPerformanceViewPgTpl, orderBy, topN)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*postgresql.DynPerformancePgColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) < 7 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		elapsedTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		cpuTime, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		diskReads, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		bufferGets, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		userIoWaitTime, err := strconv.ParseFloat(values[6].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &postgresql.DynPerformancePgColumns{
+			SQLFullText:    values[0].Value,
+			Executions:     executions,
+			ElapsedTime:    elapsedTime,
+			CPUTime:        cpuTime,
+			DiskReads:      diskReads,
+			BufferGets:     bufferGets,
+			UserIOWaitTime: userIoWaitTime,
+		})
+	}
+	return ret, nil
 }
 
 func (at *PostgreSQLTopSQLTask) Audit() (*AuditResultResp, error) {
