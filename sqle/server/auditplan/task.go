@@ -1583,7 +1583,8 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 
 	pluginMgr := driver.GetPluginManager()
 	if !pluginMgr.IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleQuery) {
-		at.logger.Errorf("collect pg schema meta failed: %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+		at.logger.Errorf("collect pg schema meta failed: %v",
+			driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
 		return
 	}
 	plugin, err := pluginMgr.OpenPlugin(at.logger, instance.DbType, &driverV2.Config{DSN: &driverV2.DSN{
@@ -1612,7 +1613,6 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		return
 	}
 
-	sqls := make([]string, 0)
 	finalTableSqls := make([]string, 0)
 	finalViewSqls := make([]string, 0)
 	for _, schema := range schemas {
@@ -1629,6 +1629,12 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 			}
 			if len(tableSqls) > 0 {
 				finalTableSqls = append(finalTableSqls, tableSqls...)
+			}
+		}
+		if len(finalTableSqls) > 0 {
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalTableSqls, schema))
+			if err != nil {
+				at.logger.Errorf("save table schema meta to storage fail, error: %s", err)
 			}
 		}
 	}
@@ -1652,20 +1658,11 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 				finalViewSqls = append(finalViewSqls, viewSqls...)
 			}
 		}
-	}
-
-	if len(finalTableSqls) > 0 {
-		sqls = append(sqls, finalTableSqls...)
-	}
-
-	if len(finalViewSqls) > 0 {
-		sqls = append(sqls, finalViewSqls...)
-	}
-
-	if len(sqls) > 0 {
-		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(sqls))
-		if err != nil {
-			at.logger.Errorf("save schema meta to storage fail, error: %s", err)
+		if len(finalViewSqls) > 0 {
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalViewSqls, schema))
+			if err != nil {
+				at.logger.Errorf("save view schema meta to storage fail, error: %s", err)
+			}
 		}
 	}
 }
@@ -1739,11 +1736,11 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	// 获取列定义，多个英文逗号分割
 	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
 		"CASE "+
-		" WHEN data_type IN ('char', 'varchar', 'character', 'character varying') "+
+		" WHEN lower(data_type) IN ('char', 'varchar', 'character', 'character varying') "+
 		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
-		" WHEN data_type IN ('numeric', 'decimal') "+
+		" WHEN lower(data_type) IN ('numeric', 'decimal') "+
 		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
-		" WHEN data_type IN ('integer', 'smallint', 'bigint', 'text') THEN data_type "+
+		" WHEN lower(data_type) IN ('integer', 'smallint', 'bigint', 'text') THEN data_type "+
 		" ELSE data_type "+
 		" END "+
 		" || "+
