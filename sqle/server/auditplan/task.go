@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/postgresql"
+	"github.com/actiontech/sqle/sqle/driver"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1571,31 +1571,34 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		at.logger.Warnf("instance schema is not configured")
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-	defer cancel()
-	instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
 	if err != nil {
-		at.logger.Warnf("get postgreSQL instance error:%s", err)
+		at.logger.Errorf("get pg instance in project by instanceName failed: %s\n", err)
 		return
 	}
 
-	dsn := &postgresql.DSN{
-		Host:     instance.Host,
-		Port:     instance.Port,
-		User:     instance.User,
-		Password: instance.Password,
-		Database: at.ap.InstanceDatabase,
-	}
-	db, err := postgresql.NewDB(dsn)
-	if err != nil {
-		at.logger.Errorf("connect to instance fail, error: %s", err)
+	pluginMgr := driver.GetPluginManager()
+	if !pluginMgr.IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleQuery) {
+		at.logger.Errorf("collect pg schema meta failed: %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
 		return
 	}
-	defer db.Close()
-	db.IsCaseSensitive = db.GetCaseSensitive()
+	plugin, err := pluginMgr.OpenPlugin(at.logger, instance.DbType, &driverV2.Config{DSN: &driverV2.DSN{
+		Host:             instance.Host,
+		Port:             instance.Port,
+		User:             instance.User,
+		Password:         instance.Password,
+		AdditionalParams: instance.AdditionalParams,
+		DatabaseName:     at.ap.InstanceDatabase,
+	}})
+	if err != nil {
+		at.logger.Errorf("connect to instance fail, error: %v", err)
+		return
+	}
 
-	schemas, err := db.GetAllUserSchemas()
+	// 是否大小写敏感
+	isSensitive := at.GetCaseSensitiveForPg(plugin)
+
+	schemas, err := at.GetAllUserSchemas(plugin)
 	if err != nil {
 		at.logger.Errorf("get database=%s schemas error: %s", at.ap.InstanceDatabase, err)
 		return
@@ -1605,60 +1608,47 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		return
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(schemas) * 2)
-	tableMutex := sync.Mutex{}
-	viewMutex := sync.Mutex{}
 	sqls := make([]string, 0)
 	finalTableSqls := make([]string, 0)
 	finalViewSqls := make([]string, 0)
 	for _, schema := range schemas {
-		go func(schema string) {
-			defer wg.Done()
-			tables, err := db.ShowSchemaTables(schema)
+		tables, err := at.ShowSchemaTablesForPg(plugin, schema, isSensitive)
+		if err != nil {
+			at.logger.Errorf("get schema table fail, error: %s", err)
+			continue
+		}
+		for _, table := range tables {
+			tableSqls, err := at.ShowCreateTablesForPg(plugin, at.ap.InstanceDatabase, schema, table, isSensitive)
 			if err != nil {
-				at.logger.Errorf("get schema table fail, error: %s", err)
-				return
+				at.logger.Errorf("show create table fail, error: %s", err)
+				continue
 			}
-			for _, table := range tables {
-				tableSqls, err := db.ShowCreateTables(at.ap.InstanceDatabase, schema, table)
-				if err != nil {
-					at.logger.Errorf("show create table fail, error: %s", err)
-					return
-				}
-				tableMutex.Lock()
-				if len(tableSqls) > 0 {
-					finalTableSqls = append(finalTableSqls, tableSqls...)
-				}
-				tableMutex.Unlock()
+			if len(tableSqls) > 0 {
+				finalTableSqls = append(finalTableSqls, tableSqls...)
 			}
-		}(schema)
-
-		go func(schema string) {
-			defer wg.Done()
-			var views []string
-			if at.ap.Params.GetParam("collect_view").Bool() {
-				views, err = db.ShowSchemaViews(schema)
-				if err != nil {
-					at.logger.Errorf("get schema view fail, error: %s", err)
-					return
-				}
-			}
-			for _, view := range views {
-				viewSqls, err := db.ShowCreateViews(at.ap.InstanceDatabase, schema, view)
-				if err != nil {
-					at.logger.Errorf("show create view fail, error: %s", err)
-					return
-				}
-				viewMutex.Lock()
-				if len(viewSqls) > 0 {
-					finalViewSqls = append(finalViewSqls, viewSqls...)
-				}
-				viewMutex.Unlock()
-			}
-		}(schema)
+		}
 	}
-	wg.Wait()
+
+	for _, schema := range schemas {
+		var views []string
+		if at.ap.Params.GetParam("collect_view").Bool() {
+			views, err = at.ShowSchemaViewsForPg(plugin, schema, isSensitive)
+			if err != nil {
+				at.logger.Errorf("get schema view fail, error: %s", err)
+				continue
+			}
+		}
+		for _, view := range views {
+			viewSqls, err := at.ShowCreateViewsForPg(plugin, at.ap.InstanceDatabase, schema, view, isSensitive)
+			if err != nil {
+				at.logger.Errorf("show create view fail, error: %s", err)
+				continue
+			}
+			if len(viewSqls) > 0 {
+				finalViewSqls = append(finalViewSqls, viewSqls...)
+			}
+		}
+	}
 
 	if len(finalTableSqls) > 0 {
 		sqls = append(sqls, finalTableSqls...)
@@ -1674,6 +1664,188 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 			at.logger.Errorf("save schema meta to storage fail, error: %s", err)
 		}
 	}
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetCaseSensitiveForPg(plugin driver.Plugin) bool {
+	sql := "SELECT setting FROM pg_settings WHERE name = 'quote_all_identifiers'"
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		at.logger.Errorf("get caseSensitive fail, error: %v", err)
+		return false
+	}
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) == 0 {
+			continue
+		}
+		caseSensitive := values[0].Value
+		if strings.ToLower(caseSensitive) == "on" {
+			return true
+		}
+	}
+	return false
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin) ([]string, error) {
+	querySql := "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema'"
+	return at.GetResultSqls(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
+	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
+		" where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
+	if isSensitive {
+		schema = strings.ToLower(schema)
+		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
+			" where lower(table_schema)='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
+	}
+	return at.GetResultSqls(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
+	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
+		" where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
+	if isSensitive {
+		schema = strings.ToLower(schema)
+		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
+			"where lower(table_schema)='%s' and TABLE_TYPE='VIEW'", schema)
+	}
+	return at.GetResultSqls(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, database, schema, tableName string, isSensitive bool) ([]string, error) {
+	tables := make([]string, 0)
+	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
+	if isSensitive {
+		database = strings.ToLower(database)
+		schema = strings.ToLower(schema)
+		tableName = strings.ToLower(tableName)
+	}
+	columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+		database, schema, tableName)
+	if isSensitive {
+		columnsCondition = fmt.Sprintf("lower(table_catalog) = '%s' AND lower(table_schema) = '%s' "+
+			"AND lower(table_name) = '%s'", database, schema, tableName)
+	}
+	// 获取列定义，多个英文逗号分割
+	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
+		"CASE "+
+		" WHEN data_type IN ('char', 'varchar', 'character', 'character varying', 'text') "+
+		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
+		" WHEN data_type IN ('numeric', 'decimal') "+
+		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
+		" WHEN data_type IN ('integer', 'smallint', 'bigint') THEN data_type "+
+		" ELSE data_type "+
+		" END "+
+		" || "+
+		" CASE "+
+		" WHEN column_default != '' THEN ' DEFAULT ' || column_default ELSE '' END "+
+		" || "+
+		" CASE "+
+		" WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END, ',\n ' ORDER BY ordinal_position) AS columns_sql"+
+		" FROM information_schema.columns "+
+		" WHERE %s GROUP BY table_name", columnsCondition)
+	sqls, err := at.GetResultSqls(plugin, columns)
+	if err != nil {
+		at.logger.Errorf("search column definition error:%s\n", err)
+		return nil, err
+	}
+	if len(sqls) == 0 {
+		return tables, nil
+	}
+	tableDDl += strings.Join(sqls, "")
+	constraintsCondition := fmt.Sprintf("n.nspname = '%s' AND C.relname = '%s'", schema, tableName)
+	if isSensitive {
+		constraintsCondition = fmt.Sprintf("lower(n.nspname) = '%s' "+
+			"AND lower(C.relname) = '%s'", schema, tableName)
+	}
+	// 获取所有约束
+	constraints := fmt.Sprintf("SELECT 'CONSTRAINT ' || r.conname || ' ' || "+
+		" pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition "+
+		" FROM pg_catalog.pg_constraint r "+
+		" JOIN pg_catalog.pg_class C ON C.OID = r.conrelid "+
+		" JOIN pg_catalog.pg_namespace n ON n.OID = C.relnamespace "+
+		" WHERE %s", constraintsCondition)
+	sqls, err = at.GetResultSqls(plugin, constraints)
+	if err != nil {
+		at.logger.Errorf("search constraint definition error:%s\n", err)
+		return nil, err
+	}
+	for _, sqlContext := range sqls {
+		tableDDl += ",\n" + sqlContext
+	}
+	tableDDl += ")"
+	indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
+	if isSensitive {
+		indexesCondition = fmt.Sprintf("lower(schemaname) = '%s' and lower(tablename) = '%s'",
+			schema, tableName)
+	}
+	// 获取索引
+	indexes := fmt.Sprintf("SELECT indexdef AS index_definition FROM pg_indexes "+
+		" WHERE %s", indexesCondition)
+	sqls, err = at.GetResultSqls(plugin, indexes)
+	if err != nil {
+		at.logger.Errorf("search index definition error:%s\n", err)
+		return nil, err
+	}
+	for _, sqlContent := range sqls {
+		if strings.Contains(sqlContent, "CREATE UNIQUE INDEX") {
+			continue
+		}
+		tableDDl += ";\n" + sqlContent
+	}
+	tables = append(tables, tableDDl)
+	return tables, nil
+}
+
+func (at *PostgreSQLSchemaMetaTask) ShowCreateViewsForPg(plugin driver.Plugin, database, schema, tableName string, isSensitive bool) ([]string, error) {
+	querySql := fmt.Sprintf(
+		"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
+			" AS create_view_statement "+
+			" FROM information_schema.views "+
+			" WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
+		database, schema, tableName)
+	if isSensitive {
+		database = strings.ToLower(database)
+		tableName = strings.ToLower(tableName)
+		querySql = fmt.Sprintf(
+			"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
+				" AS create_view_statement "+
+				" FROM information_schema.views "+
+				" WHERE lower(table_catalog) = '%s' AND lower(table_schema) = '%s' AND lower(table_name) = '%s'",
+			database, schema, tableName)
+	}
+	return at.GetResultSqls(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetResultSqls(plugin driver.Plugin, sql string) ([]string, error) {
+	var ret []string
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		at.logger.Errorf("plugin.Query() failed:%s\n", err)
+		return nil, err
+	}
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) == 0 {
+			continue
+		}
+		sqlContent := values[0].Value
+		if len(sqlContent) == 0 {
+			continue
+		}
+		ret = append(ret, sqlContent)
+	}
+	return ret, nil
 }
 
 func (at *PostgreSQLSchemaMetaTask) Audit() (*AuditResultResp, error) {
