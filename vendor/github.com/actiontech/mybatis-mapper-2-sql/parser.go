@@ -28,12 +28,17 @@ func ParseXML(data string) (string, error) {
 	return stmt, nil
 }
 
-// ParseXMLs is a parser for parse all query in several XML files to []string one by one;
+type XmlFile struct {
+	FilePath string
+	Content  string
+}
+
+// ParseXMLs is a parser for parse all query in several XML files to []ast.StmtInfo one by one;
 // you can set `skipErrorQuery` true to ignore invalid query.
-func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
+func ParseXMLs(data []XmlFile, skipErrorQuery bool) ([]ast.StmtInfo, error) {
 	ms := ast.NewMappers()
-	for i := range data {
-		r := strings.NewReader(data[i])
+	for _, data := range data {
+		r := strings.NewReader(data.Content)
 		d := xml.NewDecoder(r)
 		n, err := parse(d)
 		if err != nil {
@@ -56,6 +61,7 @@ func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
 				return nil, errors.New("the mapper is not found")
 			}
 		}
+		m.FilePath = data.FilePath
 		err = ms.AddMapper(m)
 		if err != nil && !skipErrorQuery {
 			return nil, fmt.Errorf("add mapper failed: %v", err)
@@ -89,7 +95,11 @@ func ParseXMLQuery(data string, skipErrorQuery bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return stmts, nil
+	sqls := []string{}
+	for _, stmt := range stmts {
+		sqls = append(sqls, stmt.SQL)
+	}
+	return sqls, nil
 }
 
 func parse(d *xml.Decoder) (node ast.Node, err error) {
@@ -115,7 +125,7 @@ func parse(d *xml.Decoder) (node ast.Node, err error) {
 }
 
 func parseMyBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	node, err = scanMyBatis(start)
+	node, err = scanMyBatis(d, start)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +176,7 @@ func parseMyBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err e
 	return node, nil
 }
 
-func scanMyBatis(start *xml.StartElement) (ast.Node, error) {
+func scanMyBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 	var node ast.Node
 	switch start.Name.Local {
 	case "mapper":
@@ -178,7 +188,8 @@ func scanMyBatis(start *xml.StartElement) (ast.Node, error) {
 	case "property":
 		node = ast.NewPropertyNode()
 	case "select", "update", "delete", "insert":
-		node = ast.NewQueryNode()
+		startLine, _ := d.InputPos()
+		node = ast.NewQueryNode(uint64(startLine))
 	case "if":
 		node = ast.NewIfNode()
 	case "choose":
@@ -201,7 +212,7 @@ func scanMyBatis(start *xml.StartElement) (ast.Node, error) {
 
 // ref: https://ibatis.apache.org/docs/java/pdf/iBATIS-SqlMaps-2_cn.pdf
 func parseIBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	node, err = scanIBatis(start)
+	node, err = scanIBatis(d, start)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +263,7 @@ func parseIBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err er
 	return node, nil
 }
 
-func scanIBatis(start *xml.StartElement) (ast.Node, error) {
+func scanIBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 	var node ast.Node
 	switch start.Name.Local {
 	case "sqlMap":
@@ -262,7 +273,8 @@ func scanIBatis(start *xml.StartElement) (ast.Node, error) {
 	case "include":
 		node = ast.NewIncludeNode()
 	case "select", "update", "delete", "insert", "statement":
-		node = ast.NewQueryNode()
+		startLine, _ := d.InputPos()
+		node = ast.NewQueryNode(uint64(startLine))
 	case "isEqual", "isNotEqual", "isGreaterThan", "isGreaterEqual", "isLessEqual",
 		"isPropertyAvailable", "isNotPropertyAvailable", "isNull", "isNotNull", "isEmpty", "isNotEmpty":
 		node = ast.NewConditionStmt()

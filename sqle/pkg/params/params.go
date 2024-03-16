@@ -12,9 +12,10 @@ type Params []*Param
 type ParamType string
 
 const (
-	ParamTypeString ParamType = "string"
-	ParamTypeInt    ParamType = "int"
-	ParamTypeBool   ParamType = "bool"
+	ParamTypeString  ParamType = "string"
+	ParamTypeInt     ParamType = "int"
+	ParamTypeBool    ParamType = "bool"
+	ParamTypeFloat64 ParamType = "float64"
 )
 
 type Param struct {
@@ -73,6 +74,18 @@ func (r *Param) Int() int {
 		return 0
 	}
 	i, err := strconv.Atoi(r.Value)
+	if err != nil {
+		return 0
+	}
+	return i
+}
+
+func (r *Param) Float64() float64 {
+	if r == nil {
+		return 0
+	}
+
+	i, err := strconv.ParseFloat(r.Value, 64)
 	if err != nil {
 		return 0
 	}

@@ -28,7 +28,7 @@ type WorkflowStatisticsResV1 struct {
 }
 
 type GetDashboardReqV1 struct {
-	FilterProjectName string `json:"filter_project_id" query:"filter_project_id" form:"filter_project_id"`
+	FilterProjectName string `json:"filter_project_name" query:"filter_project_name" form:"filter_project_name"`
 }
 
 // @Summary 获取 dashboard 信息
@@ -50,7 +50,7 @@ func Dashboard(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

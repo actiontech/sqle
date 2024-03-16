@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -93,7 +94,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 func checkCurrentUserCanAccessTask(c echo.Context, task *model.Task, ops []dmsV1.OpPermissionType) error {
 	userId := controller.GetUserID(c)
 	// todo issues-2005
-	if task.Instance == nil {
+	if task.Instance == nil || task.Instance.ProjectId == "" {
 		return nil
 	}
 	up, err := dms.NewUserPermission(userId, task.Instance.ProjectId)
@@ -138,7 +139,7 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 		return nil, exist, err
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return nil, false, err
 	}
@@ -167,6 +168,45 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 		}
 	}
 	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+}
+
+func GetAuditPlantReportAndInstance(c echo.Context, projectId, auditPlanName string, reportID, sqlNumber int) (
+	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
+	err error) {
+
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewAuditPlanNotExistErr()
+	}
+
+	s := model.GetStorage()
+	auditPlanReport, exist, err = s.GetAuditPlanReportByID(ap.ID, uint(reportID))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report not exist")
+	}
+
+	auditPlanReportSQLV2, exist, err = s.GetAuditPlanReportSQLV2ByReportIDAndNumber(uint(reportID), uint(sqlNumber))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("audit plan report sql v2 not exist")
+	}
+	instance, exist, err = dms.GetInstanceInProjectByName(context.Background(), projectId, auditPlanReport.AuditPlan.InstanceName)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if !exist {
+		return nil, nil, nil, errors.NewDataNotExistErr("instance not exist")
+	}
+
+	return auditPlanReport, auditPlanReportSQLV2, instance, nil
 }
 
 func CheckCurrentUserCanAccessInstances(ctx context.Context, projectUID string, userId string, instances []*model.Instance) (bool, error) {
@@ -245,6 +285,28 @@ func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, pro
 		}
 	}
 	return canOperationInstance, nil
+}
+
+func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternalItem, instance *model.Instance, opPermissioins []dmsV1.OpPermissionType) (opUsers []*model.User, err error) {
+	opMapUsers := make(map[uint]struct{}, 0)
+	for _, memberWithPermission := range memberWithPermissions {
+		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
+			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissioins, instance) {
+				opUser := new(model.User)
+				userId, err := strconv.Atoi(memberWithPermission.User.Uid)
+				if err != nil {
+					return nil, err
+				}
+				opUser.ID = uint(userId)
+				opUser.Name = memberWithPermission.User.Name
+				if _, ok := opMapUsers[opUser.ID]; !ok {
+					opMapUsers[opUser.ID] = struct{}{}
+					opUsers = append(opUsers, opUser)
+				}
+			}
+		}
+	}
+	return opUsers, nil
 }
 
 func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPermissionTypes []dmsV1.OpPermissionType, instance *model.Instance) bool {

@@ -54,10 +54,21 @@ type AuditPlanSQLV2 struct {
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
 }
 
+const (
+	FilterTypeSQL  string = "SQL"
+	FilterTypeIP   string = "IP"
+	FilterTypeCIDR string = "CIDR"
+	FilterTypeHost string = "HOST"
+)
+
 type BlackListAuditPlanSQL struct {
 	Model
+	FilterContent string `json:"filter_content" gorm:"type:varchar(512);not null;"`
+	FilterType    string `json:"filter_type" gorm:"type:enum('SQL','IP','CIDR','HOST');default:'SQL';not null;"`
+}
 
-	FilterSQL string `json:"filter_sql" gorm:"type:varchar(512);not null;unique"`
+func (a BlackListAuditPlanSQL) TableName() string {
+	return "black_list_audit_plan_sqls"
 }
 
 func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
@@ -238,6 +249,16 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 			)
 				AS DECIMAL(12,6)
 			),
+			'$.row_examined_avg', CAST(
+			(
+				COALESCE(JSON_EXTRACT(info, '$.row_examined_avg'), JSON_EXTRACT(values(info), '$.row_examined_avg'))*COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+				+COALESCE(JSON_EXTRACT(values(info), '$.row_examined_avg'), 0)*COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0)
+			)/(
+				COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+				+COALESCE(JSON_EXTRACT(values(info), '$.counter'), 1)
+			)
+				AS DECIMAL(65,6)
+			),
 			'$.first_query_at', IF(
 				JSON_TYPE(JSON_EXTRACT(info, '$.first_query_at'))="NULL",
 				JSON_EXTRACT(values(info), '$.first_query_at'),
@@ -247,7 +268,11 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 				JSON_TYPE(JSON_EXTRACT(info, '$.db_user'))="NULL",
 				JSON_EXTRACT(values(info), '$.db_user'),
 				JSON_EXTRACT(info, '$.db_user')
-			)
+			),
+            '$.endpoints', JSON_MERGE(
+                JSON_EXTRACT(info, '$.endpoints'),
+			    JSON_EXTRACT(VALUES(info), '$.endpoints')
+            )
 	  	);`
 
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
@@ -270,6 +295,19 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 												/ (JSON_EXTRACT(info, '$.counter') + JSON_EXTRACT(VALUES(info), '$.counter'))
 												AS UNSIGNED
 											  ),
+											  '$.row_examined_avg', CAST(
+                                                       (
+                                                           COALESCE(JSON_EXTRACT(info, '$.row_examined_avg'),
+                                                                    JSON_EXTRACT(VALUES(info), '$.row_examined_avg')) *
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               +
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.row_examined_avg'), 0) *
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 0)
+                                                           ) / (
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               + COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 1)
+                                                           )
+                                                   AS DECIMAL(65,6)),
 											  '$.start_time',
 											  JSON_EXTRACT(values(info), '$.start_time'));`
 

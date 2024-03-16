@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"database/sql"
 	e "errors"
 	"fmt"
 	"net/http"
@@ -68,45 +67,7 @@ type WorkFlowStepTemplateResV1 struct {
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
-	s := model.GetStorage()
-
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	var td *model.WorkflowTemplate
-
-	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		td = model.DefaultWorkflowTemplate(projectUid)
-		err = s.SaveWorkflowTemplate(td)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	} else {
-		td, err = getWorkflowTemplateDetailByTemplate(template)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowTemplateToRes(td),
-	})
-}
-
-func getWorkflowTemplateDetailByTemplate(template *model.WorkflowTemplate) (*model.WorkflowTemplate, error) {
-	s := model.GetStorage()
-	steps, err := s.GetWorkflowStepsDetailByTemplateId(template.ID)
-	if err != nil {
-		return nil, err
-	}
-	template.Steps = steps
-	return template, nil
+	return getWorkflowTemplate(c)
 }
 
 func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
@@ -149,32 +110,6 @@ type WorkFlowStepTemplateReqV1 struct {
 	Users                []string `json:"assignee_user_id_list" form:"assignee_user_id_list"`
 }
 
-func validWorkflowTemplateReq(steps []*WorkFlowStepTemplateReqV1) error {
-	if len(steps) == 0 {
-		return fmt.Errorf("workflow steps cannot be empty")
-	}
-	if len(steps) > 5 {
-		return fmt.Errorf("workflow steps length must be less than 6")
-	}
-
-	for i, step := range steps {
-		isLastStep := i == len(steps)-1
-		if isLastStep && step.Type != model.WorkflowStepTypeSQLExecute {
-			return fmt.Errorf("the last workflow step type must be sql_execute")
-		}
-		if !isLastStep && step.Type == model.WorkflowStepTypeSQLExecute {
-			return fmt.Errorf("workflow step type sql_execute just be used in last step")
-		}
-		if len(step.Users) == 0 && !step.ApprovedByAuthorized && !step.ExecuteByAuthorized {
-			return fmt.Errorf("the assignee is empty for step %s", step.Desc)
-		}
-		if len(step.Users) > 3 {
-			return fmt.Errorf("the assignee for step cannot be more than 3")
-		}
-	}
-	return nil
-}
-
 type UpdateWorkflowTemplateReqV1 struct {
 	Desc                          *string                      `json:"desc" form:"desc"`
 	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
@@ -193,73 +128,7 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflow_template [patch]
 func UpdateWorkflowTemplate(c echo.Context) error {
-	req := new(UpdateWorkflowTemplateReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	s := model.GetStorage()
-
-	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
-			fmt.Errorf("workflow template is not exist")))
-	}
-
-	if req.Steps != nil {
-		err = validWorkflowTemplateReq(req.Steps)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
-		}
-
-		// dms-todo: 校验step.Users用户是否存在
-
-		steps := make([]*model.WorkflowStepTemplate, 0, len(req.Steps))
-		for i, step := range req.Steps {
-			s := &model.WorkflowStepTemplate{
-				Number: uint(i + 1),
-				ApprovedByAuthorized: sql.NullBool{
-					Bool:  step.ApprovedByAuthorized,
-					Valid: true,
-				},
-				ExecuteByAuthorized: sql.NullBool{
-					Bool:  step.ExecuteByAuthorized,
-					Valid: true,
-				},
-				Typ:  step.Type,
-				Desc: step.Desc,
-			}
-			s.Users = strings.Join(step.Users, ",")
-			steps = append(steps, s)
-		}
-		err = s.UpdateWorkflowTemplateSteps(workflowTemplate.ID, steps)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-
-	if req.Desc != nil {
-		workflowTemplate.Desc = *req.Desc
-	}
-
-	if req.AllowSubmitWhenLessAuditLevel != nil {
-		workflowTemplate.AllowSubmitWhenLessAuditLevel = *req.AllowSubmitWhenLessAuditLevel
-	}
-
-	err = s.Save(workflowTemplate)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+	return updateWorkflowTemplate(c)
 }
 
 type WorkflowStepResV1 struct {
@@ -679,7 +548,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -774,7 +643,7 @@ func GetWorkflowsV1(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	user, err := controller.GetCurrentUser(c)
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1003,7 +872,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	workflowID := c.Param("workflow_id")
-	// user, err := controller.GetCurrentUser(c)
+	// user, err := controller.GetCurrentUser(c,dms.GetUser)
 	// if err != nil {
 	// 	return controller.JSONBaseErrorReq(c, err)
 	// }
@@ -1057,7 +926,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// user, err := controller.GetCurrentUser(c)
+	// user, err := controller.GetCurrentUser(c,dms.GetUser)
 	// if err != nil {
 	// 	return controller.JSONBaseErrorReq(c, err)
 	// }

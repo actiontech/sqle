@@ -23,6 +23,7 @@ var (
 	WebHookRouterGroup            = "/dms/webhooks"
 	MemberForInternalRouterSuffix = "/internal"
 	InternalDBServiceRouterGroup  = "/internal/db_services"
+	LicenseRouterGroup            = "/dms/license"
 )
 
 // api group

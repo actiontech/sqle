@@ -3,6 +3,6 @@
 
 package rule
 
-import driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-
-var defaultRuleKnowledgeMap = map[string]driverV2.RuleKnowledge{}
+func getDefaultRulesKnowledge() (map[string]string, error) {
+	return nil, nil
+}
