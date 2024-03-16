@@ -70,6 +70,9 @@ type ListDBServiceReq struct {
 	// project id
 	// in:path
 	ProjectUid string `param:"project_uid" json:"project_uid"`
+	// the db service fuzzy keyword,include host/port
+	// in:query
+	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`
 }
 
 // swagger:enum DBServiceOrderByField

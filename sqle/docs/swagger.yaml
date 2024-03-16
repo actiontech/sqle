@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.AffectRows:
+    properties:
+      count:
+        type: integer
+      err_message:
+        type: string
+    type: object
   v1.AuditPlanCount:
     properties:
       audit_plan_count:
@@ -144,7 +151,7 @@ definitions:
       db_user:
         example: database_user001
         type: string
-      end_point:
+      endpoint:
         example: 10.186.1.2
         type: string
       first_query_at:
@@ -1450,6 +1457,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlManageSqlAnalysisResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlAnalysis'
+        description: V1版本不能引用V2版本的结构体,所以只能复制一份
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -1957,6 +1977,12 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
         type: array
     type: object
+  v1.PerformanceStatistics:
+    properties:
+      affect_rows:
+        $ref: '#/definitions/v1.AffectRows'
+        type: object
+    type: object
   v1.ProjectRuleTemplateResV1:
     properties:
       db_type:
@@ -2241,6 +2267,18 @@ definitions:
         - sql_audit_record
         type: string
     type: object
+  v1.SqlAnalysis:
+    properties:
+      performance_statistics:
+        $ref: '#/definitions/v1.PerformanceStatistics'
+        type: object
+      sql_explain:
+        $ref: '#/definitions/v1.SQLExplain'
+        type: object
+      table_metas:
+        $ref: '#/definitions/v1.TableMetas'
+        type: object
+    type: object
   v1.SqlAnalysisResDataV1:
     properties:
       sql_explain:
@@ -2413,6 +2451,15 @@ definitions:
         type: string
       field_name:
         type: string
+    type: object
+  v1.TableMetas:
+    properties:
+      err_message:
+        type: string
+      table_meta_items:
+        items:
+          $ref: '#/definitions/v1.TableMeta'
+        type: array
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -3017,6 +3064,43 @@ definitions:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object
     type: object
+  v2.AuditPlanSQLReqV2:
+    properties:
+      audit_plan_sql_counter:
+        example: "6"
+        type: string
+      audit_plan_sql_fingerprint:
+        example: select * from t1 where id = ?
+        type: string
+      audit_plan_sql_last_receive_text:
+        example: select * from t1 where id = 1
+        type: string
+      audit_plan_sql_last_receive_timestamp:
+        example: RFC3339
+        type: string
+      audit_plan_sql_schema:
+        example: db1
+        type: string
+      db_user:
+        example: database_user001
+        type: string
+      endpoints:
+        items:
+          type: string
+        type: array
+      first_query_at:
+        example: "2023-09-12T02:48:01.317880Z"
+        type: string
+      query_time_avg:
+        example: 3.22
+        type: number
+      query_time_max:
+        example: 5.22
+        type: number
+      row_examined_avg:
+        example: 100.22
+        type: number
+    type: object
   v2.AuditResDataV2:
     properties:
       audit_level:
@@ -3085,6 +3169,10 @@ definitions:
       rollback_sql:
         type: string
       sql_source_file:
+        type: string
+      sql_start_line:
+        type: integer
+      sql_type:
         type: string
     type: object
   v2.BatchCancelWorkflowsReqV2:
@@ -3165,6 +3253,12 @@ definitions:
       instance_type:
         example: MySQL
         type: string
+      project_id:
+        example: "700300"
+        type: string
+      rule_template_name:
+        example: default
+        type: string
       sql_content:
         description: 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
         example: select * from t1; select * from t2;
@@ -3197,6 +3291,13 @@ definitions:
         type: string
       logo_url:
         type: string
+    type: object
+  v2.FullSyncAuditPlanSQLsReqV2:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLReqV2'
+        type: array
     type: object
   v2.GetAuditPlanAnalysisDataResV2:
     properties:
@@ -3279,6 +3380,25 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v2.GetSqlManageListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.SqlManage'
+        type: array
+      message:
+        example: ok
+        type: string
+      sql_manage_bad_num:
+        type: integer
+      sql_manage_optimized_num:
+        type: integer
+      sql_manage_total_num:
+        type: integer
     type: object
   v2.GetTaskAnalysisDataResV2:
     properties:
@@ -3394,6 +3514,13 @@ definitions:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
     type: object
+  v2.PartialSyncAuditPlanSQLsReqV2:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLReqV2'
+        type: array
+    type: object
   v2.PerformanceStatistics:
     properties:
       affect_rows:
@@ -3420,6 +3547,49 @@ definitions:
       err_message:
         type: string
       sql:
+        type: string
+    type: object
+  v2.SqlManage:
+    properties:
+      assignees:
+        items:
+          type: string
+        type: array
+      audit_result:
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
+      endpoints:
+        items:
+          type: string
+        type: array
+      first_appear_timestamp:
+        type: string
+      fp_count:
+        type: integer
+      id:
+        type: integer
+      instance_name:
+        type: string
+      last_receive_timestamp:
+        type: string
+      remark:
+        type: string
+      schema_name:
+        type: string
+      source:
+        $ref: '#/definitions/v1.Source'
+        type: object
+      sql:
+        type: string
+      sql_fingerprint:
+        type: string
+      status:
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
         type: string
     type: object
   v2.TableMetas:
@@ -4588,6 +4758,7 @@ paths:
       - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full:
     post:
+      deprecated: true
       description: full sync audit plan SQLs
       operationId: fullSyncAuditPlanSQLsV1
       parameters:
@@ -4619,6 +4790,7 @@ paths:
       - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial:
     post:
+      deprecated: true
       description: partial sync audit plan SQLs
       operationId: partialSyncAuditPlanSQLsV1
       parameters:
@@ -5109,6 +5281,10 @@ paths:
         name: rule_template_name
         required: true
         type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
+        type: string
       responses:
         "200":
           description: OK
@@ -5414,6 +5590,7 @@ paths:
       - sql_audit_record
   /v1/projects/{project_name}/sql_manages:
     get:
+      deprecated: true
       description: get sql manage list
       operationId: GetSqlManageList
       parameters:
@@ -5475,9 +5652,13 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: endpoint
+      - description: fuzzy search endpoint
         in: query
-        name: filter_endpoint
+        name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
         type: string
       - description: sort field
         enum:
@@ -5512,6 +5693,31 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取管控sql列表
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis:
+    get:
+      description: get sql manage analysis
+      operationId: GetSqlManageSqlAnalysisV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql manage id
+        in: path
+        name: sql_manage_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlAnalysisResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL管控SQL分析
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/batch:
@@ -5603,9 +5809,13 @@ paths:
         in: query
         name: filter_rule_name
         type: string
-      - description: endpoint
+      - description: fuzzy search endpoint
         in: query
-        name: filter_endpoint
+        name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
         type: string
       - description: sort field
         enum:
@@ -6746,6 +6956,10 @@ paths:
         name: rule_template_name
         required: true
         type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
+        type: string
       responses:
         "200":
           description: OK
@@ -6859,6 +7073,10 @@ paths:
       - description: filter db type
         in: query
         name: filter_db_type
+        type: string
+      - description: fuzzy rule,keyword for desc and annotation
+        in: query
+        name: fuzzy_keyword_rule
         type: string
       - description: filter global rule template name
         in: query
@@ -7664,6 +7882,68 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/full:
+    post:
+      description: full sync audit plan SQLs
+      operationId: fullSyncAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: full sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.FullSyncAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 全量同步SQL到扫描任务
+      tags:
+      - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_name}/sqls/partial:
+    post:
+      description: partial sync audit plan SQLs
+      operationId: partialSyncAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan name
+        in: path
+        name: audit_plan_name
+        required: true
+        type: string
+      - description: partial sync audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.PartialSyncAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 增量同步SQL到扫描任务
+      tags:
+      - audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
@@ -7689,6 +7969,112 @@ paths:
       summary: 获取实例信息
       tags:
       - instance
+  /v2/projects/{project_name}/sql_manages:
+    get:
+      description: get sql manage list
+      operationId: GetSqlManageListV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        in: query
+        name: filter_status
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: fuzzy search endpoint
+        in: query
+        name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控sql列表
+      tags:
+      - SqlManage
   /v2/projects/{project_name}/workflows:
     post:
       consumes:
@@ -8044,7 +8430,6 @@ paths:
       - workflow
   /v2/sql_audit:
     post:
-      deprecated: true
       description: Direct audit sql
       operationId: directAuditV2
       parameters:

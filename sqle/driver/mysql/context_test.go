@@ -3,19 +3,19 @@ package mysql
 import (
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
 func TestContext(t *testing.T) {
-	handler := rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge]
-	handlerNotAllowRenaming := rule.RuleHandlerMap[rule.DDLNotAllowRenaming]
-	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
-	delete(rule.RuleHandlerMap, rule.DDLNotAllowRenaming)
+	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
+	handlerNotAllowRenaming := rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming]
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckAlterTableNeedMerge)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLNotAllowRenaming)
 	defer func() {
-		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
-		rule.RuleHandlerMap[rule.DDLNotAllowRenaming] = handlerNotAllowRenaming
+		rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge] = handler
+		rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming] = handlerNotAllowRenaming
 	}()
 
 	runDefaultRulesInspectCase(t, "rename table and drop column: table not exists", DefaultMysqlInspect(),
@@ -34,7 +34,7 @@ alter table not_exist_tb_2 drop column v1;
 alter table not_exist_tb_1 drop column v1;
 `,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
 		newTestResult(),
 		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb_1"),
@@ -65,7 +65,7 @@ alter table not_exist_tb_1 drop column v1;
 	alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
 		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
 	)
@@ -115,14 +115,14 @@ alter table not_exist_tb_1 drop column v1;
 }
 
 func TestParentContext(t *testing.T) {
-	handler := rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge]
-	delete(rule.RuleHandlerMap, rule.DDLCheckAlterTableNeedMerge)
+	handler := rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge]
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckAlterTableNeedMerge)
 	// It's trick :),
 	// elegant method: unit test support MySQL.
-	delete(rule.RuleHandlerMap, rule.DDLCheckTableDBEngine)
-	delete(rule.RuleHandlerMap, rule.DDLCheckTableCharacterSet)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableDBEngine)
+	delete(rulepkg.RuleHandlerMap, rulepkg.DDLCheckTableCharacterSet)
 	defer func() {
-		rule.RuleHandlerMap[rule.DDLCheckAlterTableNeedMerge] = handler
+		rulepkg.RuleHandlerMap[rulepkg.DDLCheckAlterTableNeedMerge] = handler
 	}()
 
 	inspect1 := DefaultMysqlInspect()
@@ -139,7 +139,7 @@ PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult(),
-		newTestResult(),
+		newTestResult().addResult(rulepkg.DDLCheckPKName),
 	)
 
 	inspect2 := DefaultMysqlInspect()

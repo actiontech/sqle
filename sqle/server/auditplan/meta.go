@@ -53,6 +53,8 @@ const (
 	paramKeyAccessKeySecret                     = "access_key_secret"
 	paramKeyRdsPath                             = "rds_path"
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
+	paramKeyProjectId                           = "project_id"
+	paramKeyRegion                              = "region"
 )
 
 var Metas = []Meta{
@@ -270,6 +272,50 @@ var Metas = []Meta{
 				Key:   paramKeyRdsPath,
 				Desc:  "RDS Open API地址",
 				Value: "rds.bj.baidubce.com",
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeHuaweiRdsMySQLSlowLog,
+		Desc:         "华为云RDS MySQL慢日志",
+		InstanceType: InstanceTypeMySQL,
+		CreateTask:   NewHuaweiRdsMySQLSlowLogTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyProjectId,
+				Desc:  "项目ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyDBInstanceId,
+				Desc:  "实例ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyRegion,
+				Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
+				Value: "",
 				Type:  params.ParamTypeString,
 			},
 		},

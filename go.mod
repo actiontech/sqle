@@ -3,21 +3,17 @@ module github.com/actiontech/sqle
 go 1.19
 
 require (
-	github.com/99designs/gqlgen v0.17.20
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20231019085256-6c3ffc8b3489
+	github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.4.0
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
-	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.2
-	github.com/alibabacloud-go/dingtalk v1.4.88
 	github.com/alibabacloud-go/rds-20140815/v2 v2.1.0
 	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-utils v1.4.3
-	github.com/alibabacloud-go/tea-utils/v2 v2.0.1
 	github.com/baidubce/bce-sdk-go v0.9.151
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
@@ -61,7 +57,7 @@ require (
 	github.com/sijms/go-ora/v2 v2.2.15
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.1.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.0.0
 	github.com/swaggo/swag v1.6.7
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
@@ -75,6 +71,8 @@ require (
 	vitess.io/vitess v0.12.0
 )
 
+require github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -84,7 +82,6 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
-	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4 // indirect
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
@@ -126,7 +123,7 @@ require (
 	github.com/jackc/pgtype v1.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/json-iterator/go v1.1.11 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
@@ -136,7 +133,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
@@ -156,12 +153,12 @@ require (
 	github.com/skeema/knownhosts v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/swaggo/files v0.0.0-20190704085106-630677cd5c14 // indirect
-	github.com/tjfoc/gmsm v1.3.2 // indirect
+	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	go.mongodb.org/mongo-driver v1.11.3 // indirect
+	go.mongodb.org/mongo-driver v1.12.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
@@ -174,7 +171,7 @@ require (
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -183,6 +180,6 @@ replace (
 	cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.1.0
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20231020015929-c5d7ca486d80
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

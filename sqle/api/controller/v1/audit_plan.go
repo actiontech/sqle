@@ -6,7 +6,9 @@ import (
 	"encoding/csv"
 	"fmt"
 	"mime"
+	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -260,7 +262,7 @@ func CreateAuditPlan(c echo.Context) error {
 		}
 		instanceType = inst.DbType
 		// check operation
-		user, err := controller.GetCurrentUser(c)
+		user, err := controller.GetCurrentUser(c, dms.GetUser)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -767,21 +769,90 @@ func GetAuditPlanReport(c echo.Context) error {
 }
 
 func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV1, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV1 {
+	if len(blackList) == 0 {
+		return sqls
+	}
 	filteredSQLs := []*AuditPlanSQLReqV1{}
+	filter := ConvertToBlackFilter(blackList)
 	for _, sql := range sqls {
-		var match bool
-		for _, blackSQL := range blackList {
-			// todo: ee issue1119, 临时使用strings.Contains判断子字符串
-			match = strings.Contains(strings.ToUpper(sql.LastReceiveText), strings.ToUpper(blackSQL.FilterSQL))
-			if match {
-				break
-			}
+		if filter.HasEndpointInBlackList([]string{sql.Endpoint}) || filter.IsSqlInBlackList(sql.LastReceiveText) {
+			continue
 		}
-		if !match {
-			filteredSQLs = append(filteredSQLs, sql)
-		}
+		filteredSQLs = append(filteredSQLs, sql)
 	}
 	return filteredSQLs
+}
+
+func ConvertToBlackFilter(blackList []*model.BlackListAuditPlanSQL) *BlackFilter {
+	var blackFilter BlackFilter
+	for _, filter := range blackList {
+		switch filter.FilterType {
+		case model.FilterTypeSQL:
+			blackFilter.BlackSqlList = append(blackFilter.BlackSqlList, utils.FullFuzzySearchRegexp(filter.FilterContent))
+		case model.FilterTypeHost:
+			blackFilter.BlackHostList = append(blackFilter.BlackHostList, utils.FullFuzzySearchRegexp(filter.FilterContent))
+		case model.FilterTypeIP:
+			ip := net.ParseIP(filter.FilterContent)
+			if ip == nil {
+				log.Logger().Errorf("wrong ip in black list,ip:%s", filter.FilterContent)
+				continue
+			}
+			blackFilter.BlackIpList = append(blackFilter.BlackIpList, ip)
+		case model.FilterTypeCIDR:
+			_, cidr, err := net.ParseCIDR(filter.FilterContent)
+			if err != nil {
+				log.Logger().Errorf("wrong cidr in black list,cidr:%s,err:%v", filter.FilterContent, err)
+				continue
+			}
+			blackFilter.BlackCidrList = append(blackFilter.BlackCidrList, cidr)
+		}
+	}
+	return &blackFilter
+}
+
+// 构造BlackFilter的目的是缓存黑名单中需要使用的结构体，在每个循环中复用
+type BlackFilter struct {
+	BlackSqlList  []*regexp.Regexp //更换正则匹配提高效率
+	BlackIpList   []net.IP
+	BlackHostList []*regexp.Regexp
+	BlackCidrList []*net.IPNet
+}
+
+func (f BlackFilter) IsSqlInBlackList(checkSql string) bool {
+	for _, blackSql := range f.BlackSqlList {
+		if blackSql.MatchString(checkSql) {
+			return true
+		}
+	}
+	return false
+}
+
+// 输入一组ip若其中有一个ip在黑名单中则返回true
+func (f BlackFilter) HasEndpointInBlackList(checkIps []string) bool {
+	var checkNetIp net.IP
+	for _, checkIp := range checkIps {
+		checkNetIp = net.ParseIP(checkIp)
+		if checkNetIp == nil {
+			// 无法解析IP，可能是域名，需要正则匹配
+			for _, blackHost := range f.BlackHostList {
+				if blackHost.MatchString(checkIp) {
+					return true
+				}
+			}
+		} else {
+			for _, blackIp := range f.BlackIpList {
+				if blackIp.Equal(checkNetIp) {
+					return true
+				}
+			}
+			for _, blackCidr := range f.BlackCidrList {
+				if blackCidr.Contains(checkNetIp) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 type FullSyncAuditPlanSQLsReqV1 struct {
@@ -798,9 +869,11 @@ type AuditPlanSQLReqV1 struct {
 	QueryTimeMax         *float64  `json:"query_time_max" from:"query_time_max" example:"5.22"`
 	FirstQueryAt         time.Time `json:"first_query_at" from:"first_query_at" example:"2023-09-12T02:48:01.317880Z"`
 	DBUser               string    `json:"db_user" from:"db_user" example:"database_user001"`
-	EndPoint             string    `json:"end_point" from:"end_point" example:"10.186.1.2"`
+	Endpoint             string    `json:"endpoint" from:"endpoint" example:"10.186.1.2"`
 }
 
+// todo: 后续该接口会废弃
+// @Deprecated
 // @Summary 全量同步SQL到扫描任务
 // @Description full sync audit plan SQLs
 // @Id fullSyncAuditPlanSQLsV1
@@ -841,7 +914,9 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -854,6 +929,8 @@ type PartialSyncAuditPlanSQLsReqV1 struct {
 	SQLs []*AuditPlanSQLReqV1 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
+// todo: 后续该接口会废弃
+// @Deprecated
 // @Summary 增量同步SQL到扫描任务
 // @Description partial sync audit plan SQLs
 // @Id partialSyncAuditPlanSQLsV1
@@ -893,7 +970,9 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	} else {
 		l.Warnf("blacklist is not used, err:%v", err)
 	}
-
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
 	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1012,6 +1091,8 @@ func TriggerAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	go notification.NotifyAuditPlanWebhook(ap, report)
+	
 	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
@@ -1175,7 +1256,7 @@ func TestAuditPlanNotifyConfig(c echo.Context) error {
 	}
 
 	// s := model.GetStorage()
-	_, err = controller.GetCurrentUser(c)
+	_, err = controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		// return controller.JSONBaseErrorReq(c, err)
 		// dms-todo: 需要判断用户是否存在，dms提供

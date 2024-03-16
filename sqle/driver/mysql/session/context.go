@@ -673,7 +673,24 @@ type index struct {
 	IndexName  string
 }
 
+/*
+示例：
+
+	mysql> [透传语句]SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY, s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (("db_name","table_name","idx_name_1"),("db_name","table_name","idx_name_2"));
+
+									  ↓包含透传语句时会多出info列
+	+-------------------+------------+--------------------+
+	| INDEX_SELECTIVITY | INDEX_NAME | info               |
+	+-------------------+------------+--------------------+
+	|          100.0000 | idx_name_2 | set_1700620716_1   |
+	|           28.5714 | idx_name_1 | set_1700620716_1   |
+	|           28.5714 | idx_name_1 | set_1700620716_1   |
+	+-------------------+------------+--------------------+
+*/
 func (c *Context) getSelectivityByIndex(indexes []index) (map[string] /*index name*/ float64, error) {
+	if len(indexes) == 0 {
+		return make(map[string]float64, 0), nil
+	}
 	if c.e == nil {
 		return nil, nil
 	}
@@ -782,7 +799,21 @@ type column struct {
 	ColumnName string
 }
 
+/*
+示例：
+
+	mysql> [TDSQL透传语句]SELECT COUNT( DISTINCT ( name ) ) / COUNT( * ) * 100 AS name,COUNT( DISTINCT ( age  ) ) / COUNT( * ) * 100 AS age FROM (SELECT name,age FROM test.test_table LIMIT 50000) t;
+						 ↓包含透传语句时会多出info列
+	+---------+---------+--------------------+
+	| name    | age     | info               |
+	+---------+---------+--------------------+
+	| 50.0000 | 75.0000 | set_1700620716_1   |
+	+---------+---------+--------------------+
+*/
 func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index name*/ float64, error) {
+	if len(columns) == 0 {
+		return make(map[string]float64, 0), nil
+	}
 	if c.e == nil {
 		return nil, nil
 	}
@@ -794,14 +825,15 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	for _, column := range columns {
 		sqls = append(
 			sqls,
-			fmt.Sprintf("COUNT( DISTINCT ( %v ) ) / COUNT( * ) * 100 AS %v", column.ColumnName, column.ColumnName),
+			fmt.Sprintf("COUNT( DISTINCT ( `%v` ) ) / COUNT( * ) * 100 AS '%v'", column.ColumnName, column.ColumnName),
 		)
-		selectColumns = append(selectColumns, column.ColumnName)
+		selectColumns = append(selectColumns, "`"+column.ColumnName+"`")
+		columnSelectivityMap[column.ColumnName] = 0
 	}
 
 	results, err := c.e.Db.Query(
 		fmt.Sprintf(
-			"SELECT %v FROM (SELECT %v FROM %v.%v LIMIT 50000) t;",
+			"SELECT %v FROM (SELECT %v FROM `%v`.`%v` LIMIT 50000) t;",
 			strings.Join(sqls, ","),
 			strings.Join(selectColumns, ","),
 			columns[0].SchemaName, columns[0].TableName,
@@ -812,6 +844,9 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	}
 	for _, resultMap := range results {
 		for k, v := range resultMap {
+			if _, ok := columnSelectivityMap[k]; !ok {
+				continue
+			}
 			if v.String == "" {
 				selectivityValue = -1
 			} else {
@@ -887,6 +922,25 @@ func (c *Context) GetSchemaCharacter(stmt *ast.TableName, schemaName string) (st
 		schema.characterLoad = true
 	}
 	return character, nil
+}
+
+/*
+Example:
+
+	mysql> SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "armscii8_bin";
+	+--------------------+
+	| CHARACTER_SET_NAME |
+	+--------------------+
+	| armscii8           |
+	+--------------------+
+	1 row in set (0.01 sec)
+*/
+func (c *Context) GetSchemaCharacterByCollation(collation string) (string, error) {
+	if collation == "" || c.e == nil {
+		return "", nil
+	}
+	return c.e.ShowDefaultConfiguration(
+		fmt.Sprintf("SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = \"%s\"", collation), "CHARACTER_SET_NAME")
 }
 
 // GetSchemaEngine get schema default engine.
@@ -974,9 +1028,9 @@ func (c *Context) GetTableRowCount(tn *ast.TableName) (int, error) {
 		if c.e == nil {
 			return 0, nil
 		}
-		query := fmt.Sprintf("show table status from %s where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
+		query := fmt.Sprintf("show table status from `%s` where name = '%s'", c.GetSchemaName(tn), tn.Name.String())
 		if c.IsLowerCaseTableName() {
-			query = fmt.Sprintf("show table status from %s where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
+			query = fmt.Sprintf("show table status from `%s` where lower(name) = '%s'", c.GetSchemaName(tn), tn.Name.L)
 		}
 
 		records, err := c.e.Db.Query(query)
@@ -1065,5 +1119,27 @@ func (c *Context) GetExecutor() *executor.Executor {
 }
 
 func (c *Context) GetTableIndexesInfo(schema, tableName string) ([]*executor.TableIndexesInfo, error) {
-	return c.e.GetTableIndexesInfo(schema, tableName)
+	return c.e.GetTableIndexesInfo(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(tableName))
+}
+
+func (c *Context) GetTableNameCreateTableStmtMap(joinStmt *ast.Join) map[string] /*table name or alias table name*/ *ast.CreateTableStmt {
+	tableNameCreateTableStmtMap := make(map[string]*ast.CreateTableStmt)
+	tableSources := util.GetTableSources(joinStmt)
+	for _, tableSource := range tableSources {
+		if tableNameStmt, ok := tableSource.Source.(*ast.TableName); ok {
+			tableName := tableNameStmt.Name.L
+			if tableSource.AsName.L != "" {
+				// 如果使用别名，则需要用别名引用
+				tableName = tableSource.AsName.L
+			}
+
+			createTableStmt, exist, err := c.GetCreateTableStmt(tableNameStmt)
+			if err != nil || !exist {
+				continue
+			}
+			// TODO: 跨库的 JOIN 无法区分
+			tableNameCreateTableStmtMap[tableName] = createTableStmt
+		}
+	}
+	return tableNameCreateTableStmtMap
 }

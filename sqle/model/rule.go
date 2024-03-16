@@ -177,7 +177,7 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 }
 
 func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, []*CustomRule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name)
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
 	if !exist {
 		return nil, nil, errors.New(errors.DataNotExist, err)
 	}
@@ -238,12 +238,18 @@ func (s *Storage) IsRuleTemplateExistFromAnyProject(projectId ProjectUID, name s
 	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string, fuzzy_keyword_rule string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
+	fuzzy_condition := func(db *gorm.DB) *gorm.DB {
+		if fuzzy_keyword_rule == "" {
+			return db
+		}
+		return db.Where("`desc` like ? OR annotation like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule), fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
+	}
 	t := &RuleTemplate{Name: name}
-	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule").Preload("CustomRuleList.CustomRule").
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("CustomRuleList.CustomRule", fuzzy_condition).
 		Where(t).
 		Where("project_id IN (?)", projectIds).
 		First(t).Error
@@ -278,6 +284,15 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
+func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) (*[]RuleTemplateRule, error) {
+	ruleTemplateRule := []RuleTemplateRule{}
+	err := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
 	return s.UpdateRuleTemplateCustomRules(destination, source.CustomRuleList...)
 }
@@ -290,6 +305,13 @@ func GetRuleMapFromAllArray(allRules ...[]Rule) map[string]Rule {
 		}
 	}
 	return ruleMap
+}
+
+func (s *Storage) GetRuleTemplateById(id uint64) (*RuleTemplate, error) {
+	ruleTemplate := new(RuleTemplate)
+
+	err := s.db.Where("id = ?", id).First(ruleTemplate).Error
+	return ruleTemplate, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetRuleTemplateTips(projectId, dbType string) ([]*RuleTemplate, error) {
@@ -316,6 +338,14 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 	rules := []*Rule{}
 	err := s.db.Preload("Knowledge").Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) DeleteCascadeRule(name, dbType string) error {
+	err := s.db.Exec(`delete u,t, k 
+					from rules u 
+					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
+					left join rule_knowledge k on u.knowledge_id = k.id where u.name = ? AND u.db_type = ? `, name, dbType).Error
+	return err
 }
 
 func (s *Storage) GetAllRuleByDBType(dbType string) ([]*Rule, error) {
