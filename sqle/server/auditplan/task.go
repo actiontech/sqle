@@ -1735,11 +1735,11 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	// 获取列定义，多个英文逗号分割
 	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
 		"CASE "+
-		" WHEN data_type IN ('char', 'varchar', 'character', 'character varying', 'text') "+
+		" WHEN data_type IN ('char', 'varchar', 'character', 'character varying') "+
 		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
 		" WHEN data_type IN ('numeric', 'decimal') "+
 		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
-		" WHEN data_type IN ('integer', 'smallint', 'bigint') THEN data_type "+
+		" WHEN data_type IN ('integer', 'smallint', 'bigint', 'text') THEN data_type "+
 		" ELSE data_type "+
 		" END "+
 		" || "+
