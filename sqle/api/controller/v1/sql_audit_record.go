@@ -321,6 +321,15 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 			return nil, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
+		content, err = utils.ConvertToUtf8(content)
+		if err != nil {
+			if e.Is(err, utils.ErrUnknownEncoding) {
+				log.NewEntry().WithField("convert_to_utf8", srcFile.Name).Errorf("convert to utf8 failed: %v", err)
+				continue
+			}
+			return nil, false, fmt.Errorf("convert to utf8 failed:  %v", err)
+		}
+
 		if strings.HasSuffix(srcFile.Name, ".xml") {
 			xmlContents = append(xmlContents, xmlParser.XmlFile{
 				FilePath: srcFile.Name,
@@ -435,6 +444,12 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
+				content, err = utils.ConvertToUtf8(content)
+				if err != nil {
+					l.Errorf("skip file [%v]. because convert to utf8 failed: %v", path, err)
+					return nil
+				}
+
 				xmlContents = append(xmlContents, xmlParser.XmlFile{
 					FilePath: gitPath,
 					Content:  string(content),
@@ -464,9 +479,15 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 				sqlsFromOneFile = sqlBuffer.String()
 			}
 
+			toUtf8, err := utils.ConvertToUtf8([]byte(sqlsFromOneFile))
+			if err != nil {
+				l.Errorf("skip file [%v],sql [%v]. because convert to utf8 failed: %v", path, sqlsFromOneFile, err)
+				return nil
+			}
+
 			sqls = append(sqls, SQLsFromFile{
 				FilePath: gitPath,
-				SQLs:     sqlsFromOneFile,
+				SQLs:     string(toUtf8),
 			})
 		}
 		return nil
