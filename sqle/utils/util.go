@@ -1,10 +1,13 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io"
 	"math"
 	"net/url"
 	"regexp"
@@ -13,9 +16,12 @@ import (
 	"sync"
 	"time"
 	"unicode"
+	"unicode/utf8"
 	"unsafe"
 
 	"github.com/bwmarrin/snowflake"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 // base64 encoding string to decode string
@@ -313,4 +319,26 @@ func IsPrefixSubStrArray(arr []string, prefix []string) bool {
 // 全模糊匹配字符串，并且对大小写不敏感
 func FullFuzzySearchRegexp(str string) *regexp.Regexp {
 	return regexp.MustCompile(`^.*(?i)` + regexp.QuoteMeta(str) + `.*$`)
+}
+
+var ErrUnknownEncoding = errors.New("unknown encoding")
+
+var encodings = []transform.Transformer{
+	simplifiedchinese.GBK.NewDecoder(),
+}
+
+func ConvertToUtf8(in []byte) ([]byte, error) {
+	if utf8.Valid(in) {
+		return in, nil
+	}
+
+	for _, enc := range encodings {
+		reader := transform.NewReader(bytes.NewReader(in), enc)
+		out, err := io.ReadAll(reader)
+		if err == nil {
+			return out, nil
+		}
+	}
+
+	return nil, ErrUnknownEncoding
 }
