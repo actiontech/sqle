@@ -305,6 +305,7 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	return task, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
@@ -351,6 +352,15 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 			return nil, nil, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
+		content, err = utils.ConvertToUtf8(content)
+		if err != nil {
+			if e.Is(err, utils.ErrUnknownEncoding) {
+				log.NewEntry().WithField("convert_to_utf8", srcFile.Name).Errorf("convert to utf8 failed: %v", err)
+				continue
+			}
+			return nil, nil, false, fmt.Errorf("convert to utf8 failed:  %v", err)
+		}
+
 		if strings.HasSuffix(srcFile.Name, ".xml") {
 			xmlContents = append(xmlContents, xmlParser.XmlFile{
 				FilePath: srcFile.Name,
@@ -394,6 +404,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 	return sqls, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
@@ -437,6 +448,12 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
+				content, err = utils.ConvertToUtf8(content)
+				if err != nil {
+					l.Errorf("skip file [%v]. because convert to utf8 failed: %v", path, err)
+					return nil
+				}
+
 				xmlContents = append(xmlContents, xmlParser.XmlFile{
 					FilePath: gitPath,
 					Content:  string(content),
@@ -447,6 +464,12 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
+				content, err = utils.ConvertToUtf8(content)
+				if err != nil {
+					l.Errorf("skip file [%v]. because convert to utf8 failed: %v", path, err)
+					return nil
+				}
+
 				sqlsFromSQLFiles = append(sqlsFromSQLFiles, SQLsFromSQLFile{
 					FilePath: gitPath,
 					SQLs:     string(content),
@@ -466,9 +489,16 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 						return fmt.Errorf("gather sqls from java file failed: %v", err)
 					}
 				}
+
+				content, err := utils.ConvertToUtf8([]byte(sqlBuffer.String()))
+				if err != nil {
+					l.Errorf("skip file [%v]. because convert to utf8 failed: %v", path, err)
+					return nil
+				}
+
 				sqlsFromJavaFiles = append(sqlsFromJavaFiles, SQLsFromSQLFile{
 					FilePath: gitPath,
-					SQLs:     sqlBuffer.String(),
+					SQLs:     string(content),
 				})
 			}
 		}
