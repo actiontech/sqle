@@ -275,6 +275,7 @@ func buildOfflineTaskForAudit(userId uint, dbType string, sqls getSQLFromFileRes
 	return task, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
@@ -400,6 +401,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLsFromFile, err
 	return sqls, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
