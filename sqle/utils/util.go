@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/bwmarrin/snowflake"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -338,6 +339,7 @@ func ConvertToUtf8(in []byte) ([]byte, error) {
 		if err == nil {
 			return out, nil
 		}
+		log.NewEntry().Errorf("ConvertToUtf8 failed: %v", err)
 	}
 
 	return nil, ErrUnknownEncoding
