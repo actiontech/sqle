@@ -680,7 +680,6 @@ const (
 	ConstraintForeignKey
 	ConstraintFulltext
 	ConstraintCheck
-	ConstraintSpatial
 )
 
 // Constraint is constraint for table definition.

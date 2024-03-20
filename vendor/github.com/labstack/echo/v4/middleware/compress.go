@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -27,6 +26,7 @@ type (
 	gzipResponseWriter struct {
 		io.Writer
 		http.ResponseWriter
+		wroteBody bool
 	}
 )
 
@@ -78,8 +78,9 @@ func GzipWithConfig(config GzipConfig) echo.MiddlewareFunc {
 				}
 				rw := res.Writer
 				w.Reset(rw)
+				grw := &gzipResponseWriter{Writer: w, ResponseWriter: rw}
 				defer func() {
-					if res.Size == 0 {
+					if !grw.wroteBody {
 						if res.Header().Get(echo.HeaderContentEncoding) == gzipScheme {
 							res.Header().Del(echo.HeaderContentEncoding)
 						}
@@ -87,12 +88,11 @@ func GzipWithConfig(config GzipConfig) echo.MiddlewareFunc {
 						// nothing is written to body or error is returned.
 						// See issue #424, #407.
 						res.Writer = rw
-						w.Reset(ioutil.Discard)
+						w.Reset(io.Discard)
 					}
 					w.Close()
 					pool.Put(w)
 				}()
-				grw := &gzipResponseWriter{Writer: w, ResponseWriter: rw}
 				res.Writer = grw
 			}
 			return next(c)
@@ -101,9 +101,6 @@ func GzipWithConfig(config GzipConfig) echo.MiddlewareFunc {
 }
 
 func (w *gzipResponseWriter) WriteHeader(code int) {
-	if code == http.StatusNoContent { // Issue #489
-		w.ResponseWriter.Header().Del(echo.HeaderContentEncoding)
-	}
 	w.Header().Del(echo.HeaderContentLength) // Issue #444
 	w.ResponseWriter.WriteHeader(code)
 }
@@ -112,6 +109,7 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 	if w.Header().Get(echo.HeaderContentType) == "" {
 		w.Header().Set(echo.HeaderContentType, http.DetectContentType(b))
 	}
+	w.wroteBody = true
 	return w.Writer.Write(b)
 }
 
@@ -136,7 +134,7 @@ func (w *gzipResponseWriter) Push(target string, opts *http.PushOptions) error {
 func gzipCompressPool(config GzipConfig) sync.Pool {
 	return sync.Pool{
 		New: func() interface{} {
-			w, err := gzip.NewWriterLevel(ioutil.Discard, config.Level)
+			w, err := gzip.NewWriterLevel(io.Discard, config.Level)
 			if err != nil {
 				return err
 			}

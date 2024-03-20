@@ -70,6 +70,12 @@ type ListDBServiceReq struct {
 	// project id
 	// in:path
 	ProjectUid string `param:"project_uid" json:"project_uid"`
+	// the db service fuzzy keyword,include host/port
+	// in:query
+	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`
+	// is masking
+	// in:query
+	IsEnableMasking *bool `query:"is_enable_masking" json:"is_enable_masking"`
 }
 
 // swagger:enum DBServiceOrderByField
@@ -119,6 +125,8 @@ type ListDBService struct {
 	SQLEConfig *SQLEConfig `json:"sqle_config"`
 	// DB Service Custom connection parameters
 	AdditionalParams []*AdditionalParam `json:"additional_params"`
+	// is enable masking
+	IsEnableMasking bool `json:"is_enable_masking"`
 }
 
 type SQLEConfig struct {

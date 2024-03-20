@@ -23,15 +23,9 @@ func (s *Mappers) AddMapper(ms ...*Mapper) error {
 	return nil
 }
 
-type StmtInfo struct {
-	FilePath  string
-	StartLine uint64
-	SQL       string
-}
-
-func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
+func (s *Mappers) GetStmts(skipErrorQuery bool) ([]string, error) {
 	ctx := NewContext()
-	stmts := []StmtInfo{}
+	stmts := []string{}
 	for _, m := range s.mappers {
 		for id, node := range m.SqlNodes {
 			ctx.Sqls[fmt.Sprintf("%v.%v", m.NameSpace, id)] = node
@@ -44,13 +38,7 @@ func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
 		if err != nil {
 			return nil, fmt.Errorf("get sqls from mapper failed, namespace: %v, err: %v", m.NameSpace, err)
 		}
-		for _, info := range stmt {
-			stmts = append(stmts, StmtInfo{
-				FilePath:  m.FilePath,
-				StartLine: info.StartLine,
-				SQL:       info.SQL,
-			})
-		}
+		stmts = append(stmts, stmt...)
 	}
 	return stmts, nil
 }

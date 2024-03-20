@@ -102,14 +102,16 @@ func (g *Group) Group(prefix string, middleware ...MiddlewareFunc) (sg *Group) {
 	return
 }
 
-// Static implements `Echo#Static()` for sub-routes within the Group.
-func (g *Group) Static(prefix, root string) {
-	g.static(prefix, root, g.GET)
-}
-
 // File implements `Echo#File()` for sub-routes within the Group.
 func (g *Group) File(path, file string) {
 	g.file(path, file, g.GET)
+}
+
+// RouteNotFound implements `Echo#RouteNotFound()` for sub-routes within the Group.
+//
+// Example: `g.RouteNotFound("/*", func(c echo.Context) error { return c.NoContent(http.StatusNotFound) })`
+func (g *Group) RouteNotFound(path string, h HandlerFunc, m ...MiddlewareFunc) *Route {
+	return g.Add(RouteNotFound, path, h, m...)
 }
 
 // Add implements `Echo#Add()` for sub-routes within the Group.

@@ -28,17 +28,12 @@ func ParseXML(data string) (string, error) {
 	return stmt, nil
 }
 
-type XmlFile struct {
-	FilePath string
-	Content  string
-}
-
-// ParseXMLs is a parser for parse all query in several XML files to []ast.StmtInfo one by one;
+// ParseXMLs is a parser for parse all query in several XML files to []string one by one;
 // you can set `skipErrorQuery` true to ignore invalid query.
-func ParseXMLs(data []XmlFile, skipErrorQuery bool) ([]ast.StmtInfo, error) {
+func ParseXMLs(data []string, skipErrorQuery bool) ([]string, error) {
 	ms := ast.NewMappers()
-	for _, data := range data {
-		r := strings.NewReader(data.Content)
+	for i := range data {
+		r := strings.NewReader(data[i])
 		d := xml.NewDecoder(r)
 		n, err := parse(d)
 		if err != nil {
@@ -61,7 +56,6 @@ func ParseXMLs(data []XmlFile, skipErrorQuery bool) ([]ast.StmtInfo, error) {
 				return nil, errors.New("the mapper is not found")
 			}
 		}
-		m.FilePath = data.FilePath
 		err = ms.AddMapper(m)
 		if err != nil && !skipErrorQuery {
 			return nil, fmt.Errorf("add mapper failed: %v", err)
@@ -95,11 +89,7 @@ func ParseXMLQuery(data string, skipErrorQuery bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	sqls := []string{}
-	for _, stmt := range stmts {
-		sqls = append(sqls, stmt.SQL)
-	}
-	return sqls, nil
+	return stmts, nil
 }
 
 func parse(d *xml.Decoder) (node ast.Node, err error) {
@@ -118,8 +108,6 @@ func parse(d *xml.Decoder) (node ast.Node, err error) {
 				return parseMyBatis(d, &st)
 			case "sqlMap":
 				return parseIBatis(d, &st)
-			case "sqls":
-				return parseApStack(d, &st)
 			}
 		}
 	}
@@ -127,7 +115,7 @@ func parse(d *xml.Decoder) (node ast.Node, err error) {
 }
 
 func parseMyBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	node, err = scanMyBatis(d, start)
+	node, err = scanMyBatis(start)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +166,7 @@ func parseMyBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err e
 	return node, nil
 }
 
-func scanMyBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
+func scanMyBatis(start *xml.StartElement) (ast.Node, error) {
 	var node ast.Node
 	switch start.Name.Local {
 	case "mapper":
@@ -190,8 +178,7 @@ func scanMyBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 	case "property":
 		node = ast.NewPropertyNode()
 	case "select", "update", "delete", "insert":
-		startLine, _ := d.InputPos()
-		node = ast.NewQueryNode(uint64(startLine))
+		node = ast.NewQueryNode()
 	case "if":
 		node = ast.NewIfNode()
 	case "choose":
@@ -212,61 +199,9 @@ func scanMyBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 	return node, nil
 }
 
-func parseApStack(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	node, err = scanApStack(d, start)
-	if err != nil {
-		return nil, err
-	}
-	for {
-		t, err := d.Token()
-		if err == io.EOF { // found end of element
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		switch tt := t.(type) {
-		case xml.StartElement:
-			child, err := parseApStack(d, &tt)
-			if err != nil {
-				return nil, err
-			}
-			if child == nil {
-				continue
-			}
-			if node == nil {
-				node = child
-			} else {
-				err := node.AddChildren(child)
-				if err != nil {
-					return nil, err
-				}
-			}
-		case xml.EndElement:
-			if tt.Name == start.Name {
-				return node, nil
-			}
-		case xml.CharData:
-			s := string(tt)
-			if strings.TrimSpace(s) == "" {
-				continue
-			}
-			d := ast.NewIBatisData(tt)
-			d.ScanData()
-			if node != nil {
-				node.AddChildren(d)
-			}
-		default:
-			continue
-		}
-	}
-	return node, nil
-}
-
 // ref: https://ibatis.apache.org/docs/java/pdf/iBATIS-SqlMaps-2_cn.pdf
 func parseIBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err error) {
-	node, err = scanIBatis(d, start)
+	node, err = scanIBatis(start)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +252,7 @@ func parseIBatis(d *xml.Decoder, start *xml.StartElement) (node ast.Node, err er
 	return node, nil
 }
 
-func scanIBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
+func scanIBatis(start *xml.StartElement) (ast.Node, error) {
 	var node ast.Node
 	switch start.Name.Local {
 	case "sqlMap":
@@ -327,8 +262,7 @@ func scanIBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 	case "include":
 		node = ast.NewIncludeNode()
 	case "select", "update", "delete", "insert", "statement":
-		startLine, _ := d.InputPos()
-		node = ast.NewQueryNode(uint64(startLine))
+		node = ast.NewQueryNode()
 	case "isEqual", "isNotEqual", "isGreaterThan", "isGreaterEqual", "isLessEqual",
 		"isPropertyAvailable", "isNotPropertyAvailable", "isNull", "isNotNull", "isEmpty", "isNotEmpty":
 		node = ast.NewConditionStmt()
@@ -336,43 +270,6 @@ func scanIBatis(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
 		node = ast.NewDynamicStmt()
 	case "iterate":
 		node = ast.NewIterateStmt()
-	default:
-		return nil, nil
-		//return node, fmt.Errorf("unknow xml <%s>", start.Name.Local)
-	}
-	node.Scan(start)
-	return node, nil
-}
-
-func scanApStack(d *xml.Decoder, start *xml.StartElement) (ast.Node, error) {
-	var node ast.Node
-	switch start.Name.Local {
-	case "sqlMap", "sqls":
-		node = ast.NewMapper()
-	case "sql":
-		node = ast.NewSqlNode()
-	case "include":
-		node = ast.NewIncludeNode()
-	case "select", "update", "delete", "insert", "statement", "dynamicSelect", "dynamicDelete", "dynamicUpdate", "procedure":
-		startLine, _ := d.InputPos()
-		node = ast.NewQueryNode(uint64(startLine))
-	case "isEqual", "isNotEqual", "isGreaterThan", "isGreaterEqual", "isLessEqual",
-		"isPropertyAvailable", "isNotPropertyAvailable", "isNull", "isNotNull", "isEmpty", "isNotEmpty":
-		node = ast.NewConditionStmt()
-	case "dynamic", "dynamicSql":
-		node = ast.NewDynamicStmt()
-	case "iterate":
-		node = ast.NewIterateStmt()
-	case "if":
-		node = ast.NewIfNode()
-	case "str":
-		node = ast.NewStrStmt()
-	case "where":
-		node = ast.NewTrimNode()
-	case "and":
-		node = ast.NewAndNode()
-	case "or":
-		node = ast.NewOrNode()
 	default:
 		return nil, nil
 		//return node, fmt.Errorf("unknow xml <%s>", start.Name.Local)

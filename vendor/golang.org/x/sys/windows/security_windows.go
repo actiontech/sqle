@@ -7,6 +7,8 @@ package windows
 import (
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/internal/unsafeheader"
 )
 
 const (
@@ -887,6 +889,7 @@ type WTS_SESSION_INFO struct {
 //sys WTSQueryUserToken(session uint32, token *Token) (err error) = wtsapi32.WTSQueryUserToken
 //sys WTSEnumerateSessions(handle Handle, reserved uint32, version uint32, sessions **WTS_SESSION_INFO, count *uint32) (err error) = wtsapi32.WTSEnumerateSessionsW
 //sys WTSFreeMemory(ptr uintptr) = wtsapi32.WTSFreeMemory
+//sys WTSGetActiveConsoleSessionId() (sessionID uint32)
 
 type ACL struct {
 	aclRevision byte
@@ -1338,14 +1341,21 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 		sdLen = min
 	}
 
-	src := unsafe.Slice((*byte)(unsafe.Pointer(selfRelativeSD)), sdLen)
-	// SECURITY_DESCRIPTOR has pointers in it, which means checkptr expects for it to
-	// be aligned properly. When we're copying a Windows-allocated struct to a
-	// Go-allocated one, make sure that the Go allocation is aligned to the
-	// pointer size.
+	var src []byte
+	h := (*unsafeheader.Slice)(unsafe.Pointer(&src))
+	h.Data = unsafe.Pointer(selfRelativeSD)
+	h.Len = sdLen
+	h.Cap = sdLen
+
 	const psize = int(unsafe.Sizeof(uintptr(0)))
+
+	var dst []byte
+	h = (*unsafeheader.Slice)(unsafe.Pointer(&dst))
 	alloc := make([]uintptr, (sdLen+psize-1)/psize)
-	dst := unsafe.Slice((*byte)(unsafe.Pointer(&alloc[0])), sdLen)
+	h.Data = (*unsafeheader.Slice)(unsafe.Pointer(&alloc)).Data
+	h.Len = sdLen
+	h.Cap = sdLen
+
 	copy(dst, src)
 	return (*SECURITY_DESCRIPTOR)(unsafe.Pointer(&dst[0]))
 }

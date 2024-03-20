@@ -9,8 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -171,7 +169,11 @@ type (
 		// Redirect redirects the request to a provided URL with status code.
 		Redirect(code int, url string) error
 
-		// Error invokes the registered HTTP error handler. Generally used by middleware.
+		// Error invokes the registered global HTTP error handler. Generally used by middleware.
+		// A side-effect of calling global error handler is that now Response has been committed (sent to the client) and
+		// middlewares up in chain can not change Response status code or Response body anymore.
+		//
+		// Avoid using this method in handlers as no middleware will be able to effectively handle errors after that.
 		Error(err error)
 
 		// Handler returns the matched handler by router.
@@ -183,7 +185,7 @@ type (
 		// Logger returns the `Logger` instance.
 		Logger() Logger
 
-		// Set the logger
+		// SetLogger Set the logger
 		SetLogger(l Logger)
 
 		// Echo returns the `Echo` instance.
@@ -208,6 +210,13 @@ type (
 		logger   Logger
 		lock     sync.RWMutex
 	}
+)
+
+const (
+	// ContextKeyHeaderAllow is set by Router for getting value for `Allow` header in later stages of handler call chain.
+	// Allow header is mandatory for status 405 (method not found) and useful for OPTIONS method requests.
+	// It is added to context only when Router does not find matching method handler for request.
+	ContextKeyHeaderAllow = "echo_header_allow"
 )
 
 const (
@@ -277,11 +286,16 @@ func (c *context) RealIP() string {
 	if ip := c.request.Header.Get(HeaderXForwardedFor); ip != "" {
 		i := strings.IndexAny(ip, ",")
 		if i > 0 {
-			return strings.TrimSpace(ip[:i])
+			xffip := strings.TrimSpace(ip[:i])
+			xffip = strings.TrimPrefix(xffip, "[")
+			xffip = strings.TrimSuffix(xffip, "]")
+			return xffip
 		}
 		return ip
 	}
 	if ip := c.request.Header.Get(HeaderXRealIP); ip != "" {
+		ip = strings.TrimPrefix(ip, "[")
+		ip = strings.TrimSuffix(ip, "]")
 		return ip
 	}
 	ra, _, _ := net.SplitHostPort(c.request.RemoteAddr)
@@ -559,29 +573,6 @@ func (c *context) Stream(code int, contentType string, r io.Reader) (err error) 
 	c.writeContentType(contentType)
 	c.response.WriteHeader(code)
 	_, err = io.Copy(c.response, r)
-	return
-}
-
-func (c *context) File(file string) (err error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return NotFoundHandler(c)
-	}
-	defer f.Close()
-
-	fi, _ := f.Stat()
-	if fi.IsDir() {
-		file = filepath.Join(file, indexPage)
-		f, err = os.Open(file)
-		if err != nil {
-			return NotFoundHandler(c)
-		}
-		defer f.Close()
-		if fi, err = f.Stat(); err != nil {
-			return
-		}
-	}
-	http.ServeContent(c.Response(), c.Request(), fi.Name(), fi.ModTime(), f)
 	return
 }
 

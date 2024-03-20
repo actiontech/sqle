@@ -23,6 +23,8 @@ type (
 		// Tags to construct the logger format.
 		//
 		// - time_unix
+		// - time_unix_milli
+		// - time_unix_micro
 		// - time_unix_nano
 		// - time_rfc3339
 		// - time_rfc3339_nano
@@ -33,6 +35,7 @@ type (
 		// - host
 		// - method
 		// - path
+		// - route
 		// - protocol
 		// - referer
 		// - user_agent
@@ -45,6 +48,7 @@ type (
 		// - header:<NAME>
 		// - query:<NAME>
 		// - form:<NAME>
+		// - custom (see CustomTagFunc field)
 		//
 		// Example "${remote_ip} ${status}"
 		//
@@ -53,6 +57,11 @@ type (
 
 		// Optional. Default value DefaultLoggerConfig.CustomTimeFormat.
 		CustomTimeFormat string `yaml:"custom_time_format"`
+
+		// CustomTagFunc is function called for `${custom}` tag to output user implemented text by writing it to buf.
+		// Make sure that outputted text creates valid JSON string with other logged tags.
+		// Optional.
+		CustomTagFunc func(c echo.Context, buf *bytes.Buffer) (int, error)
 
 		// Output is a writer where logs in JSON format are written.
 		// Optional. Default value os.Stdout.
@@ -124,8 +133,19 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 
 			if _, err = config.template.ExecuteFunc(buf, func(w io.Writer, tag string) (int, error) {
 				switch tag {
+				case "custom":
+					if config.CustomTagFunc == nil {
+						return 0, nil
+					}
+					return config.CustomTagFunc(c, buf)
 				case "time_unix":
 					return buf.WriteString(strconv.FormatInt(time.Now().Unix(), 10))
+				case "time_unix_milli":
+					// go 1.17 or later, it supports time#UnixMilli()
+					return buf.WriteString(strconv.FormatInt(time.Now().UnixNano()/1000000, 10))
+				case "time_unix_micro":
+					// go 1.17 or later, it supports time#UnixMicro()
+					return buf.WriteString(strconv.FormatInt(time.Now().UnixNano()/1000, 10))
 				case "time_unix_nano":
 					return buf.WriteString(strconv.FormatInt(time.Now().UnixNano(), 10))
 				case "time_rfc3339":
@@ -154,6 +174,8 @@ func LoggerWithConfig(config LoggerConfig) echo.MiddlewareFunc {
 						p = "/"
 					}
 					return buf.WriteString(p)
+				case "route":
+					return buf.WriteString(c.Path())
 				case "protocol":
 					return buf.WriteString(req.Proto)
 				case "referer":

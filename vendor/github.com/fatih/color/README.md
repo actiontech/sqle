@@ -78,7 +78,7 @@ notice("Don't forget this...")
 ### Custom fprint functions (FprintFunc)
 
 ```go
-blue := color.New(color.FgBlue).FprintfFunc()
+blue := color.New(FgBlue).FprintfFunc()
 blue(myWriter, "important notice: %s", stars)
 
 // Mix up with multiple attributes
@@ -127,16 +127,14 @@ fmt.Println("All text will now be bold magenta.")
  
 There might be a case where you want to explicitly disable/enable color output. the 
 `go-isatty` package will automatically disable color output for non-tty output streams 
-(for example if the output were piped directly to `less`).
+(for example if the output were piped directly to `less`)
 
-The `color` package also disables color output if the [`NO_COLOR`](https://no-color.org) environment
-variable is set (regardless of its value).
-
-`Color` has support to disable/enable colors programatically both globally and
-for single color definitions. For example suppose you have a CLI app and a
-`--no-color` bool flag. You can easily disable the color output with:
+`Color` has support to disable/enable colors both globally and for single color 
+definitions. For example suppose you have a CLI app and a `--no-color` bool flag. You 
+can easily disable the color output with:
 
 ```go
+
 var flagNoColor = flag.Bool("no-color", false, "Disable color output")
 
 if *flagNoColor {
@@ -158,10 +156,6 @@ c.EnableColor()
 c.Println("This prints again cyan...")
 ```
 
-## GitHub Actions
-
-To output color in GitHub Actions (or other CI systems that support ANSI colors), make sure to set `color.NoColor = false` so that it bypasses the check for non-tty output streams. 
-
 ## Todo
 
 * Save/Return previous values
@@ -176,3 +170,4 @@ To output color in GitHub Actions (or other CI systems that support ANSI colors)
 ## License
 
 The MIT License (MIT) - see [`LICENSE.md`](https://github.com/fatih/color/blob/master/LICENSE.md) for more details
+

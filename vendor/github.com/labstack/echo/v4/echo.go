@@ -3,53 +3,49 @@ Package echo implements high performance, minimalist Go web framework.
 
 Example:
 
-  package main
+	package main
 
-  import (
-    "net/http"
+	import (
+	  "net/http"
 
-    "github.com/labstack/echo/v4"
-    "github.com/labstack/echo/v4/middleware"
-  )
+	  "github.com/labstack/echo/v4"
+	  "github.com/labstack/echo/v4/middleware"
+	)
 
-  // Handler
-  func hello(c echo.Context) error {
-    return c.String(http.StatusOK, "Hello, World!")
-  }
+	// Handler
+	func hello(c echo.Context) error {
+	  return c.String(http.StatusOK, "Hello, World!")
+	}
 
-  func main() {
-    // Echo instance
-    e := echo.New()
+	func main() {
+	  // Echo instance
+	  e := echo.New()
 
-    // Middleware
-    e.Use(middleware.Logger())
-    e.Use(middleware.Recover())
+	  // Middleware
+	  e.Use(middleware.Logger())
+	  e.Use(middleware.Recover())
 
-    // Routes
-    e.GET("/", hello)
+	  // Routes
+	  e.GET("/", hello)
 
-    // Start server
-    e.Logger.Fatal(e.Start(":1323"))
-  }
+	  // Start server
+	  e.Logger.Fatal(e.Start(":1323"))
+	}
 
 Learn more at https://echo.labstack.com
 */
 package echo
 
 import (
-	"bytes"
 	stdContext "context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	stdLog "log"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"sync"
@@ -65,20 +61,28 @@ import (
 
 type (
 	// Echo is the top-level framework instance.
+	//
+	// Goroutine safety: Do not mutate Echo instance fields after server has started. Accessing these
+	// fields from handlers/middlewares and changing field values at the same time leads to data-races.
+	// Adding new routes after the server has been started is also not safe!
 	Echo struct {
+		filesystem
 		common
 		// startupMutex is mutex to lock Echo instance access during server configuration and startup. Useful for to get
 		// listener address info (on which interface/port was listener binded) without having data races.
-		startupMutex     sync.RWMutex
+		startupMutex sync.RWMutex
+		colorer      *color.Color
+
+		// premiddleware are middlewares that are run before routing is done. In case a pre-middleware returns
+		// an error the router is not executed and the request will end up in the global error handler.
+		premiddleware []MiddlewareFunc
+		middleware    []MiddlewareFunc
+		maxParam      *int
+		router        *Router
+		routers       map[string]*Router
+		pool          sync.Pool
+
 		StdLogger        *stdLog.Logger
-		colorer          *color.Color
-		premiddleware    []MiddlewareFunc
-		middleware       []MiddlewareFunc
-		maxParam         *int
-		router           *Router
-		routers          map[string]*Router
-		notFoundHandler  HandlerFunc
-		pool             sync.Pool
 		Server           *http.Server
 		TLSServer        *http.Server
 		Listener         net.Listener
@@ -96,6 +100,9 @@ type (
 		Logger           Logger
 		IPExtractor      IPExtractor
 		ListenerNetwork  string
+
+		// OnAddRouteHandler is called when Echo adds new route to specific host router.
+		OnAddRouteHandler func(host string, route Route, handler HandlerFunc, middleware []MiddlewareFunc)
 	}
 
 	// Route contains a handler and information for matching against requests.
@@ -113,13 +120,13 @@ type (
 	}
 
 	// MiddlewareFunc defines a function to process middleware.
-	MiddlewareFunc func(HandlerFunc) HandlerFunc
+	MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
 	// HandlerFunc defines a function to serve HTTP requests.
-	HandlerFunc func(Context) error
+	HandlerFunc func(c Context) error
 
 	// HTTPErrorHandler is a centralized HTTP error handler.
-	HTTPErrorHandler func(error, Context)
+	HTTPErrorHandler func(err error, c Context)
 
 	// Validator is the interface that wraps the Validate function.
 	Validator interface {
@@ -186,12 +193,18 @@ const (
 	PROPFIND = "PROPFIND"
 	// REPORT Method can be used to get information about a resource, see rfc 3253
 	REPORT = "REPORT"
+	// RouteNotFound is special method type for routes handling "route not found" (404) cases
+	RouteNotFound = "echo_route_not_found"
 )
 
 // Headers
 const (
-	HeaderAccept              = "Accept"
-	HeaderAcceptEncoding      = "Accept-Encoding"
+	HeaderAccept         = "Accept"
+	HeaderAcceptEncoding = "Accept-Encoding"
+	// HeaderAllow is the name of the "Allow" header field used to list the set of methods
+	// advertised as supported by the target resource. Returning an Allow header is mandatory
+	// for status 405 (method not found) and useful for the OPTIONS method in responses.
+	// See RFC 7231: https://datatracker.ietf.org/doc/html/rfc7231#section-7.4.1
 	HeaderAllow               = "Allow"
 	HeaderAuthorization       = "Authorization"
 	HeaderContentDisposition  = "Content-Disposition"
@@ -203,6 +216,7 @@ const (
 	HeaderIfModifiedSince     = "If-Modified-Since"
 	HeaderLastModified        = "Last-Modified"
 	HeaderLocation            = "Location"
+	HeaderRetryAfter          = "Retry-After"
 	HeaderUpgrade             = "Upgrade"
 	HeaderVary                = "Vary"
 	HeaderWWWAuthenticate     = "WWW-Authenticate"
@@ -212,11 +226,14 @@ const (
 	HeaderXForwardedSsl       = "X-Forwarded-Ssl"
 	HeaderXUrlScheme          = "X-Url-Scheme"
 	HeaderXHTTPMethodOverride = "X-HTTP-Method-Override"
-	HeaderXRealIP             = "X-Real-IP"
-	HeaderXRequestID          = "X-Request-ID"
+	HeaderXRealIP             = "X-Real-Ip"
+	HeaderXRequestID          = "X-Request-Id"
+	HeaderXCorrelationID      = "X-Correlation-Id"
 	HeaderXRequestedWith      = "X-Requested-With"
 	HeaderServer              = "Server"
 	HeaderOrigin              = "Origin"
+	HeaderCacheControl        = "Cache-Control"
+	HeaderConnection          = "Connection"
 
 	// Access control
 	HeaderAccessControlRequestMethod    = "Access-Control-Request-Method"
@@ -241,7 +258,7 @@ const (
 
 const (
 	// Version of Echo
-	Version = "4.6.1"
+	Version = "4.10.2"
 	website = "https://echo.labstack.com"
 	// http://patorjk.com/software/taag/#p=display&f=Small%20Slant&t=Echo
 	banner = `
@@ -274,24 +291,53 @@ var (
 
 // Errors
 var (
-	ErrUnsupportedMediaType        = NewHTTPError(http.StatusUnsupportedMediaType)
-	ErrNotFound                    = NewHTTPError(http.StatusNotFound)
-	ErrUnauthorized                = NewHTTPError(http.StatusUnauthorized)
-	ErrForbidden                   = NewHTTPError(http.StatusForbidden)
-	ErrMethodNotAllowed            = NewHTTPError(http.StatusMethodNotAllowed)
-	ErrStatusRequestEntityTooLarge = NewHTTPError(http.StatusRequestEntityTooLarge)
-	ErrTooManyRequests             = NewHTTPError(http.StatusTooManyRequests)
-	ErrBadRequest                  = NewHTTPError(http.StatusBadRequest)
-	ErrBadGateway                  = NewHTTPError(http.StatusBadGateway)
-	ErrInternalServerError         = NewHTTPError(http.StatusInternalServerError)
-	ErrRequestTimeout              = NewHTTPError(http.StatusRequestTimeout)
-	ErrServiceUnavailable          = NewHTTPError(http.StatusServiceUnavailable)
-	ErrValidatorNotRegistered      = errors.New("validator not registered")
-	ErrRendererNotRegistered       = errors.New("renderer not registered")
-	ErrInvalidRedirectCode         = errors.New("invalid redirect status code")
-	ErrCookieNotFound              = errors.New("cookie not found")
-	ErrInvalidCertOrKeyType        = errors.New("invalid cert or key type, must be string or []byte")
-	ErrInvalidListenerNetwork      = errors.New("invalid listener network")
+	ErrBadRequest                    = NewHTTPError(http.StatusBadRequest)                    // HTTP 400 Bad Request
+	ErrUnauthorized                  = NewHTTPError(http.StatusUnauthorized)                  // HTTP 401 Unauthorized
+	ErrPaymentRequired               = NewHTTPError(http.StatusPaymentRequired)               // HTTP 402 Payment Required
+	ErrForbidden                     = NewHTTPError(http.StatusForbidden)                     // HTTP 403 Forbidden
+	ErrNotFound                      = NewHTTPError(http.StatusNotFound)                      // HTTP 404 Not Found
+	ErrMethodNotAllowed              = NewHTTPError(http.StatusMethodNotAllowed)              // HTTP 405 Method Not Allowed
+	ErrNotAcceptable                 = NewHTTPError(http.StatusNotAcceptable)                 // HTTP 406 Not Acceptable
+	ErrProxyAuthRequired             = NewHTTPError(http.StatusProxyAuthRequired)             // HTTP 407 Proxy AuthRequired
+	ErrRequestTimeout                = NewHTTPError(http.StatusRequestTimeout)                // HTTP 408 Request Timeout
+	ErrConflict                      = NewHTTPError(http.StatusConflict)                      // HTTP 409 Conflict
+	ErrGone                          = NewHTTPError(http.StatusGone)                          // HTTP 410 Gone
+	ErrLengthRequired                = NewHTTPError(http.StatusLengthRequired)                // HTTP 411 Length Required
+	ErrPreconditionFailed            = NewHTTPError(http.StatusPreconditionFailed)            // HTTP 412 Precondition Failed
+	ErrStatusRequestEntityTooLarge   = NewHTTPError(http.StatusRequestEntityTooLarge)         // HTTP 413 Payload Too Large
+	ErrRequestURITooLong             = NewHTTPError(http.StatusRequestURITooLong)             // HTTP 414 URI Too Long
+	ErrUnsupportedMediaType          = NewHTTPError(http.StatusUnsupportedMediaType)          // HTTP 415 Unsupported Media Type
+	ErrRequestedRangeNotSatisfiable  = NewHTTPError(http.StatusRequestedRangeNotSatisfiable)  // HTTP 416 Range Not Satisfiable
+	ErrExpectationFailed             = NewHTTPError(http.StatusExpectationFailed)             // HTTP 417 Expectation Failed
+	ErrTeapot                        = NewHTTPError(http.StatusTeapot)                        // HTTP 418 I'm a teapot
+	ErrMisdirectedRequest            = NewHTTPError(http.StatusMisdirectedRequest)            // HTTP 421 Misdirected Request
+	ErrUnprocessableEntity           = NewHTTPError(http.StatusUnprocessableEntity)           // HTTP 422 Unprocessable Entity
+	ErrLocked                        = NewHTTPError(http.StatusLocked)                        // HTTP 423 Locked
+	ErrFailedDependency              = NewHTTPError(http.StatusFailedDependency)              // HTTP 424 Failed Dependency
+	ErrTooEarly                      = NewHTTPError(http.StatusTooEarly)                      // HTTP 425 Too Early
+	ErrUpgradeRequired               = NewHTTPError(http.StatusUpgradeRequired)               // HTTP 426 Upgrade Required
+	ErrPreconditionRequired          = NewHTTPError(http.StatusPreconditionRequired)          // HTTP 428 Precondition Required
+	ErrTooManyRequests               = NewHTTPError(http.StatusTooManyRequests)               // HTTP 429 Too Many Requests
+	ErrRequestHeaderFieldsTooLarge   = NewHTTPError(http.StatusRequestHeaderFieldsTooLarge)   // HTTP 431 Request Header Fields Too Large
+	ErrUnavailableForLegalReasons    = NewHTTPError(http.StatusUnavailableForLegalReasons)    // HTTP 451 Unavailable For Legal Reasons
+	ErrInternalServerError           = NewHTTPError(http.StatusInternalServerError)           // HTTP 500 Internal Server Error
+	ErrNotImplemented                = NewHTTPError(http.StatusNotImplemented)                // HTTP 501 Not Implemented
+	ErrBadGateway                    = NewHTTPError(http.StatusBadGateway)                    // HTTP 502 Bad Gateway
+	ErrServiceUnavailable            = NewHTTPError(http.StatusServiceUnavailable)            // HTTP 503 Service Unavailable
+	ErrGatewayTimeout                = NewHTTPError(http.StatusGatewayTimeout)                // HTTP 504 Gateway Timeout
+	ErrHTTPVersionNotSupported       = NewHTTPError(http.StatusHTTPVersionNotSupported)       // HTTP 505 HTTP Version Not Supported
+	ErrVariantAlsoNegotiates         = NewHTTPError(http.StatusVariantAlsoNegotiates)         // HTTP 506 Variant Also Negotiates
+	ErrInsufficientStorage           = NewHTTPError(http.StatusInsufficientStorage)           // HTTP 507 Insufficient Storage
+	ErrLoopDetected                  = NewHTTPError(http.StatusLoopDetected)                  // HTTP 508 Loop Detected
+	ErrNotExtended                   = NewHTTPError(http.StatusNotExtended)                   // HTTP 510 Not Extended
+	ErrNetworkAuthenticationRequired = NewHTTPError(http.StatusNetworkAuthenticationRequired) // HTTP 511 Network Authentication Required
+
+	ErrValidatorNotRegistered = errors.New("validator not registered")
+	ErrRendererNotRegistered  = errors.New("renderer not registered")
+	ErrInvalidRedirectCode    = errors.New("invalid redirect status code")
+	ErrCookieNotFound         = errors.New("cookie not found")
+	ErrInvalidCertOrKeyType   = errors.New("invalid cert or key type, must be string or []byte")
+	ErrInvalidListenerNetwork = errors.New("invalid listener network")
 )
 
 // Error handlers
@@ -301,6 +347,12 @@ var (
 	}
 
 	MethodNotAllowedHandler = func(c Context) error {
+		// See RFC 7231 section 7.4.1: An origin server MUST generate an Allow field in a 405 (Method Not Allowed)
+		// response and MAY do so in any other response. For disabled resources an empty Allow header may be returned
+		routerAllowMethods, ok := c.Get(ContextKeyHeaderAllow).(string)
+		if ok && routerAllowMethods != "" {
+			c.Response().Header().Set(HeaderAllow, routerAllowMethods)
+		}
 		return ErrMethodNotAllowed
 	}
 )
@@ -308,8 +360,9 @@ var (
 // New creates an instance of Echo.
 func New() (e *Echo) {
 	e = &Echo{
-		Server:    new(http.Server),
-		TLSServer: new(http.Server),
+		filesystem: createFilesystem(),
+		Server:     new(http.Server),
+		TLSServer:  new(http.Server),
 		AutoTLSManager: autocert.Manager{
 			Prompt: autocert.AcceptTOS,
 		},
@@ -468,8 +521,21 @@ func (e *Echo) TRACE(path string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return e.Add(http.MethodTrace, path, h, m...)
 }
 
-// Any registers a new route for all HTTP methods and path with matching handler
+// RouteNotFound registers a special-case route which is executed when no other route is found (i.e. HTTP 404 cases)
+// for current request URL.
+// Path supports static and named/any parameters just like other http method is defined. Generally path is ended with
+// wildcard/match-any character (`/*`, `/download/*` etc).
+//
+// Example: `e.RouteNotFound("/*", func(c echo.Context) error { return c.NoContent(http.StatusNotFound) })`
+func (e *Echo) RouteNotFound(path string, h HandlerFunc, m ...MiddlewareFunc) *Route {
+	return e.Add(RouteNotFound, path, h, m...)
+}
+
+// Any registers a new route for all HTTP methods (supported by Echo) and path with matching handler
 // in the router with optional route-level middleware.
+//
+// Note: this method only adds specific set of supported HTTP methods as handler and is not true
+// "catch-any-arbitrary-method" way of matching requests.
 func (e *Echo) Any(path string, handler HandlerFunc, middleware ...MiddlewareFunc) []*Route {
 	routes := make([]*Route, len(methods))
 	for i, m := range methods {
@@ -488,50 +554,6 @@ func (e *Echo) Match(methods []string, path string, handler HandlerFunc, middlew
 	return routes
 }
 
-// Static registers a new route with path prefix to serve static files from the
-// provided root directory.
-func (e *Echo) Static(prefix, root string) *Route {
-	if root == "" {
-		root = "." // For security we want to restrict to CWD.
-	}
-	return e.static(prefix, root, e.GET)
-}
-
-func (common) static(prefix, root string, get func(string, HandlerFunc, ...MiddlewareFunc) *Route) *Route {
-	h := func(c Context) error {
-		p, err := url.PathUnescape(c.Param("*"))
-		if err != nil {
-			return err
-		}
-
-		name := filepath.Join(root, filepath.Clean("/"+p)) // "/"+ for security
-		fi, err := os.Stat(name)
-		if err != nil {
-			// The access path does not exist
-			return NotFoundHandler(c)
-		}
-
-		// If the request is for a directory and does not end with "/"
-		p = c.Request().URL.Path // path must not be empty.
-		if fi.IsDir() && p[len(p)-1] != '/' {
-			// Redirect to ends with "/"
-			return c.Redirect(http.StatusMovedPermanently, p+"/")
-		}
-		return c.File(name)
-	}
-	// Handle added routes based on trailing slash:
-	// 	/prefix  => exact route "/prefix" + any route "/prefix/*"
-	// 	/prefix/ => only any route "/prefix/*"
-	if prefix != "" {
-		if prefix[len(prefix)-1] == '/' {
-			// Only add any route for intentional trailing slash
-			return get(prefix+"*", h)
-		}
-		get(prefix, h)
-	}
-	return get(prefix+"/*", h)
-}
-
 func (common) file(path, file string, get func(string, HandlerFunc, ...MiddlewareFunc) *Route,
 	m ...MiddlewareFunc) *Route {
 	return get(path, func(c Context) error {
@@ -544,20 +566,20 @@ func (e *Echo) File(path, file string, m ...MiddlewareFunc) *Route {
 	return e.file(path, file, e.GET, m...)
 }
 
-func (e *Echo) add(host, method, path string, handler HandlerFunc, middleware ...MiddlewareFunc) *Route {
-	name := handlerName(handler)
+func (e *Echo) add(host, method, path string, handler HandlerFunc, middlewares ...MiddlewareFunc) *Route {
 	router := e.findRouter(host)
-	router.Add(method, path, func(c Context) error {
-		h := applyMiddleware(handler, middleware...)
+	//FIXME: when handler+middleware are both nil ... make it behave like handler removal
+	name := handlerName(handler)
+	route := router.add(method, path, name, func(c Context) error {
+		h := applyMiddleware(handler, middlewares...)
 		return h(c)
 	})
-	r := &Route{
-		Method: method,
-		Path:   path,
-		Name:   name,
+
+	if e.OnAddRouteHandler != nil {
+		e.OnAddRouteHandler(host, *route, handler, middlewares)
 	}
-	e.router.routes[method+path] = r
-	return r
+
+	return route
 }
 
 // Add registers a new route for an HTTP method and path with matching handler
@@ -581,7 +603,7 @@ func (e *Echo) Group(prefix string, m ...MiddlewareFunc) (g *Group) {
 	return
 }
 
-// URI generates a URI from handler.
+// URI generates an URI from handler.
 func (e *Echo) URI(handler HandlerFunc, params ...interface{}) string {
 	name := handlerName(handler)
 	return e.Reverse(name, params...)
@@ -594,35 +616,13 @@ func (e *Echo) URL(h HandlerFunc, params ...interface{}) string {
 
 // Reverse generates an URL from route name and provided parameters.
 func (e *Echo) Reverse(name string, params ...interface{}) string {
-	uri := new(bytes.Buffer)
-	ln := len(params)
-	n := 0
-	for _, r := range e.router.routes {
-		if r.Name == name {
-			for i, l := 0, len(r.Path); i < l; i++ {
-				if (r.Path[i] == ':' || r.Path[i] == '*') && n < ln {
-					for ; i < l && r.Path[i] != '/'; i++ {
-					}
-					uri.WriteString(fmt.Sprintf("%v", params[n]))
-					n++
-				}
-				if i < l {
-					uri.WriteByte(r.Path[i])
-				}
-			}
-			break
-		}
-	}
-	return uri.String()
+	return e.router.Reverse(name, params...)
 }
 
-// Routes returns the registered routes.
+// Routes returns the registered routes for default router.
+// In case when Echo serves multiple hosts/domains use `e.Routers()["domain2.site"].Routes()` to get specific host routes.
 func (e *Echo) Routes() []*Route {
-	routes := make([]*Route, 0, len(e.router.routes))
-	for _, v := range e.router.routes {
-		routes = append(routes, v)
-	}
-	return routes
+	return e.router.Routes()
 }
 
 // AcquireContext returns an empty `Context` instance from the pool.
@@ -642,7 +642,7 @@ func (e *Echo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Acquire context
 	c := e.pool.Get().(*context)
 	c.Reset(r, w)
-	h := NotFoundHandler
+	var h HandlerFunc
 
 	if e.premiddleware == nil {
 		e.findRouter(r.Host).Find(r.Method, GetPath(r), c)
@@ -716,7 +716,7 @@ func (e *Echo) StartTLS(address string, certFile, keyFile interface{}) (err erro
 func filepathOrContent(fileOrContent interface{}) (content []byte, err error) {
 	switch v := fileOrContent.(type) {
 	case string:
-		return ioutil.ReadFile(v)
+		return os.ReadFile(v)
 	case []byte:
 		return v, nil
 	default:
@@ -764,7 +764,7 @@ func (e *Echo) StartServer(s *http.Server) (err error) {
 	return s.Serve(e.Listener)
 }
 
-func (e *Echo) configureServer(s *http.Server) (err error) {
+func (e *Echo) configureServer(s *http.Server) error {
 	// Setup
 	e.colorer.SetOutput(e.Logger.Output())
 	s.ErrorLog = e.StdLogger
@@ -779,10 +779,11 @@ func (e *Echo) configureServer(s *http.Server) (err error) {
 
 	if s.TLSConfig == nil {
 		if e.Listener == nil {
-			e.Listener, err = newListener(s.Addr, e.ListenerNetwork)
+			l, err := newListener(s.Addr, e.ListenerNetwork)
 			if err != nil {
 				return err
 			}
+			e.Listener = l
 		}
 		if !e.HidePort {
 			e.colorer.Printf("⇨ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
@@ -823,7 +824,7 @@ func (e *Echo) TLSListenerAddr() net.Addr {
 }
 
 // StartH2CServer starts a custom http/2 server with h2c (HTTP/2 Cleartext).
-func (e *Echo) StartH2CServer(address string, h2s *http2.Server) (err error) {
+func (e *Echo) StartH2CServer(address string, h2s *http2.Server) error {
 	e.startupMutex.Lock()
 	// Setup
 	s := e.Server
@@ -840,11 +841,12 @@ func (e *Echo) StartH2CServer(address string, h2s *http2.Server) (err error) {
 	}
 
 	if e.Listener == nil {
-		e.Listener, err = newListener(s.Addr, e.ListenerNetwork)
+		l, err := newListener(s.Addr, e.ListenerNetwork)
 		if err != nil {
 			e.startupMutex.Unlock()
 			return err
 		}
+		e.Listener = l
 	}
 	if !e.HidePort {
 		e.colorer.Printf("⇨ http server started on %s\n", e.colorer.Green(e.Listener.Addr()))
@@ -898,6 +900,15 @@ func (he *HTTPError) SetInternal(err error) *HTTPError {
 	return he
 }
 
+// WithInternal returns clone of HTTPError with err set to HTTPError.Internal field
+func (he *HTTPError) WithInternal(err error) *HTTPError {
+	return &HTTPError{
+		Code:     he.Code,
+		Message:  he.Message,
+		Internal: err,
+	}
+}
+
 // Unwrap satisfies the Go 1.13 error wrapper interface.
 func (he *HTTPError) Unwrap() error {
 	return he.Internal
@@ -927,8 +938,8 @@ func WrapMiddleware(m func(http.Handler) http.Handler) MiddlewareFunc {
 
 // GetPath returns RawPath, if it's empty returns Path from URL
 // Difference between RawPath and Path is:
-//  * Path is where request path is stored. Value is stored in decoded form: /%47%6f%2f becomes /Go/.
-//  * RawPath is an optional field which only gets set if the default encoding is different from Path.
+//   - Path is where request path is stored. Value is stored in decoded form: /%47%6f%2f becomes /Go/.
+//   - RawPath is an optional field which only gets set if the default encoding is different from Path.
 func GetPath(r *http.Request) string {
 	path := r.URL.RawPath
 	if path == "" {
