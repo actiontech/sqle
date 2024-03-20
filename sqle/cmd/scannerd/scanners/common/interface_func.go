@@ -63,12 +63,8 @@ func UploadForDmSlowLog(ctx context.Context, sqls []scanners.SQL, c *scanner.Cli
 			queryTimeTotalMap[node.Fingerprint] = queryTimeTotal + node.QueryTime
 		}
 		queryTimeMax, ok := queryTimeMaxMap[node.Fingerprint]
-		if !ok {
-			queryTimeMaxMap[node.Fingerprint] = node.QueryTime
-		} else {
-			if node.QueryTime > queryTimeMax {
-				queryTimeMaxMap[node.Fingerprint] = node.QueryTime
-			}
+		if !ok || node.QueryTime > queryTimeMax {
+		    queryTimeMaxMap[node.Fingerprint] = node.QueryTime
 		}
 	}
 
