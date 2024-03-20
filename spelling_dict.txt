@@ -454,5 +454,6 @@ multipolygon
 geometrycollection
 charlength
 xmls
+simplifiedchinese
 sqlclosecheck
 mybatisparser
