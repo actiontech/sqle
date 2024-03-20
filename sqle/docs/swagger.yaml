@@ -1412,6 +1412,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlDEVRecordListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlDEVRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetSqlExecutionFailPercentResV1:
     properties:
       code:
@@ -1997,6 +2012,15 @@ definitions:
       score:
         type: integer
     type: object
+  v1.RecordSource:
+    properties:
+      name:
+        enum:
+        - ide_plugin
+        type: string
+      value:
+        type: string
+    type: object
   v1.RejectWorkflowReqV1:
     properties:
       reason:
@@ -2299,6 +2323,35 @@ definitions:
         type: integer
       min_execution_seconds:
         type: integer
+    type: object
+  v1.SqlDEVRecord:
+    properties:
+      audit_result:
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
+      creator:
+        description: create user name
+        type: string
+      first_appear_timestamp:
+        type: string
+      fp_count:
+        type: integer
+      id:
+        type: integer
+      instance_name:
+        type: string
+      last_receive_timestamp:
+        type: string
+      schema_name:
+        type: string
+      source:
+        $ref: '#/definitions/v1.RecordSource'
+        type: object
+      sql:
+        type: string
+      sql_fingerprint:
+        type: string
     type: object
   v1.SqlExecutionFailPercent:
     properties:
@@ -5588,6 +5641,77 @@ paths:
       summary: 获取SQL审核记录标签列表
       tags:
       - sql_audit_record
+  /v1/projects/{project_name}/sql_dev_records:
+    get:
+      description: get sql manage list
+      operationId: GetSqlDEVRecordList
+      parameters:
+      - description: project id
+        in: path
+        name: project_id
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: source
+        enum:
+        - ide_plugin
+        in: query
+        name: filter_source
+        type: string
+      - description: creator name
+        in: query
+        name: filter_creator
+        type: string
+      - description: last receive time from
+        in: query
+        name: filter_last_receive_time_from
+        type: string
+      - description: last receive time to
+        in: query
+        name: filter_last_receive_time_to
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlDEVRecordListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取开发sql记录
+      tags:
+      - SqlDEVRecord
   /v1/projects/{project_name}/sql_manages:
     get:
       deprecated: true
