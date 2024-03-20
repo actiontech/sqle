@@ -407,9 +407,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	buff := &bytes.Buffer{}
+	// ISSUE：https://github.com/actiontech/sqle-ee/issues/1404
+	// 此处buff和cvs文件头都需要加UTF-8 BOM，否则会导致Microsoft Office Excel打开时出现中文乱码
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
+	err = cw.Write([]string{"\xEF\xBB\xBF序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
