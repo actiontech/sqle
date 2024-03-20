@@ -409,7 +409,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	buff := &bytes.Buffer{}
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
+	err = cw.Write([]string{"\xEF\xBB\xBF序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
