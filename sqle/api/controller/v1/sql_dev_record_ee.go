@@ -110,7 +110,15 @@ func convertToGetSqlDEVRecordListResp(sqlDEVRecordList []*model.SQLDevRecord) ([
 	return sqlDEVRecordRespList, nil
 }
 
-func SyncSqlDevRecord(ctx context.Context, task *model.Task, creator string) error {
+func SyncSqlDevRecord(ctx context.Context, task *model.Task, creator string) {
+	logger := log.NewEntry().WithField("sync_sql_dev_record", creator)
+
+	err := syncSqlDevRecord(ctx, task, creator)
+	if err != nil {
+		logger.Errorf("sync sql dev record failed, err: %v", err)
+	}
+}
+func syncSqlDevRecord(ctx context.Context, task *model.Task, creator string) error {
 	if task == nil || task.ExecuteSQLs == nil {
 		return fmt.Errorf("sql audit task is nil")
 	}
