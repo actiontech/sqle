@@ -275,6 +275,7 @@ func buildOfflineTaskForAudit(userId uint, dbType string, sqls getSQLFromFileRes
 	return task, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
@@ -319,6 +320,15 @@ func getSqlsFromZip(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 		content, err := io.ReadAll(r)
 		if err != nil {
 			return nil, false, fmt.Errorf("read src file failed:  %v", err)
+		}
+
+		content, err = utils.ConvertToUtf8(content)
+		if err != nil {
+			if e.Is(err, utils.ErrUnknownEncoding) {
+				log.NewEntry().WithField("convert_to_utf8", srcFile.Name).Errorf("convert to utf8 failed: %v", err)
+				continue
+			}
+			return nil, false, fmt.Errorf("convert to utf8 failed:  %v", err)
 		}
 
 		if strings.HasSuffix(srcFile.Name, ".xml") {
@@ -391,6 +401,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLsFromFile, err
 	return sqls, nil
 }
 
+// todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
@@ -435,6 +446,12 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 					l.Errorf("skip file [%v]. because read file failed: %v", path, err)
 					return nil
 				}
+				content, err = utils.ConvertToUtf8(content)
+				if err != nil {
+					l.Errorf("skip file [%v]. because convert to utf8 failed: %v", path, err)
+					return nil
+				}
+
 				xmlContents = append(xmlContents, xmlParser.XmlFile{
 					FilePath: gitPath,
 					Content:  string(content),
@@ -464,9 +481,15 @@ func getSqlsFromGit(c echo.Context) (sqls []SQLsFromFile, exist bool, err error)
 				sqlsFromOneFile = sqlBuffer.String()
 			}
 
+			toUtf8, err := utils.ConvertToUtf8([]byte(sqlsFromOneFile))
+			if err != nil {
+				l.Errorf("skip file [%v],sql [%v]. because convert to utf8 failed: %v", path, sqlsFromOneFile, err)
+				return nil
+			}
+
 			sqls = append(sqls, SQLsFromFile{
 				FilePath: gitPath,
-				SQLs:     sqlsFromOneFile,
+				SQLs:     string(toUtf8),
 			})
 		}
 		return nil
