@@ -32,8 +32,7 @@ func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName 
 		})
 	}
 
-	err := c.UploadReq(scanner.FullUpload, apName, reqBody)
-	return err
+	return c.UploadReq(scanner.PartialUpload, apName, reqBody)
 }
 
 func Audit(c *scanner.Client, apName string) error {
