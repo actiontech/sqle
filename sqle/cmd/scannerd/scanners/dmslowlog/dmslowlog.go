@@ -64,6 +64,9 @@ func (dm *DmSlowLog) Run(ctx context.Context) error {
 		select {
 		case lines := <-tf.Lines:
 			node := DmNode{}
+			if lines == nil {
+			    continue
+			}
 			line := lines.Text
 			// 正则表达式
 			timestampRegex := regexp.MustCompile(`\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}`)
