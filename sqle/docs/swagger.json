@@ -2913,6 +2913,112 @@
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_dev_records": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage list",
+                "tags": [
+                    "SqlDEVRecord"
+                ],
+                "summary": "获取开发sql记录",
+                "operationId": "GetSqlDEVRecordList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project id",
+                        "name": "project_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "ide_plugin"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "creator name",
+                        "name": "filter_creator",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last receive time from",
+                        "name": "filter_last_receive_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last receive time to",
+                        "name": "filter_last_receive_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlDEVRecordListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_manages": {
             "get": {
                 "security": [
@@ -9485,6 +9591,28 @@
                 }
             }
         },
+        "v1.GetSqlDEVRecordListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlDEVRecord"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetSqlExecutionFailPercentResV1": {
             "type": "object",
             "properties": {
@@ -10346,6 +10474,20 @@
                 }
             }
         },
+        "v1.RecordSource": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "enum": [
+                        "ide_plugin"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RejectWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -10796,6 +10938,49 @@
                 },
                 "min_execution_seconds": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SqlDEVRecord": {
+            "type": "object",
+            "properties": {
+                "audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditResult"
+                    }
+                },
+                "creator": {
+                    "description": "create user name",
+                    "type": "string"
+                },
+                "first_appear_timestamp": {
+                    "type": "string"
+                },
+                "fp_count": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "last_receive_timestamp": {
+                    "type": "string"
+                },
+                "schema_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RecordSource"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
                 }
             }
         },
