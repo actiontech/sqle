@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"context"
 	e "errors"
 	"net/http"
 
@@ -193,6 +194,17 @@ func DirectAuditFiles(c echo.Context) error {
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
 		return controller.JSONBaseErrorReq(c, v1.ErrDirectAudit)
+	}
+
+	{
+		// record dev sql
+		task.DBType = req.InstanceType
+		task.Schema = schemaName
+		user, err := controller.GetCurrentUser(c, dms.GetUser)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		go v1.SyncSqlDevRecord(context.TODO(), task, user.Name)
 	}
 
 	return c.JSON(http.StatusOK, DirectAuditResV2{
