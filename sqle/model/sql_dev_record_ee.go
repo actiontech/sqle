@@ -112,10 +112,19 @@ func (s *Storage) InsertOrUpdateSqlDevRecord(SqlDevRecordList []*SQLDevRecord) e
 		}
 		batchSqlDevRecordList := SqlDevRecordList[start:end]
 
+		// 聚合记录，减少数据库操作
+		sqlDevRecordMap := make(map[string]*SQLDevRecord)
+		for _, v := range batchSqlDevRecordList {
+			sdr, ok := sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5]
+			if ok {
+				v.FpCount += sdr.FpCount
+			}
+			sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5] = v
+		}
+
 		args := make([]interface{}, 0)
 		pattern := make([]string, 0)
-		for _, sqlDevRecord := range batchSqlDevRecordList {
-
+		for _, sqlDevRecord := range sqlDevRecordMap {
 			pattern = append(pattern, "( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 			args = append(args, sqlDevRecord.SqlFingerprint, sqlDevRecord.ProjFpSourceInstSchemaMd5, sqlDevRecord.SqlText,
 				sqlDevRecord.Source, sqlDevRecord.AuditLevel, sqlDevRecord.AuditResults, sqlDevRecord.FpCount, sqlDevRecord.FirstAppearTimestamp,
