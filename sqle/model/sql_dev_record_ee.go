@@ -6,8 +6,6 @@ package model
 import (
 	"fmt"
 	"strings"
-
-	"github.com/jinzhu/gorm"
 )
 
 const (
@@ -106,25 +104,26 @@ AND sdr.last_receive_timestamp <= :filter_last_receive_time_to
 `
 
 func (s *Storage) InsertOrUpdateSqlDevRecord(SqlDevRecordList []*SQLDevRecord) error {
-	return s.Tx(func(tx *gorm.DB) error {
-		for batchSize, start := 50, 0; start < len(SqlDevRecordList); start += batchSize {
-			end := start + batchSize
-			if end > len(SqlDevRecordList) {
-				end = len(SqlDevRecordList)
-			}
-			batchSqlDevRecordList := SqlDevRecordList[start:end]
 
-			args := make([]interface{}, 0)
-			pattern := make([]string, 0)
-			for _, SqlDevRecord := range batchSqlDevRecordList {
-				pattern = append(pattern, "( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-				args = append(args, SqlDevRecord.SqlFingerprint, SqlDevRecord.ProjFpSourceInstSchemaMd5, SqlDevRecord.SqlText,
-					SqlDevRecord.Source, SqlDevRecord.AuditLevel, SqlDevRecord.AuditResults, SqlDevRecord.FpCount, SqlDevRecord.FirstAppearTimestamp,
-					SqlDevRecord.LastReceiveTimestamp, SqlDevRecord.InstanceName, SqlDevRecord.SchemaName, SqlDevRecord.Creator,
-					SqlDevRecord.ProjectId)
-			}
+	for batchSize, start := 50, 0; start < len(SqlDevRecordList); start += batchSize {
+		end := start + batchSize
+		if end > len(SqlDevRecordList) {
+			end = len(SqlDevRecordList)
+		}
+		batchSqlDevRecordList := SqlDevRecordList[start:end]
 
-			raw := fmt.Sprintf(`
+		args := make([]interface{}, 0)
+		pattern := make([]string, 0)
+		for _, sqlDevRecord := range batchSqlDevRecordList {
+
+			pattern = append(pattern, "( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			args = append(args, sqlDevRecord.SqlFingerprint, sqlDevRecord.ProjFpSourceInstSchemaMd5, sqlDevRecord.SqlText,
+				sqlDevRecord.Source, sqlDevRecord.AuditLevel, sqlDevRecord.AuditResults, sqlDevRecord.FpCount, sqlDevRecord.FirstAppearTimestamp,
+				sqlDevRecord.LastReceiveTimestamp, sqlDevRecord.InstanceName, sqlDevRecord.SchemaName, sqlDevRecord.Creator,
+				sqlDevRecord.ProjectId)
+		}
+
+		raw := fmt.Sprintf(`
 			INSERT INTO sql_dev_records (sql_fingerprint, proj_fp_source_inst_schema_md5, sql_text, source, audit_level, audit_results,
 			                        fp_count, first_appear_timestamp, last_receive_timestamp, instance_name, schema_name,
 			                        creator, project_id)
@@ -135,15 +134,14 @@ func (s *Storage) InsertOrUpdateSqlDevRecord(SqlDevRecordList []*SQLDevRecord) e
 			                       fp_count 			   = fp_count + VALUES(fp_count),
 			                       first_appear_timestamp = VALUES(first_appear_timestamp),
 			                       last_receive_timestamp = VALUES(last_receive_timestamp);`,
-				strings.Join(pattern, ", "))
+			strings.Join(pattern, ", "))
 
-			err := tx.Exec(raw, args...).Error
-			if err != nil {
-				return err
-			}
-
+		err := s.db.Exec(raw, args...).Error
+		if err != nil {
+			return err
 		}
 
-		return nil
-	})
+	}
+
+	return nil
 }
