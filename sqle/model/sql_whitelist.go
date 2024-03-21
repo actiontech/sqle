@@ -88,7 +88,7 @@ func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projec
 	var count uint32
 	sqlWhitelist := []SqlWhitelist{}
 	query := s.db.Table("sql_whitelist").
-		Where("project_id = ?", projectUID)
+		Where("project_id = ?", projectUID).Where("deleted_at IS NULL")
 	if pageSize == 0 {
 		err := query.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
 		return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
