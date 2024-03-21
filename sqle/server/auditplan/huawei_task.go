@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"fmt"
+	"html"
 	"strconv"
 	"time"
 
@@ -75,7 +76,7 @@ func (hr *HuaweiRdsMySQLSlowLogTask) pullLogs(client *rds.RdsClient, instanceId 
 			return nil, fmt.Errorf("parse huawei cloud execution-start-time failed: %v", err)
 		}
 		sqls[i] = SqlFromHuaweiCloud{
-			sql:                utils.NvlString(&slowRecord.QuerySample),
+			sql:                html.UnescapeString(utils.NvlString(&slowRecord.QuerySample)),
 			executionStartTime: execStartTime,
 			schema:             slowRecord.Database,
 		}
