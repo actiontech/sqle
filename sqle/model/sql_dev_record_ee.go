@@ -103,28 +103,33 @@ AND sdr.last_receive_timestamp <= :filter_last_receive_time_to
 {{ end }}
 `
 
-func (s *Storage) InsertOrUpdateSqlDevRecord(SqlDevRecordList []*SQLDevRecord) error {
+func (s *Storage) InsertOrUpdateSqlDevRecord(sqlDevRecordList []*SQLDevRecord) error {
 
-	for batchSize, start := 50, 0; start < len(SqlDevRecordList); start += batchSize {
+	// 聚合记录，减少数据库操作
+	sqlDevRecordMap := make(map[string]*SQLDevRecord)
+	for _, v := range sqlDevRecordList {
+		sdr, ok := sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5]
+		if ok {
+			v.FpCount += sdr.FpCount
+		}
+		sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5] = v
+	}
+	mergeSQLDevRecord := make([]*SQLDevRecord, 0)
+	for _, v := range sqlDevRecordMap {
+		mergeSQLDevRecord = append(mergeSQLDevRecord, v)
+	}
+
+	// 分片提交
+	for batchSize, start := 50, 0; start < len(mergeSQLDevRecord); start += batchSize {
 		end := start + batchSize
-		if end > len(SqlDevRecordList) {
-			end = len(SqlDevRecordList)
+		if end > len(mergeSQLDevRecord) {
+			end = len(mergeSQLDevRecord)
 		}
-		batchSqlDevRecordList := SqlDevRecordList[start:end]
-
-		// 聚合记录，减少数据库操作
-		sqlDevRecordMap := make(map[string]*SQLDevRecord)
-		for _, v := range batchSqlDevRecordList {
-			sdr, ok := sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5]
-			if ok {
-				v.FpCount += sdr.FpCount
-			}
-			sqlDevRecordMap[v.ProjFpSourceInstSchemaMd5] = v
-		}
+		batchSqlDevRecordList := mergeSQLDevRecord[start:end]
 
 		args := make([]interface{}, 0)
 		pattern := make([]string, 0)
-		for _, sqlDevRecord := range sqlDevRecordMap {
+		for _, sqlDevRecord := range batchSqlDevRecordList {
 			pattern = append(pattern, "( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 			args = append(args, sqlDevRecord.SqlFingerprint, sqlDevRecord.ProjFpSourceInstSchemaMd5, sqlDevRecord.SqlText,
 				sqlDevRecord.Source, sqlDevRecord.AuditLevel, sqlDevRecord.AuditResults, sqlDevRecord.FpCount, sqlDevRecord.FirstAppearTimestamp,
