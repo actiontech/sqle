@@ -1700,7 +1700,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin) ([]s
 func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
 	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 		" where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
-	if isSensitive {
+	if !isSensitive {
 		schema = strings.ToLower(schema)
 		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 			" where lower(table_schema)='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
@@ -1711,7 +1711,7 @@ func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, 
 func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
 	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 		" where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
-	if isSensitive {
+	if !isSensitive {
 		schema = strings.ToLower(schema)
 		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 			"where lower(table_schema)='%s' and TABLE_TYPE='VIEW'", schema)
@@ -1722,14 +1722,14 @@ func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, s
 func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, database, schema, tableName string, isSensitive bool) ([]string, error) {
 	tables := make([]string, 0)
 	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
-	if isSensitive {
+	if !isSensitive {
 		database = strings.ToLower(database)
 		schema = strings.ToLower(schema)
 		tableName = strings.ToLower(tableName)
 	}
 	columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
 		database, schema, tableName)
-	if isSensitive {
+	if !isSensitive {
 		columnsCondition = fmt.Sprintf("lower(table_catalog) = '%s' AND lower(table_schema) = '%s' "+
 			"AND lower(table_name) = '%s'", database, schema, tableName)
 	}
@@ -1761,7 +1761,7 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	}
 	tableDDl += strings.Join(sqls, "")
 	constraintsCondition := fmt.Sprintf("n.nspname = '%s' AND C.relname = '%s'", schema, tableName)
-	if isSensitive {
+	if !isSensitive {
 		constraintsCondition = fmt.Sprintf("lower(n.nspname) = '%s' "+
 			"AND lower(C.relname) = '%s'", schema, tableName)
 	}
@@ -1782,7 +1782,7 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	}
 	tableDDl += ")"
 	indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
-	if isSensitive {
+	if !isSensitive {
 		indexesCondition = fmt.Sprintf("lower(schemaname) = '%s' and lower(tablename) = '%s'",
 			schema, tableName)
 	}
@@ -1811,7 +1811,7 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateViewsForPg(plugin driver.Plugin, d
 			" FROM information_schema.views "+
 			" WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
 		database, schema, tableName)
-	if isSensitive {
+	if !isSensitive {
 		database = strings.ToLower(database)
 		tableName = strings.ToLower(tableName)
 		querySql = fmt.Sprintf(
