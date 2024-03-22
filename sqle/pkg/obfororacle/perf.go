@@ -18,8 +18,8 @@ t1.sql_fulltext as sql_fulltext,
 sum(t1.EXECUTIONS) as executions,
 sum(t1.ELAPSED_TIME) as elapsed_time,
 sum(t1.CPU_TIME) as cpu_time,
-sum(t1.DISK_READS) as disk_reads,
-sum(t1.BUFFERS_GETS) as buffer_gets,
+sum(t1.DISK_READS) as disk_reads, // 所有执行物理读的次数
+sum(t1.BUFFERS_GETS) as buffer_gets, // 所有执行逻辑读的次数
 sum(t1.USER_IO_WAIT_TIME) as user_io_wait_time
 FROM 
 (select to_char(QUERY_SQL) sql_fulltext,EXECUTIONS,ELAPSED_TIME,CPU_TIME,DISK_READS,BUFFERS_GETS,USER_IO_WAIT_TIME
