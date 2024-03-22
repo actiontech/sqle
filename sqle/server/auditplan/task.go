@@ -1600,9 +1600,6 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		return
 	}
 
-	// 是否大小写敏感
-	isSensitive := at.GetCaseSensitiveForPg(plugin)
-
 	schemas, err := at.GetAllUserSchemas(plugin)
 	if err != nil {
 		at.logger.Errorf("get database=%s schemas error: %s", at.ap.InstanceDatabase, err)
@@ -1616,13 +1613,13 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 	finalTableSqls := make([]string, 0)
 	finalViewSqls := make([]string, 0)
 	for _, schema := range schemas {
-		tables, err := at.ShowSchemaTablesForPg(plugin, schema, isSensitive)
+		tables, err := at.ShowSchemaTablesForPg(plugin, schema)
 		if err != nil {
 			at.logger.Errorf("get schema table fail, error: %s", err)
 			continue
 		}
 		for _, table := range tables {
-			tableSqls, err := at.ShowCreateTablesForPg(plugin, at.ap.InstanceDatabase, schema, table, isSensitive)
+			tableSqls, err := at.ShowCreateTablesForPg(plugin, at.ap.InstanceDatabase, schema, table)
 			if err != nil {
 				at.logger.Errorf("show create table fail, error: %s", err)
 				continue
@@ -1642,14 +1639,14 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 	for _, schema := range schemas {
 		var views []string
 		if at.ap.Params.GetParam("collect_view").Bool() {
-			views, err = at.ShowSchemaViewsForPg(plugin, schema, isSensitive)
+			views, err = at.ShowSchemaViewsForPg(plugin, schema)
 			if err != nil {
 				at.logger.Errorf("get schema view fail, error: %s", err)
 				continue
 			}
 		}
 		for _, view := range views {
-			viewSqls, err := at.ShowCreateViewsForPg(plugin, at.ap.InstanceDatabase, schema, view, isSensitive)
+			viewSqls, err := at.ShowCreateViewsForPg(plugin, at.ap.InstanceDatabase, schema, view)
 			if err != nil {
 				at.logger.Errorf("show create view fail, error: %s", err)
 				continue
@@ -1667,72 +1664,28 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 	}
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetCaseSensitiveForPg(plugin driver.Plugin) bool {
-	sql := "SELECT setting FROM pg_settings WHERE name = 'quote_all_identifiers'"
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
-	defer cancel()
-
-	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
-	if err != nil {
-		at.logger.Errorf("get caseSensitive fail, error: %v", err)
-		return false
-	}
-	rows := result.Rows
-	for _, row := range rows {
-		values := row.Values
-		if len(values) == 0 {
-			continue
-		}
-		caseSensitive := values[0].Value
-		if strings.ToLower(caseSensitive) == "on" {
-			return true
-		}
-	}
-	return false
-}
-
 func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin) ([]string, error) {
 	querySql := "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema'"
 	return at.GetResultSqls(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
+func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, schema string) ([]string, error) {
 	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 		" where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
-	if !isSensitive {
-		schema = strings.ToLower(schema)
-		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
-			" where lower(table_schema)='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
-	}
 	return at.GetResultSqls(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, schema string, isSensitive bool) ([]string, error) {
+func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, schema string) ([]string, error) {
 	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
 		" where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
-	if !isSensitive {
-		schema = strings.ToLower(schema)
-		querySql = fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
-			"where lower(table_schema)='%s' and TABLE_TYPE='VIEW'", schema)
-	}
 	return at.GetResultSqls(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, database, schema, tableName string, isSensitive bool) ([]string, error) {
+func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, database, schema, tableName string) ([]string, error) {
 	tables := make([]string, 0)
 	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
-	if !isSensitive {
-		database = strings.ToLower(database)
-		schema = strings.ToLower(schema)
-		tableName = strings.ToLower(tableName)
-	}
 	columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
 		database, schema, tableName)
-	if !isSensitive {
-		columnsCondition = fmt.Sprintf("lower(table_catalog) = '%s' AND lower(table_schema) = '%s' "+
-			"AND lower(table_name) = '%s'", database, schema, tableName)
-	}
 	// 获取列定义，多个英文逗号分割
 	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
 		"CASE "+
@@ -1761,10 +1714,6 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	}
 	tableDDl += strings.Join(sqls, "")
 	constraintsCondition := fmt.Sprintf("n.nspname = '%s' AND C.relname = '%s'", schema, tableName)
-	if !isSensitive {
-		constraintsCondition = fmt.Sprintf("lower(n.nspname) = '%s' "+
-			"AND lower(C.relname) = '%s'", schema, tableName)
-	}
 	// 获取所有约束
 	constraints := fmt.Sprintf("SELECT 'CONSTRAINT ' || r.conname || ' ' || "+
 		" pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition "+
@@ -1782,10 +1731,6 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	}
 	tableDDl += ")"
 	indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
-	if !isSensitive {
-		indexesCondition = fmt.Sprintf("lower(schemaname) = '%s' and lower(tablename) = '%s'",
-			schema, tableName)
-	}
 	// 获取索引
 	indexes := fmt.Sprintf("SELECT indexdef AS index_definition FROM pg_indexes "+
 		" WHERE %s", indexesCondition)
@@ -1804,23 +1749,13 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 	return tables, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowCreateViewsForPg(plugin driver.Plugin, database, schema, tableName string, isSensitive bool) ([]string, error) {
+func (at *PostgreSQLSchemaMetaTask) ShowCreateViewsForPg(plugin driver.Plugin, database, schema, tableName string) ([]string, error) {
 	querySql := fmt.Sprintf(
 		"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
 			" AS create_view_statement "+
 			" FROM information_schema.views "+
 			" WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
 		database, schema, tableName)
-	if !isSensitive {
-		database = strings.ToLower(database)
-		tableName = strings.ToLower(tableName)
-		querySql = fmt.Sprintf(
-			"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
-				" AS create_view_statement "+
-				" FROM information_schema.views "+
-				" WHERE lower(table_catalog) = '%s' AND lower(table_schema) = '%s' AND lower(table_name) = '%s'",
-			database, schema, tableName)
-	}
 	return at.GetResultSqls(plugin, querySql)
 }
 
