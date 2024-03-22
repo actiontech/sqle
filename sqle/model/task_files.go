@@ -7,3 +7,5 @@ type File struct {
 	FileHost   string `json:"file_host" gorm:"type:varchar(255)"`
 	NickName   string `json:"nick_name" gorm:"type:varchar(255)"`
 }
+
+const FixFilePath string = "audit_files/"
