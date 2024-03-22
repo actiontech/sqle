@@ -1709,11 +1709,11 @@ func (at *ObForOracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, [
 		},
 		{
 			Name: obfororacle.DynPerformanceViewObForOracleColumnDiskReads,
-			Desc: "物理读",
+			Desc: "物理读次数",
 		},
 		{
 			Name: obfororacle.DynPerformanceViewObForOracleColumnBufferGets,
-			Desc: "逻辑读",
+			Desc: "逻辑读次数",
 		},
 		{
 			Name: obfororacle.DynPerformanceViewObForOracleColumnUserIOWaitTime,
