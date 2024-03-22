@@ -104,7 +104,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			SQLsFromFormData: req.Sqls,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c)
+		sqls,_, err = getSQLFromFile(c,false)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
