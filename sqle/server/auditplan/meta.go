@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/obfororacle"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
@@ -32,13 +33,15 @@ const (
 	TypeAllAppExtract         = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
 	TypeSQLFile               = "sql_file"
+	TypeObForOracleTopSQL     = "ob_for_oracle_top_sql"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll         = ""
+	InstanceTypeMySQL       = "MySQL"
+	InstanceTypeOracle      = "Oracle"
+	InstanceTypeTiDB        = "TiDB"
+	InstanceTypeObForOracle = "OceanBase For Oracle"
 )
 
 const (
@@ -370,6 +373,32 @@ var Metas = []Meta{
 		Desc:         "SQL文件",
 		InstanceType: InstanceTypeAll,
 		CreateTask:   NewDefaultTask,
+	},
+	{
+		Type:         TypeObForOracleTopSQL,
+		Desc:         "OceanBase For Oracle TOP SQL",
+		InstanceType: InstanceTypeObForOracle,
+		CreateTask:   NewObForOracleTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: obfororacle.DynPerformanceViewObForOracleColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		},
 	},
 }
 
