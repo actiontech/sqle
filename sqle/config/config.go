@@ -1,6 +1,36 @@
 package config
 
-import dmsCommonConf "github.com/actiontech/dms/pkg/dms-common/conf"
+import (
+	"fmt"
+	"io/ioutil"
+	"sync"
+
+	dmsCommonConf "github.com/actiontech/dms/pkg/dms-common/conf"
+	"gopkg.in/yaml.v2"
+)
+
+var (
+	options *Options = &Options{}
+	once    sync.Once
+)
+
+// GetOptions 获取配置选项
+func GetOptions() *Options {
+	return options
+}
+
+func ParseConfigFile(configPath string) {
+	once.Do(func() {
+		b, err := ioutil.ReadFile(configPath)
+		if err != nil {
+			panic(fmt.Errorf("load config path: %s failed error :%v", configPath, err))
+		}
+		err = yaml.Unmarshal(b, options)
+		if err != nil {
+			panic(fmt.Errorf("unmarshal config file error %v", err))
+		}
+	})
+}
 
 type Options struct {
 	SqleOptions SqleOptions `yaml:"sqle"`
