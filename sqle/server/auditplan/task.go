@@ -1715,11 +1715,11 @@ func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []
 		},
 		{
 			Name: postgresql.DynPerformanceViewPgSQLColumnDiskReads,
-			Desc: "物理读",
+			Desc: "物理读块数",
 		},
 		{
 			Name: postgresql.DynPerformanceViewPgSQLColumnBufferGets,
-			Desc: "逻辑读",
+			Desc: "逻辑读块数",
 		},
 		{
 			Name: postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime,
