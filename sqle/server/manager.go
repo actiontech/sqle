@@ -21,6 +21,7 @@ var OnlyRunOnLeaderJobs = []func(entry *logrus.Entry) ServerJob{
 
 var RunOnAllJobs = []func(entry *logrus.Entry) ServerJob{
 	NewWorkflowScheduleJob,
+	NewCleanJobForAllNodes,
 }
 
 type ServerJobManager struct {
