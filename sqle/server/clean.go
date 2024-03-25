@@ -167,7 +167,11 @@ func (j *CleanJobForAllNodes) CleanUpExpiredFiles(entry *logrus.Entry) {
 			entry.Warnf("remove audit file failed %v", err)
 			continue
 		}
-		s.Delete(&file)
+		err = s.Delete(&file)
+		if err != nil {
+			entry.Warnf("remove audit file record failed %v", err)
+			continue
+		}
 		entry.Infof("delete files with no workflow success, file path: %s", filePath)
 	}
 }
