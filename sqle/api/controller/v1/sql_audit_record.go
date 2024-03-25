@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -104,7 +105,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			SQLsFromFormData: req.Sqls,
 		}
 	} else {
-		sqls,_, err = getSQLFromFile(c,false)
+		sqls, _, err = getSQLFromFile(c, false)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -305,22 +306,9 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	return task, nil
 }
 
-// todo 此处跳过了不支持的编码格式文件
-func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
-	file, err := c.FormFile(InputZipFileName)
-	if err == http.ErrMissingFile {
-		return nil, nil, false, nil
-	}
-	if err != nil {
-		return nil, nil, false, err
-	}
-	f, err := file.Open()
-	if err != nil {
-		return nil, nil, false, err
-	}
-	defer f.Close()
-
-	currentPos, err := f.Seek(0, io.SeekEnd) // get size of zip file
+func getSqlsFromZip(f multipart.File) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+	// get size of zip file
+	currentPos, err := f.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, nil, false, err
 	}
