@@ -361,6 +361,12 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 		return nil, errors.NewTaskNoExistOrNoAccessErr()
 	}
 
+	files, err := s.GetFileByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+	task.Files = files
+
 	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
 	if err != nil {
 		return nil, err
