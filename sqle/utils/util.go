@@ -349,6 +349,7 @@ func ConvertToUtf8(in []byte) ([]byte, error) {
 // 生成随机字符串，生成长度是halfLength的两倍
 func GenerateRandomString(halfLength int) string {
 	bytes := make([]byte, halfLength)
+	//nolint:errcheck
 	rand.Read(bytes)
 	return fmt.Sprintf("%x", bytes)
 }
