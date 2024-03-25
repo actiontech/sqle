@@ -1017,7 +1017,7 @@ func DownloadOriginFile(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	} else {
-		filePath := model.FixFilePath + file.UniqueName
+		filePath := model.DefaultFilePath(file.UniqueName)
 		err = c.Attachment(filePath, file.NickName)
 		if err != nil {
 			return err
