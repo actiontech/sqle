@@ -9,13 +9,17 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -24,6 +28,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
@@ -983,4 +988,77 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Tasks:       tasksRes,
 		},
 	})
+}
+
+func DownloadOriginFile(c echo.Context) error {
+	taskId := c.Param("task_id")
+	s := model.GetStorage()
+	files, err := s.GetFileByTaskId(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	log.Logger().Debugf("task id %v", taskId)
+	/*
+		TODO 鉴权
+		err = CheckCurrentUserCanViewTask(c, task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	*/
+	if len(files) == 0 {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("can not find any file in this task"))
+	}
+
+	file := files[0]
+	if file.FileHost != config.GetOptions().SqleOptions.ReportHost {
+		log.NewEntry().Debugf("try to reverse to sqle due to file.FileHost %v this host %v", file.FileHost, config.GetOptions().SqleOptions.ReportHost)
+		err = ReverseToSqle(c, c.Request().URL.Path, file.FileHost)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		filePath := model.FixFilePath + file.UniqueName
+		err = c.Attachment(filePath, file.NickName)
+		if err != nil {
+			return err
+		}
+	}
+	return c.NoContent(http.StatusOK)
+
+}
+
+// TODO 和DMS一起抽离出一个工具函数
+func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error) {
+	// c.Request().URL.Path = rewriteUrlPath
+	// reference from echo framework proxy middleware
+	target, err := url.Parse(fmt.Sprintf("http://%s", targetHost))
+	log.NewEntry().Debugf("reverse to sqle: %v%v", target.Host, c.Request().URL.Path)
+	if err != nil {
+		return err
+	}
+	reverseProxy := httputil.NewSingleHostReverseProxy(target)
+	reverseProxy.ErrorHandler = func(resp http.ResponseWriter, req *http.Request, err error) {
+		// If the client canceled the request (usually by closing the connection), we can report a
+		// client error (4xx) instead of a server error (5xx) to correctly identify the situation.
+		// The Go standard library (at of late 2020) wraps the exported, standard
+		// context.Canceled error with unexported garbage value requiring a substring check, see
+		// https://github.com/golang/go/blob/6965b01ea248cabb70c3749fd218b36089a21efb/src/net/net.go#L416-L430
+		if err == context.Canceled || strings.Contains(err.Error(), "operation was canceled") {
+			httpError := echo.NewHTTPError(middleware.StatusCodeContextCanceled, fmt.Sprintf("client closed connection: %v", err))
+			httpError.Internal = err
+			c.Set("_error", httpError)
+		} else {
+			httpError := echo.NewHTTPError(http.StatusBadGateway, fmt.Sprintf("remote %s unreachable, could not forward: %v", target.String(), err))
+			httpError.Internal = err
+			c.Set("_error", httpError)
+		}
+	}
+
+	reverseProxy.ServeHTTP(c.Response(), c.Request())
+
+	if e, ok := c.Get("_error").(error); ok {
+		err = e
+	}
+
+	return
 }
