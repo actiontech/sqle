@@ -1,6 +1,7 @@
 package server
 
 import (
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -124,4 +125,49 @@ func getOperationRecordExpiredHours(
 	operationRecordExpiredHours = intVal
 
 	return operationRecordExpiredHours
+}
+
+type CleanJobForAllNodes struct {
+	BaseJob
+}
+
+func NewCleanJobForAllNodes(entry *logrus.Entry) ServerJob {
+	entry = entry.WithField("job", "clean_for_all_nodes")
+	j := &CleanJobForAllNodes{}
+	j.BaseJob = *NewBaseJob(entry, 1*time.Hour, j.job)
+	return j
+}
+
+func (j *CleanJobForAllNodes) job(entry *logrus.Entry) {
+	j.CleanUpExpiredFiles(entry)
+}
+
+func (j *CleanJobForAllNodes) CleanUpExpiredFiles(entry *logrus.Entry) {
+
+	s := model.GetStorage()
+	var files []model.File
+	var err error
+	files, err = s.GetExpiredFileWithNoWorkflow()
+	if err != nil {
+		entry.Errorf("get expired file with no workflow error: %v", err)
+		return
+	}
+
+	expiredFiles, err := s.GetExpiredFile()
+	if err != nil {
+		entry.Errorf("get expired files error: %v", err)
+		return
+	}
+
+	files = append(files, expiredFiles...)
+	for _, file := range files {
+		filePath := model.DefaultFilePath(file.UniqueName)
+		err = os.Remove(filePath)
+		if err != nil {
+			entry.Warnf("remove audit file failed %v", err)
+			continue
+		}
+		s.Delete(&file)
+		entry.Infof("delete files with no workflow success, file path: %s", filePath)
+	}
 }
