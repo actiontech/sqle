@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	dmsCommonConf "github.com/actiontech/dms/pkg/dms-common/conf"
@@ -11,7 +10,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/spf13/cobra"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var version string
@@ -81,14 +79,8 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	// read config from file first, then read from cmd args.
 	if configPath != "" {
-		b, err := ioutil.ReadFile(configPath)
-		if err != nil {
-			return fmt.Errorf("load config path: %s failed error :%v", configPath, err)
-		}
-		err = yaml.Unmarshal(b, cfg)
-		if err != nil {
-			return fmt.Errorf("unmarshal config file error %v", err)
-		}
+		config.ParseConfigFile(configPath)
+		cfg = config.GetOptions()
 	} else {
 		mysqlPass, err := utils.DecodeString(mysqlPass)
 		if err != nil {
