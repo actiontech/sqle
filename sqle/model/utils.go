@@ -125,6 +125,7 @@ var autoMigrateList = []interface{}{
 	&SqlWhitelist{},
 	&SystemVariable{},
 	&Task{},
+	&AuditFile{},
 	&WorkflowRecord{},
 	&WorkflowStepTemplate{},
 	&WorkflowStep{},

@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"math/rand"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -279,4 +281,41 @@ func TestFullFuzzySearchRegexp(t *testing.T) {
 			}
 		}
 	}
+}
+
+// TestGenerateRandomString ensures that generateRandomString produces unique strings.
+func TestGenerateRandomString(t *testing.T) {
+	// Set the random seed to ensure reproducibility of the test.
+	rand.Seed(time.Now().UnixNano())
+
+	// Create a map to store unique strings.
+	uniqueStrings := make(map[string]bool)
+
+	// Define the number of iterations to test uniqueness.
+	const iterations = 100 * 1000
+
+	const halfLength int = 5
+	// Loop to generate and check for unique strings.
+	for i := 0; i < iterations; i++ {
+		// Generate a random string.
+		randomString := GenerateRandomString(halfLength) // We are using a fixed length of 10 for simplicity.
+
+		// Check if the string is already in the map.
+		if _, exists := uniqueStrings[randomString]; exists {
+			// If it exists, the strings are not unique.
+			t.Errorf("Duplicate string found: %s", randomString)
+			// No need to continue the loop, as we've found a duplicate.
+			return
+		}
+		// Check if the length of sting is expected
+		if len(randomString) != halfLength*2 {
+			t.Errorf("length of random string unexpected, expect %v got %v", halfLength*2, len(randomString))
+		}
+
+		// Add the string to the map of unique strings.
+		uniqueStrings[randomString] = true
+	}
+
+	// If we've gone through all iterations without finding a duplicate, log a success message.
+	t.Logf("All %d generated strings were unique.", iterations)
 }

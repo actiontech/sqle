@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -343,4 +344,12 @@ func ConvertToUtf8(in []byte) ([]byte, error) {
 	}
 
 	return nil, ErrUnknownEncoding
+}
+
+// 生成随机字符串，生成长度是halfLength的两倍
+func GenerateRandomString(halfLength int) string {
+	bytes := make([]byte, halfLength)
+	//nolint:errcheck
+	rand.Read(bytes)
+	return fmt.Sprintf("%x", bytes)
 }
