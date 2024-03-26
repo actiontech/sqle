@@ -141,7 +141,7 @@ func getSQLFromFile(c echo.Context, needToSaveFile bool) (getSQLFromFileResp, *m
 			}, nil, nil
 		}
 	case InputZipFileName:
-		resp, err := readSqlFromZipFile(multipartFile)
+		resp, err := readSqlFromZipFile(multipartFile, fileHeader.Size)
 		if err != nil {
 			return getSQLFromFileResp{}, nil, err
 		}
@@ -236,8 +236,11 @@ func readContentFromFileHeader(fileHeader *multipart.FileHeader) (content string
 	}
 	return string(data), nil
 }
-func readSqlFromZipFile(file multipart.File) (getSQLFromFileResp, error) {
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(file)
+func readSqlFromZipFile(file multipart.File, size int64) (getSQLFromFileResp, error) {
+	if size > maxZipFileSize {
+		return getSQLFromFileResp{}, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+	}
+	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(file, size)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
