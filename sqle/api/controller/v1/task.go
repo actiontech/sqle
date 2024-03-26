@@ -964,12 +964,12 @@ func AuditTaskGroupV1(c echo.Context) error {
 // @Summary 获取指定审核任务的原始文件
 // @Description get SQL origin file of the audit task
 // @Tags task
-// @Id DownloadOriginFile
+// @Id DownloadAuditFile
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/tasks/audits/{task_id}/origin_file [get]
-func DownloadOriginFile(c echo.Context) error {
+func DownloadAuditFile(c echo.Context) error {
 	taskId := c.Param("task_id")
 	s := model.GetStorage()
 	files, err := s.GetFileByTaskId(taskId)

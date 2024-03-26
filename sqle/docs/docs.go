@@ -5916,7 +5916,7 @@ var doc = `{
                     "task"
                 ],
                 "summary": "获取指定审核任务的原始文件",
-                "operationId": "DownloadOriginFile",
+                "operationId": "DownloadAuditFile",
                 "parameters": [
                     {
                         "type": "string",
@@ -7615,6 +7615,14 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditFileResp": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanCount": {
             "type": "object",
             "properties": {
@@ -7962,6 +7970,12 @@ var doc = `{
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "audit_files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditFileResp"
+                    }
+                },
                 "audit_level": {
                     "type": "string",
                     "enum": [

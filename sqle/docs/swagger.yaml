@@ -16,6 +16,11 @@ definitions:
       err_message:
         type: string
     type: object
+  v1.AuditFileResp:
+    properties:
+      file_name:
+        type: string
+    type: object
   v1.AuditPlanCount:
     properties:
       audit_plan_count:
@@ -256,6 +261,10 @@ definitions:
     type: object
   v1.AuditTaskResV1:
     properties:
+      audit_files:
+        items:
+          $ref: '#/definitions/v1.AuditFileResp'
+        type: array
       audit_level:
         enum:
         - normal
@@ -7579,7 +7588,7 @@ paths:
   /v1/tasks/audits/{task_id}/origin_file:
     get:
       description: get SQL origin file of the audit task
-      operationId: DownloadOriginFile
+      operationId: DownloadAuditFile
       parameters:
       - description: task id
         in: path

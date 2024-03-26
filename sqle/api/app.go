@@ -330,7 +330,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
 		v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 		v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
-		v1Router.GET("/tasks/audits/:task_id/origin_file", v1.DownloadOriginFile)
+		v1Router.GET("/tasks/audits/:task_id/audit_file", v1.DownloadAuditFile)
 		v1Router.GET("/tasks/audits/:task_id/sql_content", v1.GetAuditTaskSQLContent)
 		v1Router.PATCH("/tasks/audits/:task_id/sqls/:number", v1.UpdateAuditTaskSQLs)
 		v1Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v1.GetTaskAnalysisData)
