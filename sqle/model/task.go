@@ -56,6 +56,7 @@ type Task struct {
 	Instance     *Instance
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
+	AuditFiles   []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
 }
 
 func (t *Task) InstanceName() string {

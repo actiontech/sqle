@@ -2936,7 +2936,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get sql manage list",
+                "description": "get sql dev record list",
                 "tags": [
                     "SqlDEVRecord"
                 ],
@@ -5904,6 +5904,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/tasks/audits/{task_id}/origin_file": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL origin file of the audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取指定审核任务的原始文件",
+                "operationId": "DownloadAuditFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits/{task_id}/sql_content": {
             "get": {
                 "security": [
@@ -7583,6 +7615,14 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditFileResp": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AuditPlanCount": {
             "type": "object",
             "properties": {
@@ -7930,6 +7970,12 @@ var doc = `{
         "v1.AuditTaskResV1": {
             "type": "object",
             "properties": {
+                "audit_files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditFileResp"
+                    }
+                },
                 "audit_level": {
                     "type": "string",
                     "enum": [

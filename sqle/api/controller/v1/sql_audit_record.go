@@ -320,15 +320,10 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	}
 	defer f.Close()
 
-	currentPos, err := f.Seek(0, io.SeekEnd) // get size of zip file
-	if err != nil {
-		return nil, nil, false, err
-	}
-	size := currentPos + 1
-	if size > maxZipFileSize {
+	if file.Size > maxZipFileSize {
 		return nil, nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
 	}
-	r, err := zip.NewReader(f, size)
+	r, err := zip.NewReader(f, file.Size)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -386,7 +381,6 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
 }
-
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
 	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, true)
 	if err != nil {

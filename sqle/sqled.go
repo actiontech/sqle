@@ -34,6 +34,10 @@ func Run(options *config.SqleOptions) error {
 	if sqleCnf.EnableClusterMode && options.ID == 0 {
 		return fmt.Errorf("server id is required on cluster mode")
 	}
+	if sqleCnf.EnableClusterMode && options.ReportHost == "" {
+		// TODO Check if the report host meets the format of ip:port
+		return fmt.Errorf("report host is required on cluster mode")
+	}
 
 	secretKey := options.SecretKey
 	if secretKey != "" {
