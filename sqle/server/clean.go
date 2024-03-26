@@ -145,7 +145,7 @@ func (j *CleanJobForAllNodes) job(entry *logrus.Entry) {
 func (j *CleanJobForAllNodes) CleanUpExpiredFiles(entry *logrus.Entry) {
 
 	s := model.GetStorage()
-	var files []model.File
+	var files []model.AuditFile
 	var err error
 	// get expired file with no workflow (expired time 24h) in this machine
 	files, err = s.GetExpiredFileWithNoWorkflow()
