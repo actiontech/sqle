@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -105,7 +104,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			SQLsFromFormData: req.Sqls,
 		}
 	} else {
-		sqls, _, err = getSQLFromFile(c, false)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -306,8 +305,25 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	return task, nil
 }
 
-func getSqlsFromZip(f multipart.File, size int64) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
-	r, err := zip.NewReader(f, size)
+// todo 此处跳过了不支持的编码格式文件
+func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+	file, err := c.FormFile(InputZipFileName)
+	if err == http.ErrMissingFile {
+		return nil, nil, false, nil
+	}
+	if err != nil {
+		return nil, nil, false, err
+	}
+	f, err := file.Open()
+	if err != nil {
+		return nil, nil, false, err
+	}
+	defer f.Close()
+
+	if file.Size > maxZipFileSize {
+		return nil, nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+	}
+	r, err := zip.NewReader(f, file.Size)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -365,7 +381,6 @@ func getSqlsFromZip(f multipart.File, size int64) (sqlsFromSQLFile []SQLsFromSQL
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
 }
-
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
 	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, true)
 	if err != nil {
