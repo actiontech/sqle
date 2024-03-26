@@ -7,7 +7,7 @@ import (
 )
 
 // Grant file owners read and write execution permissions, group and other users read-only permissions
-const OwnerPrivilegedAccessMode fs.FileMode = 0744
+const OwnerPrivilegedAccessMode fs.FileMode = 0740
 
 func EnsureFilePathWithPermission(filePath string, perm os.FileMode) error {
 	_, err := os.Stat(filePath)
