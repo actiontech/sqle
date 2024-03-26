@@ -44,17 +44,24 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id             uint       `json:"task_id"`
-	InstanceName   string     `json:"instance_name"`
-	InstanceDbType string     `json:"instance_db_type"`
-	InstanceSchema string     `json:"instance_schema" example:"db1"`
-	AuditLevel     string     `json:"audit_level" enums:"normal,notice,warn,error,"`
-	Score          int32      `json:"score"`
-	PassRate       float64    `json:"pass_rate"`
-	Status         string     `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
-	SQLSource      string     `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
-	ExecStartTime  *time.Time `json:"exec_start_time,omitempty"`
-	ExecEndTime    *time.Time `json:"exec_end_time,omitempty"`
+	Id             uint            `json:"task_id"`
+	InstanceName   string          `json:"instance_name"`
+	InstanceDbType string          `json:"instance_db_type"`
+	InstanceSchema string          `json:"instance_schema" example:"db1"`
+	AuditLevel     string          `json:"audit_level" enums:"normal,notice,warn,error,"`
+	Score          int32           `json:"score"`
+	PassRate       float64         `json:"pass_rate"`
+	Status         string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
+	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
+	ExecStartTime  *time.Time      `json:"exec_start_time,omitempty"`
+	ExecEndTime    *time.Time      `json:"exec_end_time,omitempty"`
+	AuditFiles     []AuditFileResp `json:"audit_files,omitempty"`
+}
+
+type AuditFileResp struct {
+	ID       uint   `json:"id"`
+	TaskId   uint   `json:"task_id"`
+	NickName string `json:"nick_name"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
@@ -70,7 +77,19 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		SQLSource:      task.SQLSource,
 		ExecStartTime:  task.ExecStartAt,
 		ExecEndTime:    task.ExecEndAt,
+		AuditFiles:     convertToAuditFileResp(task.AuditFiles),
 	}
+}
+func convertToAuditFileResp(files []*model.AuditFile) []AuditFileResp {
+	fileResp := make([]AuditFileResp, 0, len(files))
+	for _, file := range files {
+		fileResp = append(fileResp, AuditFileResp{
+			ID:       file.ID,
+			TaskId:   file.TaskId,
+			NickName: file.NickName,
+		})
+	}
+	return fileResp
 }
 
 const (
@@ -150,7 +169,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
-func saveFileFromContext(c echo.Context) (*model.File, error) {
+func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
 	fileHeader, fileType, err := getFileHeaderFromContext(c)
 	if err != nil {
 		return nil, err
@@ -323,7 +342,7 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	task.Files = files
+	task.AuditFiles = files
 
 	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
 	if err != nil {
@@ -836,7 +855,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	var err error
 	var sqls getSQLFromFileResp
-	var fileRecord *model.File
+	var fileRecord *model.AuditFile
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
