@@ -5643,7 +5643,7 @@ paths:
       - sql_audit_record
   /v1/projects/{project_name}/sql_dev_records:
     get:
-      description: get sql manage list
+      description: get sql dev record list
       operationId: GetSqlDEVRecordList
       parameters:
       - description: project id
@@ -7574,6 +7574,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取Sql扫描任务信息
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/origin_file:
+    get:
+      description: get SQL origin file of the audit task
+      operationId: DownloadOriginFile
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定审核任务的原始文件
       tags:
       - task
   /v1/tasks/audits/{task_id}/sql_content:

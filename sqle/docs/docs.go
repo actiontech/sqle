@@ -2936,7 +2936,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get sql manage list",
+                "description": "get sql dev record list",
                 "tags": [
                     "SqlDEVRecord"
                 ],
@@ -5899,6 +5899,38 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetAuditTaskResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/audits/{task_id}/origin_file": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL origin file of the audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取指定审核任务的原始文件",
+                "operationId": "DownloadOriginFile",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
