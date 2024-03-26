@@ -306,16 +306,7 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 	return task, nil
 }
 
-func getSqlsFromZip(f multipart.File) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
-	// get size of zip file
-	currentPos, err := f.Seek(0, io.SeekEnd)
-	if err != nil {
-		return nil, nil, false, err
-	}
-	size := currentPos + 1
-	if size > maxZipFileSize {
-		return nil, nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
-	}
+func getSqlsFromZip(f multipart.File, size int64) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
 	r, err := zip.NewReader(f, size)
 	if err != nil {
 		return nil, nil, false, err
