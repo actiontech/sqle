@@ -147,12 +147,13 @@ func (j *CleanJobForAllNodes) CleanUpExpiredFiles(entry *logrus.Entry) {
 	s := model.GetStorage()
 	var files []model.File
 	var err error
+	// get expired file with no workflow (expired time 24h) in this machine
 	files, err = s.GetExpiredFileWithNoWorkflow()
 	if err != nil {
 		entry.Errorf("get expired file with no workflow error: %v", err)
 		return
 	}
-
+	// get expired file (expired time 7*24h) in this machine
 	expiredFiles, err := s.GetExpiredFile()
 	if err != nil {
 		entry.Errorf("get expired files error: %v", err)
@@ -160,18 +161,34 @@ func (j *CleanJobForAllNodes) CleanUpExpiredFiles(entry *logrus.Entry) {
 	}
 
 	files = append(files, expiredFiles...)
+	var filePath string
 	for _, file := range files {
-		filePath := model.DefaultFilePath(file.UniqueName)
-		err = os.Remove(filePath)
-		if err != nil {
-			entry.Warnf("remove audit file failed %v", err)
+		filePath = model.DefaultFilePath(file.UniqueName)
+		// if file exist delete file
+		if _, err = os.Stat(filePath); err == nil {
+			err = os.Remove(filePath)
+			if err != nil {
+				entry.Warnf("remove audit file failed %v", err)
+				continue
+			}
+			err = s.Delete(&file)
+			if err != nil {
+				entry.Warnf("remove audit file record failed %v", err)
+				continue
+			}
+			entry.Infof("delete files with no workflow success, file path: %s", filePath)
 			continue
 		}
-		err = s.Delete(&file)
-		if err != nil {
-			entry.Warnf("remove audit file record failed %v", err)
-			continue
+		// if file is not eixt delete file record
+		if os.IsNotExist(err) {
+			entry.Infof("file %s not exist, delete files record", filePath)
+			err = s.Delete(&file)
+			if err != nil {
+				entry.Warnf("while file not exist, removing file record failed %v", err)
+				continue
+			}
+		} else {
+			entry.Errorf("when read stat of file %s, unexpected err %v", filePath, err)
 		}
-		entry.Infof("delete files with no workflow success, file path: %s", filePath)
 	}
 }
