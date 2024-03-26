@@ -59,9 +59,7 @@ type AuditTaskResV1 struct {
 }
 
 type AuditFileResp struct {
-	ID       uint   `json:"id"`
-	TaskId   uint   `json:"task_id"`
-	NickName string `json:"nick_name"`
+	FileName string `json:"file_name"`
 }
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
@@ -84,9 +82,7 @@ func convertToAuditFileResp(files []*model.AuditFile) []AuditFileResp {
 	fileResp := make([]AuditFileResp, 0, len(files))
 	for _, file := range files {
 		fileResp = append(fileResp, AuditFileResp{
-			ID:       file.ID,
-			TaskId:   file.TaskId,
-			NickName: file.NickName,
+			FileName: file.FileName,
 		})
 	}
 	return fileResp
@@ -1001,7 +997,7 @@ func DownloadOriginFile(c echo.Context) error {
 		}
 	} else {
 		filePath := model.DefaultFilePath(file.UniqueName)
-		err = c.Attachment(filePath, file.NickName)
+		err = c.Attachment(filePath, file.FileName)
 		if err != nil {
 			return err
 		}

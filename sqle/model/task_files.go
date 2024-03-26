@@ -14,7 +14,7 @@ type AuditFile struct {
 	TaskId     uint   `json:"-" gorm:"index"`
 	UniqueName string `json:"unique_name" gorm:"type:varchar(255)"`
 	FileHost   string `json:"file_host" gorm:"type:varchar(255)"`
-	NickName   string `json:"nick_name" gorm:"type:varchar(255)"`
+	FileName   string `json:"file_name" gorm:"type:varchar(255)"`
 }
 
 const FixFilePath string = "audit_files/"
@@ -24,7 +24,7 @@ func NewFileRecord(taskID uint, nickName, uniqueName string) *AuditFile {
 		TaskId:     taskID,
 		UniqueName: uniqueName,
 		FileHost:   config.GetOptions().SqleOptions.ReportHost,
-		NickName:   nickName,
+		FileName:   nickName,
 	}
 }
 func DefaultFilePath(fileName string) string {
