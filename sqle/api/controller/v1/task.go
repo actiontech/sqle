@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"io"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -84,95 +83,101 @@ const (
 	GitPassword             = "git_user_password"
 )
 
-// If you need to save the file from the previous context, please set field needToSaveFile to true, so that the *model.File will not be nil，You should decide whether to save the model on the outer layer *model.File and fill in its task_id
-func getSQLFromFile(c echo.Context, needToSaveFile bool) (getSQLFromFileResp, *model.File, error) {
+func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
+	// Read it from sql file.
+	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
+	if err != nil {
+		return getSQLFromFileResp{}, err
+	}
+	if exist {
+		return getSQLFromFileResp{
+			SourceType: model.TaskSQLSourceFromSQLFile,
+			SQLsFromSQLFiles: []SQLsFromSQLFile{{
+				FilePath: fileName,
+				SQLs:     sqlsFromSQLFile}},
+		}, nil
+	}
 
+	// If sql_file is not exist, read it from mybatis xml file.
+	fileName, data, exist, err := controller.ReadFile(c, InputMyBatisXMLFileName)
+	if err != nil {
+		return getSQLFromFileResp{}, err
+	}
+	if exist {
+		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, true)
+		if err != nil {
+			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
+		}
+		sqlsFromXMLs := make([]SQLFromXML, len(sqls))
+		for i := range sqls {
+			sqlsFromXMLs[i] = SQLFromXML{
+				FilePath:  fileName,
+				StartLine: sqls[i].StartLine,
+				SQL:       sqls[i].SQL,
+			}
+		}
+		return getSQLFromFileResp{
+			SourceType:   model.TaskSQLSourceFromMyBatisXMLFile,
+			SQLsFromXMLs: sqlsFromXMLs,
+		}, nil
+	}
+
+	// If mybatis xml file is not exist, read it from zip file.
+	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
+	if err != nil {
+		return getSQLFromFileResp{}, err
+	}
+	if exist {
+		return getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromZipFile,
+			SQLsFromSQLFiles: sqlsFromSQLFiles,
+			SQLsFromXMLs:     sqlsFromXML,
+		}, nil
+	}
+
+	// If zip file is not exist, read it from git repository
+	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c)
+	if err != nil {
+		return getSQLFromFileResp{}, err
+	}
+	if exist {
+		return getSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromGitRepository,
+			SQLsFromSQLFiles: append(sqlsFromSQLFiles, sqlsFromJavaFiles...),
+			SQLsFromXMLs:     sqlsFromXMLs,
+		}, nil
+	}
+	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+}
+
+func saveFileFromContext(c echo.Context) (*model.File, error) {
 	fileHeader, fileType, err := getFileHeaderFromContext(c)
 	if err != nil {
-		return getSQLFromFileResp{}, nil, err
+		return nil, err
 	}
-	multipartFile, err := openFileHeader(fileHeader)
+	if !isSupportFileType(fileType) {
+		return nil, nil
+	}
+	multipartFile, err := fileHeader.Open()
 	if err != nil {
-		return getSQLFromFileResp{}, nil, err
+		return nil, err
 	}
 	defer multipartFile.Close()
 
-	switch fileType {
-	case InputSQLFileName:
-		resp, err := readSqlFromSqlFile(fileHeader)
-		if err != nil {
-			return getSQLFromFileResp{}, nil, err
-		}
-		if needToSaveFile {
-			err = utils.EnsureFilePathWithPermission(model.FixFilePath, utils.FileModeReadWriteAll)
-			if err != nil {
-				return getSQLFromFileResp{}, nil, err
-			}
-			uniqueName := model.GenUniqueFileName()
-			err = utils.SaveFile(multipartFile, model.DefaultFilePath(uniqueName))
-			if err != nil {
-				return getSQLFromFileResp{}, nil, err
-			}
-			return resp, model.NewFileRecord(0, fileHeader.Filename, uniqueName), nil
-		}
-		return resp, nil, nil
-	case InputMyBatisXMLFileName:
-		// If sql_file is not exist, read it from mybatis xml file.
-		fileName, data, exist, err := controller.ReadFile(c, InputMyBatisXMLFileName)
-		if err != nil {
-			return getSQLFromFileResp{}, nil, err
-		}
-		if exist {
-			sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, true)
-			if err != nil {
-				return getSQLFromFileResp{}, nil, errors.New(errors.ParseMyBatisXMLFileError, err)
-			}
-			sqlsFromXMLs := make([]SQLFromXML, len(sqls))
-			for i := range sqls {
-				sqlsFromXMLs[i] = SQLFromXML{
-					FilePath:  fileName,
-					StartLine: sqls[i].StartLine,
-					SQL:       sqls[i].SQL,
-				}
-			}
-			return getSQLFromFileResp{
-				SourceType:   model.TaskSQLSourceFromMyBatisXMLFile,
-				SQLsFromXMLs: sqlsFromXMLs,
-			}, nil, nil
-		}
-	case InputZipFileName:
-		resp, err := readSqlFromZipFile(multipartFile, fileHeader.Size)
-		if err != nil {
-			return getSQLFromFileResp{}, nil, err
-		}
-		if needToSaveFile {
-			err = utils.EnsureFilePathWithPermission(model.FixFilePath, utils.FileModeReadWriteAll)
-			if err != nil {
-				return getSQLFromFileResp{}, nil, err
-			}
-			uniqueName := model.GenUniqueFileName()
-			err = utils.SaveFile(multipartFile, model.DefaultFilePath(uniqueName))
-			if err != nil {
-				return getSQLFromFileResp{}, nil, err
-			}
-			return resp, model.NewFileRecord(0, fileHeader.Filename, uniqueName), nil
-		}
-		return resp, nil, nil
-	case InputFileFromGit:
-		// If zip file is not exist, read it from git repository
-		sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c)
-		if err != nil {
-			return getSQLFromFileResp{}, nil, err
-		}
-		if exist {
-			return getSQLFromFileResp{
-				SourceType:       model.TaskSQLSourceFromGitRepository,
-				SQLsFromSQLFiles: append(sqlsFromSQLFiles, sqlsFromJavaFiles...),
-				SQLsFromXMLs:     sqlsFromXMLs,
-			}, nil, nil
-		}
+	err = utils.EnsureFilePathWithPermission(model.FixFilePath, utils.OwnerPrivilegedAccessMode)
+	if err != nil {
+		return nil, err
 	}
-	return getSQLFromFileResp{}, nil, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	uniqueName := model.GenUniqueFileName()
+	err = utils.SaveFile(multipartFile, model.DefaultFilePath(uniqueName))
+	if err != nil {
+		return nil, err
+	}
+	return model.NewFileRecord(0, fileHeader.Filename, uniqueName), nil
+}
+
+func isSupportFileType(fileType string) bool {
+	return fileType == InputSQLFileName || fileType == InputZipFileName || fileType == InputMyBatisXMLFileName
 }
 
 func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader, fileType string, err error) {
@@ -197,61 +202,6 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 		}
 	}
 	return nil, "", fmt.Errorf("unknown input file type")
-}
-
-func openFileHeader(fileHeader *multipart.FileHeader) (multipart.File, error) {
-	file, err := fileHeader.Open()
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
-}
-
-func readSqlFromSqlFile(fileHeader *multipart.FileHeader) (getSQLFromFileResp, error) {
-	sqlsFromSQLFile, err := readContentFromFileHeader(fileHeader)
-	if err != nil {
-		return getSQLFromFileResp{}, err
-	}
-	return getSQLFromFileResp{
-		SourceType: model.TaskSQLSourceFromSQLFile,
-		SQLsFromSQLFiles: []SQLsFromSQLFile{
-			{
-				FilePath: fileHeader.Filename,
-				SQLs:     sqlsFromSQLFile,
-			},
-		},
-	}, nil
-}
-
-// ReadContent read content from multipart.File
-func readContentFromFileHeader(fileHeader *multipart.FileHeader) (content string, err error) {
-	file, err := fileHeader.Open()
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return "", errors.New(errors.ReadUploadFileError, err)
-	}
-	return string(data), nil
-}
-func readSqlFromZipFile(file multipart.File, size int64) (getSQLFromFileResp, error) {
-	if size > maxZipFileSize {
-		return getSQLFromFileResp{}, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
-	}
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(file, size)
-	if err != nil {
-		return getSQLFromFileResp{}, err
-	}
-	if exist {
-		return getSQLFromFileResp{
-			SourceType:       model.TaskSQLSourceFromZipFile,
-			SQLsFromSQLFiles: sqlsFromSQLFiles,
-			SQLsFromXMLs:     sqlsFromXML,
-		}, nil
-	}
-	return getSQLFromFileResp{}, fmt.Errorf("file not exist")
 }
 
 // @Summary 创建Sql扫描任务并提交审核
@@ -287,7 +237,7 @@ func CreateAndAuditTask(c echo.Context) error {
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, _, err = getSQLFromFile(c, false)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -893,12 +843,15 @@ func AuditTaskGroupV1(c echo.Context) error {
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, fileRecord, err = getSQLFromFile(c, true)
+		sqls, err = getSQLFromFile(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		fileRecord, err = saveFileFromContext(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
 	s := model.GetStorage()
 	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
 	if err != nil {
