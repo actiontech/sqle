@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/postgresql"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/oracle"
@@ -19,26 +20,27 @@ type Meta struct {
 }
 
 const (
-	TypeDefault               = "default"
-	TypeMySQLSlowLog          = "mysql_slow_log"
-	TypeMySQLMybatis          = "mysql_mybatis"
-	TypeMySQLSchemaMeta       = "mysql_schema_meta"
-	TypeMySQLProcesslist      = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog    = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
-	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL          = "oracle_top_sql"
-	TypeTiDBAuditLog          = "tidb_audit_log"
-	TypeAllAppExtract         = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
-	TypeSQLFile               = "sql_file"
+	TypeDefault              = "default"
+	TypeMySQLSlowLog         = "mysql_slow_log"
+	TypeMySQLMybatis         = "mysql_mybatis"
+	TypeMySQLSchemaMeta      = "mysql_schema_meta"
+	TypeMySQLProcesslist     = "mysql_processlist"
+	TypeAliRdsMySQLSlowLog   = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog  = "ali_rds_mysql_audit_log"
+	TypeOracleTopSQL         = "oracle_top_sql"
+	TypeTiDBAuditLog         = "tidb_audit_log"
+	TypeAllAppExtract        = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
+	TypeSQLFile              = "sql_file"
+	TypePostgreSQLTopSQL     = "postgresql_top_sql"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll        = ""
+	InstanceTypeMySQL      = "MySQL"
+	InstanceTypeOracle     = "Oracle"
+	InstanceTypeTiDB       = "TiDB"
+	InstanceTypePostgreSQL = "PostgreSQL"
 )
 
 const (
@@ -370,6 +372,32 @@ var Metas = []Meta{
 		Desc:         "SQL文件",
 		InstanceType: InstanceTypeAll,
 		CreateTask:   NewDefaultTask,
+	},
+	{
+		Type:         TypePostgreSQLTopSQL,
+		Desc:         "PostgreSQL TOP SQL",
+		InstanceType: InstanceTypePostgreSQL,
+		CreateTask:   NewPostgreSQLTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: postgresql.DynPerformanceViewPgSQLColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		},
 	},
 }
 

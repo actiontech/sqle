@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/pkg/postgresql"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1549,4 +1551,196 @@ func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task 
 	b.baiduRdsMySQLTask = task
 
 	return b
+}
+
+// PostgreSQLTopSQLTask implement the Task interface.
+//
+// PostgreSQLTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type PostgreSQLTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewPostgreSQLTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &PostgreSQLTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *PostgreSQLTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	// 超时2分钟
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	sqls, err := queryTopSQLsForPg(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	if len(sqls) == 0 {
+		at.logger.Info("sql result count is 0")
+		return
+	}
+
+	apSQLs := make([]*SQL, 0, len(sqls))
+	for _, sql := range sqls {
+		apSQLs = append(apSQLs, &SQL{
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
+			Info: map[string]interface{}{
+				postgresql.DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
+				postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
+				postgresql.DynPerformanceViewPgSQLColumnCPUTime:        sql.CPUTime,
+				postgresql.DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
+				postgresql.DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
+				postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
+			},
+		})
+	}
+	err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+	if err != nil {
+		at.logger.Errorf("save top sql to storage fail, error: %v", err)
+	}
+}
+
+func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, topN int) ([]*postgresql.DynPerformancePgColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	sql := fmt.Sprintf(postgresql.DynPerformanceViewPgTpl, orderBy, topN)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*postgresql.DynPerformancePgColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) < 7 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		elapsedTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		cpuTime, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		diskReads, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		bufferGets, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		userIoWaitTime, err := strconv.ParseFloat(values[6].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &postgresql.DynPerformancePgColumns{
+			SQLFullText:    values[0].Value,
+			Executions:     executions,
+			ElapsedTime:    elapsedTime,
+			CPUTime:        cpuTime,
+			DiskReads:      diskReads,
+			BufferGets:     bufferGets,
+			UserIOWaitTime: userIoWaitTime,
+		})
+	}
+	return ret, nil
+}
+
+func (at *PostgreSQLTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnElapsedTime,
+			Desc: "执行时间(s)",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnCPUTime,
+			Desc: "CPU消耗时间(s)",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnDiskReads,
+			Desc: "物理读块数",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnBufferGets,
+			Desc: "逻辑读块数",
+		},
+		{
+			Name: postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime,
+			Desc: "I/O等待时间(s)",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &postgresql.DynPerformancePgColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+			postgresql.DynPerformanceViewPgSQLColumnExecutions:     strconv.Itoa(int(info.Executions)),
+			postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+			postgresql.DynPerformanceViewPgSQLColumnCPUTime:        fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000, 3)),     //视图中时间单位是毫秒，所以除以1000得到秒
+			postgresql.DynPerformanceViewPgSQLColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
+			postgresql.DynPerformanceViewPgSQLColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
+			postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+		})
+	}
+	return heads, rows, count, nil
 }
