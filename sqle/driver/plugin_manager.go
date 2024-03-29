@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
@@ -173,6 +174,12 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 				cmdArgs = append(cmdArgs, "-c", pluginConfig.CMD)
 				break
 			}
+		}
+
+		if len(cmdArgs) == 0 && strings.HasSuffix(p.Name(), ".jar") {
+			javaPluginCmd := fmt.Sprintf("java -jar %s", cmdBase)
+			cmdBase = "sh"
+			cmdArgs = append(cmdArgs, "-c", javaPluginCmd)
 		}
 
 		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
