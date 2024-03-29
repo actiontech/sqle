@@ -204,7 +204,7 @@ func DirectAuditFiles(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		go v1.SyncSqlDevRecord(context.TODO(), task, user.Name)
+		go v1.SyncSqlDevRecord(context.TODO(), task, projectUid, user.Name)
 	}
 
 	return c.JSON(http.StatusOK, DirectAuditResV2{
