@@ -18,4 +18,4 @@ func getSqlDEVRecordList(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlDevRecord
 }
 
-func SyncSqlDevRecord(ctx context.Context, task *model.Task, creator string) {}
+func SyncSqlDevRecord(ctx context.Context, task *model.Task, projectId, creator string) {}
