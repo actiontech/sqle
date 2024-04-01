@@ -108,6 +108,11 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 	return inspect, nil
 }
 
+
+func (i *MysqlDriverImpl) SetRules(rules []*driverV2.Rule) {
+	i.rules = rules
+}
+
 func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
 	i.dbConn = dbConn
 }

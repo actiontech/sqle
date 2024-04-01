@@ -682,6 +682,7 @@ type TableIndexesInfo struct {
 	Null        string
 	IndexType   string
 	Comment     string
+	Expression  string
 }
 
 // When using keywords as view names, you need to pay attention to wrapping them in quotation marks
@@ -702,6 +703,7 @@ func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexe
 			Null:        record["Null"].String,
 			IndexType:   record["Index_type"].String,
 			Comment:     record["Comment"].String,
+			Expression:  record["Expression"].String,
 		}
 	}
 	return ret, nil

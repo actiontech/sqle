@@ -40,6 +40,11 @@ type Rule struct {
 	Level     RuleLevel
 	Params    params.Params
 	Knowledge RuleKnowledge
+	AIContext RuleAIContext
+}
+
+type RuleAIContext struct {
+	Prompt string
 }
 
 type Config struct {

@@ -91,6 +91,12 @@ func NewMockContext(e *executor.Executor) *Context {
 						Size:          1,
 						OriginalTable: getTestCreateTableStmt11(),
 					},
+					"exist_tb_12": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt12(),
+					},
 				},
 			},
 			"myisam_utf8_db": {
@@ -404,6 +410,24 @@ data_time date NOT NULL DEFAULT '2020-01-01 00:00:00',
 data_time2 TIME NOT NULL DEFAULT '12:00:00', 
 PRIMARY KEY (id) USING BTREE
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
+`
+	node, err := util.ParseOneSql(baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+
+func getTestCreateTableStmt12() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_12 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob,
+v2 int,
+v3 varchar(255),
+PRIMARY KEY (id) USING BTREE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT="unit test";
 `
 	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
