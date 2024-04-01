@@ -2,15 +2,18 @@ package log
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	rotate "gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"math/rand"
 	"os"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	rotate "gopkg.in/natefinch/lumberjack.v2"
 )
 
 var std *logrus.Logger
+
+const MaxRuleExecutionSeconds = 5
 
 func Logger() *logrus.Logger {
 	return std
