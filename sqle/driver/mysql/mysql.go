@@ -6,6 +6,7 @@ import (
 	_driver "database/sql/driver"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -351,6 +352,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			Node: nodes[0],
 		}
 
+		startTime := time.Now()
 		if err := handler.Func(input); err != nil {
 			// todo #1630 临时跳过解析建表语句失败导致的规则
 			if session.IsParseShowCreateTableContentErr(err) {
@@ -359,9 +361,13 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			}
 			return nil, err
 		}
+		if isExceedMaximum(startTime) {
+			i.Logger().Warnf("[audit_rule]rule: %v,total time: %v", rule.Desc, time.Since(startTime))
+		}
 	}
 
 	if i.cnf.optimizeIndexEnabled {
+		startTime := time.Now()
 		params := params.Params{
 			{
 				Key:   MAX_INDEX_COLUMN,
@@ -381,7 +387,9 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 				advice.Reason,
 			)
 		}
-
+		if isExceedMaximum(startTime) {
+			i.Logger().Warnf("[audit_rule]rule: %v,total time: %v", rulepkg.ConfigOptimizeIndexEnabled, time.Since(startTime))
+		}
 	}
 
 	// dry run gh-ost
@@ -413,6 +421,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 
 	return i.result, nil
+}
+
+func isExceedMaximum(startTime time.Time) bool {
+	return time.Since(startTime).Seconds() > log.MaxRuleExecutionSeconds
 }
 
 func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
