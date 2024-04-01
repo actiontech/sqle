@@ -6,6 +6,7 @@ import (
 	_driver "database/sql/driver"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -349,7 +350,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			Res:  i.result,
 			Node: nodes[0],
 		}
-
+		startTime := time.Now()
 		if err := handler.Func(input); err != nil {
 			// todo #1630 临时跳过解析建表语句失败导致的规则
 			if session.IsParseShowCreateTableContentErr(err) {
@@ -358,9 +359,13 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			}
 			return nil, err
 		}
+		if isExceedMaximum(startTime) {
+			i.Logger().Warnf("[audit_rule]rule: %v,total time: %v", rule.Desc, time.Since(startTime))
+		}
 	}
 
 	if i.cnf.optimizeIndexEnabled && index.CanOptimize(i.log, i.Ctx, nodes[0]) {
+		startTime := time.Now()
 		optimizer := index.NewOptimizer(
 			i.log, i.Ctx,
 			index.WithCalculateCardinalityMaxRow(i.cnf.calculateCardinalityMaxRow),
@@ -378,6 +383,9 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			buf.WriteString(fmt.Sprintf("建议从表 %s 的以下列中 [%s] 选取合适的列添加索引", advice.TableName, strings.Join(advice.IndexedColumns, ",")))
 		}
 		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigOptimizeIndexEnabled, buf.String())
+		if isExceedMaximum(startTime) {
+			i.Logger().Warnf("[audit_rule]rule: %v,total time: %v", rulepkg.ConfigOptimizeIndexEnabled, time.Since(startTime))
+		}
 	}
 
 	// dry run gh-ost
@@ -409,6 +417,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 
 	return i.result, nil
+}
+
+func isExceedMaximum(startTime time.Time) bool {
+	return time.Since(startTime).Seconds() > log.MaxRuleExecutionSeconds
 }
 
 func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
