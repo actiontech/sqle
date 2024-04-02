@@ -1386,3 +1386,228 @@ func (at *DmTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[stri
 	}
 	return heads, rows, count, nil
 }
+
+// ObForOracleTopSQLTask implement the Task interface.
+//
+// ObForOracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type ObForOracleTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewObForOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &ObForOracleTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *ObForOracleTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	sqls, err := queryTopSQLs(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	if len(sqls) > 0 {
+		apSQLs := make([]*SQL, 0, len(sqls))
+		for _, sql := range sqls {
+			apSQLs = append(apSQLs, &SQL{
+				SQLContent:  sql.SQLFullText,
+				Fingerprint: sql.SQLFullText,
+				Info: map[string]interface{}{
+					DynPerformanceViewObForOracleColumnExecutions:     sql.Executions,
+					DynPerformanceViewObForOracleColumnElapsedTime:    sql.ElapsedTime,
+					DynPerformanceViewObForOracleColumnCPUTime:        sql.CPUTime,
+					DynPerformanceViewObForOracleColumnDiskReads:      sql.DiskReads,
+					DynPerformanceViewObForOracleColumnBufferGets:     sql.BufferGets,
+					DynPerformanceViewObForOracleColumnUserIOWaitTime: sql.UserIOWaitTime,
+				},
+			})
+		}
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+		if err != nil {
+			at.logger.Errorf("save top sql to storage fail, error: %v", err)
+		}
+	}
+}
+
+func queryTopSQLs(inst *model.Instance, database string, orderBy string, topN int) ([]*DynPerformanceObForOracleColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	sql := fmt.Sprintf(DynPerformanceViewObForOracleTpl, orderBy, topN)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 20})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*DynPerformanceObForOracleColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) == 0 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		elapsedTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		cpuTime, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		diskReads, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		bufferGets, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		userIoWaitTime, err := strconv.ParseFloat(values[6].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &DynPerformanceObForOracleColumns{
+			SQLFullText:    values[0].Value,
+			Executions:     executions,
+			ElapsedTime:    elapsedTime,
+			CPUTime:        cpuTime,
+			DiskReads:      diskReads,
+			BufferGets:     bufferGets,
+			UserIOWaitTime: userIoWaitTime,
+		})
+	}
+	return ret, nil
+}
+
+func (at *ObForOracleTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *ObForOracleTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnElapsedTime,
+			Desc: "执行时间(s)",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnCPUTime,
+			Desc: "CPU消耗时间(s)",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnDiskReads,
+			Desc: "物理读次数",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnBufferGets,
+			Desc: "逻辑读次数",
+		},
+		{
+			Name: DynPerformanceViewObForOracleColumnUserIOWaitTime,
+			Desc: "I/O等待时间(s)",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &DynPerformanceObForOracleColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql": sql.SQLContent,
+			DynPerformanceViewObForOracleColumnExecutions:     strconv.Itoa(int(info.Executions)),
+			DynPerformanceViewObForOracleColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000/1000, 3)), //视图中时间单位是微秒，所以除以1000000得到秒
+			DynPerformanceViewObForOracleColumnCPUTime:        fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000/1000, 3)),     //视图中时间单位是微秒，所以除以1000000得到秒
+			DynPerformanceViewObForOracleColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
+			DynPerformanceViewObForOracleColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
+			DynPerformanceViewObForOracleColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000/1000, 3)), //视图中时间单位是微秒，所以除以1000000得到秒
+		})
+	}
+	return heads, rows, count, nil
+}
+
+type DynPerformanceObForOracleColumns struct {
+	SQLFullText    string  `json:"sql_fulltext"`
+	Executions     float64 `json:"executions"`
+	ElapsedTime    float64 `json:"elapsed_time"`
+	CPUTime        float64 `json:"cpu_time"`
+	DiskReads      float64 `json:"disk_reads"`
+	BufferGets     float64 `json:"buffer_gets"`
+	UserIOWaitTime float64 `json:"user_io_wait_time"`
+}
+
+const (
+	DynPerformanceViewObForOracleTpl = `
+select * from (
+SELECT
+t1.sql_fulltext as sql_fulltext,
+sum(t1.EXECUTIONS) as executions,
+sum(t1.ELAPSED_TIME) as elapsed_time,
+sum(t1.CPU_TIME) as cpu_time,
+sum(t1.DISK_READS) as disk_reads, 
+sum(t1.BUFFERS_GETS) as buffer_gets, 
+sum(t1.USER_IO_WAIT_TIME) as user_io_wait_time
+FROM 
+(select to_char(QUERY_SQL) sql_fulltext,EXECUTIONS,ELAPSED_TIME,CPU_TIME,DISK_READS,BUFFERS_GETS,USER_IO_WAIT_TIME
+from GV$OB_PLAN_CACHE_PLAN_STAT
+) t1 
+where t1.sql_fulltext != 'null'
+GROUP BY t1.sql_fulltext ORDER BY %v DESC
+)
+WHERE rownum <= %v`
+	DynPerformanceViewObForOracleColumnExecutions     = "executions"
+	DynPerformanceViewObForOracleColumnElapsedTime    = "elapsed_time"
+	DynPerformanceViewObForOracleColumnCPUTime        = "cpu_time"
+	DynPerformanceViewObForOracleColumnDiskReads      = "disk_reads"
+	DynPerformanceViewObForOracleColumnBufferGets     = "buffer_gets"
+	DynPerformanceViewObForOracleColumnUserIOWaitTime = "user_io_wait_time"
+)

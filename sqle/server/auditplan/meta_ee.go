@@ -8,6 +8,7 @@ import "github.com/actiontech/sqle/sqle/pkg/params"
 const (
 	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
+	TypeObForOracleTopSQL        = "ob_for_oracle_top_sql"
 	TypeDB2TopSQL                = "db2_top_sql"
 	TypeDB2SchemaMeta            = "db2_schema_meta"
 	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
@@ -17,6 +18,7 @@ const (
 
 const (
 	InstanceTypeOceanBaseForMySQL = "OceanBase For MySQL"
+	InstanceTypeObForOracle       = "OceanBase For Oracle"
 	InstanceTypeDB2               = "DB2"
 	InstanceTypeTDSQL             = "TDSQL For InnoDB"
 	InstanceTypeDm                = "DM"
@@ -150,6 +152,32 @@ var EEMetas = []Meta{
 				Key:   "order_by_column",
 				Desc:  "排序字段",
 				Value: DmTopSQLMetricTotalExecTime,
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypeObForOracleTopSQL,
+		Desc:         "OceanBase For Oracle TOP SQL",
+		InstanceType: InstanceTypeObForOracle,
+		CreateTask:   NewObForOracleTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: DynPerformanceViewObForOracleColumnElapsedTime,
 				Type:  params.ParamTypeString,
 			},
 		},
