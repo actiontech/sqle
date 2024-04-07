@@ -36,38 +36,38 @@ func GenUniqueFileName() string {
 }
 
 func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
-	files := []*AuditFile{}
-	err := s.db.Where("task_id = ?", taskId).Find(&files).Error
+	auditFiles := []*AuditFile{}
+	err := s.db.Where("task_id = ?", taskId).Find(&auditFiles).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
-	return files, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
 
 // expired time 24hour
 func (s *Storage) GetExpiredFileWithNoWorkflow() ([]AuditFile, error) {
-	files := []AuditFile{}
+	auditFiles := []AuditFile{}
 	err := s.db.Model(&AuditFile{}).
-		Joins("LEFT JOIN workflow_instance_records wir ON files.task_id = wir.task_id").
-		Where("wir.task_id IS NULL AND files.deleted_at IS NULL"). // 删除没有提交为工单的SQL文件
-		Where("files.file_host = ?", config.GetOptions().SqleOptions.ReportHost).
-		Where("files.created_at < ?", time.Now().Add(-24*time.Hour)). // 减少提交前文件就被删除的几率
-		Find(&files).Error
+		Joins("LEFT JOIN workflow_instance_records wir ON audit_files.task_id = wir.task_id").
+		Where("wir.task_id IS NULL AND audit_files.deleted_at IS NULL").                // 删除没有提交为工单的SQL文件
+		Where("audit_files.file_host = ?", config.GetOptions().SqleOptions.ReportHost). // 删除本机文件
+		Where("audit_files.created_at < ?", time.Now().Add(-24*time.Hour)).             // 减少提交前文件就被删除的几率
+		Find(&auditFiles).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
-	return files, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
 
 // expired time 7*24hour
 func (s *Storage) GetExpiredFile() ([]AuditFile, error) {
-	files := []AuditFile{}
+	auditFiles := []AuditFile{}
 	err := s.db.Model(&AuditFile{}).
-		Where("files.file_host = ?", config.GetOptions().SqleOptions.ReportHost).
-		Where("files.created_at < ?", time.Now().Add(-7*24*time.Hour)). // 减少提交前文件就被删除的几率
-		Find(&files).Error
+		Where("audit_files.file_host = ?", config.GetOptions().SqleOptions.ReportHost). // 删除本机文件
+		Where("audit_files.created_at < ?", time.Now().Add(-7*24*time.Hour)).           // 减少提交前文件就被删除的几率
+		Find(&auditFiles).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
-	return files, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
