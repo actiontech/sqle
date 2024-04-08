@@ -130,6 +130,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.PATCH("/configurations/feishu_audit", v1.UpdateFeishuAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.GET("/configurations/feishu_audit", v1.GetFeishuAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST("/configurations/feishu_audit/test", v1.TestFeishuAuditConfigV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.PATCH("/configurations/wechat_audit", v1.UpdateWechatAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.GET("/configurations/wechat_audit", v1.GetWechatAuditConfigurationV1, sqleMiddleware.AdminUserAllowed())
+		v1Router.POST("/configurations/wechat_audit/test", v1.TestWechatAuditConfigV1, sqleMiddleware.AdminUserAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.AdminUserAllowed())
