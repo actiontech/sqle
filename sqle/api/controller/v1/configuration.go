@@ -274,3 +274,79 @@ const (
 func TestFeishuAuditConfigV1(c echo.Context) error {
 	return testFeishuAuditConfigV1(c)
 }
+
+type GetWechatAuditConfigurationResV1 struct {
+	controller.BaseRes
+	Data WechatConfigurationV1 `json:"data"`
+}
+
+type WechatConfigurationV1 struct {
+	CorpID     string `json:"corp_id"`
+	TemplateId string `json:"template_id"`
+
+	IsWechatNotificationEnabled bool `json:"is_wechat_notification_enabled"`
+}
+
+// GetWechatAuditConfigurationV1
+// @Summary 获取微信审核配置
+// @Description get wechat audit configuration
+// @Id getWechatAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetWechatAuditConfigurationResV1
+// @router /v1/configurations/wechat_audit [get]
+func GetWechatAuditConfigurationV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetWechatAuditConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    WechatConfigurationV1{},
+	})
+}
+
+type UpdateWechatConfigurationReqV1 struct {
+	CorpID                      string `json:"corp_id" from:"corp_id" description:"微信企业号ID"`
+	CorpSecret                  string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
+	TemplateId                  string `json:"template_id" from:"template_id" description:"企业微信审批模板ID"`
+	IsWechatNotificationEnabled bool   `json:"is_wechat_notification_enabled" from:"is_wechat_notification_enabled" validate:"required" description:"是否启用微信对接流程"`
+}
+
+// UpdateWechatAuditConfigurationV1
+// @Summary 添加或更新微信配置
+// @Description update wechat audit configuration
+// @Accept json
+// @Id updateWechatAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param param body v1.UpdateWechatConfigurationReqV1 true "update wechat audit configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/wechat_audit [patch]
+func UpdateWechatAuditConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+type TestWechatConfigResDataV1 struct {
+	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
+	ErrorMessage          string `json:"error_message,omitempty"`
+}
+
+type TestWechatConfigResV1 struct {
+	controller.BaseRes
+	Data TestWechatConfigResDataV1 `json:"data"`
+}
+
+// TestWechatAuditConfigV1
+// @Summary 测试微信审批配置
+// @Description test wechat audit configuration
+// @Accept json
+// @Id testWechatAuditConfigV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestWechatConfigResV1
+// @router /v1/configurations/wechat_audit/test [post]
+func TestWechatAuditConfigV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestWechatConfigResDataV1{
+			IsMessageSentNormally: true,
+		},
+	})
+}
