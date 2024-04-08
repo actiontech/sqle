@@ -303,10 +303,10 @@ func GetWechatAuditConfigurationV1(c echo.Context) error {
 }
 
 type UpdateWechatConfigurationReqV1 struct {
-	CorpID                      string `json:"corp_id" from:"corp_id" description:"微信企业号ID"`
-	CorpSecret                  string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
-	TemplateId                  string `json:"template_id" from:"template_id" description:"企业微信审批模板ID"`
-	IsWechatNotificationEnabled bool   `json:"is_wechat_notification_enabled" from:"is_wechat_notification_enabled" validate:"required" description:"是否启用微信对接流程"`
+	CorpID                      *string `json:"corp_id" from:"corp_id" description:"微信企业号ID"`
+	CorpSecret                  *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
+	TemplateId                  *string `json:"template_id" from:"template_id" description:"企业微信审批模板ID"`
+	IsWechatNotificationEnabled *bool   `json:"is_wechat_notification_enabled" from:"is_wechat_notification_enabled" validate:"required" description:"是否启用微信对接流程"`
 }
 
 // UpdateWechatAuditConfigurationV1
