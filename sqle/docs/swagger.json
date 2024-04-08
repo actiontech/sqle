@@ -532,6 +532,90 @@
                 }
             }
         },
+        "/v1/configurations/wechat_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get wechat audit configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取微信审核配置",
+                "operationId": "getWechatAuditConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWechatAuditConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update wechat audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新微信配置",
+                "operationId": "updateWechatAuditConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update wechat audit configuration req",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWechatConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/wechat_audit/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test wechat audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试微信审批配置",
+                "operationId": "testWechatAuditConfigV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestWechatConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/custom_rules": {
             "get": {
                 "security": [
@@ -9828,6 +9912,23 @@
                 }
             }
         },
+        "v1.GetWechatAuditConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.WechatConfigurationV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowAuditPassPercentResV1": {
             "type": "object",
             "properties": {
@@ -11370,6 +11471,34 @@
                 }
             }
         },
+        "v1.TestWechatConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "is_message_sent_normally": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TestWechatConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestWechatConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.TimeResV1": {
             "type": "object",
             "properties": {
@@ -11625,6 +11754,26 @@
                 }
             }
         },
+        "v1.UpdateWechatConfigurationReqV1": {
+            "type": "object",
+            "required": [
+                "is_wechat_notification_enabled"
+            ],
+            "properties": {
+                "corp_id": {
+                    "type": "string"
+                },
+                "corp_secret": {
+                    "type": "string"
+                },
+                "is_wechat_notification_enabled": {
+                    "type": "boolean"
+                },
+                "template_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -11674,6 +11823,20 @@
                     "type": "string"
                 },
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.WechatConfigurationV1": {
+            "type": "object",
+            "properties": {
+                "corp_id": {
+                    "type": "string"
+                },
+                "is_wechat_notification_enabled": {
+                    "type": "boolean"
+                },
+                "template_id": {
                     "type": "string"
                 }
             }

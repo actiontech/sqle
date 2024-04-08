@@ -1553,6 +1553,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWechatAuditConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.WechatConfigurationV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowAuditPassPercentResV1:
     properties:
       code:
@@ -2590,6 +2602,25 @@ definitions:
         - phone
         type: string
     type: object
+  v1.TestWechatConfigResDataV1:
+    properties:
+      error_message:
+        type: string
+      is_message_sent_normally:
+        type: boolean
+    type: object
+  v1.TestWechatConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestWechatConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TimeResV1:
     properties:
       hour:
@@ -2765,6 +2796,19 @@ definitions:
         example: 720
         type: integer
     type: object
+  v1.UpdateWechatConfigurationReqV1:
+    properties:
+      corp_id:
+        type: string
+      corp_secret:
+        type: string
+      is_wechat_notification_enabled:
+        type: boolean
+      template_id:
+        type: string
+    required:
+    - is_wechat_notification_enabled
+    type: object
   v1.UpdateWorkflowReqV1:
     properties:
       task_ids:
@@ -2798,6 +2842,15 @@ definitions:
       user_id:
         type: string
       user_name:
+        type: string
+    type: object
+  v1.WechatConfigurationV1:
+    properties:
+      corp_id:
+        type: string
+      is_wechat_notification_enabled:
+        type: boolean
+      template_id:
         type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
@@ -4101,6 +4154,58 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 修改系统变量
+      tags:
+      - configuration
+  /v1/configurations/wechat_audit:
+    get:
+      description: get wechat audit configuration
+      operationId: getWechatAuditConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWechatAuditConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取微信审核配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update wechat audit configuration
+      operationId: updateWechatAuditConfigurationV1
+      parameters:
+      - description: update wechat audit configuration req
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWechatConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新微信配置
+      tags:
+      - configuration
+  /v1/configurations/wechat_audit/test:
+    post:
+      consumes:
+      - application/json
+      description: test wechat audit configuration
+      operationId: testWechatAuditConfigV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestWechatConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试微信审批配置
       tags:
       - configuration
   /v1/custom_rules:
