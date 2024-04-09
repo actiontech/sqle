@@ -1611,7 +1611,6 @@ func (at *PostgreSQLTopSQLTask) collectorDo() {
 			Info: map[string]interface{}{
 				postgresql.DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
 				postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
-				postgresql.DynPerformanceViewPgSQLColumnCPUTime:        sql.CPUTime,
 				postgresql.DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
 				postgresql.DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
 				postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
@@ -1643,7 +1642,7 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 	rows := result.Rows
 	for _, row := range rows {
 		values := row.Values
-		if len(values) < 7 {
+		if len(values) < 6 {
 			continue
 		}
 		executions, err := strconv.ParseFloat(values[1].Value, 64)
@@ -1654,19 +1653,15 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 		if err != nil {
 			return nil, err
 		}
-		cpuTime, err := strconv.ParseFloat(values[3].Value, 64)
+		diskReads, err := strconv.ParseFloat(values[3].Value, 64)
 		if err != nil {
 			return nil, err
 		}
-		diskReads, err := strconv.ParseFloat(values[4].Value, 64)
+		bufferGets, err := strconv.ParseFloat(values[4].Value, 64)
 		if err != nil {
 			return nil, err
 		}
-		bufferGets, err := strconv.ParseFloat(values[5].Value, 64)
-		if err != nil {
-			return nil, err
-		}
-		userIoWaitTime, err := strconv.ParseFloat(values[6].Value, 64)
+		userIoWaitTime, err := strconv.ParseFloat(values[5].Value, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -1674,7 +1669,6 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 			SQLFullText:    values[0].Value,
 			Executions:     executions,
 			ElapsedTime:    elapsedTime,
-			CPUTime:        cpuTime,
 			DiskReads:      diskReads,
 			BufferGets:     bufferGets,
 			UserIOWaitTime: userIoWaitTime,
@@ -1710,10 +1704,6 @@ func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []
 			Desc: "执行时间(s)",
 		},
 		{
-			Name: postgresql.DynPerformanceViewPgSQLColumnCPUTime,
-			Desc: "CPU消耗时间(s)",
-		},
-		{
 			Name: postgresql.DynPerformanceViewPgSQLColumnDiskReads,
 			Desc: "物理读块数",
 		},
@@ -1736,7 +1726,6 @@ func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []
 			"sql": sql.SQLContent,
 			postgresql.DynPerformanceViewPgSQLColumnExecutions:     strconv.Itoa(int(info.Executions)),
 			postgresql.DynPerformanceViewPgSQLColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
-			postgresql.DynPerformanceViewPgSQLColumnCPUTime:        fmt.Sprintf("%v", utils.Round(float64(info.CPUTime)/1000, 3)),     //视图中时间单位是毫秒，所以除以1000得到秒
 			postgresql.DynPerformanceViewPgSQLColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
 			postgresql.DynPerformanceViewPgSQLColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
 			postgresql.DynPerformanceViewPgSQLColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
