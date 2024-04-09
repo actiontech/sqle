@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc
+	github.com/actiontech/dms v0.0.0-20240409075121-0e9d62937656
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -69,7 +69,10 @@ require (
 	vitess.io/vitess v0.12.0
 )
 
-require github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+require (
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+	golang.org/x/text v0.13.0
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -164,7 +167,6 @@ require (
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
