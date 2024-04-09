@@ -598,7 +598,7 @@ func GetAuditPlan(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectUid, apName, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1092,7 +1092,7 @@ func TriggerAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	go notification.NotifyAuditPlanWebhook(ap, report)
-	
+
 	return c.JSON(http.StatusOK, &TriggerAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: AuditPlanReportResV1{
