@@ -1572,7 +1572,7 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		return
 	}
 	if at.ap.InstanceDatabase == "" {
-		at.logger.Warnf("instance schema is not configured")
+		at.logger.Warnf("instance database is not configured")
 		return
 	}
 	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
@@ -1599,102 +1599,173 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		at.logger.Errorf("connect to instance fail, error: %v", err)
 		return
 	}
+	defer pluginMgr.Stop()
 
-	schemas, err := at.GetAllUserSchemas(plugin)
+	// 获取所有的数据库及对应的schema
+	schemas, err := at.GetAllUserSchemas(plugin, at.ap.InstanceDatabase)
 	if err != nil {
-		at.logger.Errorf("get database=%s schemas error: %s", at.ap.InstanceDatabase, err)
-		return
-	}
-	if len(schemas) == 0 {
-		at.logger.Errorf("get database=%s schemas empty error: %s", at.ap.InstanceDatabase, err)
+		at.logger.Errorf("get databases=%s schemas fail: %s", at.ap.InstanceDatabase, err)
 		return
 	}
 
-	finalTableSqls := make([]string, 0)
-	finalViewSqls := make([]string, 0)
-	for _, schema := range schemas {
-		tables, err := at.ShowSchemaTablesForPg(plugin, schema)
+	// 获取表和视图
+	tablesAndViews, err := at.GetAllTablesAndViewsForPg(plugin, at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("get all table and view fail, error: %s", err)
+	}
+
+	// 获取列信息
+	columnsInfo, err := at.GetAllColumnsInfoForPg(plugin, at.ap.InstanceDatabase)
+	if err != nil {
+		at.logger.Errorf("get all columns information fail, error: %s", err)
+	}
+
+	// 获取约束信息
+	constraints, err := at.GetAllConstraintsForPg(plugin)
+	if err != nil {
+		at.logger.Errorf("get all constraints fail, error: %s", err)
+	}
+
+	// 获取索引信息
+	indexes, err := at.GetAllIndexesForPg(plugin)
+	if err != nil {
+		at.logger.Errorf("get all indexes fail, error: %s", err)
+	}
+
+	// 是否收集视图sql
+	isCollectView := false
+	if at.ap.Params.GetParam("collect_view").Bool() {
+		isCollectView = true
+	}
+
+	var viewsSql [][]string
+	if isCollectView {
+		// 获取视图创建sql
+		viewsSql, err = at.GetAllViewsSqlForPg(plugin, at.ap.InstanceDatabase)
 		if err != nil {
-			at.logger.Errorf("get schema table fail, error: %s", err)
+			at.logger.Errorf("get all views sql fail, error: %s", err)
+		}
+	}
+
+	for _, schema := range schemas {
+		createTableSqls := make([]string, 0)
+		createViewSqls := make([]string, 0)
+		for _, tableOrView := range tablesAndViews {
+			if len(tableOrView) < 3 {
+				continue
+			}
+
+			if tableOrView[0] != schema[0] { // schema[0]：二维数组第0个元素
+				continue
+			}
+			dataObjectType := ""
+			tableOrViewName := tableOrView[1]
+			if tableOrView[2] == "BASE TABLE" || tableOrView[2] == "SYSTEM VIEW" { // 表
+				dataObjectType = "table"
+			} else if tableOrView[2] == "VIEW" { // 视图
+				dataObjectType = "view"
+			}
+			if dataObjectType == "table" {
+				tableDDl := createTableSqlForPg(schema, tableOrViewName, columnsInfo, constraints, indexes)
+				createTableSqls = append(createTableSqls, tableDDl)
+			} else if dataObjectType == "view" {
+				if !isCollectView {
+					continue
+				}
+				// 视图sql
+				for _, viewSql := range viewsSql {
+					if len(viewSql) < 3 {
+						continue
+					}
+					schemaName, tableName := viewSql[0], viewSql[1]
+					if schemaName != schema[0] || tableName != tableOrViewName {
+						continue
+					}
+					createViewSqls = append(createViewSqls, viewSql[2])
+				}
+			}
+		}
+
+		finalInsertSqls := make([]string, 0)
+		if len(createTableSqls) > 0 {
+			finalInsertSqls = append(finalInsertSqls, createTableSqls...)
+		}
+
+		if len(createViewSqls) > 0 {
+			finalInsertSqls = append(finalInsertSqls, createViewSqls...)
+		}
+
+		if len(finalInsertSqls) > 0 {
+			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalInsertSqls, schema[0]))
+			if err != nil {
+				at.logger.Errorf("save table and view schema meta to storage fail, error: %s", err)
+			}
+		}
+	}
+}
+
+func createTableSqlForPg(schema []string, tableOrViewName string, columnsInfo, constraints, indexes [][]string) string {
+	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema[0], tableOrViewName)
+	// 列信息
+	for _, columnInfo := range columnsInfo {
+		if len(columnInfo) < 3 {
 			continue
 		}
-		for _, table := range tables {
-			tableSqls, err := at.ShowCreateTablesForPg(plugin, at.ap.InstanceDatabase, schema, table)
-			if err != nil {
-				at.logger.Errorf("show create table fail, error: %s", err)
-				continue
-			}
-			if len(tableSqls) > 0 {
-				finalTableSqls = append(finalTableSqls, tableSqls...)
-			}
+		schemaName, tableName := columnInfo[0], columnInfo[1]
+		if schemaName != schema[0] || tableName != tableOrViewName {
+			continue
 		}
-		if len(finalTableSqls) > 0 {
-			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalTableSqls, schema))
-			if err != nil {
-				at.logger.Errorf("save table schema meta to storage fail, error: %s", err)
-			}
-		}
+		tableDDl += columnInfo[2]
 	}
-
-	for _, schema := range schemas {
-		var views []string
-		if at.ap.Params.GetParam("collect_view").Bool() {
-			views, err = at.ShowSchemaViewsForPg(plugin, schema)
-			if err != nil {
-				at.logger.Errorf("get schema view fail, error: %s", err)
-				continue
-			}
+	// 约束信息
+	for _, constraintInfo := range constraints {
+		if len(constraintInfo) < 3 {
+			continue
 		}
-		for _, view := range views {
-			viewSqls, err := at.ShowCreateViewsForPg(plugin, at.ap.InstanceDatabase, schema, view)
-			if err != nil {
-				at.logger.Errorf("show create view fail, error: %s", err)
-				continue
-			}
-			if len(viewSqls) > 0 {
-				finalViewSqls = append(finalViewSqls, viewSqls...)
-			}
+		schemaName, tableName := constraintInfo[0], constraintInfo[1]
+		if schemaName != schema[0] || tableName != tableOrViewName {
+			continue
 		}
-		if len(finalViewSqls) > 0 {
-			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalViewSqls, schema))
-			if err != nil {
-				at.logger.Errorf("save view schema meta to storage fail, error: %s", err)
-			}
-		}
+		tableDDl += ",\n" + constraintInfo[2]
 	}
+	tableDDl += ")"
+	// 索引信息
+	for _, indexInfo := range indexes {
+		if len(indexInfo) < 4 {
+			continue
+		}
+		schemaName, tableName := indexInfo[0], indexInfo[1]
+		if schemaName != schema[0] || tableName != tableOrViewName {
+			continue
+		}
+		tableDDl += ";\n" + indexInfo[3]
+	}
+	return tableDDl
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin) ([]string, error) {
-	querySql := "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema'"
-	return at.GetResultSqls(plugin, querySql)
+func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, database string) ([][]string, error) {
+	querySql := fmt.Sprintf("SELECT schema_name FROM information_schema.schemata"+
+		" WHERE catalog_name = '%s'"+
+		" AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name", database)
+	return at.GetResult(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowSchemaTablesForPg(plugin driver.Plugin, schema string) ([]string, error) {
-	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
-		" where table_schema='%s' and TABLE_TYPE in ('BASE TABLE','SYSTEM VIEW')", schema)
-	return at.GetResultSqls(plugin, querySql)
+func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plugin, database string) ([][]string, error) {
+	querySql := fmt.Sprintf("select table_schema, table_name, table_type from information_schema.tables "+
+		" where table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
+		" ORDER BY table_name", database)
+	return at.GetResult(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowSchemaViewsForPg(plugin driver.Plugin, schema string) ([]string, error) {
-	querySql := fmt.Sprintf("select TABLE_NAME from information_schema.tables "+
-		" where table_schema='%s' and TABLE_TYPE='VIEW'", schema)
-	return at.GetResultSqls(plugin, querySql)
-}
-
-func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, database, schema, tableName string) ([]string, error) {
-	tables := make([]string, 0)
-	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableName)
-	columnsCondition := fmt.Sprintf("table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
-		database, schema, tableName)
-	// 获取列定义，多个英文逗号分割
-	columns := fmt.Sprintf("SELECT string_agg(column_name || ' ' || "+
+func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin, database string) ([][]string, error) {
+	columns := fmt.Sprintf("SELECT table_schema, table_name, string_agg(column_name || ' ' || "+
 		"CASE "+
 		" WHEN lower(data_type) IN ('char', 'varchar', 'character', 'character varying') "+
 		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
 		" WHEN lower(data_type) IN ('numeric', 'decimal') "+
 		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
 		" WHEN lower(data_type) IN ('integer', 'smallint', 'bigint', 'text') THEN data_type "+
-		" ELSE data_type "+
+		" ELSE udt_name "+
 		" END "+
 		" || "+
 		" CASE "+
@@ -1703,64 +1774,36 @@ func (at *PostgreSQLSchemaMetaTask) ShowCreateTablesForPg(plugin driver.Plugin, 
 		" CASE "+
 		" WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END, ',\n ' ORDER BY ordinal_position) AS columns_sql"+
 		" FROM information_schema.columns "+
-		" WHERE %s GROUP BY table_name", columnsCondition)
-	sqls, err := at.GetResultSqls(plugin, columns)
-	if err != nil {
-		at.logger.Errorf("search column definition error:%s\n", err)
-		return nil, err
-	}
-	if len(sqls) == 0 {
-		return tables, nil
-	}
-	tableDDl += strings.Join(sqls, "")
-	constraintsCondition := fmt.Sprintf("n.nspname = '%s' AND C.relname = '%s'", schema, tableName)
-	// 获取所有约束
-	constraints := fmt.Sprintf("SELECT 'CONSTRAINT ' || r.conname || ' ' || "+
-		" pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition "+
-		" FROM pg_catalog.pg_constraint r "+
-		" JOIN pg_catalog.pg_class C ON C.OID = r.conrelid "+
-		" JOIN pg_catalog.pg_namespace n ON n.OID = C.relnamespace "+
-		" WHERE %s", constraintsCondition)
-	sqls, err = at.GetResultSqls(plugin, constraints)
-	if err != nil {
-		at.logger.Errorf("search constraint definition error:%s\n", err)
-		return nil, err
-	}
-	for _, sqlContext := range sqls {
-		tableDDl += ",\n" + sqlContext
-	}
-	tableDDl += ")"
-	indexesCondition := fmt.Sprintf("schemaname = '%s' and tablename = '%s' ", schema, tableName)
-	// 获取索引
-	indexes := fmt.Sprintf("SELECT indexdef AS index_definition FROM pg_indexes "+
-		" WHERE %s", indexesCondition)
-	sqls, err = at.GetResultSqls(plugin, indexes)
-	if err != nil {
-		at.logger.Errorf("search index definition error:%s\n", err)
-		return nil, err
-	}
-	for _, sqlContent := range sqls {
-		if strings.Contains(sqlContent, "CREATE UNIQUE INDEX") {
-			continue
-		}
-		tableDDl += ";\n" + sqlContent
-	}
-	tables = append(tables, tableDDl)
-	return tables, nil
+		" WHERE table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
+		" GROUP BY table_schema, table_name", database)
+	return at.GetResult(plugin, columns)
 }
 
-func (at *PostgreSQLSchemaMetaTask) ShowCreateViewsForPg(plugin driver.Plugin, database, schema, tableName string) ([]string, error) {
-	querySql := fmt.Sprintf(
-		"SELECT 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition"+
-			" AS create_view_statement "+
-			" FROM information_schema.views "+
-			" WHERE table_catalog = '%s' AND table_schema = '%s' AND table_name = '%s'",
-		database, schema, tableName)
-	return at.GetResultSqls(plugin, querySql)
+func (at *PostgreSQLSchemaMetaTask) GetAllConstraintsForPg(plugin driver.Plugin) ([][]string, error) {
+	querySql := fmt.Sprintf("SELECT n.nspname as schema_name, c.relname as table_name, " +
+		" 'CONSTRAINT ' || r.conname || ' ' || pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition" +
+		" FROM pg_catalog.pg_constraint r JOIN pg_catalog.pg_class c ON C.OID = r.conrelid " +
+		" JOIN pg_catalog.pg_namespace n ON n.OID = c.relnamespace " +
+		" where n.nspname not like 'pg_%%' and n.nspname != 'information_schema'")
+	return at.GetResult(plugin, querySql)
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetResultSqls(plugin driver.Plugin, sql string) ([]string, error) {
-	var ret []string
+func (at *PostgreSQLSchemaMetaTask) GetAllIndexesForPg(plugin driver.Plugin) ([][]string, error) {
+	querySql := "SELECT schemaname, tablename, indexname, indexdef FROM pg_indexes " +
+		" where schemaname not like 'pg_%' AND schemaname != 'information_schema'"
+	return at.GetResult(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetAllViewsSqlForPg(plugin driver.Plugin, database string) ([][]string, error) {
+	querySql := fmt.Sprintf("SELECT table_schema, table_name, "+
+		" 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition "+
+		" AS create_view_statement FROM information_schema.views WHERE table_catalog = '%s' "+
+		" AND table_schema not like 'pg_%%' AND table_schema != 'information_schema' order by table_name", database)
+	return at.GetResult(plugin, querySql)
+}
+
+func (at *PostgreSQLSchemaMetaTask) GetResult(plugin driver.Plugin, sql string) ([][]string, error) {
+	var ret [][]string
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 
@@ -1775,11 +1818,11 @@ func (at *PostgreSQLSchemaMetaTask) GetResultSqls(plugin driver.Plugin, sql stri
 		if len(values) == 0 {
 			continue
 		}
-		sqlContent := values[0].Value
-		if len(sqlContent) == 0 {
-			continue
+		var valueArr []string
+		for _, value := range values {
+			valueArr = append(valueArr, value.Value)
 		}
-		ret = append(ret, sqlContent)
+		ret = append(ret, valueArr)
 	}
 	return ret, nil
 }
