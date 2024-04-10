@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20240409075121-0e9d62937656
+	github.com/actiontech/dms v0.0.0-20240301093629-71d4888f8cdc
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -69,16 +69,19 @@ require (
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
-	github.com/urfave/cli/v2 v2.8.1
-	golang.org/x/net v0.15.0
+	github.com/urfave/cli/v2 v2.24.4
+	golang.org/x/net v0.17.0
 	google.golang.org/grpc v1.50.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	vitess.io/vitess v0.12.0
 )
 
+require golang.org/x/sys v0.13.0
+
 require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+	github.com/xen0n/go-workwx v1.7.0
 	golang.org/x/text v0.13.0
 )
 
@@ -97,6 +100,7 @@ require (
 	github.com/aliyun/credentials-go v1.1.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
@@ -173,10 +177,9 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/crypto v0.13.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20220414192740-2d67ff6cf2b4 // indirect

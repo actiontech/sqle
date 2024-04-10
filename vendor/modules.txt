@@ -132,6 +132,9 @@ github.com/baidubce/bce-sdk-go/util/log
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
 github.com/bwmarrin/snowflake
+# github.com/cenkalti/backoff/v4 v4.1.3
+## explicit; go 1.13
+github.com/cenkalti/backoff/v4
 # github.com/clbanning/mxj/v2 v2.5.6
 ## explicit; go 1.15
 github.com/clbanning/mxj/v2
@@ -716,7 +719,7 @@ github.com/tjfoc/gmsm/sm3
 # github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
 ## explicit; go 1.13
 github.com/ungerik/go-dry
-# github.com/urfave/cli/v2 v2.8.1
+# github.com/urfave/cli/v2 v2.24.4
 ## explicit; go 1.18
 github.com/urfave/cli/v2
 # github.com/valyala/bytebufferpool v1.0.0
@@ -728,6 +731,15 @@ github.com/valyala/fasttemplate
 # github.com/xanzy/ssh-agent v0.3.3
 ## explicit; go 1.16
 github.com/xanzy/ssh-agent
+# github.com/xen0n/go-workwx v1.7.0
+## explicit; go 1.17
+github.com/xen0n/go-workwx
+github.com/xen0n/go-workwx/errcodes
+github.com/xen0n/go-workwx/internal/lowlevel/encryptor
+github.com/xen0n/go-workwx/internal/lowlevel/envelope
+github.com/xen0n/go-workwx/internal/lowlevel/httpapi
+github.com/xen0n/go-workwx/internal/lowlevel/pkcs7
+github.com/xen0n/go-workwx/internal/lowlevel/signature
 # github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
 ## explicit
 github.com/xrash/smetrics
@@ -762,7 +774,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.13.0
+# golang.org/x/crypto v0.14.0
 ## explicit; go 1.17
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
@@ -773,7 +785,6 @@ golang.org/x/crypto/cast5
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/curve25519/internal/field
-golang.org/x/crypto/ed25519
 golang.org/x/crypto/hkdf
 golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
@@ -791,7 +802,7 @@ golang.org/x/exp/slices
 # golang.org/x/mod v0.12.0
 ## explicit; go 1.17
 golang.org/x/mod/semver
-# golang.org/x/net v0.15.0
+# golang.org/x/net v0.17.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/html
@@ -807,11 +818,10 @@ golang.org/x/net/proxy
 golang.org/x/net/trace
 golang.org/x/net/webdav
 golang.org/x/net/webdav/internal/xml
-# golang.org/x/sys v0.12.0
+# golang.org/x/sys v0.13.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
-golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.13.0
