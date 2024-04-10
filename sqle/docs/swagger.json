@@ -7750,7 +7750,8 @@
                     "enum": [
                         "string",
                         "int",
-                        "bool"
+                        "bool",
+                        "password"
                     ]
                 },
                 "value": {

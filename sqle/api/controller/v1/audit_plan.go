@@ -60,7 +60,7 @@ type AuditPlanParamResV1 struct {
 	Key   string `json:"key"`
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
-	Type  string `json:"type" enums:"string,int,bool"`
+	Type  string `json:"type" enums:"string,int,bool,password"`
 }
 
 func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
