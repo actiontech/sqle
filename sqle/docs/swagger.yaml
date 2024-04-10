@@ -3175,6 +3175,8 @@ definitions:
       audit_plan_token:
         example: it's a JWT Token for scanner
         type: string
+      create_user_id:
+        type: string
       rule_template:
         $ref: '#/definitions/v2.RuleTemplateV2'
         type: object

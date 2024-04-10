@@ -12334,6 +12334,9 @@ var doc = `{
                     "type": "string",
                     "example": "it's a JWT Token for scanner"
                 },
+                "create_user_id": {
+                    "type": "string"
+                },
                 "rule_template": {
                     "type": "object",
                     "$ref": "#/definitions/v2.RuleTemplateV2"
