@@ -449,11 +449,27 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["rule_template_name"] = *req.RuleTemplateName
 	}
 	if req.Params != nil {
+		var paramsKeyMap = make(map[string]struct{}, len(req.Params))
+		for _, p := range req.Params {
+			paramsKeyMap[p.Key] = struct{}{}
+		}
+
+		for _, p := range ap.Params {
+			if _, exist := paramsKeyMap[p.Key]; !exist {
+				req.Params = append(req.Params, AuditPlanParamReqV1{
+					Key:   p.Key,
+					Value: p.Value,
+				})
+			}
+		}
+
 		ps, err := checkAndGenerateAuditPlanParams(ap.Type, ap.DBType, req.Params)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		updateAttr["params"] = ps
+	} else if ap.Params != nil {
+		updateAttr["params"] = ap.Params
 	}
 
 	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)
