@@ -1611,3 +1611,212 @@ WHERE rownum <= %v`
 	DynPerformanceViewObForOracleColumnBufferGets     = "buffer_gets"
 	DynPerformanceViewObForOracleColumnUserIOWaitTime = "user_io_wait_time"
 )
+
+type DynPerformancePgColumns struct {
+	SQLFullText    string  `json:"sql_fulltext"`
+	Executions     float64 `json:"executions"`
+	ElapsedTime    float64 `json:"elapsed_time"`
+	DiskReads      float64 `json:"disk_reads"`
+	BufferGets     float64 `json:"buffer_gets"`
+	UserIOWaitTime float64 `json:"user_io_wait_time"`
+}
+
+const (
+	DynPerformanceViewPgTpl = `
+SELECT query as sql_fulltext,
+sum(calls) as executions,
+sum(total_exec_time) AS elapsed_time,
+sum(shared_blks_read) AS disk_reads, -- 表示从共享缓冲区中读取的块数。这个值表示数据库系统从磁盘或其他存储介质中读取的数据块数量，而不是从内存中读取的数据。
+sum(shared_blks_hit) AS buffer_gets, -- 表示从共享缓冲区中命中的块数。这个值表示数据库系统从内存中读取的数据块数量，而不是从磁盘或其他存储介质中读取的数据。
+sum(blk_read_time) as user_io_wait_time
+FROM pg_stat_statements
+WHERE calls > 0
+group by query
+ORDER BY %v DESC limit %v`
+	DynPerformanceViewPgSQLColumnExecutions     = "executions"
+	DynPerformanceViewPgSQLColumnElapsedTime    = "elapsed_time"
+	DynPerformanceViewPgSQLColumnDiskReads      = "disk_reads"
+	DynPerformanceViewPgSQLColumnBufferGets     = "buffer_gets"
+	DynPerformanceViewPgSQLColumnUserIOWaitTime = "user_io_wait_time"
+)
+
+// PostgreSQLTopSQLTask implement the Task interface.
+//
+// PostgreSQLTopSQLTask is a loop task which collect Top SQL from oracle instance.
+type PostgreSQLTopSQLTask struct {
+	*sqlCollector
+}
+
+func NewPostgreSQLTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
+	task := &PostgreSQLTopSQLTask{
+		sqlCollector: newSQLCollector(entry, ap),
+	}
+	task.sqlCollector.do = task.collectorDo
+	return task
+}
+
+func (at *PostgreSQLTopSQLTask) collectorDo() {
+	select {
+	case <-at.cancel:
+		at.logger.Info("cancel task")
+		return
+	default:
+	}
+
+	if at.ap.InstanceName == "" {
+		at.logger.Warnf("instance is not configured")
+		return
+	}
+
+	// 超时2分钟
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
+	if err != nil {
+		at.logger.Errorf("query instance fail by projectId=%s and instanceName=%s, error: %v",
+			string(at.ap.ProjectId), at.ap.InstanceName, err)
+		return
+	}
+
+	sqls, err := queryTopSQLsForPg(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+		at.ap.Params.GetParam("top_n").Int())
+	if err != nil {
+		at.logger.Errorf("query top sql fail, error: %v", err)
+		return
+	}
+
+	if len(sqls) == 0 {
+		at.logger.Info("sql result count is 0")
+		return
+	}
+
+	apSQLs := make([]*SQL, 0, len(sqls))
+	for _, sql := range sqls {
+		apSQLs = append(apSQLs, &SQL{
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
+			Info: map[string]interface{}{
+				DynPerformanceViewPgSQLColumnExecutions:     sql.Executions,
+				DynPerformanceViewPgSQLColumnElapsedTime:    sql.ElapsedTime,
+				DynPerformanceViewPgSQLColumnDiskReads:      sql.DiskReads,
+				DynPerformanceViewPgSQLColumnBufferGets:     sql.BufferGets,
+				DynPerformanceViewPgSQLColumnUserIOWaitTime: sql.UserIOWaitTime,
+			},
+		})
+	}
+	err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertSQLsToModelSQLs(apSQLs))
+	if err != nil {
+		at.logger.Errorf("save top sql to storage fail, error: %v", err)
+	}
+}
+
+func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, topN int) ([]*DynPerformancePgColumns, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
+	defer cancel()
+
+	sql := fmt.Sprintf(DynPerformanceViewPgTpl, orderBy, topN)
+	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
+	if err != nil {
+		return nil, err
+	}
+	var ret []*DynPerformancePgColumns
+	rows := result.Rows
+	for _, row := range rows {
+		values := row.Values
+		if len(values) < 6 {
+			continue
+		}
+		executions, err := strconv.ParseFloat(values[1].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		elapsedTime, err := strconv.ParseFloat(values[2].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		diskReads, err := strconv.ParseFloat(values[3].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		bufferGets, err := strconv.ParseFloat(values[4].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		userIoWaitTime, err := strconv.ParseFloat(values[5].Value, 64)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, &DynPerformancePgColumns{
+			SQLFullText:    values[0].Value,
+			Executions:     executions,
+			ElapsedTime:    elapsedTime,
+			DiskReads:      diskReads,
+			BufferGets:     bufferGets,
+			UserIOWaitTime: userIoWaitTime,
+		})
+	}
+	return ret, nil
+}
+
+func (at *PostgreSQLTopSQLTask) Audit() (*AuditResultResp, error) {
+	task := &model.Task{
+		DBType: at.ap.DBType,
+	}
+	return at.baseTask.audit(task)
+}
+
+func (at *PostgreSQLTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := at.persist.GetAuditPlanSQLsByReq(args)
+	if err != nil {
+		return nil, nil, count, err
+	}
+	heads := []Head{
+		{
+			Name: "sql",
+			Desc: "SQL语句",
+			Type: "sql",
+		},
+		{
+			Name: DynPerformanceViewPgSQLColumnExecutions,
+			Desc: "总执行次数",
+		},
+		{
+			Name: DynPerformanceViewPgSQLColumnElapsedTime,
+			Desc: "执行时间(s)",
+		},
+		{
+			Name: DynPerformanceViewPgSQLColumnDiskReads,
+			Desc: "物理读块数",
+		},
+		{
+			Name: DynPerformanceViewPgSQLColumnBufferGets,
+			Desc: "逻辑读块数",
+		},
+		{
+			Name: DynPerformanceViewPgSQLColumnUserIOWaitTime,
+			Desc: "I/O等待时间(s)",
+		},
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		info := &DynPerformancePgColumns{}
+		if err := json.Unmarshal(sql.Info, info); err != nil {
+			return nil, nil, 0, err
+		}
+		rows = append(rows, map[string]string{
+			"sql":                                       sql.SQLContent,
+			DynPerformanceViewPgSQLColumnExecutions:     strconv.Itoa(int(info.Executions)),
+			DynPerformanceViewPgSQLColumnElapsedTime:    fmt.Sprintf("%v", utils.Round(float64(info.ElapsedTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+			DynPerformanceViewPgSQLColumnDiskReads:      strconv.Itoa(int(info.DiskReads)),
+			DynPerformanceViewPgSQLColumnBufferGets:     strconv.Itoa(int(info.BufferGets)),
+			DynPerformanceViewPgSQLColumnUserIOWaitTime: fmt.Sprintf("%v", utils.Round(float64(info.UserIOWaitTime)/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
+		})
+	}
+	return heads, rows, count, nil
+}

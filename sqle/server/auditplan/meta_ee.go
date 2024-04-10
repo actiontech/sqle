@@ -14,6 +14,7 @@ const (
 	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
 	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
 	TypeDmTopSQL                 = "dm_top_sql"
+	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 )
 
 const (
@@ -22,6 +23,7 @@ const (
 	InstanceTypeDB2               = "DB2"
 	InstanceTypeTDSQL             = "TDSQL For InnoDB"
 	InstanceTypeDm                = "DM"
+	InstanceTypePostgreSQL        = "PostgreSQL"
 )
 
 const (
@@ -178,6 +180,32 @@ var EEMetas = []Meta{
 				Key:   "order_by_column",
 				Desc:  "排序字段",
 				Value: DynPerformanceViewObForOracleColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		},
+	},
+	{
+		Type:         TypePostgreSQLTopSQL,
+		Desc:         "TOP SQL",
+		InstanceType: InstanceTypePostgreSQL,
+		CreateTask:   NewPostgreSQLTopSQLTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: DynPerformanceViewPgSQLColumnElapsedTime,
 				Type:  params.ParamTypeString,
 			},
 		},
