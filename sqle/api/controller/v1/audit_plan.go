@@ -72,11 +72,15 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 	if meta.Params != nil && len(meta.Params) > 0 {
 		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
 		for _, p := range meta.Params {
+			val := p.Value
+			if p.Type == params.ParamTypePassword {
+				val = ""
+			}
 			paramRes := AuditPlanParamResV1{
 				Key:   p.Key,
 				Desc:  p.Desc,
 				Type:  string(p.Type),
-				Value: p.Value,
+				Value: val,
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}
