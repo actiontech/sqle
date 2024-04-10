@@ -61,6 +61,7 @@ definitions:
         - string
         - int
         - bool
+        - password
         type: string
       value:
         type: string

@@ -7766,7 +7766,8 @@ var doc = `{
                     "enum": [
                         "string",
                         "int",
-                        "bool"
+                        "bool",
+                        "password"
                     ]
                 },
                 "value": {
