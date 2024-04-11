@@ -167,7 +167,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 
 	// register plugin
 	for _, p := range plugins {
-		// 处理插件残留进程
+
 		pluginPidFilePath := filepath.Join(pluginDir, p.Name()+".pid")
 		process, err := GetProcessByPidFile(pluginPidFilePath)
 		if err != nil {
@@ -179,6 +179,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 				return err
 			}
 		}
+
 		cmdBase := filepath.Join(pluginDir, p.Name())
 		cmdArgs := make([]string, 0)
 
@@ -281,15 +282,17 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 检查进程是否存在的方式
+	// 发送0信号检查进程是否存活
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		return nil, nil
+		if strings.Contains(err.Error(), "os: process already finished") {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return process, nil
 }
 
-// 退出进程
 func KillProcess(process *os.Process) error {
 	err := process.Signal(syscall.SIGTERM)
 	process.Wait()
