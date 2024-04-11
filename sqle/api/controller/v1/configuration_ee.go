@@ -4,18 +4,15 @@
 package v1
 
 import (
-	e "errors"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
-	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/labstack/echo/v4"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
@@ -280,4 +277,44 @@ func getWechatAuditConfigurationV1(c echo.Context) error {
 			IsWechatNotificationEnabled: wechat.IsEnable,
 		},
 	})
+}
+
+func updateWechatAuditConfigurationV1(c echo.Context) error {
+	req := new(UpdateWechatConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	wechat, _, err := s.GetImConfigByType(model.ImTypeWechatAudit)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	{ // disable
+		if req.IsWechatNotificationEnabled != nil && !(*req.IsWechatNotificationEnabled) {
+			wechat.IsEnable = false
+			return controller.JSONBaseErrorReq(c, s.Save(wechat))
+		}
+	}
+
+	if req.CorpID != nil {
+		wechat.AppKey = *req.CorpID
+	}
+	if req.CorpSecret != nil {
+		wechat.AppSecret = *req.CorpSecret
+	}
+	if req.IsWechatNotificationEnabled != nil {
+		wechat.IsEnable = *req.IsWechatNotificationEnabled
+	}
+
+	wechat.Type = model.ImTypeWechatAudit
+
+	if err := s.Save(wechat); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	go im.CreateApprovalTemplate(model.ImTypeWechatAudit)
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
