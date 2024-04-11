@@ -3737,6 +3737,12 @@ definitions:
     type: object
   v2.UpdateWorkflowScheduleReqV2:
     properties:
+      is_notify:
+        type: boolean
+      notify_type:
+        enum:
+        - Wechat
+        type: string
       schedule_time:
         type: string
     type: object
