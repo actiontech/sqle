@@ -4,15 +4,18 @@
 package v1
 
 import (
+	e "errors"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/labstack/echo/v4"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
@@ -253,6 +256,28 @@ func testDingTalkConfigV1(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: TestDingTalkConfigResDataV1{
 			IsDingTalkSendNormal: true,
+		},
+	})
+}
+
+func getWechatAuditConfigurationV1(c echo.Context) error {
+	s := model.GetStorage()
+	wechat, exist, err := s.GetImConfigByType(model.ImTypeWechatAudit)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &GetWechatAuditConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    WechatConfigurationV1{},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetWechatAuditConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: WechatConfigurationV1{
+			CorpID:                      wechat.AppKey,
+			IsWechatNotificationEnabled: wechat.IsEnable,
 		},
 	})
 }
