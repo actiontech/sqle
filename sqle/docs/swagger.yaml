@@ -2622,6 +2622,11 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TestWechatConfigurationReqV1:
+    properties:
+      wechat_id:
+        type: string
+    type: object
   v1.TimeResV1:
     properties:
       hour:
@@ -2805,8 +2810,6 @@ definitions:
         type: string
       is_wechat_notification_enabled:
         type: boolean
-      template_id:
-        type: string
     required:
     - is_wechat_notification_enabled
     type: object
@@ -2851,8 +2854,6 @@ definitions:
         type: string
       is_wechat_notification_enabled:
         type: boolean
-      template_id:
-        type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
@@ -4207,6 +4208,13 @@ paths:
       - application/json
       description: test wechat audit configuration
       operationId: testWechatAuditConfigV1
+      parameters:
+      - description: test wechat configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestWechatConfigurationReqV1'
       responses:
         "200":
           description: OK

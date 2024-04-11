@@ -15,6 +15,7 @@ import (
 var (
 	errCommunityEditionNotSupportFeishuAudit   = errors.New(errors.EnterpriseEditionFeatures, e.New("feishu audit is enterprise version feature"))
 	errCommunityEditionNotSupportDingDingAudit = errors.New(errors.EnterpriseEditionFeatures, e.New("dingding audit is enterprise version feature"))
+	errCommunityEditionNotSupportWechatAudit = errors.New(errors.EnterpriseEditionFeatures, e.New("wechat audit is enterprise version feature"))
 )
 
 func updateFeishuAuditConfigurationV1(c echo.Context) error {
@@ -39,4 +40,16 @@ func updateDingTalkConfigurationV1(c echo.Context) error {
 
 func testDingTalkConfigV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportDingDingAudit)
+}
+
+func getWechatAuditConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
+}
+
+func updateWechatAuditConfigurationV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
+}
+
+func testWechatAuditConfigV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
 }
