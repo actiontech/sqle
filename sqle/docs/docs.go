@@ -7766,7 +7766,8 @@ var doc = `{
                     "enum": [
                         "string",
                         "int",
-                        "bool"
+                        "bool",
+                        "password"
                     ]
                 },
                 "value": {
@@ -12333,6 +12334,9 @@ var doc = `{
                 "audit_plan_token": {
                     "type": "string",
                     "example": "it's a JWT Token for scanner"
+                },
+                "create_user_id": {
+                    "type": "string"
                 },
                 "rule_template": {
                     "type": "object",

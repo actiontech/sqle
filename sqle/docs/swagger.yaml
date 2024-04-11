@@ -61,6 +61,7 @@ definitions:
         - string
         - int
         - bool
+        - password
         type: string
       value:
         type: string
@@ -3174,6 +3175,8 @@ definitions:
         type: string
       audit_plan_token:
         example: it's a JWT Token for scanner
+        type: string
+      create_user_id:
         type: string
       rule_template:
         $ref: '#/definitions/v2.RuleTemplateV2'
