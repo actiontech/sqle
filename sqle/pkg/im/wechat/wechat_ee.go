@@ -8,10 +8,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/xen0n/go-workwx"
 )
 
@@ -253,4 +256,111 @@ func (c *wechatClient) CreateApprovalTemplate(ctx context.Context) (approvalCode
 		return nil, errors.New(createTemplateResp.ErrMsg)
 	}
 	return &createTemplateResp.TemplateId, nil
+}
+
+// CreateApprovalInstance 创建审批实例
+// https://developer.work.weixin.qq.com/document/path/91853
+func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode, workflowName string, originUserId string,
+	approveUserIds []string, projectName, workflowUrl, oaType string, auditResults []*model.WorkflowInstanceRecord) (string, error) {
+
+	oaApplyEvent := workwx.OAApplyEvent{
+		CreatorUserID: originUserId,
+		TemplateID:    approvalCode,
+		Approver: []workwx.OAApprover{
+			{
+				// Attr 节点审批方式：1-或签；2-会签，仅在节点为多人审批时有效
+				// sqle审核节点只要有一人同意就可进入下一个流程，所以选择或签
+				Attr:   1,
+				UserID: approveUserIds,
+			},
+		},
+	}
+	oaContents := workwx.OAContents{
+		Contents: []workwx.OAContent{
+			{
+				Control: textControl,
+				ID:      projectNameCompId,
+				Title:   []workwx.OAText{{Text: projectNameComp, Lang: language}},
+				// 该sdk创建json数据的时候使用的是结构体，导致不赋值的结构体都会初始化为零值
+				// OAContentBankAccount结构体中AccountType字段不需要进行赋值，会被初始化为0，导致接口报错，必须赋值
+				// 临时方案：将AccountType字段值初始化为1，不影响审批功能使用
+				Value: workwx.OAContentValue{Text: projectName, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+			},
+			{
+				Control: textControl,
+				ID:      workflowNameCompId,
+				Title:   []workwx.OAText{{Text: workflowNameComp, Lang: language}},
+				Value:   workwx.OAContentValue{Text: workflowName, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+			},
+			{
+				Control: textControl,
+				ID:      workflowLinkCompId,
+				Title:   []workwx.OAText{{Text: workflowLinkComp, Lang: language}},
+				Value:   workwx.OAContentValue{Text: workflowUrl, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+			},
+			{
+				Control: textControl,
+				ID:      oaTypeCompId,
+				Title:   []workwx.OAText{{Text: oaTypeComp, Lang: language}},
+				Value:   workwx.OAContentValue{Text: oaType, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+			},
+		},
+	}
+
+	tableList := []workwx.OAContentTableList{}
+	for _, result := range auditResults {
+		sqls := result.Task.ExecuteSQLs
+		if len(sqls) < 1 {
+			continue
+		}
+		sqlContent := sqls[0].Content
+		// 避免显示过长，只取前50个字符
+		if len(sqlContent) > 50 {
+			sqlContent = fmt.Sprintf("%s...", sqlContent[:50])
+		}
+		passRate := strconv.FormatFloat(result.Task.PassRate*100, 'E', -1, 64)
+		tableList = append(tableList, workwx.OAContentTableList{
+			List: []workwx.OAContent{
+				{
+					Control: textControl,
+					ID:      dataSourceCompId,
+					Title:   []workwx.OAText{{Text: dataSourceComp, Lang: language}},
+					Value:   workwx.OAContentValue{Text: result.Task.Schema, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+				},
+				{
+					Control: textControl,
+					ID:      auditScoreCompId,
+					Title:   []workwx.OAText{{Text: auditScoreComp, Lang: language}},
+					Value:   workwx.OAContentValue{Text: string(result.Task.Score), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+				},
+				{
+					Control: textControl,
+					ID:      auditPassRateCompId,
+					Title:   []workwx.OAText{{Text: auditPassRateComp, Lang: language}},
+					Value:   workwx.OAContentValue{Text: fmt.Sprintf("%s%%", passRate), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+				},
+				{
+					Control: textControl,
+					ID:      sqlTextCompId,
+					Title:   []workwx.OAText{{Text: sqlTextComp, Lang: language}},
+					Value: workwx.OAContentValue{Text: sqlContent, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+				},
+			},
+		})
+	}
+
+	// sql详情组件
+	if len(tableList) > 0 {
+		oaContents.Contents = append(oaContents.Contents, workwx.OAContent{
+			Control: tableControl,
+			ID:      tableCompId,
+			Title:   []workwx.OAText{{Text: sqlDetailComp, Lang: language}},
+			Value:   workwx.OAContentValue{Table: tableList},
+		})
+	}
+
+	oaApplyEvent.ApplyData = oaContents
+
+	spNo, err := c.client.ApplyOAEvent(oaApplyEvent)
+	return spNo, err
 }

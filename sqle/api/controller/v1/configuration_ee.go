@@ -4,15 +4,18 @@
 package v1
 
 import (
+	e "errors"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/labstack/echo/v4"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
@@ -317,4 +320,40 @@ func updateWechatAuditConfigurationV1(c echo.Context) error {
 	go im.CreateApprovalTemplate(model.ImTypeWechatAudit)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func testWechatAuditConfigV1(c echo.Context) error {
+	s := model.GetStorage()
+	wechatCfg, exist, err := s.GetImConfigByType(model.ImTypeWechatAudit)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &TestWechatConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestWechatConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          "wechat configuration doesn't exist",
+			},
+		})
+	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if user.WeChatID == "" {
+		return e.New(fmt.Sprintf("current user do not have wechatId"))
+	}
+
+	client := wechat.NewWechatClient(wechatCfg.AppKey, wechatCfg.AppSecret)
+	_, err = client.CreateApprovalInstance(c.Request().Context(), wechatCfg.ProcessCode, "", user.WeChatID, []string{user.WeChatID},
+		"", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", nil)
+
+	if err != nil {
+		return err
+	}
+	
+	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestWechatConfigResDataV1{
+			IsMessageSentNormally: true,
+		},
+	})
 }
