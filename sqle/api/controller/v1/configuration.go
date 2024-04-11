@@ -281,8 +281,7 @@ type GetWechatAuditConfigurationResV1 struct {
 }
 
 type WechatConfigurationV1 struct {
-	CorpID     string `json:"corp_id"`
-	TemplateId string `json:"template_id"`
+	CorpID string `json:"corp_id"`
 
 	IsWechatNotificationEnabled bool `json:"is_wechat_notification_enabled"`
 }
@@ -296,16 +295,12 @@ type WechatConfigurationV1 struct {
 // @Success 200 {object} v1.GetWechatAuditConfigurationResV1
 // @router /v1/configurations/wechat_audit [get]
 func GetWechatAuditConfigurationV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetWechatAuditConfigurationResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    WechatConfigurationV1{},
-	})
+	return getWechatAuditConfigurationV1(c)
 }
 
 type UpdateWechatConfigurationReqV1 struct {
 	CorpID                      *string `json:"corp_id" from:"corp_id" description:"微信企业号ID"`
 	CorpSecret                  *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
-	TemplateId                  *string `json:"template_id" from:"template_id" description:"企业微信审批模板ID"`
 	IsWechatNotificationEnabled *bool   `json:"is_wechat_notification_enabled" from:"is_wechat_notification_enabled" validate:"required" description:"是否启用微信对接流程"`
 }
 
@@ -320,7 +315,7 @@ type UpdateWechatConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/wechat_audit [patch]
 func UpdateWechatAuditConfigurationV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, nil)
+	return updateWechatAuditConfigurationV1(c)
 }
 
 type TestWechatConfigResDataV1 struct {
@@ -343,10 +338,5 @@ type TestWechatConfigResV1 struct {
 // @Success 200 {object} v1.TestWechatConfigResV1
 // @router /v1/configurations/wechat_audit/test [post]
 func TestWechatAuditConfigV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: TestWechatConfigResDataV1{
-			IsMessageSentNormally: true,
-		},
-	})
+	return testWechatAuditConfigV1(c)
 }
