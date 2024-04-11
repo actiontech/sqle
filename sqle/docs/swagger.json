@@ -606,6 +606,17 @@
                 ],
                 "summary": "测试微信审批配置",
                 "operationId": "testWechatAuditConfigV1",
+                "parameters": [
+                    {
+                        "description": "test wechat configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestWechatConfigurationReqV1"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -11499,6 +11510,14 @@
                 }
             }
         },
+        "v1.TestWechatConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "wechat_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.TimeResV1": {
             "type": "object",
             "properties": {
@@ -11768,9 +11787,6 @@
                 },
                 "is_wechat_notification_enabled": {
                     "type": "boolean"
-                },
-                "template_id": {
-                    "type": "string"
                 }
             }
         },
@@ -11835,9 +11851,6 @@
                 },
                 "is_wechat_notification_enabled": {
                     "type": "boolean"
-                },
-                "template_id": {
-                    "type": "string"
                 }
             }
         },

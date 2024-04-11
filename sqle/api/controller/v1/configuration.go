@@ -328,6 +328,10 @@ type TestWechatConfigResV1 struct {
 	Data TestWechatConfigResDataV1 `json:"data"`
 }
 
+type TestWechatConfigurationReqV1 struct {
+	WechatId string `json:"wechat_id" form:"wechat_id" valid:"required" description:"用户个人企业微信ID"`
+}
+
 // TestWechatAuditConfigV1
 // @Summary 测试微信审批配置
 // @Description test wechat audit configuration
@@ -335,6 +339,7 @@ type TestWechatConfigResV1 struct {
 // @Id testWechatAuditConfigV1
 // @Tags configuration
 // @Security ApiKeyAuth
+// @Param req body v1.TestWechatConfigurationReqV1 true "test wechat configuration req"
 // @Success 200 {object} v1.TestWechatConfigResV1
 // @router /v1/configurations/wechat_audit/test [post]
 func TestWechatAuditConfigV1(c echo.Context) error {
