@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
@@ -165,6 +167,18 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 
 	// register plugin
 	for _, p := range plugins {
+		// 处理插件残留进程
+		pluginPidFilePath := filepath.Join(pluginDir, p.Name()+".pid")
+		process, err := GetProcessByPidFile(pluginPidFilePath)
+		if err != nil {
+			return err
+		}
+		if process != nil {
+			err = KillProcess(process)
+			if err != nil {
+				return err
+			}
+		}
 		cmdBase := filepath.Join(pluginDir, p.Name())
 		cmdArgs := make([]string, 0)
 
@@ -183,17 +197,20 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		}
 
 		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
-		_, err := client.Client()
+		_, err = client.Client()
 		if err != nil {
 			return err
 		}
-
+		err = WritePidFile(pluginPidFilePath, int64(client.ReattachConfig().Pid))
+		if err != nil {
+			return err
+		}
 		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
 		case driverV1.ProtocolVersion:
 			pp = &PluginProcessorV1{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		case driverV2.ProtocolVersion:
-			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
+			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client, pluginPidFilePath: pluginPidFilePath}
 		}
 		if err := pm.register(pp); err != nil {
 			stopErr := pp.Stop()
@@ -228,4 +245,70 @@ func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *dri
 		return nil, ErrPluginNotFound
 	}
 	return pm.pluginProcessors[pluginName].Open(l, cfg)
+}
+
+// 根据pid文件获取进程信息
+func GetProcessByPidFile(pluginPidFile string) (*os.Process, error) {
+	if _, err := os.Stat(pluginPidFile); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else {
+		pidContent, err := os.ReadFile(pluginPidFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(pidContent) == 0 {
+			return nil, nil
+		}
+		pid, err := strconv.Atoi(string(pidContent))
+		if err != nil {
+			return nil, err
+		}
+		// 获取进程
+		process, err := GetProcessByPid(pid)
+		if err != nil {
+			return nil, nil
+		}
+		return process, nil
+	}
+	return nil, nil
+}
+
+// 根据pid获取进程信息，若进程已退出则返回nil
+func GetProcessByPid(pid int) (*os.Process, error) {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return nil, err
+	}
+	// 检查进程是否存在的方式
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		return nil, nil
+	}
+	return process, nil
+}
+
+// 退出进程
+func KillProcess(process *os.Process) error {
+	err := process.Signal(syscall.SIGTERM)
+	process.Wait()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func WritePidFile(pidFilePath string, pid int64) error {
+	file, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "%d", pid)
+	if err != nil {
+		return err
+	}
+	return nil
 }
