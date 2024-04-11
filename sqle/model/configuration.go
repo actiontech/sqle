@@ -100,6 +100,7 @@ const (
 	ImTypeDingTalk    = "dingTalk"
 	ImTypeFeishu      = "feishu"
 	ImTypeFeishuAudit = "feishu_audit"
+	ImTypeWechatAudit = "wechat_audit"
 )
 
 type IM struct {
