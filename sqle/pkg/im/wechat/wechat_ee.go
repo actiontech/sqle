@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/xen0n/go-workwx"
@@ -21,6 +22,7 @@ import (
 const (
 	getTokenUrl       = "https://qyapi.weixin.qq.com/cgi-bin/gettoken?"
 	createTemplateUrl = "https://qyapi.weixin.qq.com/cgi-bin/oa/approval/create_template?"
+	httpTimeOut       = 60
 
 	templateName      = "SQLE审核"
 	language          = "zh_CN"
@@ -71,7 +73,11 @@ func getAccessToekn(path string, CorpID string, CorpSecret string) (string, erro
 
 	apiURL := path + params.Encode()
 
-	resp, err := http.Get(apiURL)
+	httpClient := &http.Client{
+		Timeout: httpTimeOut * time.Second,
+	}
+
+	resp, err := httpClient.Get(apiURL)
 	if err != nil {
 		return "", err
 	}
@@ -237,7 +243,12 @@ func (c *wechatClient) CreateApprovalTemplate(ctx context.Context) (approvalCode
 	if err != nil {
 		return nil, err
 	}
-	resp, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
+
+	httpClient := &http.Client{
+		Timeout: httpTimeOut * time.Second,
+	}
+
+	resp, err := httpClient.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +354,7 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 					Control: textControl,
 					ID:      sqlTextCompId,
 					Title:   []workwx.OAText{{Text: sqlTextComp, Lang: language}},
-					Value: workwx.OAContentValue{Text: sqlContent, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+					Value:   workwx.OAContentValue{Text: sqlContent, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
 				},
 			},
 		})
