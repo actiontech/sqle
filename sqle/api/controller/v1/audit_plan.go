@@ -60,7 +60,7 @@ type AuditPlanParamResV1 struct {
 	Key   string `json:"key"`
 	Desc  string `json:"desc"`
 	Value string `json:"value"`
-	Type  string `json:"type" enums:"string,int,bool"`
+	Type  string `json:"type" enums:"string,int,bool,password"`
 }
 
 func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
@@ -72,11 +72,15 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 	if meta.Params != nil && len(meta.Params) > 0 {
 		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
 		for _, p := range meta.Params {
+			val := p.Value
+			if p.Type == params.ParamTypePassword {
+				val = ""
+			}
 			paramRes := AuditPlanParamResV1{
 				Key:   p.Key,
 				Desc:  p.Desc,
 				Type:  string(p.Type),
-				Value: p.Value,
+				Value: val,
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}
@@ -449,11 +453,27 @@ func UpdateAuditPlan(c echo.Context) error {
 		updateAttr["rule_template_name"] = *req.RuleTemplateName
 	}
 	if req.Params != nil {
+		var paramsKeyMap = make(map[string]struct{}, len(req.Params))
+		for _, p := range req.Params {
+			paramsKeyMap[p.Key] = struct{}{}
+		}
+
+		for _, p := range ap.Params {
+			if _, exist := paramsKeyMap[p.Key]; !exist {
+				req.Params = append(req.Params, AuditPlanParamReqV1{
+					Key:   p.Key,
+					Value: p.Value,
+				})
+			}
+		}
+
 		ps, err := checkAndGenerateAuditPlanParams(ap.Type, ap.DBType, req.Params)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		updateAttr["params"] = ps
+	} else if ap.Params != nil {
+		updateAttr["params"] = ap.Params
 	}
 
 	err = storage.UpdateAuditPlanById(ap.ID, updateAttr)

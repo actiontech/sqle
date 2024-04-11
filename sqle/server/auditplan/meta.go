@@ -157,13 +157,13 @@ var Metas = []Meta{
 				Key:   paramKeyAccessKeyId,
 				Desc:  "Access Key ID",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyAccessKeySecret,
 				Desc:  "Access Key Secret",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
@@ -201,13 +201,13 @@ var Metas = []Meta{
 				Key:   paramKeyAccessKeyId,
 				Desc:  "Access Key ID",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyAccessKeySecret,
 				Desc:  "Access Key Secret",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
@@ -245,13 +245,13 @@ var Metas = []Meta{
 				Key:   paramKeyAccessKeyId,
 				Desc:  "Access Key ID",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyAccessKeySecret,
 				Desc:  "Access Key Secret",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
@@ -297,13 +297,13 @@ var Metas = []Meta{
 				Key:   paramKeyAccessKeyId,
 				Desc:  "Access Key ID",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyAccessKeySecret,
 				Desc:  "Access Key Secret",
 				Value: "",
-				Type:  params.ParamTypeString,
+				Type:  params.ParamTypePassword,
 			},
 			{
 				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,

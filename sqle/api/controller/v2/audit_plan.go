@@ -46,6 +46,7 @@ type AuditPlanResV2 struct {
 	Token            string             `json:"audit_plan_token" example:"it's a JWT Token for scanner"`
 	InstanceName     string             `json:"audit_plan_instance_name" example:"test_mysql"`
 	InstanceDatabase string             `json:"audit_plan_instance_database" example:"app1"`
+	CreateUserId     string             `json:"create_user_id"`
 	RuleTemplate     *RuleTemplateV2    `json:"rule_template"`
 	Meta             v1.AuditPlanMetaV1 `json:"audit_plan_meta"`
 }
@@ -143,6 +144,7 @@ func GetAuditPlans(c echo.Context) error {
 			RuleTemplate:     ruleTemplate,
 			Token:            ap.Token,
 			Meta:             v1.ConvertAuditPlanMetaToRes(meta),
+			CreateUserId:     ap.CreateUserId,
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlansResV2{

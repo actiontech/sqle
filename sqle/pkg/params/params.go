@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 )
 
 type Params []*Param
@@ -12,10 +14,11 @@ type Params []*Param
 type ParamType string
 
 const (
-	ParamTypeString  ParamType = "string"
-	ParamTypeInt     ParamType = "int"
-	ParamTypeBool    ParamType = "bool"
-	ParamTypeFloat64 ParamType = "float64"
+	ParamTypeString   ParamType = "string"
+	ParamTypeInt      ParamType = "int"
+	ParamTypeBool     ParamType = "bool"
+	ParamTypeFloat64  ParamType = "float64"
+	ParamTypePassword ParamType = "password"
 )
 
 type Param struct {
@@ -117,6 +120,16 @@ func (r *Params) Scan(value interface{}) error {
 	}
 	result := Params{}
 	err := json.Unmarshal(bytes, &result)
+
+	for _, p := range result {
+		if p.Type == ParamTypePassword {
+			p.Value, err = dmsCommonAes.AesDecrypt(p.Value)
+			if err != nil {
+				return fmt.Errorf("param %s value decrypt err: %v", p.Key, err)
+			}
+		}
+	}
+
 	*r = result
 	return err
 }
@@ -126,7 +139,30 @@ func (r Params) Value() (driver.Value, error) {
 	if len(r) == 0 {
 		return nil, nil
 	}
-	v, err := json.Marshal(r)
+
+	params := make([]Param, 0, len(r))
+
+	for _, p := range r {
+		param := Param{
+			Key:   p.Key,
+			Value: p.Value,
+			Desc:  p.Desc,
+			Type:  p.Type,
+		}
+
+		if param.Type == ParamTypePassword {
+			val, err := dmsCommonAes.AesEncrypt(p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("param %s value encrypt err: %v", p.Key, err)
+			}
+
+			param.Value = val
+		}
+
+		params = append(params, param)
+	}
+
+	v, err := json.Marshal(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal json value: %v", v)
 	}
