@@ -294,32 +294,37 @@ func updateWechatAuditConfigurationV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// 信息没有变更 不保存
-	if req.IsWechatNotificationEnabled != nil && req.CorpID != nil && req.CorpSecret != nil {
-		if *req.IsWechatNotificationEnabled == wechat.IsEnable && *req.CorpID == wechat.AppKey && *req.CorpSecret == wechat.AppSecret {
-			return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
-		}
-	}
-
 	if req.IsWechatNotificationEnabled != nil && !(*req.IsWechatNotificationEnabled) {
 		wechat.IsEnable = false
 		return controller.JSONBaseErrorReq(c, s.Save(wechat))
 	}
 
+	var isChanged bool
 	if req.CorpID != nil {
-		wechat.AppKey = *req.CorpID
+		if wechat.AppKey != *req.CorpID {
+			wechat.AppKey = *req.CorpID
+			isChanged = true
+		}
 	}
 	if req.CorpSecret != nil {
-		wechat.AppSecret = *req.CorpSecret
+		if wechat.AppSecret != *req.CorpSecret {
+			wechat.AppSecret = *req.CorpSecret
+			isChanged = true
+		}
 	}
 	if req.IsWechatNotificationEnabled != nil {
-		wechat.IsEnable = *req.IsWechatNotificationEnabled
+		if wechat.IsEnable != *req.IsWechatNotificationEnabled {
+			wechat.IsEnable = *req.IsWechatNotificationEnabled
+			isChanged = true
+		}
 	}
 
 	wechat.Type = model.ImTypeWechatAudit
 
-	if err := s.Save(wechat); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+	if isChanged {
+		if err := s.Save(wechat); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 
 	go im.CreateApprovalTemplate(model.ImTypeWechatAudit)
