@@ -294,10 +294,16 @@ func updateWechatAuditConfigurationV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	{ // disable
-		if req.IsWechatNotificationEnabled != nil && !(*req.IsWechatNotificationEnabled) {
-			wechat.IsEnable = false
-			return controller.JSONBaseErrorReq(c, s.Save(wechat))
+	if req.IsWechatNotificationEnabled != nil && !(*req.IsWechatNotificationEnabled) {
+		wechat.IsEnable = false
+		return controller.JSONBaseErrorReq(c, s.Save(wechat))
+	} else if req.IsWechatNotificationEnabled != nil && *req.IsWechatNotificationEnabled {
+		if req.CorpID != nil && req.CorpSecret != nil && wechat.AppKey == *req.CorpID && wechat.AppSecret == *req.CorpSecret {
+			wechat.IsEnable = true
+			if err := s.Save(wechat); err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 		}
 	}
 
@@ -349,7 +355,7 @@ func testWechatAuditConfigV1(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: TestWechatConfigResDataV1{
