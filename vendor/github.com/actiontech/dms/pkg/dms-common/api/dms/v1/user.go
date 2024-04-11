@@ -38,14 +38,6 @@ type GetUser struct {
 	// user bind name space
 	UserBindProjects   []UserBindProject `json:"user_bind_projects"`
 	ThirdPartyUserInfo string            `json:"third_party_user_info"`
-	// access token
-	AccessTokenInfo AccessTokenInfo `json:"access_token_info"`
-}
-
-type AccessTokenInfo struct {
-	AccessToken string `json:"access_token"`
-	ExpiredTime string `json:"token_expired_timestamp" example:"RFC3339"`
-	IsExpired   bool   `json:"is_expired"`
 }
 
 type UserBindProject struct {
@@ -237,7 +229,7 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 	case OpPermissionTypeSQLQuery:
 		return "SQL查询"
 	default:
-		return "未知操作类型"
+		return "不支持的操作类型"
 	}
 }
 
@@ -293,8 +285,6 @@ type ListUser struct {
 	OpPermissions []UidWithName `json:"op_permissions"`
 	// user is deleted
 	IsDeleted bool `json:"is_deleted"`
-	// third party user info
-	ThirdPartyUserInfo string `json:"third_party_user_info"`
 }
 
 // swagger:model ListUserReply
@@ -302,20 +292,6 @@ type ListUserReply struct {
 	// List user reply
 	Data  []*ListUser `json:"data"`
 	Total int64       `json:"total_nums"`
-
-	// Generic reply
-	base.GenericResp
-}
-
-// swagger:parameters GenAccessToken
-type GenAccessToken struct {
-	ExpirationDays string `param:"expiration_days" json:"expiration_days" validate:"required"`
-}
-
-// swagger:model GenAccessTokenReply
-type GenAccessTokenReply struct {
-	// Get user reply
-	Data *AccessTokenInfo `json:"data"`
 
 	// Generic reply
 	base.GenericResp
