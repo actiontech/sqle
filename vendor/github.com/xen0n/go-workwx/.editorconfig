@@ -1,0 +1,29 @@
+# EditorConfig is awesome: http://EditorConfig.org
+
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+
+# use 2 spaces for yaml
+[{*.yaml,*.yml}]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+
+
+# use 4 spaces for shell files and Dockerfile
+[{*.sh,Dockerfile}]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+
+# hard tabs for Go and Makefile
+[*.go]
+indent_style = tab
+
+[Makefile]
+indent_style = tab

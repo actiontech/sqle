@@ -23,7 +23,6 @@ const (
 	JWTUsername      = "name"
 	JWTExpiredTime   = "exp"
 	JWTAuditPlanName = "apn"
-	JWTLoginType     = "loginType"
 )
 
 func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
@@ -32,19 +31,6 @@ func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
 		JWTExpiredTime: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 	}
 
-	return genJwtToken(mapClaims, customClaims...)
-}
-
-func GenJwtTokenWithExpirationTime(expiredTime *jwt.NumericDate, customClaims ...CustomClaimFunc) (tokenStr string, err error) {
-	var mapClaims = jwt.MapClaims{
-		"iss":          "actiontech dms",
-		JWTExpiredTime: expiredTime,
-	}
-
-	return genJwtToken(mapClaims, customClaims...)
-}
-
-func genJwtToken(mapClaims jwt.MapClaims, customClaims ...CustomClaimFunc) (tokenStr string, err error) {
 	for _, claimFunc := range customClaims {
 		claimFunc(mapClaims)
 	}
@@ -80,12 +66,6 @@ func WithAuditPlanName(name string) CustomClaimFunc {
 func WithExpiredTime(duration time.Duration) CustomClaimFunc {
 	return func(claims jwt.MapClaims) {
 		claims[JWTExpiredTime] = jwt.NewNumericDate(time.Now().Add(duration))
-	}
-}
-
-func WithAccessTokenMark(loginType string) CustomClaimFunc {
-	return func(claims jwt.MapClaims) {
-		claims[JWTLoginType] = loginType
 	}
 }
 

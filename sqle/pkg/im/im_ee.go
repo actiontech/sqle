@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
 	"github.com/actiontech/sqle/sqle/pkg/im/feishu"
+	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
@@ -303,6 +304,23 @@ func CancelDingdingAuditInst(ctx context.Context, im model.IM, workflowIDs []str
 				log.NewEntry().Errorf("cancel dingtalk approval instance error: %v,instant id: %v", err, inst.ID)
 			}
 		}()
+	}
+	return nil
+}
+
+func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
+	client := wechat.NewWechatClient(im.AppKey, im.AppSecret)
+
+	approvalCode, err := client.CreateApprovalTemplate(ctx)
+	if err != nil {
+		return err
+	}
+
+	s := model.GetStorage()
+	if err := s.UpdateImConfigById(im.ID, map[string]interface{}{
+		"process_code": *approvalCode,
+	}); err != nil {
+		return err
 	}
 	return nil
 }
