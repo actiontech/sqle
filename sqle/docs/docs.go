@@ -13148,6 +13148,15 @@ var doc = `{
         "v2.UpdateWorkflowScheduleReqV2": {
             "type": "object",
             "properties": {
+                "is_notify": {
+                    "type": "boolean"
+                },
+                "notify_type": {
+                    "type": "string",
+                    "enum": [
+                        "Wechat"
+                    ]
+                },
                 "schedule_time": {
                     "type": "string"
                 }
