@@ -295,7 +295,10 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 
 func KillProcess(process *os.Process) error {
 	err := process.Signal(syscall.SIGTERM)
-	process.Wait()
+	if err != nil {
+		return err
+	}
+	_, err = process.Wait()
 	if err != nil {
 		return err
 	}
