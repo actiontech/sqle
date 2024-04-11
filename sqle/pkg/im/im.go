@@ -41,6 +41,11 @@ func CreateApprovalTemplate(imType string) {
 			log.NewEntry().Errorf("create feishu audit template error: %v", err)
 			return
 		}
+	case model.ImTypeWechatAudit:
+		if err := CreateWechatAuditTemplate(context.TODO(), im); err != nil {
+			log.NewEntry().Errorf("create wechat audit template error: %v", err)
+			return
+		}
 	}
 }
 
