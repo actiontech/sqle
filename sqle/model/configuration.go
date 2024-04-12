@@ -285,3 +285,70 @@ func (s *Storage) GetFeishuInstByStatus(status string) ([]FeishuInstance, error)
 	}
 	return feishuInst, nil
 }
+
+type WechatOAStatus int
+
+const (
+	INITIALIZED WechatOAStatus = 1
+	APPROVED    WechatOAStatus = 2
+	REJECTED    WechatOAStatus = 3
+)
+
+type WechatRecord struct {
+	Model
+	TaskId   uint   `json:"task_id" gorm:"column:task_id"`
+	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
+	SpNo     string `json:"sp_no" gorm:"column:sp_no"`
+
+	Task *Task `gorm:"foreignkey:TaskId"`
+}
+
+func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error) {
+	var wcRecords []WechatRecord
+	err := s.db.Where("oa_result = ?", status).Find(&wcRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return wcRecords, nil
+}
+
+func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
+		insRecord := WorkflowInstanceRecord{}
+		err := s.db.Where("task_id = ?", w.TaskId).Find(&insRecord).Error
+		if err != nil {
+			return err
+		}
+		insRecord.ScheduledAt = nil
+		err = s.Save(&insRecord)
+		if err != nil {
+			return err
+		}
+
+		w.OaResult = ApproveStatusRefuse
+		err = s.Save(&w)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) GetWechatRecordByTaskId(taskId uint) (*WechatRecord, error) {
+	var wcRecord WechatRecord
+	err := s.db.Where("task_id = ?", taskId).Find(&wcRecord).Error
+	if err != nil {
+		return nil, err
+	}
+	return &wcRecord, nil
+}
+
+func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&WechatRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}

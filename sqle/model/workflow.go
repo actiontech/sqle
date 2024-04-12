@@ -237,11 +237,21 @@ type WorkflowInstanceRecord struct {
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
 	ExecutionUserId string
+	// 定时上线是否需要发生通知
+	NeedScheduledTaskNotify bool
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
 	ExecutionAssignees string
+}
+
+func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", id).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
