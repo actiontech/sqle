@@ -4,12 +4,10 @@
 package v1
 
 import (
-	e "errors"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
@@ -333,6 +331,10 @@ func updateWechatAuditConfigurationV1(c echo.Context) error {
 }
 
 func testWechatAuditConfigV1(c echo.Context) error {
+	req := new(TestWechatConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	s := model.GetStorage()
 	wechatCfg, exist, err := s.GetImConfigByType(model.ImTypeWechatAudit)
 	if err != nil {
@@ -347,17 +349,13 @@ func testWechatAuditConfigV1(c echo.Context) error {
 			},
 		})
 	}
-	user, err := controller.GetCurrentUser(c, dms.GetUser)
-	if user.WeChatID == "" {
-		return e.New(fmt.Sprintf("current user do not have wechatId"))
-	}
 
 	client := wechat.NewWechatClient(wechatCfg.AppKey, wechatCfg.AppSecret)
-	_, err = client.CreateApprovalInstance(c.Request().Context(), wechatCfg.ProcessCode, "", user.WeChatID, []string{user.WeChatID},
+	_, err = client.CreateApprovalInstance(c.Request().Context(), wechatCfg.ProcessCode, "", req.WechatId, []string{req.WechatId},
 		"", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", nil)
 
 	if err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
