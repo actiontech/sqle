@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -342,6 +343,10 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 		if len(sqlContent) > 50 {
 			sqlContent = fmt.Sprintf("%s...", sqlContent[:50])
 		}
+		// 企微通知不支持换行符
+		// https://developer.work.weixin.qq.com/document/path/91853#%E9%99%841-%E6%96%87%E6%9C%AC%E5%A4%9A%E8%A1%8C%E6%96%87%E6%9C%AC%E6%8E%A7%E4%BB%B6%EF%BC%88control%E5%8F%82%E6%95%B0%E4%B8%BAtext%E6%88%96textarea%EF%BC%89
+		sqlContent = strings.ReplaceAll(sqlContent, "\n", "")
+		sqlContent = strings.ReplaceAll(sqlContent, "\r", "")
 		tableList = append(tableList, workwx.OAContentTableList{
 			List: []workwx.OAContent{
 				{
