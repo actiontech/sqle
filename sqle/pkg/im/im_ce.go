@@ -49,3 +49,7 @@ func CancelDingdingAuditInst(ctx context.Context, im model.IM, workflowIDs []str
 func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
 	return ErrCommunityEditionNotSupportWechatAudit
 }
+
+func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
+	return ErrCommunityEditionNotSupportWechatAudit
+}
