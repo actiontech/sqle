@@ -12,8 +12,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/log"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/xen0n/go-workwx"
@@ -318,9 +319,21 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 		},
 	}
 
+	s := model.GetStorage()
+
 	tableList := []workwx.OAContentTableList{}
 	for _, result := range auditResults {
-		sqls := result.Task.ExecuteSQLs
+		task, exist, err := s.GetTaskDetailById(fmt.Sprint(result.TaskId))
+		if !exist {
+			log.NewEntry().Infof("task has not detail, task id:%v", result.TaskId)
+			continue
+		}
+		if err != nil {
+			log.NewEntry().Infof("get task detail failed, err:%v", err)
+			continue
+		}
+
+		sqls := task.ExecuteSQLs
 		if len(sqls) < 1 {
 			continue
 		}
@@ -329,26 +342,25 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 		if len(sqlContent) > 50 {
 			sqlContent = fmt.Sprintf("%s...", sqlContent[:50])
 		}
-		passRate := strconv.FormatFloat(result.Task.PassRate*100, 'E', -1, 64)
 		tableList = append(tableList, workwx.OAContentTableList{
 			List: []workwx.OAContent{
 				{
 					Control: textControl,
 					ID:      dataSourceCompId,
 					Title:   []workwx.OAText{{Text: dataSourceComp, Lang: language}},
-					Value:   workwx.OAContentValue{Text: result.Task.Schema, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+					Value:   workwx.OAContentValue{Text: task.Schema, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
 				},
 				{
 					Control: textControl,
 					ID:      auditScoreCompId,
 					Title:   []workwx.OAText{{Text: auditScoreComp, Lang: language}},
-					Value:   workwx.OAContentValue{Text: string(result.Task.Score), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+					Value:   workwx.OAContentValue{Text: fmt.Sprintf("%d", task.Score), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
 				},
 				{
 					Control: textControl,
 					ID:      auditPassRateCompId,
 					Title:   []workwx.OAText{{Text: auditPassRateComp, Lang: language}},
-					Value:   workwx.OAContentValue{Text: fmt.Sprintf("%s%%", passRate), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
+					Value:   workwx.OAContentValue{Text: fmt.Sprintf("%.2f%%", task.PassRate*100), BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
 				},
 				{
 					Control: textControl,
@@ -366,7 +378,7 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 			Control: tableControl,
 			ID:      tableCompId,
 			Title:   []workwx.OAText{{Text: sqlDetailComp, Lang: language}},
-			Value:   workwx.OAContentValue{Table: tableList},
+			Value:   workwx.OAContentValue{Table: tableList, BankAccount: workwx.OAContentBankAccount{AccountType: 1}},
 		})
 	}
 
@@ -374,4 +386,14 @@ func (c *wechatClient) CreateApprovalInstance(ctx context.Context, approvalCode,
 
 	spNo, err := c.client.ApplyOAEvent(oaApplyEvent)
 	return spNo, err
+}
+
+// GetApprovalInstDetail 获取审批实例详情
+// https://developer.work.weixin.qq.com/document/path/91983
+func (c *wechatClient) GetApprovalRecordDetail(ctx context.Context, spNo string) (*workwx.OAApprovalDetail, error) {
+	detail, err := c.client.GetOAApprovalDetail(spNo)
+	if err != nil {
+		return nil, err
+	}
+	return detail, nil
 }

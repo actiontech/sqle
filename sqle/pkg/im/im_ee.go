@@ -19,6 +19,8 @@ import (
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
+const OATypeContent = "定时上线审核"
+
 var (
 	approvalTableLayout = "[%v]"
 	approvalTableRow    = "[{\"name\":\"数据源\",\"value\":\"%s\"},{\"name\":\"审核得分\",\"value\":\"%v\"},{\"name\":\"审核通过率\",\"value\":\"%v%%\"}]"
@@ -322,5 +324,51 @@ func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
 	}); err != nil {
 		return err
 	}
+	return nil
+}
+
+func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
+	s := model.GetStorage()
+	l := log.NewEntry()
+	createUser, err := dms.GetUser(ctx, workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		return err
+	}
+	client := wechat.NewWechatClient(im.AppKey, im.AppSecret)
+	if err != nil {
+		return err
+	}
+	if createUser.WeChatID == "" {
+		return e.New(fmt.Sprintf("workflow creator not hava wecharID, user id:%v", createUser.ID))
+	}
+
+	assignUserWechatIDs := []string{}
+	for _, user := range assignUsers {
+		if user.WeChatID == "" {
+			l.Warnf("assign user not hava wecharID, user id:%v", user.ID)
+			continue
+		}
+		assignUserWechatIDs = append(assignUserWechatIDs, user.WeChatID)
+	}
+
+	if len(assignUserWechatIDs) == 0 {
+		return e.New("assignUsers not hava wechatID")
+	}
+
+	insRecord, err := s.GetWorkInstanceRecordByTaskId(fmt.Sprint(taskId))
+	if err != nil {
+		return err
+	}
+
+	spNo, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, createUser.WeChatID,
+		assignUserWechatIDs, string(workflow.ProjectId), url, OATypeContent, []*model.WorkflowInstanceRecord{&insRecord})
+	if err != nil {
+		return err
+	}
+	err = s.UpdateWechatRecordByTaskId(taskId, map[string]interface{}{"sp_no": spNo})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
