@@ -171,12 +171,12 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		pluginPidFilePath := filepath.Join(pluginDir, p.Name()+".pid")
 		process, err := GetProcessByPidFile(pluginPidFilePath)
 		if err != nil {
-			return err
+			log.NewEntry().Warnf("get plugin %s process failed, error: %v", pluginPidFilePath, err)
 		}
 		if process != nil {
 			err = KillProcess(process)
 			if err != nil {
-				return err
+				log.NewEntry().Warnf("kill plugin process【%v】 failed, error: %v", process.Pid, err)
 			}
 		}
 
@@ -204,7 +204,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		}
 		err = WritePidFile(pluginPidFilePath, int64(client.ReattachConfig().Pid))
 		if err != nil {
-			return err
+			return fmt.Errorf("write plugin %s pid file failed, error: %v", pluginPidFilePath, err)
 		}
 		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
@@ -282,7 +282,7 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 发送0信号检查进程是否存活
+	// 检查进程是否存在的方式
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
 		if strings.Contains(err.Error(), "os: process already finished") {
@@ -293,15 +293,13 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 	return process, nil
 }
 
+// 退出进程
 func KillProcess(process *os.Process) error {
 	err := process.Signal(syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
 	_, err = process.Wait()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
