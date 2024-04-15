@@ -299,7 +299,6 @@ func KillProcess(process *os.Process) error {
 	if err != nil {
 		return err
 	}
-	_, err = process.Wait()
 	return nil
 }
 
