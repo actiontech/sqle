@@ -270,6 +270,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.PATCH("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
 		v1ProjectRouter.GET("/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
 
+		// sql optimization
+		v1ProjectRouter.POST("/:project_name/sql_optimization_records", v1.SQLOptimizate)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records", v1.GetOptimizationRecords)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/", v1.GetOptimizationRecord)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls", v1.GetOptimizationSQLs)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls/:number/", v1.GetOptimizationSQLDetail)
+
 		// task
 		v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	}
