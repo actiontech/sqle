@@ -155,10 +155,10 @@ type GetOptimizationSQLRes struct {
 }
 
 type OptimizationSQLDetail struct {
-	OriginalSQL              string                  // 原始SQL
-	OptimizedSQL             string                  // 优化后的SQL
-	TriggeredRule            []RewriteRule           // 触发的规则
-	IndexRecommendations     []string                // 索引建议
+	OriginalSQL              string                  `json:"original_sql"`          // 原始SQL
+	OptimizedSQL             string                  `json:"optimized_sql"`         // 优化后的SQL
+	TriggeredRule            []RewriteRule           `json:"triggered_rule"`        // 触发的规则
+	IndexRecommendations     []string                `json:"index_recommendations"` // 索引建议
 	ExplainValidationDetails ExplainValidationDetail `json:"explain_validation_details"`
 }
 type ExplainValidationDetail struct {
