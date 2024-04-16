@@ -239,3 +239,33 @@ func CreateScheduledApprove(taskId uint, projectId, workflowId string) {
 		}
 	}
 }
+
+func GetScheduledTaskApprove(taskId uint) bool {
+	newLog := log.NewEntry()
+	s := model.GetStorage()
+
+	ims, err := s.GetAllIMConfig()
+	if err != nil {
+		newLog.Errorf("get im config error: %v", err)
+		return false
+	}
+
+	for _, im := range ims {
+		if !im.IsEnable {
+			continue
+		}
+
+		switch im.Type {
+		case model.ImTypeWechatAudit:
+			isOaAgree, err := GetWechatScheduledTaskOAResult(context.TODO(), taskId)
+			if err != nil {
+				newLog.Errorf("get wechat scheduled task approve: %v", err)
+				continue
+			}
+			return isOaAgree
+		default:
+			newLog.Errorf("im type %s not found", im.Type)
+		}
+	}
+	return false
+}

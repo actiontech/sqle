@@ -53,3 +53,7 @@ func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
 func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
 	return ErrCommunityEditionNotSupportWechatAudit
 }
+
+func GetWechatScheduledTaskOAResult(ctx context.Context, taskId uint) (bool, error) {
+	return false, ErrCommunityEditionNotSupportWechatAudit
+}
