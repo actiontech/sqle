@@ -372,3 +372,15 @@ func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.W
 
 	return nil
 }
+
+func GetWechatScheduledTaskOAResult(ctx context.Context, taskId uint) (bool, error) {
+	s := model.GetStorage()
+	record, err := s.GetWechatRecordByTaskId(taskId)
+	if err != nil {
+		return false, err
+	}
+	if record.OaResult == model.ApproveStatusAgree {
+		return true, nil
+	}
+	return false, nil
+}
