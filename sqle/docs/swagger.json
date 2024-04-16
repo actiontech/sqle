@@ -11073,22 +11073,22 @@
                     "type": "object",
                     "$ref": "#/definitions/v1.ExplainValidationDetail"
                 },
-                "indexRecommendations": {
+                "index_recommendations": {
                     "description": "索引建议",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
-                "optimizedSQL": {
+                "optimized_sql": {
                     "description": "优化后的SQL",
                     "type": "string"
                 },
-                "originalSQL": {
+                "original_sql": {
                     "description": "原始SQL",
                     "type": "string"
                 },
-                "triggeredRule": {
+                "triggered_rule": {
                     "description": "触发的规则",
                     "type": "array",
                     "items": {
