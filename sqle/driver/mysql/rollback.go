@@ -53,6 +53,12 @@ func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql
 		return "", NotSupportParamMarkerStatementRollback, nil
 	}
 
+	hasVarChecker := util.HasVarChecker{}
+	node.Accept(&hasVarChecker)
+	if hasVarChecker.HasVar {
+		return "", NotSupportHasVariableRollback, nil
+	}
+
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
 		rollbackSql, unableRollbackReason, err = i.generateInsertRollbackSql(stmt)
@@ -72,6 +78,7 @@ const (
 	NotSupportNoPrimaryKeyTableRollback       = "不支持回滚没有主键的表的DML语句"
 	NotSupportInsertWithoutPrimaryKeyRollback = "不支持回滚 INSERT 没有指定主键的语句"
 	NotSupportParamMarkerStatementRollback    = "不支持回滚包含指纹的语句"
+	NotSupportHasVariableRollback             = "不支持回滚包含变量的 DML 语句"
 	NotSupportExceedMaxRowsRollback           = "预计影响行数超过配置的最大值，不生成回滚语句"
 )
 
