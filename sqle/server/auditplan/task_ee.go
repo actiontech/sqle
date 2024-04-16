@@ -1326,8 +1326,9 @@ func queryTopSQLsForDm(inst *model.Instance, database string, orderBy string, to
 }
 
 func (at *DmTopSQLTask) Audit() (*AuditResultResp, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
