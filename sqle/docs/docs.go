@@ -3040,7 +3040,7 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "project_name id",
+                        "description": "project name",
                         "name": "project_name",
                         "in": "path",
                         "required": true
@@ -3715,7 +3715,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}": {
+        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/": {
             "get": {
                 "security": [
                     {
@@ -3813,7 +3813,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_optimization_records/{sql_optimization_record_id}/sqls/{number}": {
+        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls/{number}/": {
             "get": {
                 "security": [
                     {
@@ -3837,7 +3837,14 @@ var doc = `{
                     {
                         "type": "string",
                         "description": "sql optimization record id",
-                        "name": "sql_optimization_id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "optimization record sql  number",
+                        "name": "number",
                         "in": "path",
                         "required": true
                     }

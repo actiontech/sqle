@@ -95,7 +95,7 @@ type Optimizationsummary struct {
 // @Param sql query string false "sql"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetOptimizationRecordRes
-// @router /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id} [get]
+// @router /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/ [get]
 func GetOptimizationRecord(c echo.Context) error {
 	return getOptimizationRecord(c)
 }
@@ -183,10 +183,11 @@ type RewriteRule struct {
 // @Id GetOptimizationReq
 // @Tags sql_optimization
 // @Param project_name path string true "project name"
-// @Param sql_optimization_id path string true "sql optimization record id"
+// @Param optimization_record_id path string true "sql optimization record id"
+// @Param number path string true "optimization record sql  number"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetOptimizationSQLRes
-// @router /v1/projects/{project_name}/sql_optimization_records/{sql_optimization_record_id}/sqls/{number} [get]
+// @router /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls/{number}/ [get]
 func GetOptimizationSQLDetail(c echo.Context) error {
 	return getOptimizationSQL(c)
 }
