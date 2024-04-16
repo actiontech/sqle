@@ -1552,9 +1552,49 @@ func NewBaiduRdsMySQLSlowLogTask(entry *logrus.Entry, ap *model.AuditPlan) Task 
 	return b
 }
 
-// PostgreSQL库表元数据
+// PostgreSQLSchemaMetaTask : PostgreSQL库表元数据
 type PostgreSQLSchemaMetaTask struct {
 	*sqlCollector
+}
+
+type PostgreSQLSchema struct {
+	schemaName string
+}
+
+type PostgreSQLTablesAndViews struct {
+	schemaName string
+	tableName  string
+	tableType  string
+}
+
+type PostgreSQLViewInfo struct {
+	schemaName string
+	tableName  string
+	viewSql    string
+}
+
+type PostgreSQLCreateTableSql struct {
+	createTableSql string
+	createIndexSql string
+}
+
+type PostgreSQLTableColumnInfo struct {
+	schemaName string
+	tableName  string
+	columnSql  string
+}
+
+type PostgreSQLConstraint struct {
+	schemaName           string
+	tableName            string
+	constraintDefinition string
+}
+
+type PostgreSQLIndex struct {
+	schemaName      string
+	tableName       string
+	indexName       string
+	indexDefinition string
 }
 
 func NewPostgreSQLSchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -1638,7 +1678,7 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		isCollectView = true
 	}
 
-	var viewsSql [][]string
+	var viewsSql []*PostgreSQLViewInfo
 	if isCollectView {
 		// 获取视图创建sql
 		viewsSql, err = at.GetAllViewsSqlForPg(plugin, at.ap.InstanceDatabase)
@@ -1647,117 +1687,131 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 		}
 	}
 
+	auditPlanSQLV2Slice := make([]*model.AuditPlanSQLV2, 0)
 	for _, schema := range schemas {
+		currentSchema := schema.schemaName
 		createTableSqls := make([]string, 0)
 		createViewSqls := make([]string, 0)
 		for _, tableOrView := range tablesAndViews {
-			if len(tableOrView) < 3 {
-				continue
-			}
-
-			if tableOrView[0] != schema[0] { // schema[0]：二维数组第0个元素
+			if tableOrView.schemaName != currentSchema {
 				continue
 			}
 			dataObjectType := ""
-			tableOrViewName := tableOrView[1]
-			if tableOrView[2] == "BASE TABLE" || tableOrView[2] == "SYSTEM VIEW" { // 表
+			tableOrViewName := tableOrView.tableName
+			if tableOrView.tableType == "BASE TABLE" || tableOrView.tableType == "SYSTEM VIEW" { // 表
 				dataObjectType = "table"
-			} else if tableOrView[2] == "VIEW" { // 视图
+			} else if tableOrView.tableType == "VIEW" { // 视图
 				dataObjectType = "view"
 			}
 			if dataObjectType == "table" {
-				tableDDl := createTableSqlForPg(schema, tableOrViewName, columnsInfo, constraints, indexes)
+				createDDL := createTableSqlForPg(currentSchema, tableOrViewName, columnsInfo, constraints, indexes)
+				tableDDl := fmt.Sprintf("%s;\n%s", createDDL.createTableSql, createDDL.createIndexSql)
 				createTableSqls = append(createTableSqls, tableDDl)
 			} else if dataObjectType == "view" {
 				if !isCollectView {
 					continue
 				}
 				// 视图sql
-				for _, viewSql := range viewsSql {
-					if len(viewSql) < 3 {
+				for _, view := range viewsSql {
+					schemaName, tableName := view.schemaName, view.tableName
+					if schemaName != schema.schemaName || tableName != tableOrViewName {
 						continue
 					}
-					schemaName, tableName := viewSql[0], viewSql[1]
-					if schemaName != schema[0] || tableName != tableOrViewName {
-						continue
-					}
-					createViewSqls = append(createViewSqls, viewSql[2])
+					createViewSqls = append(createViewSqls, view.viewSql)
 				}
 			}
 		}
 
-		finalInsertSqls := make([]string, 0)
 		if len(createTableSqls) > 0 {
-			finalInsertSqls = append(finalInsertSqls, createTableSqls...)
+			auditPlanSQLV2Slice = append(auditPlanSQLV2Slice, convertRawSQLToModelSQLs(createTableSqls, currentSchema)...)
 		}
 
 		if len(createViewSqls) > 0 {
-			finalInsertSqls = append(finalInsertSqls, createViewSqls...)
+			auditPlanSQLV2Slice = append(auditPlanSQLV2Slice, convertRawSQLToModelSQLs(createViewSqls, currentSchema)...)
 		}
+	}
 
-		if len(finalInsertSqls) > 0 {
-			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, convertRawSQLToModelSQLs(finalInsertSqls, schema[0]))
-			if err != nil {
-				at.logger.Errorf("save table and view schema meta to storage fail, error: %s", err)
-			}
+	if len(auditPlanSQLV2Slice) > 0 {
+		err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, auditPlanSQLV2Slice)
+		if err != nil {
+			at.logger.Errorf("save table and view schema meta to storage fail, error: %s", err)
 		}
 	}
 }
 
-func createTableSqlForPg(schema []string, tableOrViewName string, columnsInfo, constraints, indexes [][]string) string {
-	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema[0], tableOrViewName)
+func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreSQLTableColumnInfo, constraints []*PostgreSQLConstraint, indexes []*PostgreSQLIndex) *PostgreSQLCreateTableSql {
+	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableOrViewName)
 	// 列信息
 	for _, columnInfo := range columnsInfo {
-		if len(columnInfo) < 3 {
+		schemaName, tableName := columnInfo.schemaName, columnInfo.tableName
+		if schemaName != schema || tableName != tableOrViewName {
 			continue
 		}
-		schemaName, tableName := columnInfo[0], columnInfo[1]
-		if schemaName != schema[0] || tableName != tableOrViewName {
-			continue
-		}
-		tableDDl += columnInfo[2]
+		tableDDl += columnInfo.columnSql
 	}
 	// 约束信息
 	for _, constraintInfo := range constraints {
-		if len(constraintInfo) < 3 {
+		schemaName, tableName := constraintInfo.schemaName, constraintInfo.tableName
+		if schemaName != schema || tableName != tableOrViewName {
 			continue
 		}
-		schemaName, tableName := constraintInfo[0], constraintInfo[1]
-		if schemaName != schema[0] || tableName != tableOrViewName {
-			continue
-		}
-		tableDDl += ",\n" + constraintInfo[2]
+		tableDDl += ",\n" + constraintInfo.constraintDefinition
 	}
 	tableDDl += ")"
+	indexDDl := ""
 	// 索引信息
 	for _, indexInfo := range indexes {
-		if len(indexInfo) < 4 {
+		schemaName, tableName := indexInfo.schemaName, indexInfo.tableName
+		if schemaName != schema || tableName != tableOrViewName {
 			continue
 		}
-		schemaName, tableName := indexInfo[0], indexInfo[1]
-		if schemaName != schema[0] || tableName != tableOrViewName {
-			continue
-		}
-		tableDDl += ";\n" + indexInfo[3]
+		indexDDl += indexInfo.indexDefinition
 	}
-	return tableDDl
+	return &PostgreSQLCreateTableSql{
+		createTableSql: tableDDl,
+		createIndexSql: indexDDl,
+	}
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, database string) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, database string) ([]*PostgreSQLSchema, error) {
+	result := make([]*PostgreSQLSchema, 0)
 	querySql := fmt.Sprintf("SELECT schema_name FROM information_schema.schemata"+
 		" WHERE catalog_name = '%s'"+
 		" AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name", database)
-	return at.GetResult(plugin, querySql)
+	res, err := at.GetResult(plugin, querySql)
+	if err != nil {
+		return result, err
+	}
+	// res是二维数组，例如:[[{"postgres"}][{"test"}]]
+	for _, value := range res {
+		result = append(result, &PostgreSQLSchema{value[0]})
+	}
+	return result, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plugin, database string) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plugin, database string) ([]*PostgreSQLTablesAndViews, error) {
 	querySql := fmt.Sprintf("select table_schema, table_name, table_type from information_schema.tables "+
 		" where table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
 		" ORDER BY table_name", database)
-	return at.GetResult(plugin, querySql)
+	result := make([]*PostgreSQLTablesAndViews, 0)
+	ret, err := at.GetResult(plugin, querySql)
+	if err != nil {
+		return result, err
+	}
+	for _, value := range ret {
+		if len(value) < 3 {
+			return result, fmt.Errorf("get tables and views error, column length is not three")
+		}
+		result = append(result, &PostgreSQLTablesAndViews{
+			schemaName: value[0],
+			tableName:  value[1],
+			tableType:  value[2],
+		})
+	}
+	return result, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin, database string) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin, database string) ([]*PostgreSQLTableColumnInfo, error) {
 	columns := fmt.Sprintf("SELECT table_schema, table_name, string_agg(column_name || ' ' || "+
 		"CASE "+
 		" WHEN lower(data_type) IN ('char', 'varchar', 'character', 'character varying') "+
@@ -1776,30 +1830,91 @@ func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin,
 		" FROM information_schema.columns "+
 		" WHERE table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
 		" GROUP BY table_schema, table_name", database)
-	return at.GetResult(plugin, columns)
+	result := make([]*PostgreSQLTableColumnInfo, 0)
+	ret, err := at.GetResult(plugin, columns)
+	if err != nil {
+		return result, err
+	}
+	for _, value := range ret {
+		if len(value) < 3 {
+			return result, fmt.Errorf("get column info error, column length is not three")
+		}
+		result = append(result, &PostgreSQLTableColumnInfo{
+			schemaName: value[0],
+			tableName:  value[1],
+			columnSql:  value[2],
+		})
+	}
+	return result, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllConstraintsForPg(plugin driver.Plugin) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllConstraintsForPg(plugin driver.Plugin) ([]*PostgreSQLConstraint, error) {
 	querySql := fmt.Sprintf("SELECT n.nspname as schema_name, c.relname as table_name, " +
 		" 'CONSTRAINT ' || r.conname || ' ' || pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition" +
 		" FROM pg_catalog.pg_constraint r JOIN pg_catalog.pg_class c ON C.OID = r.conrelid " +
 		" JOIN pg_catalog.pg_namespace n ON n.OID = c.relnamespace " +
 		" where n.nspname not like 'pg_%%' and n.nspname != 'information_schema'")
-	return at.GetResult(plugin, querySql)
+	result := make([]*PostgreSQLConstraint, 0)
+	ret, err := at.GetResult(plugin, querySql)
+	if err != nil {
+		return result, err
+	}
+	for _, value := range ret {
+		if len(value) < 3 {
+			return result, fmt.Errorf("get constraint error, column length is not three")
+		}
+		result = append(result, &PostgreSQLConstraint{
+			schemaName:           value[0],
+			tableName:            value[1],
+			constraintDefinition: value[2],
+		})
+	}
+	return result, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllIndexesForPg(plugin driver.Plugin) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllIndexesForPg(plugin driver.Plugin) ([]*PostgreSQLIndex, error) {
 	querySql := "SELECT schemaname, tablename, indexname, indexdef FROM pg_indexes " +
 		" where schemaname not like 'pg_%' AND schemaname != 'information_schema'"
-	return at.GetResult(plugin, querySql)
+	result := make([]*PostgreSQLIndex, 0)
+	ret, err := at.GetResult(plugin, querySql)
+	if err != nil {
+		return result, err
+	}
+	for _, value := range ret {
+		if len(value) < 4 {
+			return result, fmt.Errorf("get index error, column length is not four")
+		}
+		result = append(result, &PostgreSQLIndex{
+			schemaName:      value[0],
+			tableName:       value[1],
+			indexName:       value[2],
+			indexDefinition: value[3],
+		})
+	}
+	return result, nil
 }
 
-func (at *PostgreSQLSchemaMetaTask) GetAllViewsSqlForPg(plugin driver.Plugin, database string) ([][]string, error) {
+func (at *PostgreSQLSchemaMetaTask) GetAllViewsSqlForPg(plugin driver.Plugin, database string) ([]*PostgreSQLViewInfo, error) {
 	querySql := fmt.Sprintf("SELECT table_schema, table_name, "+
 		" 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition "+
 		" AS create_view_statement FROM information_schema.views WHERE table_catalog = '%s' "+
 		" AND table_schema not like 'pg_%%' AND table_schema != 'information_schema' order by table_name", database)
-	return at.GetResult(plugin, querySql)
+	result := make([]*PostgreSQLViewInfo, 0)
+	ret, err := at.GetResult(plugin, querySql)
+	if err != nil {
+		return result, err
+	}
+	for _, value := range ret {
+		if len(value) < 3 {
+			return result, fmt.Errorf("get view sql error, column length is not three")
+		}
+		result = append(result, &PostgreSQLViewInfo{
+			schemaName: value[0],
+			tableName:  value[1],
+			viewSql:    value[2],
+		})
+	}
+	return result, nil
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetResult(plugin driver.Plugin, sql string) ([][]string, error) {
