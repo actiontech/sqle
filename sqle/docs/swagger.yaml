@@ -2118,18 +2118,18 @@ definitions:
       explain_validation_details:
         $ref: '#/definitions/v1.ExplainValidationDetail'
         type: object
-      indexRecommendations:
+      index_recommendations:
         description: 索引建议
         items:
           type: string
         type: array
-      optimizedSQL:
+      optimized_sql:
         description: 优化后的SQL
         type: string
-      originalSQL:
+      original_sql:
         description: 原始SQL
         type: string
-      triggeredRule:
+      triggered_rule:
         description: 触发的规则
         items:
           $ref: '#/definitions/v1.RewriteRule'
