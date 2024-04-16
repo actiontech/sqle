@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/sirupsen/logrus"
 )
@@ -22,9 +23,11 @@ func NewWechatJob(entry *logrus.Entry) ServerJob {
 	return w
 }
 
-// 当前企微轮询只为二次确认工单定时上线功能
-// https://github.com/actiontech/sqle-ee/issues/1441
 func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
+	if err := sendWechatScheduledApprove(entry); err != nil {
+		entry.Errorf("send wechat scheduled approve error: %v", err)
+	}
+
 	s := model.GetStorage()
 	im, exist, err := s.GetImConfigByType(model.ImTypeWechatAudit)
 	if err != nil {
@@ -66,4 +69,31 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 			}
 		}
 	}
+}
+
+func sendWechatScheduledApprove(entry *logrus.Entry) error {
+	s := model.GetStorage()
+
+	workflowWithRecords, err := getWorkflowWithScheduledRecords(entry)
+	if err != nil {
+		return err
+	}
+	for _, wfWithRecords := range workflowWithRecords {
+		w := wfWithRecords.Workflow
+
+		for _, record := range wfWithRecords.NeedScheduledRecords {
+			if !record.NeedScheduledTaskNotify {
+				continue
+			}
+			wechatScheduledRecord, err := s.GetWechatRecordByTaskId(record.TaskId)
+			if err != nil {
+				entry.Errorf("get wechat scheduled record error: %v", err)
+			}
+			// 审批工单编号为空，代表未发送审批，需要发送oa审批
+			if wechatScheduledRecord.SpNo == "" {
+				im.CreateScheduledApprove(record.TaskId, string(w.ProjectId), w.WorkflowId)
+			}
+		}
+	}
+	return nil
 }
