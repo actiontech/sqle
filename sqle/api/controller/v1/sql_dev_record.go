@@ -50,7 +50,7 @@ type RecordSource struct {
 // @Tags SqlDEVRecord
 // @Id GetSqlDEVRecordList
 // @Security ApiKeyAuth
-// @Param project_id path string true "project id"
+// @Param project_name path string true "project name"
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_instance_name query string false "instance name"
 // @Param filter_source query string false "source" Enums(ide_plugin)
