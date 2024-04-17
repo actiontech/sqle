@@ -276,6 +276,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/", v1.GetOptimizationRecord)
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls", v1.GetOptimizationSQLs)
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls/:number/", v1.GetOptimizationSQLDetail)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/record_overview", v1.GetOptimizationRecordOverview)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/performance_improve_overview", v1.GetDBPerformanceImproveOverview)
 
 		// task
 		v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
