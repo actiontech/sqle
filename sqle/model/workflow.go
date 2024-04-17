@@ -9,6 +9,7 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jinzhu/gorm"
 )
@@ -251,6 +252,21 @@ type WorkflowInstanceRecord struct {
 	ExecutionAssignees string
 }
 
+func (w *WorkflowInstanceRecord) GetOAResult() (bool, error) {
+	s := GetStorage()
+	switch w.SendOaImType {
+	case WechatOAImType:
+		record, err := s.GetWechatRecordByTaskId(w.TaskId)
+		if err != nil {
+			return false, err
+		}
+		if record.OaResult == ApproveStatusAgree {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", id).Updates(m).Error
 	if err != nil {
@@ -401,6 +417,70 @@ func (w *Workflow) GetTaskIds() []uint {
 		taskIds[i] = inst.TaskId
 	}
 	return taskIds
+}
+
+func (w *Workflow) isExecuteStep() bool {
+	currentStep := w.CurrentStep()
+	if currentStep == nil {
+		return false
+	}
+	if currentStep.Template.Typ != WorkflowStepTypeSQLExecute {
+		return false
+	}
+	return true
+}
+
+func (w *Workflow) GetNeedScheduledTaskIds(entry *logrus.Entry) (map[uint] /* taskID */ string /* userID */, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	now := time.Now()
+	needExecuteTaskIds := map[uint]string{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
+			if ir.NeedScheduledTaskNotify {
+				isOaAgree, err := ir.GetOAResult()
+				if err != nil {
+					return nil, err
+				}
+				if !isOaAgree {
+					continue
+				}
+			}
+
+			needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
+		}
+	}
+	return needExecuteTaskIds, nil
+}
+
+func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry, imType string) ([]uint, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	s := GetStorage()
+	now := time.Now()
+	needSendOATaskIds := []uint{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify {
+			switch ir.SendOaImType {
+			case WechatOAImType:
+				record, err := s.GetWechatRecordByTaskId(ir.TaskId)
+				if err != nil {
+					entry.Errorf("get wechat record failed, taskID:%v, err:%v", ir.TaskId, err)
+					continue
+				}
+				if record.SpNo == "" {
+					needSendOATaskIds = append(needSendOATaskIds, ir.TaskId)
+				}
+			}
+		}
+	}
+	return needSendOATaskIds, nil
 }
 
 func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
