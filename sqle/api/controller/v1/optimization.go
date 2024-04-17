@@ -258,7 +258,8 @@ type OptimizationRecordOverview struct {
 // @Success 200 {object} v1.GetOptimizationOverviewResp
 // @router /v1/projects/{project_name}/sql_optimization_records/record_overview [get]
 func GetOptimizationRecordOverview(c echo.Context) error {
-	return nil
+	return getOptimizationRecordOverview(c)
+	// return nil
 }
 
 type GetDBPerformanceImproveOverviewResp struct {
@@ -281,5 +282,6 @@ type DBPerformanceImproveOverview struct {
 // @Success 200 {object} v1.GetDBPerformanceImproveOverviewResp
 // @router /v1/projects/{project_name}/sql_optimization_records/performance_improve_overview [get]
 func GetDBPerformanceImproveOverview(c echo.Context) error {
-	return nil
+	return getDBPerformanceImproveOverview(c)
+	// return nil
 }

@@ -29,3 +29,11 @@ func getOptimizationSQL(c echo.Context) error {
 func getOptimizationSQLs(c echo.Context) error {
 	return errors.New(errors.SQLOptimizationCommunityNotSupported, e.New("sql optimization community not supported"))
 }
+
+func getDBPerformanceImproveOverview(c echo.Context) error {
+	return errors.New(errors.SQLOptimizationCommunityNotSupported, e.New("sql optimization community not supported"))
+}
+
+func getOptimizationRecordOverview(c echo.Context) error {
+	return errors.New(errors.SQLOptimizationCommunityNotSupported, e.New("sql optimization community not supported"))
+}
