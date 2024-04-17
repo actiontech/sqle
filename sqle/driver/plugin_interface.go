@@ -12,6 +12,9 @@ import (
 type Plugin interface {
 	Close(ctx context.Context)
 
+	// Parse sqlText  to Node array, simulating the parsing method used by database clients before executing SQL files.
+	ParseSimulateClient(ctx context.Context, sql string) ([]driverV2.Node, error)
+
 	// Parse parse sqlText to Node array. sqlText may be single SQL or batch SQLs.
 	Parse(ctx context.Context, sqlText string) ([]driverV2.Node, error)
 
