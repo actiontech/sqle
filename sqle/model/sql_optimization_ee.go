@@ -229,3 +229,34 @@ func (s *Storage) GetOptimizationSQLById(optimizationId string, number int) (*Op
 		Where("optimization_id = ? AND id = ?", optimizationId, number).Find(&optimization_sql).Error
 	return optimization_sql, errors.New(errors.ConnectStorageError, err)
 }
+
+type OptimizationRecordOverview struct {
+	Creator            string `json:"creator"`
+	RecordNumber       uint64 `json:"record_number"`
+	TotalOptimizations uint64 `json:"total_optimizations"`
+	OptimizationDate   string `json:"optimization_date"`
+}
+
+func (s *Storage) GetOptimizationRecordOverview(projectId, createTimeFrom, createTimeTo string) ([]OptimizationRecordOverview, error) {
+	optimizationRecordOverviews := make([]OptimizationRecordOverview, 0)
+
+	err := s.db.Model(&SQLOptimizationRecord{}).Select(`DATE_FORMAT(sql_optimization_records.created_at, '%Y-%m-%d') AS optimization_date,	 	COUNT(*) AS record_number, 		SUM(sql_optimization_records.number_of_query) AS total_optimizations `).
+		Where(`deleted_at IS NULL 
+	AND project_id = ? 
+	AND created_at  BETWEEN ? AND ? `, projectId, createTimeFrom, createTimeTo).Group("optimization_date").
+		Scan(&optimizationRecordOverviews).Error
+	return optimizationRecordOverviews, errors.New(errors.ConnectStorageError, err)
+}
+
+type DBOptimizationImprovementOverview struct {
+	InstanceName              string  `json:"instance_name"`
+	AvgPerformanceImprovement float64 `json:"avg_performance_improvement"`
+}
+
+func (s *Storage) GetDBOptimizationImprovementOverview(projectId string) ([]DBOptimizationImprovementOverview, error) {
+	dbOptimizationImprovementOverviews := make([]DBOptimizationImprovementOverview, 0)
+	err := s.db.Model(&SQLOptimizationRecord{}).Select(`instance_name,
+    	AVG(performance_improve) AS avg_performance_improvement`).Where(`deleted_at IS NULL
+	AND project_id = ? `, projectId).Group(`instance_name`).Scan(&dbOptimizationImprovementOverviews).Debug().Error
+	return dbOptimizationImprovementOverviews, errors.New(errors.ConnectStorageError, err)
+}

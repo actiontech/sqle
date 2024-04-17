@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/optimization"
 	"github.com/labstack/echo/v4"
@@ -219,5 +221,90 @@ func getOptimizationSQLs(c echo.Context) error {
 		BaseRes:   controller.NewBaseReq(nil),
 		TotalNums: total,
 		Data:      ret,
+	})
+}
+
+func getOptimizationRecordOverview(c echo.Context) error {
+	req := new(GetOptimizationOverviewReq)
+	err := controller.BindAndValidateReq(c, req)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// parse date string
+	loc, err := time.LoadLocation("Local")
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, err))
+	}
+	dateFrom, err := time.ParseInLocation("2006-01-02", req.FilterCreateTimeFrom, loc)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateFrom failed: %v", err)))
+	}
+	dateTo, err := time.ParseInLocation("2006-01-02", req.FilterCreateTimeTo, loc)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataParseFail, fmt.Errorf("parse dateTo failed: %v", err)))
+	}
+	dateTo = dateTo.Add(time.Hour*23 + time.Minute*59 + time.Second*59) // 假设接口要查询第1天(date from)到第3天(date to)的趋势，那么第3天的工单创建数量是第3天0点到第23:59:59之间的数量
+
+	if dateFrom.After(dateTo) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("dateFrom must before dateTo")))
+	}
+
+	var datePoints []time.Time
+	currentDate := dateFrom
+	for !currentDate.After(dateTo) {
+		datePoints = append(datePoints, currentDate)
+		currentDate = currentDate.AddDate(0, 0, 1)
+	}
+
+	optimizationRecordOverviews, err := model.GetStorage().GetOptimizationRecordOverview(projectUid, dateFrom.String(), dateTo.String())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ret := make([]OptimizationRecordOverview, 0)
+
+	for _, datePoint := range datePoints {
+		optimizationRecordOverview := OptimizationRecordOverview{
+			RecordNumber: 0,
+			Time:         datePoint.Format("2006-01-02"),
+		}
+		for _, o := range optimizationRecordOverviews {
+			if datePoint.Format("2006-01-02") == o.OptimizationDate {
+				optimizationRecordOverview.RecordNumber = o.RecordNumber
+				break
+			}
+		}
+		ret = append(ret, optimizationRecordOverview)
+
+	}
+	return c.JSON(http.StatusOK, GetOptimizationOverviewResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    ret,
+	})
+}
+
+func getDBPerformanceImproveOverview(c echo.Context) error {
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	performanceImproves, err := model.GetStorage().GetDBOptimizationImprovementOverview(projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ret := make([]DBPerformanceImproveOverview, 0)
+	for _, performanceImprove := range performanceImproves {
+		ret = append(ret, DBPerformanceImproveOverview{
+			InstanceName:          performanceImprove.InstanceName,
+			AvgPerformanceImprove: performanceImprove.AvgPerformanceImprovement,
+		})
+	}
+	return c.JSON(http.StatusOK, GetDBPerformanceImproveOverviewResp{
+		Data:    ret,
+		BaseRes: controller.NewBaseReq(nil),
 	})
 }
