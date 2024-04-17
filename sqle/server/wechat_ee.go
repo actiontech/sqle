@@ -5,8 +5,10 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
@@ -72,28 +74,25 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 }
 
 func sendWechatScheduledApprove(entry *logrus.Entry) error {
-	s := model.GetStorage()
-
-	workflowWithRecords, err := getWorkflowWithScheduledRecords(entry)
+	st := model.GetStorage()
+	workflows, err := st.GetNeedScheduledWorkflows()
 	if err != nil {
-		return err
+		return fmt.Errorf("get need scheduled workflows from storage error: %v", err)
 	}
-	for _, wfWithRecords := range workflowWithRecords {
-		w := wfWithRecords.Workflow
 
-		for _, record := range wfWithRecords.NeedScheduledRecords {
-			if !record.NeedScheduledTaskNotify {
-				continue
-			}
-			wechatScheduledRecord, err := s.GetWechatRecordByTaskId(record.TaskId)
-			if err != nil {
-				entry.Errorf("get wechat scheduled record error: %v", err)
-			}
-			// 审批工单编号为空，代表未发送审批，需要发送oa审批
-			if wechatScheduledRecord.SpNo == "" {
-				im.CreateScheduledApprove(record.TaskId, string(w.ProjectId), w.WorkflowId)
-			}
+	for _, workflow := range workflows {
+		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
+		if err != nil {
+			return fmt.Errorf("get workflow from storage error: %v", err)
+		}
+		needSendOATaskIds, err := w.GetNeedSendOATaskIds(entry, model.WechatOAImType)
+		if err != nil {
+			return fmt.Errorf("get need scheduled taskIds error: %v", err)
+		}
+		for _, taskId := range needSendOATaskIds {
+			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId)
 		}
 	}
+
 	return nil
 }
