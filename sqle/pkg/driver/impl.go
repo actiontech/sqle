@@ -205,6 +205,10 @@ func (p *DriverImpl) Parse(ctx context.Context, sql string) ([]driverV2.Node, er
 	return nodes, nil
 }
 
+func (p *DriverImpl) ParseSimulateClient(ctx context.Context, sql string) ([]driverV2.Node, error) {
+	return nil, fmt.Errorf("unimpliment this method")
+}
+
 func classifySQL(sql string) (sqlType string) {
 	if utils.HasPrefix(sql, "update", false) ||
 		utils.HasPrefix(sql, "insert", false) ||
