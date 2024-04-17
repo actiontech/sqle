@@ -170,6 +170,30 @@ func (d *DriverGrpcServer) Parse(ctx context.Context, req *protoV2.ParseRequest)
 	return resp, nil
 }
 
+func (d *DriverGrpcServer) ParseSimulateClient(ctx context.Context, req *protoV2.ParseRequest) (*protoV2.ParseResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.ParseResponse{}, err
+	}
+	if req.Sql == nil {
+		return &protoV2.ParseResponse{}, ErrSQLisEmpty
+	}
+	nodes, err := driver.ParseSimulateClient(ctx, req.Sql.Query)
+	if err != nil {
+		return &protoV2.ParseResponse{}, err
+	}
+
+	resp := &protoV2.ParseResponse{}
+	for _, node := range nodes {
+		resp.Nodes = append(resp.Nodes, &protoV2.Node{
+			Text:        node.Text,
+			Type:        node.Type,
+			Fingerprint: node.Fingerprint,
+		})
+	}
+	return resp, nil
+}
+
 func (d *DriverGrpcServer) Audit(ctx context.Context, req *protoV2.AuditRequest) (*protoV2.AuditResponse, error) {
 	driver, err := d.getDriverBySession(req.Session)
 	if err != nil {
