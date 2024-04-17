@@ -3040,8 +3040,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "project id",
-                        "name": "project_id",
+                        "description": "project name",
+                        "name": "project_name",
                         "in": "path",
                         "required": true
                     },
@@ -3534,6 +3534,326 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSqlManageSqlAnalysisResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_optimization_records": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization records",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化记录列表",
+                "operationId": "getOptimizationRecords",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "fuzzy search for optimization_id or create_username",
+                        "name": "fuzzy_search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance name",
+                        "name": "filter_instance_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationRecordsRes"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "optimize sql\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.\n5. formData[git_http_url]:the url which scheme is http(s) and end with .git.\n6. formData[git_user_name]:The name of the user who owns the repository read access.\n7. formData[git_user_password]:The password corresponding to git_user_name.",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "优化SQL",
+                "operationId": "OptimizeSQLReq",
+                "parameters": [
+                    {
+                        "description": "sqls that should be optimization",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.OptimizeSQLReq"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "schema of instance",
+                        "name": "schema_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type of instance",
+                        "name": "db_type",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sql_content",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "optimization name",
+                        "name": "optimization_name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "git repository url",
+                        "name": "git_http_url",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "the name of user to clone the repository",
+                        "name": "git_user_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "the password corresponding to git_user_name",
+                        "name": "git_user_password",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.OptimizeSQLRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization record",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化记录",
+                "operationId": "GetOptimizationRecordReq",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql",
+                        "name": "sql",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationRecordRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization sqls",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化语句列表",
+                "operationId": "getOptimizationSQLs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationSQLsRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls/{number}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization record",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化语句详情",
+                "operationId": "GetOptimizationReq",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "optimization record sql  number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationSQLRes"
                         }
                     }
                 }
@@ -8767,6 +9087,26 @@ var doc = `{
                 }
             }
         },
+        "v1.ExplainValidationDetail": {
+            "type": "object",
+            "properties": {
+                "after_cost": {
+                    "type": "number"
+                },
+                "after_plan": {
+                    "type": "string"
+                },
+                "before_cost": {
+                    "type": "number"
+                },
+                "before_plan": {
+                    "type": "string"
+                },
+                "perform_improve_per": {
+                    "type": "number"
+                }
+            }
+        },
         "v1.FeishuConfigurationV1": {
             "type": "object",
             "properties": {
@@ -9407,6 +9747,84 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetOptimizationRecordRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.OptimizationDetail"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetOptimizationRecordsRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OptimizationRecord"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetOptimizationSQLRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.OptimizationSQLDetail"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetOptimizationSQLsRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OptimizationSQL"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -10570,6 +10988,207 @@ var doc = `{
                 }
             }
         },
+        "v1.OptimizationDetail": {
+            "type": "object",
+            "properties": {
+                "basic_summary": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Optimizationsummary"
+                },
+                "created_time": {
+                    "type": "string"
+                },
+                "created_user": {
+                    "type": "string"
+                },
+                "db_type": {
+                    "type": "string"
+                },
+                "index_recommendations": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "optimization_id": {
+                    "type": "string"
+                },
+                "optimization_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OptimizationRecord": {
+            "type": "object",
+            "properties": {
+                "created_time": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "created_user": {
+                    "description": "创建人",
+                    "type": "string"
+                },
+                "db_type": {
+                    "description": "数据库类型",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "数据源",
+                    "type": "string"
+                },
+                "optimization_id": {
+                    "description": "优化ID",
+                    "type": "string"
+                },
+                "optimization_name": {
+                    "type": "string"
+                },
+                "performance_gain": {
+                    "description": "优化提升性能",
+                    "type": "number"
+                }
+            }
+        },
+        "v1.OptimizationSQL": {
+            "type": "object",
+            "properties": {
+                "contributing_indices": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "number_of_hit_index": {
+                    "type": "integer"
+                },
+                "number_of_index": {
+                    "type": "integer"
+                },
+                "number_of_rewrite": {
+                    "type": "integer"
+                },
+                "number_of_syntax_error": {
+                    "type": "integer"
+                },
+                "original_sql": {
+                    "type": "string"
+                },
+                "performance": {
+                    "type": "number"
+                }
+            }
+        },
+        "v1.OptimizationSQLDetail": {
+            "type": "object",
+            "properties": {
+                "explain_validation_details": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ExplainValidationDetail"
+                },
+                "index_recommendations": {
+                    "description": "索引建议",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "optimized_sql": {
+                    "description": "优化后的SQL",
+                    "type": "string"
+                },
+                "original_sql": {
+                    "description": "原始SQL",
+                    "type": "string"
+                },
+                "triggered_rule": {
+                    "description": "触发的规则",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RewriteRule"
+                    }
+                }
+            }
+        },
+        "v1.Optimizationsummary": {
+            "type": "object",
+            "properties": {
+                "number_of_index": {
+                    "type": "integer"
+                },
+                "number_of_query": {
+                    "type": "integer"
+                },
+                "number_of_query_index": {
+                    "type": "integer"
+                },
+                "number_of_rewrite": {
+                    "type": "integer"
+                },
+                "number_of_rewritten_query": {
+                    "type": "integer"
+                },
+                "number_of_syntax_error": {
+                    "type": "integer"
+                },
+                "performance_gain": {
+                    "type": "number"
+                }
+            }
+        },
+        "v1.OptimizeSQLReq": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
+                "optimization_name": {
+                    "type": "string",
+                    "example": "optmz_2024031412091244"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
+                },
+                "sql_content": {
+                    "type": "string",
+                    "example": "select * from t1; select * from t2;"
+                }
+            }
+        },
+        "v1.OptimizeSQLRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.OptimizeSQLResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.OptimizeSQLResData": {
+            "type": "object",
+            "properties": {
+                "sql_optimization_record_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ParseProjectRuleTemplateFileResDataV1": {
             "type": "object",
             "properties": {
@@ -10667,6 +11286,26 @@ var doc = `{
             "type": "object",
             "properties": {
                 "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RewriteRule": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "rewritten_queries_str": {
+                    "type": "string"
+                },
+                "rule_code": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                },
+                "violated_queries_str": {
                     "type": "string"
                 }
             }
