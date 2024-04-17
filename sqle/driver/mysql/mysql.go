@@ -269,6 +269,10 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 	return ns, nil
 }
 
+func (d *MysqlDriverImpl) ParseSimulateClient(ctx context.Context, sql string) ([]driverV2.Node, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}
+
 func (i *MysqlDriverImpl) assertSQLType(stmt ast.Node) string {
 	switch stmt.(type) {
 	case ast.DMLNode:

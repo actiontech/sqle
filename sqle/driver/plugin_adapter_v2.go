@@ -217,6 +217,32 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.No
 	return nodes, nil
 }
 
+func (s *PluginImplV2) ParseSimulateClient(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
+	api := "Parse"
+	s.preLog(api)
+	resp, err := s.client.ParseSimulateClient(ctx, &protoV2.ParseRequest{
+		Session: s.Session,
+		Sql: &protoV2.ParsedSQL{
+			Query: sqlText,
+		}},
+	)
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]driverV2.Node, len(resp.Nodes))
+	for i, node := range resp.Nodes {
+		nodes[i] = driverV2.Node{
+			Type:        node.Type,
+			Text:        node.Text,
+			Fingerprint: node.Fingerprint,
+			StartLine:   node.StartLine,
+		}
+	}
+	return nodes, nil
+}
+
 func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {
 	api := "Audit"
 	s.preLog(api)

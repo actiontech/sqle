@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	sqlDriver "database/sql/driver"
+	"fmt"
 
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -147,6 +148,10 @@ func (p *PluginImplV1) Parse(ctx context.Context, sqlText string) ([]driverV2.No
 		})
 	}
 	return nodesV2, nil
+}
+
+func (s *PluginImplV1) ParseSimulateClient(ctx context.Context, sqlText string) ([]driverV2.Node, error) {
+	return nil, fmt.Errorf("unimplement this method")
 }
 
 func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error) {

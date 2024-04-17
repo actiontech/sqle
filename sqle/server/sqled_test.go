@@ -53,6 +53,10 @@ func (d *mockDriver) Ping(ctx context.Context) error {
 	return nil
 }
 
+func (d *mockDriver) ParseSimulateClient(ctx context.Context, sql string) ([]driverV2.Node, error) {
+	return nil, nil
+}
+
 func (d *mockDriver) KillProcess(ctx context.Context) error {
 	return nil
 }
