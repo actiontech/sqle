@@ -14,6 +14,9 @@ service Driver {
   rpc Close(CloseRequest) returns (Empty);
   rpc KillProcess(KillProcessRequest) returns (KillProcessResponse);
 
+  // Parse SQL from sql file, simulating the parsing method used by database clients before executing SQL files. Different database clients have different implementation methods. For example, MySQL clients can customize delimiters, while Oracle clients use / to determine the end of the SQL statement block for "begin ... end;"
+  rpc ParseSimulateClient(ParseRequest) returns(ParseResponse);
+  
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
   rpc Audit(AuditRequest) returns (AuditResponse);
