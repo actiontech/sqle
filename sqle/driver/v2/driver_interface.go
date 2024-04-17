@@ -70,7 +70,8 @@ type Driver interface {
 
 	// Parse parse sqlText to Node array. sqlText may be single SQL or batch SQLs.
 	Parse(ctx context.Context, sql string) ([]Node, error)
-
+	// Parse sqlText  to Node array, simulating the parsing method used by database clients before executing SQL files.
+	ParseSimulateClient(ctx context.Context, sql string) ([]Node, error)
 	// Audit sql with rules. sql is single SQL text or multi audit.
 	Audit(ctx context.Context, sqls []string) ([]*AuditResults, error)
 
