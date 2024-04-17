@@ -227,6 +227,10 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
+const (
+	WechatOAImType = "wechat"
+)
+
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -239,6 +243,7 @@ type WorkflowInstanceRecord struct {
 	ExecutionUserId string
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
+	SendOaImType            string
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
