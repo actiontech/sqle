@@ -2129,11 +2129,11 @@ definitions:
     type: object
   v1.OptimizationRecordOverview:
     properties:
+      creator:
+        type: string
       record_number:
         type: integer
       time:
-        type: string
-      username:
         type: string
     type: object
   v1.OptimizationSQL:
@@ -6623,10 +6623,12 @@ paths:
       - description: create time from
         in: query
         name: filter_create_time_from
+        required: true
         type: string
       - description: create time to
         in: query
         name: filter_create_time_to
+        required: true
         type: string
       - description: project name
         in: path

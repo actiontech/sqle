@@ -3765,13 +3765,15 @@ var doc = `{
                         "type": "string",
                         "description": "create time from",
                         "name": "filter_create_time_from",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
                         "description": "create time to",
                         "name": "filter_create_time_to",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -11181,13 +11183,13 @@ var doc = `{
         "v1.OptimizationRecordOverview": {
             "type": "object",
             "properties": {
+                "creator": {
+                    "type": "string"
+                },
                 "record_number": {
                     "type": "integer"
                 },
                 "time": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }

@@ -231,8 +231,8 @@ func GetOptimizationSQLs(c echo.Context) error {
 }
 
 type GetOptimizationOverviewReq struct {
-	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"  valid:"required"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"  valid:"required"`
 }
 
 type GetOptimizationOverviewResp struct {
@@ -241,7 +241,7 @@ type GetOptimizationOverviewResp struct {
 }
 
 type OptimizationRecordOverview struct {
-	Username     string `json:"username"`
+	Creator      string `json:"creator"`
 	RecordNumber uint64 `json:"record_number"`
 	Time         string `json:"time"`
 }
@@ -252,13 +252,12 @@ type OptimizationRecordOverview struct {
 // @Tags sql_optimization
 // @Id getOptimizationOverview
 // @Security ApiKeyAuth
-// @Param filter_create_time_from query string false "create time from"
-// @Param filter_create_time_to query string false "create time to"
+// @Param filter_create_time_from query string true "create time from"
+// @Param filter_create_time_to query string true "create time to"
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetOptimizationOverviewResp
 // @router /v1/projects/{project_name}/sql_optimization_records/record_overview [get]
 func GetOptimizationRecordOverview(c echo.Context) error {
-
 	return nil
 }
 
@@ -282,6 +281,5 @@ type DBPerformanceImproveOverview struct {
 // @Success 200 {object} v1.GetDBPerformanceImproveOverviewResp
 // @router /v1/projects/{project_name}/sql_optimization_records/performance_improve_overview [get]
 func GetDBPerformanceImproveOverview(c echo.Context) error {
-
 	return nil
 }
