@@ -3715,6 +3715,82 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_optimization_records/performance_improve_overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get db optimization performance improvements",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取实例性能提升概览",
+                "operationId": "getDBPerformanceImproveOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDBPerformanceImproveOverviewResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_optimization_records/record_overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization record overview",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化记录概览",
+                "operationId": "getOptimizationOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationOverviewResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/": {
             "get": {
                 "security": [
@@ -8891,6 +8967,17 @@ var doc = `{
                 }
             }
         },
+        "v1.DBPerformanceImproveOverview": {
+            "type": "object",
+            "properties": {
+                "avg_performance_improve": {
+                    "type": "number"
+                },
+                "instance_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.DBTypeAuditPlan": {
             "type": "object",
             "properties": {
@@ -9475,6 +9562,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetDBPerformanceImproveOverviewResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DBPerformanceImproveOverview"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetDashboardResV1": {
             "type": "object",
             "properties": {
@@ -9742,6 +9848,25 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.OperationResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetOptimizationOverviewResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.OptimizationRecordOverview"
                     }
                 },
                 "message": {
@@ -11050,6 +11175,20 @@ var doc = `{
                 "performance_gain": {
                     "description": "优化提升性能",
                     "type": "number"
+                }
+            }
+        },
+        "v1.OptimizationRecordOverview": {
+            "type": "object",
+            "properties": {
+                "record_number": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         },
