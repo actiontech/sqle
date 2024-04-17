@@ -43,6 +43,8 @@ const (
 
 	CustomRuleEditionNotSupported = 8003
 
+	SQLOptimizationCommunityNotSupported = 8004
+
 	// 需要隐藏所有错误细节或不确定时使用
 	GenericError ErrorCode = 9999
 )
