@@ -59,8 +59,7 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 
 		switch model.WechatOAStatus(instDetail.SpStatus) {
 		case model.APPROVED:
-			record.OaResult = model.ApproveStatusAgree
-			if err := s.Save(&record); err != nil {
+			if err := s.WechatAgreeScheduledTask(record); err != nil {
 				entry.Errorf("save wechat record error: %v", err)
 				continue
 			}
