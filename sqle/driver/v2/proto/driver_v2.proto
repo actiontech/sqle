@@ -22,6 +22,7 @@ service Driver {
   // db executor
   rpc Ping(PingRequest) returns (Empty);
   rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc ExecSqlGroup(ExecSqlGroupRequest) returns (ExecSqlGroupRequest);
   rpc Tx(TxRequest) returns (TxResponse);
   rpc Query(QueryRequest) returns (QueryResponse);
   rpc Explain(ExplainRequest) returns (ExplainResponse);
@@ -124,6 +125,7 @@ message Node {
   string type = 2;
   string fingerprint = 3;
   uint64 startLine = 4;
+  uint64 executeGroupId = 5;
 }
 
 message ParseResponse {
@@ -192,6 +194,18 @@ message ExecResult {
   int64 lastInsertId = 1;
   string lastInsertIdError = 2;
   int64 rowsAffected = 3;
+  string rowsAffectedError = 4;
+}
+
+message ExecSqlGroupRequest {
+  Session session = 1;
+  repeated ExecSQL sqls = 2;
+}
+
+message ExecSqlGroupResult {
+  int64  lastInsertId = 1;
+  string lastInsertIdError = 2;
+  int64  rowsAffected = 3;
   string rowsAffectedError = 4;
 }
 
