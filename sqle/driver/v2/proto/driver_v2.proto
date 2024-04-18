@@ -48,6 +48,7 @@ enum OptionalModule {
   ExtractTableFromSQL = 4;
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
+  ExecBatch = 7;
 }
 
 message Param {
