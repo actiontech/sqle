@@ -102,7 +102,7 @@ func GetOptimizationRecord(c echo.Context) error {
 
 type GetOptimizationRecordsReq struct {
 	FuzzySearch          string `json:"fuzzy_search" query:"fuzzy_search"`
-	FilterInstanceName   uint64 `json:"filter_instance_name" query:"filter_instance_name"`
+	FilterInstanceName   string `json:"filter_instance_name" query:"filter_instance_name"`
 	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
 	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_from"`
 	PageIndex            uint32 `json:"page_index" query:"page_index" valid:"required"`
