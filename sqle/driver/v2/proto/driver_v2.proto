@@ -22,7 +22,7 @@ service Driver {
   // db executor
   rpc Ping(PingRequest) returns (Empty);
   rpc Exec(ExecRequest) returns (ExecResponse);
-  rpc ExecSqlGroup(ExecSqlGroupRequest) returns (ExecSqlGroupRequest);
+  rpc ExecSqlGroup(ExecSqlGroupRequest) returns (ExecSqlGroupResult);
   rpc Tx(TxRequest) returns (TxResponse);
   rpc Query(QueryRequest) returns (QueryResponse);
   rpc Explain(ExplainRequest) returns (ExplainResponse);
