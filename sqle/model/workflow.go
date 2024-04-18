@@ -244,27 +244,13 @@ type WorkflowInstanceRecord struct {
 	ExecutionUserId string
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
-	SendOaImType            string
+	// NeedScheduledTaskNotify为true时，该字段生效
+	IsCanExec               bool
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
 	ExecutionAssignees string
-}
-
-func (w *WorkflowInstanceRecord) GetOAResult() (bool, error) {
-	s := GetStorage()
-	switch w.SendOaImType {
-	case WechatOAImType:
-		record, err := s.GetWechatRecordByTaskId(w.TaskId)
-		if err != nil {
-			return false, err
-		}
-		if record.OaResult == ApproveStatusAgree {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
@@ -440,14 +426,8 @@ func (w *Workflow) GetNeedScheduledTaskIds(entry *logrus.Entry) (map[uint] /* ta
 	needExecuteTaskIds := map[uint]string{}
 	for _, ir := range w.Record.InstanceRecords {
 		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
-			if ir.NeedScheduledTaskNotify {
-				isOaAgree, err := ir.GetOAResult()
-				if err != nil {
-					return nil, err
-				}
-				if !isOaAgree {
-					continue
-				}
+			if ir.NeedScheduledTaskNotify && !ir.IsCanExec {
+				continue
 			}
 
 			needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
@@ -464,19 +444,22 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry, imType string) ([]u
 
 	s := GetStorage()
 	now := time.Now()
-	needSendOATaskIds := []uint{}
+	taskIds := []uint{}
 	for _, ir := range w.Record.InstanceRecords {
 		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify {
-			switch ir.SendOaImType {
-			case WechatOAImType:
-				record, err := s.GetWechatRecordByTaskId(ir.TaskId)
-				if err != nil {
-					entry.Errorf("get wechat record failed, taskID:%v, err:%v", ir.TaskId, err)
-					continue
-				}
-				if record.SpNo == "" {
-					needSendOATaskIds = append(needSendOATaskIds, ir.TaskId)
-				}
+			taskIds = append(taskIds, ir.TaskId)
+		}
+	}
+	needSendOATaskIds := []uint{}
+	switch imType {
+	case WechatOAImType:
+		records, err := s.GetWechatRecordsByTaskIds(taskIds)
+		if err != nil {
+			return nil, fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", needSendOATaskIds, err)
+		}
+		for _, r := range(records) {
+			if r.SpNo == "" {
+				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
 			}
 		}
 	}
