@@ -29,17 +29,17 @@ var (
 var FeishuAuditResultLayout = `
       [
         {
-          "id": "6",
+          "id": "7",
           "type": "input",
           "value": "%s"
         },
         {
-          "id": "7",
+          "id": "8",
           "type": "input",
           "value": "%v"
         },
         {
-          "id": "8",
+          "id": "9",
           "type": "input",
           "value": "%v%%"
         }
@@ -63,7 +63,7 @@ func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 	return nil
 }
 
-func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string) error {
+func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url, oaTypeContent string) error {
 	createUser, err := dms.GetUser(ctx, workflow.CreateUserId, dms.GetDMSServerAddress())
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	auditResult := strings.Join(tableRows, ",")
 
 	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
-		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url)
+		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url, oaTypeContent)
 	if err != nil {
 		return err
 	}

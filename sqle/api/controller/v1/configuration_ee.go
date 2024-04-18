@@ -141,7 +141,7 @@ func testFeishuAuditConfigV1(c echo.Context) error {
 
 	for uid := range feishuUsers {
 		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, "测试审批", uid,
-			[]string{uid}, "", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", "")
+			[]string{uid}, "", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", "", "")
 		if err != nil {
 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 				BaseRes: controller.NewBaseReq(nil),

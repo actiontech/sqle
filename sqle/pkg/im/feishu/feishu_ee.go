@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/larksuite/oapi-sdk-go/v3/service/approval/v4"
+	larkapproval "github.com/larksuite/oapi-sdk-go/v3/service/approval/v4"
 )
 
 const (
@@ -35,15 +35,14 @@ const (
   },
   {
     "id": "5",
+    "type": "input",
+    "name": "@i18n@text5"
+  },
+  {
+    "id": "6",
     "type": "fieldList",
-    "name": "@i18n@text5",
+    "name": "@i18n@text6",
     "value": [
-      {
-        "id": "6",
-        "name": "@i18n@text6",
-        "type": "input",
-        "required": true
-      },
       {
         "id": "7",
         "name": "@i18n@text7",
@@ -53,6 +52,12 @@ const (
       {
         "id": "8",
         "name": "@i18n@text8",
+        "type": "input",
+        "required": true
+      },
+      {
+        "id": "9",
+        "name": "@i18n@text9",
         "type": "input",
         "required": true
       }
@@ -89,6 +94,11 @@ const (
   },
   {
     "id": "5",
+    "type": "input",
+	"value": "%s"
+  },
+  {
+    "id": "6",
     "type": "fieldList",
     "value": [%s]
   }
@@ -156,18 +166,22 @@ func (f *FeishuClient) CreateApprovalTemplate(ctx context.Context) (approvalCode
 							Build(),
 						larkapproval.NewI18nResourceTextBuilder().
 							Key(`@i18n@text5`).
-							Value(`审核结果`).
+							Value(`审核操作`).
 							Build(),
 						larkapproval.NewI18nResourceTextBuilder().
 							Key(`@i18n@text6`).
-							Value(`数据源`).
+							Value(`审核结果`).
 							Build(),
 						larkapproval.NewI18nResourceTextBuilder().
 							Key(`@i18n@text7`).
-							Value(`审核得分`).
+							Value(`数据源`).
 							Build(),
 						larkapproval.NewI18nResourceTextBuilder().
 							Key(`@i18n@text8`).
+							Value(`审核得分`).
+							Build(),
+						larkapproval.NewI18nResourceTextBuilder().
+							Key(`@i18n@text9`).
 							Value(`审核通过率`).
 							Build(),
 					}).Build(),
@@ -189,9 +203,8 @@ func (f *FeishuClient) CreateApprovalTemplate(ctx context.Context) (approvalCode
 // CreateApprovalInstance 创建审批实例
 // https://open.feishu.cn/document/server-docs/approval-v4/instance/create?appId=cli_a4668286c92ed013
 func (f *FeishuClient) CreateApprovalInstance(ctx context.Context, approvalCode, workflowName string, originUserId string,
-	approveUserIds []string, auditResult, projectName, desc, workflowUrl string) (*string, error) {
-	form := fmt.Sprintf(CreateInstanceForm, projectName, workflowName, desc, workflowUrl, auditResult)
-
+	approveUserIds []string, auditResult, projectName, desc, workflowUrl, oaTypeContent string) (*string, error) {
+	form := fmt.Sprintf(CreateInstanceForm, projectName, workflowName, desc, workflowUrl, oaTypeContent, auditResult)
 	req := larkapproval.NewCreateInstanceReqBuilder().
 		InstanceCreate(larkapproval.NewInstanceCreateBuilder().
 			ApprovalCode(approvalCode).
