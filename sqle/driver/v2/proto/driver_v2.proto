@@ -22,7 +22,7 @@ service Driver {
   // db executor
   rpc Ping(PingRequest) returns (Empty);
   rpc Exec(ExecRequest) returns (ExecResponse);
-  rpc ExecSqlGroup(ExecSqlGroupRequest) returns (ExecSqlGroupResult);
+  rpc ExecBatch(ExecBatchRequest) returns (ExecBatchResult);
   rpc Tx(TxRequest) returns (TxResponse);
   rpc Query(QueryRequest) returns (QueryResponse);
   rpc Explain(ExplainRequest) returns (ExplainResponse);
@@ -197,16 +197,13 @@ message ExecResult {
   string rowsAffectedError = 4;
 }
 
-message ExecSqlGroupRequest {
+message ExecBatchRequest {
   Session session = 1;
   repeated ExecSQL sqls = 2;
 }
 
-message ExecSqlGroupResult {
-  int64  lastInsertId = 1;
-  string lastInsertIdError = 2;
-  int64  rowsAffected = 3;
-  string rowsAffectedError = 4;
+message ExecBatchResult {
+  repeated ExecResult results = 1;
 }
 
 message ExecResponse {
