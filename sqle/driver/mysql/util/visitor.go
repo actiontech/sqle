@@ -40,6 +40,23 @@ func (p *ParamMarkerChecker) Leave(in ast.Node) (node ast.Node, skipChildren boo
 	return in, true
 }
 
+type HasVarChecker struct {
+	HasVar bool
+}
+
+func (v *HasVarChecker) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	if _, ok := in.(*ast.VariableExpr); ok {
+		v.HasVar = true
+		return in, true
+	}
+
+	return in, false
+}
+
+func (v *HasVarChecker) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
+
 func ParseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
 	t, err := ParseOneSql(sql)
 	if err != nil {

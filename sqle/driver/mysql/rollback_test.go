@@ -24,6 +24,25 @@ func runRollbackCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, 
 	}
 }
 
+func TestRollbackWithVariable(t *testing.T) {
+	sqlList := []string{
+		`UPDATE exist_db.exist_tb_1 SET v3 = '12' WHERE @tt = 3;`,
+		`UPDATE exist_db.exist_tb_1 SET v3 = '12' WHERE v3 = (SELECT @tt);`,
+		`UPDATE exist_db.exist_tb_1 SET v3 = @tt WHERE v3 = 'tt';`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v3 = @tt;`,
+		`DELETE FROM exist_db.exist_tb_1 WHERE v3 = (SELECT @tt);`,
+		`INSERT INTO exist_db.exist_tb_1 (v1,v2) value (@tt,"v2");`,
+	}
+
+	for _, sql := range sqlList {
+		i := DefaultMysqlInspect()
+		rollbackSQL, reason, err := i.GenRollbackSQL(context.Background(), sql)
+		assert.NoError(t, err)
+		assert.Equal(t, NotSupportHasVariableRollback, reason)
+		assert.Equal(t, "", rollbackSQL)
+	}
+}
+
 func TestAlterTableRollbackSql(t *testing.T) {
 	runRollbackCase(t, "drop column need add", DefaultMysqlInspect(),
 		`ALTER TABLE exist_db.exist_tb_1
