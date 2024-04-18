@@ -79,6 +79,7 @@ type Driver interface {
 
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, sql string) (sqlDriver.Result, error)
+	ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error)
 	Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error)
 	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
 	Explain(ctx context.Context, conf *ExplainConf) (*ExplainResult, error)

@@ -11,7 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	hclog "github.com/hashicorp/go-hclog"
-	
+
 	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
 	"vitess.io/vitess/go/vt/sqlparser"
@@ -86,6 +86,11 @@ func (p *DriverImpl) Exec(ctx context.Context, sql string) (_driver.Result, erro
 		return nil, errors.Wrap(err, "exec sql in driver adaptor")
 	}
 	return res, nil
+}
+
+func (p *DriverImpl) ExecBatch(ctx context.Context, sqls ...string) ([]_driver.Result, error) {
+
+	return nil, fmt.Errorf("unimplemented this method")
 }
 
 func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, error) {
