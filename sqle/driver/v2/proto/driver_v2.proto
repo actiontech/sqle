@@ -125,7 +125,7 @@ message Node {
   string type = 2;
   string fingerprint = 3;
   uint64 startLine = 4;
-  uint64 executeGroupId = 5;
+  uint64 batchId = 5;
 }
 
 message ParseResponse {
