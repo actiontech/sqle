@@ -19,7 +19,7 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 		if err := s.Save(&record); err != nil {
 			return nil
 		}
-		err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true, "is_can_exec": true})
+		err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
 		if err != nil {
 			return err
 		}
