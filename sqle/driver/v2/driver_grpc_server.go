@@ -257,6 +257,44 @@ func (d *DriverGrpcServer) Exec(ctx context.Context, req *protoV2.ExecRequest) (
 	return &protoV2.ExecResponse{Result: execResult}, nil
 }
 
+func (d *DriverGrpcServer) ExecBatch(ctx context.Context, req *protoV2.ExecBatchRequest) (*protoV2.ExecBatchResult, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.ExecBatchResult{}, err
+	}
+	if len(req.Sqls) == 0 {
+		return &protoV2.ExecBatchResult{}, ErrSQLisEmpty
+	}
+	sqls := make([]string, 0, len(req.Sqls))
+	for _, sql := range req.Sqls {
+		sqls = append(sqls, sql.Query)
+	}
+
+	results, err := driver.ExecBatch(ctx, sqls...)
+	if err != nil {
+		return &protoV2.ExecBatchResult{}, err
+	}
+
+	execBatchResults := make([]*protoV2.ExecResult, 0, len(results))
+	for _, result := range results {
+		execResult := &protoV2.ExecResult{}
+
+		lastInsertId, lastInsertIdErr := result.LastInsertId()
+		execResult.LastInsertId = lastInsertId
+		if lastInsertIdErr != nil {
+			execResult.LastInsertIdError = lastInsertIdErr.Error()
+		}
+		rowsAffected, rowsAffectedErr := result.RowsAffected()
+		execResult.RowsAffected = rowsAffected
+		if rowsAffectedErr != nil {
+			execResult.RowsAffectedError = rowsAffectedErr.Error()
+		}
+
+		execBatchResults = append(execBatchResults, execResult)
+	}
+	return &protoV2.ExecBatchResult{Results: execBatchResults}, nil
+}
+
 func (d *DriverGrpcServer) Tx(ctx context.Context, req *protoV2.TxRequest) (*protoV2.TxResponse, error) {
 	driver, err := d.getDriverBySession(req.Session)
 	if err != nil {
