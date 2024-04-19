@@ -101,7 +101,7 @@ func sendWechatScheduledApprove(entry *logrus.Entry) error {
 		}
 
 		for _, taskId := range needSendOATaskIds {
-			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId)
+			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId, model.ImTypeWechatAudit)
 		}
 	}
 
