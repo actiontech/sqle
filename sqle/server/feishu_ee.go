@@ -45,7 +45,9 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 		return
 	}
 
-	// todo：https://github.com/actiontech/sqle-ee/issues/1478
+	// todo：临时将发送和获取定时任务审批流程的接口放在feishuRotation中
+	// 后续会定制方案拆分不同任务的轮询或者以并发的形式发送接口 
+	// https://github.com/actiontech/sqle-ee/issues/1478
 	err = sendFeishuScheduledApprove(entry)
 	if err != nil {
 		entry.Errorf("send feishu scheduled approve error: %v", err)
