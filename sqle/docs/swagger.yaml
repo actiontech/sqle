@@ -1059,6 +1059,17 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetFunctionSupportResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      support:
+        type: boolean
+    type: object
   v1.GetInstanceConnectableResV1:
     properties:
       code:
@@ -1692,17 +1703,6 @@ definitions:
       message:
         example: ok
         type: string
-    type: object
-  v1.GetWorkflowFunctionSupportResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      message:
-        example: ok
-        type: string
-      support:
-        type: boolean
     type: object
   v1.GetWorkflowPassPercentResV1:
     properties:
@@ -4602,6 +4602,39 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/function_support:
+    get:
+      description: get support for functionalities in the system
+      operationId: getFunctionSupport
+      parameters:
+      - description: db type
+        enum:
+        - MySQL
+        - Oracle
+        - TiDB
+        - OceanBase For MySQL
+        - PostgreSQL
+        - DB2
+        - SQL Server
+        in: query
+        name: db_type
+        type: string
+      - description: function name
+        enum:
+        - execute_sql_file_mode
+        in: query
+        name: function_name
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetFunctionSupportResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 查询系统功能支持情况信息
+      tags:
+      - system
   /v1/operation_records:
     get:
       description: Get operation record list
@@ -8379,39 +8412,6 @@ paths:
       summary: 获取用户提示列表
       tags:
       - user
-  /v1/workflow_metas:
-    get:
-      description: get workflow metas
-      operationId: getWorkflowFunctionSupportReqV1
-      parameters:
-      - description: driver type
-        enum:
-        - MySQL
-        - Oracle
-        - TiDB
-        - OceanBase For MySQL
-        - PostgreSQL
-        - DB2
-        - SQL Server
-        in: query
-        name: driver_type
-        type: string
-      - description: function type
-        enum:
-        - execute_sql_file_mode
-        in: query
-        name: function_type
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetWorkflowFunctionSupportResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 查询SQL工单功能支持情况信息
-      tags:
-      - workflow
   /v1/workflows:
     get:
       description: get global workflow list
