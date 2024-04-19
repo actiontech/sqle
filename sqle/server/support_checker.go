@@ -1,4 +1,4 @@
-package workflow
+package server
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ func NewFunctionSupportChecker(driverType string, functionType string) (SupportC
 	case execute_sql_file_mode:
 		return executeSqlFileChecker{driverType: instType, functionType: funcType}, nil
 	}
-	return nil, fmt.Errorf("can not find ant manager matched")
+	return nil, fmt.Errorf("no checker mached")
 }
 
 type SupportChecker interface {
