@@ -362,3 +362,72 @@ func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface
 	}
 	return nil
 }
+
+type FeishuScheduledRecord struct {
+	Model
+	TaskId              uint   `json:"task_id" gorm:"column:task_id"`
+	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
+	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code"`
+
+	Task *Task `gorm:"foreignkey:TaskId"`
+}
+
+func (s *Storage) UpdateFeishuScheduledByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&FeishuScheduledRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+func (s *Storage) GetFeishuScheduledByStatus(status string) ([]FeishuScheduledRecord, error) {
+	var fsRecords []FeishuScheduledRecord
+	err := s.db.Where("oa_result = ?", status).Find(&fsRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return fsRecords, nil
+}
+
+func (s *Storage) FeishuCancelScheduledTask(f FeishuScheduledRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.RejectScheduledInstanceRecord(f.TaskId)
+		if err != nil {
+			return err
+		}
+
+		f.OaResult = FeishuAuditStatusRejected
+		err = s.Save(&f)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) FeishuAgreeScheduledTask(f FeishuScheduledRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.AgreeScheduledInstanceRecord(f.TaskId)
+		if err != nil {
+			return err
+		}
+
+		f.OaResult = FeishuAuditStatusApprove
+		err = s.Save(&f)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) GetFeishuRecordsByTaskIds(taskIds []uint) ([]*FeishuScheduledRecord, error) {
+	var fsRecords []*FeishuScheduledRecord
+	err := s.db.Where("task_id in (?)", taskIds).Find(&fsRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return fsRecords, nil
+}
