@@ -20,10 +20,6 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 		if err := s.Save(&record); err != nil {
 			return nil
 		}
-		err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
-		if err != nil {
-			return err
-		}
 	case NotifyTypeFeishu:
 		record := model.FeishuScheduledRecord{
 			TaskId: curTaskRecord.TaskId,
@@ -31,10 +27,12 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 		if err := s.Save(&record); err != nil {
 			return nil
 		}
-		err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
-		if err != nil {
-			return err
-		}
+	default:
+		return nil
+	}
+	err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
+	if err != nil {
+		return err
 	}
 	return nil
 }
