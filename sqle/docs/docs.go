@@ -6268,7 +6268,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetModuleSupportResV1"
+                            "$ref": "#/definitions/v1.GetModuleStatusResV1"
                         }
                     }
                 }
@@ -9720,7 +9720,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetModuleSupportResV1": {
+        "v1.GetModuleStatusResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9729,7 +9729,7 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.ModuleSupportRes"
+                    "$ref": "#/definitions/v1.ModuleStatusRes"
                 },
                 "message": {
                     "type": "string",
@@ -10973,7 +10973,7 @@ var doc = `{
                 }
             }
         },
-        "v1.ModuleSupportRes": {
+        "v1.ModuleStatusRes": {
             "type": "object",
             "properties": {
                 "is_supported": {
