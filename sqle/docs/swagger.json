@@ -6252,7 +6252,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetModuleSupportResV1"
+                            "$ref": "#/definitions/v1.GetModuleStatusResV1"
                         }
                     }
                 }
@@ -9704,7 +9704,7 @@
                 }
             }
         },
-        "v1.GetModuleSupportResV1": {
+        "v1.GetModuleStatusResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9713,7 +9713,7 @@
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.ModuleSupportRes"
+                    "$ref": "#/definitions/v1.ModuleStatusRes"
                 },
                 "message": {
                     "type": "string",
@@ -10957,7 +10957,7 @@
                 }
             }
         },
-        "v1.ModuleSupportRes": {
+        "v1.ModuleStatusRes": {
             "type": "object",
             "properties": {
                 "is_supported": {

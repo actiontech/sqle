@@ -1148,13 +1148,13 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetModuleSupportResV1:
+  v1.GetModuleStatusResV1:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.ModuleSupportRes'
+        $ref: '#/definitions/v1.ModuleStatusRes'
         type: object
       message:
         example: ok
@@ -2008,7 +2008,7 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
-  v1.ModuleSupportRes:
+  v1.ModuleStatusRes:
     properties:
       is_supported:
         type: boolean
@@ -8122,7 +8122,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetModuleSupportResV1'
+            $ref: '#/definitions/v1.GetModuleStatusResV1'
       security:
       - ApiKeyAuth: []
       summary: 查询系统功能支持情况信息

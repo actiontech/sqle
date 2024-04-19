@@ -9,17 +9,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type GetModuleSupportReqV1 struct {
+type GetModuleStatusReqV1 struct {
 	DbType     string `json:"db_type" query:"db_type"`
 	ModuleName string `json:"module_name" query:"module_name"`
 }
 
-type GetModuleSupportResV1 struct {
+type GetModuleStatusResV1 struct {
 	controller.BaseRes
-	Data ModuleSupportRes `json:"data"`
+	Data ModuleStatusRes `json:"data"`
 }
 
-type ModuleSupportRes struct {
+type ModuleStatusRes struct {
 	IsSupported bool `json:"is_supported"`
 }
 
@@ -30,10 +30,10 @@ type ModuleSupportRes struct {
 // @Security ApiKeyAuth
 // @Param db_type query string false "db type" Enums(MySQL,Oracle,TiDB,OceanBase For MySQL,PostgreSQL,DB2,SQL Server)
 // @Param module_name query string false "module name" Enums(execute_sql_file_mode)
-// @Success 200 {object} v1.GetModuleSupportResV1
+// @Success 200 {object} v1.GetModuleStatusResV1
 // @router /v1/system/module_status [get]
 func GetSystemModuleStatus(c echo.Context) error {
-	req := new(GetModuleSupportReqV1)
+	req := new(GetModuleStatusReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -43,9 +43,9 @@ func GetSystemModuleStatus(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetModuleSupportResV1{
+	return c.JSON(http.StatusOK, &GetModuleStatusResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data: ModuleSupportRes{
+		Data: ModuleStatusRes{
 			IsSupported: checker.CheckIsSupport(),
 		},
 	})
