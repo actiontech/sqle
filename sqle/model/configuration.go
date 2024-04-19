@@ -369,6 +369,24 @@ func (s *Storage) GetWechatRecordsByTaskIds(taskIds []uint) ([]*WechatRecord, er
 	return wcRecords, nil
 }
 
+func (s *Storage) GetScheduledRecordsByTaskIdsAndIm(taskIds []uint, imType string) ([]uint, error) {
+	needSendOATaskIds := []uint{}
+	switch imType {
+	case WechatOAImType:
+		records, err := s.GetWechatRecordsByTaskIds(taskIds)
+		if err != nil {
+			return nil, fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", needSendOATaskIds, err)
+		}
+		for _, r := range records {
+			if r.SpNo == "" {
+				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
+			}
+		}
+	}
+
+	return needSendOATaskIds, nil
+}
+
 func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface{}) error {
 	err := s.db.Model(&WechatRecord{}).Where("task_id = ?", taskId).Updates(m).Error
 	if err != nil {
