@@ -5,11 +5,13 @@ package im
 
 import (
 	"context"
+	"errors"
 	e "errors"
 	"fmt"
 	"strings"
 
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -19,7 +21,12 @@ import (
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
 )
 
-const OATypeContent = "定时上线审核"
+type OaType string
+
+const (
+	WorkflowAudit        OaType = "SQLE工单审核"
+	ScheduledTaskConfirm OaType = "定时上线审核"
+)
 
 var (
 	approvalTableLayout = "[%v]"
@@ -29,17 +36,17 @@ var (
 var FeishuAuditResultLayout = `
       [
         {
-          "id": "6",
+          "id": "7",
           "type": "input",
           "value": "%s"
         },
         {
-          "id": "7",
+          "id": "8",
           "type": "input",
           "value": "%v"
         },
         {
-          "id": "8",
+          "id": "9",
           "type": "input",
           "value": "%v%%"
         }
@@ -90,7 +97,7 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	auditResult := strings.Join(tableRows, ",")
 
 	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
-		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url)
+		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url, string(WorkflowAudit))
 	if err != nil {
 		return err
 	}
@@ -108,6 +115,54 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	}
 
 	if err := s.Save(&feishuInst); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateFeishuScheduledRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
+	s := model.GetStorage()
+
+	createUser, err := dms.GetUser(ctx, workflow.CreateUserId, dms.GetDMSServerAddress())
+	if err != nil {
+		return err
+	}
+	client := feishu.NewFeishuClient(im.AppKey, im.AppSecret)
+	originUser, err := client.GetFeishuUserIdList([]*model.User{createUser}, larkContact.UserIdTypeOpenId)
+	if err != nil {
+		return err
+	}
+	if len(originUser) == 0 {
+		return nil
+	}
+
+	assignUserIDs, err := client.GetFeishuUserIdList(assignUsers, larkContact.UserIdTypeOpenId)
+	if err != nil {
+		return err
+	}
+
+	tableRows := []string{}
+	for _, record := range workflow.Record.InstanceRecords {
+		if record.TaskId == taskId {
+			tableRow := fmt.Sprintf(FeishuAuditResultLayout, record.Instance.Name, record.Task.Score, record.Task.PassRate*100)
+			tableRows = append(tableRows, tableRow)
+		}
+	}
+
+	auditResult := strings.Join(tableRows, ",")
+
+	approvalInstCode, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, originUser[0],
+		assignUserIDs, auditResult, string(workflow.ProjectId), workflow.Desc, url, string(ScheduledTaskConfirm))
+	if err != nil {
+		return err
+	}
+
+	if approvalInstCode == nil {
+		return errors.New("feishu send scheduled task error")
+	}
+	err = s.UpdateFeishuScheduledByTaskId(taskId, map[string]interface{}{"approve_instance_code": *approvalInstCode})
+	if err != nil {
 		return err
 	}
 
@@ -361,7 +416,7 @@ func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.W
 	}
 
 	spNo, err := client.CreateApprovalInstance(ctx, im.ProcessCode, workflow.Subject, createUser.WeChatID,
-		assignUserWechatIDs, string(workflow.ProjectId), url, OATypeContent, []*model.WorkflowInstanceRecord{&insRecord})
+		assignUserWechatIDs, string(workflow.ProjectId), url, string(ScheduledTaskConfirm), []*model.WorkflowInstanceRecord{&insRecord})
 	if err != nil {
 		return err
 	}
@@ -371,4 +426,61 @@ func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.W
 	}
 
 	return nil
+}
+
+func CreateScheduledApprove(taskId uint, projectId, workflowId string, ImType string) {
+	newLog := log.NewEntry()
+	s := model.GetStorage()
+
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+	if err != nil {
+		newLog.Errorf("get workflow error: %v", err)
+	}
+	assignUserIds := workflow.CurrentAssigneeUser()
+
+	assignUsers, err := dms.GetUsers(context.TODO(), assignUserIds, controller.GetDMSServerAddress())
+	if err != nil {
+		newLog.Errorf("get user error: %v", err)
+		return
+	}
+
+	im, exist, err := s.GetImConfigByType(ImType)
+	if err != nil {
+		newLog.Errorf("get im config error: %v", err)
+		return
+	}
+	if !exist {
+		newLog.Errorf("im does not exist, im type: %v", ImType)
+		return
+	}
+
+	if !im.IsEnable {
+		return
+	}
+
+	systemVariables, err := s.GetAllSystemVariables()
+	if err != nil {
+		newLog.Errorf("get sqle url system variables error: %v", err)
+		return
+	}
+
+	sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
+	workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
+	if sqleUrl == "" {
+		newLog.Errorf("sqle url is empty")
+		workflowUrl = ""
+	}
+
+	switch im.Type {
+	case model.ImTypeWechatAudit:
+		if err := CreateWechatAuditRecord(context.TODO(), *im, workflow, assignUsers, workflowUrl, taskId); err != nil {
+			newLog.Errorf("create wechat scheduled audit error: %v", err)
+			return
+		}
+	case model.ImTypeFeishuAudit:
+		if err := CreateFeishuScheduledRecord(context.TODO(), *im, workflow, assignUsers, workflowUrl, taskId); err != nil {
+			newLog.Errorf("create feishu scheduled audit error: %v", err)
+			return
+		}
+	}
 }

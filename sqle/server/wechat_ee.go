@@ -68,6 +68,7 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 				entry.Errorf("save wechat record error: %v", err)
 				continue
 			}
+			entry.Warnf("cancel scheduled task, workflow id:%v, instance id:%v", record.TaskId, record.Task.InstanceId)
 		}
 	}
 }
@@ -101,7 +102,7 @@ func sendWechatScheduledApprove(entry *logrus.Entry) error {
 		}
 
 		for _, taskId := range needSendOATaskIds {
-			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId)
+			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId, model.ImTypeWechatAudit)
 		}
 	}
 
