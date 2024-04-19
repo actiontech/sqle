@@ -6663,6 +6663,55 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflow_metas": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow metas",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "查询SQL工单功能支持情况信息",
+                "operationId": "getWorkflowFunctionSupportReqV1",
+                "parameters": [
+                    {
+                        "enum": [
+                            "MySQL",
+                            "Oracle",
+                            "TiDB",
+                            "OceanBase For MySQL",
+                            "PostgreSQL",
+                            "DB2",
+                            "SQL Server"
+                        ],
+                        "type": "string",
+                        "description": "driver type",
+                        "name": "driver_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "execute_sql_file_mode"
+                        ],
+                        "type": "string",
+                        "description": "function type",
+                        "name": "function_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowFunctionSupportResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/workflows": {
             "get": {
                 "security": [
@@ -10457,6 +10506,22 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetWorkflowFunctionSupportResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "support": {
+                    "type": "boolean"
                 }
             }
         },
