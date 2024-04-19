@@ -6209,19 +6209,19 @@
                 }
             }
         },
-        "/v1/supported_function": {
+        "/v1/system/module_status": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get support for functionalities in the system",
+                "description": "get module status for modulealities in the system",
                 "tags": [
                     "system"
                 ],
                 "summary": "查询系统功能支持情况信息",
-                "operationId": "getFunctionSupport",
+                "operationId": "getSystemModuleStatus",
                 "parameters": [
                     {
                         "enum": [
@@ -6243,8 +6243,8 @@
                             "execute_sql_file_mode"
                         ],
                         "type": "string",
-                        "description": "function name",
-                        "name": "function_name",
+                        "description": "module name",
+                        "name": "module_name",
                         "in": "query"
                     }
                 ],
@@ -6252,7 +6252,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetFunctionSupportResV1"
+                            "$ref": "#/definitions/v1.GetModuleSupportResV1"
                         }
                     }
                 }
@@ -9576,22 +9576,6 @@
                 }
             }
         },
-        "v1.GetFunctionSupportResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "support": {
-                    "type": "boolean"
-                }
-            }
-        },
         "v1.GetInstanceConnectableResV1": {
             "type": "object",
             "properties": {
@@ -9713,6 +9697,23 @@
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.LicenseUsageV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetModuleSupportResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleSupportRes"
                 },
                 "message": {
                     "type": "string",
@@ -10953,6 +10954,14 @@
                 "maintenance_stop_time": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TimeResV1"
+                }
+            }
+        },
+        "v1.ModuleSupportRes": {
+            "type": "object",
+            "properties": {
+                "is_supported": {
+                    "type": "boolean"
                 }
             }
         },
