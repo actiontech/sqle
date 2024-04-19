@@ -314,21 +314,10 @@ func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error)
 
 func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
-		insRecord := WorkflowInstanceRecord{}
-		err := s.db.Where("task_id = ?", w.TaskId).Find(&insRecord).Error
-		if err != nil {
-			return err
-		}
-		insRecord.ScheduledAt = nil
-		insRecord.IsCanExec = false
-		err = s.Save(&insRecord)
-		if err != nil {
-			return err
-		}
+		s.RejectScheduledInstanceRecord(w.TaskId)
 
 		w.OaResult = ApproveStatusRefuse
-		err = s.Save(&w)
+		err := s.Save(&w)
 		if err != nil {
 			return err
 		}
@@ -339,19 +328,10 @@ func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 
 func (s *Storage) WechatAgreeScheduledTask(w WechatRecord) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		insRecord := WorkflowInstanceRecord{}
-		err := s.db.Where("task_id = ?", w.TaskId).Find(&insRecord).Error
-		if err != nil {
-			return err
-		}
-		insRecord.IsCanExec = true
-		err = s.Save(&insRecord)
-		if err != nil {
-			return err
-		}
+		s.AgreeScheduledInstanceRecord(w.TaskId)
 
 		w.OaResult = ApproveStatusAgree
-		err = s.Save(&w)
+		err := s.Save(&w)
 		if err != nil {
 			return err
 		}
@@ -367,24 +347,6 @@ func (s *Storage) GetWechatRecordsByTaskIds(taskIds []uint) ([]*WechatRecord, er
 		return nil, err
 	}
 	return wcRecords, nil
-}
-
-func (s *Storage) GetScheduledRecordsByTaskIdsAndIm(taskIds []uint, imType string) ([]uint, error) {
-	needSendOATaskIds := []uint{}
-	switch imType {
-	case WechatOAImType:
-		records, err := s.GetWechatRecordsByTaskIds(taskIds)
-		if err != nil {
-			return nil, fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", needSendOATaskIds, err)
-		}
-		for _, r := range records {
-			if r.SpNo == "" {
-				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
-			}
-		}
-	}
-
-	return needSendOATaskIds, nil
 }
 
 func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface{}) error {
