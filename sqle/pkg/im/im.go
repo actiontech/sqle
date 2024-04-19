@@ -188,7 +188,7 @@ func BatchCancelApprove(workflowIds []string, user *model.User) {
 	}
 }
 
-func CreateScheduledApprove(taskId uint, projectId, workflowId string) {
+func CreateScheduledApprove(taskId uint, projectId, workflowId string, ImType string) {
 	newLog := log.NewEntry()
 	s := model.GetStorage()
 
@@ -204,38 +204,43 @@ func CreateScheduledApprove(taskId uint, projectId, workflowId string) {
 		return
 	}
 
-	ims, err := s.GetAllIMConfig()
+	im, exist, err := s.GetImConfigByType(ImType)
 	if err != nil {
 		newLog.Errorf("get im config error: %v", err)
 		return
 	}
+	if !exist {
+		newLog.Errorf("im does not exist, im type: %v", ImType)
+		return
+	}
 
-	for _, im := range ims {
-		if !im.IsEnable {
-			continue
+	if !im.IsEnable {
+		return
+	}
+
+	systemVariables, err := s.GetAllSystemVariables()
+	if err != nil {
+		newLog.Errorf("get sqle url system variables error: %v", err)
+		return
+	}
+
+	sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
+	workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
+	if sqleUrl == "" {
+		newLog.Errorf("sqle url is empty")
+		workflowUrl = ""
+	}
+
+	switch im.Type {
+	case model.ImTypeWechatAudit:
+		if err := CreateWechatAuditRecord(context.TODO(), *im, workflow, assignUsers, workflowUrl, taskId); err != nil {
+			newLog.Errorf("create wechat scheduled audit error: %v", err)
+			return
 		}
-
-		systemVariables, err := s.GetAllSystemVariables()
-		if err != nil {
-			newLog.Errorf("get sqle url system variables error: %v", err)
-			continue
-		}
-
-		sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
-		workflowUrl := fmt.Sprintf("%v/project/%s/order/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
-		if sqleUrl == "" {
-			newLog.Errorf("sqle url is empty")
-			workflowUrl = ""
-		}
-
-		switch im.Type {
-		case model.ImTypeWechatAudit:
-			if err := CreateWechatAuditRecord(context.TODO(), im, workflow, assignUsers, workflowUrl, taskId); err != nil {
-				newLog.Errorf("create wechat audit error: %v", err)
-				continue
-			}
-		default:
-			newLog.Errorf("im type %s not found", im.Type)
+	case model.ImTypeFeishuAudit:
+		if err := CreateFeishuScheduledRecord(context.TODO(), *im, workflow, assignUsers, workflowUrl, taskId); err != nil {
+			newLog.Errorf("create feishu scheduled audit error: %v", err)
+			return
 		}
 	}
 }
