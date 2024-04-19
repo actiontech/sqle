@@ -284,21 +284,12 @@ func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowIns
 }
 
 func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
-	err := s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"is_can_exec": true})
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"is_can_exec": true})
 }
 
 func (s *Storage) RejectScheduledInstanceRecord(taskId uint) error {
 	// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
-	err := s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"scheduled_at": nil})
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"scheduled_at": nil})
 }
 
 const (
