@@ -863,55 +863,6 @@
                 }
             }
         },
-        "/v1/function_support": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get support for functionalities in the system",
-                "tags": [
-                    "system"
-                ],
-                "summary": "查询系统功能支持情况信息",
-                "operationId": "getFunctionSupport",
-                "parameters": [
-                    {
-                        "enum": [
-                            "MySQL",
-                            "Oracle",
-                            "TiDB",
-                            "OceanBase For MySQL",
-                            "PostgreSQL",
-                            "DB2",
-                            "SQL Server"
-                        ],
-                        "type": "string",
-                        "description": "db type",
-                        "name": "db_type",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "execute_sql_file_mode"
-                        ],
-                        "type": "string",
-                        "description": "function name",
-                        "name": "function_name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetFunctionSupportResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/operation_records": {
             "get": {
                 "security": [
@@ -6253,6 +6204,55 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowStatusCountResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/supported_function": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get support for functionalities in the system",
+                "tags": [
+                    "system"
+                ],
+                "summary": "查询系统功能支持情况信息",
+                "operationId": "getFunctionSupport",
+                "parameters": [
+                    {
+                        "enum": [
+                            "MySQL",
+                            "Oracle",
+                            "TiDB",
+                            "OceanBase For MySQL",
+                            "PostgreSQL",
+                            "DB2",
+                            "SQL Server"
+                        ],
+                        "type": "string",
+                        "description": "db type",
+                        "name": "db_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "execute_sql_file_mode"
+                        ],
+                        "type": "string",
+                        "description": "function name",
+                        "name": "function_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetFunctionSupportResV1"
                         }
                     }
                 }
