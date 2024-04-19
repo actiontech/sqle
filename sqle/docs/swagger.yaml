@@ -6403,6 +6403,8 @@ paths:
       tags:
       - sql_optimization
     post:
+      consumes:
+      - multipart/form-data
       description: |-
         optimize sql
         1. formData[sql]: sql content;
@@ -6470,6 +6472,8 @@ paths:
         in: formData
         name: git_user_password
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
