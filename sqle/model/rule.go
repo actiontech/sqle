@@ -33,6 +33,8 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 		Knowledge: &RuleKnowledge{
 			Content: dr.Knowledge.Content,
 		},
+		AuditPower:   dr.AuditPower,
+		RewritePower: dr.RewritePower,
 	}
 }
 
@@ -64,15 +66,17 @@ func (r *RuleKnowledge) GetContent() string {
 }
 
 type Rule struct {
-	Name        string         `json:"name" gorm:"primary_key; not null"`
-	DBType      string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc        string         `json:"desc"`
-	Annotation  string         `json:"annotation" gorm:"column:annotation"`
-	Level       string         `json:"level" example:"error"` // notice, warn, error
-	Typ         string         `json:"type" gorm:"column:type; not null"`
-	Params      params.Params  `json:"params" gorm:"type:varchar(1000)"`
-	KnowledgeId uint           `json:"knowledge_id"`
-	Knowledge   *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	Name         string         `json:"name" gorm:"primary_key; not null"`
+	DBType       string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc         string         `json:"desc"`
+	Annotation   string         `json:"annotation" gorm:"column:annotation"`
+	Level        string         `json:"level" example:"error"` // notice, warn, error
+	Typ          string         `json:"type" gorm:"column:type; not null"`
+	Params       params.Params  `json:"params" gorm:"type:varchar(1000)"`
+	KnowledgeId  uint           `json:"knowledge_id"`
+	Knowledge    *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	AuditPower   string         `json:"audit_power" gorm:"type:varchar(255)" example:"true"`
+	RewritePower string         `json:"rewrite_power" gorm:"type:varchar(255)" example:"true"`
 }
 
 func (r Rule) TableName() string {
