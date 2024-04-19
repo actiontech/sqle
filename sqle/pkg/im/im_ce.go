@@ -22,10 +22,6 @@ func CreateFeishuAuditInst(ctx context.Context, im model.IM, workflow *model.Wor
 	return ErrCommunityEditionNotSupportFeishuAudit
 }
 
-func CreateFeishuScheduledRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
-	return ErrCommunityEditionNotSupportFeishuAudit
-}
-
 func UpdateFeishuAuditStatus(ctx context.Context, im model.IM, workflowId string, user *model.User, status string, reason string) error {
 	return ErrCommunityEditionNotSupportFeishuAudit
 }
@@ -51,9 +47,5 @@ func CancelDingdingAuditInst(ctx context.Context, im model.IM, workflowIDs []str
 }
 
 func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
-	return ErrCommunityEditionNotSupportWechatAudit
-}
-
-func CreateWechatAuditRecord(ctx context.Context, im model.IM, workflow *model.Workflow, assignUsers []*model.User, url string, taskId uint) error {
 	return ErrCommunityEditionNotSupportWechatAudit
 }
