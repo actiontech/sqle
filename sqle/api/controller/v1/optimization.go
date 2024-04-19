@@ -10,7 +10,7 @@ import (
 
 type OptimizeSQLReq struct {
 	DBType           string  `json:"db_type" form:"db_type" example:"MySQL"`
-	SQLContent       string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
+	SQLContent       string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;"`
 	OptimizationName string  `json:"optimization_name" form:"optimization_name" example:"optmz_2024031412091244" valid:"required"`
 	InstanceName     *string `json:"instance_name" form:"instance_name" example:"instance1"`
 	SchemaName       *string `json:"schema_name" form:"schema_name" example:"schema1"`
@@ -26,6 +26,7 @@ type OptimizeSQLResData struct {
 
 // @Summary 优化SQL
 // @Description optimize sql
+// @Id OptimizeSQLReq
 // @Description 1. formData[sql]: sql content;
 // @Description 2. file[input_sql_file]: it is a sql file;
 // @Description 3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
@@ -33,7 +34,8 @@ type OptimizeSQLResData struct {
 // @Description 5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
 // @Description 6. formData[git_user_name]:The name of the user who owns the repository read access.
 // @Description 7. formData[git_user_password]:The password corresponding to git_user_name.
-// @Id OptimizeSQLReq
+// @Accept mpfd
+// @Produce json
 // @Tags sql_optimization
 // @Security ApiKeyAuth
 // @Param req body v1.OptimizeSQLReq true "sqls that should be optimization"
