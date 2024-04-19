@@ -446,23 +446,16 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry, imType string) ([]u
 	now := time.Now()
 	taskIds := []uint{}
 	for _, ir := range w.Record.InstanceRecords {
-		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify && !ir.IsCanExec {
 			taskIds = append(taskIds, ir.TaskId)
 		}
 	}
-	needSendOATaskIds := []uint{}
-	switch imType {
-	case WechatOAImType:
-		records, err := s.GetWechatRecordsByTaskIds(taskIds)
-		if err != nil {
-			return nil, fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", needSendOATaskIds, err)
-		}
-		for _, r := range(records) {
-			if r.SpNo == "" {
-				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
-			}
-		}
+
+	needSendOATaskIds, err := s.GetScheduledRecordsByTaskIdsAndIm(taskIds, imType)
+	if err != nil {
+		return nil, err
 	}
+	
 	return needSendOATaskIds, nil
 }
 
