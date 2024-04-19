@@ -65,9 +65,10 @@ func (pm *pluginManager) AllDriverMetas() []*driverV2.DriverMetas {
 		pluginName := pm.pluginNames[i]
 		meta := pm.metas[pluginName]
 		metas[i] = &driverV2.DriverMetas{
-			PluginName:          meta.PluginName,
-			DatabaseDefaultPort: meta.DatabaseDefaultPort,
-			Logo:                meta.Logo,
+			PluginName:            meta.PluginName,
+			DatabaseDefaultPort:   meta.DatabaseDefaultPort,
+			Logo:                  meta.Logo,
+			EnabledOptionalModule: meta.EnabledOptionalModule,
 		}
 	}
 
