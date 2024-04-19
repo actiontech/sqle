@@ -261,6 +261,14 @@ func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interfa
 	return nil
 }
 
+func (s *Storage) UpdateWorkflowInstanceRecordByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
 	return instanceRecord, s.db.Where("task_id = ?", id).First(&instanceRecord).Error
 }
@@ -276,13 +284,7 @@ func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowIns
 }
 
 func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
-	insRecord := WorkflowInstanceRecord{}
-	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
-	if err != nil {
-		return err
-	}
-	insRecord.IsCanExec = true
-	err = s.Save(&insRecord)
+	err := s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"is_can_exec": true})
 	if err != nil {
 		return err
 	}
@@ -291,13 +293,8 @@ func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
 
 func (s *Storage) RejectScheduledInstanceRecord(taskId uint) error {
 	// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
-	insRecord := WorkflowInstanceRecord{}
-	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
-	if err != nil {
-		return err
-	}
-	insRecord.ScheduledAt = nil
-	err = s.Save(&insRecord)
+	err := s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"scheduled_at": nil})
+
 	if err != nil {
 		return err
 	}
