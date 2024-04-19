@@ -68,6 +68,7 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 				entry.Errorf("save wechat record error: %v", err)
 				continue
 			}
+			entry.Warnf("cancel scheduled task, workflow id:%v, instance id:%v", record.TaskId, record.Task.InstanceId)
 		}
 	}
 }

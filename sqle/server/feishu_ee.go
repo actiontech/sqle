@@ -239,6 +239,7 @@ func updateFeishuScheduledTask(entry *logrus.Entry, im *model.IM) error {
 				entry.Errorf("save feishu record error: %v", err)
 				continue
 			}
+			entry.Warnf("cancel scheduled task, workflow id:%v, instance id:%v", record.TaskId, record.Task.InstanceId)
 		}
 	}
 	return nil
