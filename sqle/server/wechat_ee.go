@@ -84,10 +84,22 @@ func sendWechatScheduledApprove(entry *logrus.Entry) error {
 		if err != nil {
 			return fmt.Errorf("get workflow from storage error: %v", err)
 		}
-		needSendOATaskIds, err := w.GetNeedSendOATaskIds(entry, model.WechatOAImType)
+		taskIds, err := w.GetNeedSendOATaskIds(entry)
 		if err != nil {
-			return fmt.Errorf("get need scheduled taskIds error: %v", err)
+			return err
 		}
+		records, err := st.GetWechatRecordsByTaskIds(taskIds)
+		if err != nil {
+			return fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", taskIds, err)
+		}
+
+		needSendOATaskIds := []uint{}
+		for _, r := range records {
+			if r.SpNo == "" {
+				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
+			}
+		}
+
 		for _, taskId := range needSendOATaskIds {
 			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId)
 		}
