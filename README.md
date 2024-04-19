@@ -30,7 +30,7 @@ SQLE 是爱可生自主研发支持多元数据库的 SQL 质量管理平台。�
 # 📌 功能特性
 ### 更丰富的数据源支持
 
-  支持主流商业和开源数据库，包括 MySQL、PostgreSQL、Oracle、SQL Server、DB2、TiDB、OceanBase 等，持续增加新的数据源类型，以满足您不同的需求。
+  支持主流商业和开源数据库，包括 MySQL、PostgreSQL、Oracle、SQL Server、DB2、TiDB、OceanBase、ActionDB 等，持续增加新的数据源类型，以满足您不同的需求。
   
 ### 更全面的审核规则
 

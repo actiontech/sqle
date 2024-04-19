@@ -22,6 +22,7 @@ service Driver {
   // db executor
   rpc Ping(PingRequest) returns (Empty);
   rpc Exec(ExecRequest) returns (ExecResponse);
+  rpc ExecBatch(ExecBatchRequest) returns (ExecBatchResult);
   rpc Tx(TxRequest) returns (TxResponse);
   rpc Query(QueryRequest) returns (QueryResponse);
   rpc Explain(ExplainRequest) returns (ExplainResponse);
@@ -47,6 +48,7 @@ enum OptionalModule {
   ExtractTableFromSQL = 4;
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
+  ExecBatch = 7;
 }
 
 message Param {
@@ -124,6 +126,7 @@ message Node {
   string type = 2;
   string fingerprint = 3;
   uint64 startLine = 4;
+  uint64 batchId = 5;
 }
 
 message ParseResponse {
@@ -193,6 +196,15 @@ message ExecResult {
   string lastInsertIdError = 2;
   int64 rowsAffected = 3;
   string rowsAffectedError = 4;
+}
+
+message ExecBatchRequest {
+  Session session = 1;
+  repeated ExecSQL sqls = 2;
+}
+
+message ExecBatchResult {
+  repeated ExecResult results = 1;
 }
 
 message ExecResponse {

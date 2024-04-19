@@ -314,14 +314,7 @@ func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error)
 
 func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
-		insRecord := WorkflowInstanceRecord{}
-		err := s.db.Where("task_id = ?", w.TaskId).Find(&insRecord).Error
-		if err != nil {
-			return err
-		}
-		insRecord.ScheduledAt = nil
-		err = s.Save(&insRecord)
+		err := s.RejectScheduledInstanceRecord(w.TaskId)
 		if err != nil {
 			return err
 		}
@@ -336,13 +329,30 @@ func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 	return err
 }
 
-func (s *Storage) GetWechatRecordByTaskId(taskId uint) (*WechatRecord, error) {
-	var wcRecord WechatRecord
-	err := s.db.Where("task_id = ?", taskId).Find(&wcRecord).Error
+func (s *Storage) WechatAgreeScheduledTask(w WechatRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.AgreeScheduledInstanceRecord(w.TaskId)
+		if err != nil {
+			return err
+		}
+
+		w.OaResult = ApproveStatusAgree
+		err = s.Save(&w)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) GetWechatRecordsByTaskIds(taskIds []uint) ([]*WechatRecord, error) {
+	var wcRecords []*WechatRecord
+	err := s.db.Where("task_id in (?)", taskIds).Find(&wcRecords).Error
 	if err != nil {
 		return nil, err
 	}
-	return &wcRecord, nil
+	return wcRecords, nil
 }
 
 func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface{}) error {
