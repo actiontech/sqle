@@ -368,7 +368,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 企业公告
 		v1Router.GET("/company_notice", v1.GetCompanyNotice)
 		// 系统功能开关
-		v1Router.GET("/function_support", v1.GetFunctionSupport)
+		v1Router.GET("/supported_function", v1.GetFunctionSupport)
 	}
 
 	// enterprise customized apis
