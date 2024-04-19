@@ -80,6 +80,8 @@ func errUnknownFunctionType() error {
 
 func convertToDriverType(driverType string) (DriverType, error) {
 	switch driverType {
+	case "MySQL":
+		return DriverTypeMySQL, nil
 	case "Oracle":
 		return DriverTypeOracle, nil
 	case "SQL Server":
@@ -92,6 +94,8 @@ func convertToDriverType(driverType string) (DriverType, error) {
 		return DriverTypeDB2, nil
 	case "OceanBase For MySQL":
 		return DriverTypeOceanBase, nil
+	case "TDSQL For InnoDB":
+		return DriverTypeTDSQLForInnoDB, nil
 	default:
 		return "", errUnknownDriverType()
 	}
