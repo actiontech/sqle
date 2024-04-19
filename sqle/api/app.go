@@ -327,7 +327,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1)
 		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge)
 		v1Router.GET("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.GetCustomRuleKnowledge)
-		v1Router.GET("/workflow_function_support", v1.GetWorkflowFunctionSupport)
 
 		//rule
 		v1Router.GET("/rules", v1.GetRules)
@@ -368,6 +367,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 		// 企业公告
 		v1Router.GET("/company_notice", v1.GetCompanyNotice)
+		// 系统功能开关
+		v1Router.GET("/function_support", v1.GetFunctionSupport)
 	}
 
 	// enterprise customized apis
