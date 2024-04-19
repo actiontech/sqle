@@ -245,7 +245,7 @@ type WorkflowInstanceRecord struct {
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
 	// NeedScheduledTaskNotify为true时，该字段生效
-	IsCanExec               bool
+	IsCanExec bool
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
@@ -273,6 +273,35 @@ func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowIns
 	}
 
 	return workflowInstanceRecords, nil
+}
+
+func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
+	insRecord := WorkflowInstanceRecord{}
+	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
+	if err != nil {
+		return err
+	}
+	insRecord.IsCanExec = true
+	err = s.Save(&insRecord)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) RejectScheduledInstanceRecord(taskId uint) error {
+	// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
+	insRecord := WorkflowInstanceRecord{}
+	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
+	if err != nil {
+		return err
+	}
+	insRecord.ScheduledAt = nil
+	err = s.Save(&insRecord)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 const (
@@ -436,13 +465,12 @@ func (w *Workflow) GetNeedScheduledTaskIds(entry *logrus.Entry) (map[uint] /* ta
 	return needExecuteTaskIds, nil
 }
 
-func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry, imType string) ([]uint, error) {
+func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	isExec := w.isExecuteStep()
 	if !isExec {
 		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
 	}
 
-	s := GetStorage()
 	now := time.Now()
 	taskIds := []uint{}
 	for _, ir := range w.Record.InstanceRecords {
@@ -451,12 +479,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry, imType string) ([]u
 		}
 	}
 
-	needSendOATaskIds, err := s.GetScheduledRecordsByTaskIdsAndIm(taskIds, imType)
-	if err != nil {
-		return nil, err
-	}
-	
-	return needSendOATaskIds, nil
+	return taskIds, nil
 }
 
 func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
