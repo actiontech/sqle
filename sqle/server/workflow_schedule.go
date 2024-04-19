@@ -15,7 +15,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
-	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,51 +33,25 @@ func NewWorkflowScheduleJob(entry *logrus.Entry) ServerJob {
 
 func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	st := model.GetStorage()
-
-	entry.Error("start WorkflowSchedule")
 	workflows, err := st.GetNeedScheduledWorkflows()
 	if err != nil {
 		entry.Errorf("get need scheduled workflows from storage error: %v", err)
 		return
 	}
-	entry.Errorf("start WorkflowSchedule workflow:%v", workflows)
-	now := time.Now()
+
 	for _, workflow := range workflows {
-		entry.Errorf("get workflow id %v", workflow.WorkflowId)
 		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
 		if err != nil {
 			entry.Errorf("get workflow from storage error: %v", err)
 			return
 		}
-
-		currentStep := w.CurrentStep()
-		if currentStep == nil {
-			entry.Errorf("workflow %s not found", w.Subject)
-			return
-		}
-		if currentStep.Template.Typ != model.WorkflowStepTypeSQLExecute {
-			entry.Errorf("workflow %s need to be approved first", w.Subject)
+		needExecuteTaskIds, err := w.GetNeedScheduledTaskIds(entry)
+		if err != nil {
+			entry.Errorf("get need scheduled taskIds error: %v", err)
 			return
 		}
 
 		entry.Infof("start to execute scheduled workflow %s", w.Subject)
-		needExecuteTaskIds := map[uint]string{}
-		for _, ir := range w.Record.InstanceRecords {
-			if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
-				if ir.NeedScheduledTaskNotify {
-					isOaAgree, err := getOaApproveResult(ir.TaskId, workflow)
-
-					if err != nil {
-						entry.Error(err)
-						continue
-					}
-					if !isOaAgree {
-						continue
-					}
-				}
-				needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
-			}
-		}
 		if len(needExecuteTaskIds) == 0 {
 			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
 		}
@@ -89,21 +62,6 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 			entry.Infof("execute scheduled workflow %s success", w.Subject)
 		}
 	}
-}
-
-func getOaApproveResult(taskId uint, workflow *model.Workflow) (bool, error) {
-	s := model.GetStorage()
-	record, err := s.GetWechatRecordByTaskId(taskId)
-	if err != nil {
-		return false, err
-	}
-	if record.SpNo == "" {
-		go im.CreateScheduledApprove(taskId, string(workflow.ProjectId), workflow.WorkflowId)
-		return false, nil
-	} else if record.OaResult == model.ApproveStatusAgree {
-		return true, nil
-	}
-	return false, nil
 }
 
 func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) error {

@@ -9,6 +9,7 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jinzhu/gorm"
 )
@@ -227,6 +228,10 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
+const (
+	WechatOAImType = "wechat"
+)
+
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -239,6 +244,8 @@ type WorkflowInstanceRecord struct {
 	ExecutionUserId string
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
+	// NeedScheduledTaskNotify为true时，该字段生效
+	IsCanExec bool
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
@@ -266,6 +273,35 @@ func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowIns
 	}
 
 	return workflowInstanceRecords, nil
+}
+
+func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
+	insRecord := WorkflowInstanceRecord{}
+	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
+	if err != nil {
+		return err
+	}
+	insRecord.IsCanExec = true
+	err = s.Save(&insRecord)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) RejectScheduledInstanceRecord(taskId uint) error {
+	// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
+	insRecord := WorkflowInstanceRecord{}
+	err := s.db.Where("task_id = ?", taskId).Find(&insRecord).Error
+	if err != nil {
+		return err
+	}
+	insRecord.ScheduledAt = nil
+	err = s.Save(&insRecord)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 const (
@@ -396,6 +432,54 @@ func (w *Workflow) GetTaskIds() []uint {
 		taskIds[i] = inst.TaskId
 	}
 	return taskIds
+}
+
+func (w *Workflow) isExecuteStep() bool {
+	currentStep := w.CurrentStep()
+	if currentStep == nil {
+		return false
+	}
+	if currentStep.Template.Typ != WorkflowStepTypeSQLExecute {
+		return false
+	}
+	return true
+}
+
+func (w *Workflow) GetNeedScheduledTaskIds(entry *logrus.Entry) (map[uint] /* taskID */ string /* userID */, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	now := time.Now()
+	needExecuteTaskIds := map[uint]string{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
+			if ir.NeedScheduledTaskNotify && !ir.IsCanExec {
+				continue
+			}
+
+			needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
+		}
+	}
+	return needExecuteTaskIds, nil
+}
+
+func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	now := time.Now()
+	taskIds := []uint{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify && !ir.IsCanExec {
+			taskIds = append(taskIds, ir.TaskId)
+		}
+	}
+
+	return taskIds, nil
 }
 
 func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
