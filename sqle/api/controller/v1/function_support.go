@@ -27,7 +27,7 @@ type GetFunctionSupportResV1 struct {
 // @Param db_type query string false "db type" Enums(MySQL,Oracle,TiDB,OceanBase For MySQL,PostgreSQL,DB2,SQL Server)
 // @Param function_name query string false "function name" Enums(execute_sql_file_mode)
 // @Success 200 {object} v1.GetFunctionSupportResV1
-// @router /v1/function_support [get]
+// @router /v1/supported_function [get]
 func GetFunctionSupport(c echo.Context) error {
 	req := new(GetFunctionSupportReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
