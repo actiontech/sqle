@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/workflow"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -1028,4 +1029,40 @@ func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
 		}
 	}
 	return taskIDs
+}
+
+type GetWorkflowFunctionSupportReqV1 struct {
+	DriverType   string `json:"driver_type" query:"driver_type"`
+	FunctionType string `json:"function_type" query:"function_type"`
+}
+
+type GetWorkflowFunctionSupportResV1 struct {
+	controller.BaseRes
+	Support bool `json:"support"`
+}
+
+// @Summary 查询SQL工单功能支持情况信息
+// @Description get functions support of workflow
+// @Id getWorkflowFunctionSupportReqV1
+// @Tags workflow
+// @Security ApiKeyAuth
+// @Param driver_type query string false "driver type" Enums(MySQL,Oracle,TiDB,OceanBase For MySQL,PostgreSQL,DB2,SQL Server)
+// @Param function_type query string false "function type" Enums(execute_sql_file_mode)
+// @Success 200 {object} v1.GetWorkflowFunctionSupportResV1
+// @router /v1/workflow_metas [get]
+func GetWorkflowFunctionSupport(c echo.Context) error {
+	req := new(GetWorkflowFunctionSupportReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+
+	checker, err := workflow.NewFunctionSupportChecker(req.DriverType, req.FunctionType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetWorkflowFunctionSupportResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Support: checker.CheckIsSupport(),
+	})
 }
