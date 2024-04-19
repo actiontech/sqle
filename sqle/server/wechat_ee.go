@@ -5,9 +5,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/sirupsen/logrus"
 )
@@ -22,9 +25,11 @@ func NewWechatJob(entry *logrus.Entry) ServerJob {
 	return w
 }
 
-// 当前企微轮询只为二次确认工单定时上线功能
-// https://github.com/actiontech/sqle-ee/issues/1441
 func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
+	if err := sendWechatScheduledApprove(entry); err != nil {
+		entry.Errorf("send wechat scheduled approve error: %v", err)
+	}
+
 	s := model.GetStorage()
 	im, exist, err := s.GetImConfigByType(model.ImTypeWechatAudit)
 	if err != nil {
@@ -54,8 +59,7 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 
 		switch model.WechatOAStatus(instDetail.SpStatus) {
 		case model.APPROVED:
-			record.OaResult = model.ApproveStatusAgree
-			if err := s.Save(&record); err != nil {
+			if err := s.WechatAgreeScheduledTask(record); err != nil {
 				entry.Errorf("save wechat record error: %v", err)
 				continue
 			}
@@ -66,4 +70,40 @@ func (w *WechatJob) wechatRotation(entry *logrus.Entry) {
 			}
 		}
 	}
+}
+
+func sendWechatScheduledApprove(entry *logrus.Entry) error {
+	st := model.GetStorage()
+	workflows, err := st.GetNeedScheduledWorkflows()
+	if err != nil {
+		return fmt.Errorf("get need scheduled workflows from storage error: %v", err)
+	}
+
+	for _, workflow := range workflows {
+		w, err := dms.GetWorkflowDetailByWorkflowId(string(workflow.ProjectId), workflow.WorkflowId, st.GetWorkflowDetailWithoutInstancesByWorkflowID)
+		if err != nil {
+			return fmt.Errorf("get workflow from storage error: %v", err)
+		}
+		taskIds, err := w.GetNeedSendOATaskIds(entry)
+		if err != nil {
+			return err
+		}
+		records, err := st.GetWechatRecordsByTaskIds(taskIds)
+		if err != nil {
+			return fmt.Errorf("get wechat record failed, taskIDs:%v, err:%v", taskIds, err)
+		}
+
+		needSendOATaskIds := []uint{}
+		for _, r := range records {
+			if r.SpNo == "" {
+				needSendOATaskIds = append(needSendOATaskIds, r.TaskId)
+			}
+		}
+
+		for _, taskId := range needSendOATaskIds {
+			im.CreateScheduledApprove(taskId, string(w.ProjectId), w.WorkflowId)
+		}
+	}
+
+	return nil
 }
