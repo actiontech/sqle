@@ -305,7 +305,7 @@ type WechatRecord struct {
 
 func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error) {
 	var wcRecords []WechatRecord
-	err := s.db.Where("oa_result = ?", status).Find(&wcRecords).Error
+	err := s.db.Where("oa_result = ?", status).Preload("Task").Find(&wcRecords).Error
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +382,7 @@ func (s *Storage) UpdateFeishuScheduledByTaskId(taskId uint, m map[string]interf
 
 func (s *Storage) GetFeishuScheduledByStatus(status string) ([]FeishuScheduledRecord, error) {
 	var fsRecords []FeishuScheduledRecord
-	err := s.db.Where("oa_result = ?", status).Find(&fsRecords).Error
+	err := s.db.Where("oa_result = ?", status).Preload("Task").Find(&fsRecords).Error
 	if err != nil {
 		return nil, err
 	}
