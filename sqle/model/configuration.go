@@ -314,10 +314,13 @@ func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error)
 
 func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		s.RejectScheduledInstanceRecord(w.TaskId)
+		err := s.RejectScheduledInstanceRecord(w.TaskId)
+		if err != nil {
+			return err
+		}
 
 		w.OaResult = ApproveStatusRefuse
-		err := s.Save(&w)
+		err = s.Save(&w)
 		if err != nil {
 			return err
 		}
@@ -328,10 +331,13 @@ func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
 
 func (s *Storage) WechatAgreeScheduledTask(w WechatRecord) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		s.AgreeScheduledInstanceRecord(w.TaskId)
+		err := s.AgreeScheduledInstanceRecord(w.TaskId)
+		if err != nil {
+			return err
+		}
 
 		w.OaResult = ApproveStatusAgree
-		err := s.Save(&w)
+		err = s.Save(&w)
 		if err != nil {
 			return err
 		}
