@@ -1059,17 +1059,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetFunctionSupportResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      message:
-        example: ok
-        type: string
-      support:
-        type: boolean
-    type: object
   v1.GetInstanceConnectableResV1:
     properties:
       code:
@@ -1154,6 +1143,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.LicenseUsageV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetModuleSupportResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ModuleSupportRes'
         type: object
       message:
         example: ok
@@ -2006,6 +2007,11 @@ definitions:
       maintenance_stop_time:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
+    type: object
+  v1.ModuleSupportRes:
+    properties:
+      is_supported:
+        type: boolean
     type: object
   v1.OperationActionList:
     properties:
@@ -8089,10 +8095,10 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
-  /v1/supported_function:
+  /v1/system/module_status:
     get:
-      description: get support for functionalities in the system
-      operationId: getFunctionSupport
+      description: get module status for modulealities in the system
+      operationId: getSystemModuleStatus
       parameters:
       - description: db type
         enum:
@@ -8106,17 +8112,17 @@ paths:
         in: query
         name: db_type
         type: string
-      - description: function name
+      - description: module name
         enum:
         - execute_sql_file_mode
         in: query
-        name: function_name
+        name: module_name
         type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetFunctionSupportResV1'
+            $ref: '#/definitions/v1.GetModuleSupportResV1'
       security:
       - ApiKeyAuth: []
       summary: 查询系统功能支持情况信息
