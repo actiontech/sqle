@@ -120,6 +120,20 @@ func (rtr *RuleTemplateRule) GetRule() *Rule {
 	return rule
 }
 
+func (rtr *RuleTemplateRule) GetRewriteRule() *Rule {
+	rule := rtr.Rule
+	if rule.RewritePower != "true" {
+		return nil
+	}
+	if rtr.RuleLevel != "" {
+		rule.Level = rtr.RuleLevel
+	}
+	if rtr.RuleParams != nil && len(rtr.RuleParams) > 0 {
+		rule.Params = rtr.RuleParams
+	}
+	return rule
+}
+
 type RuleTemplateCustomRule struct {
 	RuleTemplateId uint   `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
 	RuleId         string `json:"rule_id" gorm:"primary_key;"`
@@ -215,6 +229,37 @@ func (s *Storage) GetAllRulesByInstance(instance *Instance) ([]*Rule, []*CustomR
 
 	// 数据源可以绑定全局模板和项目模板
 	return s.GetRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
+}
+
+func (s *Storage) GetRewriteRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, error) {
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, err)
+	}
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	rules := make([]*Rule, 0, len(tpl.RuleList))
+	for _, r := range tpl.RuleList {
+		rule := r.GetRewriteRule()
+		if rule != nil {
+			rules = append(rules, rule)
+		}
+	}
+	return rules, nil
+}
+
+func (s *Storage) GetAllRewriteRulesByInstance(instance *Instance) ([]*Rule, error) {
+	var template RuleTemplate
+	if err := s.db.Where("id = ? ", instance.RuleTemplateId).First(&template).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, errors.New(errors.ConnectStorageError, err)
+		} else {
+			return nil, nil
+		}
+	}
+	return s.GetRewriteRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
 }
 
 func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId, name string) (*RuleTemplate, bool, error) {
