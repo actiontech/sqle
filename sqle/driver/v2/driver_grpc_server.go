@@ -36,10 +36,12 @@ type Rule struct {
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
-	Category  string
-	Level     RuleLevel
-	Params    params.Params
-	Knowledge RuleKnowledge
+	Category     string
+	Level        RuleLevel
+	Params       params.Params
+	Knowledge    RuleKnowledge
+	AuditPower   string
+	RewritePower string
 }
 
 type Config struct {
