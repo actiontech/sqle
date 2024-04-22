@@ -1084,6 +1084,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/workflows/schedule/default": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get scheduled task default selector",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单定时上线二次确认默认选项",
+                "operationId": "getScheduledTaskDefaultSelectorV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLAuditRecordsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [

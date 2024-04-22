@@ -7442,6 +7442,20 @@ paths:
       summary: 导出工单
       tags:
       - workflow
+  /v1/projects/workflows/schedule/default:
+    get:
+      description: get scheduled task default selector
+      operationId: getScheduledTaskDefaultSelectorV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLAuditRecordsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单定时上线二次确认默认选项
+      tags:
+      - workflow
   /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/:
     get:
       description: get custom rule knowledge
