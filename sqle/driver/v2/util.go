@@ -49,6 +49,7 @@ const (
 	OptionalModuleExtractTableFromSQL
 	OptionalModuleEstimateSQLAffectRows
 	OptionalModuleKillProcess
+	OptionalExecBatch
 )
 
 func (m OptionalModule) String() string {
@@ -67,6 +68,8 @@ func (m OptionalModule) String() string {
 		return "EstimateSQLAffectRows"
 	case OptionalModuleKillProcess:
 		return "KillProcess"
+	case OptionalExecBatch:
+		return "ExecBatch"
 	default:
 		return "Unknown"
 	}
