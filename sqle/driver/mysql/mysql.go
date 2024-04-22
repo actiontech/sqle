@@ -334,6 +334,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 
 	var ghostRule *driverV2.Rule
 	for _, rule := range i.rules {
+		if rule.AuditPower == "false" {
+			// 跳过没有审核能力的规则
+			continue
+		}
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
 			ghostRule = rule
 		}

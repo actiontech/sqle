@@ -40,12 +40,14 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 
 func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 	return &driverV2.Rule{
-		Name:       r.Name,
-		Desc:       r.Desc,
-		Annotation: r.Annotation,
-		Category:   r.Typ,
-		Level:      driverV2.RuleLevel(r.Level),
-		Params:     r.Params,
+		Name:         r.Name,
+		Desc:         r.Desc,
+		Annotation:   r.Annotation,
+		Category:     r.Typ,
+		Level:        driverV2.RuleLevel(r.Level),
+		Params:       r.Params,
+		AuditPower:   r.AuditPower,
+		RewritePower: r.RewritePower,
 	}
 }
 
