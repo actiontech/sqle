@@ -6225,6 +6225,55 @@ var doc = `{
                 }
             }
         },
+        "/v1/system/module_status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get module status for modulealities in the system",
+                "tags": [
+                    "system"
+                ],
+                "summary": "查询系统功能支持情况信息",
+                "operationId": "getSystemModuleStatus",
+                "parameters": [
+                    {
+                        "enum": [
+                            "MySQL",
+                            "Oracle",
+                            "TiDB",
+                            "OceanBase For MySQL",
+                            "PostgreSQL",
+                            "DB2",
+                            "SQL Server"
+                        ],
+                        "type": "string",
+                        "description": "db type",
+                        "name": "db_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "execute_sql_file_mode"
+                        ],
+                        "type": "string",
+                        "description": "module name",
+                        "name": "module_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetModuleStatusResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/task_groups/audit": {
             "post": {
                 "security": [
@@ -9671,6 +9720,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetModuleStatusResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleStatusRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetOperationActionListResV1": {
             "type": "object",
             "properties": {
@@ -10904,6 +10970,14 @@ var doc = `{
                 "maintenance_stop_time": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TimeResV1"
+                }
+            }
+        },
+        "v1.ModuleStatusRes": {
+            "type": "object",
+            "properties": {
+                "is_supported": {
+                    "type": "boolean"
                 }
             }
         },
