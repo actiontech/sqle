@@ -76,7 +76,7 @@ func GetPluginNameByPawsqlRuleCode(ruleCode string) (string, bool) {
 	return "", false
 }
 
-// 整合plugin规则与powsql规则，并赋予规则审核、重写能力
+// 整合plugin规则与pawsql规则，并赋予规则审核、重写能力
 func MergeRulesAndPower(pluginRules []*driverV2.Rule) []*driverV2.Rule {
 	allRules := []*driverV2.Rule{}
 	rulesMap := make(map[string]bool)
