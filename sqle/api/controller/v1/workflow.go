@@ -1029,3 +1029,19 @@ func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
 	}
 	return taskIDs
 }
+
+type ScheduleTaskDefaultSelector struct {
+	DefaultSelector string `json:"default_selector"`
+}
+
+// GetScheduledTaskDefaultSelectorV1
+// @Summary 获取工单定时上线二次确认默认选项
+// @Description get scheduled task default selector
+// @Tags workflow
+// @Id getScheduledTaskDefaultSelectorV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSQLAuditRecordsResV1
+// @Router /v1/projects/workflows/schedule/default [get]
+func GetScheduledTaskDefaultSelectorV1(c echo.Context) error {
+	return getScheduledTaskDefaultSelectorV1(c)
+}
