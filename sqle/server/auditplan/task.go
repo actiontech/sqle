@@ -1782,9 +1782,14 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
 	if err != nil {
 		return result, err
 	}
-	// res是二维数组，例如:[[{"postgres"}][{"test"}]]
 	for _, value := range res {
+		if len(value) == 0 {
+			continue
+		}
 		result = append(result, &PostgreSQLSchema{value[0]})
+	}
+	if len(result) == 0 {
+		return result, fmt.Errorf("database=%s has no schema", database)
 	}
 	return result, nil
 }
