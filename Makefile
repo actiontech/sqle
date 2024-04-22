@@ -160,6 +160,7 @@ docker_rpm_with_dms: docker_install
 	(tar zcf ${PROJECT_NAME}.tar.gz /universe/sqle /universe/dms --transform 's/universe/${PROJECT_NAME}-$(GIT_COMMIT)/' > /tmp/build.log 2>&1) && \
 	(rpmbuild --define 'group_name $(RPM_USER_GROUP_NAME)' --define 'user_name $(RPM_USER_NAME)' \
 	--define 'commit $(GIT_COMMIT)' --define 'os_version $(OS_VERSION)' \
+	--define 'edition $(EDITION)' \
 	--target $(RPMBUILD_TARGET)  -bb --with qa /universe/sqle/build/sqled_with_dms.spec >> /tmp/build.log 2>&1) && \
 	(cat ~/rpmbuild/RPMS/$(RPMBUILD_TARGET)/${PROJECT_NAME}-$(GIT_COMMIT)-qa.$(OS_VERSION).$(RPMBUILD_TARGET).rpm) || (cat /tmp/build.log && exit 1)" > $(RPM_NAME) && \
 	md5sum $(RPM_NAME) > $(RPM_NAME).md5
