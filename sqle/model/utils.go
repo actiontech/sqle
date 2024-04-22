@@ -211,6 +211,8 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 				isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
 				isRuleLevelSame := existedRule.Level == string(rule.Level)
 				isRuleTypSame := existedRule.Typ == rule.Category
+				isAuditPowerSame := existedRule.AuditPower == rule.AuditPower
+				isRewritePowerSame := existedRule.RewritePower == rule.RewritePower
 				existRuleParam, err := existedRule.Params.Value()
 				if err != nil {
 					return err
@@ -221,7 +223,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 				}
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
-				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame {
+				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame || !isAuditPowerSame || !isRewritePowerSame {
 					if existedRule.Knowledge != nil && existedRule.Knowledge.Content != "" {
 						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
 						rule.Knowledge.Content = existedRule.Knowledge.Content

@@ -17,6 +17,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -333,6 +334,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 
 	var ghostRule *driverV2.Rule
 	for _, rule := range i.rules {
+		if rule.AuditPower == "false" {
+			// 跳过没有审核能力的规则
+			continue
+		}
 		if rule.Name == rulepkg.ConfigDDLGhostMinSize {
 			ghostRule = rule
 		}
@@ -592,10 +597,11 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
 	}
-	allRules := make([]*driverV2.Rule, len(rulepkg.RuleHandlers))
+	pluginRules := make([]*driverV2.Rule, len(rulepkg.RuleHandlers))
 	for i := range rulepkg.RuleHandlers {
-		allRules[i] = &rulepkg.RuleHandlers[i].Rule
+		pluginRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
+	allRules := opt.MergeRulesAndPower(pluginRules)
 	return &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
