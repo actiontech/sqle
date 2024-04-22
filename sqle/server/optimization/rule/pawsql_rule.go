@@ -66,6 +66,16 @@ func init() {
 	ruleMapping[DMLRuleSATTCRewrite] = "RuleSATTCRewrite"
 }
 
+// 通过pawsql规则的ruleCode获取插件规则的name
+func GetPluginNameByPawsqlRuleCode(ruleCode string) (string, bool) {
+	for key, value := range ruleMapping {
+		if value == ruleCode {
+			return key, true
+		}
+	}
+	return "", false
+}
+
 // 整合plugin规则与powsql规则，并赋予规则审核、重写能力
 func MergeRulesAndPower(pluginRules []*driverV2.Rule) []*driverV2.Rule {
 	allRules := []*driverV2.Rule{}
