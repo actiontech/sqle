@@ -1461,3 +1461,12 @@ func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid s
 
 	return count, nil
 }
+
+func (s *Storage) GetLastNeedNotifyScheduledRecord() (*WorkflowInstanceRecord, bool, error) {
+	wr := &WorkflowInstanceRecord{}
+	err := s.db.Where("need_scheduled_task_notify=true").Order("created_at desc").Limit(1).First(&wr).Error
+	if err == gorm.ErrRecordNotFound {
+		return wr, false, nil
+	}
+	return wr, true, errors.New(errors.ConnectStorageError, err)
+}

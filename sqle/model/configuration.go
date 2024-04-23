@@ -99,6 +99,7 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 const (
 	ImTypeDingTalk    = "dingTalk"
 	ImTypeFeishu      = "feishu"
+	ImTypeWechat      = "wechat"
 	ImTypeFeishuAudit = "feishu_audit"
 	ImTypeWechatAudit = "wechat_audit"
 )
