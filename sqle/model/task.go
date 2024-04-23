@@ -38,6 +38,9 @@ const (
 
 const TaskExecResultOK = "OK"
 
+const ExecModeSqlFile = "sql_file"
+const ExecModeSqls = "sqls"
+
 type Task struct {
 	Model
 	InstanceId   uint64  `json:"instance_id"`
@@ -52,7 +55,7 @@ type Task struct {
 	CreateUserId uint64
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
-
+	ExecMode     string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
 	Instance     *Instance
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
@@ -114,6 +117,7 @@ type BaseSQL struct {
 	RowAffects      int64  `json:"row_affects"`
 	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
+	ExecBatchId     uint64 `json:"exec_batch_id"`
 	Schema          string `json:"schema"`
 	SourceFile      string `json:"source_file"`
 	StartLine       uint64 `json:"start_line" gorm:"not null"`
