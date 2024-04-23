@@ -71,3 +71,15 @@ func (s *Storage) GetExpiredFile() ([]AuditFile, error) {
 	}
 	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) BatchSaveFileRecords(models []AuditFile) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, model := range models {
+			if err := txDB.Save(&model).Error; err != nil {
+				txDB.Rollback()
+				return err
+			}
+		}
+		return nil
+	})
+}
