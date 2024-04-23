@@ -183,6 +183,10 @@ func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Resul
 	return conn.Db.Exec(query)
 }
 
+func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}
+
 func (i *MysqlDriverImpl) onlineddlWithGhost(query string) (bool, error) {
 	if i.cnf.DDLGhostMinSize == -1 {
 		return false, nil
