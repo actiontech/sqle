@@ -13,3 +13,7 @@ import (
 func getTaskAnalysisData(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetTaskAnalysisDataErr())
 }
+
+func getScheduledTaskDefaultOptionV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportScheduledNotify)
+}

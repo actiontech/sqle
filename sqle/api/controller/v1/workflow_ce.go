@@ -43,7 +43,3 @@ func getWorkflowTemplate(c echo.Context) error {
 func updateWorkflowTemplate(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWorkflowTemplate)
 }
-
-func getScheduledTaskDefaultSelectorV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportScheduledNotify)
-}
