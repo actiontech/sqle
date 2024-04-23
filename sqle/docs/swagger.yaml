@@ -2087,6 +2087,9 @@ definitions:
         type: string
       optimization_name:
         type: string
+      status:
+        description: 优化状态
+        type: string
     type: object
   v1.OptimizationRecord:
     properties:
@@ -2110,6 +2113,9 @@ definitions:
       performance_gain:
         description: 优化提升性能
         type: number
+      status:
+        description: 优化状态
+        type: string
     type: object
   v1.OptimizationSQL:
     properties:
@@ -6419,6 +6425,8 @@ paths:
       tags:
       - sql_optimization
     post:
+      consumes:
+      - multipart/form-data
       description: |-
         optimize sql
         1. formData[sql]: sql content;
@@ -6486,6 +6494,8 @@ paths:
         in: formData
         name: git_user_password
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
