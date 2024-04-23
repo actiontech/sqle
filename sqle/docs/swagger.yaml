@@ -2087,6 +2087,9 @@ definitions:
         type: string
       optimization_name:
         type: string
+      status:
+        description: 优化状态
+        type: string
     type: object
   v1.OptimizationRecord:
     properties:

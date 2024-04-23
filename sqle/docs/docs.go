@@ -11098,6 +11098,10 @@ var doc = `{
                 },
                 "optimization_name": {
                     "type": "string"
+                },
+                "status": {
+                    "description": "优化状态",
+                    "type": "string"
                 }
             }
         },
