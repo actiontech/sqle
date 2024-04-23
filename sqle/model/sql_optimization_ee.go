@@ -109,7 +109,7 @@ func (e *ExplainValidationDetail) Scan(input interface{}) error {
 }
 
 var optimizationQueryTpl = `
-SELECT sql_optimization_records.optimization_id,sql_optimization_records.optimization_name,  sql_optimization_records.db_type,
+SELECT sql_optimization_records.optimization_id,sql_optimization_records.optimization_name,sql_optimization_records.status,  sql_optimization_records.db_type,
 sql_optimization_records.instance_name, sql_optimization_records.schema_name,
 sql_optimization_records.creator, sql_optimization_records.performance_improve,sql_optimization_records.created_at
 

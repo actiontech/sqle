@@ -79,6 +79,7 @@ func getOptimizationRecord(c echo.Context) error {
 			PerformanceGain:        record.PerformanceImprove,
 		},
 		IndexRecommendations: record.IndexRecommendations,
+		Status:               record.Status,
 	}
 
 	return c.JSON(http.StatusOK, GetOptimizationRecordRes{
