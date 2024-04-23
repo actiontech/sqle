@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/pkg/im/dingding"
@@ -16,6 +17,11 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/im/wechat"
 	"github.com/labstack/echo/v4"
 	larkContact "github.com/larksuite/oapi-sdk-go/v3/service/contact/v3"
+)
+
+const (
+	ImTypeFeishu = "feishu"
+	ImTypeWechat = "wechat"
 )
 
 func updateFeishuAuditConfigurationV1(c echo.Context) error {
@@ -364,4 +370,34 @@ func testWechatAuditConfigV1(c echo.Context) error {
 			IsMessageSentNormally: true,
 		},
 	})
+}
+
+func getScheduledTaskDefaultOptionV1(c echo.Context) error {
+	s := model.GetStorage()
+	wir, exist, err := s.GetLastNeedNotifyScheduledRecord()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
+	}
+
+	fr, err := s.GetFeishuRecordsByTaskIds([]uint{wir.TaskId})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(fr) > 0 {
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeFeishu})
+	}
+
+	wr, err := s.GetWechatRecordsByTaskIds([]uint{wir.TaskId})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(wr) > 0 {
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeWechat})
+	}
+
+	log.NewEntry().Error("failed to retrieve default option: Unable to locate the 'im' type. This issue may be attributed to the data truncation in the ScheduledRecord table. ")
+	return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
 }

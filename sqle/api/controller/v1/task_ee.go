@@ -18,11 +18,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const (
-	ImTypeFeishu = "feishu"
-	ImTypeWechat = "wechat"
-)
-
 func getTaskAnalysisData(c echo.Context) error {
 	taskId := c.Param("task_id")
 	number := c.Param("number")
@@ -155,34 +150,4 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 	}
 
 	return analysisDataResItemV1
-}
-
-func getScheduledTaskDefaultOptionV1(c echo.Context) error {
-	s := model.GetStorage()
-	wir, exist, err := s.GetLastNeedNotifyScheduledRecord()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
-	}
-
-	fr, err := s.GetFeishuRecordsByTaskIds([]uint{wir.TaskId})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if len(fr) > 0 {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeFeishu})
-	}
-
-	wr, err := s.GetWechatRecordsByTaskIds([]uint{wir.TaskId})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if len(wr) > 0 {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeWechat})
-	}
-
-	log.NewEntry().Error("get default option failed: im type not found")
-	return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
 }
