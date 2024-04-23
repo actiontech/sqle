@@ -61,7 +61,7 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 	workspaceId, ok := cacheOptimizationWorkspace.Load(optimizationWorkspace.MD5())
 	if !ok {
 		// 创建pawsql的空间,内存缓存
-		workspaceId, err = a.CreateWorkspaceOnline(ctx, a.Instance, a.Schema)
+		workspaceId, err = a.createWorkspaceOnline(ctx, a.Instance, a.Schema)
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +69,7 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 	}
 
 	// 创建分析任务
-	id, err := a.CreateOptimization(ctx, workspaceId.(string), a.Instance.DbType, OptimizationSQL, "online")
+	id, err := a.createOptimization(ctx, workspaceId.(string), a.Instance.DbType, OptimizationSQL, "online")
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +80,12 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context, analysisId string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
 	a.logger.Debugf("get Optimization info id : %v", analysisId)
 	// 获取优化任务概览
-	summary, err := a.GetOptimizationSummary(ctx, analysisId)
+	summary, err := a.getOptimizationSummary(ctx, analysisId)
 	if err != nil {
 		return optimizationInfo, err
 	}
 	a.logger.Debugf("get Optimization summary %v", summary)
 	optimizationInfo = &model.SQLOptimizationRecord{
-		PerformanceImprove:     summary.BasicSummary.PerformanceImprove,
 		NumberOfQuery:          summary.BasicSummary.NumberOfQuery,
 		NumberOfSyntaxError:    summary.BasicSummary.NumberOfSyntaxError,
 		NumberOfRewrite:        summary.BasicSummary.NumberOfRewrite,
@@ -95,10 +94,12 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		NumberOfQueryIndex:     summary.BasicSummary.NumberOfQueryIndex,
 		IndexRecommendations:   summary.OptimizationIndexInfo,
 	}
+
+	var performanceImprove float64
 	for _, statementInfo := range summary.SummaryStatementInfo {
 
 		// 获取优化任务详情
-		detail, err := a.GetOptimizationDetail(ctx, statementInfo.OptimizationStmtId)
+		detail, err := a.getOptimizationDetail(ctx, statementInfo.OptimizationStmtId)
 		if err != nil {
 			return optimizationInfo, err
 		}
@@ -126,7 +127,9 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			IndexRecommendations:     detail.IndexRecommended,
 			ExplainValidationDetails: model.ExplainValidationDetail{BeforeCost: detail.ValidationDetails.BeforeCost, AfterCost: detail.ValidationDetails.AfterCost, BeforePlan: detail.ValidationDetails.BeforePlan, AfterPlan: detail.ValidationDetails.AfterPlan, PerformImprovePer: detail.ValidationDetails.PerformImprovePer},
 		})
-
+		performanceImprove += statementInfo.Performance
 	}
+	// 概览接口返回的提升数据异常，自行计算
+	optimizationInfo.PerformanceImprove = performanceImprove
 	return
 }

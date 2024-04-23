@@ -48,7 +48,7 @@ type CreateWorkspace struct {
 }
 
 // 在线模式（online）
-func (a *OptimizationPawSQLServer) CreateWorkspaceOnline(ctx context.Context, instance *model.Instance, database string) (string, error) {
+func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, instance *model.Instance, database string) (string, error) {
 	req := CreateWorkspaceReq{
 		UserKey:    getUserKey(),
 		Mode:       "online",
@@ -72,7 +72,7 @@ func (a *OptimizationPawSQLServer) CreateWorkspaceOnline(ctx context.Context, in
 }
 
 // 离线模式：定义DDL建表
-func (a *OptimizationPawSQLServer) CreateWorkspaceOffline(ctx context.Context, dbType string, ddlText string) (string, error) {
+func (a *OptimizationPawSQLServer) createWorkspaceOffline(ctx context.Context, dbType string, ddlText string) (string, error) {
 	req := CreateWorkspaceReq{
 		UserKey: getUserKey(),
 		Mode:    "offline",
@@ -92,7 +92,7 @@ func (a *OptimizationPawSQLServer) CreateWorkspaceOffline(ctx context.Context, d
 
 // 创建SQL优化任务
 // Post http://${server-host}:${server-port}/api/v1/createAnalysis
-func (a *OptimizationPawSQLServer) CreateOptimization(ctx context.Context, workspaceId string, dbType string, workload string, queryMode string) (string, error) {
+func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, workspaceId string, dbType string, workload string, queryMode string) (string, error) {
 	req := CreateOptimizationReq{
 		UserKey:      getUserKey(),
 		Workspace:    workspaceId,
@@ -136,7 +136,7 @@ type CreateOptimizationData struct {
 // 查询优化SQL概览
 //  Post http://${server-host}:${server-port}/api/v1/getAnalysisSummary
 
-func (a *OptimizationPawSQLServer) GetOptimizationSummary(ctx context.Context, optimizationId string) (ret OptimizationSummaryBody, err error) {
+func (a *OptimizationPawSQLServer) getOptimizationSummary(ctx context.Context, optimizationId string) (ret OptimizationSummaryBody, err error) {
 	req := OptimizationListReq{
 		UserKey:        getUserKey(),
 		OptimizationId: optimizationId,
@@ -216,7 +216,7 @@ type SummaryStatementInfo struct {
 // 查询优化详情
 //
 //	Post http://${server-host}:${server-port}/api/v1/getStatementDetails
-func (a *OptimizationPawSQLServer) GetOptimizationDetail(ctx context.Context, optimizationStmtId string) (ret OptimizationDetail, err error) {
+func (a *OptimizationPawSQLServer) getOptimizationDetail(ctx context.Context, optimizationStmtId string) (ret OptimizationDetail, err error) {
 	req := OptimizationDetailReq{
 		UserKey:            getUserKey(),
 		OptimizationStmtId: optimizationStmtId,
