@@ -16,6 +16,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
@@ -26,7 +27,7 @@ var storage *Storage
 
 var storageMutex sync.Mutex
 
-var pluginRules map[string][]*driverV2.Rule
+var pluginRules map[string][]*Rule
 
 const dbDriver = "mysql"
 
@@ -180,7 +181,7 @@ func (s *Storage) AutoMigrate() error {
 	return nil
 }
 
-func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
+func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 	isRuleExistInDB := func(rulesInDB []*Rule, targetRuleName, dbType string) (*Rule, bool) {
 		for i := range rulesInDB {
 			rule := rulesInDB[i]
@@ -196,13 +197,13 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 	if err != nil {
 		return err
 	}
-	for dbType, rules := range rules {
+	for dbType, rules := range rulesMap {
 		for _, rule := range rules {
 			existedRule, exist := isRuleExistInDB(rulesInDB, rule.Name, dbType)
 			// rule will be created or update if:
 			// 1. rule not exist;
 			if !exist {
-				err := s.Save(GenerateRuleByDriverRule(rule, dbType))
+				err := s.Save(rule)
 				if err != nil {
 					return err
 				}
@@ -210,7 +211,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 				isRuleDescSame := existedRule.Desc == rule.Desc
 				isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
 				isRuleLevelSame := existedRule.Level == string(rule.Level)
-				isRuleTypSame := existedRule.Typ == rule.Category
+				isRuleTypSame := existedRule.Typ == rule.Typ
 				isAuditPowerSame := existedRule.AuditPower == rule.AuditPower
 				isRewritePowerSame := existedRule.RewritePower == rule.RewritePower
 				existRuleParam, err := existedRule.Params.Value()
@@ -229,7 +230,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 						rule.Knowledge.Content = existedRule.Knowledge.Content
 					}
 					// 保存规则
-					err := s.Save(GenerateRuleByDriverRule(rule, dbType))
+					err := s.Save(rule)
 					if err != nil {
 						return err
 					}
@@ -247,7 +248,7 @@ func (s *Storage) CreateRulesIfNotExist(rules map[string][]*driverV2.Rule) error
 	return nil
 }
 
-func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *driverV2.Rule, dbType string) error {
+func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *Rule, dbType string) error {
 	ruleTemplateRules, err := s.GetRuleTemplateRuleByName(pluginRule.Name, dbType)
 	if err != nil {
 		return err
@@ -273,7 +274,7 @@ func (s *Storage) UpdateRuleTemplateRulesParams(pluginRule *driverV2.Rule, dbTyp
 }
 
 // 为所有模板删除插件中已不存在的规则
-func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*driverV2.Rule) error {
+func (s *Storage) DeleteRulesIfNotExist(rules map[string][]*Rule) error {
 	pluginRules = rules
 	// 避免清空规则
 	if len(pluginRules) <= 0 {
@@ -317,6 +318,47 @@ func DBRuleInPluginRule(dbRule *Rule) bool {
 		}
 	}
 	return false
+}
+
+// 整合重写规则与插件规则，并赋予审核、重写能力
+func MergeRewirteRules(pluginRulesMap map[string][]*driverV2.Rule) map[string][]*Rule {
+	resultAllRulesMap := map[string][]*Rule{}
+	resultAllRules := []*Rule{}
+	for dbType, pluginRules := range pluginRulesMap {
+		// 现仅mysql支持重写，非mysql插件不整合重写规则和赋予能力
+		if dbType == "MySQL" {
+			rulesMap := make(map[string]bool)
+			// 只有审核能力或审核、重写能力都有的规则
+			for _, rule := range pluginRules {
+				rule := GenerateRuleByDriverRule(rule, dbType)
+				rule.AuditPower = true
+				if _, ok := opt.RuleMapping[rule.Name]; ok {
+					rule.RewritePower = true
+				} else {
+					rule.RewritePower = false
+				}
+				rulesMap[rule.Name] = true
+				resultAllRules = append(resultAllRules, rule)
+			}
+			// 仅有重写能力的规则
+			for _, rewriteRule := range opt.RuleHandler {
+				rule := GenerateRuleByDriverRule(&rewriteRule.Rule, dbType)
+				rule.RewritePower = true
+				rule.AuditPower = false
+				if _, exist := rulesMap[rule.Name]; !exist {
+					resultAllRules = append(resultAllRules, rule)
+				}
+			}
+			resultAllRulesMap[dbType] = resultAllRules
+		} else {
+			for _, rule := range pluginRules {
+				rule := GenerateRuleByDriverRule(rule, dbType)
+				resultAllRules = append(resultAllRules, rule)
+			}
+			resultAllRulesMap[dbType] = resultAllRules
+		}
+	}
+	return resultAllRulesMap
 }
 
 // func (s *Storage) CreateDefaultRole() error {

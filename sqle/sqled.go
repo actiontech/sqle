@@ -94,10 +94,11 @@ func Run(options *config.SqleOptions) error {
 		if err != nil {
 			return fmt.Errorf("create workflow template failed: %v", err)
 		}
-		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
+		rules := model.MergeRewirteRules(driver.GetPluginManager().GetAllRules())
+		if err := s.CreateRulesIfNotExist(rules); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.DeleteRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
+		if err := s.DeleteRulesIfNotExist(rules); err != nil {
 			return fmt.Errorf("delete rules failed while auto migrating table: %v", err)
 		}
 
