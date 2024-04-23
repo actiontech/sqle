@@ -354,7 +354,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// configurations
 		v1Router.GET("/configurations/drivers", v1.GetDrivers)
 		v2Router.GET("/configurations/drivers", v2.GetDrivers)
-		v1Router.GET("/configurations/schedule/default-option", v1.GetScheduledTaskDefaultOptionV1)
+		v1Router.GET("/configurations/workflows/schedule/default_option", v1.GetScheduledTaskDefaultOptionV1)
 
 		// audit plan
 		v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
