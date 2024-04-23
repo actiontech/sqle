@@ -2,10 +2,9 @@ package optimization
 
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
-var ruleMapping map[string]string // ruleCode与plugin的rule name映射关系
+var RuleMapping map[string]string // ruleCode与plugin的rule name映射关系
 
 // DML规则
 const (
@@ -29,76 +28,49 @@ const (
 )
 
 func init() {
-	ruleMapping = make(map[string]string)
+	RuleMapping = make(map[string]string)
 
 	// 有审核能力的重写规则
-	ruleMapping[rulepkg.DMLHintGroupByRequiresConditions] = "RuleAddOrderByNullRewrite"
-	ruleMapping[rulepkg.DMLCheckWhereExistScalarSubquery] = "RuleCntGtThanZeroRewrite"
-	ruleMapping[rulepkg.DMLHintUseTruncateInsteadOfDelete] = "RuleDelete2TruncateRewrite"
-	ruleMapping[rulepkg.DMLCheckWhereExistImplicitConversion] = "RuleDiffDataTypeInPredicateWrite"
-	ruleMapping[rulepkg.DDLCheckDatabaseCollation] = "RuleDiffOrderingSpecTypeWarning"
-	ruleMapping[rulepkg.DMLCheckMathComputationOrFuncOnIndex] = "RuleFuncWithColumnInPredicate"
-	ruleMapping[rulepkg.DMLNotRecommendHaving] = "RuleHavingCond2WhereCondRewrite"
-	ruleMapping[rulepkg.DMLNotRecommendIn] = "RuleInSubqueryRewrite"
-	ruleMapping[rulepkg.DMLCheckLimitOffsetNum] = "RuleLargeOffset"
-	ruleMapping[rulepkg.DMLHintInNullOnlyFalse] = "RuleNotInNullableSubQueryRewrite"
-	ruleMapping[rulepkg.DMLNotRecommendNotWildcardLike] = "RuleNoWildcardInPredicateLikeWarning"
-	ruleMapping[rulepkg.DMLWhereExistNull] = "RuleUseEqual4NullRewrite"
-	ruleMapping[rulepkg.DMLCheckNotEqualSymbol] = "RuleUseNonstandardNotEqualOperator"
+	RuleMapping[rulepkg.DMLHintGroupByRequiresConditions] = "RuleAddOrderByNullRewrite"
+	RuleMapping[rulepkg.DMLCheckWhereExistScalarSubquery] = "RuleCntGtThanZeroRewrite"
+	RuleMapping[rulepkg.DMLHintUseTruncateInsteadOfDelete] = "RuleDelete2TruncateRewrite"
+	RuleMapping[rulepkg.DMLCheckWhereExistImplicitConversion] = "RuleDiffDataTypeInPredicateWrite"
+	RuleMapping[rulepkg.DDLCheckDatabaseCollation] = "RuleDiffOrderingSpecTypeWarning"
+	RuleMapping[rulepkg.DMLCheckMathComputationOrFuncOnIndex] = "RuleFuncWithColumnInPredicate"
+	RuleMapping[rulepkg.DMLNotRecommendHaving] = "RuleHavingCond2WhereCondRewrite"
+	RuleMapping[rulepkg.DMLNotRecommendIn] = "RuleInSubqueryRewrite"
+	RuleMapping[rulepkg.DMLCheckLimitOffsetNum] = "RuleLargeOffset"
+	RuleMapping[rulepkg.DMLHintInNullOnlyFalse] = "RuleNotInNullableSubQueryRewrite"
+	RuleMapping[rulepkg.DMLNotRecommendNotWildcardLike] = "RuleNoWildcardInPredicateLikeWarning"
+	RuleMapping[rulepkg.DMLWhereExistNull] = "RuleUseEqual4NullRewrite"
+	RuleMapping[rulepkg.DMLCheckNotEqualSymbol] = "RuleUseNonstandardNotEqualOperator"
 
 	// 仅有重写能力的规则
-	ruleMapping[DMLRuleDistinctEliminationRewrite] = "RuleDistinctEliminationRewrite"
-	ruleMapping[DMLRuleExists2JoinRewrite] = "RuleExists2JoinRewrite"
-	ruleMapping[DMLRuleFilterPredicatePushDownRewrite] = "RuleFilterPredicatePushDownRewrite"
-	ruleMapping[DMLRuleGroupingFromDiffTablesRewrite] = "RuleGroupingFromDiffTablesRewrite"
-	ruleMapping[DMLRuleJoinEliminationRewrite] = "RuleJoinEliminationRewrite"
-	ruleMapping[DMLRuleLimitClausePushDownRewrite] = "RuleLimitClausePushDownRewrite"
-	ruleMapping[DMLRuleMaxMinAggRewrite] = "RuleMaxMinAggRewrite"
-	ruleMapping[DMLRuleMoveOrder2LeadingRewrite] = "RuleMoveOrder2LeadingRewrite"
-	ruleMapping[DMLRuleOrCond4SelectRewrite] = "RuleOrCond4SelectRewrite"
-	ruleMapping[DMLRuleOrCond4UpDeleteRewrite] = "RuleOrCond4UpDeleteRewrite"
-	ruleMapping[DMLRuleOrderEliminationInSubqueryRewrite] = "RuleOrderEliminationInSubqueryRewrite"
-	ruleMapping[DMLRuleOrderingFromDiffTablesRewrite] = "RuleOrderingFromDiffTablesRewrite"
-	ruleMapping[DMLRuleOuter2InnerConversionRewrite] = "RuleOuter2InnerConversionRewrite"
-	ruleMapping[DMLRuleProjectionPushdownRewrite] = "RuleProjectionPushdownRewrite"
-	ruleMapping[DMLRuleQualifierSubQueryRewrite] = "RuleQualifierSubQueryRewrite"
-	ruleMapping[DMLRuleQueryFoldingRewrite] = "RuleQueryFoldingRewrite"
-	ruleMapping[DMLRuleSATTCRewrite] = "RuleSATTCRewrite"
+	RuleMapping[DMLRuleDistinctEliminationRewrite] = "RuleDistinctEliminationRewrite"
+	RuleMapping[DMLRuleExists2JoinRewrite] = "RuleExists2JoinRewrite"
+	RuleMapping[DMLRuleFilterPredicatePushDownRewrite] = "RuleFilterPredicatePushDownRewrite"
+	RuleMapping[DMLRuleGroupingFromDiffTablesRewrite] = "RuleGroupingFromDiffTablesRewrite"
+	RuleMapping[DMLRuleJoinEliminationRewrite] = "RuleJoinEliminationRewrite"
+	RuleMapping[DMLRuleLimitClausePushDownRewrite] = "RuleLimitClausePushDownRewrite"
+	RuleMapping[DMLRuleMaxMinAggRewrite] = "RuleMaxMinAggRewrite"
+	RuleMapping[DMLRuleMoveOrder2LeadingRewrite] = "RuleMoveOrder2LeadingRewrite"
+	RuleMapping[DMLRuleOrCond4SelectRewrite] = "RuleOrCond4SelectRewrite"
+	RuleMapping[DMLRuleOrCond4UpDeleteRewrite] = "RuleOrCond4UpDeleteRewrite"
+	RuleMapping[DMLRuleOrderEliminationInSubqueryRewrite] = "RuleOrderEliminationInSubqueryRewrite"
+	RuleMapping[DMLRuleOrderingFromDiffTablesRewrite] = "RuleOrderingFromDiffTablesRewrite"
+	RuleMapping[DMLRuleOuter2InnerConversionRewrite] = "RuleOuter2InnerConversionRewrite"
+	RuleMapping[DMLRuleProjectionPushdownRewrite] = "RuleProjectionPushdownRewrite"
+	RuleMapping[DMLRuleQualifierSubQueryRewrite] = "RuleQualifierSubQueryRewrite"
+	RuleMapping[DMLRuleQueryFoldingRewrite] = "RuleQueryFoldingRewrite"
+	RuleMapping[DMLRuleSATTCRewrite] = "RuleSATTCRewrite"
 }
 
-// 通过规则的ruleCode获取插件规则的name
+// 通过重写规则的ruleCode获取插件规则的name
 func GetPluginNameByRuleCode(ruleCode string) (string, bool) {
-	for key, value := range ruleMapping {
+	for key, value := range RuleMapping {
 		if value == ruleCode {
 			return key, true
 		}
 	}
 	return "", false
-}
-
-// 整合规则，并赋予规则审核、重写能力
-func MergeRulesAndPower(pluginRules []*driverV2.Rule) []*driverV2.Rule {
-	allRules := []*driverV2.Rule{}
-	rulesMap := make(map[string]bool)
-	// 只有审核能力或审核、重写能力都有的规则
-	for _, pluginRule := range pluginRules {
-		pluginRule.AuditPower = "true"
-		if _, ok := ruleMapping[pluginRule.Name]; ok {
-			pluginRule.RewritePower = "true"
-		} else {
-			pluginRule.RewritePower = "false"
-		}
-		rulesMap[pluginRule.Name] = true
-		allRules = append(allRules, pluginRule)
-	}
-	// 仅有重写能力的规则
-	for _, rewriteRule := range RuleHandler {
-		rewriteRule.Rule.RewritePower = "true"
-		rewriteRule.Rule.AuditPower = "false"
-		if _, exist := rulesMap[rewriteRule.Rule.Name]; !exist {
-			rule := rewriteRule.Rule
-			allRules = append(allRules, &rule)
-		}
-	}
-	return allRules
 }

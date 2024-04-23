@@ -33,21 +33,17 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 		Knowledge: &RuleKnowledge{
 			Content: dr.Knowledge.Content,
 		},
-		AuditPower:   dr.AuditPower,
-		RewritePower: dr.RewritePower,
 	}
 }
 
 func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 	return &driverV2.Rule{
-		Name:         r.Name,
-		Desc:         r.Desc,
-		Annotation:   r.Annotation,
-		Category:     r.Typ,
-		Level:        driverV2.RuleLevel(r.Level),
-		Params:       r.Params,
-		AuditPower:   r.AuditPower,
-		RewritePower: r.RewritePower,
+		Name:       r.Name,
+		Desc:       r.Desc,
+		Annotation: r.Annotation,
+		Category:   r.Typ,
+		Level:      driverV2.RuleLevel(r.Level),
+		Params:     r.Params,
 	}
 }
 
@@ -77,8 +73,8 @@ type Rule struct {
 	Params       params.Params  `json:"params" gorm:"type:varchar(1000)"`
 	KnowledgeId  uint           `json:"knowledge_id"`
 	Knowledge    *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
-	AuditPower   string         `json:"audit_power" gorm:"type:varchar(255)" example:"true"`
-	RewritePower string         `json:"rewrite_power" gorm:"type:varchar(255)" example:"true"`
+	AuditPower   bool           `json:"audit_power" gorm:"type:bool" example:"true"`
+	RewritePower bool           `json:"rewrite_power" gorm:"type:bool" example:"true"`
 }
 
 func (r Rule) TableName() string {
@@ -122,7 +118,7 @@ func (rtr *RuleTemplateRule) GetRule() *Rule {
 
 func (rtr *RuleTemplateRule) GetRewriteRule() *Rule {
 	rule := rtr.Rule
-	if rule.RewritePower != "true" {
+	if rule.RewritePower != true {
 		return nil
 	}
 	if rtr.RuleLevel != "" {

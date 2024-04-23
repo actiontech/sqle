@@ -473,8 +473,8 @@ type RuleResV1 struct {
 	DBType       string           `json:"db_type" example:"mysql"`
 	Params       []RuleParamResV1 `json:"params,omitempty"`
 	IsCustomRule bool             `json:"is_custom_rule"`
-	AuditPower   string           `json:"audit_power"`
-	RewritePower string           `json:"rewrite_power"`
+	AuditPower   bool             `json:"audit_power"`
+	RewritePower bool             `json:"rewrite_power"`
 }
 
 type RuleParamResV1 struct {
@@ -520,8 +520,8 @@ func convertCustomRuleToRuleResV1(rule *model.CustomRule) RuleResV1 {
 		Typ:          rule.Typ,
 		DBType:       rule.DBType,
 		IsCustomRule: true,
-		AuditPower:   "true",
-		RewritePower: "false",
+		AuditPower:   true,
+		RewritePower: false,
 	}
 	return ruleRes
 }
