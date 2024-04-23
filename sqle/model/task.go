@@ -222,6 +222,18 @@ func (s *ExecuteSQL) GetAuditResultDesc() string {
 	return s.AuditResults.String()
 }
 
+func (s *Storage) BatchSaveExecuteSqls(models []*ExecuteSQL) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, model := range models {
+			if err := txDB.Save(&model).Error; err != nil {
+				txDB.Rollback()
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 type RollbackSQL struct {
 	BaseSQL
 	ExecuteSQLId uint `gorm:"index;column:execute_sql_id"`
