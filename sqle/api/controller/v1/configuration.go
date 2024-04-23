@@ -346,6 +346,10 @@ func TestWechatAuditConfigV1(c echo.Context) error {
 	return testWechatAuditConfigV1(c)
 }
 
+type ScheduleTaskDefaultOption struct {
+	DefaultSelector string `json:"default_selector"`
+}
+
 // GetScheduledTaskDefaultOptionV1
 // @Summary 获取工单定时上线二次确认默认选项
 // @Description get scheduled task default option
