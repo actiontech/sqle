@@ -1039,3 +1039,19 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 
 	return
 }
+
+type ScheduleTaskDefaultOption struct {
+	DefaultSelector string `json:"default_selector"`
+}
+
+// GetScheduledTaskDefaultOptionV1
+// @Summary 获取工单定时上线二次确认默认选项
+// @Description get scheduled task default option
+// @Tags workflow
+// @Id getScheduledTaskDefaultOptionV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.ScheduleTaskDefaultOption
+// @Router /v1/schedule/default/option [get]
+func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
+	return getScheduledTaskDefaultOptionV1(c)
+}
