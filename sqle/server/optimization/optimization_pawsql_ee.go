@@ -26,15 +26,18 @@ type OptimizationPawSQLServer struct {
 type OptimizationWorkspace struct {
 	DBName     string
 	SchemaName string
-	UPdateTime string
+	Host       string
+	Port       string
+	DbUser     string
+	DbPassword string
 	DDL        string
 }
 
 func (o OptimizationWorkspace) MD5() string {
-	return utils.Md5String(o.DBName + o.SchemaName + o.DDL)
+	return utils.Md5String(o.DBName + o.SchemaName + o.Host + o.Port + o.DbUser + o.DbPassword + o.DDL)
 }
 
-var cacheOptimizationWorkspace sync.Map // map[string] /*MD5(dbName+schemaName+DDL)*/ string /*workspaceId*/
+var cacheOptimizationWorkspace sync.Map // map[string] /*MD5(dbName+schemaName++ Host + Port + DbUser + DbPassword + DDL)*/ string /*workspaceId*/
 
 func NewOptimizationOnlinePawSQLServer(logger *logrus.Entry, instance *model.Instance, schema string) *OptimizationOnlinePawSQLServer {
 	return &OptimizationOnlinePawSQLServer{
@@ -47,7 +50,7 @@ func NewOptimizationOnlinePawSQLServer(logger *logrus.Entry, instance *model.Ins
 }
 
 // 在线模式：创建空间后创建分析任务
-func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, OptimizationSQL string) (optimizationId string, err error) {
+func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, OptimizationSQL string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
 	a.logger.Debugf("Optimization SQL %v", OptimizationSQL)
 	optimizationWorkspace := OptimizationWorkspace{
 		DBName:     a.Instance.Name,
@@ -60,20 +63,24 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 		// 创建pawsql的空间,内存缓存
 		workspaceId, err = a.CreateWorkspaceOnline(ctx, a.Instance, a.Schema)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		cacheOptimizationWorkspace.Store(optimizationWorkspace.MD5(), workspaceId)
 	}
 
 	// 创建分析任务
-	return a.CreateOptimization(ctx, workspaceId.(string), a.Instance.DbType, OptimizationSQL, "online")
+	id, err := a.CreateOptimization(ctx, workspaceId.(string), a.Instance.DbType, OptimizationSQL, "online")
+	if err != nil {
+		return nil, err
+	}
+	return a.getOptimizationInfo(ctx, id)
 }
 
 // 获取优化详情
-func (a *OptimizationOnlinePawSQLServer) GetOptimizationInfo(ctx context.Context, optimizationId string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
-	a.logger.Debugf("get Optimization detail %v", optimizationId)
+func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context, analysisId string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
+	a.logger.Debugf("get Optimization info id : %v", analysisId)
 	// 获取优化任务概览
-	summary, err := a.GetOptimizationSummary(ctx, optimizationId)
+	summary, err := a.GetOptimizationSummary(ctx, analysisId)
 	if err != nil {
 		return optimizationInfo, err
 	}
@@ -96,7 +103,6 @@ func (a *OptimizationOnlinePawSQLServer) GetOptimizationInfo(ctx context.Context
 			return optimizationInfo, err
 		}
 		a.logger.Debugf("get Optimization detail %v", detail)
-
 		triggeredRule := make([]model.RewriteRule, 0)
 		for _, v := range detail.RewrittenQuery {
 			triggeredRule = append(triggeredRule, model.RewriteRule{
@@ -108,7 +114,6 @@ func (a *OptimizationOnlinePawSQLServer) GetOptimizationInfo(ctx context.Context
 		}
 
 		optimizationInfo.OptimizationSQLs = append(optimizationInfo.OptimizationSQLs, &model.OptimizationSQL{
-			OptimizationId:           optimizationId,
 			OriginalSQL:              statementInfo.StmtText,
 			OptimizedSQL:             detail.StmtText,
 			NumberOfRewrite:          statementInfo.NumberOfRewrite,

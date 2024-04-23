@@ -10,13 +10,26 @@ import (
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/log"
 )
 
 type OptimizationServeror interface {
-	Optimizate(ctx context.Context, optimizationSQL string) (optimizationId string, err error)
-	GetOptimizationInfo(ctx context.Context, optimizationId string) (optimizationInfo model.SQLOptimizationRecord, err error)
+	Optimizate(ctx context.Context, optimizationSQL string) (optimizationInfo model.SQLOptimizationRecord, err error)
+}
+
+type OptimizateStatus string
+
+// 优化状态常量
+const (
+	OptimizateStatusOptimizating OptimizateStatus = "optimizing"
+	OptimizateStatusFinish       OptimizateStatus = "finish"
+	OptimizateStatusFailed       OptimizateStatus = "failed"
+)
+
+func (dets OptimizateStatus) String() string {
+	return string(dets)
 }
 
 // SQL优化任务入口
@@ -34,38 +47,64 @@ func Optimizate(ctx context.Context, user, projectId string, instanceName *strin
 		return "", fmt.Errorf("instance %s not exist", *instanceName)
 	}
 
-	// SQL优化服务 newOptimizateServer
-	server := NewOptimizationOnlinePawSQLServer(logger, instance, *schema)
-
-	// 调用SQL优化
-	id, err := server.Optimizate(ctx, OptimizationSQL)
+	id, err := utils.GenUid()
 	if err != nil {
 		return "", err
 	}
-	logger.Debugf("optimization sql successful,optimization id: %s", id)
-	// 保存优化SQL记录
-	go func() {
-		ctx := context.TODO()
-		optimizationRecord, err := server.GetOptimizationInfo(ctx, id)
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-		optimizationRecord.Creator = user
-		optimizationRecord.ProjectId = projectId
-		optimizationRecord.InstanceName = *instanceName
-		optimizationRecord.SchemaName = *schema
-		optimizationRecord.DBType = instance.DbType
-		optimizationRecord.OptimizationId = id
-		optimizationRecord.OptimizationName = optimizationName
+	// 保存优化SQL记录基础信息
+	optimizationRecord := new(model.SQLOptimizationRecord)
+	optimizationRecord.Creator = user
+	optimizationRecord.ProjectId = projectId
+	optimizationRecord.InstanceName = *instanceName
+	optimizationRecord.SchemaName = *schema
+	optimizationRecord.DBType = instance.DbType
+	optimizationRecord.OptimizationId = id
+	optimizationRecord.OptimizationName = optimizationName
+	optimizationRecord.Status = OptimizateStatusOptimizating.String()
 
-		// 保存优化任务详情
-		s := model.GetStorage()
-		err = s.Save(optimizationRecord)
+	err = model.GetStorage().Save(optimizationRecord)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	// 保存优化任务详情
+	go func() {
+		store := model.GetStorage()
+		optimizationRecord, err := store.GetOptimizationRecordId(id)
 		if err != nil {
 			logger.Error(err)
 			return
 		}
+
+		// SQL优化服务 newOptimizateServer
+		server := NewOptimizationOnlinePawSQLServer(logger, instance, *schema)
+		// 调用SQL优化
+		optimizationInfo, err := server.Optimizate(context.TODO(), OptimizationSQL)
+		if err != nil {
+			optimizationRecord.Status = OptimizateStatusFailed.String()
+			logger.Error(err)
+		} else {
+			optimizationRecord.PerformanceImprove = optimizationInfo.PerformanceImprove
+			optimizationRecord.NumberOfQuery = optimizationInfo.NumberOfQuery
+			optimizationRecord.NumberOfSyntaxError = optimizationInfo.NumberOfSyntaxError
+			optimizationRecord.NumberOfRewrite = optimizationInfo.NumberOfRewrite
+			optimizationRecord.NumberOfRewrittenQuery = optimizationInfo.NumberOfRewrittenQuery
+			optimizationRecord.NumberOfIndex = optimizationInfo.NumberOfIndex
+			optimizationRecord.NumberOfQueryIndex = optimizationInfo.NumberOfQueryIndex
+			optimizationRecord.IndexRecommendations = optimizationInfo.IndexRecommendations
+			for _, optSQL := range optimizationInfo.OptimizationSQLs {
+				optSQL.OptimizationId = id
+			}
+			optimizationRecord.OptimizationSQLs = optimizationInfo.OptimizationSQLs
+			optimizationRecord.Status = OptimizateStatusFinish.String()
+		}
+		err = store.Save(optimizationRecord)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+
 	}()
 	return id, nil
 }

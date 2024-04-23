@@ -24,6 +24,7 @@ type SQLOptimizationRecord struct {
 	InstanceName       string  `json:"instance_name"`
 	SchemaName         string  `json:"schema_name"`
 	Creator            string  `json:"creator"`
+	Status             string  `json:"status"`
 	PerformanceImprove float64 `json:"performance_improve"`
 	// summary
 	NumberOfQuery          int       `json:"number_of_query"`

@@ -143,6 +143,7 @@ func getOptimizationRecords(c echo.Context) error {
 			PerformanceGain:  v.PerformanceImprove,
 			CreatedTime:      v.CreatedAt,
 			CreatedUser:      v.Creator,
+			Status:           v.Status,
 		})
 	}
 	return c.JSON(http.StatusOK, GetOptimizationRecordsRes{
