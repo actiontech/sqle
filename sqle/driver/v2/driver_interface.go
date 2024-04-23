@@ -103,6 +103,9 @@ type Node struct {
 
 	// StartLine is the starting row number of the Node's raw SQL.
 	StartLine uint64
+
+	// ExecBatchId represents the identifier for a group of SQL statements that should be executed within a single context using the ExecBatch method.
+	ExecBatchId uint64
 }
 
 type RuleLevel string

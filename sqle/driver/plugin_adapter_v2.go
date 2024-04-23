@@ -212,6 +212,7 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.No
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
 			StartLine:   node.StartLine,
+			ExecBatchId: node.BatchId,
 		}
 	}
 	return nodes, nil
