@@ -45,8 +45,8 @@ func (sm SQLOptimizationRecord) TableName() string {
 type OptimizationSQL struct {
 	Model
 	OptimizationId           string                  `json:"optimization_id"`
-	OriginalSQL              string                  `json:"original_sql"`
-	OptimizedSQL             string                  `json:"optimized_sql"`
+	OriginalSQL              string                  `json:"original_sql" gorm:"type:text;not null"`
+	OptimizedSQL             string                  `json:"optimized_sql" gorm:"type:text;not null"`
 	NumberOfRewrite          int                     `json:"number_of_rewrite"`
 	NumberOfSyntaxError      int                     `json:"number_of_syntax_error"`
 	NumberOfIndex            int                     `json:"number_of_index"`
