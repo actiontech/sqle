@@ -347,7 +347,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v2.GetTaskAnalysisData)
 		v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
 		v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
-		v1Router.GET("/schedule/default/option", v1.GetScheduledTaskDefaultOptionV1)
 
 		// dashboard
 		v1Router.GET("/dashboard", v1.Dashboard)
@@ -355,6 +354,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// configurations
 		v1Router.GET("/configurations/drivers", v1.GetDrivers)
 		v2Router.GET("/configurations/drivers", v2.GetDrivers)
+		v1Router.GET("/configurations/schedule/default-option", v1.GetScheduledTaskDefaultOptionV1)
 
 		// audit plan
 		v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
