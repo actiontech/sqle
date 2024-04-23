@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -166,7 +167,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
-func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
+func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 	fileHeader, fileType, err := getFileHeaderFromContext(c)
 	if err != nil {
 		return nil, err
@@ -189,7 +190,37 @@ func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName), nil
+	auditFiles := []*model.AuditFile{
+		model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName),
+	}
+	if strings.HasSuffix(fileHeader.Filename, ".zip") {
+		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader, uniqueName)
+		if err != nil {
+			return nil, err
+		}
+		auditFiles = append(auditFiles, auditFilesInZip...)
+	}
+	return auditFiles, nil
+}
+
+func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.FileHeader, zipUniqueName string) ([]*model.AuditFile, error) {
+	r, err := zip.NewReader(multipartFile, fileHeader.Size)
+	if err != nil {
+		return nil, err
+	}
+	var auditFiles []*model.AuditFile
+	for i := range r.File {
+		srcFile := r.File[i]
+		// skip empty file and folder
+		if srcFile == nil || srcFile.FileInfo().IsDir() {
+			continue
+		}
+		fileName := srcFile.FileInfo().Name()
+		if strings.HasSuffix(fileName, ".sql") {
+			auditFiles = append(auditFiles, model.NewFileRecord(0, uint(i+1), fileName, zipUniqueName+"_"+srcFile.Name))
+		}
+	}
+	return auditFiles, nil
 }
 
 func isSupportFileType(fileType string) bool {
@@ -853,7 +884,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	var err error
 	var sqls getSQLFromFileResp
-	var fileRecord *model.AuditFile
+	var fileRecords []*model.AuditFile
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -864,7 +895,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		fileRecord, err = saveFileFromContext(c)
+		fileRecords, err = saveFileFromContext(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -909,15 +940,16 @@ func AuditTaskGroupV1(c echo.Context) error {
 		defer plugin.Close(context.TODO())
 
 		for _, task := range tasks {
+			task.SQLSource = sqls.SourceType
 			err := addSQLsFromFileToTasks(sqls, task, plugin)
-			if fileRecord != nil {
-				fileRecord.TaskId = task.ID
-				if err := s.Save(&fileRecord); err != nil {
-					return controller.JSONBaseErrorReq(c, fmt.Errorf("save sql audit file record failed: %v", err))
-				}
-			}
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
+			}
+			if len(fileRecords) > 0 {
+				err = batchSaveFileRecords(s, fileRecords, task.ID)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
+				}
 			}
 		}
 	}
@@ -961,6 +993,38 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Tasks:       tasksRes,
 		},
 	})
+}
+
+func batchSaveFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
+	// Initialize parentID to 0
+	var parentID uint
+	// Create a slice to store all file records except the first one
+	saveRecords := make([]*model.AuditFile, 0, len(fileRecords)-1)
+
+	for i, fileRecord := range fileRecords {
+		// Set TaskId and ParentID for each file record
+		fileRecord.TaskId = taskId
+		fileRecord.ParentID = parentID
+
+		if i == 0 {
+			// save first record as the parent file record
+			if err := s.Save(&fileRecord); err != nil {
+				return err
+			}
+			// Update parentID to the ID of the first record
+			parentID = fileRecord.ID
+		} else {
+			// Add the record to saveRecords slice
+			saveRecords = append(saveRecords, fileRecord)
+		}
+	}
+	// Batch save all file records except the first one
+	if len(saveRecords) > 0 {
+		if err := s.BatchSaveFileRecords(saveRecords); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // @Summary 获取指定审核任务的原始文件
