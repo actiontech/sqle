@@ -118,6 +118,7 @@ type OptimizationRecord struct {
 	PerformanceGain  float64   `json:"performance_gain"` // 优化提升性能
 	CreatedTime      time.Time `json:"created_time"`     // 创建时间
 	CreatedUser      string    `json:"created_user"`     // 创建人
+	Status           string    `json:"status"`           // 优化状态
 }
 
 type GetOptimizationRecordsRes struct {
