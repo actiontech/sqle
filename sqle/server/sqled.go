@@ -583,12 +583,12 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 		return executeSQLs[i].StartLine < executeSQLs[j].StartLine
 	})
 
-	var sqlStatements []string
+	var sqls []string
 	for _, sql := range executeSQLs {
-		sqlStatements = append(sqlStatements, sql.Content)
+		sqls = append(sqls, sql.Content)
 	}
 
-	results, execErr := a.plugin.ExecBatch(context.TODO(), sqlStatements...)
+	results, execErr := a.plugin.ExecBatch(context.TODO(), sqls...)
 	for idx, executeSQL := range executeSQLs {
 		if execErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
