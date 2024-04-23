@@ -2534,6 +2534,11 @@ definitions:
       query_timeout_second:
         type: integer
     type: object
+  v1.ScheduleTaskDefaultOption:
+    properties:
+      default_selector:
+        type: string
+    type: object
   v1.Source:
     properties:
       audit_plan_name:
@@ -4366,6 +4371,20 @@ paths:
       summary: 获取生成 sqle license需要的的信息
       tags:
       - configuration
+  /v1/configurations/schedule/default-option:
+    get:
+      description: get scheduled task default option
+      operationId: getScheduledTaskDefaultOptionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ScheduleTaskDefaultOption'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单定时上线二次确认默认选项
+      tags:
+      - workflow
   /v1/configurations/system_variables:
     get:
       description: get system variables
