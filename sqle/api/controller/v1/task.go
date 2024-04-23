@@ -188,7 +188,7 @@ func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.NewFileRecord(0, fileHeader.Filename, uniqueName), nil
+	return model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName), nil
 }
 
 func isSupportFileType(fileType string) bool {
