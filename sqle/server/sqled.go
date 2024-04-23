@@ -4,6 +4,7 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -456,11 +457,35 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 
 func (a *action) execTask() (err error) {
 
-	task := a.task
+	switch a.task.ExecMode {
+	case model.ExecModeSqlFile:
+		// check plugin can exec batch sqls
+		execFileModeChecker, err := NewModuleStatusChecker(a.task.DBType, executeSqlFileMode)
+		if err != nil {
+			return err
+		}
+		if !execFileModeChecker.CheckIsSupport() {
+			return fmt.Errorf("plugin %v does not support execute sql file", a.task.DBType)
+		}
+		err = a.execSqlFileMode()
+		if err != nil {
+			return err
+		}
+	default:
+		err = a.execSqlSqlMode()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 
+}
+
+func (a *action) execSqlSqlMode() error {
 	// txSQLs keep adjacent DMLs, execute in one transaction.
+	task := a.task
 	var txSQLs []*model.ExecuteSQL
-
+	var err error
 	for i := range task.ExecuteSQLs {
 		executeSQL := task.ExecuteSQLs[i]
 		var nodes []driverV2.Node
@@ -489,7 +514,107 @@ func (a *action) execTask() (err error) {
 			}
 		}
 	}
+	return nil
+}
 
+func (a *action) execSqlFileMode() error {
+
+	st := model.GetStorage()
+	files, err := st.GetFileByTaskId(a.task.GetIDStr())
+	if err != nil {
+		return err
+	}
+
+	// Sort files by ExecOrder
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+
+	execMap := groupExecuteSQLsByFile(a.task.ExecuteSQLs)
+
+	for _, file := range files {
+		execSqlsByBatch, ok := execMap[file.FileName]
+		if !ok {
+			continue // No SQLs to execute for this file
+		}
+
+		// Sort execSqlsByBatch by batchId
+		batchIds := make([]uint64, 0, len(execSqlsByBatch))
+		for batchId := range execSqlsByBatch {
+			batchIds = append(batchIds, batchId)
+		}
+		sort.Slice(batchIds, func(i, j int) bool {
+			return batchIds[i] < batchIds[j]
+		})
+
+		// Execute SQLs in order of batchId
+		for _, batchId := range batchIds {
+			execSqls := execSqlsByBatch[batchId]
+			if err := a.executeSQLBatch(execSqls); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// groupExecuteSQLsByFile groups ExecuteSQLs by their source file and execution batch.
+//
+//	return map[fileName]map[batchId][]*model.ExecuteSQL
+func groupExecuteSQLsByFile(sqls []*model.ExecuteSQL) map[string]map[uint64][]*model.ExecuteSQL {
+	execMap := make(map[string]map[uint64][]*model.ExecuteSQL)
+	for _, executeSQL := range sqls {
+		if _, exist := execMap[executeSQL.SourceFile]; !exist {
+			execMap[executeSQL.SourceFile] = make(map[uint64][]*model.ExecuteSQL)
+		}
+		execMap[executeSQL.SourceFile][executeSQL.ExecBatchId] = append(
+			execMap[executeSQL.SourceFile][executeSQL.ExecBatchId], executeSQL)
+	}
+	return execMap
+}
+
+// executeSQLBatch executes a batch of SQLs and updates their status.
+func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
+	st := model.GetStorage()
+
+	// Sort sqls by StartLine
+	sort.Slice(executeSQLs, func(i, j int) bool {
+		return executeSQLs[i].StartLine < executeSQLs[j].StartLine
+	})
+
+	var sqlStatements []string
+	for _, sql := range executeSQLs {
+		sqlStatements = append(sqlStatements, sql.Content)
+	}
+
+	results, execErr := a.plugin.ExecBatch(context.TODO(), sqlStatements...)
+	for idx, executeSQL := range executeSQLs {
+		if execErr != nil {
+			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+			executeSQL.ExecResult = execErr.Error()
+			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
+				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				if idx >= len(results) {
+					continue
+				}
+				if results[idx] == nil {
+					continue
+				}
+				rowAffects, _ := results[idx].RowsAffected()
+				executeSQL.RowAffects = rowAffects
+			}
+			continue
+		}
+		rowAffects, _ := results[idx].RowsAffected()
+		executeSQL.RowAffects = rowAffects
+		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+		executeSQL.ExecResult = model.TaskExecResultOK
+	}
+	err := st.BatchSaveExecuteSqls(executeSQLs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
