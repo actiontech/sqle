@@ -18,7 +18,6 @@ import (
 var (
 	errCommunityEditionDoesNotSupportFeatureExportWorkflowList = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support feature export workflow list"))
 	errCommunityEditionDoesNotSupportWorkflowTemplate          = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support workflow template"))
-	errCommunityEditionDoesNotSupportScheduledNotify           = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support workflow scheduled notify"))
 )
 
 func exportWorkflowV1(c echo.Context) error {
