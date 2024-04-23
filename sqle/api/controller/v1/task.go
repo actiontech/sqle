@@ -1039,7 +1039,3 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 
 	return
 }
-
-type ScheduleTaskDefaultOption struct {
-	DefaultSelector string `json:"default_selector"`
-}
