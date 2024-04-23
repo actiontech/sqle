@@ -37,8 +37,9 @@ type Options struct {
 }
 type SqleOptions struct {
 	dmsCommonConf.BaseOptions `yaml:",inline"`
-	DMSServerAddress          string     `yaml:"dms_server_address"`
-	Service                   SeviceOpts `yaml:"service"`
+	DMSServerAddress          string             `yaml:"dms_server_address"`
+	Service                   SeviceOpts         `yaml:"service"`
+	OptimizationConfig        OptimizationConfig `yaml:"optimization_config"`
 }
 
 type SeviceOpts struct {
@@ -65,4 +66,9 @@ type Database struct {
 type PluginConfig struct {
 	PluginName string `yaml:"plugin_name"`
 	CMD        string `yaml:"cmd"`
+}
+
+type OptimizationConfig struct {
+	OptimizationKey string `yaml:"optimization_key"`
+	OptimizationURL string `yaml:"optimization_url"`
 }
