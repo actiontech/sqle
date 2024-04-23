@@ -11124,6 +11124,10 @@ var doc = `{
                 "performance_gain": {
                     "description": "优化提升性能",
                     "type": "number"
+                },
+                "status": {
+                    "description": "优化状态",
+                    "type": "string"
                 }
             }
         },
