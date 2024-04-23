@@ -3638,6 +3638,12 @@ var doc = `{
                     }
                 ],
                 "description": "optimize sql\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.\n5. formData[git_http_url]:the url which scheme is http(s) and end with .git.\n6. formData[git_user_name]:The name of the user who owns the repository read access.\n7. formData[git_user_password]:The password corresponding to git_user_name.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "sql_optimization"
                 ],
@@ -11115,6 +11121,10 @@ var doc = `{
                 },
                 "optimization_name": {
                     "type": "string"
+                },
+                "status": {
+                    "description": "优化状态",
+                    "type": "string"
                 }
             }
         },
@@ -11147,6 +11157,10 @@ var doc = `{
                 "performance_gain": {
                     "description": "优化提升性能",
                     "type": "number"
+                },
+                "status": {
+                    "description": "优化状态",
+                    "type": "string"
                 }
             }
         },
