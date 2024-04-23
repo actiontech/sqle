@@ -118,7 +118,7 @@ func (rtr *RuleTemplateRule) GetRule() *Rule {
 
 func (rtr *RuleTemplateRule) GetRewriteRule() *Rule {
 	rule := rtr.Rule
-	if rule.RewritePower != true {
+	if !rule.RewritePower {
 		return nil
 	}
 	if rtr.RuleLevel != "" {

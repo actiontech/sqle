@@ -210,7 +210,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 			} else {
 				isRuleDescSame := existedRule.Desc == rule.Desc
 				isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
-				isRuleLevelSame := existedRule.Level == string(rule.Level)
+				isRuleLevelSame := existedRule.Level == rule.Level
 				isRuleTypSame := existedRule.Typ == rule.Typ
 				isAuditPowerSame := existedRule.AuditPower == rule.AuditPower
 				isRewritePowerSame := existedRule.RewritePower == rule.RewritePower
