@@ -167,7 +167,7 @@ func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(fr) > 0 {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: model.ImTypeWechat})
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: model.ImTypeFeishu})
 	}
 
 	wr, err := s.GetWechatRecordsByTaskIds([]uint{wir.TaskId})
