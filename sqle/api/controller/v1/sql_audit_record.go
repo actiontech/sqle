@@ -184,6 +184,16 @@ type SQLFromXML struct {
 	SQL       string
 }
 
+func (s getSQLFromFileResp) MergeSQLs() (sqls string) {
+	for _, v := range s.SQLsFromSQLFiles {
+		sqls += v.SQLs
+	}
+	for _, v := range s.SQLsFromXMLs {
+		sqls += v.SQL
+	}
+	return sqls
+}
+
 func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin driver.Plugin) error {
 	var num uint = 1
 
