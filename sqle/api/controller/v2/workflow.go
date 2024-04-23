@@ -1170,6 +1170,7 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 		WorkflowID: workflow.WorkflowId,
 		Desc:       workflow.Desc,
 		Mode:       workflow.Mode,
+		ExecMode:   workflow.ExecMode,
 		CreateUser: dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime: &workflow.CreatedAt,
 	}
