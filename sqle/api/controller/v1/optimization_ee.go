@@ -23,17 +23,13 @@ func sqlOptimizate(c echo.Context) error {
 	}
 
 	// 获取入参中的SQL
-	sqls := getSQLFromFileResp{}
-	if req.SQLContent != "" {
-		sqls = getSQLFromFileResp{
-			SourceType:       model.TaskSQLSourceFromFormData,
-			SQLsFromFormData: req.SQLContent,
-		}
-	} else {
-		sqls, err = getSQLFromFile(c)
+	sql := req.SQLContent
+	if sql == "" {
+		sqls, err := getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		sql = sqls.MergeSQLs()
 	}
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
@@ -43,7 +39,7 @@ func sqlOptimizate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	optimizationId, err := optimization.Optimizate(c.Request().Context(), user.Name, projectUid, req.InstanceName, req.SchemaName, req.OptimizationName, sqls.SQLsFromFormData)
+	optimizationId, err := optimization.Optimizate(c.Request().Context(), user.Name, projectUid, req.InstanceName, req.SchemaName, req.OptimizationName, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
