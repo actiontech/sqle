@@ -36,6 +36,7 @@ type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
 	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	ExecMode       string `json:"exec_mode" enums:"sql_file,sqls"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -52,7 +53,7 @@ type AuditTaskResV1 struct {
 	Score          int32           `json:"score"`
 	PassRate       float64         `json:"pass_rate"`
 	Status         string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
-	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
+	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
 	ExecStartTime  *time.Time      `json:"exec_start_time,omitempty"`
 	ExecEndTime    *time.Time      `json:"exec_end_time,omitempty"`
 	AuditFiles     []AuditFileResp `json:"audit_files,omitempty"`
@@ -236,6 +237,7 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
+// @Param req body v1.CreateAuditTaskReqV1 true "create and audit task"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
@@ -694,6 +696,7 @@ func GetTaskAnalysisData(c echo.Context) error {
 
 type CreateAuditTasksGroupReqV1 struct {
 	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+	ExecMode  string                     `json:"exec_mode" enums:"sql_file,sqls"`
 }
 
 type InstanceForCreatingTask struct {
