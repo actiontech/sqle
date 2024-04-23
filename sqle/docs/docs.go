@@ -490,29 +490,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/schedule/default-option": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get scheduled task default option",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单定时上线二次确认默认选项",
-                "operationId": "getScheduledTaskDefaultOptionV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.ScheduleTaskDefaultOption"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/configurations/system_variables": {
             "get": {
                 "security": [
@@ -661,6 +638,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.TestWechatConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/workflows/schedule/default_option": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get scheduled task default option",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单定时上线二次确认默认选项",
+                "operationId": "getScheduledTaskDefaultOptionV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ScheduleTaskDefaultOption"
                         }
                     }
                 }
