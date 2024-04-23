@@ -2517,6 +2517,11 @@ definitions:
       query_timeout_second:
         type: integer
     type: object
+  v1.ScheduleTaskDefaultOption:
+    properties:
+      default_selector:
+        type: string
+    type: object
   v1.Source:
     properties:
       audit_plan_name:
@@ -7442,20 +7447,6 @@ paths:
       summary: 导出工单
       tags:
       - workflow
-  /v1/projects/workflows/schedule/default:
-    get:
-      description: get scheduled task default selector
-      operationId: getScheduledTaskDefaultSelectorV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSQLAuditRecordsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单定时上线二次确认默认选项
-      tags:
-      - workflow
   /v1/rule_knowledge/db_types/{db_type}/custom_rules/{rule_name}/:
     get:
       description: get custom rule knowledge
@@ -7801,6 +7792,20 @@ paths:
       summary: 规则列表
       tags:
       - rule_template
+  /v1/schedule/default/option:
+    get:
+      description: get scheduled task default option
+      operationId: getScheduledTaskDefaultOptionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ScheduleTaskDefaultOption'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单定时上线二次确认默认选项
+      tags:
+      - workflow
   /v1/sql_analysis:
     get:
       description: Direct get sql analysis result
