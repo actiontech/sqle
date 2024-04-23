@@ -75,6 +75,7 @@ type OptimizationDetail struct {
 	CreatedUser          string              `json:"created_user"`
 	Optimizationsummary  Optimizationsummary `json:"basic_summary"`
 	IndexRecommendations []string            `json:"index_recommendations"`
+	Status               string              `json:"status"` // 优化状态
 }
 
 type Optimizationsummary struct {
