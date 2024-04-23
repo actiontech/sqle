@@ -151,3 +151,31 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 
 	return analysisDataResItemV1
 }
+
+func getScheduledTaskDefaultOptionV1(c echo.Context) error {
+	s := model.GetStorage()
+	wir, exist, err := s.GetLastNeedNotifyScheduledRecord()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("there is no scheduled task record"))
+	}
+
+	fr, err := s.GetFeishuRecordsByTaskIds([]uint{wir.TaskId})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(fr) > 0 {
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: model.ImTypeWechat})
+	}
+
+	wr, err := s.GetWechatRecordsByTaskIds([]uint{wir.TaskId})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(wr) > 0 {
+		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: model.ImTypeWechat})
+	}
+	return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
+}
