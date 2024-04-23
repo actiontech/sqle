@@ -9,11 +9,16 @@ import (
 	"strings"
 
 	dmsCommonHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-const pawHost = "https://www.pawsql.com"
-const userKey = "46324B18-8263BC74-2F965314-19568F5A"
+func getUserKey() string {
+	return config.GetOptions().SqleOptions.OptimizationConfig.OptimizationKey
+}
+func getPawHost() string {
+	return config.GetOptions().SqleOptions.OptimizationConfig.OptimizationURL
+}
 
 type BaseReply struct {
 	Code    int    `json:"code"`
@@ -45,7 +50,7 @@ type CreateWorkspace struct {
 // 在线模式（online）
 func (a *OptimizationPawSQLServer) CreateWorkspaceOnline(ctx context.Context, instance *model.Instance, database string) (string, error) {
 	req := CreateWorkspaceReq{
-		UserKey:    userKey,
+		UserKey:    getUserKey(),
 		Mode:       "online",
 		DbType:     strings.ToLower(instance.DbType),
 		Host:       instance.Host,
@@ -56,7 +61,7 @@ func (a *OptimizationPawSQLServer) CreateWorkspaceOnline(ctx context.Context, in
 		DbPassword: instance.Password,
 	}
 	reply := new(CreateWorkspaceReply)
-	err := dmsCommonHttp.POST(ctx, pawHost+"/api/v1/createWorkspace", nil, req, reply)
+	err := dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/createWorkspace", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -69,13 +74,13 @@ func (a *OptimizationPawSQLServer) CreateWorkspaceOnline(ctx context.Context, in
 // 离线模式：定义DDL建表
 func (a *OptimizationPawSQLServer) CreateWorkspaceOffline(ctx context.Context, dbType string, ddlText string) (string, error) {
 	req := CreateWorkspaceReq{
-		UserKey: userKey,
+		UserKey: getUserKey(),
 		Mode:    "offline",
 		DbType:  dbType,
 		DdlText: ddlText,
 	}
 	reply := new(CreateWorkspaceReply)
-	err := dmsCommonHttp.POST(ctx, pawHost+"/api/v1/workspaces", nil, req, reply)
+	err := dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/workspaces", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -89,7 +94,7 @@ func (a *OptimizationPawSQLServer) CreateWorkspaceOffline(ctx context.Context, d
 // Post http://${server-host}:${server-port}/api/v1/createAnalysis
 func (a *OptimizationPawSQLServer) CreateOptimization(ctx context.Context, workspaceId string, dbType string, workload string, queryMode string) (string, error) {
 	req := CreateOptimizationReq{
-		UserKey:      userKey,
+		UserKey:      getUserKey(),
 		Workspace:    workspaceId,
 		DBType:       dbType,
 		Workload:     workload,
@@ -97,7 +102,7 @@ func (a *OptimizationPawSQLServer) CreateOptimization(ctx context.Context, works
 		ValidateFlag: true,
 	}
 	reply := new(CreateOptimizationReply)
-	err := dmsCommonHttp.POST(context.TODO(), pawHost+"/api/v1/createAnalysis", nil, req, reply)
+	err := dmsCommonHttp.POST(context.TODO(), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -133,12 +138,12 @@ type CreateOptimizationData struct {
 
 func (a *OptimizationPawSQLServer) GetOptimizationSummary(ctx context.Context, optimizationId string) (ret OptimizationSummaryBody, err error) {
 	req := OptimizationListReq{
-		UserKey:        userKey,
+		UserKey:        getUserKey(),
 		OptimizationId: optimizationId,
 	}
 
 	reply := new(OptimizationSummaryReply)
-	err = dmsCommonHttp.POST(ctx, pawHost+"/api/v1/getAnalysisSummary", nil, req, reply)
+	err = dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/getAnalysisSummary", nil, req, reply)
 	if err != nil {
 		return ret, err
 	}
@@ -213,11 +218,11 @@ type SummaryStatementInfo struct {
 //	Post http://${server-host}:${server-port}/api/v1/getStatementDetails
 func (a *OptimizationPawSQLServer) GetOptimizationDetail(ctx context.Context, optimizationStmtId string) (ret OptimizationDetail, err error) {
 	req := OptimizationDetailReq{
-		UserKey:            userKey,
+		UserKey:            getUserKey(),
 		OptimizationStmtId: optimizationStmtId,
 	}
 	reply := new(OptimizationDetailReply)
-	err = dmsCommonHttp.POST(ctx, pawHost+"/api/v1/getStatementDetails", nil, req, reply)
+	err = dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/getStatementDetails", nil, req, reply)
 	if err != nil {
 		return ret, err
 	}
