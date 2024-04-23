@@ -25,6 +25,29 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/configurations/workflows/schedule/default_option": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get scheduled task default option",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单定时上线二次确认默认选项",
+                "operationId": "getScheduledTaskDefaultOptionV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.ScheduleTaskDefaultOption"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_files": {
             "post": {
                 "security": [
@@ -11756,6 +11779,14 @@ var doc = `{
                 },
                 "query_timeout_second": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.ScheduleTaskDefaultOption": {
+            "type": "object",
+            "properties": {
+                "default_selector": {
+                    "type": "string"
                 }
             }
         },
