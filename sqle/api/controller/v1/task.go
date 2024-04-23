@@ -285,7 +285,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	task.ExecMode = req.ExecMode
 	task.Instance = &tmpInst
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
@@ -795,6 +795,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
 		}
 		tasks[i].CreatedAt = time.Now()
+		tasks[i].ExecMode = req.ExecMode
 	}
 
 	taskGroup := model.TaskGroup{Tasks: tasks}
