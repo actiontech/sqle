@@ -295,6 +295,8 @@ definitions:
         - sql_file
         - mybatis_xml_file
         - audit_plan
+        - zip_file
+        - git_repository
         type: string
       status:
         enum:
@@ -473,8 +475,30 @@ definitions:
         example: default_MySQL
         type: string
     type: object
+  v1.CreateAuditTaskReqV1:
+    properties:
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
+        type: string
+      instance_name:
+        example: inst_1
+        type: string
+      instance_schema:
+        example: db1
+        type: string
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
+    type: object
   v1.CreateAuditTasksGroupReqV1:
     properties:
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
+        type: string
       instances:
         items:
           $ref: '#/definitions/v1.InstanceForCreatingTask'
@@ -4022,6 +4046,11 @@ definitions:
         type: string
       desc:
         type: string
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
+        type: string
       mode:
         enum:
         - same_sqls
@@ -6841,6 +6870,12 @@ paths:
         in: formData
         name: input_zip_file
         type: file
+      - description: create and audit task
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditTaskReqV1'
       produces:
       - application/json
       responses:
