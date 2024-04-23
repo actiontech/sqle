@@ -296,6 +296,10 @@ func (s *PluginImplV2) Exec(ctx context.Context, sql string) (sqlDriver.Result, 
 	}, nil
 }
 
+func (s *PluginImplV2) ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}
+
 func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
 	api := "Tx"
 	s.preLog(api)
