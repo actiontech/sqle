@@ -946,7 +946,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
 			}
 			if len(fileRecords) > 0 {
-				err = batchSaveFileRecords(s, fileRecords, task.ID)
+				err = batchCreateFileRecords(s, fileRecords, task.ID)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
 				}
@@ -995,11 +995,11 @@ func AuditTaskGroupV1(c echo.Context) error {
 	})
 }
 
-func batchSaveFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
+func batchCreateFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
 	// Initialize parentID to 0
 	var parentID uint
 	// Create a slice to store all file records except the first one
-	saveRecords := make([]*model.AuditFile, 0, len(fileRecords)-1)
+	records := make([]*model.AuditFile, 0, len(fileRecords)-1)
 
 	for i, fileRecord := range fileRecords {
 		// Set TaskId and ParentID for each file record
@@ -1007,20 +1007,21 @@ func batchSaveFileRecords(s *model.Storage, fileRecords []*model.AuditFile, task
 		fileRecord.ParentID = parentID
 
 		if i == 0 {
+			fileRecord.ID = 0
 			// save first record as the parent file record
-			if err := s.Save(&fileRecord); err != nil {
+			if err := s.Create(fileRecord); err != nil {
 				return err
 			}
 			// Update parentID to the ID of the first record
 			parentID = fileRecord.ID
 		} else {
-			// Add the record to saveRecords slice
-			saveRecords = append(saveRecords, fileRecord)
+			// Add the record to records slice
+			records = append(records, fileRecord)
 		}
 	}
 	// Batch save all file records except the first one
-	if len(saveRecords) > 0 {
-		if err := s.BatchSaveFileRecords(saveRecords); err != nil {
+	if len(records) > 0 {
+		if err := s.BatchCreateFileRecords(records); err != nil {
 			return err
 		}
 	}
