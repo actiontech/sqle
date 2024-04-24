@@ -577,7 +577,13 @@ func groupExecuteSQLsByFile(sqls []*model.ExecuteSQL) map[string]map[uint64][]*m
 // executeSQLBatch executes a batch of SQLs and updates their status.
 func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 	st := model.GetStorage()
-
+	// update status befor execute
+	for _, executeSQL := range executeSQLs {
+		executeSQL.ExecStatus = model.SQLExecuteStatusDoing
+	}
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
+		return err
+	}
 	// Sort sqls by StartLine
 	sort.Slice(executeSQLs, func(i, j int) bool {
 		return executeSQLs[i].StartLine < executeSQLs[j].StartLine
