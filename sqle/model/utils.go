@@ -212,8 +212,8 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
 				isRuleLevelSame := existedRule.Level == rule.Level
 				isRuleTypSame := existedRule.Typ == rule.Typ
-				isAuditPowerSame := existedRule.AuditPower == rule.AuditPower
-				isRewritePowerSame := existedRule.RewritePower == rule.RewritePower
+				isHasAuditPowerSame := existedRule.HasAuditPower == rule.HasAuditPower
+				isHasRewritePowerSame := existedRule.HasRewritePower == rule.HasRewritePower
 				existRuleParam, err := existedRule.Params.Value()
 				if err != nil {
 					return err
@@ -224,7 +224,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				}
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
-				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame || !isAuditPowerSame || !isRewritePowerSame {
+				if !isRuleDescSame || !isRuleAnnotationSame || !isRuleLevelSame || !isRuleTypSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
 					if existedRule.Knowledge != nil && existedRule.Knowledge.Content != "" {
 						// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
 						rule.Knowledge.Content = existedRule.Knowledge.Content
@@ -320,43 +320,44 @@ func DBRuleInPluginRule(dbRule *Rule) bool {
 	return false
 }
 
-// 整合重写规则与插件规则，并赋予审核、重写能力
-func MergeRewirteRules(pluginRulesMap map[string][]*driverV2.Rule) map[string][]*Rule {
+// 整合sql优化规则与插件规则，并赋予审核、重写能力
+func MergeOptimizationRules(pluginRulesMap map[string][]*driverV2.Rule, optimizationRulesMap map[string][]opt.OptimizationRuleHandler) map[string][]*Rule {
 	resultAllRulesMap := map[string][]*Rule{}
 	resultAllRules := []*Rule{}
+	rulesMap := map[string]*Rule{}
 	for dbType, pluginRules := range pluginRulesMap {
-		// 现仅mysql支持重写，非mysql插件不整合重写规则和赋予能力
-		if dbType == "MySQL" {
-			rulesMap := make(map[string]bool)
-			// 只有审核能力或审核、重写能力都有的规则
+		optimizationRules := optimizationRulesMap[dbType]
+		if len(optimizationRules) > 0 {
+			// 插件规则转换并赋值能力
 			for _, rule := range pluginRules {
-				rule := GenerateRuleByDriverRule(rule, dbType)
-				rule.AuditPower = true
-				if _, ok := opt.RuleMapping[rule.Name]; ok {
-					rule.RewritePower = true
+				resultRule := GenerateRuleByDriverRule(rule, dbType)
+				resultRule.HasAuditPower = true
+				resultRule.HasRewritePower = false
+				resultAllRules = append(resultAllRules, resultRule)
+				rulesMap[rule.Name] = resultRule
+			}
+			// sql优化规则转换并赋值能力
+			for _, rule := range optimizationRules {
+				// 与插件规则复用的sql优化规则（rule name相同）
+				if value, ok := rulesMap[rule.Rule.Name]; ok {
+					value.HasRewritePower = true
+					rulesMap[rule.Rule.Name] = value
 				} else {
-					rule.RewritePower = false
-				}
-				rulesMap[rule.Name] = true
-				resultAllRules = append(resultAllRules, rule)
-			}
-			// 仅有重写能力的规则
-			for _, rewriteRule := range opt.RuleHandler {
-				rule := GenerateRuleByDriverRule(&rewriteRule.Rule, dbType)
-				rule.RewritePower = true
-				rule.AuditPower = false
-				if _, exist := rulesMap[rule.Name]; !exist {
-					resultAllRules = append(resultAllRules, rule)
+					resultRule := GenerateRuleByDriverRule(&rule.Rule, dbType)
+					resultRule.HasRewritePower = true
+					resultRule.HasAuditPower = false
+					resultAllRules = append(resultAllRules, resultRule)
 				}
 			}
-			resultAllRulesMap[dbType] = resultAllRules
 		} else {
 			for _, rule := range pluginRules {
-				rule := GenerateRuleByDriverRule(rule, dbType)
-				resultAllRules = append(resultAllRules, rule)
+				resultRule := GenerateRuleByDriverRule(rule, dbType)
+				resultRule.HasAuditPower = true
+				resultRule.HasRewritePower = false
+				resultAllRules = append(resultAllRules, resultRule)
 			}
-			resultAllRulesMap[dbType] = resultAllRules
 		}
+		resultAllRulesMap[dbType] = resultAllRules
 	}
 	return resultAllRulesMap
 }

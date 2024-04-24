@@ -1,10 +1,10 @@
 package optimization
 
 import (
-	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
-var RuleMapping map[string]string // ruleCode与plugin的rule name映射关系
+var OptimizationRuleMap map[string][]OptimizationRuleHandler // ruleCode与plugin的rule name映射关系
 
 // DML规则
 const (
@@ -27,49 +27,58 @@ const (
 	DMLRuleSATTCRewrite                      = "dml_rule_sattc_rewrite"
 )
 
-func init() {
-	RuleMapping = make(map[string]string)
+// mysql sql优化的ruleCode
+const (
+	RuleAddOrderByNullRewrite             = "RuleAddOrderByNullRewrite"
+	RuleCntGtThanZeroRewrite              = "RuleCntGtThanZeroRewrite"
+	RuleDelete2TruncateRewrite            = "RuleDelete2TruncateRewrite"
+	RuleDiffDataTypeInPredicateWrite      = "RuleDiffDataTypeInPredicateWrite"
+	RuleDiffOrderingSpecTypeWarning       = "RuleDiffOrderingSpecTypeWarning"
+	RuleFuncWithColumnInPredicate         = "RuleFuncWithColumnInPredicate"
+	RuleHavingCond2WhereCondRewrite       = "RuleHavingCond2WhereCondRewrite"
+	RuleUseEqual4NullRewrite              = "RuleUseEqual4NullRewrite"
+	RuleInSubqueryRewrite                 = "RuleInSubqueryRewrite"
+	RuleNotInNullableSubQueryRewrite      = "RuleNotInNullableSubQueryRewrite"
+	RuleNoWildcardInPredicateLikeWarning  = "RuleNoWildcardInPredicateLikeWarning"
+	RuleUseNonstandardNotEqualOperator    = "RuleUseNonstandardNotEqualOperator"
+	RuleLargeOffset                       = "RuleLargeOffset"
+	RuleDistinctEliminationRewrite        = "RuleDistinctEliminationRewrite"
+	RuleExists2JoinRewrite                = "RuleExists2JoinRewrite"
+	RuleFilterPredicatePushDownRewrite    = "RuleFilterPredicatePushDownRewrite"
+	RuleGroupingFromDiffTablesRewrite     = "RuleGroupingFromDiffTablesRewrite"
+	RuleJoinEliminationRewrite            = "RuleJoinEliminationRewrite"
+	RuleLimitClausePushDownRewrite        = "RuleLimitClausePushDownRewrite"
+	RuleMaxMinAggRewrite                  = "RuleMaxMinAggRewrite"
+	RuleMoveOrder2LeadingRewrite          = "RuleMoveOrder2LeadingRewrite"
+	RuleOrCond4SelectRewrite              = "RuleOrCond4SelectRewrite"
+	RuleOrCond4UpDeleteRewrite            = "RuleOrCond4UpDeleteRewrite"
+	RuleOrderEliminationInSubqueryRewrite = "RuleOrderEliminationInSubqueryRewrite"
+	RuleOrderingFromDiffTablesRewrite     = "RuleOrderingFromDiffTablesRewrite"
+	RuleOuter2InnerConversionRewrite      = "RuleOuter2InnerConversionRewrite"
+	RuleProjectionPushdownRewrite         = "RuleProjectionPushdownRewrite"
+	RuleQualifierSubQueryRewrite          = "RuleQualifierSubQueryRewrite"
+	RuleQueryFoldingRewrite               = "RuleQueryFoldingRewrite"
+	RuleSATTCRewrite                      = "RuleSATTCRewrite"
+)
 
-	// 有审核能力的重写规则
-	RuleMapping[rulepkg.DMLHintGroupByRequiresConditions] = "RuleAddOrderByNullRewrite"
-	RuleMapping[rulepkg.DMLCheckWhereExistScalarSubquery] = "RuleCntGtThanZeroRewrite"
-	RuleMapping[rulepkg.DMLHintUseTruncateInsteadOfDelete] = "RuleDelete2TruncateRewrite"
-	RuleMapping[rulepkg.DMLCheckWhereExistImplicitConversion] = "RuleDiffDataTypeInPredicateWrite"
-	RuleMapping[rulepkg.DDLCheckDatabaseCollation] = "RuleDiffOrderingSpecTypeWarning"
-	RuleMapping[rulepkg.DMLCheckMathComputationOrFuncOnIndex] = "RuleFuncWithColumnInPredicate"
-	RuleMapping[rulepkg.DMLNotRecommendHaving] = "RuleHavingCond2WhereCondRewrite"
-	RuleMapping[rulepkg.DMLNotRecommendIn] = "RuleInSubqueryRewrite"
-	RuleMapping[rulepkg.DMLCheckLimitOffsetNum] = "RuleLargeOffset"
-	RuleMapping[rulepkg.DMLHintInNullOnlyFalse] = "RuleNotInNullableSubQueryRewrite"
-	RuleMapping[rulepkg.DMLNotRecommendNotWildcardLike] = "RuleNoWildcardInPredicateLikeWarning"
-	RuleMapping[rulepkg.DMLWhereExistNull] = "RuleUseEqual4NullRewrite"
-	RuleMapping[rulepkg.DMLCheckNotEqualSymbol] = "RuleUseNonstandardNotEqualOperator"
-
-	// 仅有重写能力的规则
-	RuleMapping[DMLRuleDistinctEliminationRewrite] = "RuleDistinctEliminationRewrite"
-	RuleMapping[DMLRuleExists2JoinRewrite] = "RuleExists2JoinRewrite"
-	RuleMapping[DMLRuleFilterPredicatePushDownRewrite] = "RuleFilterPredicatePushDownRewrite"
-	RuleMapping[DMLRuleGroupingFromDiffTablesRewrite] = "RuleGroupingFromDiffTablesRewrite"
-	RuleMapping[DMLRuleJoinEliminationRewrite] = "RuleJoinEliminationRewrite"
-	RuleMapping[DMLRuleLimitClausePushDownRewrite] = "RuleLimitClausePushDownRewrite"
-	RuleMapping[DMLRuleMaxMinAggRewrite] = "RuleMaxMinAggRewrite"
-	RuleMapping[DMLRuleMoveOrder2LeadingRewrite] = "RuleMoveOrder2LeadingRewrite"
-	RuleMapping[DMLRuleOrCond4SelectRewrite] = "RuleOrCond4SelectRewrite"
-	RuleMapping[DMLRuleOrCond4UpDeleteRewrite] = "RuleOrCond4UpDeleteRewrite"
-	RuleMapping[DMLRuleOrderEliminationInSubqueryRewrite] = "RuleOrderEliminationInSubqueryRewrite"
-	RuleMapping[DMLRuleOrderingFromDiffTablesRewrite] = "RuleOrderingFromDiffTablesRewrite"
-	RuleMapping[DMLRuleOuter2InnerConversionRewrite] = "RuleOuter2InnerConversionRewrite"
-	RuleMapping[DMLRuleProjectionPushdownRewrite] = "RuleProjectionPushdownRewrite"
-	RuleMapping[DMLRuleQualifierSubQueryRewrite] = "RuleQualifierSubQueryRewrite"
-	RuleMapping[DMLRuleQueryFoldingRewrite] = "RuleQueryFoldingRewrite"
-	RuleMapping[DMLRuleSATTCRewrite] = "RuleSATTCRewrite"
+type OptimizationRuleHandler struct {
+	Rule     driverV2.Rule
+	RuleCode string
 }
 
-// 通过重写规则的ruleCode获取插件规则的name
-func GetPluginNameByRuleCode(ruleCode string) (string, bool) {
-	for key, value := range RuleMapping {
-		if value == ruleCode {
-			return key, true
+func init() {
+	OptimizationRuleMap = make(map[string][]OptimizationRuleHandler)
+	OptimizationRuleMap["MySQL"] = BaseOptimizationRuleHandler
+}
+
+// 通过sql优化规则的ruleCode和dbType获取插件规则的name
+func GetPluginRuleNameByOptimizationRule(ruleCode string, dbType string) (string, bool) {
+	rules := OptimizationRuleMap[dbType]
+	if len(rules) > 0 {
+		for _, rule := range rules {
+			if rule.RuleCode == ruleCode {
+				return rule.Rule.Name, true
+			}
 		}
 	}
 	return "", false

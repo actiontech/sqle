@@ -5,7 +5,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
-var RuleHandler = []rulepkg.RuleHandler{
+var BaseOptimizationRuleHandler = []OptimizationRuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       rulepkg.DMLHintGroupByRequiresConditions,
@@ -14,8 +14,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "为GROUP BY显示添加 ORDER BY 条件(<MYSQL 5.7)",
-		Func:    nil,
+		RuleCode: RuleAddOrderByNullRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -25,9 +24,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message:      "COUNT标量子查询重写",
-		AllowOffline: true,
-		Func:         nil,
+		RuleCode: RuleCntGtThanZeroRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -37,8 +34,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "无条件的DELETE建议重写为Truncate",
-		Func:    nil,
+		RuleCode: RuleDelete2TruncateRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -48,8 +44,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "隐式类型转换导致索引失效",
-		Func:    nil,
+		RuleCode: RuleDiffDataTypeInPredicateWrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -59,8 +54,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "排序字段方向不同导致索引失效",
-		Func:    nil,
+		RuleCode: RuleDiffOrderingSpecTypeWarning,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -70,9 +64,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		AllowOffline: false,
-		Message:      "索引列上的运算导致索引失效",
-		Func:         nil,
+		RuleCode: RuleFuncWithColumnInPredicate,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -82,8 +74,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "HAVING条件下推",
-		Func:    nil,
+		RuleCode: RuleHavingCond2WhereCondRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -93,9 +84,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message:      "禁止使用=NULL判断空值",
-		Func:         nil,
-		AllowOffline: true,
+		RuleCode: RuleUseEqual4NullRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -105,10 +94,8 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "IN子查询优化",
-		Func:    nil,
+		RuleCode: RuleInSubqueryRewrite,
 	},
-
 	{
 		Rule: driverV2.Rule{
 			Name:       rulepkg.DMLHintInNullOnlyFalse,
@@ -117,8 +104,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "IN可空子查询可能导致结果集不符合预期",
-		Func:    nil,
+		RuleCode: RuleNotInNullableSubQueryRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -128,10 +114,8 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "避免使用没有通配符的 LIKE 查询",
-		Func:    nil,
+		RuleCode: RuleNoWildcardInPredicateLikeWarning,
 	},
-
 	{
 		Rule: driverV2.Rule{
 			Name:       rulepkg.DMLCheckNotEqualSymbol,
@@ -140,8 +124,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "建议使用'<>'代替'!='",
-		Func:    nil,
+		RuleCode: RuleUseNonstandardNotEqualOperator,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -151,11 +134,8 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message:      "OFFSET的值超过阈值",
-		AllowOffline: true,
-		Func:         nil,
+		RuleCode: RuleLargeOffset,
 	},
-
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLRuleDistinctEliminationRewrite,
@@ -164,9 +144,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "子查询中的DISTINCT消除",
-		Func:         nil,
+		RuleCode: RuleDistinctEliminationRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -176,9 +154,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "EXISTS查询转换为表连接",
-		Func:         nil,
+		RuleCode: RuleExists2JoinRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -188,9 +164,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "过滤谓词下推",
-		Func:         nil,
+		RuleCode: RuleFilterPredicatePushDownRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -200,9 +174,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "GROUPBY字段来自不同表",
-		Func:         nil,
+		RuleCode: RuleGroupingFromDiffTablesRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -212,9 +184,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "表连接消除",
-		Func:         nil,
+		RuleCode: RuleJoinEliminationRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -224,9 +194,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "LIMIT下推至UNION分支",
-		Func:         nil,
+		RuleCode: RuleLimitClausePushDownRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -236,9 +204,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "MAX/MIN子查询重写",
-		Func:         nil,
+		RuleCode: RuleMaxMinAggRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -248,9 +214,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "ORDER子句重排序优化",
-		Func:         nil,
+		RuleCode: RuleMoveOrder2LeadingRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -260,9 +224,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "OR条件的SELECT重写",
-		Func:         nil,
+		RuleCode: RuleOrCond4SelectRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -272,9 +234,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "OR条件的UPDELETE重写",
-		Func:         nil,
+		RuleCode: RuleOrCond4UpDeleteRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -284,9 +244,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "IN子查询中没有LIMIT的排序消除",
-		Func:         nil,
+		RuleCode: RuleOrderEliminationInSubqueryRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -296,9 +254,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "避免ORDERBY字段来自不同表",
-		Func:         nil,
+		RuleCode: RuleOrderingFromDiffTablesRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -308,9 +264,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "外连接优化",
-		Func:         nil,
+		RuleCode: RuleOuter2InnerConversionRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -320,9 +274,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "投影下推(PROJECTION PUSHDOWN)",
-		Func:         nil,
+		RuleCode: RuleProjectionPushdownRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -332,9 +284,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "修饰子查询重写优化",
-		Func:         nil,
+		RuleCode: RuleQualifierSubQueryRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -344,9 +294,7 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "查询折叠(QUERY FOLDING)",
-		Func:         nil,
+		RuleCode: RuleQueryFoldingRewrite,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -356,8 +304,6 @@ var RuleHandler = []rulepkg.RuleHandler{
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		AllowOffline: false,
-		Message:      "SATTC重写优化",
-		Func:         nil,
+		RuleCode: RuleSATTCRewrite,
 	},
 }

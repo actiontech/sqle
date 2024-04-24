@@ -64,17 +64,17 @@ func (r *RuleKnowledge) GetContent() string {
 }
 
 type Rule struct {
-	Name         string         `json:"name" gorm:"primary_key; not null"`
-	DBType       string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc         string         `json:"desc"`
-	Annotation   string         `json:"annotation" gorm:"column:annotation"`
-	Level        string         `json:"level" example:"error"` // notice, warn, error
-	Typ          string         `json:"type" gorm:"column:type; not null"`
-	Params       params.Params  `json:"params" gorm:"type:varchar(1000)"`
-	KnowledgeId  uint           `json:"knowledge_id"`
-	Knowledge    *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
-	AuditPower   bool           `json:"audit_power" gorm:"type:bool" example:"true"`
-	RewritePower bool           `json:"rewrite_power" gorm:"type:bool" example:"true"`
+	Name            string         `json:"name" gorm:"primary_key; not null"`
+	DBType          string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
+	Desc            string         `json:"desc"`
+	Annotation      string         `json:"annotation" gorm:"column:annotation"`
+	Level           string         `json:"level" example:"error"` // notice, warn, error
+	Typ             string         `json:"type" gorm:"column:type; not null"`
+	Params          params.Params  `json:"params" gorm:"type:varchar(1000)"`
+	KnowledgeId     uint           `json:"knowledge_id"`
+	Knowledge       *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	HasAuditPower   bool           `json:"has_audit_power" gorm:"type:bool" example:"true"`
+	HasRewritePower bool           `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
 }
 
 func (r Rule) TableName() string {
@@ -116,9 +116,9 @@ func (rtr *RuleTemplateRule) GetRule() *Rule {
 	return rule
 }
 
-func (rtr *RuleTemplateRule) GetRewriteRule() *Rule {
+func (rtr *RuleTemplateRule) GetOptimizationRule() *Rule {
 	rule := rtr.Rule
-	if !rule.RewritePower {
+	if !rule.HasRewritePower {
 		return nil
 	}
 	if rtr.RuleLevel != "" {
@@ -227,7 +227,7 @@ func (s *Storage) GetAllRulesByInstance(instance *Instance) ([]*Rule, []*CustomR
 	return s.GetRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
 }
 
-func (s *Storage) GetRewriteRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, error) {
+func (s *Storage) GetOptimizationRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, error) {
 	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
@@ -238,7 +238,7 @@ func (s *Storage) GetRewriteRulesFromRuleTemplateByName(projectIds []string, nam
 
 	rules := make([]*Rule, 0, len(tpl.RuleList))
 	for _, r := range tpl.RuleList {
-		rule := r.GetRewriteRule()
+		rule := r.GetOptimizationRule()
 		if rule != nil {
 			rules = append(rules, rule)
 		}
@@ -246,7 +246,7 @@ func (s *Storage) GetRewriteRulesFromRuleTemplateByName(projectIds []string, nam
 	return rules, nil
 }
 
-func (s *Storage) GetAllRewriteRulesByInstance(instance *Instance) ([]*Rule, error) {
+func (s *Storage) GetAllOptimizationRulesByInstance(instance *Instance) ([]*Rule, error) {
 	var template RuleTemplate
 	if err := s.db.Where("id = ? ", instance.RuleTemplateId).First(&template).Error; err != nil {
 		if err != gorm.ErrRecordNotFound {
@@ -255,7 +255,7 @@ func (s *Storage) GetAllRewriteRulesByInstance(instance *Instance) ([]*Rule, err
 			return nil, nil
 		}
 	}
-	return s.GetRewriteRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
+	return s.GetOptimizationRulesFromRuleTemplateByName([]string{instance.ProjectId, ProjectIdForGlobalRuleTemplate}, instance.RuleTemplateName)
 }
 
 func (s *Storage) GetRuleTemplateByProjectIdAndName(projectId, name string) (*RuleTemplate, bool, error) {
