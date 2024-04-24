@@ -583,7 +583,7 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 		return executeSQLs[i].StartLine < executeSQLs[j].StartLine
 	})
 
-	var sqls []string
+	sqls := make([]string, 0, len(executeSQLs))
 	for _, sql := range executeSQLs {
 		sqls = append(sqls, sql.Content)
 	}
