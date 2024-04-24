@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
@@ -17,7 +18,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// TODO 临时方法限制SQL优化功能
+func checkLicenseAction() error {
+	if config.GetOptions().SqleOptions.OptimizationConfig.OptimizationKey != "" && config.GetOptions().SqleOptions.OptimizationConfig.OptimizationURL != "" {
+		return nil
+	}
+	return fmt.Errorf("Optimization is not supported in the current version")
+}
+
 func sqlOptimizate(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	req := new(OptimizeSQLReq)
 	err := controller.BindAndValidateReq(c, req)
 	if err != nil {
@@ -54,6 +67,10 @@ func sqlOptimizate(c echo.Context) error {
 }
 
 func getOptimizationRecord(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	optimizationId := c.Param("optimization_record_id")
 	record, err := model.GetStorage().GetOptimizationRecordId(optimizationId)
 	if err != nil {
@@ -87,6 +104,10 @@ func getOptimizationRecord(c echo.Context) error {
 }
 
 func getOptimizationRecords(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	req := new(GetOptimizationRecordsReq)
 	err := controller.BindAndValidateReq(c, req)
 	if err != nil {
@@ -153,6 +174,10 @@ func getOptimizationRecords(c echo.Context) error {
 }
 
 func getOptimizationSQL(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	optimizationId := c.Param("optimization_record_id")
 
 	number, err := strconv.Atoi(c.Param("number"))
@@ -187,6 +212,10 @@ func getOptimizationSQL(c echo.Context) error {
 }
 
 func getOptimizationSQLs(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	req := new(GetOptimizationSQLsReq)
 	err := controller.BindAndValidateReq(c, req)
 	if err != nil {
@@ -225,6 +254,10 @@ func getOptimizationSQLs(c echo.Context) error {
 }
 
 func getOptimizationRecordOverview(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	req := new(GetOptimizationOverviewReq)
 	err := controller.BindAndValidateReq(c, req)
 	if err != nil {
@@ -288,6 +321,10 @@ func getOptimizationRecordOverview(c echo.Context) error {
 }
 
 func getDBPerformanceImproveOverview(c echo.Context) error {
+	if err := checkLicenseAction(); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
