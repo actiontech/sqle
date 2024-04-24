@@ -5,6 +5,7 @@ package optimization
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -105,6 +106,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		if err != nil {
 			return optimizationInfo, err
 		}
+
 		a.logger.Debugf("get Optimization detail %v", detail)
 		triggeredRule := make([]model.RewriteRule, 0)
 		for _, v := range detail.RewrittenQuery {
@@ -116,12 +118,23 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			})
 		}
 
+		// 触发多条重写规则的SQL是一致的，只需获取任意一条即可
+		var optimizedSQL string
+		if len(detail.RewrittenQuery) != 0 && detail.RewrittenQuery[0].RewrittenQueriesStr != "" {
+			sqls := make([]string, 0)
+			err = json.Unmarshal([]byte(detail.RewrittenQuery[0].RewrittenQueriesStr), &sqls)
+			if err != nil {
+				a.logger.Errorf("unmarshal rewriteQueriesStr error %v", err)
+			}
+			optimizedSQL = sqls[0]
+		}
+		// 索引数据移除pawsql关键字
 		indexRecommendeds := trimKeyWord(detail.IndexRecommended)
 		contributingIndices := trimKeyWord([]string{statementInfo.ContributingIndices})
 
 		optimizationInfo.OptimizationSQLs = append(optimizationInfo.OptimizationSQLs, &model.OptimizationSQL{
-			OriginalSQL:              statementInfo.StmtText,
-			OptimizedSQL:             detail.StmtText,
+			OriginalSQL:              detail.StmtText,
+			OptimizedSQL:             optimizedSQL,
 			NumberOfRewrite:          statementInfo.NumberOfRewrite,
 			NumberOfSyntaxError:      statementInfo.NumberOfSyntaxError,
 			NumberOfIndex:            statementInfo.NumberOfIndex,
