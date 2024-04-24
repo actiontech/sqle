@@ -67,6 +67,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	var rules []*model.Rule
 	var customRules []*model.CustomRule
 	var instance *model.Instance
+	var auditRules []*model.Rule
 	st := model.GetStorage()
 	// var drvMgr driver.DriverManager
 	entry := log.NewEntry().WithField("task_id", taskId)
@@ -114,6 +115,12 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 
 	// plugin will be closed by drvMgr in Sqled.do().
 	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", task.Instance, task.DBType)
+	for _, rule := range rules {
+		if rule.HasAuditPower {
+			auditRules = append(auditRules, rule)
+		}
+	}
+
 	if err != nil {
 		goto Error
 	}
@@ -123,7 +130,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	}
 	action.plugin = p
 	action.customRules = customRules
-	action.rules = rules
+	action.rules = auditRules
 
 	s.queue <- action
 
