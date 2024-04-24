@@ -114,7 +114,7 @@ sql_optimization_records.instance_name, sql_optimization_records.schema_name,
 sql_optimization_records.creator, sql_optimization_records.performance_improve,sql_optimization_records.created_at
 
 {{- template "body" . -}} 
-
+ORDER BY sql_optimization_records.created_at DESC
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
 {{- end -}}

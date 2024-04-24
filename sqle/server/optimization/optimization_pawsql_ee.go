@@ -5,7 +5,9 @@ package optimization
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/actiontech/sqle/sqle/model"
@@ -85,6 +87,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		return optimizationInfo, err
 	}
 	a.logger.Debugf("get Optimization summary %v", summary)
+	optimizationIndexInfo := trimKeyWord(summary.OptimizationIndexInfo)
 	optimizationInfo = &model.SQLOptimizationRecord{
 		NumberOfQuery:          summary.BasicSummary.NumberOfQuery,
 		NumberOfSyntaxError:    summary.BasicSummary.NumberOfSyntaxError,
@@ -92,7 +95,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		NumberOfRewrittenQuery: summary.BasicSummary.NumberOfRewrittenQuery,
 		NumberOfIndex:          summary.BasicSummary.NumberOfIndex,
 		NumberOfQueryIndex:     summary.BasicSummary.NumberOfQueryIndex,
-		IndexRecommendations:   summary.OptimizationIndexInfo,
+		IndexRecommendations:   optimizationIndexInfo,
 	}
 
 	var performanceImprove float64
@@ -103,6 +106,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		if err != nil {
 			return optimizationInfo, err
 		}
+
 		a.logger.Debugf("get Optimization detail %v", detail)
 		triggeredRule := make([]model.RewriteRule, 0)
 		for _, v := range detail.RewrittenQuery {
@@ -114,22 +118,42 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			})
 		}
 
+		// 触发多条重写规则的SQL是一致的，只需获取任意一条即可
+		var optimizedSQL string
+		if len(detail.RewrittenQuery) != 0 && detail.RewrittenQuery[0].RewrittenQueriesStr != "" {
+			sqls := make([]string, 0)
+			err = json.Unmarshal([]byte(detail.RewrittenQuery[0].RewrittenQueriesStr), &sqls)
+			if err != nil {
+				a.logger.Errorf("unmarshal rewriteQueriesStr error %v", err)
+			}
+			optimizedSQL = sqls[0]
+		}
+		// 索引数据移除pawsql关键字
+		indexRecommendeds := trimKeyWord(detail.IndexRecommended)
+		contributingIndices := trimKeyWord([]string{statementInfo.ContributingIndices})
+
 		optimizationInfo.OptimizationSQLs = append(optimizationInfo.OptimizationSQLs, &model.OptimizationSQL{
-			OriginalSQL:              statementInfo.StmtText,
-			OptimizedSQL:             detail.StmtText,
+			OriginalSQL:              detail.StmtText,
+			OptimizedSQL:             optimizedSQL,
 			NumberOfRewrite:          statementInfo.NumberOfRewrite,
 			NumberOfSyntaxError:      statementInfo.NumberOfSyntaxError,
 			NumberOfIndex:            statementInfo.NumberOfIndex,
 			NumberOfHitIndex:         statementInfo.NumberOfHitIndex,
 			Performance:              statementInfo.Performance,
-			ContributingIndices:      statementInfo.ContributingIndices,
+			ContributingIndices:      contributingIndices[0],
 			TriggeredRules:           triggeredRule,
-			IndexRecommendations:     detail.IndexRecommended,
+			IndexRecommendations:     indexRecommendeds,
 			ExplainValidationDetails: model.ExplainValidationDetail{BeforeCost: detail.ValidationDetails.BeforeCost, AfterCost: detail.ValidationDetails.AfterCost, BeforePlan: detail.ValidationDetails.BeforePlan, AfterPlan: detail.ValidationDetails.AfterPlan, PerformImprovePer: detail.ValidationDetails.PerformImprovePer},
 		})
 		performanceImprove += statementInfo.Performance
 	}
 	// 概览接口返回的提升数据异常，自行计算
 	optimizationInfo.PerformanceImprove = performanceImprove
+	return
+}
+func trimKeyWord(slices []string) (ret []string) {
+	for _, s := range slices {
+		ret = append(ret, strings.ReplaceAll(s, "PAWSQL", "OPTIMIZATION"))
+	}
 	return
 }
