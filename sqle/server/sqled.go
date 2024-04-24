@@ -115,6 +115,8 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 
 	// plugin will be closed by drvMgr in Sqled.do().
 	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", task.Instance, task.DBType)
+
+	// 过滤没有审核能力的规则
 	for _, rule := range rules {
 		if rule.HasAuditPower {
 			auditRules = append(auditRules, rule)
