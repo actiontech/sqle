@@ -326,8 +326,8 @@ func MergeOptimizationRules(pluginRulesMap map[string][]*driverV2.Rule, optimiza
 	resultAllRules := []*Rule{}
 	rulesMap := map[string]*Rule{}
 	for dbType, pluginRules := range pluginRulesMap {
-		optimizationRules := optimizationRulesMap[dbType]
-		if len(optimizationRules) > 0 {
+		optimizationRules, exist := optimizationRulesMap[dbType]
+		if exist {
 			// 插件规则转换并赋值能力
 			for _, rule := range pluginRules {
 				resultRule := GenerateRuleByDriverRule(rule, dbType)
