@@ -347,7 +347,12 @@ func TestWechatAuditConfigV1(c echo.Context) error {
 }
 
 type ScheduleTaskDefaultOption struct {
-	DefaultSelector string `json:"default_selector"`
+	DefaultSelector string `json:"default_selector" enums:"wechat,feishu"`
+}
+
+type ScheduledTaskDefaultOptionV1Rsp struct {
+	controller.BaseRes
+	Data ScheduleTaskDefaultOption `json:"data"`
 }
 
 // GetScheduledTaskDefaultOptionV1
