@@ -19,6 +19,7 @@ Acitontech Sqle
 %define _binary_filedigest_algorithm md5
 %define _source_payload w0.gzdio
 %define _binary_payload w0.gzdio
+%define __jar_repack %{nil}
 
 ##########
 
