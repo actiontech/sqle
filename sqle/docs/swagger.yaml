@@ -4104,20 +4104,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /configurations/workflows/schedule/default_option:
-    get:
-      description: get scheduled task default option
-      operationId: getScheduledTaskDefaultOptionV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.ScheduledTaskDefaultOptionV1Rsp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单定时上线二次确认默认选项
-      tags:
-      - workflow
   /v1/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
@@ -4501,6 +4487,20 @@ paths:
       summary: 测试微信审批配置
       tags:
       - configuration
+  /v1/configurations/workflows/schedule/default_option:
+    get:
+      description: get scheduled task default option
+      operationId: getScheduledTaskDefaultOptionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ScheduledTaskDefaultOptionV1Rsp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单定时上线二次确认默认选项
+      tags:
+      - workflow
   /v1/custom_rules:
     get:
       description: get all custom rule template
