@@ -3,7 +3,11 @@
 
 package v2
 
-import "github.com/actiontech/sqle/sqle/model"
+import (
+	"fmt"
+
+	"github.com/actiontech/sqle/sqle/model"
+)
 
 const (
 	NotifyTypeWechat = "wechat"
@@ -39,6 +43,19 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 
 func cancelNotify(taskId uint) error {
 	s := model.GetStorage()
+	ir, err := s.GetWorkInstanceRecordByTaskId(fmt.Sprint(taskId))
+	if err != nil {
+		return err
+	}
+	// 定时上线原本不需要发送通知，就不需要再删除record记录
+	if !ir.NeedScheduledTaskNotify {
+		return nil
+	}
+
+	ir.NeedScheduledTaskNotify = false
+	if err := s.Save(ir); err != nil {
+		return err
+	}
 
 	// wechat
 	{
