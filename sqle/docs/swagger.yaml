@@ -5482,6 +5482,7 @@ paths:
         - create_audit_plan
         - create_workflow
         - sql_manage
+        - create_optimization
         in: query
         name: functional_module
         type: string
