@@ -9,3 +9,8 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 	// nothing
 	return nil
 }
+
+func cancelNotify(taskId uint) error {
+	// nothing
+	return nil
+}
