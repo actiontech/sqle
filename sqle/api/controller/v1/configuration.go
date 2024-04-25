@@ -361,7 +361,7 @@ type ScheduledTaskDefaultOptionV1Rsp struct {
 // @Tags workflow
 // @Id getScheduledTaskDefaultOptionV1
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.ScheduleTaskDefaultOption
+// @Success 200 {object} v1.ScheduledTaskDefaultOptionV1Rsp
 // @Router /configurations/workflows/schedule/default_option [get]
 func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return getScheduledTaskDefaultOptionV1(c)
