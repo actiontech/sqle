@@ -518,60 +518,65 @@ func (a *action) execSqlSqlMode() error {
 }
 
 func (a *action) execSqlFileMode() error {
-
-	st := model.GetStorage()
-	files, err := st.GetFileByTaskId(a.task.GetIDStr())
+	files, err := getFilesSortByExecOrder(a.task.GetIDStr())
 	if err != nil {
 		return err
 	}
-
-	// Sort files by ExecOrder
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].ExecOrder < files[j].ExecOrder
-	})
-
-	execMap := groupExecuteSQLsByFile(a.task.ExecuteSQLs)
-
+	sqlsInFile := groupSqlsByFile(a.task.ExecuteSQLs)
+	// execute sqls in the order of files
 	for _, file := range files {
-		execSqlsByBatch, ok := execMap[file.FileName]
+		sqls, ok := sqlsInFile[file.FileName]
 		if !ok {
-			continue // No SQLs to execute for this file
+			continue
 		}
+		a.executeSqlsGroupByBatchId(sqls)
+	}
+	return nil
+}
 
-		// Sort execSqlsByBatch by batchId
-		batchIds := make([]uint64, 0, len(execSqlsByBatch))
-		for batchId := range execSqlsByBatch {
-			batchIds = append(batchIds, batchId)
-		}
-		sort.Slice(batchIds, func(i, j int) bool {
-			return batchIds[i] < batchIds[j]
-		})
-
-		// Execute SQLs in order of batchId
-		for _, batchId := range batchIds {
-			execSqls := execSqlsByBatch[batchId]
-			if err := a.executeSQLBatch(execSqls); err != nil {
+func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
+	var sqlBatch []*model.ExecuteSQL
+	for idx, sql := range sqls {
+		sqlBatch = append(sqlBatch, sql)
+		if idx < len(sqls)-1 {
+			// not the last sql
+			if sql.ExecBatchId != sqls[idx+1].ExecBatchId {
+				// when batch id is changed, execute sql batch
+				if err := a.executeSQLBatch(sqlBatch); err != nil {
+					return err
+				}
+				// clear sql batch
+				sqlBatch = make([]*model.ExecuteSQL, 0)
+			}
+		} else {
+			// when encount the last sql in this file execute sql batch
+			if err := a.executeSQLBatch(sqlBatch); err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }
 
-// groupExecuteSQLsByFile groups ExecuteSQLs by their source file and execution batch.
-//
-//	return map[fileName]map[batchId][]*model.ExecuteSQL
-func groupExecuteSQLsByFile(sqls []*model.ExecuteSQL) map[string]map[uint64][]*model.ExecuteSQL {
-	execMap := make(map[string]map[uint64][]*model.ExecuteSQL)
-	for _, executeSQL := range sqls {
-		if _, exist := execMap[executeSQL.SourceFile]; !exist {
-			execMap[executeSQL.SourceFile] = make(map[uint64][]*model.ExecuteSQL)
-		}
-		execMap[executeSQL.SourceFile][executeSQL.ExecBatchId] = append(
-			execMap[executeSQL.SourceFile][executeSQL.ExecBatchId], executeSQL)
+func groupSqlsByFile(executeSQLs []*model.ExecuteSQL) map[string][]*model.ExecuteSQL {
+	fileSqlMap := make(map[string][]*model.ExecuteSQL)
+	for _, executeSQL := range executeSQLs {
+		fileSqlMap[executeSQL.SourceFile] = append(fileSqlMap[executeSQL.SourceFile], executeSQL)
 	}
-	return execMap
+	return fileSqlMap
+}
+
+func getFilesSortByExecOrder(taskId string) ([]*model.AuditFile, error) {
+	st := model.GetStorage()
+	files, err := st.GetFileByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+	return files, nil
 }
 
 // executeSQLBatch executes a batch of SQLs and updates their status.
@@ -584,10 +589,6 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
 		return err
 	}
-	// Sort sqls by StartLine
-	sort.Slice(executeSQLs, func(i, j int) bool {
-		return executeSQLs[i].StartLine < executeSQLs[j].StartLine
-	})
 
 	sqls := make([]string, 0, len(executeSQLs))
 	for _, sql := range executeSQLs {
@@ -595,28 +596,28 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 	}
 
 	results, execErr := a.plugin.ExecBatch(context.TODO(), sqls...)
-	for idx, executeSQL := range executeSQLs {
-		if execErr != nil {
+	if execErr != nil {
+		for idx, executeSQL := range executeSQLs {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = execErr.Error()
 			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
-				if idx >= len(results) {
-					continue
-				}
-				if results[idx] == nil {
+				if idx >= len(results) || results[idx] == nil {
 					continue
 				}
 				rowAffects, _ := results[idx].RowsAffected()
 				executeSQL.RowAffects = rowAffects
 			}
-			continue
 		}
-		rowAffects, _ := results[idx].RowsAffected()
-		executeSQL.RowAffects = rowAffects
-		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
-		executeSQL.ExecResult = model.TaskExecResultOK
+	} else {
+		for idx, executeSQL := range executeSQLs {
+			rowAffects, _ := results[idx].RowsAffected()
+			executeSQL.RowAffects = rowAffects
+			executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+			executeSQL.ExecResult = model.TaskExecResultOK
+		}
 	}
+
 	err := st.BatchSaveExecuteSqls(executeSQLs)
 	if err != nil {
 		return err
