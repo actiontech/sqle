@@ -52,6 +52,7 @@ type ListProject struct {
 }
 
 type Business struct {
+	Id     string `json:"id"`
 	Name   string `json:"name"`
 	IsUsed bool   `json:"is_used"`
 }
