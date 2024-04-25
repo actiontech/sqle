@@ -8082,7 +8082,7 @@ var doc = `{
                 }
             }
         },
-        "/v2/{project_name}/workflows/{workflow_id}/files": {
+        "/v2/{project_name}/workflows/{workflow_id}/tasks/{task_id}/files": {
             "get": {
                 "security": [
                     {
