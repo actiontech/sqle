@@ -36,3 +36,29 @@ func createNotifyRecord(notifyType string, curTaskRecord *model.WorkflowInstance
 	}
 	return nil
 }
+
+func cancelNotify(taskId uint) error {
+	s := model.GetStorage()
+
+	// wechat
+	{
+		records, err := s.GetWechatRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteWechatRecordByTaskId(taskId)
+		}
+	}
+	// feishu
+	{
+		records, err := s.GetFeishuRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteFeishuRecordByTaskId(taskId)
+		}
+	}
+	return nil
+}
