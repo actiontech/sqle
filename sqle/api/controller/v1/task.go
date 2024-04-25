@@ -277,7 +277,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	var sqls getSQLFromFileResp
 	var err error
-
+	var fileRecords []*model.AuditFile
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -285,6 +285,10 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	} else {
 		sqls, err = getSQLFromFile(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		fileRecords, err = saveFileFromContext(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -310,12 +314,18 @@ func CreateAndAuditTask(c echo.Context) error {
 	tmpInst := *task.Instance
 	task.Instance = nil
 
+	task.ExecMode = req.ExecMode
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
 	err = s.Save(&taskGroup)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	task.ExecMode = req.ExecMode
+	if len(fileRecords) > 0 {
+		err = batchCreateFileRecords(s, fileRecords, task.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
+		}
+	}
 	task.Instance = &tmpInst
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
