@@ -233,3 +233,56 @@ type GetOptimizationSQLsRes struct {
 func GetOptimizationSQLs(c echo.Context) error {
 	return getOptimizationSQLs(c)
 }
+
+type GetOptimizationOverviewReq struct {
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"  valid:"required"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"  valid:"required"`
+}
+
+type GetOptimizationOverviewResp struct {
+	Data []OptimizationRecordOverview `json:"data"`
+	controller.BaseRes
+}
+
+type OptimizationRecordOverview struct {
+	RecordNumber uint64 `json:"record_number"`
+	Time         string `json:"time"`
+}
+
+// GetOptimizationOverview
+// @Summary 获取SQL优化记录概览
+// @Description get sql optimization record overview
+// @Tags sql_optimization
+// @Id getOptimizationOverview
+// @Security ApiKeyAuth
+// @Param filter_create_time_from query string true "create time from"
+// @Param filter_create_time_to query string true "create time to"
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetOptimizationOverviewResp
+// @router /v1/projects/{project_name}/statistic/optimization_record_overview [get]
+func GetOptimizationRecordOverview(c echo.Context) error {
+	return getOptimizationRecordOverview(c)
+}
+
+type GetDBPerformanceImproveOverviewResp struct {
+	Data []DBPerformanceImproveOverview `json:"data"`
+	controller.BaseRes
+}
+
+type DBPerformanceImproveOverview struct {
+	InstanceName          string  `json:"instance_name"`
+	AvgPerformanceImprove float64 `json:"avg_performance_improve"`
+}
+
+// GetDBPerformanceImproveOverview
+// @Summary 获取实例性能提升概览
+// @Description get db optimization performance improvements
+// @Tags sql_optimization
+// @Id getDBPerformanceImproveOverview
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetDBPerformanceImproveOverviewResp
+// @router /v1/projects/{project_name}/statistic/optimization_performance_improve_overview [get]
+func GetDBPerformanceImproveOverview(c echo.Context) error {
+	return getDBPerformanceImproveOverview(c)
+}

@@ -608,6 +608,13 @@ definitions:
         example: DDL规则
         type: string
     type: object
+  v1.DBPerformanceImproveOverview:
+    properties:
+      avg_performance_improve:
+        type: number
+      instance_name:
+        type: string
+    type: object
   v1.DBTypeAuditPlan:
     properties:
       data:
@@ -1011,6 +1018,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetDBPerformanceImproveOverviewResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DBPerformanceImproveOverview'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetDashboardResV1:
     properties:
       code:
@@ -1209,6 +1229,19 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.OperationResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetOptimizationOverviewResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OptimizationRecordOverview'
         type: array
       message:
         example: ok
@@ -2115,6 +2148,13 @@ definitions:
         type: number
       status:
         description: 优化状态
+        type: string
+    type: object
+  v1.OptimizationRecordOverview:
+    properties:
+      record_number:
+        type: integer
+      time:
         type: string
     type: object
   v1.OptimizationSQL:
@@ -6675,6 +6715,56 @@ paths:
       summary: 获取各类型数据源的健康情况
       tags:
       - statistic
+  /v1/projects/{project_name}/statistic/optimization_performance_improve_overview:
+    get:
+      description: get db optimization performance improvements
+      operationId: getDBPerformanceImproveOverview
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDBPerformanceImproveOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例性能提升概览
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/statistic/optimization_record_overview:
+    get:
+      description: get sql optimization record overview
+      operationId: getOptimizationOverview
+      parameters:
+      - description: create time from
+        in: query
+        name: filter_create_time_from
+        required: true
+        type: string
+      - description: create time to
+        in: query
+        name: filter_create_time_to
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录概览
+      tags:
+      - sql_optimization
   /v1/projects/{project_name}/statistic/project_score:
     get:
       description: get project score
