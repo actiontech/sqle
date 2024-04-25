@@ -10836,6 +10836,12 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "has_audit_power": {
+                    "type": "boolean"
+                },
+                "has_rewrite_power": {
+                    "type": "boolean"
+                },
                 "is_custom_rule": {
                     "type": "boolean"
                 },
