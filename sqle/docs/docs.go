@@ -3744,84 +3744,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_optimization_records/performance_improve_overview": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get db optimization performance improvements",
-                "tags": [
-                    "sql_optimization"
-                ],
-                "summary": "获取实例性能提升概览",
-                "operationId": "getDBPerformanceImproveOverview",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetDBPerformanceImproveOverviewResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{project_name}/sql_optimization_records/record_overview": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql optimization record overview",
-                "tags": [
-                    "sql_optimization"
-                ],
-                "summary": "获取SQL优化记录概览",
-                "operationId": "getOptimizationOverview",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "create time from",
-                        "name": "filter_create_time_from",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "create time to",
-                        "name": "filter_create_time_to",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOptimizationOverviewResp"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/": {
             "get": {
                 "security": [
@@ -4057,6 +3979,84 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetInstanceHealthResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/optimization_performance_improve_overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get db optimization performance improvements",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取实例性能提升概览",
+                "operationId": "getDBPerformanceImproveOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDBPerformanceImproveOverviewResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/statistic/optimization_record_overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql optimization record overview",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "获取SQL优化记录概览",
+                "operationId": "getOptimizationOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetOptimizationOverviewResp"
                         }
                     }
                 }

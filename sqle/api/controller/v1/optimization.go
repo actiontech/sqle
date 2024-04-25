@@ -259,7 +259,7 @@ type OptimizationRecordOverview struct {
 // @Param filter_create_time_to query string true "create time to"
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetOptimizationOverviewResp
-// @router /v1/projects/{project_name}/sql_optimization_records/record_overview [get]
+// @router /v1/projects/{project_name}/statistic/optimization_record_overview [get]
 func GetOptimizationRecordOverview(c echo.Context) error {
 	return getOptimizationRecordOverview(c)
 }
@@ -282,7 +282,7 @@ type DBPerformanceImproveOverview struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} v1.GetDBPerformanceImproveOverviewResp
-// @router /v1/projects/{project_name}/sql_optimization_records/performance_improve_overview [get]
+// @router /v1/projects/{project_name}/statistic/optimization_performance_improve_overview [get]
 func GetDBPerformanceImproveOverview(c echo.Context) error {
 	return getDBPerformanceImproveOverview(c)
 }
