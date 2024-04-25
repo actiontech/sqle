@@ -537,6 +537,27 @@ func (a *action) execSqlFileMode() error {
 	return nil
 }
 
+func getFilesSortByExecOrder(taskId string) ([]*model.AuditFile, error) {
+	st := model.GetStorage()
+	files, err := st.GetFileByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+	return files, nil
+}
+
+func groupSqlsByFile(executeSQLs []*model.ExecuteSQL) map[string][]*model.ExecuteSQL {
+	fileSqlMap := make(map[string][]*model.ExecuteSQL)
+	for _, executeSQL := range executeSQLs {
+		fileSqlMap[executeSQL.SourceFile] = append(fileSqlMap[executeSQL.SourceFile], executeSQL)
+	}
+	return fileSqlMap
+}
+
 func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 	sqlBatch := make([]*model.ExecuteSQL, 0)
 	for idx, sql := range sqls {
@@ -559,27 +580,6 @@ func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 		}
 	}
 	return nil
-}
-
-func groupSqlsByFile(executeSQLs []*model.ExecuteSQL) map[string][]*model.ExecuteSQL {
-	fileSqlMap := make(map[string][]*model.ExecuteSQL)
-	for _, executeSQL := range executeSQLs {
-		fileSqlMap[executeSQL.SourceFile] = append(fileSqlMap[executeSQL.SourceFile], executeSQL)
-	}
-	return fileSqlMap
-}
-
-func getFilesSortByExecOrder(taskId string) ([]*model.AuditFile, error) {
-	st := model.GetStorage()
-	files, err := st.GetFileByTaskId(taskId)
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].ExecOrder < files[j].ExecOrder
-	})
-	return files, nil
 }
 
 // executeSQLBatch executes a batch of SQLs and updates their status.
