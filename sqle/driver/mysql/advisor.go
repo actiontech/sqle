@@ -447,7 +447,10 @@ func (a *threeStarIndexAdvisor) extractColumnInSelect() error {
 				if !a.isColumnInDrivingTable(col) {
 					continue
 				}
-				column = a.drivingTableColumnMap[col.Name.Name.L]
+				column, ok = a.drivingTableColumnMap[col.Name.Name.L]
+				if !ok {
+					continue
+				}
 				column.columnName = col
 				a.drivingTableColumn.columnInOrderBy.add(column)
 				a.possibleColumns.add(column)
