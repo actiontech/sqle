@@ -194,7 +194,7 @@ func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 		model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName),
 	}
 	if strings.HasSuffix(fileHeader.Filename, ".zip") {
-		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader, uniqueName)
+		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader)
 		if err != nil {
 			return nil, err
 		}
@@ -203,21 +203,20 @@ func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 	return auditFiles, nil
 }
 
-func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.FileHeader, zipUniqueName string) ([]*model.AuditFile, error) {
+func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.FileHeader) ([]*model.AuditFile, error) {
 	r, err := zip.NewReader(multipartFile, fileHeader.Size)
 	if err != nil {
 		return nil, err
 	}
 	var auditFiles []*model.AuditFile
-	for i := range r.File {
-		srcFile := r.File[i]
+	for i, srcFile := range r.File {
 		// skip empty file and folder
 		if srcFile == nil || srcFile.FileInfo().IsDir() {
 			continue
 		}
-		fileName := srcFile.FileInfo().Name()
-		if strings.HasSuffix(fileName, ".sql") {
-			auditFiles = append(auditFiles, model.NewFileRecord(0, uint(i+1), fileName, zipUniqueName+"_"+srcFile.Name))
+		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
+		if strings.HasSuffix(fullName, ".sql") {
+			auditFiles = append(auditFiles, model.NewFileRecord(0, uint(i+1), fullName, model.GenUniqueFileName()))
 		}
 	}
 	return auditFiles, nil
