@@ -6,7 +6,7 @@ package v2
 import "github.com/actiontech/sqle/sqle/model"
 
 const (
-	NotifyTypeWechat = "Wechat"
+	NotifyTypeWechat = "wechat"
 	NotifyTypeFeishu = "feishu"
 )
 
