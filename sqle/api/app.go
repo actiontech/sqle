@@ -192,6 +192,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/statistic/project_score", v1.GetProjectScoreV1)
 		v1ProjectRouter.GET("/:project_name/statistic/instance_health", v1.GetInstanceHealthV1)
 		v1ProjectRouter.GET("/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
+		v1ProjectRouter.GET("/:project_name/statistic/optimization_record_overview", v1.GetOptimizationRecordOverview)
+		v1ProjectRouter.GET("/:project_name/statistic/optimization_performance_improve_overview", v1.GetDBPerformanceImproveOverview)
 
 		// audit whitelist
 		v1ProjectRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
@@ -276,8 +278,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/", v1.GetOptimizationRecord)
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls", v1.GetOptimizationSQLs)
 		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls/:number/", v1.GetOptimizationSQLDetail)
-		v1ProjectRouter.GET("/:project_name/sql_optimization_records/record_overview", v1.GetOptimizationRecordOverview)
-		v1ProjectRouter.GET("/:project_name/sql_optimization_records/performance_improve_overview", v1.GetDBPerformanceImproveOverview)
 
 		// task
 		v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)

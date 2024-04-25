@@ -6640,56 +6640,6 @@ paths:
       summary: 获取SQL优化语句详情
       tags:
       - sql_optimization
-  /v1/projects/{project_name}/sql_optimization_records/performance_improve_overview:
-    get:
-      description: get db optimization performance improvements
-      operationId: getDBPerformanceImproveOverview
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetDBPerformanceImproveOverviewResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取实例性能提升概览
-      tags:
-      - sql_optimization
-  /v1/projects/{project_name}/sql_optimization_records/record_overview:
-    get:
-      description: get sql optimization record overview
-      operationId: getOptimizationOverview
-      parameters:
-      - description: create time from
-        in: query
-        name: filter_create_time_from
-        required: true
-        type: string
-      - description: create time to
-        in: query
-        name: filter_create_time_to
-        required: true
-        type: string
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOptimizationOverviewResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取SQL优化记录概览
-      tags:
-      - sql_optimization
   /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
@@ -6750,6 +6700,56 @@ paths:
       summary: 获取各类型数据源的健康情况
       tags:
       - statistic
+  /v1/projects/{project_name}/statistic/optimization_performance_improve_overview:
+    get:
+      description: get db optimization performance improvements
+      operationId: getDBPerformanceImproveOverview
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDBPerformanceImproveOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例性能提升概览
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/statistic/optimization_record_overview:
+    get:
+      description: get sql optimization record overview
+      operationId: getOptimizationOverview
+      parameters:
+      - description: create time from
+        in: query
+        name: filter_create_time_from
+        required: true
+        type: string
+      - description: create time to
+        in: query
+        name: filter_create_time_to
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录概览
+      tags:
+      - sql_optimization
   /v1/projects/{project_name}/statistic/project_score:
     get:
       description: get project score
