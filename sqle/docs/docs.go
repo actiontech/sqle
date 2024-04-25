@@ -13929,7 +13929,7 @@ var doc = `{
                 "notify_type": {
                     "type": "string",
                     "enum": [
-                        "Wechat",
+                        "wechat",
                         "feishu"
                     ]
                 },
