@@ -42,7 +42,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.ScheduleTaskDefaultOption"
+                            "$ref": "#/definitions/v1.ScheduledTaskDefaultOptionV1Rsp"
                         }
                     }
                 }
@@ -11805,6 +11805,23 @@ var doc = `{
                         "wechat",
                         "feishu"
                     ]
+                }
+            }
+        },
+        "v1.ScheduledTaskDefaultOptionV1Rsp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ScheduleTaskDefaultOption"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
