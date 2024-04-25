@@ -4046,7 +4046,7 @@ definitions:
         type: boolean
       notify_type:
         enum:
-        - Wechat
+        - wechat
         - feishu
         type: string
       schedule_time:

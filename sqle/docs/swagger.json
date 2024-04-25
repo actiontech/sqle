@@ -14072,7 +14072,7 @@
                 "notify_type": {
                     "type": "string",
                     "enum": [
-                        "Wechat",
+                        "wechat",
                         "feishu"
                     ]
                 },
