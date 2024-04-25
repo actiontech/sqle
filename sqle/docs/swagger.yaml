@@ -3492,6 +3492,17 @@ definitions:
       rule_name:
         type: string
     type: object
+  v2.AuditResultFlags:
+    properties:
+      has_error:
+        type: boolean
+      has_normal:
+        type: boolean
+      has_notice:
+        type: boolean
+      has_warning:
+        type: boolean
+    type: object
   v2.AuditSQLResV2:
     properties:
       audit_level:
@@ -3649,6 +3660,20 @@ definitions:
       driver_name:
         type: string
       logo_url:
+        type: string
+    type: object
+  v2.FileOverview:
+    properties:
+      audit_result_flags:
+        $ref: '#/definitions/v2.AuditResultFlags'
+        type: object
+      exec_order:
+        type: integer
+      exec_status:
+        type: string
+      file_id:
+        type: string
+      file_name:
         type: string
     type: object
   v2.FullSyncAuditPlanSQLsReqV2:
@@ -3989,6 +4014,19 @@ definitions:
         - feishu
         type: string
       schedule_time:
+        type: string
+    type: object
+  v2.WorkflowFileOverviewRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.FileOverview'
+        type: array
+      message:
+        example: ok
         type: string
     type: object
   v2.WorkflowRecordResV2:
@@ -8507,6 +8545,31 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
+  /v2/{project_name}/workflows/{workflow_id}/files:
+    get:
+      description: get workflow file overview
+      operationId: getWorkflowFileOverview
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.WorkflowFileOverviewRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单文件概览
+      tags:
+      - workflow
   /v2/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
@@ -9274,6 +9337,10 @@ paths:
         in: query
         name: no_duplicate
         type: boolean
+      - description: 'filter: audit file id of task'
+        in: query
+        name: filter_audit_file_id
+        type: integer
       - description: page index
         in: query
         name: page_index

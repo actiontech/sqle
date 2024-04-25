@@ -8013,6 +8013,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "filter: audit file id of task",
+                        "name": "filter_audit_file_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "page index",
                         "name": "page_index",
@@ -8071,6 +8077,45 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetTaskAnalysisDataResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/{project_name}/workflows/{workflow_id}/files": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow file overview",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单文件概览",
+                "operationId": "getWorkflowFileOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.WorkflowFileOverviewRes"
                         }
                     }
                 }
@@ -13198,6 +13243,23 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditResultFlags": {
+            "type": "object",
+            "properties": {
+                "has_error": {
+                    "type": "boolean"
+                },
+                "has_normal": {
+                    "type": "boolean"
+                },
+                "has_notice": {
+                    "type": "boolean"
+                },
+                "has_warning": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v2.AuditSQLResV2": {
             "type": "object",
             "properties": {
@@ -13424,6 +13486,27 @@ var doc = `{
                     "type": "string"
                 },
                 "logo_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.FileOverview": {
+            "type": "object",
+            "properties": {
+                "audit_result_flags": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditResultFlags"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
                     "type": "string"
                 }
             }
@@ -13921,6 +14004,25 @@ var doc = `{
                 },
                 "schedule_time": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.WorkflowFileOverviewRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.FileOverview"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
