@@ -63,7 +63,7 @@ const (
 
 type OptimizationRuleHandler struct {
 	Rule     driverV2.Rule
-	RuleCode string
+	RuleCode string // sql优化规则的ruleCode
 }
 
 func init() {
