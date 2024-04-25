@@ -347,7 +347,12 @@ func TestWechatAuditConfigV1(c echo.Context) error {
 }
 
 type ScheduleTaskDefaultOption struct {
-	DefaultSelector string `json:"default_selector"`
+	DefaultSelector string `json:"default_selector" enums:"wechat,feishu"`
+}
+
+type ScheduledTaskDefaultOptionV1Rsp struct {
+	controller.BaseRes
+	Data ScheduleTaskDefaultOption `json:"data"`
 }
 
 // GetScheduledTaskDefaultOptionV1
@@ -356,8 +361,8 @@ type ScheduleTaskDefaultOption struct {
 // @Tags workflow
 // @Id getScheduledTaskDefaultOptionV1
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.ScheduleTaskDefaultOption
-// @Router /configurations/workflows/schedule/default_option [get]
+// @Success 200 {object} v1.ScheduledTaskDefaultOptionV1Rsp
+// @Router /v1/configurations/workflows/schedule/default_option [get]
 func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return getScheduledTaskDefaultOptionV1(c)
 }
