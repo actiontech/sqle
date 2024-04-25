@@ -11800,7 +11800,11 @@ var doc = `{
             "type": "object",
             "properties": {
                 "default_selector": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "wechat",
+                        "feishu"
+                    ]
                 }
             }
         },
