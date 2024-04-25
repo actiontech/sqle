@@ -362,6 +362,10 @@ func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface
 	return nil
 }
 
+func (s *Storage) DeleteWechatRecordByTaskId(taskId uint) error {
+	return s.db.Where("task_id = ?", taskId).Delete(&WechatRecord{}).Error
+}
+
 type FeishuScheduledRecord struct {
 	Model
 	TaskId              uint   `json:"task_id" gorm:"column:task_id"`
@@ -429,4 +433,8 @@ func (s *Storage) GetFeishuRecordsByTaskIds(taskIds []uint) ([]*FeishuScheduledR
 		return nil, err
 	}
 	return fsRecords, nil
+}
+
+func (s *Storage) DeleteFeishuRecordByTaskId(taskId uint) error {
+	return s.db.Where("task_id = ?", taskId).Delete(&FeishuScheduledRecord{}).Error
 }
