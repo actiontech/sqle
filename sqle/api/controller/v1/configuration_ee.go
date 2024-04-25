@@ -379,7 +379,10 @@ func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !exist {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
+		return c.JSON(http.StatusOK, &ScheduledTaskDefaultOptionV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    ScheduleTaskDefaultOption{},
+		})
 	}
 
 	fr, err := s.GetFeishuRecordsByTaskIds([]uint{wir.TaskId})
@@ -387,7 +390,12 @@ func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(fr) > 0 {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeFeishu})
+		return c.JSON(http.StatusOK, &ScheduledTaskDefaultOptionV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: ScheduleTaskDefaultOption{
+				DefaultSelector: ImTypeFeishu,
+			},
+		})
 	}
 
 	wr, err := s.GetWechatRecordsByTaskIds([]uint{wir.TaskId})
@@ -395,9 +403,17 @@ func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(wr) > 0 {
-		return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{DefaultSelector: ImTypeWechat})
+		return c.JSON(http.StatusOK, &ScheduledTaskDefaultOptionV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: ScheduleTaskDefaultOption{
+				DefaultSelector: ImTypeWechat,
+			},
+		})
 	}
 
 	log.NewEntry().Error("failed to retrieve default option: Unable to locate the 'im' type. This issue may be attributed to the data truncation in the ScheduledRecord table. ")
-	return c.JSON(http.StatusOK, ScheduleTaskDefaultOption{})
+	return c.JSON(http.StatusOK, &ScheduledTaskDefaultOptionV1Rsp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    ScheduleTaskDefaultOption{},
+	})
 }
