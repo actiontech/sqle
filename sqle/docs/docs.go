@@ -7946,6 +7946,38 @@ var doc = `{
                 }
             }
         },
+        "/v2/tasks/audits/{task_id}/files": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit task file overview",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取审核任务文件概览",
+                "operationId": "getAuditTaskFileOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditTaskFileOverviewRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/tasks/audits/{task_id}/sqls": {
             "get": {
                 "security": [
@@ -8077,45 +8109,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetTaskAnalysisDataResV2"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/{project_name}/workflows/{workflow_id}/tasks/{task_id}/files": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow file overview",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单文件概览",
-                "operationId": "getWorkflowFileOverview",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.WorkflowFileOverviewRes"
                         }
                     }
                 }
@@ -13583,6 +13576,28 @@ var doc = `{
                 }
             }
         },
+        "v2.GetAuditTaskFileOverviewRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.FileOverview"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v2.GetAuditTaskSQLsResV2": {
             "type": "object",
             "properties": {
@@ -14004,28 +14019,6 @@ var doc = `{
                 },
                 "schedule_time": {
                     "type": "string"
-                }
-            }
-        },
-        "v2.WorkflowFileOverviewRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.FileOverview"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
                 }
             }
         },

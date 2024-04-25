@@ -3725,6 +3725,21 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v2.GetAuditTaskFileOverviewRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.FileOverview'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v2.GetAuditTaskSQLsResV2:
     properties:
       code:
@@ -4015,21 +4030,6 @@ definitions:
         type: string
       schedule_time:
         type: string
-    type: object
-  v2.WorkflowFileOverviewRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v2.FileOverview'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
     type: object
   v2.WorkflowRecordResV2:
     properties:
@@ -8547,31 +8547,6 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
-  /v2/{project_name}/workflows/{workflow_id}/tasks/{task_id}/files:
-    get:
-      description: get workflow file overview
-      operationId: getWorkflowFileOverview
-      parameters:
-      - description: workflow id
-        in: path
-        name: workflow_id
-        required: true
-        type: string
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.WorkflowFileOverviewRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取工单文件概览
-      tags:
-      - workflow
   /v2/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
@@ -9295,6 +9270,26 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v2/tasks/audits/{task_id}/files:
+    get:
+      description: get audit task file overview
+      operationId: getAuditTaskFileOverview
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditTaskFileOverviewRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务文件概览
+      tags:
+      - task
   /v2/tasks/audits/{task_id}/sqls:
     get:
       description: get information of all SQLs belong to the specified audit task
