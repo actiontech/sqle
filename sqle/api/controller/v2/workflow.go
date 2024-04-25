@@ -919,7 +919,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 type UpdateWorkflowScheduleReqV2 struct {
 	ScheduleTime *time.Time `json:"schedule_time"`
 	IsNotify     *bool      `json:"is_notify"`
-	NotifyType   *string    `json:"notify_type" enums:"Wechat,feishu"`
+	NotifyType   *string    `json:"notify_type" enums:"wechat,feishu"`
 }
 
 // UpdateWorkflowScheduleV2
