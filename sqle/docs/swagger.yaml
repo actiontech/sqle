@@ -8547,7 +8547,7 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
-  /v2/{project_name}/workflows/{workflow_id}/files:
+  /v2/{project_name}/workflows/{workflow_id}/tasks/{task_id}/files:
     get:
       description: get workflow file overview
       operationId: getWorkflowFileOverview
