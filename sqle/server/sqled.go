@@ -529,13 +529,16 @@ func (a *action) execSqlFileMode() error {
 		if !ok {
 			continue
 		}
-		a.executeSqlsGroupByBatchId(sqls)
+		err = a.executeSqlsGroupByBatchId(sqls)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
-	var sqlBatch []*model.ExecuteSQL
+	sqlBatch := make([]*model.ExecuteSQL, 0)
 	for idx, sql := range sqls {
 		sqlBatch = append(sqlBatch, sql)
 		if idx < len(sqls)-1 {
