@@ -23,6 +23,7 @@ const (
 	JWTUsername      = "name"
 	JWTExpiredTime   = "exp"
 	JWTAuditPlanName = "apn"
+	JWTLoginType     = "loginType"
 )
 
 func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
@@ -31,6 +32,19 @@ func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
 		JWTExpiredTime: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 	}
 
+	return genJwtToken(mapClaims, customClaims...)
+}
+
+func GenJwtTokenWithExpirationTime(expiredTime *jwt.NumericDate, customClaims ...CustomClaimFunc) (tokenStr string, err error) {
+	var mapClaims = jwt.MapClaims{
+		"iss":          "actiontech dms",
+		JWTExpiredTime: expiredTime,
+	}
+
+	return genJwtToken(mapClaims, customClaims...)
+}
+
+func genJwtToken(mapClaims jwt.MapClaims, customClaims ...CustomClaimFunc) (tokenStr string, err error) {
 	for _, claimFunc := range customClaims {
 		claimFunc(mapClaims)
 	}
@@ -66,6 +80,12 @@ func WithAuditPlanName(name string) CustomClaimFunc {
 func WithExpiredTime(duration time.Duration) CustomClaimFunc {
 	return func(claims jwt.MapClaims) {
 		claims[JWTExpiredTime] = jwt.NewNumericDate(time.Now().Add(duration))
+	}
+}
+
+func WithAccessTokenMark(loginType string) CustomClaimFunc {
+	return func(claims jwt.MapClaims) {
+		claims[JWTLoginType] = loginType
 	}
 }
 
@@ -196,4 +216,80 @@ func ParseUserUidStrFromTokenWithOldJwt(token *jwtOld.Token) (uid string, err er
 		return "", fmt.Errorf("failed to parse user id: empty uid")
 	}
 	return uidStr, nil
+}
+
+type TokenDetail struct {
+	TokenStr  string
+	UID       string
+	LoginType string
+}
+
+// 由于sqle使用的github.com/golang-jwt/jwt，本方法为sqle兼容
+func GetTokenDetailFromContextWithOldJwt(c EchoContextGetter) (tokenDetail *TokenDetail, err error) {
+	tokenDetail = &TokenDetail{}
+
+	if c.Get("user") == nil {
+		return tokenDetail, nil
+	}
+
+	// Gets user token from the context.
+	u, ok := c.Get("user").(*jwtOld.Token)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert user from jwt token")
+	}
+	tokenDetail.TokenStr = u.Raw
+
+	// get uid from token
+	uid, err := ParseUserUidStrFromTokenWithOldJwt(u)
+	if err != nil {
+		return nil, err
+	}
+	tokenDetail.UID = uid
+
+	// get login type from token
+	claims, ok := u.Claims.(jwtOld.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert token claims to jwt")
+	}
+	loginType, ok := claims[JWTLoginType]
+	if !ok {
+		return tokenDetail, nil
+	}
+
+	tokenDetail.LoginType = fmt.Sprint(loginType)
+	return tokenDetail, nil
+}
+
+func GetTokenDetailFromContext(c EchoContextGetter) (tokenDetail *TokenDetail, err error) {
+	tokenDetail = &TokenDetail{}
+	if c.Get("user") == nil {
+		return tokenDetail, nil
+	}
+
+	// Gets user token from the context.
+	u, ok := c.Get("user").(*jwt.Token)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert user from jwt token")
+	}
+	tokenDetail.TokenStr = u.Raw
+
+	// get uid from token
+	uid, err := ParseUserUidStrFromToken(u)
+	if err != nil {
+		return nil, err
+	}
+	tokenDetail.UID = uid
+
+	// get login type from token
+	claims, ok := u.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("failed to convert token claims to jwt")
+	}
+	loginType, ok := claims[JWTLoginType]
+	if !ok {
+		return tokenDetail, nil
+	}
+
+	tokenDetail.LoginType = fmt.Sprint(loginType)
+	return tokenDetail, nil
 }
