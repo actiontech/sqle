@@ -8291,6 +8291,7 @@ paths:
       - description: module name
         enum:
         - execute_sql_file_mode
+        - sql_optimization
         in: query
         name: module_name
         type: string
