@@ -438,3 +438,72 @@ func (s *Storage) GetFeishuRecordsByTaskIds(taskIds []uint) ([]*FeishuScheduledR
 func (s *Storage) DeleteFeishuRecordByTaskId(taskId uint) error {
 	return s.db.Where("task_id = ?", taskId).Delete(&FeishuScheduledRecord{}).Error
 }
+
+const (
+	NotifyTypeWechat = "wechat"
+	NotifyTypeFeishu = "feishu"
+)
+
+func (s *Storage) CreateNotifyRecord(notifyType string, curTaskRecord *WorkflowInstanceRecord) error {
+	switch notifyType {
+	case NotifyTypeWechat:
+		record := WechatRecord{
+			TaskId: curTaskRecord.TaskId,
+		}
+		if err := s.Save(&record); err != nil {
+			return nil
+		}
+	case NotifyTypeFeishu:
+		record := FeishuScheduledRecord{
+			TaskId: curTaskRecord.TaskId,
+		}
+		if err := s.Save(&record); err != nil {
+			return nil
+		}
+	default:
+		return nil
+	}
+	err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) CancelNotify(taskId uint) error {
+	ir, err := s.GetWorkInstanceRecordByTaskId(fmt.Sprint(taskId))
+	if err != nil {
+		return err
+	}
+	// 定时上线原本不需要发送通知，就不需要再删除record记录
+	if !ir.NeedScheduledTaskNotify {
+		return nil
+	}
+
+	ir.NeedScheduledTaskNotify = false
+	if err := s.Save(ir); err != nil {
+		return err
+	}
+
+	// wechat
+	{
+		records, err := s.GetWechatRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteWechatRecordByTaskId(taskId)
+		}
+	}
+	// feishu
+	{
+		records, err := s.GetFeishuRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteFeishuRecordByTaskId(taskId)
+		}
+	}
+	return nil
+}
