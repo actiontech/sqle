@@ -3553,6 +3553,17 @@ definitions:
       rule_name:
         type: string
     type: object
+  v2.AuditResultFlags:
+    properties:
+      has_error:
+        type: boolean
+      has_normal:
+        type: boolean
+      has_notice:
+        type: boolean
+      has_warning:
+        type: boolean
+    type: object
   v2.AuditSQLResV2:
     properties:
       audit_level:
@@ -3712,6 +3723,20 @@ definitions:
       logo_url:
         type: string
     type: object
+  v2.FileOverview:
+    properties:
+      audit_result_flags:
+        $ref: '#/definitions/v2.AuditResultFlags'
+        type: object
+      exec_order:
+        type: integer
+      exec_status:
+        type: string
+      file_id:
+        type: string
+      file_name:
+        type: string
+    type: object
   v2.FullSyncAuditPlanSQLsReqV2:
     properties:
       audit_plan_sql_list:
@@ -3754,6 +3779,21 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v2.AuditPlanResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v2.GetAuditTaskFileOverviewRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.FileOverview'
         type: array
       message:
         example: ok
@@ -9346,6 +9386,26 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v2/tasks/audits/{task_id}/files:
+    get:
+      description: get audit task file overview
+      operationId: getAuditTaskFileOverview
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditTaskFileOverviewRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务文件概览
+      tags:
+      - task
   /v2/tasks/audits/{task_id}/sqls:
     get:
       description: get information of all SQLs belong to the specified audit task
@@ -9390,6 +9450,10 @@ paths:
         in: query
         name: no_duplicate
         type: boolean
+      - description: 'filter: audit file id of task'
+        in: query
+        name: filter_audit_file_id
+        type: integer
       - description: page index
         in: query
         name: page_index

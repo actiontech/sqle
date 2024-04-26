@@ -1254,3 +1254,38 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	stepRes.Users = append(stepRes.Users, strings.Split(step.Assignees, ",")...)
 	return stepRes
 }
+
+type GetAuditTaskFileOverviewRes struct {
+	controller.BaseRes
+	Data      []FileOverview `json:"data"`
+	TotalNums uint64         `json:"total_nums"`
+}
+
+type FileOverview struct {
+	FileID           string            `json:"file_id"`
+	FileName         string            `json:"file_name"`
+	ExecOrder        uint              `json:"exec_order"`
+	ExecStatus       string            `json:"exec_status"`
+	AuditResultFlags *AuditResultFlags `json:"audit_result_flags"`
+}
+
+type AuditResultFlags struct {
+	HasError   bool `json:"has_error"`
+	HasWarning bool `json:"has_warning"`
+	HasNormal  bool `json:"has_normal"`
+	HasNotice  bool `json:"has_notice"`
+}
+
+// GetAuditTaskFileOverview
+// @Summary 获取审核任务文件概览
+// @Description get audit task file overview
+// @Tags task
+// @Id getAuditTaskFileOverview
+// @Security ApiKeyAuth
+// @Param task_id path string true "task id"
+// @Success 200 {object} GetAuditTaskFileOverviewRes
+// @router /v2/tasks/audits/{task_id}/files [get]
+func GetAuditTaskFileOverview(c echo.Context) error {
+	// TODO implement this function
+	return nil
+}
