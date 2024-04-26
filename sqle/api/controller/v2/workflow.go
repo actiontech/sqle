@@ -1021,8 +1021,14 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if req.IsNotify != nil && *req.IsNotify && req.NotifyType != nil {
-		if err := createNotifyRecord(*req.NotifyType, curTaskRecord); err != nil {
+	if req.IsNotify != nil && *req.IsNotify && req.NotifyType != nil && req.ScheduleTime != nil {
+		if err := s.CreateNotifyRecord(*req.NotifyType, curTaskRecord); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+
+	if req.ScheduleTime == nil {
+		if err := s.CancelNotify(uint(taskIdUint)); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
