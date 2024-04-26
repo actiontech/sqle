@@ -81,7 +81,7 @@ type Context struct {
 	schemaHasLoad bool
 
 	// executionPlan store batch SQLs' execution plan during one inspect context.
-	executionPlan map[string][]*executor.ExplainRecord
+	executionPlan map[string]*executor.ExplainWithWarningsResult
 
 	// sysVars keep some MySQL global system variables during one inspect context.
 	sysVars map[string]string
@@ -100,7 +100,7 @@ func (o contextOption) apply(c *Context) {
 func NewContext(parent *Context, opts ...contextOption) *Context {
 	ctx := &Context{
 		schemas:        map[string]*SchemaInfo{},
-		executionPlan:  map[string][]*executor.ExplainRecord{},
+		executionPlan:  map[string]*executor.ExplainWithWarningsResult{},
 		sysVars:        map[string]string{},
 		historySqlInfo: &HistorySQLInfo{},
 	}
@@ -998,20 +998,32 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
 	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
 	if ep, ok := c.executionPlan[key]; ok {
-		return ep, nil
+		return ep.Plan, nil
 	}
 
-	if c.e == nil {
-		return nil, nil
-	}
-
-	records, err := c.e.GetExplainRecord(sql)
+	r, err := c.fetchExecutionPlanWithWarnings(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	c.executionPlan[key] = records
-	return records, nil
+	c.executionPlan[key] = r
+	return r.Plan, nil
+}
+
+// GetExecutionPlanWithWarnings get execution plan and warnings of SQL.
+func (c *Context) GetExecutionPlanWithWarnings(sql string) (*executor.ExplainWithWarningsResult, error) {
+	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
+	if ep, ok := c.executionPlan[key]; ok {
+		return ep, nil
+	}
+
+	r, err := c.fetchExecutionPlanWithWarnings(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	c.executionPlan[key] = r
+	return r, nil
 }
 
 // GetTableRowCount get table row count by show table status.
@@ -1142,4 +1154,26 @@ func (c *Context) GetTableNameCreateTableStmtMap(joinStmt *ast.Join) map[string]
 		}
 	}
 	return tableNameCreateTableStmtMap
+}
+
+// fetchExecutionPlanWithWarnings fetch execution plan and warnings of SQL.
+func (c *Context) fetchExecutionPlanWithWarnings(sql string) (*executor.ExplainWithWarningsResult, error) {
+	if c.e == nil {
+		return nil, fmt.Errorf("executor is not initialized")
+	}
+
+	explainRecords, err := c.e.GetExplainRecord(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	WarningsRecords, err := c.e.ShowWarningsRecord()
+	if err != nil {
+		return nil, err
+	}
+
+	return &executor.ExplainWithWarningsResult{
+		Plan:     explainRecords,
+		Warnings: WarningsRecords,
+	}, nil
 }

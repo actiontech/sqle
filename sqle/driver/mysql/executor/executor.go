@@ -476,6 +476,11 @@ func (c *Executor) ShowCreateView(tableName string) (string, error) {
 	}
 }
 
+type ExplainWithWarningsResult struct {
+	Plan     []*ExplainRecord
+	Warnings []*WarningsRecord
+}
+
 type ExplainRecord struct {
 	Id           string `json:"id"`
 	SelectType   string `json:"select_type"`
@@ -500,6 +505,7 @@ const (
 
 	ExplainRecordAccessTypeAll   = "ALL"
 	ExplainRecordAccessTypeIndex = "index"
+	ExplainRecordAccessTypeIndexMerge = "index_merge"
 
 	ExplainRecordPrimaryKey = "PRIMARY"
 )
@@ -515,6 +521,42 @@ func (c *Executor) Explain(query string) (columns []string, rows [][]sql.NullStr
 	}
 
 	return columns, rows, nil
+}
+
+type WarningsRecord struct {
+	Level   string `json:"level"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+func (c *Executor) ShowWarningsRecord() ([]*WarningsRecord, error) {
+	columns, rows, err := c.Db.QueryWithContext(context.TODO(), "SHOW WARNINGS")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	records := make([]map[string]sql.NullString, len(rows))
+	for j, row := range rows {
+		value := make(map[string]sql.NullString)
+		for i, s := range row {
+			value[columns[i]] = s
+		}
+		records[j] = value
+	}
+
+	ret := make([]*WarningsRecord, len(rows))
+	for i, record := range records {
+		ret[i] = &WarningsRecord{
+			Level:   record["Level"].String,
+			Code:    record["Code"].String,
+			Message: record["Message"].String,
+		}
+	}
+	return ret, nil
 }
 
 func (c *Executor) GetExplainRecord(query string) ([]*ExplainRecord, error) {

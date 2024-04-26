@@ -29,7 +29,7 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00036): "In DDL, adding BLOB columns to the index is prohibited".
+In MySQL, you should check if the SQL violate the rule(SQLE00036): "For index, adding BLOB columns to the index is prohibited".
 You should follow the following logic:
 1. For the "CREATE TABLE . .." statements, check if the index which on the table option or on the column includes blob columns. If it does, report a violation.
 2. For the  "CREATE INDEX ..." statements, check if the index includes blob columns. If it does, report a violation.
