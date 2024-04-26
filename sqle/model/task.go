@@ -478,6 +478,9 @@ var taskSQLsCountTpl = `SELECT COUNT(*)
 var taskSQLsQueryBodyTpl = `
 {{ define "body" }}
 FROM execute_sql_detail AS e_sql
+{{- if .filter_audit_file_id }}
+LEFT JOIN audit_files ON audit_files.task_id = e_sql.task_id
+{{- end }}
 LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
 WHERE
 e_sql.deleted_at IS NULL
@@ -493,6 +496,10 @@ AND e_sql.audit_status = :filter_audit_status
 
 {{- if .filter_audit_level }}
 AND e_sql.audit_level = :filter_audit_level
+{{- end }}
+
+{{- if .filter_audit_file_id }}
+AND audit_files.id = :filter_audit_file_id
 {{- end }}
 
 {{- if .no_duplicate }}

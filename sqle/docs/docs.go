@@ -8031,6 +8031,38 @@ var doc = `{
                 }
             }
         },
+        "/v2/tasks/audits/{task_id}/files": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit task file overview",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取审核任务文件概览",
+                "operationId": "getAuditTaskFileOverview",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditTaskFileOverviewRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/tasks/audits/{task_id}/sqls": {
             "get": {
                 "security": [
@@ -8095,6 +8127,12 @@ var doc = `{
                         "type": "boolean",
                         "description": "select unique (fingerprint and audit result) for task sql",
                         "name": "no_duplicate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter: audit file id of task",
+                        "name": "filter_audit_file_id",
                         "in": "query"
                     },
                     {
@@ -13372,6 +13410,23 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditResultFlags": {
+            "type": "object",
+            "properties": {
+                "has_error": {
+                    "type": "boolean"
+                },
+                "has_normal": {
+                    "type": "boolean"
+                },
+                "has_notice": {
+                    "type": "boolean"
+                },
+                "has_warning": {
+                    "type": "boolean"
+                }
+            }
+        },
         "v2.AuditSQLResV2": {
             "type": "object",
             "properties": {
@@ -13602,6 +13657,27 @@ var doc = `{
                 }
             }
         },
+        "v2.FileOverview": {
+            "type": "object",
+            "properties": {
+                "audit_result_flags": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditResultFlags"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.FullSyncAuditPlanSQLsReqV2": {
             "type": "object",
             "properties": {
@@ -13663,6 +13739,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v2.GetAuditTaskFileOverviewRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.FileOverview"
                     }
                 },
                 "message": {
