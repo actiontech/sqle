@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -326,8 +327,9 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
-	create_audit_plan = "create_audit_plan"
-	create_workflow   = "create_workflow"
+	create_audit_plan   = "create_audit_plan"
+	create_workflow     = "create_workflow"
+	create_optimization = "create_optimization"
 )
 
 type InstanceTipReqV1 struct {
@@ -383,6 +385,8 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = v1.OpPermissionTypeSaveAuditPlan
 	case create_workflow:
 		operationType = v1.OpPermissionTypeCreateWorkflow
+	case create_optimization:
+		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
 
@@ -400,6 +404,10 @@ func GetInstanceTips(c echo.Context) error {
 	}
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 	for _, inst := range instances {
+		if operationType == v1.OpPermissionTypeCreateOptimization && strings.ToLower(inst.DbType) != "mysql" {
+			// 创建"SQL调优"只支持mysql数据源
+			continue
+		}
 		instanceTipRes := InstanceTipResV1{
 			ID:                 inst.GetIDStr(),
 			Name:               inst.Name,
