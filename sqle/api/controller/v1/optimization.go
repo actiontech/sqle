@@ -69,7 +69,8 @@ type GetOptimizationRecordRes struct {
 type OptimizationDetail struct {
 	OptimizationID       string              `json:"optimization_id"`
 	OptimizationName     string              `json:"optimization_name"`
-	InstanceNmae         string              `json:"instance_name"`
+	InstanceId           uint64              `json:"instance_id"`
+	InstanceName         string              `json:"instance_name"`
 	DBType               string              `json:"db_type"`
 	CreatedTime          time.Time           `json:"created_time"`
 	CreatedUser          string              `json:"created_user"`
@@ -116,7 +117,8 @@ type GetOptimizationRecordsReq struct {
 type OptimizationRecord struct {
 	OptimizationID   string    `json:"optimization_id"` // 优化ID
 	OptimizationName string    `json:"optimization_name"`
-	InstanceNmae     string    `json:"instance_name"`    // 数据源
+	InstanceId       uint64    `json:"instance_id"`      // 数据源
+	InstanceName     string    `json:"instance_name"`    // 数据源
 	DBType           string    `json:"db_type"`          // 数据库类型
 	PerformanceGain  float64   `json:"performance_gain"` // 优化提升性能
 	CreatedTime      time.Time `json:"created_time"`     // 创建时间

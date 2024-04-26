@@ -121,5 +121,7 @@ func GetAllOpPermissions() []v1.OpPermissionType {
 		v1.OpPermissionTypeSQLQuery,
 		v1.OpPermissionTypeExportCreate,
 		v1.OpPermissionTypeAuditExportWorkflow,
+		v1.OpPermissionTypeCreateOptimization,
+		v1.OpPermissionTypeViewOthersOptimization,
 	}
 }
