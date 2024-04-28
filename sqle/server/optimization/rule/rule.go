@@ -1,6 +1,8 @@
 package optimization
 
 import (
+	"fmt"
+
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
@@ -69,6 +71,20 @@ type OptimizationRuleHandler struct {
 func init() {
 	OptimizationRuleMap = make(map[string][]OptimizationRuleHandler)
 	OptimizationRuleMap["MySQL"] = BaseOptimizationRuleHandler
+
+	// sql优化知识库
+	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
+	if err != nil {
+		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
+	}
+	for _, optimizationRule := range OptimizationRuleMap {
+		for i, rule := range optimizationRule {
+			if knowledge, ok := defaultRulesKnowledge[rule.Rule.Name]; ok {
+				rule.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+				optimizationRule[i] = rule
+			}
+		}
+	}
 }
 
 // 通过sql优化规则的ruleCode和dbType获取插件规则的name
