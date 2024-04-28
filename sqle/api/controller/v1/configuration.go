@@ -281,8 +281,7 @@ type GetWechatAuditConfigurationResV1 struct {
 }
 
 type WechatConfigurationV1 struct {
-	CorpID     string `json:"corp_id"`
-	TemplateId string `json:"template_id"`
+	CorpID string `json:"corp_id"`
 
 	IsWechatNotificationEnabled bool `json:"is_wechat_notification_enabled"`
 }
@@ -296,16 +295,12 @@ type WechatConfigurationV1 struct {
 // @Success 200 {object} v1.GetWechatAuditConfigurationResV1
 // @router /v1/configurations/wechat_audit [get]
 func GetWechatAuditConfigurationV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, &GetWechatAuditConfigurationResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    WechatConfigurationV1{},
-	})
+	return getWechatAuditConfigurationV1(c)
 }
 
 type UpdateWechatConfigurationReqV1 struct {
 	CorpID                      *string `json:"corp_id" from:"corp_id" description:"微信企业号ID"`
 	CorpSecret                  *string `json:"corp_secret" from:"corp_secret" description:"企业微信ID对应密码"`
-	TemplateId                  *string `json:"template_id" from:"template_id" description:"企业微信审批模板ID"`
 	IsWechatNotificationEnabled *bool   `json:"is_wechat_notification_enabled" from:"is_wechat_notification_enabled" validate:"required" description:"是否启用微信对接流程"`
 }
 
@@ -320,7 +315,7 @@ type UpdateWechatConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/wechat_audit [patch]
 func UpdateWechatAuditConfigurationV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, nil)
+	return updateWechatAuditConfigurationV1(c)
 }
 
 type TestWechatConfigResDataV1 struct {
@@ -333,6 +328,10 @@ type TestWechatConfigResV1 struct {
 	Data TestWechatConfigResDataV1 `json:"data"`
 }
 
+type TestWechatConfigurationReqV1 struct {
+	WechatId string `json:"wechat_id" form:"wechat_id" valid:"required" description:"用户个人企业微信ID"`
+}
+
 // TestWechatAuditConfigV1
 // @Summary 测试微信审批配置
 // @Description test wechat audit configuration
@@ -340,13 +339,30 @@ type TestWechatConfigResV1 struct {
 // @Id testWechatAuditConfigV1
 // @Tags configuration
 // @Security ApiKeyAuth
+// @Param req body v1.TestWechatConfigurationReqV1 true "test wechat configuration req"
 // @Success 200 {object} v1.TestWechatConfigResV1
 // @router /v1/configurations/wechat_audit/test [post]
 func TestWechatAuditConfigV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: TestWechatConfigResDataV1{
-			IsMessageSentNormally: true,
-		},
-	})
+	return testWechatAuditConfigV1(c)
+}
+
+type ScheduleTaskDefaultOption struct {
+	DefaultSelector string `json:"default_selector" enums:"wechat,feishu"`
+}
+
+type ScheduledTaskDefaultOptionV1Rsp struct {
+	controller.BaseRes
+	Data ScheduleTaskDefaultOption `json:"data"`
+}
+
+// GetScheduledTaskDefaultOptionV1
+// @Summary 获取工单定时上线二次确认默认选项
+// @Description get scheduled task default option
+// @Tags workflow
+// @Id getScheduledTaskDefaultOptionV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.ScheduledTaskDefaultOptionV1Rsp
+// @Router /v1/configurations/workflows/schedule/default_option [get]
+func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
+	return getScheduledTaskDefaultOptionV1(c)
 }

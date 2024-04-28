@@ -9,6 +9,7 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/jinzhu/gorm"
 )
@@ -227,6 +228,10 @@ type WorkflowRecord struct {
 	Steps       []*WorkflowStep `gorm:"foreignkey:WorkflowRecordId"`
 }
 
+const (
+	WechatOAImType = "wechat"
+)
+
 type WorkflowInstanceRecord struct {
 	Model
 	TaskId           uint `gorm:"index"`
@@ -237,11 +242,31 @@ type WorkflowInstanceRecord struct {
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
 	ExecutionUserId string
+	// 定时上线是否需要发生通知
+	NeedScheduledTaskNotify bool
+	// NeedScheduledTaskNotify为true时，该字段生效
+	IsCanExec bool
 
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
 	ExecutionAssignees string
+}
+
+func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", id).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+func (s *Storage) UpdateWorkflowInstanceRecordByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
 }
 
 func (s *Storage) GetWorkInstanceRecordByTaskId(id string) (instanceRecord WorkflowInstanceRecord, err error) {
@@ -256,6 +281,15 @@ func (s *Storage) GetWorkInstanceRecordByTaskIds(taskIds []uint) ([]*WorkflowIns
 	}
 
 	return workflowInstanceRecords, nil
+}
+
+func (s *Storage) AgreeScheduledInstanceRecord(taskId uint) error {
+	return s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"is_can_exec": true})
+}
+
+func (s *Storage) RejectScheduledInstanceRecord(taskId uint) error {
+	// 取消该task对应的定时上线任务，将WorkflowInstanceRecord表中的ScheduledAt字段设置为null
+	return s.UpdateWorkflowInstanceRecordByTaskId(taskId, map[string]interface{}{"scheduled_at": nil})
 }
 
 const (
@@ -386,6 +420,54 @@ func (w *Workflow) GetTaskIds() []uint {
 		taskIds[i] = inst.TaskId
 	}
 	return taskIds
+}
+
+func (w *Workflow) isExecuteStep() bool {
+	currentStep := w.CurrentStep()
+	if currentStep == nil {
+		return false
+	}
+	if currentStep.Template.Typ != WorkflowStepTypeSQLExecute {
+		return false
+	}
+	return true
+}
+
+func (w *Workflow) GetNeedScheduledTaskIds(entry *logrus.Entry) (map[uint] /* taskID */ string /* userID */, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	now := time.Now()
+	needExecuteTaskIds := map[uint]string{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) {
+			if ir.NeedScheduledTaskNotify && !ir.IsCanExec {
+				continue
+			}
+
+			needExecuteTaskIds[ir.TaskId] = ir.ScheduleUserId
+		}
+	}
+	return needExecuteTaskIds, nil
+}
+
+func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
+	isExec := w.isExecuteStep()
+	if !isExec {
+		return nil, fmt.Errorf("workflow has not yet reached the exec step, workflow id: %v", w.WorkflowId)
+	}
+
+	now := time.Now()
+	taskIds := []uint{}
+	for _, ir := range w.Record.InstanceRecords {
+		if !ir.IsSQLExecuted && ir.ScheduledAt != nil && ir.ScheduledAt.Before(now) && ir.NeedScheduledTaskNotify && !ir.IsCanExec {
+			taskIds = append(taskIds, ir.TaskId)
+		}
+	}
+
+	return taskIds, nil
 }
 
 func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
@@ -1366,4 +1448,13 @@ func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid s
 	}
 
 	return count, nil
+}
+
+func (s *Storage) GetLastNeedNotifyScheduledRecord() (*WorkflowInstanceRecord, bool, error) {
+	wr := &WorkflowInstanceRecord{}
+	err := s.db.Where("need_scheduled_task_notify=true").Order("created_at desc").Limit(1).First(&wr).Error
+	if err == gorm.ErrRecordNotFound {
+		return wr, false, nil
+	}
+	return wr, true, errors.New(errors.ConnectStorageError, err)
 }

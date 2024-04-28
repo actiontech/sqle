@@ -98,8 +98,8 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 
 const (
 	ImTypeDingTalk    = "dingTalk"
-	ImTypeFeishu      = "feishu"
 	ImTypeFeishuAudit = "feishu_audit"
+	ImTypeWechatAudit = "wechat_audit"
 )
 
 type IM struct {
@@ -283,4 +283,227 @@ func (s *Storage) GetFeishuInstByStatus(status string) ([]FeishuInstance, error)
 		return nil, err
 	}
 	return feishuInst, nil
+}
+
+type WechatOAStatus int
+
+const (
+	INITIALIZED WechatOAStatus = 1
+	APPROVED    WechatOAStatus = 2
+	REJECTED    WechatOAStatus = 3
+)
+
+type WechatRecord struct {
+	Model
+	TaskId   uint   `json:"task_id" gorm:"column:task_id"`
+	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
+	SpNo     string `json:"sp_no" gorm:"column:sp_no"`
+
+	Task *Task `gorm:"foreignkey:TaskId"`
+}
+
+func (s *Storage) GetWechatRecordByStatus(status string) ([]WechatRecord, error) {
+	var wcRecords []WechatRecord
+	err := s.db.Where("oa_result = ?", status).Preload("Task").Find(&wcRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return wcRecords, nil
+}
+
+func (s *Storage) WechatCancelScheduledTask(w WechatRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.RejectScheduledInstanceRecord(w.TaskId)
+		if err != nil {
+			return err
+		}
+
+		w.OaResult = ApproveStatusRefuse
+		err = s.Save(&w)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) WechatAgreeScheduledTask(w WechatRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.AgreeScheduledInstanceRecord(w.TaskId)
+		if err != nil {
+			return err
+		}
+
+		w.OaResult = ApproveStatusAgree
+		err = s.Save(&w)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) GetWechatRecordsByTaskIds(taskIds []uint) ([]*WechatRecord, error) {
+	var wcRecords []*WechatRecord
+	err := s.db.Where("task_id in (?)", taskIds).Find(&wcRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return wcRecords, nil
+}
+
+func (s *Storage) UpdateWechatRecordByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&WechatRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+func (s *Storage) DeleteWechatRecordByTaskId(taskId uint) error {
+	return s.db.Where("task_id = ?", taskId).Delete(&WechatRecord{}).Error
+}
+
+type FeishuScheduledRecord struct {
+	Model
+	TaskId              uint   `json:"task_id" gorm:"column:task_id"`
+	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
+	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code"`
+
+	Task *Task `gorm:"foreignkey:TaskId"`
+}
+
+func (s *Storage) UpdateFeishuScheduledByTaskId(taskId uint, m map[string]interface{}) error {
+	err := s.db.Model(&FeishuScheduledRecord{}).Where("task_id = ?", taskId).Updates(m).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	return nil
+}
+
+func (s *Storage) GetFeishuScheduledByStatus(status string) ([]FeishuScheduledRecord, error) {
+	var fsRecords []FeishuScheduledRecord
+	err := s.db.Where("oa_result = ?", status).Preload("Task").Find(&fsRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return fsRecords, nil
+}
+
+func (s *Storage) FeishuCancelScheduledTask(f FeishuScheduledRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.RejectScheduledInstanceRecord(f.TaskId)
+		if err != nil {
+			return err
+		}
+
+		f.OaResult = FeishuAuditStatusRejected
+		err = s.Save(&f)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) FeishuAgreeScheduledTask(f FeishuScheduledRecord) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		err := s.AgreeScheduledInstanceRecord(f.TaskId)
+		if err != nil {
+			return err
+		}
+
+		f.OaResult = FeishuAuditStatusApprove
+		err = s.Save(&f)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Storage) GetFeishuRecordsByTaskIds(taskIds []uint) ([]*FeishuScheduledRecord, error) {
+	var fsRecords []*FeishuScheduledRecord
+	err := s.db.Where("task_id in (?)", taskIds).Find(&fsRecords).Error
+	if err != nil {
+		return nil, err
+	}
+	return fsRecords, nil
+}
+
+func (s *Storage) DeleteFeishuRecordByTaskId(taskId uint) error {
+	return s.db.Where("task_id = ?", taskId).Delete(&FeishuScheduledRecord{}).Error
+}
+
+const (
+	NotifyTypeWechat = "wechat"
+	NotifyTypeFeishu = "feishu"
+)
+
+func (s *Storage) CreateNotifyRecord(notifyType string, curTaskRecord *WorkflowInstanceRecord) error {
+	switch notifyType {
+	case NotifyTypeWechat:
+		record := WechatRecord{
+			TaskId: curTaskRecord.TaskId,
+		}
+		if err := s.Save(&record); err != nil {
+			return nil
+		}
+	case NotifyTypeFeishu:
+		record := FeishuScheduledRecord{
+			TaskId: curTaskRecord.TaskId,
+		}
+		if err := s.Save(&record); err != nil {
+			return nil
+		}
+	default:
+		return nil
+	}
+	err := s.UpdateWorkflowInstanceRecordById(curTaskRecord.ID, map[string]interface{}{"need_scheduled_task_notify": true})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) CancelNotify(taskId uint) error {
+	ir, err := s.GetWorkInstanceRecordByTaskId(fmt.Sprint(taskId))
+	if err != nil {
+		return err
+	}
+	// 定时上线原本不需要发送通知，就不需要再删除record记录
+	if !ir.NeedScheduledTaskNotify {
+		return nil
+	}
+
+	ir.NeedScheduledTaskNotify = false
+	if err := s.Save(ir); err != nil {
+		return err
+	}
+
+	// wechat
+	{
+		records, err := s.GetWechatRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteWechatRecordByTaskId(taskId)
+		}
+	}
+	// feishu
+	{
+		records, err := s.GetFeishuRecordsByTaskIds([]uint{taskId})
+		if err != nil {
+			return err
+		}
+		if len(records) > 0 {
+			return s.DeleteFeishuRecordByTaskId(taskId)
+		}
+	}
+	return nil
 }

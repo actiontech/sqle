@@ -17,6 +17,7 @@ var OnlyRunOnLeaderJobs = []func(entry *logrus.Entry) ServerJob{
 	NewCleanJob,
 	NewDingTalkJob,
 	NewFeishuJob,
+	NewWechatJob,
 }
 
 var RunOnAllJobs = []func(entry *logrus.Entry) ServerJob{

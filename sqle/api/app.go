@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/actiontech/dms/pkg/dms-common/api/accesstoken"
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	jwtPkg "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -100,9 +102,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	v1Router := e.Group(apiV1)
-	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord())
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	v2Router := e.Group(apiV2)
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord())
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 
 	// v1 admin api, just admin user can access.
 	{
@@ -192,6 +194,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.GET("/:project_name/statistic/project_score", v1.GetProjectScoreV1)
 		v1ProjectRouter.GET("/:project_name/statistic/instance_health", v1.GetInstanceHealthV1)
 		v1ProjectRouter.GET("/:project_name/statistic/audited_sqls", v1.StatisticsAuditedSQLV1)
+		v1ProjectRouter.GET("/:project_name/statistic/optimization_record_overview", v1.GetOptimizationRecordOverview)
+		v1ProjectRouter.GET("/:project_name/statistic/optimization_performance_improve_overview", v1.GetDBPerformanceImproveOverview)
 
 		// audit whitelist
 		v1ProjectRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
@@ -270,6 +274,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.PATCH("/:project_name/sql_audit_records/:sql_audit_record_id/", v1.UpdateSQLAuditRecordV1)
 		v1ProjectRouter.GET("/:project_name/sql_audit_records/tag_tips", v1.GetSQLAuditRecordTagTipsV1)
 
+		// sql optimization
+		v1ProjectRouter.POST("/:project_name/sql_optimization_records", v1.SQLOptimizate)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records", v1.GetOptimizationRecords)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/", v1.GetOptimizationRecord)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls", v1.GetOptimizationSQLs)
+		v1ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/sqls/:number/", v1.GetOptimizationSQLDetail)
+
 		// task
 		v1ProjectRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
 	}
@@ -331,6 +342,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 		v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 		v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
+		v2Router.GET("/tasks/audits/:task_id/files", v2.GetAuditTaskFileOverview)
 		v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 		v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 		v1Router.GET("/tasks/audits/:task_id/audit_file", v1.DownloadAuditFile)
@@ -347,6 +359,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// configurations
 		v1Router.GET("/configurations/drivers", v1.GetDrivers)
 		v2Router.GET("/configurations/drivers", v2.GetDrivers)
+		v1Router.GET("/configurations/workflows/schedule/default_option", v1.GetScheduledTaskDefaultOptionV1)
 
 		// audit plan
 		v1Router.GET("/audit_plan_metas", v1.GetAuditPlanMetas)
@@ -360,6 +373,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
 		// 企业公告
 		v1Router.GET("/company_notice", v1.GetCompanyNotice)
+		// 系统功能开关
+		v1Router.GET("/system/module_status", v1.GetSystemModuleStatus)
 	}
 
 	// enterprise customized apis

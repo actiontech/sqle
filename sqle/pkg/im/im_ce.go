@@ -12,6 +12,7 @@ import (
 
 var ErrCommunityEditionNotSupportFeishuAudit = e.New("community edition not support feishu audit")
 var ErrCommunityEditionNotSupportDingDingAudit = e.New("community edition not support dingding audit")
+var ErrCommunityEditionNotSupportWechatAudit = e.New("community edition not support wechat audit")
 
 func CreateFeishuAuditTemplate(ctx context.Context, im model.IM) error {
 	return ErrCommunityEditionNotSupportFeishuAudit
@@ -43,4 +44,8 @@ func UpdateDingdingAuditStatus(ctx context.Context, im model.IM, workflowId stri
 
 func CancelDingdingAuditInst(ctx context.Context, im model.IM, workflowIDs []string, user *model.User) error {
 	return ErrCommunityEditionNotSupportDingDingAudit
+}
+
+func CreateWechatAuditTemplate(ctx context.Context, im model.IM) error {
+	return ErrCommunityEditionNotSupportWechatAudit
 }

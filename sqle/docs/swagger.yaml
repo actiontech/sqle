@@ -608,6 +608,13 @@ definitions:
         example: DDL规则
         type: string
     type: object
+  v1.DBPerformanceImproveOverview:
+    properties:
+      avg_performance_improve:
+        type: number
+      instance_name:
+        type: string
+    type: object
   v1.DBTypeAuditPlan:
     properties:
       data:
@@ -744,6 +751,19 @@ definitions:
             type: string
           type: object
         type: array
+    type: object
+  v1.ExplainValidationDetail:
+    properties:
+      after_cost:
+        type: number
+      after_plan:
+        type: string
+      before_cost:
+        type: number
+      before_plan:
+        type: string
+      perform_improve_per:
+        type: number
     type: object
   v1.FeishuConfigurationV1:
     properties:
@@ -998,6 +1018,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetDBPerformanceImproveOverviewResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DBPerformanceImproveOverview'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetDashboardResV1:
     properties:
       code:
@@ -1135,6 +1168,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetModuleStatusResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ModuleStatusRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetOperationActionListResV1:
     properties:
       code:
@@ -1188,6 +1233,73 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetOptimizationOverviewResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OptimizationRecordOverview'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetOptimizationRecordRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.OptimizationDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetOptimizationRecordsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OptimizationRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetOptimizationSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.OptimizationSQLDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetOptimizationSQLsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.OptimizationSQL'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetProjectRuleTemplateResV1:
     properties:
@@ -1929,6 +2041,11 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
+  v1.ModuleStatusRes:
+    properties:
+      is_supported:
+        type: boolean
+    type: object
   v1.OperationActionList:
     properties:
       desc:
@@ -1980,6 +2097,157 @@ definitions:
       ip:
         type: string
       user_name:
+        type: string
+    type: object
+  v1.OptimizationDetail:
+    properties:
+      basic_summary:
+        $ref: '#/definitions/v1.Optimizationsummary'
+        type: object
+      created_time:
+        type: string
+      created_user:
+        type: string
+      db_type:
+        type: string
+      index_recommendations:
+        items:
+          type: string
+        type: array
+      instance_name:
+        type: string
+      optimization_id:
+        type: string
+      optimization_name:
+        type: string
+      status:
+        description: 优化状态
+        type: string
+    type: object
+  v1.OptimizationRecord:
+    properties:
+      created_time:
+        description: 创建时间
+        type: string
+      created_user:
+        description: 创建人
+        type: string
+      db_type:
+        description: 数据库类型
+        type: string
+      instance_name:
+        description: 数据源
+        type: string
+      optimization_id:
+        description: 优化ID
+        type: string
+      optimization_name:
+        type: string
+      performance_gain:
+        description: 优化提升性能
+        type: number
+      status:
+        description: 优化状态
+        type: string
+    type: object
+  v1.OptimizationRecordOverview:
+    properties:
+      record_number:
+        type: integer
+      time:
+        type: string
+    type: object
+  v1.OptimizationSQL:
+    properties:
+      contributing_indices:
+        type: string
+      number:
+        type: integer
+      number_of_hit_index:
+        type: integer
+      number_of_index:
+        type: integer
+      number_of_rewrite:
+        type: integer
+      number_of_syntax_error:
+        type: integer
+      original_sql:
+        type: string
+      performance:
+        type: number
+    type: object
+  v1.OptimizationSQLDetail:
+    properties:
+      explain_validation_details:
+        $ref: '#/definitions/v1.ExplainValidationDetail'
+        type: object
+      index_recommendations:
+        description: 索引建议
+        items:
+          type: string
+        type: array
+      optimized_sql:
+        description: 优化后的SQL
+        type: string
+      original_sql:
+        description: 原始SQL
+        type: string
+      triggered_rule:
+        description: 触发的规则
+        items:
+          $ref: '#/definitions/v1.RewriteRule'
+        type: array
+    type: object
+  v1.Optimizationsummary:
+    properties:
+      number_of_index:
+        type: integer
+      number_of_query:
+        type: integer
+      number_of_query_index:
+        type: integer
+      number_of_rewrite:
+        type: integer
+      number_of_rewritten_query:
+        type: integer
+      number_of_syntax_error:
+        type: integer
+      performance_gain:
+        type: number
+    type: object
+  v1.OptimizeSQLReq:
+    properties:
+      db_type:
+        example: MySQL
+        type: string
+      instance_name:
+        example: instance1
+        type: string
+      optimization_name:
+        example: optmz_2024031412091244
+        type: string
+      schema_name:
+        example: schema1
+        type: string
+      sql_content:
+        example: select * from t1; select * from t2;
+        type: string
+    type: object
+  v1.OptimizeSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.OptimizeSQLResData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.OptimizeSQLResData:
+    properties:
+      sql_optimization_record_id:
         type: string
     type: object
   v1.ParseProjectRuleTemplateFileResDataV1:
@@ -2046,6 +2314,19 @@ definitions:
   v1.RejectWorkflowReqV1:
     properties:
       reason:
+        type: string
+    type: object
+  v1.RewriteRule:
+    properties:
+      message:
+        type: string
+      rewritten_queries_str:
+        type: string
+      rule_code:
+        type: string
+      rule_name:
+        type: string
+      violated_queries_str:
         type: string
     type: object
   v1.RiskAuditPlan:
@@ -2298,6 +2579,26 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
+    type: object
+  v1.ScheduleTaskDefaultOption:
+    properties:
+      default_selector:
+        enum:
+        - wechat
+        - feishu
+        type: string
+    type: object
+  v1.ScheduledTaskDefaultOptionV1Rsp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ScheduleTaskDefaultOption'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.Source:
     properties:
@@ -2622,6 +2923,11 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TestWechatConfigurationReqV1:
+    properties:
+      wechat_id:
+        type: string
+    type: object
   v1.TimeResV1:
     properties:
       hour:
@@ -2805,8 +3111,6 @@ definitions:
         type: string
       is_wechat_notification_enabled:
         type: boolean
-      template_id:
-        type: string
     required:
     - is_wechat_notification_enabled
     type: object
@@ -2851,8 +3155,6 @@ definitions:
         type: string
       is_wechat_notification_enabled:
         type: boolean
-      template_id:
-        type: string
     type: object
   v1.WorkFlowStepTemplateReqV1:
     properties:
@@ -3251,6 +3553,17 @@ definitions:
       rule_name:
         type: string
     type: object
+  v2.AuditResultFlags:
+    properties:
+      has_error:
+        type: boolean
+      has_normal:
+        type: boolean
+      has_notice:
+        type: boolean
+      has_warning:
+        type: boolean
+    type: object
   v2.AuditSQLResV2:
     properties:
       audit_level:
@@ -3410,6 +3723,20 @@ definitions:
       logo_url:
         type: string
     type: object
+  v2.FileOverview:
+    properties:
+      audit_result_flags:
+        $ref: '#/definitions/v2.AuditResultFlags'
+        type: object
+      exec_order:
+        type: integer
+      exec_status:
+        type: string
+      file_id:
+        type: string
+      file_name:
+        type: string
+    type: object
   v2.FullSyncAuditPlanSQLsReqV2:
     properties:
       audit_plan_sql_list:
@@ -3452,6 +3779,21 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v2.AuditPlanResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v2.GetAuditTaskFileOverviewRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.FileOverview'
         type: array
       message:
         example: ok
@@ -3744,7 +4086,8 @@ definitions:
         type: boolean
       notify_type:
         enum:
-        - Wechat
+        - wechat
+        - feishu
         type: string
       schedule_time:
         type: string
@@ -4207,6 +4550,13 @@ paths:
       - application/json
       description: test wechat audit configuration
       operationId: testWechatAuditConfigV1
+      parameters:
+      - description: test wechat configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestWechatConfigurationReqV1'
       responses:
         "200":
           description: OK
@@ -4217,6 +4567,20 @@ paths:
       summary: 测试微信审批配置
       tags:
       - configuration
+  /v1/configurations/workflows/schedule/default_option:
+    get:
+      description: get scheduled task default option
+      operationId: getScheduledTaskDefaultOptionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.ScheduledTaskDefaultOptionV1Rsp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单定时上线二次确认默认选项
+      tags:
+      - workflow
   /v1/custom_rules:
     get:
       description: get all custom rule template
@@ -5158,6 +5522,7 @@ paths:
         - create_audit_plan
         - create_workflow
         - sql_manage
+        - create_optimization
         in: query
         name: functional_module
         type: string
@@ -5769,9 +6134,9 @@ paths:
       description: get sql dev record list
       operationId: GetSqlDEVRecordList
       parameters:
-      - description: project id
+      - description: project name
         in: path
-        name: project_id
+        name: project_name
         required: true
         type: string
       - description: fuzzy search sql fingerprint
@@ -6109,6 +6474,228 @@ paths:
       summary: 获取管控规则tips
       tags:
       - SqlManage
+  /v1/projects/{project_name}/sql_optimization_records:
+    get:
+      description: get sql optimization records
+      operationId: getOptimizationRecords
+      parameters:
+      - description: fuzzy search for optimization_id or create_username
+        in: query
+        name: fuzzy_search
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationRecordsRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录列表
+      tags:
+      - sql_optimization
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        optimize sql
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+        4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
+        5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
+        6. formData[git_user_name]:The name of the user who owns the repository read access.
+        7. formData[git_user_password]:The password corresponding to git_user_name.
+      operationId: OptimizeSQLReq
+      parameters:
+      - description: sqls that should be optimization
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.OptimizeSQLReq'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: formData
+        name: instance_name
+        type: string
+      - description: schema of instance
+        in: formData
+        name: schema_name
+        type: string
+      - description: db type of instance
+        in: formData
+        name: db_type
+        type: string
+      - description: sqls for audit
+        in: formData
+        name: sql_content
+        type: string
+      - description: optimization name
+        in: formData
+        name: optimization_name
+        required: true
+        type: string
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
+        type: file
+      - description: git repository url
+        in: formData
+        name: git_http_url
+        type: string
+      - description: the name of user to clone the repository
+        in: formData
+        name: git_user_name
+        type: string
+      - description: the password corresponding to git_user_name
+        in: formData
+        name: git_user_password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.OptimizeSQLRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 优化SQL
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/:
+    get:
+      description: get sql optimization record
+      operationId: GetOptimizationRecordReq
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      - description: sql
+        in: query
+        name: sql
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationRecordRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls:
+    get:
+      description: get sql optimization sqls
+      operationId: getOptimizationSQLs
+      parameters:
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationSQLsRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化语句列表
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/sql_optimization_records/{optimization_record_id}/sqls/{number}/:
+    get:
+      description: get sql optimization record
+      operationId: GetOptimizationReq
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      - description: optimization record sql  number
+        in: path
+        name: number
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationSQLRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化语句详情
+      tags:
+      - sql_optimization
   /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
@@ -6169,6 +6756,56 @@ paths:
       summary: 获取各类型数据源的健康情况
       tags:
       - statistic
+  /v1/projects/{project_name}/statistic/optimization_performance_improve_overview:
+    get:
+      description: get db optimization performance improvements
+      operationId: getDBPerformanceImproveOverview
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDBPerformanceImproveOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例性能提升概览
+      tags:
+      - sql_optimization
+  /v1/projects/{project_name}/statistic/optimization_record_overview:
+    get:
+      description: get sql optimization record overview
+      operationId: getOptimizationOverview
+      parameters:
+      - description: create time from
+        in: query
+        name: filter_create_time_from
+        required: true
+        type: string
+      - description: create time to
+        in: query
+        name: filter_create_time_to
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetOptimizationOverviewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录概览
+      tags:
+      - sql_optimization
   /v1/projects/{project_name}/statistic/project_score:
     get:
       description: get project score
@@ -7634,6 +8271,40 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
+  /v1/system/module_status:
+    get:
+      description: get module status for modulealities in the system
+      operationId: getSystemModuleStatus
+      parameters:
+      - description: db type
+        enum:
+        - MySQL
+        - Oracle
+        - TiDB
+        - OceanBase For MySQL
+        - PostgreSQL
+        - DB2
+        - SQL Server
+        in: query
+        name: db_type
+        type: string
+      - description: module name
+        enum:
+        - execute_sql_file_mode
+        - sql_optimization
+        in: query
+        name: module_name
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetModuleStatusResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 查询系统功能支持情况信息
+      tags:
+      - system
   /v1/task_groups/audit:
     post:
       consumes:
@@ -8716,6 +9387,26 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v2/tasks/audits/{task_id}/files:
+    get:
+      description: get audit task file overview
+      operationId: getAuditTaskFileOverview
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditTaskFileOverviewRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务文件概览
+      tags:
+      - task
   /v2/tasks/audits/{task_id}/sqls:
     get:
       description: get information of all SQLs belong to the specified audit task
@@ -8760,6 +9451,10 @@ paths:
         in: query
         name: no_duplicate
         type: boolean
+      - description: 'filter: audit file id of task'
+        in: query
+        name: filter_audit_file_id
+        type: integer
       - description: page index
         in: query
         name: page_index

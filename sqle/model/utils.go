@@ -149,6 +149,8 @@ var autoMigrateList = []interface{}{
 	&CompanyNotice{},
 	&SqlManageEndpoint{},
 	&SQLDevRecord{},
+	&WechatRecord{},
+	&FeishuScheduledRecord{},
 }
 
 func (s *Storage) AutoMigrate() error {

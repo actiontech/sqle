@@ -14,6 +14,7 @@ type GetAuditTaskSQLsReqV2 struct {
 	FilterExecStatus  string `json:"filter_exec_status" query:"filter_exec_status"`
 	FilterAuditStatus string `json:"filter_audit_status" query:"filter_audit_status"`
 	FilterAuditLevel  string `json:"filter_audit_level" query:"filter_audit_level"`
+	FilterAuditFileId uint   `json:"filter_audit_file_id" query:"filter_audit_file_id"`
 	NoDuplicate       bool   `json:"no_duplicate" query:"no_duplicate"`
 	PageIndex         uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize          uint32 `json:"page_size" query:"page_size" valid:"required"`
@@ -57,6 +58,7 @@ type AuditResult struct {
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
 // @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
+// @Param filter_audit_file_id query uint false "filter: audit file id of task"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
 // @Success 200 {object} v2.GetAuditTaskSQLsResV2
@@ -83,13 +85,14 @@ func GetTaskSQLs(c echo.Context) error {
 		offset = req.PageSize * (req.PageIndex - 1)
 	}
 	data := map[string]interface{}{
-		"task_id":             taskId,
-		"filter_exec_status":  req.FilterExecStatus,
-		"filter_audit_status": req.FilterAuditStatus,
-		"filter_audit_level":  req.FilterAuditLevel,
-		"no_duplicate":        req.NoDuplicate,
-		"limit":               req.PageSize,
-		"offset":              offset,
+		"task_id":              taskId,
+		"filter_exec_status":   req.FilterExecStatus,
+		"filter_audit_status":  req.FilterAuditStatus,
+		"filter_audit_level":   req.FilterAuditLevel,
+		"filter_audit_file_id": req.FilterAuditFileId,
+		"no_duplicate":         req.NoDuplicate,
+		"limit":                req.PageSize,
+		"offset":               offset,
 	}
 
 	taskSQLs, count, err := s.GetTaskSQLsByReq(data)
