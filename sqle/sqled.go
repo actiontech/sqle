@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
 
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/facebookgo/grace/gracenet"
 )
 
@@ -94,10 +95,11 @@ func Run(options *config.SqleOptions) error {
 		if err != nil {
 			return fmt.Errorf("create workflow template failed: %v", err)
 		}
-		if err := s.CreateRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
+		rules := model.MergeOptimizationRules(driver.GetPluginManager().GetAllRules(), opt.OptimizationRuleMap)
+		if err := s.CreateRulesIfNotExist(rules); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 		}
-		if err := s.DeleteRulesIfNotExist(driver.GetPluginManager().GetAllRules()); err != nil {
+		if err := s.DeleteRulesIfNotExist(rules); err != nil {
 			return fmt.Errorf("delete rules failed while auto migrating table: %v", err)
 		}
 
