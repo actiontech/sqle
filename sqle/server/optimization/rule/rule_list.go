@@ -3,6 +3,7 @@ package optimization
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
 var BaseOptimizationRuleHandler = []OptimizationRuleHandler{
@@ -193,6 +194,14 @@ var BaseOptimizationRuleHandler = []OptimizationRuleHandler{
 			Annotation: "Limit子句下推优化通过尽可能的 “下压” Limit子句，提前过滤掉部分数据, 减少中间结果集的大小，减少后续计算需要处理的数据量, 以提高查询性能。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   rulepkg.DefaultSingleParamKeyName,
+					Value: "1000",
+					Desc:  "OFFSET最大阈值",
+					Type:  params.ParamTypeInt,
+				},
+			},
 		},
 		RuleCode: RuleLimitClausePushDownRewrite,
 	},
