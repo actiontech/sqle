@@ -465,14 +465,16 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name         string           `json:"rule_name"`
-	Desc         string           `json:"desc"`
-	Annotation   string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
-	Level        string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ          string           `json:"type" example:"全局配置" `
-	DBType       string           `json:"db_type" example:"mysql"`
-	Params       []RuleParamResV1 `json:"params,omitempty"`
-	IsCustomRule bool             `json:"is_custom_rule"`
+	Name            string           `json:"rule_name"`
+	Desc            string           `json:"desc"`
+	Annotation      string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
+	Level           string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ             string           `json:"type" example:"全局配置" `
+	DBType          string           `json:"db_type" example:"mysql"`
+	Params          []RuleParamResV1 `json:"params,omitempty"`
+	IsCustomRule    bool             `json:"is_custom_rule"`
+	HasAuditPower   bool             `json:"has_audit_power"`
+	HasRewritePower bool             `json:"has_rewrite_power"`
 }
 
 type RuleParamResV1 struct {
@@ -484,12 +486,14 @@ type RuleParamResV1 struct {
 
 func convertRuleToRes(rule *model.Rule) RuleResV1 {
 	ruleRes := RuleResV1{
-		Name:       rule.Name,
-		Desc:       rule.Desc,
-		Annotation: rule.Annotation,
-		Level:      rule.Level,
-		Typ:        rule.Typ,
-		DBType:     rule.DBType,
+		Name:            rule.Name,
+		Desc:            rule.Desc,
+		Annotation:      rule.Annotation,
+		Level:           rule.Level,
+		Typ:             rule.Typ,
+		DBType:          rule.DBType,
+		HasAuditPower:   rule.HasAuditPower,
+		HasRewritePower: rule.HasRewritePower,
 	}
 	if rule.Params != nil && len(rule.Params) > 0 {
 		paramsRes := make([]RuleParamResV1, 0, len(rule.Params))
@@ -509,13 +513,15 @@ func convertRuleToRes(rule *model.Rule) RuleResV1 {
 
 func convertCustomRuleToRuleResV1(rule *model.CustomRule) RuleResV1 {
 	ruleRes := RuleResV1{
-		Name:         rule.RuleId,
-		Desc:         rule.Desc,
-		Annotation:   rule.Annotation,
-		Level:        rule.Level,
-		Typ:          rule.Typ,
-		DBType:       rule.DBType,
-		IsCustomRule: true,
+		Name:            rule.RuleId,
+		Desc:            rule.Desc,
+		Annotation:      rule.Annotation,
+		Level:           rule.Level,
+		Typ:             rule.Typ,
+		DBType:          rule.DBType,
+		IsCustomRule:    true,
+		HasAuditPower:   true,
+		HasRewritePower: false,
 	}
 	return ruleRes
 }
