@@ -21,6 +21,7 @@ type SQLOptimizationRecord struct {
 	OptimizationName   string  `json:"optimization_name"`
 	DBType             string  `json:"db_type"`
 	ProjectId          string  `json:"project_id"`
+	InstanceId         uint64  `json:"instance_id"`
 	InstanceName       string  `json:"instance_name"`
 	SchemaName         string  `json:"schema_name"`
 	Creator            string  `json:"creator"`
@@ -133,7 +134,13 @@ FROM sql_optimization_records
 WHERE sql_optimization_records.deleted_at IS NULL
 
 {{- if not .current_user_is_admin }}
-AND sql_optimization_records.creator = :current_user
+AND ( sql_optimization_records.creator = :current_user
+
+{{- if .viewable_instance_ids }} 
+OR sql_optimization_records.instance_id IN ( {{ .viewable_instance_ids }})
+{{- end }}
+
+)
 {{- end }}
 
 

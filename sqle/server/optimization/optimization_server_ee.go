@@ -5,14 +5,10 @@ package optimization
 
 import (
 	"context"
-	"errors"
-	"fmt"
-
-	"github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 type OptimizationServeror interface {
@@ -33,19 +29,8 @@ func (dets OptimizateStatus) String() string {
 }
 
 // SQL优化任务入口
-func Optimizate(ctx context.Context, user, projectId string, instanceName *string, schema *string, optimizationName, OptimizationSQL string) (optimizationId string, err error) {
+func Optimizate(ctx context.Context, user, projectId string, instance *model.Instance, schema *string, optimizationName, OptimizationSQL string) (optimizationId string, err error) {
 	logger := log.NewEntry()
-	// 参数校验
-	if instanceName == nil || schema == nil {
-		return "", errors.New("online optimizate sql with nil instance is not supported")
-	}
-	instance, exist, err := dms.GetInstanceInProjectByName(ctx, projectId, *instanceName)
-	if err != nil {
-		return "", err
-	}
-	if !exist {
-		return "", fmt.Errorf("instance %s not exist", *instanceName)
-	}
 
 	id, err := utils.GenUid()
 	if err != nil {
@@ -55,7 +40,8 @@ func Optimizate(ctx context.Context, user, projectId string, instanceName *strin
 	optimizationRecord := new(model.SQLOptimizationRecord)
 	optimizationRecord.Creator = user
 	optimizationRecord.ProjectId = projectId
-	optimizationRecord.InstanceName = *instanceName
+	optimizationRecord.InstanceId = instance.ID
+	optimizationRecord.InstanceName = instance.Name
 	optimizationRecord.SchemaName = *schema
 	optimizationRecord.DBType = instance.DbType
 	optimizationRecord.OptimizationId = id

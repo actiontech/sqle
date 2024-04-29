@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	dms "github.com/actiontech/sqle/sqle/dms"
@@ -36,6 +38,10 @@ func sqlOptimizate(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	// 参数校验
+	if req.InstanceName == nil || req.SchemaName == nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("online optimizate sql with nil instance is not supported"))
+	}
 
 	// 获取入参中的SQL
 	sql := req.SQLContent
@@ -54,7 +60,24 @@ func sqlOptimizate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	optimizationId, err := optimization.Optimizate(c.Request().Context(), user.Name, projectUid, req.InstanceName, req.SchemaName, req.OptimizationName, sql)
+
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, *req.InstanceName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("instance %s not exist", *req.InstanceName))
+	}
+
+	canCreateOptimization, err := CheckUserCanCreateOptimization(c.Request().Context(), projectUid, user, []*model.Instance{instance})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !canCreateOptimization {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("can't operation instance"))
+	}
+
+	optimizationId, err := optimization.Optimizate(c.Request().Context(), user.Name, projectUid, instance, req.SchemaName, req.OptimizationName, sql)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -72,15 +95,20 @@ func getOptimizationRecord(c echo.Context) error {
 	}
 
 	optimizationId := c.Param("optimization_record_id")
-	record, err := model.GetStorage().GetOptimizationRecordId(optimizationId)
+	s := model.GetStorage()
+	record, err := s.GetOptimizationRecordId(optimizationId)
 	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 权限校验
+	if err = checkCurrentUserViewTheOptimizationRecord(c, record); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	ret := OptimizationDetail{
 		OptimizationID:   optimizationId,
 		OptimizationName: record.OptimizationName,
-		InstanceNmae:     record.InstanceName,
+		InstanceName:     record.InstanceName,
 		DBType:           record.DBType,
 		CreatedTime:      record.CreatedAt,
 		CreatedUser:      record.Creator,
@@ -127,9 +155,6 @@ func getOptimizationRecords(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
-	}
 
 	var offset uint32
 	if req.PageIndex > 0 {
@@ -144,8 +169,12 @@ func getOptimizationRecords(c echo.Context) error {
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
-		"check_user_can_access":   !up.IsProjectAdmin(),
+		"current_user_is_admin":   up.IsProjectAdmin(),
 		"current_user":            user.Name,
+	}
+
+	if !up.IsAdmin() {
+		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersOptimization), ",")
 	}
 
 	records, total, err := s.GetOptimizationRecordsByReq(data)
@@ -158,7 +187,7 @@ func getOptimizationRecords(c echo.Context) error {
 		ret = append(ret, OptimizationRecord{
 			OptimizationName: v.OptimizationName,
 			OptimizationID:   v.OptimizationId,
-			InstanceNmae:     v.InstanceName,
+			InstanceName:     v.InstanceName,
 			DBType:           v.DBType,
 			PerformanceGain:  v.PerformanceImprove,
 			CreatedTime:      v.CreatedAt,
@@ -179,13 +208,21 @@ func getOptimizationSQL(c echo.Context) error {
 	}
 
 	optimizationId := c.Param("optimization_record_id")
-
 	number, err := strconv.Atoi(c.Param("number"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// TODO 权限校验
+	s := model.GetStorage()
+	record, err := s.GetOptimizationRecordId(optimizationId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 权限校验
+	if err = checkCurrentUserViewTheOptimizationRecord(c, record); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	optimizationSQL, err := model.GetStorage().GetOptimizationSQLById(optimizationId, number)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -226,13 +263,24 @@ func getOptimizationSQLs(c echo.Context) error {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
 
+	s := model.GetStorage()
+	optimizationId := c.Param("optimization_record_id")
+	record, err := s.GetOptimizationRecordId(optimizationId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 权限校验
+	if err = checkCurrentUserViewTheOptimizationRecord(c, record); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	data := map[string]interface{}{
 		"limit":           req.PageSize,
 		"offset":          offset,
 		"optimization_id": c.Param("optimization_record_id"),
 	}
-	sqls, total, err := model.GetStorage().GetOptimizationSQLsByReq(data)
-	// TODO 权限校验
+	sqls, total, err := s.GetOptimizationSQLsByReq(data)
+
 	ret := make([]OptimizationSQL, 0)
 	for _, s := range sqls {
 		ret = append(ret, OptimizationSQL{
@@ -344,4 +392,22 @@ func getDBPerformanceImproveOverview(c echo.Context) error {
 		Data:    ret,
 		BaseRes: controller.NewBaseReq(nil),
 	})
+}
+
+// checkCurrentUserViewTheOptimizationRecord 当前用户是否可以查看该优化记录
+func checkCurrentUserViewTheOptimizationRecord(c echo.Context, record *model.SQLOptimizationRecord) error {
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return err
+	}
+	up, err := dms.NewUserPermission(user.GetIDStr(), record.ProjectId)
+	if err != nil {
+		return err
+	}
+
+	if !up.IsAdmin() && record.Creator != user.Name &&
+		!up.CanOpInstanceNoAdmin(fmt.Sprint(record.InstanceId), dmsV1.OpPermissionTypeViewOthersOptimization) {
+		return fmt.Errorf("can't operate instance")
+	}
+	return nil
 }
