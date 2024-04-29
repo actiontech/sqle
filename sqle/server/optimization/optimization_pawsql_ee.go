@@ -180,6 +180,7 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 				ruleCode = opRule.RuleCode
 			}
 		}
+		// 构建SQL优化任务使用的规则，当前所有重写规则的阈值都为模板规则参数的first_key
 		rule := &CreateOptimizationRules{
 			RuleCode:  ruleCode,
 			Rewrite:   true,
