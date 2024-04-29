@@ -8061,6 +8061,20 @@ var doc = `{
                         "name": "task_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
