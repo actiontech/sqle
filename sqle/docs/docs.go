@@ -4365,6 +4365,15 @@ var doc = `{
                         "description": "input ZIP file",
                         "name": "input_zip_file",
                         "in": "formData"
+                    },
+                    {
+                        "description": "create and audit task",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTaskReqV1"
+                        }
                     }
                 ],
                 "responses": {
@@ -8626,7 +8635,9 @@ var doc = `{
                         "form_data",
                         "sql_file",
                         "mybatis_xml_file",
-                        "audit_plan"
+                        "audit_plan",
+                        "zip_file",
+                        "git_repository"
                     ]
                 },
                 "status": {
@@ -8893,9 +8904,40 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateAuditTaskReqV1": {
+            "type": "object",
+            "properties": {
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "inst_1"
+                },
+                "instance_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "sql": {
+                    "type": "string",
+                    "example": "alter table tb1 drop columns c1"
+                }
+            }
+        },
         "v1.CreateAuditTasksGroupReqV1": {
             "type": "object",
             "properties": {
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
+                },
                 "instances": {
                     "type": "array",
                     "items": {
@@ -14246,6 +14288,13 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
                 },
                 "mode": {
                     "type": "string",
