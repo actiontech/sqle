@@ -9436,6 +9436,16 @@ paths:
         name: task_id
         required: true
         type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        required: true
+        type: string
       responses:
         "200":
           description: OK
