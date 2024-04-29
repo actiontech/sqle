@@ -191,7 +191,8 @@ type Workflow struct {
 	// Project       *Project          `gorm:"foreignkey:ProjectId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history"`
 
-	Mode string
+	Mode     string
+	ExecMode string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
 }
 
 const (
@@ -483,7 +484,11 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			break
 		}
 	}
-
+	execMode := ExecModeSqls
+	if len(tasks) > 0 {
+		// the tasks here is current task, and all of tasks should apply the same execute mode.
+		execMode = tasks[0].ExecMode
+	}
 	// 相同sql模式下，数据源类型必须相同
 	if workflowMode == WorkflowModeSameSQLs && len(tasks) > 1 {
 		dbType := tasks[0].Instance.DbType
@@ -513,6 +518,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		Desc:             desc,
 		ProjectId:        projectId,
 		CreateUserId:     user.GetIDStr(),
+		ExecMode:         execMode,
 		Mode:             workflowMode,
 		WorkflowRecordId: record.ID,
 	}

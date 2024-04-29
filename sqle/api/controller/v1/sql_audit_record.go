@@ -209,11 +209,12 @@ func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin dr
 			}
 			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 				BaseSQL: model.BaseSQL{
-					Number:     num,
-					Content:    node.Text,
-					SourceFile: filePath,
-					StartLine:  startLine,
-					SQLType:    node.Type,
+					Number:      num,
+					Content:     node.Text,
+					SourceFile:  filePath,
+					StartLine:   startLine,
+					SQLType:     node.Type,
+					ExecBatchId: node.ExecBatchId,
 				},
 			})
 			num++
