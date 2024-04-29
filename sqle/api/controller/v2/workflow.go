@@ -1257,6 +1257,11 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	return stepRes
 }
 
+type GetAuditTaskFileOverviewReq struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+}
+
 type GetAuditTaskFileOverviewRes struct {
 	controller.BaseRes
 	Data      []FileOverview `json:"data"`
@@ -1285,6 +1290,8 @@ type AuditResultFlags struct {
 // @Id getAuditTaskFileOverview
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
+// @Param page_index query string true "page index"
+// @Param page_size query string true "page size"
 // @Success 200 {object} GetAuditTaskFileOverviewRes
 // @router /v2/tasks/audits/{task_id}/files [get]
 func GetAuditTaskFileOverview(c echo.Context) error {
