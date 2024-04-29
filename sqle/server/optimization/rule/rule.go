@@ -99,3 +99,9 @@ func GetPluginRuleNameByOptimizationRule(ruleCode string, dbType string) (string
 	}
 	return "", false
 }
+
+// CanOptimizeDbType SQL优化是否支持该数据源类型
+func CanOptimizeDbType(dt string) bool {
+	_, exist := OptimizationRuleMap[dt]
+	return exist
+}
