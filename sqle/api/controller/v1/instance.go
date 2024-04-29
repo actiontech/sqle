@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -16,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -404,8 +404,7 @@ func GetInstanceTips(c echo.Context) error {
 	}
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 	for _, inst := range instances {
-		if operationType == v1.OpPermissionTypeCreateOptimization && strings.ToLower(inst.DbType) != "mysql" {
-			// 创建"SQL调优"只支持mysql数据源
+		if operationType == v1.OpPermissionTypeCreateOptimization && !opt.CanOptimizeDbType(inst.DbType) {
 			continue
 		}
 		instanceTipRes := InstanceTipResV1{
