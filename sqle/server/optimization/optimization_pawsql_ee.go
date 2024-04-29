@@ -10,7 +10,9 @@ import (
 	"strings"
 	"sync"
 
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/model"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -71,7 +73,7 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 	}
 
 	// 创建分析任务
-	id, err := a.createOptimization(ctx, workspaceId.(string), a.Instance.DbType, OptimizationSQL, "online")
+	id, err := a.createOptimization(ctx, workspaceId.(string), a.Instance, OptimizationSQL, "online")
 	if err != nil {
 		return nil, err
 	}
@@ -156,4 +158,35 @@ func trimKeyWord(slices []string) (ret []string) {
 		ret = append(ret, strings.ReplaceAll(s, "PAWSQL", "OPTIMIZATION"))
 	}
 	return
+}
+
+func getOptimizationReqRules(instance *model.Instance) ([]*CreateOptimizationRules, error) {
+	store := model.GetStorage()
+	templateRules, err := store.GetAllOptimizationRulesByInstance(instance)
+	if err != nil {
+		return nil, err
+	}
+	reqRules := convertRulesToOptimizationReqRules(templateRules, instance.DbType)
+	return reqRules, nil
+}
+
+func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType string) []*CreateOptimizationRules {
+	allRules := opt.OptimizationRuleMap[dbType]
+	reqRules := []*CreateOptimizationRules{}
+	for _, templateRule := range templateRules {
+		var ruleCode string
+		for _, opRule := range allRules {
+			if templateRule.Name == opRule.Rule.Name {
+				ruleCode = opRule.RuleCode
+			}
+		}
+		// 构建SQL优化任务使用的规则，当前所有重写规则的阈值都为模板规则参数的first_key
+		rule := &CreateOptimizationRules{
+			RuleCode:  ruleCode,
+			Rewrite:   true,
+			Threshold: templateRule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String(),
+		}
+		reqRules = append(reqRules, rule)
+	}
+	return reqRules
 }
