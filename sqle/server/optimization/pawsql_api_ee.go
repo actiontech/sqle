@@ -92,17 +92,22 @@ func (a *OptimizationPawSQLServer) createWorkspaceOffline(ctx context.Context, d
 
 // 创建SQL优化任务
 // Post http://${server-host}:${server-port}/api/v1/createAnalysis
-func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, workspaceId string, dbType string, workload string, queryMode string) (string, error) {
+func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, workspaceId string, instance *model.Instance, workload string, queryMode string) (string, error) {
+	rules, err := getOptimizationReqRules(instance)
+	if err != nil {
+		return "", err
+	}
 	req := CreateOptimizationReq{
 		UserKey:      getUserKey(),
 		Workspace:    workspaceId,
-		DBType:       dbType,
+		DBType:       instance.DbType,
 		Workload:     workload,
 		QueryMode:    queryMode,
 		ValidateFlag: true,
+		Rules:        rules,
 	}
 	reply := new(CreateOptimizationReply)
-	err := dmsCommonHttp.POST(context.TODO(), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
+	err = dmsCommonHttp.POST(context.TODO(), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -116,12 +121,19 @@ func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, works
 }
 
 type CreateOptimizationReq struct {
-	UserKey      string `json:"userKey"`
-	Workspace    string `json:"workspace"`
-	DBType       string `json:"dbType"`
-	Workload     string `json:"workload"`
-	QueryMode    string `json:"queryMode"`
-	ValidateFlag bool   `json:"validateFlag"`
+	UserKey      string                     `json:"userKey"`
+	Workspace    string                     `json:"workspace"`
+	DBType       string                     `json:"dbType"`
+	Workload     string                     `json:"workload"`
+	QueryMode    string                     `json:"queryMode"`
+	ValidateFlag bool                       `json:"validateFlag"`
+	Rules        []*CreateOptimizationRules `json:"rules"`
+}
+
+type CreateOptimizationRules struct {
+	RuleCode  string `json:"ruleCode"`
+	Rewrite   bool   `json:"rewrite"`
+	Threshold string `json:"threshold"`
 }
 
 type CreateOptimizationReply struct {
