@@ -3,6 +3,7 @@ package driver
 import (
 	"context"
 	sqlDriver "database/sql/driver"
+	"fmt"
 
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -194,6 +195,10 @@ func (p *PluginImplV1) Exec(ctx context.Context, query string) (sqlDriver.Result
 		return nil, err
 	}
 	return client.Exec(ctx, query)
+}
+
+func (s *PluginImplV1) ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
+	return nil, fmt.Errorf("unimplement this method")
 }
 
 func (p *PluginImplV1) Tx(ctx context.Context, queries ...string) ([]sqlDriver.Result, error) {

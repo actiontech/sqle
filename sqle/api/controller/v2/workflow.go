@@ -1098,6 +1098,7 @@ type WorkflowResV2 struct {
 	WorkflowID    string                 `json:"workflow_id"`
 	Desc          string                 `json:"desc,omitempty"`
 	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`
+	ExecMode      string                 `json:"exec_mode" enums:"sql_file,sqls"`
 	CreateUser    string                 `json:"create_user_name"`
 	CreateTime    *time.Time             `json:"create_time"`
 	Record        *WorkflowRecordResV2   `json:"record"`
@@ -1175,6 +1176,7 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 		WorkflowID: workflow.WorkflowId,
 		Desc:       workflow.Desc,
 		Mode:       workflow.Mode,
+		ExecMode:   workflow.ExecMode,
 		CreateUser: dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime: &workflow.CreatedAt,
 	}
