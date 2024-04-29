@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -326,8 +327,9 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
-	create_audit_plan = "create_audit_plan"
-	create_workflow   = "create_workflow"
+	create_audit_plan   = "create_audit_plan"
+	create_workflow     = "create_workflow"
+	create_optimization = "create_optimization"
 )
 
 type InstanceTipReqV1 struct {
@@ -383,6 +385,8 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = v1.OpPermissionTypeSaveAuditPlan
 	case create_workflow:
 		operationType = v1.OpPermissionTypeCreateWorkflow
+	case create_optimization:
+		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
 
@@ -400,6 +404,9 @@ func GetInstanceTips(c echo.Context) error {
 	}
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
 	for _, inst := range instances {
+		if operationType == v1.OpPermissionTypeCreateOptimization && !opt.CanOptimizeDbType(inst.DbType) {
+			continue
+		}
 		instanceTipRes := InstanceTipResV1{
 			ID:                 inst.GetIDStr(),
 			Name:               inst.Name,
