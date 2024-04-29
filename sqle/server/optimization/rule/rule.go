@@ -1,9 +1,8 @@
 package optimization
 
 import (
-	"fmt"
-
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 )
 
 var OptimizationRuleMap map[string][]OptimizationRuleHandler // ruleCode与plugin的rule name映射关系
@@ -29,7 +28,7 @@ const (
 	DMLRuleSATTCRewrite                      = "dml_rule_sattc_rewrite"
 )
 
-// mysql sql优化的ruleCode
+// mysql SQL优化规则的ruleCode
 const (
 	RuleAddOrderByNullRewrite             = "RuleAddOrderByNullRewrite"
 	RuleCntGtThanZeroRewrite              = "RuleCntGtThanZeroRewrite"
@@ -65,17 +64,18 @@ const (
 
 type OptimizationRuleHandler struct {
 	Rule     driverV2.Rule
-	RuleCode string // sql优化规则的ruleCode
+	RuleCode string // SQL优化规则的ruleCode
 }
 
 func init() {
 	OptimizationRuleMap = make(map[string][]OptimizationRuleHandler)
 	OptimizationRuleMap["MySQL"] = BaseOptimizationRuleHandler
 
-	// sql优化知识库
+	// SQL优化规则知识库
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
-		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
+		log.NewEntry().Errorf("get default rules knowledge failed: %v", err)
+		return
 	}
 	for _, optimizationRule := range OptimizationRuleMap {
 		for i, rule := range optimizationRule {
@@ -87,7 +87,7 @@ func init() {
 	}
 }
 
-// 通过sql优化规则的ruleCode和dbType获取插件规则的name
+// 通过SQL优化规则的ruleCode和dbType获取插件规则的name
 func GetPluginRuleNameByOptimizationRule(ruleCode string, dbType string) (string, bool) {
 	rules := OptimizationRuleMap[dbType]
 	if len(rules) > 0 {
