@@ -6,7 +6,6 @@ package optimization
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -77,11 +76,11 @@ func (a *OptimizationOnlinePawSQLServer) Optimizate(ctx context.Context, Optimiz
 	if err != nil {
 		return nil, err
 	}
-	return a.getOptimizationInfo(ctx, id)
+	return a.getOptimizationInfo(ctx, id, a.Instance.DbType)
 }
 
 // 获取优化详情
-func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context, analysisId string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
+func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context, analysisId string, dbType string) (optimizationInfo *model.SQLOptimizationRecord, err error) {
 	a.logger.Debugf("get Optimization info id : %v", analysisId)
 	// 获取优化任务概览
 	summary, err := a.getOptimizationSummary(ctx, analysisId)
@@ -112,9 +111,10 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		a.logger.Debugf("get Optimization detail %v", detail)
 		triggeredRule := make([]model.RewriteRule, 0)
 		for _, v := range detail.RewrittenQuery {
+			name, message := convertRuleNameAndMessage(v.RuleCode, v.RuleNameZh, dbType)
 			triggeredRule = append(triggeredRule, model.RewriteRule{
-				RuleName:            v.RuleCode,
-				Message:             fmt.Sprintf("%s \n %s", v.RuleNameZh, v.RuleNameEn),
+				RuleName:            name,
+				Message:             message,
 				RewrittenQueriesStr: v.RewrittenQueriesStr,
 				ViolatedQueriesStr:  v.ViolatedQueriesStr,
 			})
@@ -189,4 +189,20 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 		reqRules = append(reqRules, rule)
 	}
 	return reqRules
+}
+
+func convertRuleNameAndMessage(ruleCode string, ruleMessage string, dbType string) (string, string) {
+	name := ruleCode
+	message := ruleMessage
+	// 获取规则的Name
+	ruleName, exist := opt.GetPluginRuleNameByOptimizationRule(ruleCode, dbType)
+	if exist {
+		name = ruleName
+		// 获取复用规则的Desc（保持与规则模板中的规则名一致）
+		handler, ok := rulepkg.RuleHandlerMap[ruleName]
+		if ok {
+			message = handler.Rule.Desc
+		}
+	}
+	return name, message
 }
