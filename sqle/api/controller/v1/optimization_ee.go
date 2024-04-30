@@ -14,9 +14,11 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/optimization"
+	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/labstack/echo/v4"
 )
 
@@ -229,9 +231,21 @@ func getOptimizationSQL(c echo.Context) error {
 	}
 	trs := make([]RewriteRule, 0)
 	for _, tr := range optimizationSQL.TriggeredRules {
+		name := tr.RuleName
+		message := tr.Message
+		// 获取规则的Name
+		ruleName, exist := opt.GetPluginRuleNameByOptimizationRule(tr.RuleName, record.DBType)
+		if exist {
+			name = ruleName
+			// 获取复用规则的Desc（保持与规则模板中的规则名一致）
+			handler, ok := rulepkg.RuleHandlerMap[ruleName]
+			if ok {
+				message = handler.Rule.Desc
+			}
+		}
 		trs = append(trs, RewriteRule{
-			RuleName:            tr.RuleName,
-			Message:             tr.Message,
+			RuleName:            name,
+			Message:             message,
 			RewrittenQueriesStr: tr.RewrittenQueriesStr,
 			ViolatedQueriesStr:  tr.ViolatedQueriesStr,
 		})
