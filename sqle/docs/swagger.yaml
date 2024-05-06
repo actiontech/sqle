@@ -3753,7 +3753,7 @@ definitions:
     type: object
   v2.FileOverview:
     properties:
-      audit_result_counts:
+      audit_result_count:
         $ref: '#/definitions/v2.AuditResultCount'
         type: object
       exec_order:

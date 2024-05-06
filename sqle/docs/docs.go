@@ -13723,7 +13723,7 @@ var doc = `{
         "v2.FileOverview": {
             "type": "object",
             "properties": {
-                "audit_result_counts": {
+                "audit_result_count": {
                     "type": "object",
                     "$ref": "#/definitions/v2.AuditResultCount"
                 },

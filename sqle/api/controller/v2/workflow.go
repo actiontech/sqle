@@ -1269,11 +1269,11 @@ type GetAuditTaskFileOverviewRes struct {
 }
 
 type FileOverview struct {
-	FileID            string             `json:"file_id"`
-	FileName          string             `json:"file_name"`
-	ExecOrder         uint               `json:"exec_order"`
-	ExecStatus        string             `json:"exec_status"`
-	AuditResultCount *AuditResultCount `json:"audit_result_counts"`
+	FileID           string            `json:"file_id"`
+	FileName         string            `json:"file_name"`
+	ExecOrder        uint              `json:"exec_order"`
+	ExecStatus       string            `json:"exec_status"`
+	AuditResultCount *AuditResultCount `json:"audit_result_count"`
 }
 
 type AuditResultCount struct {
