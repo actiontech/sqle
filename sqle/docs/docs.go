@@ -13473,20 +13473,20 @@ var doc = `{
                 }
             }
         },
-        "v2.AuditResultFlags": {
+        "v2.AuditResultCount": {
             "type": "object",
             "properties": {
-                "has_error": {
-                    "type": "boolean"
+                "error_sql_count": {
+                    "type": "integer"
                 },
-                "has_normal": {
-                    "type": "boolean"
+                "normal_sql_count": {
+                    "type": "integer"
                 },
-                "has_notice": {
-                    "type": "boolean"
+                "notice_sql_count": {
+                    "type": "integer"
                 },
-                "has_warning": {
-                    "type": "boolean"
+                "warning_sql_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -13723,9 +13723,9 @@ var doc = `{
         "v2.FileOverview": {
             "type": "object",
             "properties": {
-                "audit_result_flags": {
+                "audit_result_counts": {
                     "type": "object",
-                    "$ref": "#/definitions/v2.AuditResultFlags"
+                    "$ref": "#/definitions/v2.AuditResultCount"
                 },
                 "exec_order": {
                     "type": "integer"
