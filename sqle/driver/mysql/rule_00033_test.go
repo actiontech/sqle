@@ -56,6 +56,72 @@ func TestRuleSQLE00033(t *testing.T) {
 	PRIMARY KEY (id)
 	);
 	`, newTestResult())
+
+	//alter table, add not update_time column
+	runSingleRuleInspectCase(rule, t, "alter table, add not update_time column", DefaultMysqlInspect(), `
+		ALTER TABLE exist_db.exist_tb_1 ADD UPDATE_TIME2 int;
+		`, newTestResult())
+
+	//alter table, add update_time column, without DEFAULT
+	runSingleRuleInspectCase(rule, t, "alter table, add update_time column, without DEFAULT", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 ADD UPDATE_TIME datetime COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, add update_time column, with DEFAULT value not CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, add update_time column, with DEFAULT value not CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 ADD UPDATE_TIME datetime DEFAULT 0 COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, add update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE
+	runSingleRuleInspectCase(rule, t, "alter table, add update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 ADD UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, add update_time column, with DEFAULT value CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, add update_time column, with DEFAULT value CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 ADD UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp COMMENT "unit test";
+	`, newTestResult())
+
+	//alter table, modify update_time column, without DEFAULT
+	runSingleRuleInspectCase(rule, t, "alter table, modify update_time column, without DEFAULT", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 MODIFY UPDATE_TIME datetime COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, modify update_time column, with DEFAULT value not CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, modify update_time column, with DEFAULT value not CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 MODIFY UPDATE_TIME datetime DEFAULT 0 COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, modify update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE
+	runSingleRuleInspectCase(rule, t, "alter table, modify update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 MODIFY UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, modify update_time column, with DEFAULT value CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, modify update_time column, with DEFAULT value CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 MODIFY UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP  ON UPDATE current_timestamp COMMENT "unit test";
+	`, newTestResult())
+
+	//alter table, change update_time column, without DEFAULT
+	runSingleRuleInspectCase(rule, t, "alter table, change update_time column, without DEFAULT", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 CHANGE v1 UPDATE_TIME datetime COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, change update_time column, with DEFAULT value not CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, change update_time column, with DEFAULT value not CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 CHANGE v1 UPDATE_TIME datetime DEFAULT 0 COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, change update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE
+	runSingleRuleInspectCase(rule, t, "alter table, change update_time column, with DEFAULT value CURRENT_TIMESTAMP, not ON UPDATE", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 CHANGE v1 UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP  COMMENT "unit test";
+	`, newTestResult().addResult(ruleName, "UPDATE_TIME"))
+
+	//alter table, change update_time column, with DEFAULT value CURRENT_TIMESTAMP
+	runSingleRuleInspectCase(rule, t, "alter table, change update_time column, with DEFAULT value CURRENT_TIMESTAMP", DefaultMysqlInspect(), `
+	ALTER TABLE exist_db.exist_tb_1 CHANGE v1 UPDATE_TIME datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE current_timestamp COMMENT "unit test";
+	`, newTestResult())
+
 }
 
 // ==== Rule test code end ====

@@ -19,9 +19,19 @@ func TestRuleSQLE00113(t *testing.T) {
 	`, newTestResult())
 
 	//select... is null
-	runSingleRuleInspectCase(rule, t, "select... no problem", DefaultMysqlInspect(), `
+	runSingleRuleInspectCase(rule, t, "select... is null", DefaultMysqlInspect(), `
 	SELECT id, v1 FROM exist_db.exist_tb_1 WHERE id IS NULL;
 	`, newTestResult())
+
+	//select... is not null
+	runSingleRuleInspectCase(rule, t, "select... is not null", DefaultMysqlInspect(), `
+	SELECT id, v1 FROM exist_db.exist_tb_1 WHERE id IS NOT NULL;
+	`, newTestResult())
+
+	//select... is not 1
+	runSingleRuleInspectCase(rule, t, "select... is not 1", DefaultMysqlInspect(), `
+	SELECT id, v1 FROM exist_db.exist_tb_1 WHERE NOT id = 1;
+	`, newTestResult().addResult(ruleName))
 
 	//select... with negative where condition, not in
 	runSingleRuleInspectCase(rule, t, "select... with negative where condition, not in", DefaultMysqlInspect(), `
@@ -41,6 +51,11 @@ func TestRuleSQLE00113(t *testing.T) {
 	//select... with negative where condition, not equal to
 	runSingleRuleInspectCase(rule, t, "select... with negative where condition, not equal to", DefaultMysqlInspect(), `
 	SELECT id, v1 FROM exist_db.exist_tb_1 WHERE id <> 1;
+	`, newTestResult().addResult(ruleName))
+
+	// select... with negative where condition, not between
+	runSingleRuleInspectCase(rule, t, "select... with negative where condition, not between", DefaultMysqlInspect(), `
+	SELECT id, v1 FROM exist_db.exist_tb_1 WHERE id NOT BETWEEN 1 AND 10;
 	`, newTestResult().addResult(ruleName))
 
 	//delete...

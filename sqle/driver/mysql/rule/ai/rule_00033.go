@@ -43,10 +43,14 @@ func init() {
 ==== Prompt start ====
 In MySQL, you should check if the SQL violate the rule(SQLE00033): "In DDL, when creating table, table should have a field about update-timestamp, whose DEFAULT value and ON-UPDATE value should be both 'CURRENT_TIMESTAMP'", the update-timestamp column name is a parameter whose default value is 'UPDATE_TIME'.
 You should follow the following logic:
-For "create table ..." statement, check the following conditions, report violation if any condition is violated:
-1. The table should have a update-timestamp column whose type is datetime or timestamp, and column name is same as the parameter
-2. The update-timestamp column's DEFAULT value should be configured as 'CURRENT_TIMESTAMP'
-3. The update-timestamp column's ON-UPDATE value should be configured as 'CURRENT_TIMESTAMP'
+1. For "create table ..." statement, check the following conditions, report violation if any condition is violated:
+  1. The table should have a update-timestamp column whose type is datetime or timestamp, and column name is same as the parameter
+  2. The update-timestamp column's DEFAULT value should be configured as 'CURRENT_TIMESTAMP'
+  3. The update-timestamp column's ON-UPDATE value should be configured as 'CURRENT_TIMESTAMP'
+2. For "ALTER TABLE..." Statement, if the added field column name is the same as the parameter, checks the following conditions, report violation if any condition is violated:
+  1. its data type should be datetime or timestamp.
+  2. The default value for this update time column should be set to 'CURRENT_TIMESTAMP'
+  3. The ON-UPDATE value of the update time column should be configured to 'CURRENT_TIMESTAMP'
 ==== Prompt end ====
 */
 
@@ -74,13 +78,50 @@ func RuleSQLE00033(input *rulepkg.RuleHandlerInput) error {
 				}
 			}
 		}
+
+		if !found {
+			//the column is not created by "create table..."
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00033, updateTimeColumnName)
+		}
+	case *ast.AlterTableStmt:
+		// "alter table"
+		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableChangeColumn, ast.AlterTableModifyColumn) {
+			// "alter table add column" or "alter table change column" or "alter table add column"
+			for _, col := range spec.NewColumns {
+				if strings.EqualFold(util.GetColumnName(col), updateTimeColumnName) {
+					violated := true
+					// the column is update_time column
+					if util.IsColumnTypeEqual(col, mysql.TypeTimestamp, mysql.TypeDatetime) {
+						// the column type is timestamp or datetime
+						if util.IsColumnHasOption(col, ast.ColumnOptionDefaultValue) {
+							// the column has "DEFAULT" option
+							option := util.GetColumnOption(col, ast.ColumnOptionDefaultValue)
+							if util.IsOptionFuncCall(option, "current_timestamp") {
+								// the "DEFAULT" value is current_timestamp
+								if util.IsColumnHasOption(col, ast.ColumnOptionOnUpdate) {
+									// the column has "ON UPDATE" option
+									option := util.GetColumnOption(col, ast.ColumnOptionOnUpdate)
+									if util.IsOptionFuncCall(option, "current_timestamp") {
+										// the "ON UPDATE" value is current_timestamp
+										violated = false
+									}
+								}
+							}
+						}
+					}
+					if violated {
+						// the column is not created by "alter table ..."
+						rulepkg.AddResult(input.Res, input.Rule, SQLE00033, updateTimeColumnName)
+					}
+				}
+			}
+
+		}
+
 	default:
 		return nil
 	}
 
-	if !found {
-		rulepkg.AddResult(input.Res, input.Rule, SQLE00033, updateTimeColumnName)
-	}
 	return nil
 }
 

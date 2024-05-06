@@ -5,6 +5,7 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 )
 
@@ -32,7 +33,7 @@ func init() {
 ==== Prompt start ====
 In MySQL, you should check if the SQL violate the rule(SQLE00113): "For dml, using negative queries against WHERE conditional fields is prohibited".
 You should follow the following logic:
-1. For "SELECT..." Statement, checks for the presence of a negative (NOT, NOT IN, NOT LIKE, NOT EXISTS, not equal to) in the WHERE condition in the sentence, and if so, reports a rule violation.
+1. For "SELECT..." Statement, checks for the presence of a negative (NOT(except NOT NULL), NOT IN, NOT LIKE, NOT EXISTS, NOT BETWEEN, not equal to) in the WHERE condition in the sentence, and if so, reports a rule violation.
 2. For "DELETE..." Statement, perform the same checks as above for each SELECT clause in the statement. The DELETE statement itself is checked for the presence of a negative query in its WHERE condition, and if so, a rule violation is reported.
 3. For "INSERT..." Statement, perform the same checks as above for each SELECT clause in the statement.
 4. For "UPDATE..." Statement, perform the same checks as above for each SELECT clause in the statement. The UPDATE statement itself is checked for the presence of a negative query in its WHERE condition, and if so, a rule violation is reported.
@@ -49,9 +50,23 @@ func RuleSQLE00113(input *rulepkg.RuleHandlerInput) error {
 	negative := false
 	util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
 		switch x := expr.(type) {
+		case *ast.UnaryOperationExpr:
+			// NOT
+			if x.Op == opcode.Not {
+				negative = true
+				return true
+			}
 		case *ast.BinaryOperationExpr:
 			//  not equal to, NOT
-			if x.Op == opcode.NE || x.Op == opcode.NullEQ || x.Op == opcode.Not {
+			if x.Op == opcode.NE || x.Op == opcode.NullEQ {
+				negative = true
+				return true
+			}
+			if x.Op == opcode.Not {
+				// except not null
+				if v, ok := x.R.(*ast.ValuesExpr); ok && v.Type.Tp == mysql.TypeNull {
+					return true
+				}
 				negative = true
 				return true
 			}
@@ -70,6 +85,12 @@ func RuleSQLE00113(input *rulepkg.RuleHandlerInput) error {
 		case *ast.ExistsSubqueryExpr:
 			// NOT EXISTS
 			if v, ok := x.Sel.(*ast.SubqueryExpr); ok && x.Not && v.Exists {
+				negative = true
+				return true
+			}
+		case *ast.BetweenExpr:
+			// NOT BETWEEN
+			if x.Not {
 				negative = true
 				return true
 			}
