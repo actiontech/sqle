@@ -3581,16 +3581,16 @@ definitions:
       rule_name:
         type: string
     type: object
-  v2.AuditResultFlags:
+  v2.AuditResultCount:
     properties:
-      has_error:
-        type: boolean
-      has_normal:
-        type: boolean
-      has_notice:
-        type: boolean
-      has_warning:
-        type: boolean
+      error_sql_count:
+        type: integer
+      normal_sql_count:
+        type: integer
+      notice_sql_count:
+        type: integer
+      warning_sql_count:
+        type: integer
     type: object
   v2.AuditSQLResV2:
     properties:
@@ -3753,8 +3753,8 @@ definitions:
     type: object
   v2.FileOverview:
     properties:
-      audit_result_flags:
-        $ref: '#/definitions/v2.AuditResultFlags'
+      audit_result_count:
+        $ref: '#/definitions/v2.AuditResultCount'
         type: object
       exec_order:
         type: integer
