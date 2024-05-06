@@ -1273,14 +1273,14 @@ type FileOverview struct {
 	FileName         string            `json:"file_name"`
 	ExecOrder        uint              `json:"exec_order"`
 	ExecStatus       string            `json:"exec_status"`
-	AuditResultFlags *AuditResultFlags `json:"audit_result_flags"`
+	AuditResultCount *AuditResultCount `json:"audit_result_count"`
 }
 
-type AuditResultFlags struct {
-	HasError   bool `json:"has_error"`
-	HasWarning bool `json:"has_warning"`
-	HasNormal  bool `json:"has_normal"`
-	HasNotice  bool `json:"has_notice"`
+type AuditResultCount struct {
+	ErrorSQLCount   uint `json:"error_sql_count"`
+	WarningSQLCount uint `json:"warning_sql_count"`
+	NormalSQLCount  uint `json:"normal_sql_count"`
+	NoticeSQLCount  uint `json:"notice_sql_count"`
 }
 
 // GetAuditTaskFileOverview
