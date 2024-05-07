@@ -604,15 +604,13 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 	if err != nil {
 		return "", "", err
 	}
-	columnsName := []string{}
 	rollbackSql := ""
 	colNameDefMap := make(map[string]*ast.ColumnDef)
 	for _, col := range createTableStmt.Cols {
-		columnsName = append(columnsName, col.Name.Name.String())
 		colNameDefMap[col.Name.Name.String()] = col
 	}
 	for _, record := range records {
-		if len(record) != len(columnsName) {
+		if len(record) != len(colNameDefMap) {
 			return "", "", nil
 		}
 		where := []string{}
