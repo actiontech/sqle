@@ -1258,8 +1258,9 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 }
 
 type GetAuditTaskFileOverviewReq struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+	PageIndex    uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize     uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FilterFileID string `json:"filter_file_id" query:"filter_file_id"`
 }
 
 type GetAuditTaskFileOverviewRes struct {
@@ -1274,6 +1275,7 @@ type FileOverview struct {
 	ExecOrder        uint              `json:"exec_order"`
 	ExecStatus       string            `json:"exec_status"`
 	AuditResultCount *AuditResultCount `json:"audit_result_count"`
+	ExecResultCount  *ExecResultCount  `json:"exec_result_count"`
 }
 
 type AuditResultCount struct {
@@ -1281,6 +1283,16 @@ type AuditResultCount struct {
 	WarningSQLCount uint `json:"warning_sql_count"`
 	NormalSQLCount  uint `json:"normal_sql_count"`
 	NoticeSQLCount  uint `json:"notice_sql_count"`
+}
+
+type ExecResultCount struct {
+	FailedCount             uint `json:"failed_count"`
+	SucceededCount          uint `json:"succeeded_count"`
+	InitializedCount        uint `json:"initialized_count"`
+	DoingCount              uint `json:"doing_count"`
+	ManuallyExecutedCount   uint `json:"manually_executed_count"`
+	TerminateSucceededCount uint `json:"terminate_succeeded_count"`
+	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
 // GetAuditTaskFileOverview
