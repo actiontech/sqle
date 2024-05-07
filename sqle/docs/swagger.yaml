@@ -9466,6 +9466,11 @@ paths:
         name: page_size
         required: true
         type: string
+      - description: filter file id
+        in: query
+        name: filter_file_id
+        required: true
+        type: string
       responses:
         "200":
           description: OK

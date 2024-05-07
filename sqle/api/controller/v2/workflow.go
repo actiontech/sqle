@@ -1304,6 +1304,7 @@ type ExecResultCount struct {
 // @Param task_id path string true "task id"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
+// @Param filter_file_id query string true "filter file id"
 // @Success 200 {object} GetAuditTaskFileOverviewRes
 // @router /v2/tasks/audits/{task_id}/files [get]
 func GetAuditTaskFileOverview(c echo.Context) error {
