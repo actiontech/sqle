@@ -3751,6 +3751,23 @@ definitions:
       logo_url:
         type: string
     type: object
+  v2.ExecResultCount:
+    properties:
+      doing_count:
+        type: integer
+      failed_count:
+        type: integer
+      initialized_count:
+        type: integer
+      manually_executed_count:
+        type: integer
+      succeeded_count:
+        type: integer
+      terminate_failed_count:
+        type: integer
+      terminate_succeeded_count:
+        type: integer
+    type: object
   v2.FileOverview:
     properties:
       audit_result_count:
@@ -3758,6 +3775,9 @@ definitions:
         type: object
       exec_order:
         type: integer
+      exec_result_count:
+        $ref: '#/definitions/v2.ExecResultCount'
+        type: object
       exec_status:
         type: string
       file_id:
