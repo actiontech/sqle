@@ -8075,6 +8075,13 @@ var doc = `{
                         "name": "page_size",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter file id",
+                        "name": "filter_file_id",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
