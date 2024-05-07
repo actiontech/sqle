@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
+	parserMysql "github.com/pingcap/parser/mysql"
 )
 
 func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, string, error) {
@@ -456,6 +458,12 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 	return rollbackSql, "", nil
 }
 
+// 将二进制字段转化为十六进制字段
+func getHexStrFromBytesStr(byteStr string) string {
+	encode := []byte(byteStr)
+	return hex.EncodeToString(encode)
+}
+
 // generateDeleteRollbackSql generate insert SQL for delete.
 func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, string, error) {
 	// not support multi-table syntax
@@ -504,8 +512,10 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 	values := []string{}
 
 	columnsName := []string{}
+	colNameDefMap := make(map[string]*ast.ColumnDef)
 	for _, col := range createTableStmt.Cols {
 		columnsName = append(columnsName, col.Name.Name.String())
+		colNameDefMap[col.Name.Name.String()] = col
 	}
 	for _, record := range records {
 		if len(record) != len(columnsName) {
@@ -515,7 +525,13 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 		for _, name := range columnsName {
 			v := "NULL"
 			if record[name].Valid {
-				v = fmt.Sprintf("'%s'", record[name].String)
+				colDef := colNameDefMap[name]
+				if parserMysql.HasBinaryFlag(colDef.Tp.Flag) {
+					hexStr := getHexStrFromBytesStr(record[name].String)
+					v = fmt.Sprintf("X'%s'", hexStr)
+				} else {
+					v = fmt.Sprintf("'%s'", record[name].String)
+				}
 			}
 			vs = append(vs, v)
 		}
@@ -588,13 +604,13 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 	if err != nil {
 		return "", "", err
 	}
-	columnsName := []string{}
 	rollbackSql := ""
+	colNameDefMap := make(map[string]*ast.ColumnDef)
 	for _, col := range createTableStmt.Cols {
-		columnsName = append(columnsName, col.Name.Name.String())
+		colNameDefMap[col.Name.Name.String()] = col
 	}
 	for _, record := range records {
-		if len(record) != len(columnsName) {
+		if len(record) != len(colNameDefMap) {
 			return "", "", nil
 		}
 		where := []string{}
@@ -617,7 +633,13 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 			name := col.Name.Name.O
 			v := "NULL"
 			if record[name].Valid {
-				v = fmt.Sprintf("'%s'", record[name].String)
+				colDef := colNameDefMap[name]
+				if parserMysql.HasBinaryFlag(colDef.Tp.Flag) {
+					hexStr := getHexStrFromBytesStr(record[name].String)
+					v = fmt.Sprintf("X'%s'", hexStr)
+				} else {
+					v = fmt.Sprintf("'%s'", record[name].String)
+				}
 			}
 
 			if colChanged {
