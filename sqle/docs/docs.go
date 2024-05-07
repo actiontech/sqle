@@ -13720,6 +13720,32 @@ var doc = `{
                 }
             }
         },
+        "v2.ExecResultCount": {
+            "type": "object",
+            "properties": {
+                "doing_count": {
+                    "type": "integer"
+                },
+                "failed_count": {
+                    "type": "integer"
+                },
+                "initialized_count": {
+                    "type": "integer"
+                },
+                "manually_executed_count": {
+                    "type": "integer"
+                },
+                "succeeded_count": {
+                    "type": "integer"
+                },
+                "terminate_failed_count": {
+                    "type": "integer"
+                },
+                "terminate_succeeded_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "v2.FileOverview": {
             "type": "object",
             "properties": {
@@ -13729,6 +13755,10 @@ var doc = `{
                 },
                 "exec_order": {
                     "type": "integer"
+                },
+                "exec_result_count": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.ExecResultCount"
                 },
                 "exec_status": {
                     "type": "string"
