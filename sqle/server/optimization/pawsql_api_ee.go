@@ -65,7 +65,8 @@ func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, in
 	if err != nil {
 		return "", err
 	}
-	if reply.Code != 200 {
+	// todo: 私有化部署响应无code字段 https://github.com/actiontech/sqle-ee/issues/1527
+	if reply.Message != "操作成功" {
 		return "", fmt.Errorf("code is %v,message is %v", reply.Code, reply.Message)
 	}
 	return reply.Data.WorkspaceId, nil
@@ -84,7 +85,8 @@ func (a *OptimizationPawSQLServer) createWorkspaceOffline(ctx context.Context, d
 	if err != nil {
 		return "", err
 	}
-	if reply.Code != 200 {
+	// todo: 私有化部署响应无code字段 https://github.com/actiontech/sqle-ee/issues/1527
+	if reply.Message != "操作成功" {
 		return "", fmt.Errorf("code is %v,message is %v", reply.Code, reply.Message)
 	}
 	return reply.Data.WorkspaceId, nil
@@ -111,7 +113,8 @@ func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, works
 	if err != nil {
 		return "", err
 	}
-	if reply.Code != 200 {
+	// todo: 私有化部署响应无code字段 https://github.com/actiontech/sqle-ee/issues/1527
+	if reply.Message != "操作成功" {
 		return "", fmt.Errorf("code is %v,message is %v", reply.Code, reply.Message)
 	}
 	if reply.Data.Status != "success1" {
@@ -159,7 +162,8 @@ func (a *OptimizationPawSQLServer) getOptimizationSummary(ctx context.Context, o
 	if err != nil {
 		return ret, err
 	}
-	if reply.Code != 200 {
+	// todo: 私有化部署响应无code字段 https://github.com/actiontech/sqle-ee/issues/1527
+	if reply.Message != "操作成功" {
 		return ret, fmt.Errorf("code is %v,message is %v", reply.Code, reply.Message)
 	}
 	return reply.Data, nil
@@ -238,7 +242,8 @@ func (a *OptimizationPawSQLServer) getOptimizationDetail(ctx context.Context, op
 	if err != nil {
 		return ret, err
 	}
-	if reply.Code != 200 {
+	// todo: 私有化部署响应无code字段 https://github.com/actiontech/sqle-ee/issues/1527
+	if reply.Message != "操作成功" {
 		return ret, fmt.Errorf("code is %v,message is %v", reply.Code, reply.Message)
 	}
 	return reply.Data, nil
