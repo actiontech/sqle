@@ -1308,6 +1308,82 @@ type ExecResultCount struct {
 // @Success 200 {object} GetAuditTaskFileOverviewRes
 // @router /v2/tasks/audits/{task_id}/files [get]
 func GetAuditTaskFileOverview(c echo.Context) error {
-	// TODO implement this function
-	return nil
+	req := new(GetAuditTaskFileOverviewReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskId := c.Param("task_id")
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = v1.CheckCurrentUserCanViewTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	var offset uint32
+	if req.PageIndex >= 1 {
+		offset = req.PageSize * (req.PageIndex - 1)
+	}
+	data := map[string]interface{}{
+		"task_id":        taskId,
+		"limit":          req.PageSize,
+		"offset":         offset,
+		"filter_file_id": req.FilterFileID,
+	}
+
+	result, count, err := s.GetAuditOverviewByTaskId(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetAuditTaskFileOverviewRes{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertToAuditFileOverview(result, req.FilterFileID != ""),
+		TotalNums: count,
+	})
+}
+
+func convertToAuditFileOverview(input []*model.AuditResultOverview, filterByFileID bool) (output []FileOverview) {
+	for _, file := range input {
+		output = append(output, FileOverview{
+			FileID:           file.FileID,
+			FileName:         file.FileName,
+			ExecOrder:        file.ExecOrder,
+			ExecStatus:       file.FileExecStatus(),
+			AuditResultCount: convertToAuditResultCount(file, filterByFileID),
+			ExecResultCount:  convertToExecResultCount(file, filterByFileID),
+		})
+	}
+	return
+}
+
+func convertToAuditResultCount(file *model.AuditResultOverview, filterByFileID bool) *AuditResultCount {
+	// 单个文件的页面不展示审核情况概览
+	if filterByFileID {
+		return nil
+	}
+	return &AuditResultCount{
+		ErrorSQLCount:   file.ErrorCount,
+		WarningSQLCount: file.WarningCount,
+		NormalSQLCount:  file.NormalCount,
+		NoticeSQLCount:  file.NoticeCount,
+	}
+}
+
+func convertToExecResultCount(file *model.AuditResultOverview, filterByFileID bool) *ExecResultCount {
+	// 列表页面不展示执行情况概览
+	if !filterByFileID {
+		return nil
+	}
+	return &ExecResultCount{
+		InitializedCount:        file.InitializedCount,
+		SucceededCount:          file.SucceededCount,
+		FailedCount:             file.FailedCount,
+		DoingCount:              file.DoingCount,
+		ManuallyExecutedCount:   file.ManuallyExecutedCount,
+		TerminateSucceededCount: file.TerminateSucceededCount,
+		TerminateFailedCount:    file.TerminateFailedCount,
+	}
 }
