@@ -89,7 +89,6 @@ func (s *Storage) BatchCreateFileRecords(records []*AuditFile) error {
 	})
 }
 
-
 type AuditResultOverview struct {
 	FileID    string `json:"file_id"`
 	FileName  string `json:"file_name"`
@@ -145,13 +144,14 @@ func (a AuditResultOverview) FileExecStatus() string {
 	return SQLExecuteStatusInitialized
 }
 
-func (s *Storage) GetAuditOverviewByTaskId(data map[string]interface{}) (
+func (s *Storage) GetAuditOverviewByTaskId(data map[string]interface{}, limit uint32) (
 	result []*AuditResultOverview, count uint64, err error) {
 	// add key value because suspension(:) will be considered as input variables
 	data["key_error"] = "{\"level\": \"error\"}"
 	data["key_warn"] = "{\"level\": \"warn\"}"
 	data["key_normal"] = "{\"level\": \"normal\"}"
 	data["key_notice"] = "{\"level\": \"notice\"}"
+	result = make([]*AuditResultOverview, 0, limit)
 	err = s.getListResult(auditFileOverviewQueryBodyTpl, auditFileOverviewQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err

@@ -1334,7 +1334,7 @@ func GetAuditTaskFileOverview(c echo.Context) error {
 		"filter_file_id": req.FilterFileID,
 	}
 
-	result, count, err := s.GetAuditOverviewByTaskId(data)
+	result, count, err := s.GetAuditOverviewByTaskId(data, req.PageSize)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
