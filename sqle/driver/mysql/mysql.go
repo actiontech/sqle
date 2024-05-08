@@ -183,23 +183,8 @@ func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Resul
 	return conn.Db.Exec(query)
 }
 
-//	func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-//		return nil, fmt.Errorf("unimplement this method")
-//	}
 func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-	var results []_driver.Result
-	var errorSlice []error
-	for _, sql := range queries {
-		result, err := i.Exec(ctx, sql)
-		results = append(results, result)
-		if err != nil {
-			errorSlice = append(errorSlice, err)
-		}
-	}
-	if len(errorSlice) > 0 {
-		return results, fmt.Errorf("encount errors:\n%v", errorSlice)
-	}
-	return results, nil
+	return nil, fmt.Errorf("unimplement this method")
 }
 
 func (i *MysqlDriverImpl) onlineddlWithGhost(query string) (bool, error) {
@@ -282,7 +267,6 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 		n.Text = nodes[idx].Text()
 		n.StartLine = uint64(nodes[idx].StartLine())
 		n.Type = i.assertSQLType(nodes[idx])
-		n.ExecBatchId = uint64(idx)
 		ns[idx] = n
 	}
 	return ns, nil
@@ -629,7 +613,6 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleExtractTableFromSQL,
 			driverV2.OptionalModuleEstimateSQLAffectRows,
 			driverV2.OptionalModuleKillProcess,
-			driverV2.OptionalExecBatch,
 		},
 	}, nil
 }
