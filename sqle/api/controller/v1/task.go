@@ -191,9 +191,10 @@ func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 		return nil, err
 	}
 	auditFiles := []*model.AuditFile{
-		model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName),
+		model.NewFileRecord(0, 1, fileHeader.Filename, uniqueName),
 	}
 	if strings.HasSuffix(fileHeader.Filename, ".zip") {
+		auditFiles[0].ExecOrder = 0
 		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader)
 		if err != nil {
 			return nil, err
@@ -209,15 +210,18 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 		return nil, err
 	}
 	var auditFiles []*model.AuditFile
-	for i, srcFile := range r.File {
+	for _, srcFile := range r.File {
 		// skip empty file and folder
 		if srcFile == nil || srcFile.FileInfo().IsDir() {
 			continue
 		}
 		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
 		if strings.HasSuffix(fullName, ".sql") {
-			auditFiles = append(auditFiles, model.NewFileRecord(0, uint(i+1), fullName, model.GenUniqueFileName()))
+			auditFiles = append(auditFiles, model.NewFileRecord(0, 0, fullName, model.GenUniqueFileName()))
 		}
+	}
+	for i, auditFile := range auditFiles {
+		auditFile.ExecOrder = uint(i) + 1
 	}
 	return auditFiles, nil
 }
