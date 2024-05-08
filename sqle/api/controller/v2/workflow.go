@@ -1346,6 +1346,7 @@ func GetAuditTaskFileOverview(c echo.Context) error {
 }
 
 func convertToAuditFileOverview(input []*model.AuditResultOverview, filterByFileID bool) (output []FileOverview) {
+	output = make([]FileOverview, 0, len(input))
 	for _, file := range input {
 		output = append(output, FileOverview{
 			FileID:           file.FileID,
