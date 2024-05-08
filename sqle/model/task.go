@@ -496,6 +496,7 @@ var taskSQLsQueryBodyTpl = `
 FROM execute_sql_detail AS e_sql
 {{- if .filter_audit_file_id }}
 LEFT JOIN audit_files ON audit_files.task_id = e_sql.task_id
+AND audit_files.file_name = e_sql.source_file
 {{- end }}
 LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
 WHERE
