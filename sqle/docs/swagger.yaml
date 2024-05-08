@@ -3581,16 +3581,16 @@ definitions:
       rule_name:
         type: string
     type: object
-  v2.AuditResultFlags:
+  v2.AuditResultCount:
     properties:
-      has_error:
-        type: boolean
-      has_normal:
-        type: boolean
-      has_notice:
-        type: boolean
-      has_warning:
-        type: boolean
+      error_sql_count:
+        type: integer
+      normal_sql_count:
+        type: integer
+      notice_sql_count:
+        type: integer
+      warning_sql_count:
+        type: integer
     type: object
   v2.AuditSQLResV2:
     properties:
@@ -3751,13 +3751,33 @@ definitions:
       logo_url:
         type: string
     type: object
+  v2.ExecResultCount:
+    properties:
+      doing_count:
+        type: integer
+      failed_count:
+        type: integer
+      initialized_count:
+        type: integer
+      manually_executed_count:
+        type: integer
+      succeeded_count:
+        type: integer
+      terminate_failed_count:
+        type: integer
+      terminate_succeeded_count:
+        type: integer
+    type: object
   v2.FileOverview:
     properties:
-      audit_result_flags:
-        $ref: '#/definitions/v2.AuditResultFlags'
+      audit_result_count:
+        $ref: '#/definitions/v2.AuditResultCount'
         type: object
       exec_order:
         type: integer
+      exec_result_count:
+        $ref: '#/definitions/v2.ExecResultCount'
+        type: object
       exec_status:
         type: string
       file_id:
@@ -9444,6 +9464,11 @@ paths:
       - description: page size
         in: query
         name: page_size
+        required: true
+        type: string
+      - description: filter file id
+        in: query
+        name: filter_file_id
         required: true
         type: string
       responses:
