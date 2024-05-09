@@ -8048,12 +8048,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit task file statistic list",
+                "description": "get audit task file list",
                 "tags": [
                     "task"
                 ],
                 "summary": "获取审核任务文件概览列表",
-                "operationId": "getAuditFileStatisticList",
+                "operationId": "getAuditFileList",
                 "parameters": [
                     {
                         "type": "string",
@@ -8081,7 +8081,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetAuditFileStatisticListRes"
+                            "$ref": "#/definitions/v2.GetAuditFileListRes"
                         }
                     }
                 }
@@ -13849,7 +13849,7 @@ var doc = `{
                 }
             }
         },
-        "v2.GetAuditFileStatisticListRes": {
+        "v2.GetAuditFileListRes": {
             "type": "object",
             "properties": {
                 "code": {
