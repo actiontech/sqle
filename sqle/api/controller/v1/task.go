@@ -215,6 +215,7 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 		return nil, err
 	}
 	var auditFiles []*model.AuditFile
+	var execOrder uint = 1
 	for _, srcFile := range r.File {
 		// skip empty file and folder
 		if srcFile == nil || srcFile.FileInfo().IsDir() {
@@ -222,11 +223,9 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 		}
 		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
 		if strings.HasSuffix(fullName, ".sql") {
-			auditFiles = append(auditFiles, model.NewFileRecord(0, 0, fullName, model.GenUniqueFileName()))
+			auditFiles = append(auditFiles, model.NewFileRecord(0, execOrder, fullName, model.GenUniqueFileName()))
+			execOrder++
 		}
-	}
-	for i, auditFile := range auditFiles {
-		auditFile.ExecOrder = uint(i) + 1
 	}
 	return auditFiles, nil
 }
