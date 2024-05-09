@@ -108,6 +108,11 @@ func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, works
 		ValidateFlag: true,
 		Rules:        rules,
 	}
+
+	if len(rules) == 0 {
+		req.CloseRewrite = true
+	}
+
 	reply := new(CreateOptimizationReply)
 	err = dmsCommonHttp.POST(context.TODO(), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
 	if err != nil {
@@ -130,6 +135,7 @@ type CreateOptimizationReq struct {
 	Workload     string                     `json:"workload"`
 	QueryMode    string                     `json:"queryMode"`
 	ValidateFlag bool                       `json:"validateFlag"`
+	CloseRewrite bool                       `json:"closeRewrite"`
 	Rules        []*CreateOptimizationRules `json:"rules"`
 }
 
