@@ -8048,12 +8048,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit task file overview list",
+                "description": "get audit task file statistic list",
                 "tags": [
                     "task"
                 ],
                 "summary": "获取审核任务文件概览列表",
-                "operationId": "getAuditFileOverviewList",
+                "operationId": "getAuditFileStatisticList",
                 "parameters": [
                     {
                         "type": "string",
@@ -8081,7 +8081,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetAuditFileOverviewListRes"
+                            "$ref": "#/definitions/v2.GetAuditFileStatisticListRes"
                         }
                     }
                 }
@@ -8094,12 +8094,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit task file execute overview",
+                "description": "get audit task file execute statistic",
                 "tags": [
                     "task"
                 ],
                 "summary": "获取审核任务文件执行概览",
-                "operationId": "getAuditFileExecOverview",
+                "operationId": "getAuditFileExecStatistic",
                 "parameters": [
                     {
                         "type": "string",
@@ -8120,7 +8120,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetAuditFileExecOverviewRes"
+                            "$ref": "#/definitions/v2.GetAuditFileExecStatisticRes"
                         }
                     }
                 }
@@ -13356,7 +13356,7 @@ var doc = `{
                 }
             }
         },
-        "v2.AuditFileExecOverview": {
+        "v2.AuditFileExecStatistic": {
             "type": "object",
             "properties": {
                 "exec_result_count": {
@@ -13371,7 +13371,7 @@ var doc = `{
                 }
             }
         },
-        "v2.AuditFileOverview": {
+        "v2.AuditFileStatistic": {
             "type": "object",
             "properties": {
                 "audit_result_count": {
@@ -13832,7 +13832,7 @@ var doc = `{
                 }
             }
         },
-        "v2.GetAuditFileExecOverviewRes": {
+        "v2.GetAuditFileExecStatisticRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -13841,7 +13841,7 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v2.AuditFileExecOverview"
+                    "$ref": "#/definitions/v2.AuditFileExecStatistic"
                 },
                 "message": {
                     "type": "string",
@@ -13849,7 +13849,7 @@ var doc = `{
                 }
             }
         },
-        "v2.GetAuditFileOverviewListRes": {
+        "v2.GetAuditFileStatisticListRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -13859,7 +13859,7 @@ var doc = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.AuditFileOverview"
+                        "$ref": "#/definitions/v2.AuditFileStatistic"
                     }
                 },
                 "message": {

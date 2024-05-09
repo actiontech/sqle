@@ -1258,18 +1258,18 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	return stepRes
 }
 
-type GetAuditFileOverviewListReq struct {
+type GetAuditFileStatisticListReq struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type GetAuditFileOverviewListRes struct {
+type GetAuditFileStatisticListRes struct {
 	controller.BaseRes
-	Data      []AuditFileOverview `json:"data"`
-	TotalNums uint64                  `json:"total_nums"`
+	Data      []AuditFileStatistic `json:"data"`
+	TotalNums uint64               `json:"total_nums"`
 }
 
-type AuditFileOverview struct {
+type AuditFileStatistic struct {
 	FileID           string            `json:"file_id"`
 	FileName         string            `json:"file_name"`
 	ExecOrder        uint              `json:"exec_order"`
@@ -1284,24 +1284,24 @@ type AuditResultCount struct {
 	NoticeSQLCount  uint `json:"notice_sql_count"`
 }
 
-// GetAuditFileOverviewList
+// GetAuditFileStatisticList
 // @Summary 获取审核任务文件概览列表
-// @Description get audit task file overview list
+// @Description get audit task file statistic list
 // @Tags task
-// @Id getAuditFileOverviewList
+// @Id getAuditFileStatisticList
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
-// @Success 200 {object} GetAuditFileOverviewListRes
+// @Success 200 {object} GetAuditFileStatisticListRes
 // @router /v2/tasks/audits/{task_id}/files [get]
-func GetAuditFileOverviewList(c echo.Context) error {
-	req := new(GetAuditFileOverviewListReq)
+func GetAuditFileStatisticList(c echo.Context) error {
+	req := new(GetAuditFileStatisticListReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 	taskId := c.Param("task_id")
-	
+
 	task, err := v1.GetTaskById(c.Request().Context(), taskId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1318,22 +1318,22 @@ func GetAuditFileOverviewList(c echo.Context) error {
 		"limit":   limit,
 		"offset":  offset,
 	}
-	result, count, err := s.GetAuditOverviewByTaskId(data)
+	result, count, err := s.GetAuditStatisticByTaskId(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetAuditFileOverviewListRes{
+	return c.JSON(http.StatusOK, &GetAuditFileStatisticListRes{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      convertToAuditFileOverviewList(result),
+		Data:      convertToAuditFileStatisticList(result),
 		TotalNums: count,
 	})
 }
 
-func convertToAuditFileOverviewList(input []*model.AuditResultOverview) (output []AuditFileOverview) {
-	output = make([]AuditFileOverview, 0, len(input))
+func convertToAuditFileStatisticList(input []*model.AuditResultStatistic) (output []AuditFileStatistic) {
+	output = make([]AuditFileStatistic, 0, len(input))
 	for _, file := range input {
-		output = append(output, AuditFileOverview{
+		output = append(output, AuditFileStatistic{
 			FileID:     file.ExecFileID,
 			FileName:   file.ExecFileName,
 			ExecOrder:  file.ExecOrder,
@@ -1349,12 +1349,12 @@ func convertToAuditFileOverviewList(input []*model.AuditResultOverview) (output 
 	return
 }
 
-type GetAuditFileExecOverviewRes struct {
+type GetAuditFileExecStatisticRes struct {
 	controller.BaseRes
-	Data *AuditFileExecOverview `json:"data"`
+	Data *AuditFileExecStatistic `json:"data"`
 }
 
-type AuditFileExecOverview struct {
+type AuditFileExecStatistic struct {
 	FileID          string           `json:"file_id"`
 	FileName        string           `json:"file_name"`
 	ExecResultCount *ExecResultCount `json:"exec_result_count"`
@@ -1370,17 +1370,17 @@ type ExecResultCount struct {
 	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
-// GetAuditFileExecOverview
+// GetAuditFileExecStatistic
 // @Summary 获取审核任务文件执行概览
-// @Description get audit task file execute overview
+// @Description get audit task file execute statistic
 // @Tags task
-// @Id getAuditFileExecOverview
+// @Id getAuditFileExecStatistic
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param file_id path string true "file id"
-// @Success 200 {object} GetAuditFileExecOverviewRes
+// @Success 200 {object} GetAuditFileExecStatisticRes
 // @router /v2/tasks/audits/{task_id}/files/{file_id}/ [get]
-func GetAuditFileExecOverview(c echo.Context) error {
+func GetAuditFileExecStatistic(c echo.Context) error {
 	taskId := c.Param("task_id")
 	fileId := c.Param("file_id")
 
@@ -1406,19 +1406,19 @@ func GetAuditFileExecOverview(c echo.Context) error {
 		"task_id": taskId,
 		"file_id": fileId,
 	}
-	result, err := s.GetAuditFileExecOverviewByFileId(data)
+	result, err := s.GetAuditFileExecStatisticByFileId(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetAuditFileExecOverviewRes{
+	return c.JSON(http.StatusOK, &GetAuditFileExecStatisticRes{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertToAuditFileExecOverview(result),
+		Data:    convertToAuditFileExecStatistic(result),
 	})
 }
 
-func convertToAuditFileExecOverview(file *model.AuditFileExecOverview) *AuditFileExecOverview {
-	return &AuditFileExecOverview{
+func convertToAuditFileExecStatistic(file *model.AuditFileExecStatistic) *AuditFileExecStatistic {
+	return &AuditFileExecStatistic{
 		FileID:   file.ExecFileID,
 		FileName: file.ExecFileName,
 		ExecResultCount: &ExecResultCount{

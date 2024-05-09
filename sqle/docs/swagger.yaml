@@ -3470,7 +3470,7 @@ definitions:
       err_message:
         type: string
     type: object
-  v2.AuditFileExecOverview:
+  v2.AuditFileExecStatistic:
     properties:
       exec_result_count:
         $ref: '#/definitions/v2.ExecResultCount'
@@ -3480,7 +3480,7 @@ definitions:
       file_name:
         type: string
     type: object
-  v2.AuditFileOverview:
+  v2.AuditFileStatistic:
     properties:
       audit_result_count:
         $ref: '#/definitions/v2.AuditResultCount'
@@ -3799,26 +3799,26 @@ definitions:
           $ref: '#/definitions/v2.AuditPlanSQLReqV2'
         type: array
     type: object
-  v2.GetAuditFileExecOverviewRes:
+  v2.GetAuditFileExecStatisticRes:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v2.AuditFileExecOverview'
+        $ref: '#/definitions/v2.AuditFileExecStatistic'
         type: object
       message:
         example: ok
         type: string
     type: object
-  v2.GetAuditFileOverviewListRes:
+  v2.GetAuditFileStatisticListRes:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/v2.AuditFileOverview'
+          $ref: '#/definitions/v2.AuditFileStatistic'
         type: array
       message:
         example: ok
@@ -9467,8 +9467,8 @@ paths:
       - sql_audit
   /v2/tasks/audits/{task_id}/files:
     get:
-      description: get audit task file overview list
-      operationId: getAuditFileOverviewList
+      description: get audit task file statistic list
+      operationId: getAuditFileStatisticList
       parameters:
       - description: task id
         in: path
@@ -9489,7 +9489,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.GetAuditFileOverviewListRes'
+            $ref: '#/definitions/v2.GetAuditFileStatisticListRes'
       security:
       - ApiKeyAuth: []
       summary: 获取审核任务文件概览列表
@@ -9497,8 +9497,8 @@ paths:
       - task
   /v2/tasks/audits/{task_id}/files/{file_id}/:
     get:
-      description: get audit task file execute overview
-      operationId: getAuditFileExecOverview
+      description: get audit task file execute statistic
+      operationId: getAuditFileExecStatistic
       parameters:
       - description: task id
         in: path
@@ -9514,7 +9514,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.GetAuditFileExecOverviewRes'
+            $ref: '#/definitions/v2.GetAuditFileExecStatisticRes'
       security:
       - ApiKeyAuth: []
       summary: 获取审核任务文件执行概览
