@@ -536,10 +536,7 @@ func GetAuditPlans(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	userId := controller.GetUserID(c)
 
@@ -554,7 +551,7 @@ func GetAuditPlans(c echo.Context) error {
 		"filter_audit_plan_type":          req.FilterAuditPlanType,
 		"filter_audit_plan_instance_name": req.FilterAuditPlanInstanceName,
 		"filter_project_id":               projectUid,
-		"limit":                           req.PageSize,
+		"limit":                           limit,
 		"current_user_id":                 userId,
 		"current_user_is_admin":           up.IsAdmin(),
 		"offset":                          offset,
@@ -699,15 +696,12 @@ func GetAuditPlanReports(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
 		"project_id":      projectUid,
 		"audit_plan_name": apName,
-		"limit":           req.PageSize,
+		"limit":           limit,
 		"offset":          offset,
 	}
 	auditPlanReports, count, err := s.GetAuditPlanReportsByReq(data)
@@ -1403,13 +1397,10 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
-		"limit":  req.PageSize,
+		"limit":  limit,
 		"offset": offset,
 	}
 
@@ -1487,15 +1478,12 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
 		"audit_plan_id":        ap.ID,
-		"limit":                req.PageSize,
+		"limit":                limit,
 		"offset":               offset,
 	}
 	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)

@@ -5,6 +5,7 @@ import (
 	_err "errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1257,25 +1258,23 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	return stepRes
 }
 
-type GetAuditTaskFileOverviewReq struct {
-	PageIndex    uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize     uint32 `json:"page_size" query:"page_size" valid:"required"`
-	FilterFileID string `json:"filter_file_id" query:"filter_file_id"`
+type GetAuditFileListReq struct {
+	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type GetAuditTaskFileOverviewRes struct {
+type GetAuditFileListRes struct {
 	controller.BaseRes
-	Data      []FileOverview `json:"data"`
-	TotalNums uint64         `json:"total_nums"`
+	Data      []AuditFileStatistic `json:"data"`
+	TotalNums uint64               `json:"total_nums"`
 }
 
-type FileOverview struct {
+type AuditFileStatistic struct {
 	FileID           string            `json:"file_id"`
 	FileName         string            `json:"file_name"`
 	ExecOrder        uint              `json:"exec_order"`
 	ExecStatus       string            `json:"exec_status"`
 	AuditResultCount *AuditResultCount `json:"audit_result_count"`
-	ExecResultCount  *ExecResultCount  `json:"exec_result_count"`
 }
 
 type AuditResultCount struct {
@@ -1283,6 +1282,82 @@ type AuditResultCount struct {
 	WarningSQLCount uint `json:"warning_sql_count"`
 	NormalSQLCount  uint `json:"normal_sql_count"`
 	NoticeSQLCount  uint `json:"notice_sql_count"`
+}
+
+// GetAuditFileList
+// @Summary 获取审核任务文件概览列表
+// @Description get audit task file list
+// @Tags task
+// @Id getAuditFileList
+// @Security ApiKeyAuth
+// @Param task_id path string true "task id"
+// @Param page_index query string true "page index"
+// @Param page_size query string true "page size"
+// @Success 200 {object} GetAuditFileListRes
+// @router /v2/tasks/audits/{task_id}/files [get]
+func GetAuditFileList(c echo.Context) error {
+	req := new(GetAuditFileListReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskId := c.Param("task_id")
+
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = v1.CheckCurrentUserCanViewTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	data := map[string]interface{}{
+		"task_id": taskId,
+		"limit":   limit,
+		"offset":  offset,
+	}
+	result, count, err := s.GetAuditStatisticByTaskId(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditFileListRes{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      convertToAuditFileList(result),
+		TotalNums: count,
+	})
+}
+
+func convertToAuditFileList(input []*model.AuditResultStatistic) (output []AuditFileStatistic) {
+	output = make([]AuditFileStatistic, 0, len(input))
+	for _, file := range input {
+		output = append(output, AuditFileStatistic{
+			FileID:     file.ExecFileID,
+			FileName:   file.ExecFileName,
+			ExecOrder:  file.ExecOrder,
+			ExecStatus: file.FileExecStatus(),
+			AuditResultCount: &AuditResultCount{
+				ErrorSQLCount:   file.ErrorCount,
+				WarningSQLCount: file.WarningCount,
+				NormalSQLCount:  file.NormalCount,
+				NoticeSQLCount:  file.NoticeCount,
+			},
+		})
+	}
+	return
+}
+
+type GetAuditFileExecStatisticRes struct {
+	controller.BaseRes
+	Data *AuditFileExecStatistic `json:"data"`
+}
+
+type AuditFileExecStatistic struct {
+	FileID          string           `json:"file_id"`
+	FileName        string           `json:"file_name"`
+	ExecResultCount *ExecResultCount `json:"exec_result_count"`
 }
 
 type ExecResultCount struct {
@@ -1295,19 +1370,65 @@ type ExecResultCount struct {
 	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
-// GetAuditTaskFileOverview
-// @Summary 获取审核任务文件概览
-// @Description get audit task file overview
+// GetAuditFileExecStatistic
+// @Summary 获取审核任务文件执行概览
+// @Description get audit task file execute statistic
 // @Tags task
-// @Id getAuditTaskFileOverview
+// @Id getAuditFileExecStatistic
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
-// @Param page_index query string true "page index"
-// @Param page_size query string true "page size"
-// @Param filter_file_id query string true "filter file id"
-// @Success 200 {object} GetAuditTaskFileOverviewRes
-// @router /v2/tasks/audits/{task_id}/files [get]
-func GetAuditTaskFileOverview(c echo.Context) error {
-	// TODO implement this function
-	return nil
+// @Param file_id path string true "file id"
+// @Success 200 {object} GetAuditFileExecStatisticRes
+// @router /v2/tasks/audits/{task_id}/files/{file_id}/ [get]
+func GetAuditFileExecStatistic(c echo.Context) error {
+	taskId := c.Param("task_id")
+	fileId := c.Param("file_id")
+
+	task, err := v1.GetTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = v1.CheckCurrentUserCanViewTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	fileIdNum, err := strconv.Atoi(fileId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("the file id should be a number %v", err))
+	}
+	if fileIdNum <= 0 {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("file id cannot be less than or equal with zero"))
+	}
+
+	s := model.GetStorage()
+	data := map[string]interface{}{
+		"task_id": taskId,
+		"file_id": fileId,
+	}
+	result, err := s.GetAuditFileExecStatisticByFileId(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditFileExecStatisticRes{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertToAuditFileExecStatistic(result),
+	})
+}
+
+func convertToAuditFileExecStatistic(file *model.AuditFileExecStatistic) *AuditFileExecStatistic {
+	return &AuditFileExecStatistic{
+		FileID:   file.ExecFileID,
+		FileName: file.ExecFileName,
+		ExecResultCount: &ExecResultCount{
+			InitializedCount:        file.InitializedCount,
+			SucceededCount:          file.SucceededCount,
+			FailedCount:             file.FailedCount,
+			DoingCount:              file.DoingCount,
+			ManuallyExecutedCount:   file.ManuallyExecutedCount,
+			TerminateSucceededCount: file.TerminateSucceededCount,
+			TerminateFailedCount:    file.TerminateFailedCount,
+		},
+	}
 }

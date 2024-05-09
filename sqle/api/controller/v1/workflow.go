@@ -553,10 +553,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex > 0 {
-		offset = (req.PageIndex - 1) * req.PageSize
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
 		"filter_subject":                       req.FilterSubject,
@@ -570,7 +567,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		"filter_task_instance_name":            req.FilterTaskInstanceName,
 		"current_user_id":                      user.GetIDStr(),
 		"check_user_can_access":                user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
-		"limit":                                req.PageSize,
+		"limit":                                limit,
 		"offset":                               offset,
 	}
 
@@ -651,10 +648,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	var offset uint32
-	if req.PageIndex > 0 {
-		offset = (req.PageIndex - 1) * req.PageSize
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	data := map[string]interface{}{
 		"filter_workflow_id":                   req.FilterWorkflowID,
 		"filter_subject":                       req.FilterSubject,
@@ -669,7 +663,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_project_id":                    projectUid,
 		"current_user_id":                      user.ID,
 		"check_user_can_access":                !up.IsAdmin(),
-		"limit":                                req.PageSize,
+		"limit":                                limit,
 		"offset":                               offset,
 	}
 	if req.FuzzyKeyword != "" {

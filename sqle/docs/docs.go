@@ -8048,12 +8048,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit task file overview",
+                "description": "get audit task file list",
                 "tags": [
                     "task"
                 ],
-                "summary": "获取审核任务文件概览",
-                "operationId": "getAuditTaskFileOverview",
+                "summary": "获取审核任务文件概览列表",
+                "operationId": "getAuditFileList",
                 "parameters": [
                     {
                         "type": "string",
@@ -8075,12 +8075,44 @@ var doc = `{
                         "name": "page_size",
                         "in": "query",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditFileListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/tasks/audits/{task_id}/files/{file_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit task file execute statistic",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取审核任务文件执行概览",
+                "operationId": "getAuditFileExecStatistic",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "filter file id",
-                        "name": "filter_file_id",
-                        "in": "query",
+                        "description": "file id",
+                        "name": "file_id",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -8088,7 +8120,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetAuditTaskFileOverviewRes"
+                            "$ref": "#/definitions/v2.GetAuditFileExecStatisticRes"
                         }
                     }
                 }
@@ -13324,6 +13356,42 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditFileExecStatistic": {
+            "type": "object",
+            "properties": {
+                "exec_result_count": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.ExecResultCount"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.AuditFileStatistic": {
+            "type": "object",
+            "properties": {
+                "audit_result_count": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditResultCount"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.AuditPlanReportSQLResV2": {
             "type": "object",
             "properties": {
@@ -13753,31 +13821,6 @@ var doc = `{
                 }
             }
         },
-        "v2.FileOverview": {
-            "type": "object",
-            "properties": {
-                "audit_result_count": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AuditResultCount"
-                },
-                "exec_order": {
-                    "type": "integer"
-                },
-                "exec_result_count": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.ExecResultCount"
-                },
-                "exec_status": {
-                    "type": "string"
-                },
-                "file_id": {
-                    "type": "string"
-                },
-                "file_name": {
-                    "type": "string"
-                }
-            }
-        },
         "v2.FullSyncAuditPlanSQLsReqV2": {
             "type": "object",
             "properties": {
@@ -13786,6 +13829,45 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
                     }
+                }
+            }
+        },
+        "v2.GetAuditFileExecStatisticRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditFileExecStatistic"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.GetAuditFileListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditFileStatistic"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -13839,28 +13921,6 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetAuditTaskFileOverviewRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.FileOverview"
                     }
                 },
                 "message": {

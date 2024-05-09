@@ -78,10 +78,7 @@ func GetAuditPlans(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	userId := controller.GetUserID(c)
 
@@ -98,7 +95,7 @@ func GetAuditPlans(c echo.Context) error {
 		"current_user_id":                 userId,
 		"current_user_is_admin":           up.IsAdmin(),
 		"filter_project_id":               projectUid,
-		"limit":                           req.PageSize,
+		"limit":                           limit,
 		"offset":                          offset,
 	}
 	if !up.IsAdmin() {
@@ -204,15 +201,12 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
 		"audit_plan_id":        ap.ID,
-		"limit":                req.PageSize,
+		"limit":                limit,
 		"offset":               offset,
 	}
 	auditPlanReportSQLs, count, err := s.GetAuditPlanReportSQLsByReq(data)
