@@ -97,7 +97,7 @@ func (s *Storage) BatchCreateFileRecords(records []*AuditFile) error {
 }
 
 // 单个文件中触发XX审核等级的SQL的数量统计
-type FileAuditOverview struct {
+type FileAuditStatistic struct {
 	ErrorCount   uint `json:"error_count"`
 	WarningCount uint `json:"warning_count"`
 	NoticeCount  uint `json:"notice_count"`
@@ -105,7 +105,7 @@ type FileAuditOverview struct {
 }
 
 // 单个文件中SQL执行状态的数量统计
-type FileExecOverview struct {
+type FileExecStatistic struct {
 	FailedCount             uint `json:"failed_count"`
 	SucceededCount          uint `json:"succeeded_count"`
 	InitializedCount        uint `json:"initialized_count"`
@@ -115,7 +115,7 @@ type FileExecOverview struct {
 	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
-func (a FileExecOverview) FileExecStatus() string {
+func (a FileExecStatistic) FileExecStatus() string {
 	// 手工执行后，手工执行和SQLE执行互斥，因此先判断
 	if a.ManuallyExecutedCount > 0 {
 		return SQLExecuteStatusManuallyExecuted
@@ -151,30 +151,30 @@ func (a FileExecOverview) FileExecStatus() string {
 	return SQLExecuteStatusInitialized
 }
 
-type AuditResultOverview struct {
+type AuditResultStatistic struct {
 	ExecFileID   string `json:"exec_file_id"`
 	ExecFileName string `json:"exec_file_name"`
 	ExecOrder    uint   `json:"exec_order"`
-	FileAuditOverview
-	FileExecOverview
+	FileAuditStatistic
+	FileExecStatistic
 }
 
-func (s *Storage) GetAuditOverviewByTaskId(data map[string]interface{}) (
-	result []*AuditResultOverview, count uint64, err error) {
+func (s *Storage) GetAuditStatisticByTaskId(data map[string]interface{}) (
+	result []*AuditResultStatistic, count uint64, err error) {
 	// add key value because suspension(:) will be considered as input variables
 	data["key_error"] = "{\"level\": \"error\"}"
 	data["key_warn"] = "{\"level\": \"warn\"}"
 	data["key_normal"] = "{\"level\": \"normal\"}"
 	data["key_notice"] = "{\"level\": \"notice\"}"
-	err = s.getListResult(auditFileOverviewQueryBodyTpl, auditFileOverviewQueryTpl, data, &result)
+	err = s.getListResult(auditFileStatisticQueryBodyTpl, auditFileStatisticQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
 	}
-	count, err = s.getCountResult("", auditFileOverviewCountTpl, data)
+	count, err = s.getCountResult("", auditFileStatisticCountTpl, data)
 	return result, count, err
 }
 
-var auditFileOverviewQueryTpl string = `
+var auditFileStatisticQueryTpl string = `
 	SELECT 
 		a_file.id AS exec_file_id,
 		a_file.exec_order,
@@ -196,7 +196,7 @@ var auditFileOverviewQueryTpl string = `
 	{{- end -}}
 `
 
-var auditFileOverviewQueryBodyTpl = `
+var auditFileStatisticQueryBodyTpl = `
 	{{ define "body" }}
 		FROM 
 			audit_files AS a_file
@@ -215,7 +215,7 @@ var auditFileOverviewQueryBodyTpl = `
 	{{- end }}
 `
 
-var auditFileOverviewCountTpl = `
+var auditFileStatisticCountTpl = `
 	SELECT 
 		COUNT(DISTINCT a_file.id)
 	FROM 
@@ -232,16 +232,16 @@ var auditFileOverviewCountTpl = `
 		e_sql.exec_status IS NOT NULL
 `
 
-type AuditFileExecOverview struct {
+type AuditFileExecStatistic struct {
 	ExecFileID   string `json:"exec_file_id"`
 	ExecFileName string `json:"exec_file_name"`
-	FileExecOverview
+	FileExecStatistic
 }
 
-func (s *Storage) GetAuditFileExecOverviewByFileId(data map[string]interface{}) (
-	overview *AuditFileExecOverview, err error) {
-	result := make([]*AuditFileExecOverview, 0, 1)
-	err = s.getListResult(auditFileExecOverviewQueryBodyTpl, auditFileExecOverviewQueryTpl, data, &result)
+func (s *Storage) GetAuditFileExecStatisticByFileId(data map[string]interface{}) (
+	overview *AuditFileExecStatistic, err error) {
+	result := make([]*AuditFileExecStatistic, 0, 1)
+	err = s.getListResult(auditFileExecStatisticQueryBodyTpl, auditFileExecStatisticQueryTpl, data, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func (s *Storage) GetAuditFileExecOverviewByFileId(data map[string]interface{}) 
 	return result[0], err
 }
 
-var auditFileExecOverviewQueryTpl string = `
+var auditFileExecStatisticQueryTpl string = `
 	SELECT 
 		a_file.id AS exec_file_id,
 		a_file.file_name AS exec_file_name,
@@ -265,7 +265,7 @@ var auditFileExecOverviewQueryTpl string = `
 	{{- template "body" . -}}
 `
 
-var auditFileExecOverviewQueryBodyTpl = `
+var auditFileExecStatisticQueryBodyTpl = `
 	{{ define "body" }}
 		FROM 
 			audit_files AS a_file
