@@ -1258,15 +1258,15 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	return stepRes
 }
 
-type GetAuditTaskFileOverviewListReq struct {
+type GetAuditFileOverviewListReq struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type GetAuditTaskFileOverviewListRes struct {
+type GetAuditFileOverviewListRes struct {
 	controller.BaseRes
 	Data      []AuditFileOverview `json:"data"`
-	TotalNums uint64              `json:"total_nums"`
+	TotalNums uint64                  `json:"total_nums"`
 }
 
 type AuditFileOverview struct {
@@ -1284,19 +1284,19 @@ type AuditResultCount struct {
 	NoticeSQLCount  uint `json:"notice_sql_count"`
 }
 
-// GetAuditTaskFileOverviewList
+// GetAuditFileOverviewList
 // @Summary 获取审核任务文件概览列表
 // @Description get audit task file overview list
 // @Tags task
-// @Id getAuditTaskFileOverviewList
+// @Id getAuditFileOverviewList
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
-// @Success 200 {object} GetAuditTaskFileOverviewListRes
+// @Success 200 {object} GetAuditFileOverviewListRes
 // @router /v2/tasks/audits/{task_id}/files [get]
-func GetAuditTaskFileOverviewList(c echo.Context) error {
-	req := new(GetAuditTaskFileOverviewListReq)
+func GetAuditFileOverviewList(c echo.Context) error {
+	req := new(GetAuditFileOverviewListReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -1323,7 +1323,7 @@ func GetAuditTaskFileOverviewList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetAuditTaskFileOverviewListRes{
+	return c.JSON(http.StatusOK, &GetAuditFileOverviewListRes{
 		BaseRes:   controller.NewBaseReq(nil),
 		Data:      convertToAuditFileOverviewList(result),
 		TotalNums: count,
@@ -1349,12 +1349,12 @@ func convertToAuditFileOverviewList(input []*model.AuditResultOverview) (output 
 	return
 }
 
-type GetAuditTaskFileOverviewRes struct {
+type GetAuditFileExecOverviewRes struct {
 	controller.BaseRes
-	Data *FileExecOverview `json:"data"`
+	Data *AuditFileExecOverview `json:"data"`
 }
 
-type FileExecOverview struct {
+type AuditFileExecOverview struct {
 	FileID          string           `json:"file_id"`
 	FileName        string           `json:"file_name"`
 	ExecResultCount *ExecResultCount `json:"exec_result_count"`
@@ -1370,17 +1370,17 @@ type ExecResultCount struct {
 	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
-// GetAuditTaskFileExecOverview
+// GetAuditFileExecOverview
 // @Summary 获取审核任务文件执行概览
 // @Description get audit task file execute overview
 // @Tags task
-// @Id getAuditTaskFileExecOverview
+// @Id getAuditFileExecOverview
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param file_id path string true "file id"
-// @Success 200 {object} GetAuditTaskFileOverviewRes
+// @Success 200 {object} GetAuditFileExecOverviewRes
 // @router /v2/tasks/audits/{task_id}/files/{file_id}/ [get]
-func GetAuditTaskFileExecOverview(c echo.Context) error {
+func GetAuditFileExecOverview(c echo.Context) error {
 	taskId := c.Param("task_id")
 	fileId := c.Param("file_id")
 
@@ -1411,14 +1411,14 @@ func GetAuditTaskFileExecOverview(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetAuditTaskFileOverviewRes{
+	return c.JSON(http.StatusOK, &GetAuditFileExecOverviewRes{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertToAuditTaskFileExecOverview(result),
+		Data:    convertToAuditFileExecOverview(result),
 	})
 }
 
-func convertToAuditTaskFileExecOverview(file *model.AuditFileExecOverview) *FileExecOverview {
-	return &FileExecOverview{
+func convertToAuditFileExecOverview(file *model.AuditFileExecOverview) *AuditFileExecOverview {
+	return &AuditFileExecOverview{
 		FileID:   file.ExecFileID,
 		FileName: file.ExecFileName,
 		ExecResultCount: &ExecResultCount{
