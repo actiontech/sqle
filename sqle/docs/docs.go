@@ -8080,8 +8080,7 @@ var doc = `{
                         "type": "string",
                         "description": "filter file id",
                         "name": "filter_file_id",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
