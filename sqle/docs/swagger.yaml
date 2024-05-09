@@ -3470,6 +3470,20 @@ definitions:
       err_message:
         type: string
     type: object
+  v2.AuditFileOverview:
+    properties:
+      audit_result_count:
+        $ref: '#/definitions/v2.AuditResultCount'
+        type: object
+      exec_order:
+        type: integer
+      exec_status:
+        type: string
+      file_id:
+        type: string
+      file_name:
+        type: string
+    type: object
   v2.AuditPlanReportSQLResV2:
     properties:
       audit_plan_report_sql:
@@ -3768,18 +3782,11 @@ definitions:
       terminate_succeeded_count:
         type: integer
     type: object
-  v2.FileOverview:
+  v2.FileExecOverview:
     properties:
-      audit_result_count:
-        $ref: '#/definitions/v2.AuditResultCount'
-        type: object
-      exec_order:
-        type: integer
       exec_result_count:
         $ref: '#/definitions/v2.ExecResultCount'
         type: object
-      exec_status:
-        type: string
       file_id:
         type: string
       file_name:
@@ -3834,20 +3841,32 @@ definitions:
       total_nums:
         type: integer
     type: object
-  v2.GetAuditTaskFileOverviewRes:
+  v2.GetAuditTaskFileOverviewListRes:
     properties:
       code:
         example: 0
         type: integer
       data:
         items:
-          $ref: '#/definitions/v2.FileOverview'
+          $ref: '#/definitions/v2.AuditFileOverview'
         type: array
       message:
         example: ok
         type: string
       total_nums:
         type: integer
+    type: object
+  v2.GetAuditTaskFileOverviewRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.FileExecOverview'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v2.GetAuditTaskSQLsResV2:
     properties:
@@ -9448,8 +9467,8 @@ paths:
       - sql_audit
   /v2/tasks/audits/{task_id}/files:
     get:
-      description: get audit task file overview
-      operationId: getAuditTaskFileOverview
+      description: get audit task file overview list
+      operationId: getAuditTaskFileOverviewList
       parameters:
       - description: task id
         in: path
@@ -9466,9 +9485,30 @@ paths:
         name: page_size
         required: true
         type: string
-      - description: filter file id
-        in: query
-        name: filter_file_id
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditTaskFileOverviewListRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务文件概览列表
+      tags:
+      - task
+  /v2/tasks/audits/{task_id}/files/{file_id}/:
+    get:
+      description: get audit task file execute overview
+      operationId: getAuditTaskFileExecOverview
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: file id
+        in: path
+        name: file_id
+        required: true
         type: string
       responses:
         "200":
@@ -9477,7 +9517,7 @@ paths:
             $ref: '#/definitions/v2.GetAuditTaskFileOverviewRes'
       security:
       - ApiKeyAuth: []
-      summary: 获取审核任务文件概览
+      summary: 获取审核任务文件执行概览
       tags:
       - task
   /v2/tasks/audits/{task_id}/sqls:
