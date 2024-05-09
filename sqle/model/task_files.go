@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
@@ -16,10 +17,10 @@ type AuditFile struct {
 	FileHost   string `json:"file_host" gorm:"type:varchar(255)"`
 	FileName   string `json:"file_name" gorm:"type:varchar(255)"`
 	/*
-	默认顺序
-		1. 单个文件的执行顺序都是1，在页面上默认显示执行顺序1
-		2. 对zip文件来说，zip文件本身的执行顺序默认为0，因为不执行也不展示
-		3. 对zip文件中的子文件，只保存sql文件，sql文件的执行顺序从1开始，按序递增，默认顺序为读取到的sql的先后顺序
+		默认顺序
+			1. 单个文件的执行顺序都是1，在页面上默认显示执行顺序1
+			2. 对zip文件来说，zip文件本身的执行顺序默认为0，因为不执行也不展示
+			3. 对zip文件中的子文件，只保存sql文件，sql文件的执行顺序从1开始，按序递增，默认顺序为读取到的sql的先后顺序
 	*/
 	ExecOrder uint `json:"exec_order"`
 	ParentID  uint `json:"parent_id"`
@@ -95,16 +96,16 @@ func (s *Storage) BatchCreateFileRecords(records []*AuditFile) error {
 	})
 }
 
-type AuditResultOverview struct {
-	FileID    string `json:"file_id"`
-	FileName  string `json:"file_name"`
-	ExecOrder uint   `json:"exec_order"`
-	// 单个文件中触发XX审核等级的SQL的数量统计
+// 单个文件中触发XX审核等级的SQL的数量统计
+type FileAuditOverview struct {
 	ErrorCount   uint `json:"error_count"`
 	WarningCount uint `json:"warning_count"`
 	NoticeCount  uint `json:"notice_count"`
 	NormalCount  uint `json:"normal_count"`
-	// 单个文件中SQL执行状态的数量统计
+}
+
+// 单个文件中SQL执行状态的数量统计
+type FileExecOverview struct {
 	FailedCount             uint `json:"failed_count"`
 	SucceededCount          uint `json:"succeeded_count"`
 	InitializedCount        uint `json:"initialized_count"`
@@ -114,7 +115,7 @@ type AuditResultOverview struct {
 	TerminateFailedCount    uint `json:"terminate_failed_count"`
 }
 
-func (a AuditResultOverview) FileExecStatus() string {
+func (a FileExecOverview) FileExecStatus() string {
 	// 手工执行后，手工执行和SQLE执行互斥，因此先判断
 	if a.ManuallyExecutedCount > 0 {
 		return SQLExecuteStatusManuallyExecuted
@@ -150,6 +151,14 @@ func (a AuditResultOverview) FileExecStatus() string {
 	return SQLExecuteStatusInitialized
 }
 
+type AuditResultOverview struct {
+	ExecFileID   string `json:"exec_file_id"`
+	ExecFileName string `json:"exec_file_name"`
+	ExecOrder    uint   `json:"exec_order"`
+	FileAuditOverview
+	FileExecOverview
+}
+
 func (s *Storage) GetAuditOverviewByTaskId(data map[string]interface{}) (
 	result []*AuditResultOverview, count uint64, err error) {
 	// add key value because suspension(:) will be considered as input variables
@@ -167,9 +176,9 @@ func (s *Storage) GetAuditOverviewByTaskId(data map[string]interface{}) (
 
 var auditFileOverviewQueryTpl string = `
 	SELECT 
-		a_file.id AS file_id,
+		a_file.id AS exec_file_id,
 		a_file.exec_order,
-		a_file.file_name,
+		a_file.file_name AS exec_file_name,
 		SUM(CASE WHEN e_sql.exec_status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
 		SUM(CASE WHEN e_sql.exec_status = 'succeeded' THEN 1 ELSE 0 END) AS succeeded_count,
 		SUM(CASE WHEN e_sql.exec_status = 'initialized' THEN 1 ELSE 0 END) AS initialized_count,
@@ -201,11 +210,6 @@ var auditFileOverviewQueryBodyTpl = `
 			a_file.task_id = :task_id
 		AND
 			e_sql.exec_status IS NOT NULL
-
-		{{- if .filter_file_id }}
-			AND a_file.id = :filter_file_id
-		{{- end }}
-
 		GROUP BY 
 			a_file.id,a_file.file_name,a_file.exec_order
 	{{- end }}
@@ -224,11 +228,61 @@ var auditFileOverviewCountTpl = `
 		a_file.file_name = e_sql.source_file
 	WHERE 
 		a_file.task_id = :task_id
-
-	{{- if .filter_file_id }}
-		AND a_file.id = :filter_file_id
-	{{- end }}
-
 	AND
 		e_sql.exec_status IS NOT NULL
+`
+
+type AuditFileExecOverview struct {
+	ExecFileID   string `json:"exec_file_id"`
+	ExecFileName string `json:"exec_file_name"`
+	FileExecOverview
+}
+
+func (s *Storage) GetAuditFileExecOverviewByFileId(data map[string]interface{}) (
+	overview *AuditFileExecOverview, err error) {
+	result := make([]*AuditFileExecOverview, 0, 1)
+	err = s.getListResult(auditFileExecOverviewQueryBodyTpl, auditFileExecOverviewQueryTpl, data, &result)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, fmt.Errorf("can not find any file execute overview match with this task")
+	}
+	return result[0], err
+}
+
+var auditFileExecOverviewQueryTpl string = `
+	SELECT 
+		a_file.id AS exec_file_id,
+		a_file.file_name AS exec_file_name,
+		SUM(CASE WHEN e_sql.exec_status = 'failed' THEN 1 ELSE 0 END) AS failed_count,
+		SUM(CASE WHEN e_sql.exec_status = 'succeeded' THEN 1 ELSE 0 END) AS succeeded_count,
+		SUM(CASE WHEN e_sql.exec_status = 'initialized' THEN 1 ELSE 0 END) AS initialized_count,
+		SUM(CASE WHEN e_sql.exec_status = 'doing' THEN 1 ELSE 0 END) AS doing_count,
+		SUM(CASE WHEN e_sql.exec_status = 'manually_executed' THEN 1 ELSE 0 END) AS manually_executed_count,
+		SUM(CASE WHEN e_sql.exec_status = 'terminate_succeeded' THEN 1 ELSE 0 END) AS terminate_succeeded_count,
+		SUM(CASE WHEN e_sql.exec_status = 'terminate_failed' THEN 1 ELSE 0 END) AS terminate_failed_count
+	{{- template "body" . -}}
+`
+
+var auditFileExecOverviewQueryBodyTpl = `
+	{{ define "body" }}
+		FROM 
+			audit_files AS a_file
+		LEFT JOIN
+			execute_sql_detail AS e_sql
+		ON 
+			a_file.task_id = e_sql.task_id
+		AND 
+			a_file.file_name = e_sql.source_file
+		WHERE 
+			a_file.task_id = :task_id
+		AND
+			e_sql.exec_status IS NOT NULL
+		AND 
+		a_file.id = :file_id
+		GROUP BY 
+			a_file.id,a_file.file_name
+		LIMIT 1
+	{{- end }}
 `
