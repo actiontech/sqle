@@ -452,17 +452,14 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	data := map[string]interface{}{
 		"task_id":             taskId,
 		"filter_exec_status":  req.FilterExecStatus,
 		"filter_audit_status": req.FilterAuditStatus,
 		"filter_audit_level":  req.FilterAuditLevel,
 		"no_duplicate":        req.NoDuplicate,
-		"limit":               req.PageSize,
+		"limit":               limit,
 		"offset":              offset,
 	}
 
