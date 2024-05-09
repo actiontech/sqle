@@ -1323,13 +1323,12 @@ func GetAuditTaskFileOverview(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
 	data := map[string]interface{}{
 		"task_id":        taskId,
-		"limit":          req.PageSize,
+		"limit":          limit,
 		"offset":         offset,
 		"filter_file_id": req.FilterFileID,
 	}
