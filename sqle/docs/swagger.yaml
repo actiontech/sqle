@@ -9469,7 +9469,6 @@ paths:
       - description: filter file id
         in: query
         name: filter_file_id
-        required: true
         type: string
       responses:
         "200":
