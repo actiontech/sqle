@@ -1258,12 +1258,12 @@ func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	return stepRes
 }
 
-type GetAuditFileStatisticListReq struct {
+type GetAuditFileListReq struct {
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type GetAuditFileStatisticListRes struct {
+type GetAuditFileListRes struct {
 	controller.BaseRes
 	Data      []AuditFileStatistic `json:"data"`
 	TotalNums uint64               `json:"total_nums"`
@@ -1284,19 +1284,19 @@ type AuditResultCount struct {
 	NoticeSQLCount  uint `json:"notice_sql_count"`
 }
 
-// GetAuditFileStatisticList
+// GetAuditFileList
 // @Summary 获取审核任务文件概览列表
-// @Description get audit task file statistic list
+// @Description get audit task file list
 // @Tags task
-// @Id getAuditFileStatisticList
+// @Id getAuditFileList
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
-// @Success 200 {object} GetAuditFileStatisticListRes
+// @Success 200 {object} GetAuditFileListRes
 // @router /v2/tasks/audits/{task_id}/files [get]
-func GetAuditFileStatisticList(c echo.Context) error {
-	req := new(GetAuditFileStatisticListReq)
+func GetAuditFileList(c echo.Context) error {
+	req := new(GetAuditFileListReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
@@ -1323,14 +1323,14 @@ func GetAuditFileStatisticList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &GetAuditFileStatisticListRes{
+	return c.JSON(http.StatusOK, &GetAuditFileListRes{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      convertToAuditFileStatisticList(result),
+		Data:      convertToAuditFileList(result),
 		TotalNums: count,
 	})
 }
 
-func convertToAuditFileStatisticList(input []*model.AuditResultStatistic) (output []AuditFileStatistic) {
+func convertToAuditFileList(input []*model.AuditResultStatistic) (output []AuditFileStatistic) {
 	output = make([]AuditFileStatistic, 0, len(input))
 	for _, file := range input {
 		output = append(output, AuditFileStatistic{

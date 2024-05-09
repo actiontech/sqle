@@ -3811,7 +3811,7 @@ definitions:
         example: ok
         type: string
     type: object
-  v2.GetAuditFileStatisticListRes:
+  v2.GetAuditFileListRes:
     properties:
       code:
         example: 0
@@ -9467,8 +9467,8 @@ paths:
       - sql_audit
   /v2/tasks/audits/{task_id}/files:
     get:
-      description: get audit task file statistic list
-      operationId: getAuditFileStatisticList
+      description: get audit task file list
+      operationId: getAuditFileList
       parameters:
       - description: task id
         in: path
@@ -9489,7 +9489,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.GetAuditFileStatisticListRes'
+            $ref: '#/definitions/v2.GetAuditFileListRes'
       security:
       - ApiKeyAuth: []
       summary: 获取审核任务文件概览列表
