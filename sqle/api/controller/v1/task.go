@@ -193,6 +193,11 @@ func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 	auditFiles := []*model.AuditFile{
 		model.NewFileRecord(0, 1, fileHeader.Filename, uniqueName),
 	}
+	/*
+		单个文件的执行顺序都是1，在页面上默认显示执行顺序1
+		对zip文件来说，zip文件本身的执行顺序默认为0，因为不执行也不展示
+		对zip文件中的子文件，只保存sql文件，sql文件的执行顺序从1开始，按序递增，默认顺序为读取到的sql的先后顺序
+	*/
 	if strings.HasSuffix(fileHeader.Filename, ".zip") {
 		auditFiles[0].ExecOrder = 0
 		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader)
