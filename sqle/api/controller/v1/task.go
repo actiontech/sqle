@@ -191,9 +191,10 @@ func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 		return nil, err
 	}
 	auditFiles := []*model.AuditFile{
-		model.NewFileRecord(0, 0, fileHeader.Filename, uniqueName),
+		model.NewFileRecord(0, 1, fileHeader.Filename, uniqueName),
 	}
 	if strings.HasSuffix(fileHeader.Filename, ".zip") {
+		auditFiles[0].ExecOrder = 0
 		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader)
 		if err != nil {
 			return nil, err
@@ -209,14 +210,16 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 		return nil, err
 	}
 	var auditFiles []*model.AuditFile
-	for i, srcFile := range r.File {
+	var execOrder uint = 1
+	for _, srcFile := range r.File {
 		// skip empty file and folder
 		if srcFile == nil || srcFile.FileInfo().IsDir() {
 			continue
 		}
 		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
 		if strings.HasSuffix(fullName, ".sql") {
-			auditFiles = append(auditFiles, model.NewFileRecord(0, uint(i+1), fullName, model.GenUniqueFileName()))
+			auditFiles = append(auditFiles, model.NewFileRecord(0, execOrder, fullName, model.GenUniqueFileName()))
+			execOrder++
 		}
 	}
 	return auditFiles, nil
@@ -449,17 +452,14 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	data := map[string]interface{}{
 		"task_id":             taskId,
 		"filter_exec_status":  req.FilterExecStatus,
 		"filter_audit_status": req.FilterAuditStatus,
 		"filter_audit_level":  req.FilterAuditLevel,
 		"no_duplicate":        req.NoDuplicate,
-		"limit":               req.PageSize,
+		"limit":               limit,
 		"offset":              offset,
 	}
 
