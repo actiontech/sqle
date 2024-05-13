@@ -200,12 +200,14 @@ func convertRuleNameAndMessage(ruleCode string, ruleMessage string, dbType strin
 	if exist && rule != nil {
 		// 用重写规则的名称和描述
 		name, message = rule.Name, rule.Desc
-		rules := driver.GetPluginManager().GetAllRules()[dbType]
-		for _, v := range rules {
-			if v.Name == name {
-				// 获取复用规则的Desc（保持与规则模板中的规则名一致）
-				message = v.Desc
-				break
+		dm := driver.GetPluginManager().GetDriverMetasOfPlugin(dbType)
+		if dm != nil {
+			for _, v := range dm.Rules {
+				if v.Name == name {
+					// 获取复用规则的Desc（保持与规则模板中的规则名一致）
+					message = v.Desc
+					break
+				}
 			}
 		}
 	}
