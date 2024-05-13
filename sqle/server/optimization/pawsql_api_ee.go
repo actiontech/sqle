@@ -48,18 +48,25 @@ type CreateWorkspace struct {
 }
 
 // 在线模式（online）
-func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, instance *model.Instance, database string) (string, error) {
+func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, instance *model.Instance, schema string) (string, error) {
 	req := CreateWorkspaceReq{
 		UserKey:    getUserKey(),
 		Mode:       "online",
 		DbType:     strings.ToLower(instance.DbType),
 		Host:       instance.Host,
 		Port:       instance.Port,
-		Database:   database,
+		Database:   schema,
 		Schemas:    "",
 		DbUser:     instance.User,
 		DbPassword: instance.Password,
 	}
+	if instance.DbType == "Oracle" {
+		req.Schemas, req.Database = schema, ""
+		if p := instance.AdditionalParams.GetParam("service_name"); p != nil {
+			req.Database = p.Value
+		}
+	}
+
 	reply := new(CreateWorkspaceReply)
 	err := dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/createWorkspace", nil, req, reply)
 	if err != nil {

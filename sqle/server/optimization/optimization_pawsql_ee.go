@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/model"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
@@ -178,6 +179,7 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 		for _, opRule := range allRules {
 			if templateRule.Name == opRule.Rule.Name {
 				ruleCode = opRule.RuleCode
+				break
 			}
 		}
 		// 构建SQL优化任务使用的规则，当前所有重写规则的阈值都为模板规则参数的first_key
@@ -192,16 +194,19 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 }
 
 func convertRuleNameAndMessage(ruleCode string, ruleMessage string, dbType string) (string, string) {
-	name := ruleCode
-	message := ruleMessage
-	// 获取规则的Name
-	ruleName, exist := opt.GetPluginRuleNameByOptimizationRule(ruleCode, dbType)
-	if exist {
-		name = ruleName
-		// 获取复用规则的Desc（保持与规则模板中的规则名一致）
-		handler, ok := rulepkg.RuleHandlerMap[ruleName]
-		if ok {
-			message = handler.Rule.Desc
+	name, message := ruleCode, ruleMessage
+	// 获取对应的重写规则
+	rule, exist := opt.GetOptimizationRuleByRuleCode(ruleCode, dbType)
+	if exist && rule != nil {
+		// 用重写规则的名称和描述
+		name, message = rule.Name, rule.Desc
+		rules := driver.GetPluginManager().GetAllRules()[dbType]
+		for _, v := range rules {
+			if v.Name == name {
+				// 获取复用规则的Desc（保持与规则模板中的规则名一致）
+				message = v.Desc
+				break
+			}
 		}
 	}
 	return name, message
