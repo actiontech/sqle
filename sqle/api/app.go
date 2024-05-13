@@ -384,13 +384,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		log.Logger().Fatalf("failed to register custom api, %v", err)
 		return
 	}
-	// UI
-	e.File("/", "ui/index.html")
-	e.Static("/static", "ui/static")
-	e.File("/favicon.png", "ui/favicon.png")
-	e.GET("/*", func(c echo.Context) error {
-		return c.File("ui/index.html")
-	})
 
 	address := fmt.Sprintf(":%v", config.APIServiceOpts.Port)
 	log.Logger().Infof("starting http server on %s", address)
