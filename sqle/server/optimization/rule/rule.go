@@ -32,9 +32,8 @@ const (
 
 // SQL优化规则的ruleCode
 const (
-	RuleNPERewrite                        = "RuleNPERewrite"
-	RuleAllQualifierSubQueryRewrite       = "RuleAllQualifierSubQueryRewrite"
 	RuleAddOrderByNullRewrite             = "RuleAddOrderByNullRewrite"
+	RuleAllQualifierSubQueryRewrite       = "RuleAllQualifierSubQueryRewrite"
 	RuleCntGtThanZeroRewrite              = "RuleCntGtThanZeroRewrite"
 	RuleDelete2TruncateRewrite            = "RuleDelete2TruncateRewrite"
 	RuleDiffDataTypeInPredicateWrite      = "RuleDiffDataTypeInPredicateWrite"
@@ -45,6 +44,7 @@ const (
 	RuleInSubqueryRewrite                 = "RuleInSubqueryRewrite"
 	RuleNotInNullableSubQueryRewrite      = "RuleNotInNullableSubQueryRewrite"
 	RuleNoWildcardInPredicateLikeWarning  = "RuleNoWildcardInPredicateLikeWarning"
+	RuleNPERewrite                        = "RuleNPERewrite"
 	RuleUseNonstandardNotEqualOperator    = "RuleUseNonstandardNotEqualOperator"
 	RuleLargeOffset                       = "RuleLargeOffset"
 	RuleDistinctEliminationRewrite        = "RuleDistinctEliminationRewrite"
@@ -84,7 +84,7 @@ func init() {
 	}
 	for _, optimizationRule := range OptimizationRuleMap {
 		for i, rule := range optimizationRule {
-			if knowledge, ok := defaultRulesKnowledge[rule.Rule.Name]; ok {
+			if knowledge, ok := defaultRulesKnowledge[rule.RuleCode]; ok {
 				rule.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 				optimizationRule[i] = rule
 			}
