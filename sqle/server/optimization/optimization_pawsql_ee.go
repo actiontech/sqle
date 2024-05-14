@@ -135,6 +135,8 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		indexRecommendeds := trimKeyWord(detail.IndexRecommended)
 		contributingIndices := trimKeyWord([]string{statementInfo.ContributingIndices})
 
+		// 详情和列表的性能提升值保持一致
+		detail.ValidationDetails.PerformImprovePer = statementInfo.Performance
 		optimizationInfo.OptimizationSQLs = append(optimizationInfo.OptimizationSQLs, &model.OptimizationSQL{
 			OriginalSQL:              detail.StmtText,
 			OptimizedSQL:             optimizedSQL,
