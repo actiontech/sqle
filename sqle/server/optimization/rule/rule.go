@@ -5,10 +5,12 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 )
 
-var OptimizationRuleMap map[string][]OptimizationRuleHandler // ruleCode与plugin的rule name映射关系
+var OptimizationRuleMap map[string][]OptimizationRuleHandler // ruleCode与plugin重写规则的映射关系
 
 // DML规则
 const (
+	DMLRuleNPERewrite                        = "dml_rule_npe_rewrite"
+	DMLRuleAllSubqueryRewrite                = "dml_rule_all_subquery_rewrite"
 	DMLRuleDistinctEliminationRewrite        = "dml_rule_distinct_elimination_rewrite"
 	DMLRuleExists2JoinRewrite                = "dml_rule_exists_2_join_rewrite"
 	DMLRuleFilterPredicatePushDownRewrite    = "dml_rule_filter_predicate_push_down_rewrite"
@@ -28,9 +30,10 @@ const (
 	DMLRuleSATTCRewrite                      = "dml_rule_sattc_rewrite"
 )
 
-// mysql SQL优化规则的ruleCode
+// SQL优化规则的ruleCode
 const (
 	RuleAddOrderByNullRewrite             = "RuleAddOrderByNullRewrite"
+	RuleAllQualifierSubQueryRewrite       = "RuleAllQualifierSubQueryRewrite"
 	RuleCntGtThanZeroRewrite              = "RuleCntGtThanZeroRewrite"
 	RuleDelete2TruncateRewrite            = "RuleDelete2TruncateRewrite"
 	RuleDiffDataTypeInPredicateWrite      = "RuleDiffDataTypeInPredicateWrite"
@@ -41,6 +44,7 @@ const (
 	RuleInSubqueryRewrite                 = "RuleInSubqueryRewrite"
 	RuleNotInNullableSubQueryRewrite      = "RuleNotInNullableSubQueryRewrite"
 	RuleNoWildcardInPredicateLikeWarning  = "RuleNoWildcardInPredicateLikeWarning"
+	RuleNPERewrite                        = "RuleNPERewrite"
 	RuleUseNonstandardNotEqualOperator    = "RuleUseNonstandardNotEqualOperator"
 	RuleLargeOffset                       = "RuleLargeOffset"
 	RuleDistinctEliminationRewrite        = "RuleDistinctEliminationRewrite"
@@ -69,7 +73,8 @@ type OptimizationRuleHandler struct {
 
 func init() {
 	OptimizationRuleMap = make(map[string][]OptimizationRuleHandler)
-	OptimizationRuleMap["MySQL"] = BaseOptimizationRuleHandler
+	OptimizationRuleMap["MySQL"] = MySQLOptimizationRuleHandler
+	OptimizationRuleMap["Oracle"] = OracleOptimizationRuleHandler
 
 	// SQL优化规则知识库
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
@@ -79,7 +84,7 @@ func init() {
 	}
 	for _, optimizationRule := range OptimizationRuleMap {
 		for i, rule := range optimizationRule {
-			if knowledge, ok := defaultRulesKnowledge[rule.Rule.Name]; ok {
+			if knowledge, ok := defaultRulesKnowledge[rule.RuleCode]; ok {
 				rule.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 				optimizationRule[i] = rule
 			}
@@ -87,17 +92,17 @@ func init() {
 	}
 }
 
-// 通过SQL优化规则的ruleCode和dbType获取插件规则的name
-func GetPluginRuleNameByOptimizationRule(ruleCode string, dbType string) (string, bool) {
+// GetOptimizationRuleByRuleCode 通过pawsql的ruleCode和dbType获取重写规则
+func GetOptimizationRuleByRuleCode(ruleCode string, dbType string) (*driverV2.Rule, bool) {
 	rules := OptimizationRuleMap[dbType]
 	if len(rules) > 0 {
 		for _, rule := range rules {
 			if rule.RuleCode == ruleCode {
-				return rule.Rule.Name, true
+				return &rule.Rule, true
 			}
 		}
 	}
-	return "", false
+	return nil, false
 }
 
 // CanOptimizeDbType SQL优化是否支持该数据源类型

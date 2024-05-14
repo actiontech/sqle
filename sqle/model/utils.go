@@ -324,9 +324,9 @@ func DBRuleInPluginRule(dbRule *Rule) bool {
 // 整合sql优化规则与插件规则，并赋予审核、重写能力
 func MergeOptimizationRules(pluginRulesMap map[string][]*driverV2.Rule, optimizationRulesMap map[string][]opt.OptimizationRuleHandler) map[string][]*Rule {
 	resultAllRulesMap := map[string][]*Rule{}
-	resultAllRules := []*Rule{}
 	rulesMap := map[string]*Rule{}
 	for dbType, pluginRules := range pluginRulesMap {
+		resultAllRules := []*Rule{}
 		optimizationRules, exist := optimizationRulesMap[dbType]
 		if exist {
 			// 插件规则转换并赋值能力
