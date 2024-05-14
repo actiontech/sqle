@@ -1117,3 +1117,31 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 
 	return
 }
+
+type SqlFileOrderMethod struct {
+	OrderMethod string `json:"order_method"`
+	Desc        string `json:"desc"`
+}
+
+type SqlFileOrderMethodRes struct {
+	Methods []SqlFileOrderMethod `json:"methods"`
+}
+
+type GetSqlFileOrderMethodResV1 struct {
+	controller.BaseRes
+	Data SqlFileOrderMethodRes `json:"data"`
+}
+
+// GetSqlFileOrderMethodV1
+// @Summary 获取文件上线排序方式
+// @Description get file order method
+// @Accept json
+// @Produce json
+// @Tags task
+// @Id getSqlFileOrderMethodV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlFileOrderMethodResV1
+// @router /v1/task/sql_file/order_method [get]
+func GetSqlFileOrderMethodV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
+}
