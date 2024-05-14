@@ -25,13 +25,13 @@ func getDefaultRulesKnowledge() (map[string]string, error) {
 		if entry.IsDir() {
 			continue
 		}
-		ruleName := strings.TrimSuffix(entry.Name(), ".md")
+		filename := strings.TrimSuffix(entry.Name(), ".md")
 		filePath := path.Join(defaultKnowledgeRootDir, entry.Name())
 		content, err := f.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("read file [%v] failed: %v", filePath, err)
 		}
-		res[ruleName] = string(content)
+		res[filename] = string(content)
 	}
 	return res, nil
 }
