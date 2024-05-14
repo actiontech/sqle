@@ -857,8 +857,9 @@ type AuditTaskGroupReqV1 struct {
 }
 
 type AuditTaskGroupRes struct {
-	TaskGroupId uint              `json:"task_group_id"`
-	Tasks       []*AuditTaskResV1 `json:"tasks"`
+	TaskGroupId        uint              `json:"task_group_id"`
+	Tasks              []*AuditTaskResV1 `json:"tasks"`
+	SqlFileOrderMethod string            `json:"sql_file_order_method"`
 }
 
 type AuditTaskGroupResV1 struct {
