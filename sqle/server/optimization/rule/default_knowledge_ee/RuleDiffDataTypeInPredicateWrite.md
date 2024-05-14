@@ -6,7 +6,7 @@
 
 select count(*) from ORDERS where O_ORDERDATE = current_date();
 
-如果`O_ORDERDATE`列的数据类型是`CHAR(16)`，那么`O_ORDERDATE`上的索引将不会被使用，导致全表扫描。解决方案通常有两个，一是`ALTER TABLE`改变`O_ORDERDATE`的数据类型，二是把`current_date`强制换换为`CHAR`类型（PawSQL提供该重写建议）。
+如果`O_ORDERDATE`列的数据类型是`CHAR(16)`，那么`O_ORDERDATE`上的索引将不会被使用，导致全表扫描。解决方案通常有两个，一是`ALTER TABLE`改变`O_ORDERDATE`的数据类型，二是把`current_date`强制换换为`CHAR`类型。
 
 select count(*) ORDERS where ORDERS.O_ORDERDATE = cast(current_date() as CHAR(16));
 
