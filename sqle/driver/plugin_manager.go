@@ -54,6 +54,13 @@ func (pm *pluginManager) GetAllRules() map[string][]*driverV2.Rule {
 	return rules
 }
 
+func (pm *pluginManager) GetDriverMetasOfPlugin(pluginName string) *driverV2.DriverMetas {
+	if dm, exist := pm.metas[pluginName]; exist {
+		return &dm
+	}
+	return nil
+}
+
 func (pm *pluginManager) AllDrivers() []string {
 	return pm.pluginNames
 }
