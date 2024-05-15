@@ -852,14 +852,14 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	TaskGroupId     uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
 }
 
 type AuditTaskGroupRes struct {
-	TaskGroupId        uint              `json:"task_group_id"`
-	Tasks              []*AuditTaskResV1 `json:"tasks"`
-	SqlFileOrderMethod string            `json:"sql_file_order_method"`
+	TaskGroupId uint              `json:"task_group_id"`
+	Tasks       []*AuditTaskResV1 `json:"tasks"`
 }
 
 type AuditTaskGroupResV1 struct {
@@ -881,6 +881,7 @@ type AuditTaskGroupResV1 struct {
 // @Security ApiKeyAuth
 // @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
+// @Param file_order_method formData string false "file order method"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
