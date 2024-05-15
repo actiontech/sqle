@@ -116,6 +116,10 @@ type FileExecStatistic struct {
 }
 
 func (a FileExecStatistic) FileExecStatus() string {
+	// 一旦存在执行失败的SQL，则执行失败
+	if a.FailedCount > 0 {
+		return SQLExecuteStatusFailed
+	}
 	// 手工执行后，手工执行和SQLE执行互斥，因此先判断
 	if a.ManuallyExecutedCount > 0 {
 		return SQLExecuteStatusManuallyExecuted
@@ -140,10 +144,7 @@ func (a FileExecStatistic) FileExecStatus() string {
 		// 若不包含初始化的SQL，但存在正在执行的SQL，则文件状态为执行中
 		return SQLExecuteStatusDoing
 	}
-	// 执行完毕后
-	if a.FailedCount > 0 {
-		return SQLExecuteStatusFailed
-	}
+	// 执行完毕后 程序执行到这里，其他所有状态数量均等于0，若存在成功的SQL，则执行成功
 	if a.SucceededCount > 0 {
 		return SQLExecuteStatusSucceeded
 	}
