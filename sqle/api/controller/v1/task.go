@@ -852,8 +852,9 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	TaskGroupId     uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
 }
 
 type AuditTaskGroupRes struct {
@@ -880,6 +881,7 @@ type AuditTaskGroupResV1 struct {
 // @Security ApiKeyAuth
 // @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
+// @Param file_order_method formData string false "file order method"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
@@ -1116,4 +1118,32 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 	}
 
 	return
+}
+
+type SqlFileOrderMethod struct {
+	OrderMethod string `json:"order_method"`
+	Desc        string `json:"desc"`
+}
+
+type SqlFileOrderMethodRes struct {
+	Methods []SqlFileOrderMethod `json:"methods"`
+}
+
+type GetSqlFileOrderMethodResV1 struct {
+	controller.BaseRes
+	Data SqlFileOrderMethodRes `json:"data"`
+}
+
+// GetSqlFileOrderMethodV1
+// @Summary 获取文件上线排序方式
+// @Description get file order method
+// @Accept json
+// @Produce json
+// @Tags task
+// @Id getSqlFileOrderMethodV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlFileOrderMethodResV1
+// @router /v1/tasks/file_order_methods [get]
+func GetSqlFileOrderMethodV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
 }
