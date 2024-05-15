@@ -6426,6 +6426,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",
@@ -8642,9 +8648,6 @@ var doc = `{
         "v1.AuditTaskGroupRes": {
             "type": "object",
             "properties": {
-                "sql_file_order_method": {
-                    "type": "string"
-                },
                 "task_group_id": {
                     "type": "integer"
                 },

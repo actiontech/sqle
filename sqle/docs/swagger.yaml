@@ -241,8 +241,6 @@ definitions:
     type: object
   v1.AuditTaskGroupRes:
     properties:
-      sql_file_order_method:
-        type: string
       task_group_id:
         type: integer
       tasks:
@@ -8431,6 +8429,10 @@ paths:
       - description: sqls for audit
         in: formData
         name: sql
+        type: string
+      - description: file order method
+        in: formData
+        name: file_order_method
         type: string
       - description: input SQL file
         in: formData
