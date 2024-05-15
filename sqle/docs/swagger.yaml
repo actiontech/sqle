@@ -8411,24 +8411,6 @@ paths:
       summary: 查询系统功能支持情况信息
       tags:
       - system
-  /v1/task/sql_file/order_method:
-    get:
-      consumes:
-      - application/json
-      description: get file order method
-      operationId: getSqlFileOrderMethodV1
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取文件上线排序方式
-      tags:
-      - task
   /v1/task_groups/audit:
     post:
       consumes:
@@ -8697,6 +8679,24 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取task相关的SQL执行计划和表元数据
+      tags:
+      - task
+  /v1/tasks/file_order_methods:
+    get:
+      consumes:
+      - application/json
+      description: get file order method
+      operationId: getSqlFileOrderMethodV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取文件上线排序方式
       tags:
       - task
   /v1/user_tips:

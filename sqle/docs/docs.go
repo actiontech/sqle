@@ -6392,35 +6392,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/task/sql_file/order_method": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get file order method",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "task"
-                ],
-                "summary": "获取文件上线排序方式",
-                "operationId": "getSqlFileOrderMethodV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/task_groups/audit": {
             "post": {
                 "security": [
@@ -6822,6 +6793,35 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/file_order_methods": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get file order method",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取文件上线排序方式",
+                "operationId": "getSqlFileOrderMethodV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
                         }
                     }
                 }

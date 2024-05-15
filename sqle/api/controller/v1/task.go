@@ -1142,7 +1142,7 @@ type GetSqlFileOrderMethodResV1 struct {
 // @Id getSqlFileOrderMethodV1
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
-// @router /v1/task/sql_file/order_method [get]
+// @router /v1/tasks/file_order_methods [get]
 func GetSqlFileOrderMethodV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
 }
