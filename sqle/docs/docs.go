@@ -6426,6 +6426,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",
@@ -6793,6 +6799,35 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/file_order_methods": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get file order method",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取文件上线排序方式",
+                "operationId": "getSqlFileOrderMethodV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
                         }
                     }
                 }
@@ -10565,6 +10600,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlFileOrderMethodResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlFileOrderMethodRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlManageListResp": {
             "type": "object",
             "properties": {
@@ -12225,6 +12277,28 @@ var doc = `{
                 },
                 "percent": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.SqlFileOrderMethod": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "order_method": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SqlFileOrderMethodRes": {
+            "type": "object",
+            "properties": {
+                "methods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlFileOrderMethod"
+                    }
                 }
             }
         },

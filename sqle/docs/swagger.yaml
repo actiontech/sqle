@@ -1586,6 +1586,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlFileOrderMethodResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlFileOrderMethodRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlManageListResp:
     properties:
       code:
@@ -2710,6 +2722,20 @@ definitions:
         type: string
       percent:
         type: number
+    type: object
+  v1.SqlFileOrderMethod:
+    properties:
+      desc:
+        type: string
+      order_method:
+        type: string
+    type: object
+  v1.SqlFileOrderMethodRes:
+    properties:
+      methods:
+        items:
+          $ref: '#/definitions/v1.SqlFileOrderMethod'
+        type: array
     type: object
   v1.SqlManage:
     properties:
@@ -8404,6 +8430,10 @@ paths:
         in: formData
         name: sql
         type: string
+      - description: file order method
+        in: formData
+        name: file_order_method
+        type: string
       - description: input SQL file
         in: formData
         name: input_sql_file
@@ -8651,6 +8681,24 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取task相关的SQL执行计划和表元数据
+      tags:
+      - task
+  /v1/tasks/file_order_methods:
+    get:
+      consumes:
+      - application/json
+      description: get file order method
+      operationId: getSqlFileOrderMethodV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取文件上线排序方式
       tags:
       - task
   /v1/user_tips:
