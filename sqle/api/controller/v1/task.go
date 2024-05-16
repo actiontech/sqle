@@ -1251,7 +1251,7 @@ type GetSqlFileOrderMethodResV1 struct {
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
 // @router /v1/tasks/file_order_methods [get]
 func GetSqlFileOrderMethodV1(c echo.Context) error {
-	var methods []SqlFileOrderMethod
+	methods := make([]SqlFileOrderMethod, 0, len(FileOrderMethods))
 	for _, method := range FileOrderMethods {
 		methods = append(methods, SqlFileOrderMethod{
 			OrderMethod: method.Method,
