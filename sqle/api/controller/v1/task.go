@@ -735,8 +735,9 @@ func GetTaskAnalysisData(c echo.Context) error {
 }
 
 type CreateAuditTasksGroupReqV1 struct {
-	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
-	ExecMode  string                     `json:"exec_mode" enums:"sql_file,sqls"`
+	Instances       []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+	ExecMode        string                     `json:"exec_mode" enums:"sql_file,sqls"`
+	FileOrderMethod string                     `json:"file_order_method"`
 }
 
 type InstanceForCreatingTask struct {
@@ -836,6 +837,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		}
 		tasks[i].CreatedAt = time.Now()
 		tasks[i].ExecMode = req.ExecMode
+		tasks[i].FileOrderMethod = req.FileOrderMethod
 	}
 
 	taskGroup := model.TaskGroup{Tasks: tasks}
@@ -852,9 +854,8 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId     uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
+	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type AuditTaskGroupRes struct {
