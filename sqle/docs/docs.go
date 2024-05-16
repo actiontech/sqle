@@ -12423,6 +12423,9 @@ var doc = `{
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
+                "audit_logs_expired_hours": {
+                    "type": "integer"
+                },
                 "operation_record_expired_hours": {
                     "type": "integer"
                 },
@@ -12908,6 +12911,10 @@ var doc = `{
         "v1.UpdateSystemVariablesReqV1": {
             "type": "object",
             "properties": {
+                "audit_logs_expired_hours": {
+                    "type": "integer",
+                    "example": 2160
+                },
                 "operation_record_expired_hours": {
                     "type": "integer",
                     "example": 2160
