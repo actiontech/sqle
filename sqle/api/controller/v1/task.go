@@ -11,6 +11,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -958,6 +961,14 @@ func AuditTaskGroupV1(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
 			}
 			if len(fileRecords) > 0 {
+				fileHeader, _, err := getFileHeaderFromContext(c)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+				if strings.HasSuffix(fileHeader.Filename, ".zip") && task.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
+					sortAuditFiles(fileRecords, task.FileOrderMethod)
+				}
+
 				err = batchCreateFileRecords(s, fileRecords, task.ID)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
@@ -1005,6 +1016,79 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Tasks:       tasksRes,
 		},
 	})
+}
+
+type auditFileWithNum struct {
+	auditFile *model.AuditFile
+	num       int
+}
+
+type auditFileWithNums []auditFileWithNum
+
+func (s auditFileWithNums) Len() int           { return len(s) }
+func (s auditFileWithNums) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s auditFileWithNums) Less(i, j int) bool { return s[i].num < s[j].num }
+
+func sortAuditFiles(auditFiles []*model.AuditFile, orderMethod string) {
+	var re *regexp.Regexp
+	sortedAuditFiles := []*model.AuditFile{}
+
+	// 索引为0的auditFiles为zip包自身的信息，不参与排序
+	sortedAuditFiles = append(sortedAuditFiles, auditFiles[0])
+	auditFiles = auditFiles[1:]
+
+	switch orderMethod {
+	case FileNamePrefixNumAscOrder:
+		re = regexp.MustCompile(`^\d+`)
+	case FileNameSuffixNumAscOrder:
+		re = regexp.MustCompile(`\d+$`)
+	}
+	if re == nil {
+		return
+	}
+
+	fileWithNums, invalidOrderFiles := getFileWithNumFromPathsByRe(auditFiles, re)
+	fileWithSortNums := auditFileWithNums(fileWithNums)
+	sort.Sort(fileWithSortNums)
+
+	for _, fileWithSortNum := range fileWithSortNums {
+		sortedAuditFiles = append(sortedAuditFiles, fileWithSortNum.auditFile)
+	}
+	sortedAuditFiles = append(sortedAuditFiles, invalidOrderFiles...)
+	for i, auditFile := range sortedAuditFiles {
+		auditFile.ExecOrder = uint(i)
+	}
+}
+
+func getFileWithNumFromPathsByRe(auditFiles []*model.AuditFile, re *regexp.Regexp) ([]auditFileWithNum, []*model.AuditFile) {
+	invalidOrderFiles := []*model.AuditFile{} // 不符合排序规则的文件路径
+	fileWithNums := []auditFileWithNum{}
+
+	for _, file := range auditFiles {
+		filename := getFileNameWithoutExtension(file.FileName)
+		match := re.FindString(filename)
+		if match == "" {
+			invalidOrderFiles = append(invalidOrderFiles, file)
+			continue
+		}
+		num, err := strconv.Atoi(match)
+		if err != nil {
+			invalidOrderFiles = append(invalidOrderFiles, file)
+			log.NewEntry().Errorf("getSortNumsFromFilePaths convert string to number failed, string:%s, err:%v", match, err)
+			continue
+		}
+		fileWithNums = append(fileWithNums, auditFileWithNum{
+			auditFile: file,
+			num:       num,
+		})
+	}
+	return fileWithNums, invalidOrderFiles
+}
+
+func getFileNameWithoutExtension(filePath string) string {
+	fileName := filepath.Base(filePath)
+	ext := filepath.Ext(fileName)
+	return strings.TrimSuffix(fileName, ext)
 }
 
 func batchCreateFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
