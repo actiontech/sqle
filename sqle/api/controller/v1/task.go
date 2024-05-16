@@ -11,9 +11,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"path/filepath"
-	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -101,6 +98,7 @@ const (
 	GitHttpURL              = "git_http_url"
 	GitUserName             = "git_user_name"
 	GitPassword             = "git_user_password"
+	ZIPFileExtension        = ".zip"
 )
 
 func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
@@ -965,7 +963,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, err)
 				}
-				if strings.HasSuffix(fileHeader.Filename, ".zip") && task.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
+				if strings.HasSuffix(fileHeader.Filename, ZIPFileExtension) && task.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
 					sortAuditFiles(fileRecords, task.FileOrderMethod)
 				}
 
@@ -1016,79 +1014,6 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Tasks:       tasksRes,
 		},
 	})
-}
-
-type auditFileWithNum struct {
-	auditFile *model.AuditFile
-	num       int
-}
-
-type auditFileWithNums []auditFileWithNum
-
-func (s auditFileWithNums) Len() int           { return len(s) }
-func (s auditFileWithNums) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s auditFileWithNums) Less(i, j int) bool { return s[i].num < s[j].num }
-
-func sortAuditFiles(auditFiles []*model.AuditFile, orderMethod string) {
-	var re *regexp.Regexp
-	sortedAuditFiles := []*model.AuditFile{}
-
-	// 索引为0的auditFiles为zip包自身的信息，不参与排序
-	sortedAuditFiles = append(sortedAuditFiles, auditFiles[0])
-	auditFiles = auditFiles[1:]
-
-	switch orderMethod {
-	case FileNamePrefixNumAscOrder:
-		re = regexp.MustCompile(`^\d+`)
-	case FileNameSuffixNumAscOrder:
-		re = regexp.MustCompile(`\d+$`)
-	}
-	if re == nil {
-		return
-	}
-
-	fileWithNums, invalidOrderFiles := getFileWithNumFromPathsByRe(auditFiles, re)
-	fileWithSortNums := auditFileWithNums(fileWithNums)
-	sort.Sort(fileWithSortNums)
-
-	for _, fileWithSortNum := range fileWithSortNums {
-		sortedAuditFiles = append(sortedAuditFiles, fileWithSortNum.auditFile)
-	}
-	sortedAuditFiles = append(sortedAuditFiles, invalidOrderFiles...)
-	for i, auditFile := range sortedAuditFiles {
-		auditFile.ExecOrder = uint(i)
-	}
-}
-
-func getFileWithNumFromPathsByRe(auditFiles []*model.AuditFile, re *regexp.Regexp) ([]auditFileWithNum, []*model.AuditFile) {
-	invalidOrderFiles := []*model.AuditFile{} // 不符合排序规则的文件路径
-	fileWithNums := []auditFileWithNum{}
-
-	for _, file := range auditFiles {
-		filename := getFileNameWithoutExtension(file.FileName)
-		match := re.FindString(filename)
-		if match == "" {
-			invalidOrderFiles = append(invalidOrderFiles, file)
-			continue
-		}
-		num, err := strconv.Atoi(match)
-		if err != nil {
-			invalidOrderFiles = append(invalidOrderFiles, file)
-			log.NewEntry().Errorf("getSortNumsFromFilePaths convert string to number failed, string:%s, err:%v", match, err)
-			continue
-		}
-		fileWithNums = append(fileWithNums, auditFileWithNum{
-			auditFile: file,
-			num:       num,
-		})
-	}
-	return fileWithNums, invalidOrderFiles
-}
-
-func getFileNameWithoutExtension(filePath string) string {
-	fileName := filepath.Base(filePath)
-	ext := filepath.Ext(fileName)
-	return strings.TrimSuffix(fileName, ext)
 }
 
 func batchCreateFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
@@ -1205,27 +1130,6 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 	return
 }
 
-const (
-	FileNamePrefixNumAscOrder = "filename_prefix_num_asc_order"
-	FileNameSuffixNumAscOrder = "filename_suffix_num_asc_order"
-)
-
-type FileOrderMethod struct {
-	Method string
-	Desc   string
-}
-
-var FileOrderMethods = []FileOrderMethod{
-	{
-		Method: FileNamePrefixNumAscOrder,
-		Desc:   "文件名前缀数字升序",
-	},
-	{
-		Method: FileNameSuffixNumAscOrder,
-		Desc:   "文件名后缀数字升序",
-	},
-}
-
 type SqlFileOrderMethod struct {
 	OrderMethod string `json:"order_method"`
 	Desc        string `json:"desc"`
@@ -1251,17 +1155,5 @@ type GetSqlFileOrderMethodResV1 struct {
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
 // @router /v1/tasks/file_order_methods [get]
 func GetSqlFileOrderMethodV1(c echo.Context) error {
-	methods := make([]SqlFileOrderMethod, 0, len(FileOrderMethods))
-	for _, method := range FileOrderMethods {
-		methods = append(methods, SqlFileOrderMethod{
-			OrderMethod: method.Method,
-			Desc:        method.Desc,
-		})
-	}
-	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: SqlFileOrderMethodRes{
-			Methods: methods,
-		},
-	})
+	return getSqlFileOrderMethod(c)
 }
