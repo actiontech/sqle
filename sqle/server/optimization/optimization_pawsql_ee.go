@@ -129,7 +129,9 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			if err != nil {
 				a.logger.Errorf("unmarshal rewriteQueriesStr error %v", err)
 			}
-			optimizedSQL = sqls[0]
+			if len(sqls) > 0 {
+				optimizedSQL = sqls[0]
+			}
 		}
 		// 索引数据移除pawsql关键字
 		indexRecommendeds := trimKeyWord(detail.IndexRecommended)
