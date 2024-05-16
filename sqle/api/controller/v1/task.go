@@ -1120,6 +1120,27 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 	return
 }
 
+const (
+	FileNamePrefixNumAscOrder = "filename_prefix_num_asc_order"
+	FileNameSuffixNumAscOrder = "filename_suffix_num_asc_order"
+)
+
+type FileOrderMethod struct {
+	Method string
+	Desc   string
+}
+
+var FileOrderMethods = []FileOrderMethod{
+	{
+		Method: FileNamePrefixNumAscOrder,
+		Desc:   "文件名前缀数字升序",
+	},
+	{
+		Method: FileNameSuffixNumAscOrder,
+		Desc:   "文件名后缀数字升序",
+	},
+}
+
 type SqlFileOrderMethod struct {
 	OrderMethod string `json:"order_method"`
 	Desc        string `json:"desc"`
@@ -1145,5 +1166,17 @@ type GetSqlFileOrderMethodResV1 struct {
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
 // @router /v1/tasks/file_order_methods [get]
 func GetSqlFileOrderMethodV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
+	var methods []SqlFileOrderMethod
+	for _, method := range FileOrderMethods {
+		methods = append(methods, SqlFileOrderMethod{
+			OrderMethod: method.Method,
+			Desc:        method.Desc,
+		})
+	}
+	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: SqlFileOrderMethodRes{
+			Methods: methods,
+		},
+	})
 }
