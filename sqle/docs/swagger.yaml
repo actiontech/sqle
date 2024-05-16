@@ -499,6 +499,8 @@ definitions:
         - sql_file
         - sqls
         type: string
+      file_order_method:
+        type: string
       instances:
         items:
           $ref: '#/definitions/v1.InstanceForCreatingTask'

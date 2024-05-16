@@ -9026,6 +9026,9 @@ var doc = `{
                         "sqls"
                     ]
                 },
+                "file_order_method": {
+                    "type": "string"
+                },
                 "instances": {
                     "type": "array",
                     "items": {
