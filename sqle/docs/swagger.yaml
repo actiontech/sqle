@@ -2820,6 +2820,8 @@ definitions:
     type: object
   v1.SystemVariablesResV1:
     properties:
+      cb_operation_logs_expired_hours:
+        type: integer
       operation_record_expired_hours:
         type: integer
       url:
@@ -3147,6 +3149,9 @@ definitions:
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
+      cb_operation_logs_expired_hours:
+        example: 2160
+        type: integer
       operation_record_expired_hours:
         example: 2160
         type: integer
