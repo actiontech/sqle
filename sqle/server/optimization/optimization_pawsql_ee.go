@@ -19,7 +19,7 @@ import (
 )
 
 // regIndexesRecommended to match IndexesRecommended in pawsql response
-var regIndexesRecommended = regexp.MustCompile(`CREATE INDEX .+?;`)
+var regIndexesRecommended = regexp.MustCompile(`(?i)CREATE INDEX .+?\);`)
 
 // OptimizationServer
 type OptimizationOnlinePawSQLServer struct {
