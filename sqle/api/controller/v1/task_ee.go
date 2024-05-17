@@ -6,6 +6,11 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -150,4 +155,119 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 	}
 
 	return analysisDataResItemV1
+}
+
+const (
+	FileOrderMethodPrefixNumAsc = "file_order_method_prefix_num_asc"
+	FileOrderMethodSuffixNumAsc = "file_order_method_suffix_num_asc"
+)
+
+type FileOrderMethod struct {
+	Method string
+	Desc   string
+}
+
+var FileOrderMethods = []FileOrderMethod{
+	{
+		Method: FileOrderMethodPrefixNumAsc,
+		Desc:   "文件名前缀数字升序",
+	},
+	{
+		Method: FileOrderMethodSuffixNumAsc,
+		Desc:   "文件名后缀数字升序",
+	},
+}
+
+func getSqlFileOrderMethod(c echo.Context) error {
+	methods := make([]SqlFileOrderMethod, 0, len(FileOrderMethods))
+	for _, method := range FileOrderMethods {
+		methods = append(methods, SqlFileOrderMethod{
+			OrderMethod: method.Method,
+			Desc:        method.Desc,
+		})
+	}
+	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: SqlFileOrderMethodRes{
+			Methods: methods,
+		},
+	})
+}
+
+type auditFileWithNum struct {
+	auditFile *model.AuditFile
+	num       int
+}
+
+type auditFileWithNums []auditFileWithNum
+
+func (s auditFileWithNums) Len() int           { return len(s) }
+func (s auditFileWithNums) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s auditFileWithNums) Less(i, j int) bool { return s[i].num < s[j].num }
+
+func sortAuditFiles(auditFiles []*model.AuditFile, orderMethod string) {
+	var re *regexp.Regexp
+	sortedAuditFiles := []*model.AuditFile{}
+
+	if len(auditFiles) <= 1 {
+		return
+	}
+
+	// 索引为0的auditFiles为zip包自身的信息，不参与排序
+	sortedAuditFiles = append(sortedAuditFiles, auditFiles[0])
+	auditFiles = auditFiles[1:]
+
+	switch orderMethod {
+	case FileOrderMethodPrefixNumAsc:
+		re = regexp.MustCompile(`^\d+`)
+	case FileOrderMethodSuffixNumAsc:
+		re = regexp.MustCompile(`\d+$`)
+	}
+	if re == nil {
+		return
+	}
+
+	fileWithNums, invalidOrderFiles := getFileWithNumFromPathsByRegexp(auditFiles, re)
+	fileWithSortNums := auditFileWithNums(fileWithNums)
+	sort.Sort(fileWithSortNums)
+
+	for _, fileWithSortNum := range fileWithSortNums {
+		sortedAuditFiles = append(sortedAuditFiles, fileWithSortNum.auditFile)
+	}
+	sortedAuditFiles = append(sortedAuditFiles, invalidOrderFiles...)
+	for i, auditFile := range sortedAuditFiles {
+		auditFile.ExecOrder = uint(i)
+	}
+}
+
+func getFileWithNumFromPathsByRegexp(auditFiles []*model.AuditFile, re *regexp.Regexp) ([]auditFileWithNum, []*model.AuditFile) {
+	invalidOrderFiles := []*model.AuditFile{} // 不符合排序规则的文件路径
+	fileWithNums := []auditFileWithNum{}
+
+	for _, file := range auditFiles {
+		filename := getFileNameWithoutExtension(file.FileName)
+		match := re.FindString(filename)
+		if match == "" {
+			invalidOrderFiles = append(invalidOrderFiles, file)
+			log.NewEntry().Errorf("getSortNumsFromFilePaths regexp match failed, filename:%s, regexp:%s", file.FileName, re.String())
+			continue
+		}
+		num, err := strconv.Atoi(match)
+		if err != nil {
+			invalidOrderFiles = append(invalidOrderFiles, file)
+			log.NewEntry().Errorf("getSortNumsFromFilePaths convert string to number failed, string:%s, filename:%s,  err:%v", match, file.FileName, err)
+			continue
+		}
+		fileWithNums = append(fileWithNums, auditFileWithNum{
+			auditFile: file,
+			num:       num,
+		})
+	}
+	return fileWithNums, invalidOrderFiles
+}
+
+func getFileNameWithoutExtension(filePath string) string {
+	fileName := filepath.Base(filePath)
+	ext := filepath.Ext(fileName)
+	return strings.TrimSuffix(fileName, ext)
 }
