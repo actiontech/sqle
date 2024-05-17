@@ -6,6 +6,7 @@ package optimization
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -17,12 +18,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// regIndexesRecommended to match IndexesRecommended in pawsql response
+var regIndexesRecommended = regexp.MustCompile(`(?i)CREATE INDEX .+?\);`)
+
 // OptimizationServer
 type OptimizationOnlinePawSQLServer struct {
 	OptimizationPawSQLServer
 	Instance *model.Instance
 	Schema   string
 }
+
 type OptimizationPawSQLServer struct {
 	logger *logrus.Entry
 }
@@ -129,10 +134,13 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			if err != nil {
 				a.logger.Errorf("unmarshal rewriteQueriesStr error %v", err)
 			}
-			optimizedSQL = sqls[0]
+			if len(sqls) > 0 {
+				optimizedSQL = sqls[0]
+			}
 		}
+
 		// 索引数据移除pawsql关键字
-		indexRecommendeds := trimKeyWord(detail.IndexRecommended)
+		indexRecommendeds := trimKeyWord(getIndexesRecommendedFromMD(detail.DetailMarkdownZh))
 		contributingIndices := trimKeyWord([]string{statementInfo.ContributingIndices})
 
 		// 详情和列表的性能提升值保持一致
@@ -156,6 +164,20 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 	optimizationInfo.PerformanceImprove = performanceImprove
 	return
 }
+
+func getIndexesRecommendedFromMD(md string) []string {
+	start := strings.Index(md, "推荐的索引")
+	if start < 0 {
+		return []string{}
+	}
+	then := strings.Index(md[start:], "\n#")
+	if then < 0 {
+		return []string{}
+	}
+	createIndexes := regIndexesRecommended.FindAllString(md[start:start+then], -1)
+	return createIndexes
+}
+
 func trimKeyWord(slices []string) (ret []string) {
 	for _, s := range slices {
 		ret = append(ret, strings.ReplaceAll(s, "PAWSQL", "OPTIMIZATION"))
