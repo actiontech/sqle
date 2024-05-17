@@ -96,6 +96,18 @@ func (s *Storage) BatchCreateFileRecords(records []*AuditFile) error {
 	})
 }
 
+func (s *Storage) BatchSaveFileRecords(records []*AuditFile) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, record := range records {
+			if err := txDB.Save(record).Error; err != nil {
+				txDB.Rollback()
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 // 单个文件中触发XX审核等级的SQL的数量统计
 type FileAuditStatistic struct {
 	ErrorCount   uint `json:"error_count"`
@@ -213,6 +225,8 @@ var auditFileStatisticQueryBodyTpl = `
 			e_sql.exec_status IS NOT NULL
 		GROUP BY 
 			a_file.id,a_file.file_name,a_file.exec_order
+		ORDER BY
+			a_file.exec_order
 	{{- end }}
 `
 

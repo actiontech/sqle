@@ -1023,3 +1023,26 @@ func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
 	}
 	return taskIDs
 }
+
+type UpdateSqlFileOrder struct {
+	FileID   uint `json:"file_id" valid:"required"`
+	NewIndex uint `json:"new_index" valid:"required"`
+}
+
+type UpdateSqlFileOrderV1Req struct {
+	FileNewIndexes []UpdateSqlFileOrder `json:"file_new_indexes"`
+}
+
+// UpdateSqlFileOrderV1
+// @Summary 修改文件上线顺序
+// @Description update sql file order
+// @Accept json
+// @Produce json
+// @Tags task
+// @Id updateSqlFileOrderV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlFileOrderMethodResV1
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/file_order [patch]
+func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
+	return updateSqlFileOrderByWorkflow(c)
+}
