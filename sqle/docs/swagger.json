@@ -4850,6 +4850,35 @@
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/file_order": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql file order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "修改文件上线顺序",
+                "operationId": "updateSqlFileOrderV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate": {
             "post": {
                 "security": [
