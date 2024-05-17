@@ -25,7 +25,7 @@ func init() {
 			Params: params.Params{
 				&params.Param{
 					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "3",
+					Value: "5",
 					Desc:  "索引列数",
 					Type:  params.ParamTypeInt,
 				},
@@ -40,7 +40,7 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00005): "For table creation and index creation statements, the number of columns included in the composite index should be within threshold, the threshold should be a parameter whose default value is 3.".
+In MySQL, you should check if the SQL violate the rule(SQLE00005): "For table creation and index creation statements, the number of columns included in the composite index should be within threshold, the threshold should be a parameter whose default value is 5.".
 You should follow the following logic:
 1. For the "CREATE TABLE ..." statements, check if the composite index includes more than three columns. If it does, report a violation.
 2. For the  "CREATE INDEX ..." statements, check if the composite index includes more than three columns. If it does, report a violation.

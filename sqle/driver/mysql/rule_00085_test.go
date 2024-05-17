@@ -43,15 +43,15 @@ func TestRuleSQLE00085(t *testing.T) {
 	`, newTestResult().addResult(ruleName))
 
 	// union, no index
-	i = NewMySQLInspectOnRuleSQLE00085(t, "SELECT v3 FROM exist_db.exist_tb_1 UNION SELECT v3 FROM exist_db.exist_tb_2", "ALL")
+	i = NewMySQLInspectOnRuleSQLE00085(t, "SELECT v1 FROM exist_db.exist_tb_1 UNION SELECT v1 FROM exist_db.exist_tb_2", "ALL")
 	runSingleRuleInspectCase(rule, t, "union, no index", i, `
-	SELECT v3 FROM exist_db.exist_tb_1 UNION SELECT v3 FROM exist_db.exist_tb_2;
+	SELECT v1 FROM exist_db.exist_tb_1 UNION SELECT v1 FROM exist_db.exist_tb_2;
 	`, newTestResult())
 
 	// union, with index
-	i = NewMySQLInspectOnRuleSQLE00085(t, "SELECT v1 FROM exist_db.exist_tb_1 UNION SELECT v1 FROM exist_db.exist_tb_2", "index")
+	i = NewMySQLInspectOnRuleSQLE00085(t, " (SELECT v1 FROM exist_db.exist_tb_1 ORDER BY v1) UNION SELECT v1 FROM exist_db.exist_tb_2", "index")
 	runSingleRuleInspectCase(rule, t, "union, with index", i, `
-	SELECT v1 FROM exist_db.exist_tb_1 UNION SELECT v1 FROM exist_db.exist_tb_2;
+	 (SELECT v1 FROM exist_db.exist_tb_1 ORDER BY v1) UNION SELECT v1 FROM exist_db.exist_tb_2;
 	`, newTestResult().addResult(ruleName))
 }
 

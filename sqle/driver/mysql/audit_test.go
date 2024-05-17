@@ -89,8 +89,8 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 		},
 		Ctx: session.NewMockContext(e),
 		cnf: &Config{
-			DDLOSCMinSize:      16,
-			DDLGhostMinSize:    16,
+			DDLOSCMinSize:      -1,
+			DDLGhostMinSize:    -1,
 			DMLRollbackMaxRows: 1000,
 		},
 		dbConn: e,
@@ -195,7 +195,7 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 	}
 	actualResults, err := i.Audit(context.TODO(), sqls)
 	if err != nil {
-		t.Error()
+		t.Errorf("%s", err)
 		return
 	}
 	if len(stmts) != len(actualResults) {

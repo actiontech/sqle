@@ -27,12 +27,12 @@ func init() {
 				&params.Param{
 					Key:   rulepkg.DefaultSingleParamKeyName,
 					Value: "3",
-					Desc:  "select_count",
+					Desc:  "max_table_join_count",
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "对于MySQL的DML,避免在单个SQL语句中对同一张表进行多次连接或查询. 表名: %s",
+		Message: "对于MySQL的DML,避免在单个SQL语句中对同一张表进行多次连接或查询. 违反规则的表名: %s",
 		Func:    RuleSQLE00098,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
@@ -43,7 +43,7 @@ func init() {
 ==== Prompt start ====
 In MySQL, you should check if the SQL violate the rule(SQLE00098): "For dml, Avoid joining or querying the same table multiple times in a single SQL statement".the threshold should be a parameter whose default value is 3.
 You should follow the following logic:
-1. For the SELECT clause in all DML statements, check the FROM clause in the SELECT to get the tables involved, record the number of tables, and report the rule violation if the number of tables is greater than or equal to the threshold.
+1. For the SELECT clause in all DML statements, check the FROM clause in the SELECT to get the tables involved, record how many times the same table appears, and report the rule violation if the times is greater than or equal to the threshold
 ==== Prompt end ====
 */
 

@@ -536,7 +536,7 @@ CREATE TABLE exist_db.exist_tb_12 (
 id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
 v1 blob,
 v2 int,
-v3 varchar(255),
+v3 varchar(1000),
 PRIMARY KEY (id) USING BTREE
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT="unit test";
 `
