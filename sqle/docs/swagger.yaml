@@ -7283,6 +7283,24 @@ paths:
       summary: 创建工单
       tags:
       - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/file_order:
+    patch:
+      consumes:
+      - application/json
+      description: update sql file order
+      operationId: updateSqlFileOrderV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改文件上线顺序
+      tags:
+      - task
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate:
     post:
       description: execute one task on workflow
