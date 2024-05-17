@@ -18,6 +18,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// regIndexesRecommended to match IndexesRecommended in pawsql response
+var regIndexesRecommended = regexp.MustCompile(`CREATE INDEX .+?;`)
+
 // OptimizationServer
 type OptimizationOnlinePawSQLServer struct {
 	OptimizationPawSQLServer
@@ -171,7 +174,7 @@ func getIndexesRecommendedFromMD(md string) []string {
 	if then < 0 {
 		return []string{}
 	}
-	createIndexes := regexp.MustCompile(`CREATE INDEX .+?;`).FindAllString(md[start:start+then], -1)
+	createIndexes := regIndexesRecommended.FindAllString(md[start:start+then], -1)
 	return createIndexes
 }
 
