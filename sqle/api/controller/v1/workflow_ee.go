@@ -6,22 +6,24 @@ package v1
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"mime"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
-	"database/sql"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/actiontech/sqle/sqle/errors"
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -358,4 +360,115 @@ func updateWorkflowTemplate(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func updateSqlFileOrderByWorkflow(c echo.Context) error {
+	req := new(UpdateSqlFileOrderV1Req)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskIdStr := c.Param("task_id")
+
+	isCan, err := checkTaskCanExecAndUserHasPermission(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !isCan {
+		return controller.JSONBaseErrorReq(c,
+			fmt.Errorf("task has not reached the execution step or you are not allow to adjust the order, task id:%s", taskIdStr))
+	}
+
+	s := model.GetStorage()
+	fileNewIndexes := req.FileNewIndexes
+	files, err := s.GetFileByTaskId(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+
+	idFileMap := make(map[uint]*model.AuditFile)
+	for _, file := range files {
+		idFileMap[file.ID] = file
+	}
+
+	// 将修改过位置的文件按照新索引添加到slice中
+	newOrderFiles := make([]*model.AuditFile, len(files))
+	for _, fileNewIndex := range fileNewIndexes {
+		newIndex := fileNewIndex.NewIndex
+		if int(newIndex) >= len(files) {
+			return controller.JSONBaseErrorReq(c,
+				fmt.Errorf("new index setting is too long, file id:%d, new index:%d, length of files:%d", fileNewIndex.FileID, newIndex, len(files)))
+		}
+		auditFile := idFileMap[fileNewIndex.FileID]
+		newOrderFiles[newIndex] = auditFile
+	}
+
+	// 将修改过位置的文件从原有数据中删除
+	removedFiles := removeFileFromOriginFiles(fileNewIndexes, files)
+
+	// 将未修改位置的文件添加到新slice中
+	index := 0
+	for i := 0; i < len(newOrderFiles); i++ {
+		if newOrderFiles[i] == nil {
+			newOrderFiles[i] = removedFiles[index]
+			index++
+		}
+	}
+
+	for i, file := range newOrderFiles {
+		file.ExecOrder = uint(i)
+	}
+
+	if err := s.BatchSaveFileRecords(newOrderFiles); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func checkTaskCanExecAndUserHasPermission(c echo.Context) (bool, error) {
+	s := model.GetStorage()
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	taskIdStr := c.Param("task_id")
+	workflowID := c.Param("workflow_id")
+	taskID, err := strconv.Atoi(taskIdStr)
+	if err != nil {
+		return false, err
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return false, err
+	}
+
+	var workflow *model.Workflow
+	{
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+		if err != nil {
+			return false, err
+		}
+	}
+	err = PrepareForTaskExecution(c, string(workflow.ProjectId), workflow, user, taskID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func removeFileFromOriginFiles(fileNewIndexes []UpdateSqlFileOrder, originFiles []*model.AuditFile) []*model.AuditFile {
+	files := []*model.AuditFile{}
+
+	newIndexFileIds := make(map[uint]struct{})
+	for _, file := range fileNewIndexes {
+		newIndexFileIds[file.FileID] = struct{}{}
+	}
+
+	for _, file := range originFiles {
+		if _, exist := newIndexFileIds[file.ID]; !exist {
+			files = append(files, file)
+		}
+	}
+	return files
 }
