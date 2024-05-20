@@ -40,6 +40,7 @@ const (
 	OperationRecordActionRejectWorkflow              = "reject_workflow"
 	OperationRecordActionExecuteWorkflow             = "execute_workflow"
 	OperationRecordActionScheduleWorkflow            = "schedule_workflow"
+	OperationRecordActionUpdateWorkflow              = "update_workflow"
 	OperationRecordActionCreateUser                  = "create_user"
 	OperationRecordActionUpdateUser                  = "update_user"
 	OperationRecordActionDeleteUser                  = "delete_user"

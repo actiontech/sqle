@@ -5,15 +5,18 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"strings"
 	"time"
 
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
+	dms "github.com/actiontech/sqle/sqle/dms"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -131,6 +134,14 @@ func init() {
 				return "", "修改全局配置", nil
 			},
 		},
+		// 工单
+		{
+			RouterPath:               "/v1/projects/:project_name/workflows/:workflow_id/tasks/:task_id/file_order",
+			Method:                   http.MethodPatch,
+			OperationType:            model.OperationRecordTypeWorkflow,
+			OperationAction:          model.OperationRecordActionUpdateWorkflow,
+			GetProjectAndContentFunc: getProjectAndContentFromUpdatingFilesOrder,
+		},
 	}...)
 }
 
@@ -158,6 +169,43 @@ func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string
 		return "", "", err
 	}
 	return c.Param("project_name"), fmt.Sprintf("添加规则模板，模板名：%v", req.Name), nil
+}
+
+func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, string, error) {
+	req := new(UpdateSqlFileOrderV1Req)
+	err := marshalRequestBody(c, req)
+	if err != nil {
+		return "", "", err
+	}
+
+	s := model.GetStorage()
+	contents := []string{}
+	for _, updateFile := range req.FileNewIndexes {
+		auditFile, err := s.GetFileById(updateFile.FileID)
+		if err != nil {
+			return "", "", err
+		}
+		if auditFile == nil {
+			return "", "", fmt.Errorf("cannot find audit file by id, id:%d", updateFile.FileID)
+		}
+		contents = append(contents, fmt.Sprintf("将%s->%d", auditFile.FileName, updateFile.NewIndex))
+	}
+
+	projectName := c.Param("project_name")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
+	if err != nil {
+		return "", "", err
+	}
+	id := c.Param("workflow_id")
+	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
+	if err != nil {
+		return "", "", fmt.Errorf("get workflow failed: %v", err)
+	}
+	if !exist {
+		return "", "", ErrWorkflowNoAccess
+	}
+	content := "文件上线顺序调整：" + strings.Join(contents, "，") + fmt.Sprintf("，工单名称：%s", workflow.Subject)
+	return projectName, content, nil
 }
 
 func marshalRequestBody(c echo.Context, pattern interface{}) error {
