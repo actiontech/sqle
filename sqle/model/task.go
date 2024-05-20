@@ -38,6 +38,9 @@ const (
 
 const TaskExecResultOK = "OK"
 
+const ExecModeSqlFile = "sql_file"
+const ExecModeSqls = "sqls"
+
 type Task struct {
 	Model
 	InstanceId   uint64  `json:"instance_id"`
@@ -52,7 +55,7 @@ type Task struct {
 	CreateUserId uint64
 	ExecStartAt  *time.Time
 	ExecEndAt    *time.Time
-
+	ExecMode     string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
 	Instance     *Instance
 	ExecuteSQLs  []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
@@ -114,6 +117,7 @@ type BaseSQL struct {
 	RowAffects      int64  `json:"row_affects"`
 	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
+	ExecBatchId     uint64 `json:"exec_batch_id"`
 	Schema          string `json:"schema"`
 	SourceFile      string `json:"source_file"`
 	StartLine       uint64 `json:"start_line" gorm:"not null"`
@@ -216,6 +220,18 @@ func (s *ExecuteSQL) GetAuditResultDesc() string {
 	}
 
 	return s.AuditResults.String()
+}
+
+func (s *Storage) BatchSaveExecuteSqls(models []*ExecuteSQL) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, model := range models {
+			if err := txDB.Save(&model).Error; err != nil {
+				txDB.Rollback()
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 type RollbackSQL struct {
@@ -480,6 +496,7 @@ var taskSQLsQueryBodyTpl = `
 FROM execute_sql_detail AS e_sql
 {{- if .filter_audit_file_id }}
 LEFT JOIN audit_files ON audit_files.task_id = e_sql.task_id
+AND audit_files.file_name = e_sql.source_file
 {{- end }}
 LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
 WHERE

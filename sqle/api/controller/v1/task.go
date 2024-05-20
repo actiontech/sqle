@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -36,6 +37,7 @@ type CreateAuditTaskReqV1 struct {
 	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
 	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
 	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	ExecMode       string `json:"exec_mode" enums:"sql_file,sqls"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -52,7 +54,7 @@ type AuditTaskResV1 struct {
 	Score          int32           `json:"score"`
 	PassRate       float64         `json:"pass_rate"`
 	Status         string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
-	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan"`
+	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
 	ExecStartTime  *time.Time      `json:"exec_start_time,omitempty"`
 	ExecEndTime    *time.Time      `json:"exec_end_time,omitempty"`
 	AuditFiles     []AuditFileResp `json:"audit_files,omitempty"`
@@ -165,7 +167,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	return getSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
-func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
+func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 	fileHeader, fileType, err := getFileHeaderFromContext(c)
 	if err != nil {
 		return nil, err
@@ -188,7 +190,39 @@ func saveFileFromContext(c echo.Context) (*model.AuditFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return model.NewFileRecord(0, fileHeader.Filename, uniqueName), nil
+	auditFiles := []*model.AuditFile{
+		model.NewFileRecord(0, 1, fileHeader.Filename, uniqueName),
+	}
+	if strings.HasSuffix(fileHeader.Filename, ".zip") {
+		auditFiles[0].ExecOrder = 0
+		auditFilesInZip, err := getFileRecordsFromZip(multipartFile, fileHeader)
+		if err != nil {
+			return nil, err
+		}
+		auditFiles = append(auditFiles, auditFilesInZip...)
+	}
+	return auditFiles, nil
+}
+
+func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.FileHeader) ([]*model.AuditFile, error) {
+	r, err := zip.NewReader(multipartFile, fileHeader.Size)
+	if err != nil {
+		return nil, err
+	}
+	var auditFiles []*model.AuditFile
+	var execOrder uint = 1
+	for _, srcFile := range r.File {
+		// skip empty file and folder
+		if srcFile == nil || srcFile.FileInfo().IsDir() {
+			continue
+		}
+		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
+		if strings.HasSuffix(fullName, ".sql") {
+			auditFiles = append(auditFiles, model.NewFileRecord(0, execOrder, fullName, model.GenUniqueFileName()))
+			execOrder++
+		}
+	}
+	return auditFiles, nil
 }
 
 func isSupportFileType(fileType string) bool {
@@ -236,6 +270,7 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
+// @Param req body v1.CreateAuditTaskReqV1 true "create and audit task"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
@@ -245,7 +280,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	var sqls getSQLFromFileResp
 	var err error
-
+	var fileRecords []*model.AuditFile
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -253,6 +288,10 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	} else {
 		sqls, err = getSQLFromFile(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		fileRecords, err = saveFileFromContext(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -278,12 +317,18 @@ func CreateAndAuditTask(c echo.Context) error {
 	tmpInst := *task.Instance
 	task.Instance = nil
 
+	task.ExecMode = req.ExecMode
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
 	err = s.Save(&taskGroup)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	if len(fileRecords) > 0 {
+		err = batchCreateFileRecords(s, fileRecords, task.ID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
+		}
+	}
 	task.Instance = &tmpInst
 	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
@@ -407,17 +452,14 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	var offset uint32
-	if req.PageIndex >= 1 {
-		offset = req.PageSize * (req.PageIndex - 1)
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	data := map[string]interface{}{
 		"task_id":             taskId,
 		"filter_exec_status":  req.FilterExecStatus,
 		"filter_audit_status": req.FilterAuditStatus,
 		"filter_audit_level":  req.FilterAuditLevel,
 		"no_duplicate":        req.NoDuplicate,
-		"limit":               req.PageSize,
+		"limit":               limit,
 		"offset":              offset,
 	}
 
@@ -694,6 +736,7 @@ func GetTaskAnalysisData(c echo.Context) error {
 
 type CreateAuditTasksGroupReqV1 struct {
 	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+	ExecMode  string                     `json:"exec_mode" enums:"sql_file,sqls"`
 }
 
 type InstanceForCreatingTask struct {
@@ -792,6 +835,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			DBType:       nameInstanceMap[reqInstance.InstanceName].DbType,
 		}
 		tasks[i].CreatedAt = time.Now()
+		tasks[i].ExecMode = req.ExecMode
 	}
 
 	taskGroup := model.TaskGroup{Tasks: tasks}
@@ -808,8 +852,9 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	TaskGroupId     uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
 }
 
 type AuditTaskGroupRes struct {
@@ -836,6 +881,7 @@ type AuditTaskGroupResV1 struct {
 // @Security ApiKeyAuth
 // @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
+// @Param file_order_method formData string false "file order method"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
@@ -849,7 +895,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	var err error
 	var sqls getSQLFromFileResp
-	var fileRecord *model.AuditFile
+	var fileRecords []*model.AuditFile
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -860,7 +906,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		fileRecord, err = saveFileFromContext(c)
+		fileRecords, err = saveFileFromContext(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -905,15 +951,16 @@ func AuditTaskGroupV1(c echo.Context) error {
 		defer plugin.Close(context.TODO())
 
 		for _, task := range tasks {
+			task.SQLSource = sqls.SourceType
 			err := addSQLsFromFileToTasks(sqls, task, plugin)
-			if fileRecord != nil {
-				fileRecord.TaskId = task.ID
-				if err := s.Save(&fileRecord); err != nil {
-					return controller.JSONBaseErrorReq(c, fmt.Errorf("save sql audit file record failed: %v", err))
-				}
-			}
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
+			}
+			if len(fileRecords) > 0 {
+				err = batchCreateFileRecords(s, fileRecords, task.ID)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
+				}
 			}
 		}
 	}
@@ -957,6 +1004,39 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Tasks:       tasksRes,
 		},
 	})
+}
+
+func batchCreateFileRecords(s *model.Storage, fileRecords []*model.AuditFile, taskId uint) error {
+	// Initialize parentID to 0
+	var parentID uint
+	// Create a slice to store all file records except the first one
+	records := make([]*model.AuditFile, 0, len(fileRecords)-1)
+
+	for i, fileRecord := range fileRecords {
+		// Set TaskId and ParentID for each file record
+		fileRecord.TaskId = taskId
+		fileRecord.ParentID = parentID
+
+		if i == 0 {
+			fileRecord.ID = 0
+			// save first record as the parent file record
+			if err := s.Create(fileRecord); err != nil {
+				return err
+			}
+			// Update parentID to the ID of the first record
+			parentID = fileRecord.ID
+		} else {
+			// Add the record to records slice
+			records = append(records, fileRecord)
+		}
+	}
+	// Batch save all file records except the first one
+	if len(records) > 0 {
+		if err := s.BatchCreateFileRecords(records); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // @Summary 获取指定审核任务的原始文件
@@ -1038,4 +1118,32 @@ func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error
 	}
 
 	return
+}
+
+type SqlFileOrderMethod struct {
+	OrderMethod string `json:"order_method"`
+	Desc        string `json:"desc"`
+}
+
+type SqlFileOrderMethodRes struct {
+	Methods []SqlFileOrderMethod `json:"methods"`
+}
+
+type GetSqlFileOrderMethodResV1 struct {
+	controller.BaseRes
+	Data SqlFileOrderMethodRes `json:"data"`
+}
+
+// GetSqlFileOrderMethodV1
+// @Summary 获取文件上线排序方式
+// @Description get file order method
+// @Accept json
+// @Produce json
+// @Tags task
+// @Id getSqlFileOrderMethodV1
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlFileOrderMethodResV1
+// @router /v1/tasks/file_order_methods [get]
+func GetSqlFileOrderMethodV1(c echo.Context) error {
+	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
 }

@@ -4365,6 +4365,15 @@ var doc = `{
                         "description": "input ZIP file",
                         "name": "input_zip_file",
                         "in": "formData"
+                    },
+                    {
+                        "description": "create and audit task",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateAuditTaskReqV1"
+                        }
                     }
                 ],
                 "responses": {
@@ -6417,6 +6426,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",
@@ -6784,6 +6799,35 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/file_order_methods": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get file order method",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取文件上线排序方式",
+                "operationId": "getSqlFileOrderMethodV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
                         }
                     }
                 }
@@ -8039,17 +8083,70 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get audit task file overview",
+                "description": "get audit task file list",
                 "tags": [
                     "task"
                 ],
-                "summary": "获取审核任务文件概览",
-                "operationId": "getAuditTaskFileOverview",
+                "summary": "获取审核任务文件概览列表",
+                "operationId": "getAuditFileList",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "task id",
                         "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditFileListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/tasks/audits/{task_id}/files/{file_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit task file execute statistic",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取审核任务文件执行概览",
+                "operationId": "getAuditFileExecStatistic",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "file id",
+                        "name": "file_id",
                         "in": "path",
                         "required": true
                     }
@@ -8058,7 +8155,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetAuditTaskFileOverviewRes"
+                            "$ref": "#/definitions/v2.GetAuditFileExecStatisticRes"
                         }
                     }
                 }
@@ -8626,7 +8723,9 @@ var doc = `{
                         "form_data",
                         "sql_file",
                         "mybatis_xml_file",
-                        "audit_plan"
+                        "audit_plan",
+                        "zip_file",
+                        "git_repository"
                     ]
                 },
                 "status": {
@@ -8893,9 +8992,40 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateAuditTaskReqV1": {
+            "type": "object",
+            "properties": {
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "inst_1"
+                },
+                "instance_schema": {
+                    "type": "string",
+                    "example": "db1"
+                },
+                "sql": {
+                    "type": "string",
+                    "example": "alter table tb1 drop columns c1"
+                }
+            }
+        },
         "v1.CreateAuditTasksGroupReqV1": {
             "type": "object",
             "properties": {
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
+                },
                 "instances": {
                     "type": "array",
                     "items": {
@@ -10470,6 +10600,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlFileOrderMethodResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlFileOrderMethodRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlManageListResp": {
             "type": "object",
             "properties": {
@@ -11764,6 +11911,12 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "has_audit_power": {
+                    "type": "boolean"
+                },
+                "has_rewrite_power": {
+                    "type": "boolean"
+                },
                 "is_custom_rule": {
                     "type": "boolean"
                 },
@@ -12127,6 +12280,28 @@ var doc = `{
                 }
             }
         },
+        "v1.SqlFileOrderMethod": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "order_method": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SqlFileOrderMethodRes": {
+            "type": "object",
+            "properties": {
+                "methods": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SqlFileOrderMethod"
+                    }
+                }
+            }
+        },
         "v1.SqlManage": {
             "type": "object",
             "properties": {
@@ -12248,6 +12423,9 @@ var doc = `{
         "v1.SystemVariablesResV1": {
             "type": "object",
             "properties": {
+                "cb_operation_logs_expired_hours": {
+                    "type": "integer"
+                },
                 "operation_record_expired_hours": {
                     "type": "integer"
                 },
@@ -12733,6 +12911,10 @@ var doc = `{
         "v1.UpdateSystemVariablesReqV1": {
             "type": "object",
             "properties": {
+                "cb_operation_logs_expired_hours": {
+                    "type": "integer",
+                    "example": 2160
+                },
                 "operation_record_expired_hours": {
                     "type": "integer",
                     "example": 2160
@@ -13255,6 +13437,42 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditFileExecStatistic": {
+            "type": "object",
+            "properties": {
+                "exec_result_count": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.ExecResultCount"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.AuditFileStatistic": {
+            "type": "object",
+            "properties": {
+                "audit_result_count": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditResultCount"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "file_id": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.AuditPlanReportSQLResV2": {
             "type": "object",
             "properties": {
@@ -13411,20 +13629,20 @@ var doc = `{
                 }
             }
         },
-        "v2.AuditResultFlags": {
+        "v2.AuditResultCount": {
             "type": "object",
             "properties": {
-                "has_error": {
-                    "type": "boolean"
+                "error_sql_count": {
+                    "type": "integer"
                 },
-                "has_normal": {
-                    "type": "boolean"
+                "normal_sql_count": {
+                    "type": "integer"
                 },
-                "has_notice": {
-                    "type": "boolean"
+                "notice_sql_count": {
+                    "type": "integer"
                 },
-                "has_warning": {
-                    "type": "boolean"
+                "warning_sql_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -13658,24 +13876,29 @@ var doc = `{
                 }
             }
         },
-        "v2.FileOverview": {
+        "v2.ExecResultCount": {
             "type": "object",
             "properties": {
-                "audit_result_flags": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AuditResultFlags"
-                },
-                "exec_order": {
+                "doing_count": {
                     "type": "integer"
                 },
-                "exec_status": {
-                    "type": "string"
+                "failed_count": {
+                    "type": "integer"
                 },
-                "file_id": {
-                    "type": "string"
+                "initialized_count": {
+                    "type": "integer"
                 },
-                "file_name": {
-                    "type": "string"
+                "manually_executed_count": {
+                    "type": "integer"
+                },
+                "succeeded_count": {
+                    "type": "integer"
+                },
+                "terminate_failed_count": {
+                    "type": "integer"
+                },
+                "terminate_succeeded_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -13687,6 +13910,45 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
                     }
+                }
+            }
+        },
+        "v2.GetAuditFileExecStatisticRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditFileExecStatistic"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v2.GetAuditFileListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditFileStatistic"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -13740,28 +14002,6 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanResV2"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v2.GetAuditTaskFileOverviewRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v2.FileOverview"
                     }
                 },
                 "message": {
@@ -14240,6 +14480,13 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
+                },
+                "exec_mode": {
+                    "type": "string",
+                    "enum": [
+                        "sql_file",
+                        "sqls"
+                    ]
                 },
                 "mode": {
                     "type": "string",

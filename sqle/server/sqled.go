@@ -4,6 +4,7 @@ import (
 	"context"
 	_errors "errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -456,11 +457,35 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 
 func (a *action) execTask() (err error) {
 
-	task := a.task
+	switch a.task.ExecMode {
+	case model.ExecModeSqlFile:
+		// check plugin can exec batch sqls
+		execFileModeChecker, err := NewModuleStatusChecker(a.task.DBType, executeSqlFileMode)
+		if err != nil {
+			return err
+		}
+		if !execFileModeChecker.CheckIsSupport() {
+			return fmt.Errorf("plugin %v does not support execute sql file", a.task.DBType)
+		}
+		err = a.execSqlFileMode()
+		if err != nil {
+			return err
+		}
+	default:
+		err = a.execSqlSqlMode()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 
+}
+
+func (a *action) execSqlSqlMode() error {
 	// txSQLs keep adjacent DMLs, execute in one transaction.
+	task := a.task
 	var txSQLs []*model.ExecuteSQL
-
+	var err error
 	for i := range task.ExecuteSQLs {
 		executeSQL := task.ExecuteSQLs[i]
 		var nodes []driverV2.Node
@@ -489,7 +514,123 @@ func (a *action) execTask() (err error) {
 			}
 		}
 	}
+	return nil
+}
 
+func (a *action) execSqlFileMode() error {
+	files, err := getFilesSortByExecOrder(a.task.GetIDStr())
+	if err != nil {
+		return err
+	}
+	sqlsInFile := groupSqlsByFile(a.task.ExecuteSQLs)
+	// execute sqls in the order of files
+	for _, file := range files {
+		sqls, ok := sqlsInFile[file.FileName]
+		if !ok {
+			continue
+		}
+		err = a.executeSqlsGroupByBatchId(sqls)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getFilesSortByExecOrder(taskId string) ([]*model.AuditFile, error) {
+	st := model.GetStorage()
+	files, err := st.GetFileByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+	return files, nil
+}
+
+func groupSqlsByFile(executeSQLs []*model.ExecuteSQL) map[string][]*model.ExecuteSQL {
+	fileSqlMap := make(map[string][]*model.ExecuteSQL)
+	for _, executeSQL := range executeSQLs {
+		fileSqlMap[executeSQL.SourceFile] = append(fileSqlMap[executeSQL.SourceFile], executeSQL)
+	}
+	return fileSqlMap
+}
+
+func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
+	sqlBatch := make([]*model.ExecuteSQL, 0)
+	for idx, sql := range sqls {
+		sqlBatch = append(sqlBatch, sql)
+		if idx < len(sqls)-1 {
+			// not the last sql
+			if sql.ExecBatchId != sqls[idx+1].ExecBatchId {
+				// when batch id is changed, execute sql batch
+				if err := a.executeSQLBatch(sqlBatch); err != nil {
+					return err
+				}
+				for _, sqlInBatch := range sqlBatch {
+					if sqlInBatch.ExecStatus == model.SQLExecuteStatusFailed {
+						// 一旦出现执行失败的SQL，则不再执行其他未执行的SQL
+						return nil
+					}
+				}
+				// clear sql batch
+				sqlBatch = make([]*model.ExecuteSQL, 0)
+			}
+		} else {
+			// when encount the last sql in this file execute sql batch
+			if err := a.executeSQLBatch(sqlBatch); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// executeSQLBatch executes a batch of SQLs and updates their status.
+func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
+	st := model.GetStorage()
+	// update status befor execute
+	for _, executeSQL := range executeSQLs {
+		executeSQL.ExecStatus = model.SQLExecuteStatusDoing
+	}
+	if err := st.UpdateExecuteSQLs(executeSQLs); err != nil {
+		return err
+	}
+
+	sqls := make([]string, 0, len(executeSQLs))
+	for _, sql := range executeSQLs {
+		sqls = append(sqls, sql.Content)
+	}
+
+	results, execErr := a.plugin.ExecBatch(context.TODO(), sqls...)
+	if execErr != nil {
+		for idx, executeSQL := range executeSQLs {
+			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+			executeSQL.ExecResult = execErr.Error()
+			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
+				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				if idx >= len(results) || results[idx] == nil {
+					continue
+				}
+				rowAffects, _ := results[idx].RowsAffected()
+				executeSQL.RowAffects = rowAffects
+			}
+		}
+	} else {
+		for idx, executeSQL := range executeSQLs {
+			rowAffects, _ := results[idx].RowsAffected()
+			executeSQL.RowAffects = rowAffects
+			executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
+			executeSQL.ExecResult = model.TaskExecResultOK
+		}
+	}
+
+	err := st.BatchSaveExecuteSqls(executeSQLs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

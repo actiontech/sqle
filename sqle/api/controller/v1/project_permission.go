@@ -262,6 +262,22 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, projectUID string, user *m
 	return true, nil
 }
 
+func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user *model.User, instances []*model.Instance) (bool, error) {
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUID)
+	if err != nil {
+		return false, err
+	}
+	if up.IsAdmin() {
+		return true, nil
+	}
+	for _, instance := range instances {
+		if !up.CanOpInstanceNoAdmin(instance.GetIDStr(), dmsV1.OpPermissionTypeCreateOptimization) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // 根据用户权限获取能访问/操作的实例列表
 func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, projectUid string, operationType v1.OpPermissionType) ([]*model.Instance, error) {
 	// 获取当前项目下指定数据库类型的全部实例

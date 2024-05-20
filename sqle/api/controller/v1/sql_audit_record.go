@@ -209,11 +209,12 @@ func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin dr
 			}
 			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 				BaseSQL: model.BaseSQL{
-					Number:     num,
-					Content:    node.Text,
-					SourceFile: filePath,
-					StartLine:  startLine,
-					SQLType:    node.Type,
+					Number:      num,
+					Content:     node.Text,
+					SourceFile:  filePath,
+					StartLine:   startLine,
+					SQLType:     node.Type,
+					ExecBatchId: node.ExecBatchId,
 				},
 			})
 			num++
@@ -681,10 +682,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
 	}
 
-	var offset uint32
-	if req.PageIndex > 0 {
-		offset = (req.PageIndex - 1) * req.PageSize
-	}
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 
 	data := map[string]interface{}{
 		"filter_project_id":       projectUid,
@@ -695,7 +693,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"check_user_can_access":   !up.IsProjectAdmin(),
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
-		"limit":                   req.PageSize,
+		"limit":                   limit,
 		"offset":                  offset,
 	}
 	if req.FilterSQLAuditStatus == SQLAuditRecordStatusAuditing {

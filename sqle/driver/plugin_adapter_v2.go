@@ -215,6 +215,7 @@ func (s *PluginImplV2) Parse(ctx context.Context, sqlText string) ([]driverV2.No
 			Text:        node.Text,
 			Fingerprint: node.Fingerprint,
 			StartLine:   node.StartLine,
+			ExecBatchId: node.BatchId,
 		}
 	}
 	return nodes, nil
@@ -296,6 +297,33 @@ func (s *PluginImplV2) Exec(ctx context.Context, sql string) (sqlDriver.Result, 
 		rowsAffected:    resp.Result.RowsAffected,
 		rowsAffectedErr: resp.Result.RowsAffectedError,
 	}, nil
+}
+
+func (s *PluginImplV2) ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
+	api := "ExecBatch"
+	s.preLog(api)
+	execSqls := make([]*protoV2.ExecSQL, 0, len(sqls))
+	for _, sql := range sqls {
+		execSqls = append(execSqls, &protoV2.ExecSQL{Query: sql})
+	}
+	resp, err := s.client.ExecBatch(ctx, &protoV2.ExecBatchRequest{
+		Session: s.Session,
+		Sqls:    execSqls,
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]sqlDriver.Result, len(resp.Results))
+	for i, result := range resp.Results {
+		ret[i] = &dbDriverResult{
+			lastInsertId:    result.LastInsertId,
+			lastInsertIdErr: result.LastInsertIdError,
+			rowsAffected:    result.RowsAffected,
+			rowsAffectedErr: result.RowsAffectedError,
+		}
+	}
+	return ret, nil
 }
 
 func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {

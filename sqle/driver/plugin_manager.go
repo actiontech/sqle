@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/actiontech/sqle/sqle/driver/common"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
@@ -54,6 +55,13 @@ func (pm *pluginManager) GetAllRules() map[string][]*driverV2.Rule {
 		rules[p] = meta.Rules
 	}
 	return rules
+}
+
+func (pm *pluginManager) GetDriverMetasOfPlugin(pluginName string) *driverV2.DriverMetas {
+	if dm, exist := pm.metas[pluginName]; exist {
+		return &dm
+	}
+	return nil
 }
 
 func (pm *pluginManager) AllDrivers() []string {
@@ -125,6 +133,11 @@ func (pm *pluginManager) register(pp PluginProcessor) error {
 
 func getClientConfig(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig {
 	return &goPlugin.ClientConfig{
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:   "plugin-client",
+			Output: log.Logger().Out,
+			Level:  hclog.Trace,
+		}),
 		HandshakeConfig: driverV2.HandshakeConfig,
 		VersionedPlugins: map[int]goPlugin.PluginSet{
 			driverV1.ProtocolVersion: driverV1.PluginSet,
@@ -201,7 +214,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
 		_, err = client.Client()
 		if err != nil {
-			return err
+			return fmt.Errorf("plugin %v failed to start, error: %v Please check the sqled.log for more details", p.Name(), err)
 		}
 		err = WritePidFile(pluginPidFilePath, int64(client.ReattachConfig().Pid))
 		if err != nil {

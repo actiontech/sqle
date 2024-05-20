@@ -295,6 +295,8 @@ definitions:
         - sql_file
         - mybatis_xml_file
         - audit_plan
+        - zip_file
+        - git_repository
         type: string
       status:
         enum:
@@ -473,8 +475,30 @@ definitions:
         example: default_MySQL
         type: string
     type: object
+  v1.CreateAuditTaskReqV1:
+    properties:
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
+        type: string
+      instance_name:
+        example: inst_1
+        type: string
+      instance_schema:
+        example: db1
+        type: string
+      sql:
+        example: alter table tb1 drop columns c1
+        type: string
+    type: object
   v1.CreateAuditTasksGroupReqV1:
     properties:
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
+        type: string
       instances:
         items:
           $ref: '#/definitions/v1.InstanceForCreatingTask'
@@ -1562,6 +1586,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlFileOrderMethodResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlFileOrderMethodRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlManageListResp:
     properties:
       code:
@@ -2439,6 +2475,10 @@ definitions:
         type: string
       desc:
         type: string
+      has_audit_power:
+        type: boolean
+      has_rewrite_power:
+        type: boolean
       is_custom_rule:
         type: boolean
       level:
@@ -2683,6 +2723,20 @@ definitions:
       percent:
         type: number
     type: object
+  v1.SqlFileOrderMethod:
+    properties:
+      desc:
+        type: string
+      order_method:
+        type: string
+    type: object
+  v1.SqlFileOrderMethodRes:
+    properties:
+      methods:
+        items:
+          $ref: '#/definitions/v1.SqlFileOrderMethod'
+        type: array
+    type: object
   v1.SqlManage:
     properties:
       appear_num:
@@ -2766,6 +2820,8 @@ definitions:
     type: object
   v1.SystemVariablesResV1:
     properties:
+      cb_operation_logs_expired_hours:
+        type: integer
       operation_record_expired_hours:
         type: integer
       url:
@@ -3093,6 +3149,9 @@ definitions:
     type: object
   v1.UpdateSystemVariablesReqV1:
     properties:
+      cb_operation_logs_expired_hours:
+        example: 2160
+        type: integer
       operation_record_expired_hours:
         example: 2160
         type: integer
@@ -3442,6 +3501,30 @@ definitions:
       err_message:
         type: string
     type: object
+  v2.AuditFileExecStatistic:
+    properties:
+      exec_result_count:
+        $ref: '#/definitions/v2.ExecResultCount'
+        type: object
+      file_id:
+        type: string
+      file_name:
+        type: string
+    type: object
+  v2.AuditFileStatistic:
+    properties:
+      audit_result_count:
+        $ref: '#/definitions/v2.AuditResultCount'
+        type: object
+      exec_order:
+        type: integer
+      exec_status:
+        type: string
+      file_id:
+        type: string
+      file_name:
+        type: string
+    type: object
   v2.AuditPlanReportSQLResV2:
     properties:
       audit_plan_report_sql:
@@ -3553,16 +3636,16 @@ definitions:
       rule_name:
         type: string
     type: object
-  v2.AuditResultFlags:
+  v2.AuditResultCount:
     properties:
-      has_error:
-        type: boolean
-      has_normal:
-        type: boolean
-      has_notice:
-        type: boolean
-      has_warning:
-        type: boolean
+      error_sql_count:
+        type: integer
+      normal_sql_count:
+        type: integer
+      notice_sql_count:
+        type: integer
+      warning_sql_count:
+        type: integer
     type: object
   v2.AuditSQLResV2:
     properties:
@@ -3723,19 +3806,22 @@ definitions:
       logo_url:
         type: string
     type: object
-  v2.FileOverview:
+  v2.ExecResultCount:
     properties:
-      audit_result_flags:
-        $ref: '#/definitions/v2.AuditResultFlags'
-        type: object
-      exec_order:
+      doing_count:
         type: integer
-      exec_status:
-        type: string
-      file_id:
-        type: string
-      file_name:
-        type: string
+      failed_count:
+        type: integer
+      initialized_count:
+        type: integer
+      manually_executed_count:
+        type: integer
+      succeeded_count:
+        type: integer
+      terminate_failed_count:
+        type: integer
+      terminate_succeeded_count:
+        type: integer
     type: object
   v2.FullSyncAuditPlanSQLsReqV2:
     properties:
@@ -3743,6 +3829,33 @@ definitions:
         items:
           $ref: '#/definitions/v2.AuditPlanSQLReqV2'
         type: array
+    type: object
+  v2.GetAuditFileExecStatisticRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.AuditFileExecStatistic'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.GetAuditFileListRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.AuditFileStatistic'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v2.GetAuditPlanAnalysisDataResV2:
     properties:
@@ -3779,21 +3892,6 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v2.AuditPlanResV2'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v2.GetAuditTaskFileOverviewRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v2.FileOverview'
         type: array
       message:
         example: ok
@@ -4122,6 +4220,11 @@ definitions:
       create_user_name:
         type: string
       desc:
+        type: string
+      exec_mode:
+        enum:
+        - sql_file
+        - sqls
         type: string
       mode:
         enum:
@@ -6997,6 +7100,12 @@ paths:
         in: formData
         name: input_zip_file
         type: file
+      - description: create and audit task
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateAuditTaskReqV1'
       produces:
       - application/json
       responses:
@@ -8326,6 +8435,10 @@ paths:
         in: formData
         name: sql
         type: string
+      - description: file order method
+        in: formData
+        name: file_order_method
+        type: string
       - description: input SQL file
         in: formData
         name: input_sql_file
@@ -8573,6 +8686,24 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取task相关的SQL执行计划和表元数据
+      tags:
+      - task
+  /v1/tasks/file_order_methods:
+    get:
+      consumes:
+      - application/json
+      description: get file order method
+      operationId: getSqlFileOrderMethodV1
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取文件上线排序方式
       tags:
       - task
   /v1/user_tips:
@@ -9389,22 +9520,57 @@ paths:
       - sql_audit
   /v2/tasks/audits/{task_id}/files:
     get:
-      description: get audit task file overview
-      operationId: getAuditTaskFileOverview
+      description: get audit task file list
+      operationId: getAuditFileList
       parameters:
       - description: task id
         in: path
         name: task_id
         required: true
         type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v2.GetAuditTaskFileOverviewRes'
+            $ref: '#/definitions/v2.GetAuditFileListRes'
       security:
       - ApiKeyAuth: []
-      summary: 获取审核任务文件概览
+      summary: 获取审核任务文件概览列表
+      tags:
+      - task
+  /v2/tasks/audits/{task_id}/files/{file_id}/:
+    get:
+      description: get audit task file execute statistic
+      operationId: getAuditFileExecStatistic
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: file id
+        in: path
+        name: file_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditFileExecStatisticRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审核任务文件执行概览
       tags:
       - task
   /v2/tasks/audits/{task_id}/sqls:

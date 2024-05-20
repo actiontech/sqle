@@ -342,7 +342,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 		v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
 		v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
-		v2Router.GET("/tasks/audits/:task_id/files", v2.GetAuditTaskFileOverview)
+		v2Router.GET("/tasks/audits/:task_id/files", v2.GetAuditFileList)
+		v2Router.GET("/tasks/audits/:task_id/files/:file_id/", v2.GetAuditFileExecStatistic)
 		v1Router.GET("/tasks/audits/:task_id/sql_report", v1.DownloadTaskSQLReportFile)
 		v1Router.GET("/tasks/audits/:task_id/sql_file", v1.DownloadTaskSQLFile)
 		v1Router.GET("/tasks/audits/:task_id/audit_file", v1.DownloadAuditFile)
@@ -352,6 +353,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2Router.GET("/tasks/audits/:task_id/sqls/:number/analysis", v2.GetTaskAnalysisData)
 		v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
 		v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
+		v1Router.GET("/tasks/file_order_methods", v1.GetSqlFileOrderMethodV1)
 
 		// dashboard
 		v1Router.GET("/dashboard", v1.Dashboard)
@@ -383,13 +385,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		log.Logger().Fatalf("failed to register custom api, %v", err)
 		return
 	}
-	// UI
-	e.File("/", "ui/index.html")
-	e.Static("/static", "ui/static")
-	e.File("/favicon.png", "ui/favicon.png")
-	e.GET("/*", func(c echo.Context) error {
-		return c.File("ui/index.html")
-	})
 
 	address := fmt.Sprintf(":%v", config.APIServiceOpts.Port)
 	log.Logger().Infof("starting http server on %s", address)
