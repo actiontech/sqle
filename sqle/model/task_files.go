@@ -55,6 +55,15 @@ func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
 	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetFileById(fileId uint) (*AuditFile, error) {
+	auditFile := &AuditFile{}
+	err := s.db.Where("id = ?", fileId).First(auditFile).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, nil
+	}
+	return auditFile, errors.New(errors.ConnectStorageError, err)
+}
+
 // expired time 24hour
 func (s *Storage) GetExpiredFileWithNoWorkflow() ([]AuditFile, error) {
 	auditFiles := []AuditFile{}
