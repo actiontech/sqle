@@ -482,6 +482,8 @@ definitions:
         - sql_file
         - sqls
         type: string
+      file_order_method:
+        type: string
       instance_name:
         example: inst_1
         type: string
