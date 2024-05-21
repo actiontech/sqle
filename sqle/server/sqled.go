@@ -569,6 +569,12 @@ func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 				if err := a.executeSQLBatch(sqlBatch); err != nil {
 					return err
 				}
+				for _, sqlInBatch := range sqlBatch {
+					if sqlInBatch.ExecStatus == model.SQLExecuteStatusFailed {
+						// 一旦出现执行失败的SQL，则不再执行其他未执行的SQL
+						return nil
+					}
+				}
 				// clear sql batch
 				sqlBatch = make([]*model.ExecuteSQL, 0)
 			}

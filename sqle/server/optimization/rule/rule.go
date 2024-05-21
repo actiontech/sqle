@@ -11,6 +11,7 @@ var OptimizationRuleMap map[string][]OptimizationRuleHandler // ruleCode与plugi
 const (
 	DMLRuleNPERewrite                        = "dml_rule_npe_rewrite"
 	DMLRuleAllSubqueryRewrite                = "dml_rule_all_subquery_rewrite"
+	DMLRuleDiffOrderingSpecTypeWarning       = "dml_rule_diff_ordering_spec_type_warning"
 	DMLRuleDistinctEliminationRewrite        = "dml_rule_distinct_elimination_rewrite"
 	DMLRuleExists2JoinRewrite                = "dml_rule_exists_2_join_rewrite"
 	DMLRuleFilterPredicatePushDownRewrite    = "dml_rule_filter_predicate_push_down_rewrite"
