@@ -9,26 +9,6 @@ import (
 var MySQLOptimizationRuleHandler = []OptimizationRuleHandler{
 	{
 		Rule: driverV2.Rule{
-			Name:       DMLRuleNPERewrite,
-			Desc:       "NPE重写",
-			Annotation: "SQL的NPE(Null Pointer Exception)问题是指在SQL查询中,当聚合列全为NULL时,SUM、AVG等聚合函数会返回NULL,这可能会导致后续的程序出现空指针异常。",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-		},
-		RuleCode: RuleNPERewrite,
-	},
-	{
-		Rule: driverV2.Rule{
-			Name:       DMLRuleAllSubqueryRewrite,
-			Desc:       "ALL修饰的子查询重写",
-			Annotation: "如果ALL子查询的结果中存在NULL，这个SQL永远返回为空。正确的写法应该是在子查询里加上非空限制，或使用max/min的写法。",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-		},
-		RuleCode: RuleAllQualifierSubQueryRewrite,
-	},
-	{
-		Rule: driverV2.Rule{
 			Name:       rulepkg.DMLHintGroupByRequiresConditions,
 			Desc:       "为GROUP BY显示添加 ORDER BY 条件(<MYSQL 5.7)",
 			Annotation: "在早期版本的MySQL中，GROUP BY 默认进行排序，可通过添加 ORDER BY NULL 来取消此排序，提高查询效率。",
@@ -66,16 +46,6 @@ var MySQLOptimizationRuleHandler = []OptimizationRuleHandler{
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		RuleCode: RuleDiffDataTypeInPredicateWrite,
-	},
-	{
-		Rule: driverV2.Rule{
-			Name:       rulepkg.DDLCheckDatabaseCollation,
-			Desc:       "排序字段方向不同导致索引失效",
-			Annotation: "ORDER BY 子句中的所有表达式需要按统一的 ASC 或 DESC 方向排序，才能利用索引来避免排序；如果ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDDLConvention,
-		},
-		RuleCode: RuleDiffOrderingSpecTypeWarning,
 	},
 	{
 		Rule: driverV2.Rule{
@@ -156,6 +126,36 @@ var MySQLOptimizationRuleHandler = []OptimizationRuleHandler{
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		RuleCode: RuleLargeOffset,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLRuleNPERewrite,
+			Desc:       "NPE重写",
+			Annotation: "SQL的NPE(Null Pointer Exception)问题是指在SQL查询中,当聚合列全为NULL时,SUM、AVG等聚合函数会返回NULL,这可能会导致后续的程序出现空指针异常。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   rulepkg.RuleTypeDMLConvention,
+		},
+		RuleCode: RuleNPERewrite,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLRuleAllSubqueryRewrite,
+			Desc:       "ALL修饰的子查询重写",
+			Annotation: "如果ALL子查询的结果中存在NULL，这个SQL永远返回为空。正确的写法应该是在子查询里加上非空限制，或使用max/min的写法。",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   rulepkg.RuleTypeDMLConvention,
+		},
+		RuleCode: RuleAllQualifierSubQueryRewrite,
+	},
+	{
+		Rule: driverV2.Rule{
+			Name:       DMLRuleDiffOrderingSpecTypeWarning,
+			Desc:       "排序字段方向不同导致索引失效",
+			Annotation: "ORDER BY 子句中的所有表达式需要按统一的 ASC 或 DESC 方向排序，才能利用索引来避免排序；如果ORDER BY 语句对多个不同条件使用不同方向的排序无法使用索引",
+			Level:      driverV2.RuleLevelNotice,
+			Category:   rulepkg.RuleTypeDMLConvention,
+		},
+		RuleCode: RuleDiffOrderingSpecTypeWarning,
 	},
 	{
 		Rule: driverV2.Rule{
