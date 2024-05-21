@@ -98,6 +98,7 @@ const (
 	GitHttpURL              = "git_http_url"
 	GitUserName             = "git_user_name"
 	GitPassword             = "git_user_password"
+	ZIPFileExtension        = ".zip"
 )
 
 func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
@@ -735,8 +736,9 @@ func GetTaskAnalysisData(c echo.Context) error {
 }
 
 type CreateAuditTasksGroupReqV1 struct {
-	Instances []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
-	ExecMode  string                     `json:"exec_mode" enums:"sql_file,sqls"`
+	Instances       []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+	ExecMode        string                     `json:"exec_mode" enums:"sql_file,sqls"`
+	FileOrderMethod string                     `json:"file_order_method"`
 }
 
 type InstanceForCreatingTask struct {
@@ -836,6 +838,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 		}
 		tasks[i].CreatedAt = time.Now()
 		tasks[i].ExecMode = req.ExecMode
+		tasks[i].FileOrderMethod = req.FileOrderMethod
 	}
 
 	taskGroup := model.TaskGroup{Tasks: tasks}
@@ -852,9 +855,8 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId     uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
+	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 }
 
 type AuditTaskGroupRes struct {
@@ -957,6 +959,14 @@ func AuditTaskGroupV1(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
 			}
 			if len(fileRecords) > 0 {
+				fileHeader, _, err := getFileHeaderFromContext(c)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+				if strings.HasSuffix(fileHeader.Filename, ZIPFileExtension) && task.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
+					sortAuditFiles(fileRecords, task.FileOrderMethod)
+				}
+
 				err = batchCreateFileRecords(s, fileRecords, task.ID)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
@@ -1145,5 +1155,5 @@ type GetSqlFileOrderMethodResV1 struct {
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
 // @router /v1/tasks/file_order_methods [get]
 func GetSqlFileOrderMethodV1(c echo.Context) error {
-	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{})
+	return getSqlFileOrderMethod(c)
 }

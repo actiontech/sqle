@@ -144,3 +144,7 @@ func NewTaskNoExistOrNoAccessErr() error {
 func NewInstanceNoExistErr() error {
 	return New(DataNotExist, fmt.Errorf("instance is not exist"))
 }
+
+func NewNotSupportGetSqlFileOrderMethodErr() error {
+	return New(EnterpriseEditionFeatures, fmt.Errorf("get sql file order method is enterprise version function"))
+}
