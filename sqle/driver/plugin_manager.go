@@ -182,7 +182,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 	// register plugin
 	for _, p := range plugins {
 
-		pluginPidFilePath := filepath.Join(pluginDir, p.Name()+".pid")
+		pluginPidFilePath := filepath.Join(pluginDir, "pidfile", p.Name()+".pid")
 		process, err := GetProcessByPidFile(pluginPidFilePath)
 		if err != nil {
 			log.NewEntry().Warnf("get plugin %s process failed, error: %v", pluginPidFilePath, err)
@@ -190,7 +190,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		if process != nil {
 			err = KillProcess(process)
 			if err != nil {
-				log.NewEntry().Warnf("kill plugin process【%v】 failed, error: %v", process.Pid, err)
+				log.NewEntry().Warnf("kill plugin process [%v] failed, error: %v", process.Pid, err)
 			}
 		}
 
@@ -283,7 +283,7 @@ func GetProcessByPidFile(pluginPidFile string) (*os.Process, error) {
 		// 获取进程
 		process, err := GetProcessByPid(pid)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		return process, nil
 	}
@@ -299,7 +299,7 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 	// 检查进程是否存在的方式
 	err = process.Signal(syscall.Signal(0))
 	if err != nil {
-		if strings.Contains(err.Error(), "os: process already finished") {
+		if errors.Is(err, os.ErrProcessDone) {
 			return nil, nil
 		}
 		return nil, err
@@ -309,14 +309,33 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 
 // 退出进程
 func KillProcess(process *os.Process) error {
-	err := process.Signal(syscall.SIGTERM)
-	if err != nil {
-		return err
+	doneChan := time.NewTicker(2 * time.Second)
+	defer doneChan.Stop()
+	for {
+		select {
+		case <-doneChan.C:
+			log.NewEntry().Warnf("stop plugin process [%v] failed, just kill it ", process.Pid)
+			err := process.Kill()
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			err := process.Signal(syscall.SIGTERM)
+			if errors.Is(err, os.ErrProcessDone) {
+				return nil
+			}
+		}
 	}
-	return nil
 }
 
 func WritePidFile(pidFilePath string, pid int64) error {
+	_, err := os.Stat(pidFilePath)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(pidFilePath), 0644); err != nil {
+			return err
+		}
+	}
 	file, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
