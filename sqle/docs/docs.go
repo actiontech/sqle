@@ -9002,6 +9002,9 @@ var doc = `{
                         "sqls"
                     ]
                 },
+                "file_order_method": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string",
                     "example": "inst_1"
