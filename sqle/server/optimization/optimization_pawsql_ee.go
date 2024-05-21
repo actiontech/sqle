@@ -94,7 +94,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		return optimizationInfo, err
 	}
 	a.logger.Debugf("get Optimization summary %v", summary)
-	optimizationIndexInfo := trimKeyWord(summary.OptimizationIndexInfo)
+	optimizationIndexInfo := trimKeyWord4Slice(summary.OptimizationIndexInfo)
 	optimizationInfo = &model.SQLOptimizationRecord{
 		NumberOfQuery:          summary.BasicSummary.NumberOfQuery,
 		NumberOfSyntaxError:    summary.BasicSummary.NumberOfSyntaxError,
@@ -139,9 +139,11 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 			}
 		}
 
-		// 索引数据移除pawsql关键字
-		indexRecommendeds := trimKeyWord(getIndexesRecommendedFromMD(detail.DetailMarkdownZh))
-		contributingIndices := trimKeyWord([]string{statementInfo.ContributingIndices})
+		// 移除PAWSQL关键字
+		indexRecommendeds := trimKeyWord4Slice(getIndexesRecommendedFromMD(detail.DetailMarkdownZh))
+		contributingIndices := trimKeyWord4Slice([]string{statementInfo.ContributingIndices})
+		detail.ValidationDetails.BeforePlan = trimKeyWord(detail.ValidationDetails.BeforePlan)
+		detail.ValidationDetails.AfterPlan = trimKeyWord(detail.ValidationDetails.AfterPlan)
 
 		// 详情和列表的性能提升值保持一致
 		detail.ValidationDetails.PerformImprovePer = statementInfo.Performance
@@ -178,9 +180,14 @@ func getIndexesRecommendedFromMD(md string) []string {
 	return createIndexes
 }
 
-func trimKeyWord(slices []string) (ret []string) {
-	for _, s := range slices {
-		ret = append(ret, strings.ReplaceAll(s, "PAWSQL", "OPTIMIZATION"))
+func trimKeyWord(s string) string {
+	return strings.ReplaceAll(s, "PAWSQL", "OPTIMIZATION")
+}
+
+func trimKeyWord4Slice(slice []string) (ret []string) {
+	ret = make([]string, len(slice))
+	for k := range slice {
+		ret[k] = trimKeyWord(slice[k])
 	}
 	return
 }
