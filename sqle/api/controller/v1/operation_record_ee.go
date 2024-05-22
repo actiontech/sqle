@@ -180,15 +180,21 @@ func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, string,
 
 	s := model.GetStorage()
 	contents := []string{}
+	fileIds := []uint{}
+	idIndexMap := make(map[uint]uint)
 	for _, updateFile := range req.FileNewIndexes {
-		auditFile, err := s.GetFileById(updateFile.FileID)
-		if err != nil {
-			return "", "", err
-		}
-		if auditFile == nil {
-			return "", "", fmt.Errorf("cannot find audit file by id, id:%d", updateFile.FileID)
-		}
-		contents = append(contents, fmt.Sprintf("将%s->%d", auditFile.FileName, updateFile.NewIndex))
+		fileIds = append(fileIds, updateFile.FileID)
+		idIndexMap[updateFile.FileID] = updateFile.NewIndex
+	}
+
+	auditFiles, err := s.GetFileByIds(fileIds)
+	if err != nil {
+		return "", "", err
+	}
+
+	for _, file := range auditFiles {
+		newIndex := idIndexMap[file.ID]
+		contents = append(contents, fmt.Sprintf("将%s->%d", file.FileName, newIndex))
 	}
 
 	projectName := c.Param("project_name")
