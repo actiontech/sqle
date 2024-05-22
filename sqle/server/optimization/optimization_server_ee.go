@@ -69,6 +69,10 @@ func Optimizate(ctx context.Context, user, projectId string, instance *model.Ins
 		optimizationInfo, err := server.Optimizate(context.TODO(), OptimizationSQL)
 		if err != nil {
 			optimizationRecord.Status = OptimizateStatusFailed.String()
+			optimizationRecord.OptimizationSQLs = append(optimizationRecord.OptimizationSQLs, &model.OptimizationSQL{
+				OptimizationId: id,
+				OriginalSQL:    OptimizationSQL,
+			})
 			logger.Error(err)
 		} else {
 			optimizationRecord.PerformanceImprove = optimizationInfo.PerformanceImprove
