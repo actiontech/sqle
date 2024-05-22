@@ -55,13 +55,13 @@ func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
 	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetFileById(fileId uint) (*AuditFile, error) {
-	auditFile := &AuditFile{}
-	err := s.db.Where("id = ?", fileId).First(auditFile).Error
+func (s *Storage) GetFileByIds(fileIds []uint) ([]*AuditFile, error) {
+	auditFiles := []*AuditFile{}
+	err := s.db.Debug().Where("id in (?)", fileIds).Find(&auditFiles).Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, nil
+		return auditFiles, nil
 	}
-	return auditFile, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, err)
 }
 
 // expired time 24hour
