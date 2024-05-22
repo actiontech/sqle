@@ -385,3 +385,13 @@ func GetOverlapOfUsers(users1, users2 []*User) []*User {
 	}
 	return res
 }
+
+func (s *Storage) GetManageUsersByProjectID(projectID uint) ([]*User, error) {
+	var users []*User
+	err := s.db.Model(&User{}).
+		Joins("LEFT JOIN project_manager pm ON pm.user_id = users.id").
+		Where("pm.project_id = ?", projectID).
+		Where("users.deleted_at IS NULL").
+		Find(&users).Error
+	return users, errors.ConnectStorageErrWrapper(err)
+}
