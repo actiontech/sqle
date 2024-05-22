@@ -34,10 +34,11 @@ import (
 var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
 
 type CreateAuditTaskReqV1 struct {
-	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
-	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sql            string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	ExecMode       string `json:"exec_mode" enums:"sql_file,sqls"`
+	InstanceName    string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
+	InstanceSchema  string `json:"instance_schema" form:"instance_schema" example:"db1"`
+	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	ExecMode        string `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
+	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -319,12 +320,21 @@ func CreateAndAuditTask(c echo.Context) error {
 	task.Instance = nil
 
 	task.ExecMode = req.ExecMode
+	task.FileOrderMethod = req.FileOrderMethod
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
 	err = s.Save(&taskGroup)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if len(fileRecords) > 0 {
+		fileHeader, _, err := getFileHeaderFromContext(c)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if strings.HasSuffix(fileHeader.Filename, ZIPFileExtension) && req.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
+			sortAuditFiles(fileRecords, req.FileOrderMethod)
+		}
+
 		err = batchCreateFileRecords(s, fileRecords, task.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
