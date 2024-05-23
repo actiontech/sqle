@@ -1024,13 +1024,13 @@ func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
 	return taskIDs
 }
 
-type UpdateSqlFileOrder struct {
+type FileToSort struct {
 	FileID   uint `json:"file_id" valid:"required"`
 	NewIndex uint `json:"new_index" valid:"required"`
 }
 
 type UpdateSqlFileOrderV1Req struct {
-	FileNewIndexes []UpdateSqlFileOrder `json:"file_new_indexes"`
+	FilesToSort []FileToSort `json:"files_to_sort"`
 }
 
 // UpdateSqlFileOrderV1
@@ -1041,8 +1041,9 @@ type UpdateSqlFileOrderV1Req struct {
 // @Tags task
 // @Id updateSqlFileOrderV1
 // @Security ApiKeyAuth
+// @Param instance body v1.UpdateSqlFileOrderV1Req true "instance body v1.UpdateSqlFileOrderV1Req true"
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
-// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/file_order [patch]
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file [post]
 func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
 	return updateSqlFileOrderByWorkflow(c)
 }

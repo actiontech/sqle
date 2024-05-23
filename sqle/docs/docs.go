@@ -4866,8 +4866,8 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/file_order": {
-            "patch": {
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -4885,6 +4885,17 @@ var doc = `{
                 ],
                 "summary": "修改文件上线顺序",
                 "operationId": "updateSqlFileOrderV1",
+                "parameters": [
+                    {
+                        "description": "instance body v1.UpdateSqlFileOrderV1Req true",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSqlFileOrderV1Req"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -9484,6 +9495,17 @@ var doc = `{
                 }
             }
         },
+        "v1.FileToSort": {
+            "type": "object",
+            "properties": {
+                "file_id": {
+                    "type": "integer"
+                },
+                "new_index": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.FullSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -12933,6 +12955,17 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.UpdateSqlFileOrderV1Req": {
+            "type": "object",
+            "properties": {
+                "files_to_sort": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.FileToSort"
                     }
                 }
             }
