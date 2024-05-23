@@ -4887,6 +4887,27 @@ var doc = `{
                 "operationId": "updateSqlFileOrderV1",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "description": "instance body v1.UpdateSqlFileOrderV1Req true",
                         "name": "instance",
                         "in": "body",

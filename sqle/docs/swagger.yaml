@@ -7308,6 +7308,21 @@ paths:
       description: update sql file order
       operationId: updateSqlFileOrderV1
       parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
       - description: instance body v1.UpdateSqlFileOrderV1Req true
         in: body
         name: instance
