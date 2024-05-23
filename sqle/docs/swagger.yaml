@@ -800,6 +800,13 @@ definitions:
       is_feishu_notification_enabled:
         type: boolean
     type: object
+  v1.FileToSort:
+    properties:
+      file_id:
+        type: integer
+      new_index:
+        type: integer
+    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -3149,6 +3156,13 @@ definitions:
       tags:
         items:
           type: string
+        type: array
+    type: object
+  v1.UpdateSqlFileOrderV1Req:
+    properties:
+      files_to_sort:
+        items:
+          $ref: '#/definitions/v1.FileToSort'
         type: array
     type: object
   v1.UpdateSystemVariablesReqV1:
@@ -7287,6 +7301,31 @@ paths:
       summary: 创建工单
       tags:
       - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file:
+    post:
+      consumes:
+      - application/json
+      description: update sql file order
+      operationId: updateSqlFileOrderV1
+      parameters:
+      - description: instance body v1.UpdateSqlFileOrderV1Req true
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSqlFileOrderV1Req'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlFileOrderMethodResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 修改文件上线顺序
+      tags:
+      - task
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate:
     post:
       description: execute one task on workflow
