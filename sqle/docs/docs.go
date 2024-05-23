@@ -4367,6 +4367,18 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "exec mode",
+                        "name": "exec_mode",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
                         "description": "create and audit task",
                         "name": "req",
                         "in": "body",
