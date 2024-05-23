@@ -57,7 +57,7 @@ func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
 
 func (s *Storage) GetFileByIds(fileIds []uint) ([]*AuditFile, error) {
 	auditFiles := []*AuditFile{}
-	err := s.db.Debug().Where("id in (?)", fileIds).Find(&auditFiles).Error
+	err := s.db.Where("id in (?)", fileIds).Find(&auditFiles).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditFiles, nil
 	}
