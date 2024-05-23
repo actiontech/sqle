@@ -1041,6 +1041,9 @@ type UpdateSqlFileOrderV1Req struct {
 // @Tags task
 // @Id updateSqlFileOrderV1
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
+// @Param task_id path string true "task id"
 // @Param instance body v1.UpdateSqlFileOrderV1Req true "instance body v1.UpdateSqlFileOrderV1Req true"
 // @Success 200 {object} v1.GetSqlFileOrderMethodResV1
 // @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file [post]
