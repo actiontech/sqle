@@ -378,49 +378,19 @@ func updateSqlFileOrderByWorkflow(c echo.Context) error {
 			fmt.Errorf("task has not reached the execution step or you are not allow to adjust the order, task id:%s", taskIdStr))
 	}
 
-	s := model.GetStorage()
-	fileNewIndexes := req.FileNewIndexes
-	files, err := s.GetFileByTaskId(taskIdStr)
+	originSortedFiles, err := getOriginSortedFiles(taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].ExecOrder < files[j].ExecOrder
-	})
 
-	idFileMap := make(map[uint]*model.AuditFile)
-	for _, file := range files {
-		idFileMap[file.ID] = file
+	err = checkParamsIsValid(req, originSortedFiles)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	// 将修改过位置的文件按照新索引添加到slice中
-	newOrderFiles := make([]*model.AuditFile, len(files))
-	for _, fileNewIndex := range fileNewIndexes {
-		newIndex := fileNewIndex.NewIndex
-		if int(newIndex) >= len(files) {
-			return controller.JSONBaseErrorReq(c,
-				fmt.Errorf("new index setting is too long, file id:%d, new index:%d, length of files:%d", fileNewIndex.FileID, newIndex, len(files)))
-		}
-		auditFile := idFileMap[fileNewIndex.FileID]
-		newOrderFiles[newIndex] = auditFile
-	}
+	newOrderFiles := reorderFiles(req.FilesToSort, originSortedFiles)
 
-	// 将修改过位置的文件从原有数据中删除
-	removedFiles := removeFileFromOriginFiles(fileNewIndexes, files)
-
-	// 将未修改位置的文件添加到新slice中
-	index := 0
-	for i := 0; i < len(newOrderFiles); i++ {
-		if newOrderFiles[i] == nil {
-			newOrderFiles[i] = removedFiles[index]
-			index++
-		}
-	}
-
-	for i, file := range newOrderFiles {
-		file.ExecOrder = uint(i)
-	}
-
+	s := model.GetStorage()
 	if err := s.BatchSaveFileRecords(newOrderFiles); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -457,7 +427,85 @@ func checkTaskCanExecAndUserHasPermission(c echo.Context) (bool, error) {
 	return true, nil
 }
 
-func removeFileFromOriginFiles(fileNewIndexes []UpdateSqlFileOrder, originFiles []*model.AuditFile) []*model.AuditFile {
+func getOriginSortedFiles(taskId string) ([]*model.AuditFile, error) {
+	s := model.GetStorage()
+	sortedFiles := []*model.AuditFile{}
+	files, err := s.GetFileByTaskId(taskId)
+	if err != nil {
+		return sortedFiles, err
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+	return files, nil
+}
+
+/*
+参数校验内容：
+1. 新索引是否越界
+2. 传参中的文件ID是否存在
+3. 传参中的文件ID和索引是否存在重复传递
+*/
+func checkParamsIsValid(req *UpdateSqlFileOrderV1Req, originFiles []*model.AuditFile) error {
+	originFileIdSet := make(map[uint]struct{})
+	for _, file := range originFiles {
+		originFileIdSet[file.ID] = struct{}{}
+	}
+
+	filesLength := len(originFiles)
+	paramFileIdSet := make(map[uint]struct{})
+	paramNewIndexSet := make(map[uint]struct{})
+	for _, fileToSort := range req.FilesToSort {
+		newIndex := fileToSort.NewIndex
+		fileId := fileToSort.FileID
+		if int(newIndex) >= filesLength {
+			return fmt.Errorf("new index setting is too long, file id:%d, new index:%d, length of files:%d", fileId, newIndex, filesLength)
+		}
+		if newIndex <= 0 {
+			return fmt.Errorf("new index must be greater than 0, file id:%d, new index:%d", fileId, newIndex)
+		}
+
+		_, exist := originFileIdSet[fileId]
+		if !exist {
+			return fmt.Errorf("file id is not exist, file id:%d", fileId)
+		}
+
+		_, exist = paramFileIdSet[fileId]
+		if exist {
+			return fmt.Errorf("duplicate file IDs found, file id:%d", fileId)
+		} else {
+			paramFileIdSet[fileId] = struct{}{}
+		}
+		_, exist = paramNewIndexSet[newIndex]
+		if exist {
+			return fmt.Errorf("duplicate indexes found, new index:%d", newIndex)
+		} else {
+			paramNewIndexSet[newIndex] = struct{}{}
+		}
+	}
+	return nil
+}
+
+func reorderFiles(filesToSort []FileToSort, originSortedFiles []*model.AuditFile) []*model.AuditFile {
+	auditFileById := make(map[uint]*model.AuditFile)
+	for _, file := range originSortedFiles {
+		auditFileById[file.ID] = file
+	}
+
+	newOrderFiles := make([]*model.AuditFile, len(originSortedFiles))
+	for _, fileToSort := range filesToSort {
+		auditFile := auditFileById[fileToSort.FileID]
+		newOrderFiles[fileToSort.NewIndex] = auditFile
+	}
+
+	unadjustedFiles := removeFileFromOriginFiles(filesToSort, originSortedFiles)
+
+	fillUnadjustedFiles(newOrderFiles, unadjustedFiles)
+
+	return newOrderFiles
+}
+
+func removeFileFromOriginFiles(fileNewIndexes []FileToSort, originFiles []*model.AuditFile) []*model.AuditFile {
 	files := []*model.AuditFile{}
 
 	newIndexFileIds := make(map[uint]struct{})
@@ -471,4 +519,18 @@ func removeFileFromOriginFiles(fileNewIndexes []UpdateSqlFileOrder, originFiles 
 		}
 	}
 	return files
+}
+
+func fillUnadjustedFiles(orderedFiles, unadjustedFiles []*model.AuditFile) {
+	index := 0
+	for i := 0; i < len(orderedFiles); i++ {
+		if orderedFiles[i] == nil {
+			orderedFiles[i] = unadjustedFiles[index]
+			index++
+		}
+	}
+
+	for i, file := range orderedFiles {
+		file.ExecOrder = uint(i)
+	}
 }
