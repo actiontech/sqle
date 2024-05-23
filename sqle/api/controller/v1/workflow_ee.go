@@ -486,6 +486,8 @@ func checkParamsIsValid(req *UpdateSqlFileOrderV1Req, originFiles []*model.Audit
 	return nil
 }
 
+// originSortedFiles索引0的位置是一个不允许排序的文件，代表的是zip包
+// 重新排序时，不允许传递newindex为0的数据
 func reorderFiles(filesToSort []FileToSort, originSortedFiles []*model.AuditFile) []*model.AuditFile {
 	auditFileById := make(map[uint]*model.AuditFile)
 	for _, file := range originSortedFiles {
