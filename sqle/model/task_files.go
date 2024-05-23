@@ -100,7 +100,6 @@ func (s *Storage) BatchSaveFileRecords(records []*AuditFile) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		for _, record := range records {
 			if err := txDB.Save(record).Error; err != nil {
-				txDB.Rollback()
 				return err
 			}
 		}
