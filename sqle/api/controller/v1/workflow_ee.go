@@ -6,22 +6,24 @@ package v1
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"mime"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
-	"database/sql"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/actiontech/sqle/sqle/errors"
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -358,4 +360,179 @@ func updateWorkflowTemplate(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func updateSqlFileOrderByWorkflow(c echo.Context) error {
+	req := new(UpdateSqlFileOrderV1Req)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskIdStr := c.Param("task_id")
+
+	isCan, err := checkTaskCanExecAndUserHasPermission(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !isCan {
+		return controller.JSONBaseErrorReq(c,
+			fmt.Errorf("task has not reached the execution step or you are not allow to adjust the order, task id:%s", taskIdStr))
+	}
+
+	originSortedFiles, err := getOriginSortedFiles(taskIdStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = checkParamsIsValid(req, originSortedFiles)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	newOrderFiles := reorderFiles(req.FilesToSort, originSortedFiles)
+
+	s := model.GetStorage()
+	if err := s.BatchSaveFileRecords(newOrderFiles); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func checkTaskCanExecAndUserHasPermission(c echo.Context) (bool, error) {
+	s := model.GetStorage()
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	taskIdStr := c.Param("task_id")
+	workflowID := c.Param("workflow_id")
+	taskID, err := strconv.Atoi(taskIdStr)
+	if err != nil {
+		return false, err
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return false, err
+	}
+
+	var workflow *model.Workflow
+	{
+		workflow, err = dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+		if err != nil {
+			return false, err
+		}
+	}
+	err = PrepareForTaskExecution(c, string(workflow.ProjectId), workflow, user, taskID)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func getOriginSortedFiles(taskId string) ([]*model.AuditFile, error) {
+	s := model.GetStorage()
+	sortedFiles := []*model.AuditFile{}
+	files, err := s.GetFileByTaskId(taskId)
+	if err != nil {
+		return sortedFiles, err
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].ExecOrder < files[j].ExecOrder
+	})
+	return files, nil
+}
+
+/*
+参数校验内容：
+1. 新索引是否越界
+2. 传参中的文件ID是否存在
+3. 传参中的文件ID和索引是否存在重复传递
+*/
+func checkParamsIsValid(req *UpdateSqlFileOrderV1Req, originFiles []*model.AuditFile) error {
+	originFileIdSet := make(map[uint]struct{})
+	for _, file := range originFiles {
+		originFileIdSet[file.ID] = struct{}{}
+	}
+
+	filesLength := len(originFiles)
+	paramFileIdSet := make(map[uint]struct{})
+	paramNewIndexSet := make(map[uint]struct{})
+	for _, fileToSort := range req.FilesToSort {
+		newIndex := fileToSort.NewIndex
+		fileId := fileToSort.FileID
+		if int(newIndex) >= filesLength {
+			return fmt.Errorf("new index setting is too long, file id:%d, new index:%d, length of files:%d", fileId, newIndex, filesLength)
+		}
+		if newIndex <= 0 {
+			return fmt.Errorf("new index must be greater than 0, file id:%d, new index:%d", fileId, newIndex)
+		}
+
+		_, exist := originFileIdSet[fileId]
+		if !exist {
+			return fmt.Errorf("file id is not exist, file id:%d", fileId)
+		}
+
+		_, exist = paramFileIdSet[fileId]
+		if exist {
+			return fmt.Errorf("duplicate file IDs found, file id:%d", fileId)
+		} else {
+			paramFileIdSet[fileId] = struct{}{}
+		}
+		_, exist = paramNewIndexSet[newIndex]
+		if exist {
+			return fmt.Errorf("duplicate indexes found, new index:%d", newIndex)
+		} else {
+			paramNewIndexSet[newIndex] = struct{}{}
+		}
+	}
+	return nil
+}
+
+// originSortedFiles索引0的位置是一个不允许排序的文件，代表的是zip包
+// 重新排序时，不允许传递newindex为0的数据
+func reorderFiles(filesToSort []FileToSort, originSortedFiles []*model.AuditFile) []*model.AuditFile {
+	auditFileById := make(map[uint]*model.AuditFile)
+	for _, file := range originSortedFiles {
+		auditFileById[file.ID] = file
+	}
+
+	newOrderFiles := make([]*model.AuditFile, len(originSortedFiles))
+	for _, fileToSort := range filesToSort {
+		auditFile := auditFileById[fileToSort.FileID]
+		newOrderFiles[fileToSort.NewIndex] = auditFile
+	}
+
+	unadjustedFiles := removeFileFromOriginFiles(filesToSort, originSortedFiles)
+
+	fillUnadjustedFiles(newOrderFiles, unadjustedFiles)
+
+	return newOrderFiles
+}
+
+func removeFileFromOriginFiles(fileNewIndexes []FileToSort, originFiles []*model.AuditFile) []*model.AuditFile {
+	files := []*model.AuditFile{}
+
+	newIndexFileIds := make(map[uint]struct{})
+	for _, file := range fileNewIndexes {
+		newIndexFileIds[file.FileID] = struct{}{}
+	}
+
+	for _, file := range originFiles {
+		if _, exist := newIndexFileIds[file.ID]; !exist {
+			files = append(files, file)
+		}
+	}
+	return files
+}
+
+func fillUnadjustedFiles(orderedFiles, unadjustedFiles []*model.AuditFile) {
+	index := 0
+	for i := 0; i < len(orderedFiles); i++ {
+		if orderedFiles[i] == nil {
+			orderedFiles[i] = unadjustedFiles[index]
+			index++
+		}
+	}
+
+	for i, file := range orderedFiles {
+		file.ExecOrder = uint(i)
+	}
 }
