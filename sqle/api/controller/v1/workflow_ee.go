@@ -395,7 +395,7 @@ func updateSqlFileOrderByWorkflow(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 func checkTaskCanExecAndUserHasPermission(c echo.Context) (bool, error) {
