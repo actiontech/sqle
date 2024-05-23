@@ -136,8 +136,8 @@ func init() {
 		},
 		// 工单
 		{
-			RouterPath:               "/v1/projects/:project_name/workflows/:workflow_id/tasks/:task_id/file_order",
-			Method:                   http.MethodPatch,
+			RouterPath:               "/v1/projects/:project_name/workflows/:workflow_id/tasks/:task_id/order_file",
+			Method:                   http.MethodPost,
 			OperationType:            model.OperationRecordTypeWorkflow,
 			OperationAction:          model.OperationRecordActionUpdateWorkflow,
 			GetProjectAndContentFunc: getProjectAndContentFromUpdatingFilesOrder,
@@ -182,7 +182,7 @@ func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, string,
 	contents := []string{}
 	fileIds := []uint{}
 	idIndexMap := make(map[uint]uint)
-	for _, updateFile := range req.FileNewIndexes {
+	for _, updateFile := range req.FilesToSort {
 		fileIds = append(fileIds, updateFile.FileID)
 		idIndexMap[updateFile.FileID] = updateFile.NewIndex
 	}
