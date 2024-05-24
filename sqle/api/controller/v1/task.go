@@ -272,6 +272,8 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
+// @Param exec_mode formData string false "exec mode"
+// @Param file_order_method formData string false "file order method"
 // @Param req body v1.CreateAuditTaskReqV1 true "create and audit task"
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
