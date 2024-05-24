@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 	_model "github.com/pingcap/parser/model"
 	parserMysql "github.com/pingcap/parser/mysql"
 )
@@ -619,7 +620,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 					colChanged = true
 					if isPk {
 						isPkChanged = true
-						pkValue = util.ExprFormat(l.Expr)
+						pkValue = restore(l.Expr)
 					}
 				}
 			}
@@ -640,7 +641,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 			}
 			if isPk {
 				if isPkChanged {
-					where = append(where, fmt.Sprintf("%s = '%s'", name, pkValue))
+					where = append(where, fmt.Sprintf("%s = %s", name, pkValue))
 				} else {
 					where = append(where, fmt.Sprintf("%s = %s", name, v))
 
@@ -651,6 +652,18 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 			strings.Join(value, ", "), strings.Join(where, " AND "))
 	}
 	return rollbackSql, "", nil
+}
+
+// 还原抽象语法树节点至SQL
+func restore(node ast.Node) (sql string) {
+	var buf strings.Builder
+	rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &buf)
+
+	if err := node.Restore(rc); err != nil {
+		return
+	}
+	sql = buf.String()
+	return
 }
 
 // getRecords select all data which will be update or delete.
