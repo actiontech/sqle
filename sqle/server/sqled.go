@@ -531,6 +531,9 @@ func (a *action) execSqlFileMode() error {
 		}
 		err = a.executeSqlsGroupByBatchId(sqls)
 		if err != nil {
+			if err == ErrExecuteFileFailed {
+				return nil
+			}
 			return err
 		}
 	}
@@ -558,6 +561,9 @@ func groupSqlsByFile(executeSQLs []*model.ExecuteSQL) map[string][]*model.Execut
 	return fileSqlMap
 }
 
+// 存在SQL文件执行失败，不再执行其他SQL文件
+var ErrExecuteFileFailed error = fmt.Errorf("execute file failed, please stop execute other file")
+
 func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 	sqlBatch := make([]*model.ExecuteSQL, 0)
 	for idx, sql := range sqls {
@@ -572,7 +578,7 @@ func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 				for _, sqlInBatch := range sqlBatch {
 					if sqlInBatch.ExecStatus == model.SQLExecuteStatusFailed {
 						// 一旦出现执行失败的SQL，则不再执行其他未执行的SQL
-						return nil
+						return ErrExecuteFileFailed
 					}
 				}
 				// clear sql batch
