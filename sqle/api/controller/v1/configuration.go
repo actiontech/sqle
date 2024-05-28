@@ -117,6 +117,13 @@ func UpdateSystemVariables(c echo.Context) error {
 		})
 	}
 
+	if req.CbOperationLogsExpiredHours != nil {
+		systemVariables = append(systemVariables, model.SystemVariable{
+			Key:   model.SystemVariableCbOperationLogsExpiredHours,
+			Value: strconv.Itoa(*req.CbOperationLogsExpiredHours),
+		})
+	}
+
 	if req.Url != nil {
 		systemVariables = append(systemVariables, model.SystemVariable{
 			Key:   model.SystemVariableSqleUrl,
@@ -167,12 +174,18 @@ func GetSystemVariables(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	cbOperationLogsExpiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableCbOperationLogsExpiredHours].Value)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetSystemVariablesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SystemVariablesResV1{
 			WorkflowExpiredHours:        expiredHours,
 			Url:                         systemVariables[model.SystemVariableSqleUrl].Value,
 			OperationRecordExpiredHours: operationRecordExpiredHours,
+			CbOperationLogsExpiredHours: cbOperationLogsExpiredHours,
 		},
 	})
 }
