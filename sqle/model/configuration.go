@@ -17,6 +17,7 @@ const (
 	SystemVariableWorkflowExpiredHours        = "system_variable_workflow_expired_hours"
 	SystemVariableSqleUrl                     = "system_variable_sqle_url"
 	SystemVariableOperationRecordExpiredHours = "system_variable_operation_record_expired_hours"
+	SystemVariableCbOperationLogsExpiredHours = "system_variable_cb_operation_logs_expired_hours"
 )
 
 const (
@@ -62,6 +63,13 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 		sysVariables[SystemVariableOperationRecordExpiredHours] = SystemVariable{
 			Key:   SystemVariableOperationRecordExpiredHours,
 			Value: strconv.Itoa(DefaultOperationRecordExpiredHours),
+		}
+	}
+
+	if _, ok := sysVariables[SystemVariableCbOperationLogsExpiredHours]; !ok {
+		sysVariables[SystemVariableCbOperationLogsExpiredHours] = SystemVariable{
+			Key:   SystemVariableCbOperationLogsExpiredHours,
+			Value: strconv.Itoa(30 * 24),
 		}
 	}
 
