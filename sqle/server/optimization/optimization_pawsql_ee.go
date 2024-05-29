@@ -163,7 +163,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		performanceImprove += statementInfo.Performance
 	}
 	// 概览接口返回的提升数据异常，自行计算
-	optimizationInfo.PerformanceImprove = performanceImprove
+	optimizationInfo.PerformanceImprove = performanceImprove / float64(len(summary.SummaryStatementInfo))
 	return
 }
 
