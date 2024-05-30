@@ -575,11 +575,8 @@ func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 				if err := a.executeSQLBatch(sqlBatch); err != nil {
 					return err
 				}
-				for _, sqlInBatch := range sqlBatch {
-					if sqlInBatch.ExecStatus == model.SQLExecuteStatusFailed {
-						// 一旦出现执行失败的SQL，则不再执行其他未执行的SQL
-						return ErrExecuteFileFailed
-					}
+				if err := checkBatchExecuteStatus(sqlBatch); err != nil {
+					return err
 				}
 				// clear sql batch
 				sqlBatch = make([]*model.ExecuteSQL, 0)
@@ -589,6 +586,19 @@ func (a *action) executeSqlsGroupByBatchId(sqls []*model.ExecuteSQL) error {
 			if err := a.executeSQLBatch(sqlBatch); err != nil {
 				return err
 			}
+			if err := checkBatchExecuteStatus(sqlBatch); err != nil {
+				return err
+			}
+		}
+
+	}
+	return nil
+}
+
+func checkBatchExecuteStatus(sqlBatch []*model.ExecuteSQL) error {
+	for _, sql := range sqlBatch {
+		if sql.ExecStatus == model.SQLExecuteStatusFailed {
+			return ErrExecuteFileFailed
 		}
 	}
 	return nil
