@@ -640,7 +640,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 			}
 			if isPk {
 				if isPkChanged {
-					where = append(where, fmt.Sprintf("%s = '%s'", name, pkValue))
+					where = append(where, fmt.Sprintf("%s = %s", name, pkValue))
 				} else {
 					where = append(where, fmt.Sprintf("%s = %s", name, v))
 
