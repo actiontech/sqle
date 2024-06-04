@@ -184,8 +184,8 @@ func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Resul
 }
 
 func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-	var results []_driver.Result
-	var execErrors []error
+	results := make([]_driver.Result, 0, len(queries))
+	execErrors := make([]error, 0)
 	for _, sql := range queries {
 		result, err := i.Exec(ctx, sql)
 		results = append(results, result)
