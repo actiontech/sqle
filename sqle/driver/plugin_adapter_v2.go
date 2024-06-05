@@ -5,6 +5,7 @@ import (
 	sqlDriver "database/sql/driver"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -18,11 +19,12 @@ import (
 )
 
 type PluginProcessorV2 struct {
-	cfg     func(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig
-	cmdBase string
-	cmdArgs []string
-	client  *goPlugin.Client
-	meta    *driverV2.DriverMetas
+	cfg               func(cmdBase string, cmdArgs []string) *goPlugin.ClientConfig
+	cmdBase           string
+	cmdArgs           []string
+	client            *goPlugin.Client
+	meta              *driverV2.DriverMetas
+	pluginPidFilePath string
 	sync.Mutex
 }
 
@@ -142,6 +144,7 @@ func (d *PluginProcessorV2) Stop() error {
 	if d.client != nil {
 		d.client.Kill()
 	}
+	os.Remove(d.pluginPidFilePath)
 	d.Unlock()
 	return nil
 }

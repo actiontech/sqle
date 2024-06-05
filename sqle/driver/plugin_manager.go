@@ -5,7 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/config"
@@ -177,6 +180,26 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		return err
 	}
 
+	// kill plugins process residual and remove pidfile
+	var wg sync.WaitGroup
+	dir := GetPluginPidDirPath(pluginDir)
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".pid") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				err = KillResidualPluginsProcess(path)
+				if err != nil {
+					log.NewEntry().Warnf("stop plugin error: %v", err)
+				}
+			}()
+		}
+		return nil
+	}); err != nil {
+		log.NewEntry().Warnf("file path walk stop plugin error: %v", err)
+	}
+	wg.Wait()
+
 	// register plugin
 	for _, p := range plugins {
 		cmdBase := filepath.Join(pluginDir, p.Name())
@@ -202,12 +225,17 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 			return fmt.Errorf("plugin %v failed to start, error: %v Please check the sqled.log for more details", p.Name(), err)
 		}
 
+		pluginPidFilePath := GetPluginPidFilePath(pluginDir, p.Name())
+		err = WritePidFile(pluginPidFilePath, int64(client.ReattachConfig().Pid))
+		if err != nil {
+			return fmt.Errorf("write plugin %s pid file failed, error: %v", pluginPidFilePath, err)
+		}
 		var pp PluginProcessor
 		switch client.NegotiatedVersion() {
 		case driverV1.ProtocolVersion:
 			pp = &PluginProcessorV1{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
 		case driverV2.ProtocolVersion:
-			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client}
+			pp = &PluginProcessorV2{cfg: getClientConfig, cmdBase: cmdBase, cmdArgs: cmdArgs, client: client, pluginPidFilePath: pluginPidFilePath}
 		}
 		if err := pm.register(pp); err != nil {
 			stopErr := pp.Stop()
@@ -242,4 +270,114 @@ func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *dri
 		return nil, ErrPluginNotFound
 	}
 	return pm.pluginProcessors[pluginName].Open(l, cfg)
+}
+
+func KillResidualPluginsProcess(pidFile string) error {
+	process, err := GetProcessByPidFile(pidFile)
+	if err != nil {
+		return fmt.Errorf("get plugin %s process failed, error: %v", pidFile, err)
+	}
+	if process != nil {
+		err = StopProcess(process)
+		if err != nil {
+			return fmt.Errorf("stop plugin process [%v] failed, error: %v", process.Pid, err)
+		}
+	}
+	os.Remove(pidFile)
+	return nil
+}
+
+// 根据pid文件获取进程信息
+func GetProcessByPidFile(pluginPidFile string) (*os.Process, error) {
+	if _, err := os.Stat(pluginPidFile); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	} else {
+		pidContent, err := os.ReadFile(pluginPidFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(pidContent) == 0 {
+			return nil, nil
+		}
+		pid, err := strconv.Atoi(string(pidContent))
+		if err != nil {
+			return nil, err
+		}
+		// 获取进程
+		process, err := GetProcessByPid(pid)
+		if err != nil {
+			return nil, err
+		}
+		return process, nil
+	}
+	return nil, nil
+}
+
+// 根据pid获取进程信息，若进程已退出则返回nil
+func GetProcessByPid(pid int) (*os.Process, error) {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return nil, err
+	}
+	// 检查进程是否存在的方式
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		if errors.Is(err, os.ErrProcessDone) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return process, nil
+}
+
+// 退出进程
+func StopProcess(process *os.Process) error {
+	doneChan := time.NewTicker(2 * time.Second)
+	defer doneChan.Stop()
+	for {
+		select {
+		case <-doneChan.C:
+			log.NewEntry().Warnf("stop plugin process [%v] failed, just kill it ", process.Pid)
+			err := process.Kill()
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			err := process.Signal(syscall.SIGTERM)
+			if errors.Is(err, os.ErrProcessDone) {
+				return nil
+			}
+		}
+	}
+}
+
+func GetPluginPidDirPath(pluginDir string) string {
+	return filepath.Join(pluginDir, "pidfile")
+}
+
+func GetPluginPidFilePath(pluginDir string, pluginName string) string {
+	return filepath.Join(GetPluginPidDirPath(pluginDir), pluginName+".pid")
+}
+
+func WritePidFile(pidFilePath string, pid int64) error {
+	_, err := os.Stat(pidFilePath)
+	if os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(pidFilePath), 0644); err != nil {
+			return err
+		}
+	}
+	file, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "%d", pid)
+	if err != nil {
+		return err
+	}
+	return nil
 }
