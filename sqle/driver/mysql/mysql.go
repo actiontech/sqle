@@ -184,7 +184,15 @@ func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Resul
 }
 
 func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
-	return nil, fmt.Errorf("unimplement this method")
+	results := make([]_driver.Result, 0, len(queries))
+	for _, sql := range queries {
+		result, err := i.Exec(ctx, sql)
+		results = append(results, result)
+		if err != nil {
+			return results, fmt.Errorf("exec sql failed: \n%s \n%v", sql, err)
+		}
+	}
+	return results, nil
 }
 
 func (i *MysqlDriverImpl) onlineddlWithGhost(query string) (bool, error) {
@@ -267,6 +275,7 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 		n.Text = nodes[idx].Text()
 		n.StartLine = uint64(nodes[idx].StartLine())
 		n.Type = i.assertSQLType(nodes[idx])
+		n.ExecBatchId = uint64(idx)
 
 		ns[idx] = n
 	}
@@ -614,6 +623,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleExtractTableFromSQL,
 			driverV2.OptionalModuleEstimateSQLAffectRows,
 			driverV2.OptionalModuleKillProcess,
+			driverV2.OptionalExecBatch,
 		},
 	}, nil
 }
