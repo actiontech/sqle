@@ -185,16 +185,12 @@ func (i *MysqlDriverImpl) Exec(ctx context.Context, query string) (_driver.Resul
 
 func (i *MysqlDriverImpl) ExecBatch(ctx context.Context, queries ...string) ([]_driver.Result, error) {
 	results := make([]_driver.Result, 0, len(queries))
-	execErrors := make([]error, 0)
 	for _, sql := range queries {
 		result, err := i.Exec(ctx, sql)
 		results = append(results, result)
 		if err != nil {
-			execErrors = append(execErrors, fmt.Errorf("exec sql failed: \n%s \n%v", sql, err))
+			return results, fmt.Errorf("exec sql failed: \n%s \n%v", sql, err)
 		}
-	}
-	if len(execErrors) > 0 {
-		return results, fmt.Errorf("encount errors:\n%v", execErrors)
 	}
 	return results, nil
 }
