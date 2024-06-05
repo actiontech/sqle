@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -179,21 +180,22 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		return err
 	}
 
+	// kill residual plugins process
+	pluginNameMap := make(map[string]struct{}, len(plugins))
+	var wg sync.WaitGroup
+	for _, p := range plugins {
+		wg.Add(1)
+		pluginPidFilePath := GetPluginPidFilePath(pluginDir, p.Name())
+		pluginNameMap[pluginPidFilePath] = struct{}{}
+		go KillResidualPluginsProcess(pluginPidFilePath, p.Name(), &wg)
+	}
+	wg.Wait()
+
+	// remove not exist plugin process pid file
+	go KillNotExitPliginsProcess(pluginDir, pluginNameMap)
+
 	// register plugin
 	for _, p := range plugins {
-
-		pluginPidFilePath := filepath.Join(pluginDir, "pidfile", p.Name()+".pid")
-		process, err := GetProcessByPidFile(pluginPidFilePath)
-		if err != nil {
-			log.NewEntry().Warnf("get plugin %s process failed, error: %v", pluginPidFilePath, err)
-		}
-		if process != nil {
-			err = KillProcess(process)
-			if err != nil {
-				log.NewEntry().Warnf("kill plugin process [%v] failed, error: %v", process.Pid, err)
-			}
-		}
-
 		cmdBase := filepath.Join(pluginDir, p.Name())
 		cmdArgs := make([]string, 0)
 
@@ -212,10 +214,11 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		}
 
 		client := goPlugin.NewClient(getClientConfig(cmdBase, cmdArgs))
-		_, err = client.Client()
+		_, err := client.Client()
 		if err != nil {
 			return fmt.Errorf("plugin %v failed to start, error: %v Please check the sqled.log for more details", p.Name(), err)
 		}
+		pluginPidFilePath := GetPluginPidFilePath(pluginDir, p.Name())
 		err = WritePidFile(pluginPidFilePath, int64(client.ReattachConfig().Pid))
 		if err != nil {
 			return fmt.Errorf("write plugin %s pid file failed, error: %v", pluginPidFilePath, err)
@@ -260,6 +263,20 @@ func (pm *pluginManager) OpenPlugin(l *logrus.Entry, pluginName string, cfg *dri
 		return nil, ErrPluginNotFound
 	}
 	return pm.pluginProcessors[pluginName].Open(l, cfg)
+}
+
+func KillResidualPluginsProcess(pluginPidFilePath string, pluginName string, wg *sync.WaitGroup) {
+	process, err := GetProcessByPidFile(pluginPidFilePath)
+	if err != nil {
+		log.NewEntry().Warnf("get plugin %s process failed, error: %v", pluginPidFilePath, err)
+	}
+	if process != nil {
+		err = StopProcess(process)
+		if err != nil {
+			log.NewEntry().Warnf("stop plugin process [%v] failed, error: %v", process.Pid, err)
+		}
+	}
+	wg.Done()
 }
 
 // 根据pid文件获取进程信息
@@ -308,7 +325,7 @@ func GetProcessByPid(pid int) (*os.Process, error) {
 }
 
 // 退出进程
-func KillProcess(process *os.Process) error {
+func StopProcess(process *os.Process) error {
 	doneChan := time.NewTicker(2 * time.Second)
 	defer doneChan.Stop()
 	for {
@@ -327,6 +344,43 @@ func KillProcess(process *os.Process) error {
 			}
 		}
 	}
+}
+
+// kill被移除插件的进程并且删除pid文件
+func KillNotExitPliginsProcess(pluginDir string, pluginNameMap map[string]struct{}) {
+	dir := GetPluginPidDirPath(pluginDir)
+	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		_, ok := pluginNameMap[path]
+		if ok {
+			return nil
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".pid") {
+			process, err := GetProcessByPidFile(path)
+			if err != nil {
+				log.NewEntry().Warnf("get plugin %s process failed, error: %v", path, err)
+				return nil
+			}
+			if process != nil {
+				err = process.Kill()
+				if err != nil {
+					log.NewEntry().Warnf("kill plugin process [%v] failed, error: %v", process.Pid, err)
+					return nil
+				}
+			}
+			os.Remove(path)
+		}
+		return nil
+	}); err != nil {
+		log.NewEntry().Warnf("stop plugin  %v", err)
+	}
+}
+
+func GetPluginPidDirPath(pluginDir string) string {
+	return filepath.Join(pluginDir, "pidfile")
+}
+
+func GetPluginPidFilePath(pluginDir string, pluginName string) string {
+	return filepath.Join(pluginDir, "pidfile", pluginName+".pid")
 }
 
 func WritePidFile(pidFilePath string, pid int64) error {
