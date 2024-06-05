@@ -52,7 +52,7 @@ func newConn(entry *logrus.Entry, instance *driverV2.DSN, schema string) (*BaseC
 	config.Loc = time.Local
 	config.Timeout = DAIL_TIMEOUT
 	config.Params = map[string]string{
-		"charset": "utf8",
+		"charset": "utf8mb4",
 	}
 	driver, err := mysql.NewConnector(config)
 	if err != nil {
