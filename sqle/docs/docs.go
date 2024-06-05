@@ -4367,6 +4367,18 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "exec mode",
+                        "name": "exec_mode",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
                         "description": "create and audit task",
                         "name": "req",
                         "in": "body",
@@ -4861,6 +4873,67 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql file order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "修改文件上线顺序",
+                "operationId": "updateSqlFileOrderV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "instance body v1.UpdateSqlFileOrderV1Req true",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSqlFileOrderV1Req"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
                         }
                     }
                 }
@@ -9002,6 +9075,9 @@ var doc = `{
                         "sqls"
                     ]
                 },
+                "file_order_method": {
+                    "type": "string"
+                },
                 "instance_name": {
                     "type": "string",
                     "example": "inst_1"
@@ -9025,6 +9101,9 @@ var doc = `{
                         "sql_file",
                         "sqls"
                     ]
+                },
+                "file_order_method": {
+                    "type": "string"
                 },
                 "instances": {
                     "type": "array",
@@ -9452,6 +9531,17 @@ var doc = `{
                 },
                 "is_feishu_notification_enabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "v1.FileToSort": {
+            "type": "object",
+            "properties": {
+                "file_id": {
+                    "type": "integer"
+                },
+                "new_index": {
+                    "type": "integer"
                 }
             }
         },
@@ -12904,6 +12994,17 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.UpdateSqlFileOrderV1Req": {
+            "type": "object",
+            "properties": {
+                "files_to_sort": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.FileToSort"
                     }
                 }
             }
