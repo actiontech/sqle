@@ -318,9 +318,20 @@ func IsPrefixSubStrArray(arr []string, prefix []string) bool {
 	return true
 }
 
-// 全模糊匹配字符串，并且对大小写不敏感
+// 全模糊匹配字符串，对大小写不敏感，匹配多行，且防止正则注入
 func FullFuzzySearchRegexp(str string) *regexp.Regexp {
-	return regexp.MustCompile(`^.*(?i)` + regexp.QuoteMeta(str) + `.*$`)
+	/*
+		1. (?is)是一个正则表达式修饰符,其中：
+			i表示忽略大小写(case-insensitive)
+			s表示让.匹配任何字符,包括换行符(\n)
+		2. ^.*匹配字符串的开头,其中：
+			^表示起始位置,
+			.表示匹配任何字符(除了换行符)
+			*表示匹配前面的模式零次或多次
+		3. .*$匹配字符串的结尾,其中：
+			$表示结束位置
+	*/
+	return regexp.MustCompile(`(?is)^.*` + regexp.QuoteMeta(str) + `.*$`)
 }
 
 var ErrUnknownEncoding = errors.New("unknown encoding")
