@@ -190,7 +190,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 				defer wg.Done()
 				err = KillResidualPluginsProcess(path)
 				if err != nil {
-					log.NewEntry().Warnf("stop residual plugin error: %v", err)
+					log.NewEntry().Warnf("stop residual plugin %s error: %v", path, err)
 				}
 			}()
 		}
@@ -285,7 +285,7 @@ func KillResidualPluginsProcess(pidFile string) error {
 	}
 	err = os.Remove(pidFile)
 	if err != nil {
-		return fmt.Errorf("remove pid file error: %v", err)
+		return fmt.Errorf("remove pid file %s error: %v", pidFile, err)
 	}
 	return nil
 }
