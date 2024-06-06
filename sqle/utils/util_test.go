@@ -259,6 +259,13 @@ func TestFullFuzzySearchRegexp(t *testing.T) {
 			".*(?i)",
 			[]string{"GoLang .*(?i) awesome", "I love GO^.*(?i)SING", "GoLangGO.*(?i)Golang"},
 			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
+		},{
+			"ignored_service",
+			[]string{`/* this is a comment, Service: ignored_service */
+			select * from table_ignored where id < 123;'
+			`,`/* this is a comment, Service: ignored_service */ select * from table_ignored where id < 123;`},
+			[]string{"any sql","",`/* this is a comment, Service: ignored
+			_service */ select * from table_ignored where id < 123;`},
 		},
 	}
 
