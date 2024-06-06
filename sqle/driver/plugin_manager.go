@@ -283,7 +283,10 @@ func KillResidualPluginsProcess(pidFile string) error {
 			return fmt.Errorf("stop plugin process [%v] failed, error: %v", process.Pid, err)
 		}
 	}
-	os.Remove(pidFile)
+	err = os.Remove(pidFile)
+	if err != nil {
+		return fmt.Errorf("remove pid file error: %v", err)
+	}
 	return nil
 }
 
