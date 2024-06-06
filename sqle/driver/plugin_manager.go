@@ -190,13 +190,13 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 				defer wg.Done()
 				err = KillResidualPluginsProcess(path)
 				if err != nil {
-					log.NewEntry().Warnf("stop plugin error: %v", err)
+					log.NewEntry().Warnf("stop residual plugin error: %v", err)
 				}
 			}()
 		}
 		return nil
 	}); err != nil {
-		log.NewEntry().Warnf("file path walk stop plugin error: %v", err)
+		log.NewEntry().Warnf("stop residual plugin file path walk error: %v", err)
 	}
 	wg.Wait()
 
