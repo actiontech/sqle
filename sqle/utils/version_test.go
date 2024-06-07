@@ -46,6 +46,31 @@ func TestIsVersionLessThan(t *testing.T) {
 			versionToBeCompared: "invalid",
 			expectedResult:      false,
 			expectedError:       true,
+		}, {
+			name:                "ob versionToBeCompared 1",
+			version:             "4.2.1.1-101010012023111012",
+			versionToBeCompared: "4.2.0",
+			expectedResult:      false,
+			expectedError:       false,
+		}, {
+			name:                "ob versionToBeCompared 2",
+			version:             "4.2.1.2-101010012023111012",
+			versionToBeCompared: "4.2.0.0-100001282023042317",
+			expectedResult:      false,
+			expectedError:       false,
+		}, {
+			name:                "ob versionToBeCompared 3",
+			version:             "3.1.3-101010012023111012",
+			versionToBeCompared: "4.10.0.0-100001282023042317",
+			expectedResult:      true,
+			expectedError:       false,
+		},
+		{
+			name:                "ob versionToBeCompared 4",
+			version:             "3.1.2-101010012023111012",
+			versionToBeCompared: "4.10.0.0-100001282023042317",
+			expectedResult:      true,
+			expectedError:       false,
 		},
 	}
 
