@@ -74,7 +74,7 @@ func addCustomApis(e *echo.Group, apis []restApi) error {
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
-// @BasePath /
+// @BasePath /sqle
 func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOptions) {
 	defer close(exitChan)
 
