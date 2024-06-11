@@ -75,7 +75,7 @@ func addCustomApis(e *echo.Group, apis []restApi) error {
 // @in header
 // @name Authorization
 // @BasePath /sqle
-func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOptions) {
+func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOptions, swaggerYaml []byte) {
 	defer close(exitChan)
 
 	e := echo.New()
@@ -100,6 +100,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	}
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	e.GET("/swagger_file", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, struct {
+			Content []byte `json:"content"`
+		}{
+			Content: swaggerYaml,
+		})
+	})
 
 	v1Router := e.Group(apiV1)
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
