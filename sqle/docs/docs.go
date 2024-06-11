@@ -14691,7 +14691,7 @@ type swaggerInfo struct {
 var SwaggerInfo = swaggerInfo{
 	Version:     "1.0",
 	Host:        "",
-	BasePath:    "/",
+	BasePath:    "/sqle",
 	Schemes:     []string{},
 	Title:       "Sqle API Docs",
 	Description: "This is a sample server for dev.",
