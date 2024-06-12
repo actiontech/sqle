@@ -7787,9 +7787,9 @@ paths:
         in: query
         name: filter_current_step_assignee_user_id
         type: string
-      - description: filter instance name
+      - description: filter instance id
         in: query
-        name: filter_task_instance_name
+        name: filter_task_instance_id
         type: string
       - description: project name
         in: path
