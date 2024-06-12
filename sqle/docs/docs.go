@@ -4560,8 +4560,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_task_instance_name",
+                        "description": "filter instance id",
+                        "name": "filter_task_instance_id",
                         "in": "query"
                     },
                     {
@@ -4811,8 +4811,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter instance name",
-                        "name": "filter_task_instance_name",
+                        "description": "filter instance id",
+                        "name": "filter_task_instance_id",
                         "in": "query"
                     },
                     {
@@ -7012,7 +7012,7 @@ var doc = `{
                     {
                         "type": "string",
                         "description": "filter instance id",
-                        "name": "filter_task_instance_name",
+                        "name": "filter_task_instance_id",
                         "in": "query"
                     },
                     {

@@ -127,8 +127,8 @@ OR IF(wr.status = 'wait_for_execution'
 AND tasks.status = :filter_task_status
 {{- end }}
 
-{{- if .filter_task_instance_name }}
-AND inst.name = :filter_task_instance_name
+{{- if .filter_task_instance_id }}
+AND tasks.instance_id = :filter_task_instance_id
 {{- end }}
 
 {{- if .filter_workflow_id }}
