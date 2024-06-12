@@ -497,7 +497,7 @@ type GetWorkflowsReqV1 struct {
 	FilterCreateUserId              string `json:"filter_create_user_id" query:"filter_create_user_id"`
 	FilterStatus                    string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
 	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
-	FilterTaskInstanceName          string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskInstanceId            string `json:"filter_task_instance_id" query:"filter_task_instance_id"`
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -537,7 +537,7 @@ type WorkflowDetailResV1 struct {
 // @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
-// @Param filter_task_instance_name query string false "filter instance id"
+// @Param filter_task_instance_id query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
@@ -564,7 +564,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                        req.FilterStatus,
 		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
-		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_task_instance_id":              req.FilterTaskInstanceId,
 		"current_user_id":                      user.GetIDStr(),
 		"check_user_can_access":                user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
 		"limit":                                limit,
@@ -621,7 +621,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 // @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
-// @Param filter_task_instance_name query string false "filter instance name"
+// @Param filter_task_instance_id query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
@@ -659,7 +659,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                        req.FilterStatus,
 		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
-		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_task_instance_id":              req.FilterTaskInstanceId,
 		"filter_project_id":                    projectUid,
 		"current_user_id":                      user.ID,
 		"check_user_can_access":                !up.IsAdmin(),
@@ -818,7 +818,7 @@ type ExportWorkflowReqV1 struct {
 	FilterCreateUserID              string `json:"filter_create_user_id" query:"filter_create_user_id"`
 	FilterStatus                    string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
 	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
-	FilterTaskInstanceName          string `json:"filter_task_instance_name" query:"filter_task_instance_name"`
+	FilterTaskInstanceId            string `json:"filter_task_instance_id" query:"filter_task_instance_id"`
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
@@ -839,7 +839,7 @@ type ExportWorkflowReqV1 struct {
 // @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
-// @Param filter_task_instance_name query string false "filter instance name"
+// @Param filter_task_instance_id query string false "filter instance id"
 // @Param project_name path string true "project name"
 // @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id/desc"
 // @Success 200 {file} file "export workflow"
