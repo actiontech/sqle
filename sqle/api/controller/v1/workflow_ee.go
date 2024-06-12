@@ -56,7 +56,7 @@ func exportWorkflowV1(c echo.Context) error {
 		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
 		"filter_status":                        req.FilterStatus,
 		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
-		"filter_task_instance_name":            req.FilterTaskInstanceName,
+		"filter_task_instance_id":              req.FilterTaskInstanceId,
 		"filter_project_id":                    projectUid,
 		"current_user_id":                      user.ID,
 		"check_user_can_access":                !up.IsAdmin(),
