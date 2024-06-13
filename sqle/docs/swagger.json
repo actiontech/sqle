@@ -7,7 +7,7 @@
         "license": {},
         "version": "1.0"
     },
-    "basePath": "/",
+    "basePath": "/sqle",
     "paths": {
         "/v1/audit_files": {
             "post": {
