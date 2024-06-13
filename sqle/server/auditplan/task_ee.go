@@ -1402,7 +1402,12 @@ const OceanBaseVersion4_0_0 string = "4.0.0"
 // ob for oracle 是从4.1.0开始适配的，因此默认版本设定为4.1.0
 const DefaultOBForOracleVersion string = "4.1.0"
 
-func getOceanBaseVersion(ctx context.Context, plugin driver.Plugin) (string, error) {
+func getOceanBaseVersion(ctx context.Context, inst *model.Instance, database string) (string, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return "", err
+	}
+	defer plugin.Close(context.TODO())
 	versionResult, err := plugin.Query(ctx, GetOceanbaseVersionSQL, &driverV2.QueryConf{TimeOutSecond: 20})
 	if err != nil {
 		return "", err
@@ -1418,6 +1423,7 @@ func getOceanBaseVersion(ctx context.Context, plugin driver.Plugin) (string, err
 // ObForOracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
 type ObForOracleTopSQLTask struct {
 	*sqlCollector
+	obVersion string
 }
 
 func NewObForOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -1450,7 +1456,16 @@ func (at *ObForOracleTopSQLTask) collectorDo() {
 		return
 	}
 
-	sqls, err := queryTopSQLs(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+	if at.obVersion == "" {
+		at.obVersion, err = getOceanBaseVersion(ctx, inst, at.ap.InstanceDatabase)
+		if err != nil {
+			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", DefaultOBForOracleVersion, err)
+			at.obVersion = DefaultOBForOracleVersion
+		}
+	}
+
+	sqls, err := queryTopSQLs(inst, at.ap.InstanceDatabase, at.obVersion,
+		at.ap.Params.GetParam("order_by_column").String(),
 		at.ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
@@ -1498,7 +1513,7 @@ func getPlanCacheViewNameByObVersion(obVersion string) string {
 	return viewName
 }
 
-func queryTopSQLs(inst *model.Instance, database string, orderBy string, topN int) ([]*DynPerformanceObForOracleColumns, error) {
+func queryTopSQLs(inst *model.Instance, database string, obVersion string, orderBy string, topN int) ([]*DynPerformanceObForOracleColumns, error) {
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
 	if err != nil {
 		return nil, err
@@ -1507,12 +1522,6 @@ func queryTopSQLs(inst *model.Instance, database string, orderBy string, topN in
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-
-	obVersion, err := getOceanBaseVersion(ctx, plugin)
-	if err != nil {
-		log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", DefaultOBForOracleVersion, err)
-		obVersion = DefaultOBForOracleVersion
-	}
 
 	sql := fmt.Sprintf(
 		DynPerformanceViewObForOracleTpl,
