@@ -1,6 +1,7 @@
 package sqled
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 	"os/signal"
@@ -22,6 +23,9 @@ import (
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/facebookgo/grace/gracenet"
 )
+
+//go:embed docs/swagger.yaml
+var sqleSwaggerYaml []byte
 
 func Run(options *config.SqleOptions) error {
 	// init logger
@@ -126,7 +130,7 @@ func Run(options *config.SqleOptions) error {
 	defer jm.Stop()
 
 	net := &gracenet.Net{}
-	go api.StartApi(net, exitChan, options)
+	go api.StartApi(net, exitChan, options, sqleSwaggerYaml)
 
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught
