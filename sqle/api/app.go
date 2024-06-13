@@ -22,7 +22,6 @@ import (
 	"github.com/facebookgo/grace/gracenet"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 const (
@@ -99,7 +98,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		}
 	}
 
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	e.GET("/swagger_file", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, struct {
 			Content []byte `json:"content"`
