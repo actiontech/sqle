@@ -80,6 +80,7 @@ require (
 require golang.org/x/sys v0.13.0
 
 require (
+	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/xen0n/go-workwx v1.7.0
 	golang.org/x/text v0.13.0
