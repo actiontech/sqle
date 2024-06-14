@@ -223,6 +223,9 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 		if srcFile.NonUTF8 {
 			utf8NameByte, err := utils.ConvertToUtf8([]byte(fullName))
 			if err != nil {
+				if e.Is(err, utils.ErrUnknownEncoding) {
+					return nil, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name")
+				}
 				return nil, err
 			} else {
 				fullName = string(utf8NameByte)
@@ -305,9 +308,6 @@ func CreateAndAuditTask(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		fileRecords, err = saveFileFromContext(c)
-		if e.Is(err, utils.ErrUnknownEncoding) {
-			return controller.JSONBaseErrorReq(c, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name"))
-		}
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -956,9 +956,6 @@ func AuditTaskGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		fileRecords, err = saveFileFromContext(c)
-		if e.Is(err, utils.ErrUnknownEncoding) {
-			return controller.JSONBaseErrorReq(c, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name"))
-		}
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
