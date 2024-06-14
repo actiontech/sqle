@@ -125,6 +125,11 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	// if task instance is not nil, gorm will update instance when save task.
 	task.Instance = nil
 
+	err = convertSQLSourceEncodingFromTask(task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	recordId, err := utils.GenUid()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("generate audit record id failed: %v", err))
