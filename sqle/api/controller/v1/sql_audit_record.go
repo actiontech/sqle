@@ -126,9 +126,6 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	task.Instance = nil
 
 	err = convertSQLSourceEncodingFromTask(task)
-	if e.Is(err, utils.ErrUnknownEncoding) {
-		return controller.JSONBaseErrorReq(c, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name"))
-	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
