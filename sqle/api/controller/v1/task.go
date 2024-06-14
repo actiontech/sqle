@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	e "errors"
 	"fmt"
 	"mime"
 	"mime/multipart"
@@ -219,6 +220,17 @@ func getFileRecordsFromZip(multipartFile multipart.File, fileHeader *multipart.F
 			continue
 		}
 		fullName := srcFile.FileHeader.Name // full name with relative path to zip file
+		if srcFile.NonUTF8 {
+			utf8NameByte, err := utils.ConvertToUtf8([]byte(fullName))
+			if err != nil {
+				if e.Is(err, utils.ErrUnknownEncoding) {
+					return nil, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name")
+				}
+				return nil, err
+			} else {
+				fullName = string(utf8NameByte)
+			}
+		}
 		if strings.HasSuffix(fullName, ".sql") {
 			auditFiles = append(auditFiles, model.NewFileRecord(0, execOrder, fullName, model.GenUniqueFileName()))
 			execOrder++
@@ -323,6 +335,12 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	task.ExecMode = req.ExecMode
 	task.FileOrderMethod = req.FileOrderMethod
+
+	err = convertSQLSourceEncodingFromTask(task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	taskGroup := model.TaskGroup{Tasks: []*model.Task{task}}
 	err = s.Save(&taskGroup)
 	if err != nil {
@@ -351,6 +369,23 @@ func CreateAndAuditTask(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertTaskToRes(task),
 	})
+}
+
+func convertSQLSourceEncodingFromTask(task *model.Task) error {
+	for _, sql := range task.ExecuteSQLs {
+		if sql.SourceFile == "" {
+			continue
+		}
+		utf8NameByte, err := utils.ConvertToUtf8([]byte(sql.SourceFile))
+		if err != nil {
+			if e.Is(err, utils.ErrUnknownEncoding) {
+				return e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name")
+			}
+			return err
+		}
+		sql.SourceFile = string(utf8NameByte)
+	}
+	return nil
 }
 
 // @Summary 获取Sql扫描任务信息
@@ -984,6 +1019,13 @@ func AuditTaskGroupV1(c echo.Context) error {
 					return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err)))
 				}
 			}
+		}
+	}
+
+	for _, task := range taskGroup.Tasks {
+		err = convertSQLSourceEncodingFromTask(task)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 
