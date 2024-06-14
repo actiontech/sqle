@@ -337,9 +337,6 @@ func CreateAndAuditTask(c echo.Context) error {
 	task.FileOrderMethod = req.FileOrderMethod
 
 	err = convertSQLSourceEncodingFromTask(task)
-	if e.Is(err, utils.ErrUnknownEncoding) {
-		return controller.JSONBaseErrorReq(c, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name"))
-	}
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -381,6 +378,9 @@ func convertSQLSourceEncodingFromTask(task *model.Task) error {
 		}
 		utf8NameByte, err := utils.ConvertToUtf8([]byte(sql.SourceFile))
 		if err != nil {
+			if e.Is(err, utils.ErrUnknownEncoding) {
+				return e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name")
+			}
 			return err
 		}
 		sql.SourceFile = string(utf8NameByte)
@@ -1027,9 +1027,6 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	for _, task := range taskGroup.Tasks {
 		err = convertSQLSourceEncodingFromTask(task)
-		if e.Is(err, utils.ErrUnknownEncoding) {
-			return controller.JSONBaseErrorReq(c, e.New("the file name contains unrecognized characters. Please ensure the file name is encoded in UTF-8 or use an English file name"))
-		}
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
