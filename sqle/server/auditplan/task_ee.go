@@ -1388,11 +1388,42 @@ func (at *DmTopSQLTask) GetSQLs(args map[string]interface{}) ([]Head, []map[stri
 	return heads, rows, count, nil
 }
 
+/*
+查询OceanBase版本的SQL语句
+
+ 1. 根据文档查询到的支持范围包括：3.2.3-4.3.1(最新)
+ 2. 测试时使用OceanBase版本3.1.5，3.1.5也支持该用法
+
+参考链接：https://www.oceanbase.com/quicksearch?q=OB_VERSION
+*/
+const GetOceanbaseVersionSQL string = "SELECT OB_VERSION() FROM DUAL"
+const OceanBaseVersion4_0_0 string = "4.0.0"
+
+// ob for oracle 是从4.1.0开始适配的，因此默认版本设定为4.1.0
+const DefaultOBForOracleVersion string = "4.1.0"
+
+func getOceanBaseVersion(ctx context.Context, inst *model.Instance, database string) (string, error) {
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return "", err
+	}
+	defer plugin.Close(context.TODO())
+	versionResult, err := plugin.Query(ctx, GetOceanbaseVersionSQL, &driverV2.QueryConf{TimeOutSecond: 20})
+	if err != nil {
+		return "", err
+	}
+	if len(versionResult.Column) == 1 && len(versionResult.Rows) == 1 {
+		return versionResult.Rows[0].Values[0].Value, nil
+	}
+	return "", fmt.Errorf("unexpected result of ob version")
+}
+
 // ObForOracleTopSQLTask implement the Task interface.
 //
 // ObForOracleTopSQLTask is a loop task which collect Top SQL from oracle instance.
 type ObForOracleTopSQLTask struct {
 	*sqlCollector
+	obVersion string
 }
 
 func NewObForOracleTopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
@@ -1425,7 +1456,16 @@ func (at *ObForOracleTopSQLTask) collectorDo() {
 		return
 	}
 
-	sqls, err := queryTopSQLs(inst, at.ap.InstanceDatabase, at.ap.Params.GetParam("order_by_column").String(),
+	if at.obVersion == "" {
+		at.obVersion, err = getOceanBaseVersion(ctx, inst, at.ap.InstanceDatabase)
+		if err != nil {
+			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", DefaultOBForOracleVersion, err)
+			at.obVersion = DefaultOBForOracleVersion
+		}
+	}
+
+	sqls, err := queryTopSQLs(inst, at.ap.InstanceDatabase, at.obVersion,
+		at.ap.Params.GetParam("order_by_column").String(),
 		at.ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		at.logger.Errorf("query top sql fail, error: %v", err)
@@ -1455,7 +1495,25 @@ func (at *ObForOracleTopSQLTask) collectorDo() {
 	}
 }
 
-func queryTopSQLs(inst *model.Instance, database string, orderBy string, topN int) ([]*DynPerformanceObForOracleColumns, error) {
+// 从OceanBase4.0.0版本开始，GV$PLAN_CACHE_PLAN_STAT视图名称调整为GV$OB_PLAN_CACHE_PLAN_STAT
+// 参考：https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000000820360
+const PlanCacheViewNameOBV4After string = "GV$OB_PLAN_CACHE_PLAN_STAT"
+const PlanCacheViewNameOBV4Before string = "GV$PLAN_CACHE_PLAN_STAT"
+
+func getPlanCacheViewNameByObVersion(obVersion string) string {
+	var viewName string = PlanCacheViewNameOBV4After
+	isLess, err := utils.IsVersionLessThan(obVersion, OceanBaseVersion4_0_0)
+	if err != nil {
+		log.Logger().Errorf("compare ocean base version failed, use default view name for top sql %v, error is %v", viewName, err)
+		isLess = false
+	}
+	if isLess {
+		viewName = PlanCacheViewNameOBV4Before
+	}
+	return viewName
+}
+
+func queryTopSQLs(inst *model.Instance, database string, obVersion string, orderBy string, topN int) ([]*DynPerformanceObForOracleColumns, error) {
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
 	if err != nil {
 		return nil, err
@@ -1465,7 +1523,11 @@ func queryTopSQLs(inst *model.Instance, database string, orderBy string, topN in
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	sql := fmt.Sprintf(DynPerformanceViewObForOracleTpl, orderBy, topN)
+	sql := fmt.Sprintf(
+		DynPerformanceViewObForOracleTpl,
+		// 通过视图PlanCacheView查询OecanBase for Oracle的Top SQL
+		getPlanCacheViewNameByObVersion(obVersion), orderBy, topN,
+	)
 	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 20})
 	if err != nil {
 		return nil, err
@@ -1588,23 +1650,35 @@ type DynPerformanceObForOracleColumns struct {
 
 const (
 	DynPerformanceViewObForOracleTpl = `
-select * from (
 SELECT
-t1.sql_fulltext as sql_fulltext,
-sum(t1.EXECUTIONS) as executions,
-sum(t1.ELAPSED_TIME) as elapsed_time,
-sum(t1.CPU_TIME) as cpu_time,
-sum(t1.DISK_READS) as disk_reads, 
-sum(t1.BUFFERS_GETS) as buffer_gets, 
-sum(t1.USER_IO_WAIT_TIME) as user_io_wait_time
+    t1.sql_fulltext as sql_fulltext,
+    sum(t1.EXECUTIONS) as executions,
+    sum(t1.ELAPSED_TIME) as elapsed_time,
+    sum(t1.CPU_TIME) as cpu_time,
+    sum(t1.DISK_READS) as disk_reads,
+    sum(t1.BUFFERS_GETS) as buffer_gets,
+    sum(t1.USER_IO_WAIT_TIME) as user_io_wait_time
 FROM 
-(select to_char(QUERY_SQL) sql_fulltext,EXECUTIONS,ELAPSED_TIME,CPU_TIME,DISK_READS,BUFFERS_GETS,USER_IO_WAIT_TIME
-from GV$OB_PLAN_CACHE_PLAN_STAT
-) t1 
-where t1.sql_fulltext != 'null'
-GROUP BY t1.sql_fulltext ORDER BY %v DESC
-)
-WHERE rownum <= %v`
+	(
+		SELECT
+			to_char(QUERY_SQL) as sql_fulltext,
+			EXECUTIONS,
+			ELAPSED_TIME,
+			CPU_TIME,
+			DISK_READS,
+			BUFFERS_GETS,
+			USER_IO_WAIT_TIME
+		FROM 
+			%v
+		WHERE
+			to_char(QUERY_SQL) != 'null'
+	) t1 
+GROUP BY 
+    t1.sql_fulltext
+ORDER BY 
+    %v DESC
+FETCH FIRST %v ROWS ONLY
+`
 	DynPerformanceViewObForOracleColumnExecutions     = "executions"
 	DynPerformanceViewObForOracleColumnElapsedTime    = "elapsed_time"
 	DynPerformanceViewObForOracleColumnCPUTime        = "cpu_time"
