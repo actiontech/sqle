@@ -2795,6 +2795,18 @@ select v1 from exist_db.exist_tb_1 where v2 = "3"
 `,
 		newTestResult(),
 	)
+
+	runSingleRuleInspectCase(rule, t, "select: without from condition", DefaultMysqlInspect(), `select 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: without where condition", DefaultMysqlInspect(), `select * from exist_db.exist_tb_1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: next select with function", DefaultMysqlInspect(), `select * from (select * from exist_db.exist_tb_1 where nvl(v2,"0") = "3") as t1`, newTestResult().addResult(rulepkg.DMLCheckWhereExistFunc))
+
+	runSingleRuleInspectCase(rule, t, "select union select 1", DefaultMysqlInspect(), `select 1 union select 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: union select", DefaultMysqlInspect(), `select * from exist_db.exist_tb_1 where nvl(v2,"0") = "3" union select * from exist_db.exist_tb_1`, newTestResult().addResult(rulepkg.DMLCheckWhereExistFunc))
+
+	runSingleRuleInspectCase(rule, t, "union next select", DefaultMysqlInspect(), `select * from exist_db.exist_tb_1 union all select * from (select * from exist_db.exist_tb_1 where nvl(v2,"0") = "3") as t1`, newTestResult().addResult(rulepkg.DMLCheckWhereExistFunc))
 }
 
 func Test_DDLCheckCreateTimeColumn(t *testing.T) {
@@ -3027,6 +3039,21 @@ select v1 from exist_db.exist_tb_1 where id = 3;
 `,
 		newTestResult(),
 	)
+
+	runSingleRuleInspectCase(rule, t, "select: not exist from condition", DefaultMysqlInspect(), `select 1;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: not exist where condition", DefaultMysqlInspect(), `select v1 from exist_db.exist_tb_1;`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "select: nest select", DefaultMysqlInspect(), `select s.* from (select v1 from exist_db.exist_tb_1 where id = "3") s`,
+		newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion))
+
+	runSingleRuleInspectCase(rule, t, "select: nest select", DefaultMysqlInspect(), `select s.* from (select v1 from exist_db.exist_tb_1 where id = 3) s`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "UNION: union all select", DefaultMysqlInspect(), `select 1 union all select 1`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "UNION: union nest select", DefaultMysqlInspect(), `select v1 from exist_db.exist_tb_1 union select s.v1 from (select v1 from exist_db.exist_tb_1 where v1 = "3") s`, newTestResult())
+
+	runSingleRuleInspectCase(rule, t, "UNION: union nest select", DefaultMysqlInspect(), `select v1 from exist_db.exist_tb_1 union select s.v1 from (select v1 from exist_db.exist_tb_1 where v1 = 3) s`, newTestResult().addResult(rulepkg.DMLCheckWhereExistImplicitConversion))
 }
 
 func TestCheckMultiSelectWhereExistImplicitConversion(t *testing.T) {
