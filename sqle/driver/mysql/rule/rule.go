@@ -2682,8 +2682,7 @@ func checkDMLWithBatchInsertMaxLimits(input *RuleHandlerInput) error {
 
 func checkWhereExistFunc(input *RuleHandlerInput) error {
 	tables := []*ast.TableName{}
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
+	hasExistFunc := func(stmt *ast.SelectStmt) bool {
 		selectExtractor := util.SelectStmtExtractor{}
 		stmt.Accept(&selectExtractor)
 		for _, selectStmt := range selectExtractor.SelectStmts {
@@ -2705,8 +2704,17 @@ func checkWhereExistFunc(input *RuleHandlerInput) error {
 			}
 
 			if checkExistFunc(input.Ctx, input.Rule, input.Res, tables, selectStmt.Where) {
-				break
+				return true
 			}
+		}
+
+		return false
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if hasExistFunc(stmt) {
+			break
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
@@ -2724,30 +2732,9 @@ func checkWhereExistFunc(input *RuleHandlerInput) error {
 			checkExistFunc(input.Ctx, input.Rule, input.Res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
-	outerBreaker:
-		for _, selectStmtList := range stmt.SelectList.Selects {
-			selectExtractor := util.SelectStmtExtractor{}
-			selectStmtList.Accept(&selectExtractor)
-			for _, selectStmt := range selectExtractor.SelectStmts {
-				if selectStmt.From == nil || selectStmt.Where == nil {
-					continue
-				}
-
-				tableSources := util.GetTableSources(selectStmt.From.TableRefs)
-				if len(tableSources) < 1 {
-					continue
-				}
-
-				for _, tableSource := range tableSources {
-					switch source := tableSource.Source.(type) {
-					case *ast.TableName:
-						tables = append(tables, source)
-					}
-				}
-
-				if checkExistFunc(input.Ctx, input.Rule, input.Res, tables, selectStmt.Where) {
-					break outerBreaker
-				}
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if hasExistFunc(selectStmt) {
+				break
 			}
 		}
 	default:
@@ -2779,24 +2766,31 @@ func checkExistFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.Audi
 }
 
 func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
+	hasWhereColumnImplicitConversionFunc := func(stmt *ast.SelectStmt) bool {
 		selectExtractor := util.SelectStmtExtractor{}
 		stmt.Accept(&selectExtractor)
 		for _, selectStmt := range selectExtractor.SelectStmts {
-			if selectStmt.Where == nil || selectStmt.From == nil {
+			if selectStmt.From == nil || selectStmt.Where == nil {
 				continue
 			}
 
 			tableSources := util.GetTableSources(selectStmt.From.TableRefs)
-			// not select from table statement
 			if len(tableSources) < 1 {
 				continue
 			}
 
 			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, selectStmt.Where) {
-				break
+				return true
 			}
+		}
+
+		return false
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if hasWhereColumnImplicitConversionFunc(stmt) {
+			break
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
@@ -2809,23 +2803,9 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UnionStmt:
-	outerBreaker:
-		for _, selectStmtList := range stmt.SelectList.Selects {
-			selectExtractor := util.SelectStmtExtractor{}
-			selectStmtList.Accept(&selectExtractor)
-			for _, selectStmt := range selectExtractor.SelectStmts {
-				if selectStmt.From == nil || selectStmt.Where == nil {
-					continue
-				}
-
-				tableSources := util.GetTableSources(selectStmt.From.TableRefs)
-				if len(tableSources) < 1 {
-					continue
-				}
-
-				if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, selectStmt.Where) {
-					break outerBreaker
-				}
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if hasWhereColumnImplicitConversionFunc(selectStmt) {
+				break
 			}
 		}
 	default:
