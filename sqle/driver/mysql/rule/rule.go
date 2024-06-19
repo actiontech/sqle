@@ -4811,21 +4811,39 @@ func checkDMLWithBatchInsertMaxLimits(input *RuleHandlerInput) error {
 
 func checkWhereExistFunc(input *RuleHandlerInput) error {
 	tables := []*ast.TableName{}
-	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt:
-		if stmt.Where != nil {
-			tableSources := util.GetTableSources(stmt.From.TableRefs)
+	hasExistFunc := func(stmt *ast.SelectStmt) bool {
+		selectExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectExtractor)
+		for _, selectStmt := range selectExtractor.SelectStmts {
+			if selectStmt.Where == nil || selectStmt.From == nil {
+				continue
+			}
+
+			tableSources := util.GetTableSources(selectStmt.From.TableRefs)
 			// not select from table statement
 			if len(tableSources) < 1 {
-				break
+				continue
 			}
+
 			for _, tableSource := range tableSources {
 				switch source := tableSource.Source.(type) {
 				case *ast.TableName:
 					tables = append(tables, source)
 				}
 			}
-			checkExistFunc(input.Ctx, input.Rule, input.Res, tables, stmt.Where)
+
+			if checkExistFunc(input.Ctx, input.Rule, input.Res, tables, selectStmt.Where) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	switch stmt := input.Node.(type) {
+	case *ast.SelectStmt:
+		if hasExistFunc(stmt) {
+			break
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
@@ -4843,18 +4861,8 @@ func checkWhereExistFunc(input *RuleHandlerInput) error {
 			checkExistFunc(input.Ctx, input.Rule, input.Res, util.GetTables(stmt.TableRefs.TableRefs), stmt.Where)
 		}
 	case *ast.UnionStmt:
-		for _, ss := range stmt.SelectList.Selects {
-			tableSources := util.GetTableSources(ss.From.TableRefs)
-			if len(tableSources) < 1 {
-				continue
-			}
-			for _, tableSource := range tableSources {
-				switch source := tableSource.Source.(type) {
-				case *ast.TableName:
-					tables = append(tables, source)
-				}
-			}
-			if checkExistFunc(input.Ctx, input.Rule, input.Res, tables, ss.Where) {
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if hasExistFunc(selectStmt) {
 				break
 			}
 		}
@@ -4887,15 +4895,31 @@ func checkExistFunc(ctx *session.Context, rule driverV2.Rule, res *driverV2.Audi
 }
 
 func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
+	hasWhereColumnImplicitConversionFunc := func(stmt *ast.SelectStmt) bool {
+		selectExtractor := util.SelectStmtExtractor{}
+		stmt.Accept(&selectExtractor)
+		for _, selectStmt := range selectExtractor.SelectStmts {
+			if selectStmt.From == nil || selectStmt.Where == nil {
+				continue
+			}
+
+			tableSources := util.GetTableSources(selectStmt.From.TableRefs)
+			if len(tableSources) < 1 {
+				continue
+			}
+
+			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, selectStmt.Where) {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
-		if stmt.Where != nil {
-			tableSources := util.GetTableSources(stmt.From.TableRefs)
-			// not select from table statement
-			if len(tableSources) < 1 {
-				break
-			}
-			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
+		if hasWhereColumnImplicitConversionFunc(stmt) {
+			break
 		}
 	case *ast.UpdateStmt:
 		if stmt.Where != nil {
@@ -4908,12 +4932,8 @@ func checkWhereColumnImplicitConversion(input *RuleHandlerInput) error {
 			checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, stmt.Where)
 		}
 	case *ast.UnionStmt:
-		for _, ss := range stmt.SelectList.Selects {
-			tableSources := util.GetTableSources(ss.From.TableRefs)
-			if len(tableSources) < 1 {
-				continue
-			}
-			if checkWhereColumnImplicitConversionFunc(input.Ctx, input.Rule, input.Res, tableSources, ss.Where) {
+		for _, selectStmt := range stmt.SelectList.Selects {
+			if hasWhereColumnImplicitConversionFunc(selectStmt) {
 				break
 			}
 		}
