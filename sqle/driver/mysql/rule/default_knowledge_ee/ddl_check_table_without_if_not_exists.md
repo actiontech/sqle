@@ -1,3 +1,5 @@
+样例说明：
+
 ```
 CREATE TABLE IF NOT EXISTS table_a (  --建议使用 IF NOT EXISTS
     id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',

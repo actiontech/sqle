@@ -10,7 +10,8 @@ CREATE TABLE table_a (
     INDEX index_column_a_b_c (column_a, column_b, column_c),  --使用联合索引
     PRIMARY KEY (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 COMMENT 'table_a'
-
+```
+```
 SELECT 
   column_a,column_b,column_c,column_d 
 FROM

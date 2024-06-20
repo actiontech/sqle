@@ -1,6 +1,7 @@
 ```
 CREATE DATABASE db_a CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
-
+```
+```
 CREATE TABLE table_a (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',
     column_a INT NOT NULL DEFAULT 0 COMMENT 'column_a',
