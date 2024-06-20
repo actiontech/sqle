@@ -262,23 +262,9 @@ func NewDefaultTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 }
 
 func (at *DefaultTask) Audit() (*AuditResultResp, error) {
-	var task *model.Task
-	if at.ap.InstanceName == "" {
-		task = &model.Task{
-			DBType: at.ap.DBType,
-		}
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel()
-		instance, _, err := dms.GetInstanceInProjectByName(ctx, string(at.ap.ProjectId), at.ap.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		task = &model.Task{
-			Instance: instance,
-			Schema:   at.ap.InstanceDatabase,
-			DBType:   at.ap.DBType,
-		}
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
