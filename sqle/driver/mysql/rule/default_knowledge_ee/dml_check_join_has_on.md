@@ -1,4 +1,5 @@
 样例说明：
+
 ```
 SELECT 
   t_a.column_a,t_b.column_b

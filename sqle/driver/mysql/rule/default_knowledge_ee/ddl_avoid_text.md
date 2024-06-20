@@ -8,7 +8,8 @@ CREATE TABLE table_a (
     PRIMARY KEY (id),  
     KEY index_a (column_a)
 )ENGINE=InnoDB AUTO_INCREMENT=0 COMMENT 'table_a'
-
+```
+```
 CREATE TABLE table_b (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',
     table_a_id INT NOT NULL DEFAULT 0 COMMENT '关联table_a的id字段',  -- 跟主表的主键做关联关系

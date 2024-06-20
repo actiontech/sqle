@@ -1,4 +1,5 @@
 样例说明
+
 ```
 CREATE TABLE table_a (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增主键id',

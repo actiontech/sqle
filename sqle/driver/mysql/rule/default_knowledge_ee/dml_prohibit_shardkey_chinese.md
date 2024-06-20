@@ -4,5 +4,4 @@
 /*! TDDL:SHARD_KEY(shard_id) */
 不建议操作
 INSERT INTO table_a(shard_id,column_a,column_b) VALUES ('张三',1,'a1')
-
 ```

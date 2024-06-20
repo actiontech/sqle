@@ -6,6 +6,7 @@ CREATE TABLE table_a (
     long_text_column VARCHAR(2000) DEFAULT NULL COMMENT 'long_text_column',
     PRIMARY KEY (id)
 ) ENGINE=InnoDB AUTO_INCREMENT=0 COMMENT 'table_a'
-
+```
+```
 SELECT id FROM table_a ORDER BY long_text_column  -- 不建议使用，对长字段进行排序
 ```

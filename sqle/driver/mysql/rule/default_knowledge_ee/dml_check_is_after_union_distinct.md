@@ -1,4 +1,5 @@
 样例说明：
+
 ```
 SELECT column_a FROM table_a 
 UNION ALL
