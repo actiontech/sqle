@@ -134,21 +134,9 @@ func (at *OBMySQLTopSQLTask) collect(p driver.Plugin, sql string) error {
 }
 
 func (at *OBMySQLTopSQLTask) Audit() (*AuditResultResp, error) {
-	var task *model.Task
-	if at.ap.InstanceName == "" {
-		task = &model.Task{
-			DBType: at.ap.DBType,
-		}
-	} else {
-		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		task = &model.Task{
-			Instance: instance,
-			Schema:   at.ap.InstanceDatabase,
-			DBType:   at.ap.DBType,
-		}
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
@@ -702,18 +690,10 @@ func NewDB2TopSQLTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 }
 
 func (at *DB2TopSQLTask) Audit() (*AuditResultResp, error) {
-
-	task := &model.Task{DBType: at.ap.DBType}
-
-	if at.ap.InstanceName != "" {
-		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		task.Instance = instance
-		task.Schema = at.ap.InstanceDatabase
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
-
 	return at.baseTask.audit(task)
 }
 
@@ -947,16 +927,9 @@ func NewDB2SchemaMetaTask(entry *logrus.Entry, ap *model.AuditPlan) Task {
 }
 
 func (at *DB2SchemaMetaTask) Audit() (*AuditResultResp, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
-	}
-	if at.ap.InstanceName != "" {
-		instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(at.ap.ProjectId), at.ap.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		task.Instance = instance
-		task.Schema = at.ap.InstanceDatabase
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
@@ -1841,8 +1814,9 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 }
 
 func (at *PostgreSQLTopSQLTask) Audit() (*AuditResultResp, error) {
-	task := &model.Task{
-		DBType: at.ap.DBType,
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
 	}
 	return at.baseTask.audit(task)
 }
