@@ -1807,6 +1807,14 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 		if len(values) < 6 {
 			continue
 		}
+		// 过滤无意义内容
+		{
+			// 过滤包含"<insufficient privilege>"的SQL语句
+			// https://github.com/actiontech/sqle-ee/issues/1586
+			if strings.Contains(strings.ToLower(values[0].Value), "<insufficient privilege>") {
+				continue
+			}
+		}
 		executions, err := strconv.ParseFloat(values[1].Value, 64)
 		if err != nil {
 			return nil, err
