@@ -1706,6 +1706,7 @@ sum(shared_blks_hit) AS buffer_gets, -- 表示从共享缓冲区中命中的块�
 sum(blk_read_time) as user_io_wait_time
 FROM pg_stat_statements
 WHERE calls > 0
+AND query <> '<insufficient privilege>' -- 过滤包含"<insufficient privilege>"的SQL语句 https://github.com/actiontech/sqle-ee/issues/1586
 group by query
 ORDER BY %v DESC limit %v`
 	DynPerformanceViewPgSQLColumnExecutions     = "executions"
@@ -1806,14 +1807,6 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 		values := row.Values
 		if len(values) < 6 {
 			continue
-		}
-		// 过滤无意义内容
-		{
-			// 过滤包含"<insufficient privilege>"的SQL语句
-			// https://github.com/actiontech/sqle-ee/issues/1586
-			if strings.Contains(strings.ToLower(values[0].Value), "<insufficient privilege>") {
-				continue
-			}
 		}
 		executions, err := strconv.ParseFloat(values[1].Value, 64)
 		if err != nil {
