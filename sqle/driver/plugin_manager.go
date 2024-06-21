@@ -183,7 +183,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 	// kill plugins process residual and remove pidfile
 	var wg sync.WaitGroup
 	dir := GetPluginPidDirPath(pluginDir)
-	if err := os.MkdirAll(dir, 0644); err != nil {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
 	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -369,7 +369,7 @@ func GetPluginPidFilePath(pluginDir string, pluginName string) string {
 }
 
 func WritePidFile(pidFilePath string, pid int64) error {
-	if err := os.MkdirAll(filepath.Dir(pidFilePath), 0644); err != nil {
+	if err := os.MkdirAll(filepath.Dir(pidFilePath), 0755); err != nil {
 		return err
 	}
 	file, err := os.OpenFile(pidFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
