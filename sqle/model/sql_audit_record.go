@@ -59,7 +59,7 @@ func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId strin
 	record = &SQLAuditRecord{}
 	if err = s.db.Preload("Task").Preload("Task.ExecuteSQLs").
 		Where("project_id = ?", projectId).Where("audit_record_id = ?", SQLAuditRecordId).
-		Find(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
+		First(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)

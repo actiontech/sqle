@@ -40,7 +40,7 @@ func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number ui
 	auditPlanReportSQLV2 *AuditPlanReportSQLV2, exist bool, err error) {
 
 	auditPlanReportSQLV2 = &AuditPlanReportSQLV2{}
-	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).Find(auditPlanReportSQLV2).Error
+	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).First(auditPlanReportSQLV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportSQLV2, false, nil
 	}
@@ -89,7 +89,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid 
 
 func (s *Storage) GetReportWithAuditPlanByReportID(reportId int) (auditPlanReportV2 *AuditPlanReportV2, exist bool, err error) {
 	auditPlanReportV2 = &AuditPlanReportV2{}
-	err = s.db.Preload("AuditPlan").Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(auditPlanReportV2).Error
+	err = s.db.Preload("AuditPlan").Preload("AuditPlanReportSQLs").Where("id=?", reportId).First(auditPlanReportV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportV2, false, nil
 	}

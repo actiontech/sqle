@@ -158,7 +158,7 @@ func (rtr *RuleTemplateCustomRule) GetRule() *CustomRule {
 
 func (s *Storage) GetRuleTemplatesByInstance(inst *Instance) ([]RuleTemplate, error) {
 	var associationRT []RuleTemplate
-	err := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT).Error
+	err := s.db.Model(inst).Association("RuleTemplates").Find(&associationRT)
 	return associationRT, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -185,7 +185,7 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 	err := s.db.Joins("JOIN `instance_rule_template` ON `rule_templates`.`id` = `instance_rule_template`.`rule_template_id`").
 		Joins("JOIN `instances` ON `instance_rule_template`.`instance_id` = `instances`.`id`").
 		Where("`instances`.`name` = ?", name).
-		Where("`instances`.`project_id` = ?", projectId).Find(t).Error
+		Where("`instances`.`project_id` = ?", projectId).First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
@@ -333,11 +333,11 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 
 func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) (*[]RuleTemplateRule, error) {
 	ruleTemplateRule := []RuleTemplateRule{}
-	err := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule).Error
-	if err == gorm.ErrRecordNotFound {
+	result := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule)
+	if result.RowsAffected == 0 {
 		return nil, nil
 	}
-	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, err)
+	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, result.Error)
 }
 
 func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
@@ -374,7 +374,7 @@ func (s *Storage) GetRuleTemplateTips(projectId, dbType string) ([]*RuleTemplate
 
 func (s *Storage) GetRule(name, dbType string) (*Rule, bool, error) {
 	rule := Rule{Name: name, DBType: dbType}
-	err := s.db.Find(&rule).Error
+	err := s.db.First(&rule).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -520,7 +520,7 @@ type CustomRule struct {
 
 func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
 	rule := &CustomRule{}
-	err := s.db.Where("rule_id = ?", ruleId).Find(rule).Error
+	err := s.db.Where("rule_id = ?", ruleId).First(rule).Error
 	if err == gorm.ErrRecordNotFound {
 		return rule, false, nil
 	}
@@ -563,11 +563,11 @@ func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs interface{}) err
 
 func (s *Storage) GetCustomRuleByDBTypeAndScriptType(DBType, ScriptType string) ([]CustomRule, bool, error) {
 	rules := []CustomRule{}
-	err := s.db.Where("db_type = ? and script_type = ?", DBType, ScriptType).Find(&rules).Error
-	if err == gorm.ErrRecordNotFound {
+	result := s.db.Where("db_type = ? and script_type = ?", DBType, ScriptType).Find(&rules)
+	if result.RowsAffected == 0 {
 		return rules, false, nil
 	}
-	return rules, true, errors.New(errors.ConnectStorageError, err)
+	return rules, true, errors.New(errors.ConnectStorageError, result.Error)
 }
 
 type CustomTypeCount struct {
@@ -591,7 +591,7 @@ func (s *Storage) GetCustomRuleTypeCountByDBType(DBType string) ([]*CustomTypeCo
 func (s *Storage) GetCustomRulesByDBType(filterDbType string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
 	err := s.db.Where("db_type = ?", filterDbType).Find(&rules).Error
-	if err == gorm.ErrRecordNotFound {
+	if len(rules) == 0 {
 		return rules, nil
 	}
 	return rules, errors.New(errors.ConnectStorageError, err)
