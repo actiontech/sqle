@@ -792,7 +792,7 @@ func (s *Storage) UpdateWorkflowRecordByID(id uint, workFlow map[string]interfac
 }
 
 func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId string, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Updates(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
 		"schedule_user_id": userId,
 	}).Error
