@@ -99,8 +99,8 @@ func (a *AuditPlanSQLV2) GetFingerprintMD5() string {
 }
 
 // BeforeSave is a hook implement gorm model before exec create.
-func (a *AuditPlanSQLV2) BeforeSave() error {
-	a.FingerprintMD5 = a.GetFingerprintMD5()
+func (a *AuditPlanSQLV2) BeforeSave(tx *gorm.DB) error {
+	tx.Statement.SetColumn("FingerprintMD5", a.GetFingerprintMD5())
 	return nil
 }
 

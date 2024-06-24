@@ -7,6 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"gorm.io/gorm"
 )
 
 const InstanceSourceSQLE string = "SQLE"
@@ -45,12 +46,12 @@ func (i *Instance) GetIDStr() string {
 }
 
 // BeforeSave is a hook implement gorm model before exec create
-func (i *Instance) BeforeSave() error {
-	return i.encryptPassword()
+func (i *Instance) BeforeSave(tx *gorm.DB) error {
+	return i.encryptPassword(tx)
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db
-func (i *Instance) AfterFind() error {
+func (i *Instance) AfterFind(tx *gorm.DB) error {
 	err := i.decryptPassword()
 	if err != nil {
 		log.NewEntry().Errorf("decrypt password for instance %d failed, error: %v", i.ID, err)
@@ -73,7 +74,7 @@ func (i *Instance) decryptPassword() error {
 	return nil
 }
 
-func (i *Instance) encryptPassword() error {
+func (i *Instance) encryptPassword(tx *gorm.DB) error {
 	if i == nil {
 		return nil
 	}
@@ -82,7 +83,7 @@ func (i *Instance) encryptPassword() error {
 		if err != nil {
 			return err
 		}
-		i.SecretPassword = data
+		tx.Statement.SetColumn("SecretPassword", data)
 	}
 	return nil
 }
