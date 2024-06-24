@@ -84,8 +84,8 @@ func (s *Storage) GetSqlWhitelistByIdAndProjectUID(sqlWhiteId string, projectUID
 // 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 // }
 
-func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID) ([]SqlWhitelist, uint32, error) {
-	var count uint32
+func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID) ([]SqlWhitelist, int64, error) {
+	var count int64
 	sqlWhitelist := []SqlWhitelist{}
 	query := s.db.Table("sql_whitelist").
 		Where("project_id = ?", projectUID).Where("deleted_at IS NULL")
@@ -97,7 +97,7 @@ func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projec
 	if err != nil {
 		return sqlWhitelist, 0, errors.New(errors.ConnectStorageError, err)
 	}
-	err = query.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
+	err = query.Offset(int((pageIndex - 1) * pageSize)).Limit(int(pageSize)).Order("id desc").Find(&sqlWhitelist).Error
 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 }
 

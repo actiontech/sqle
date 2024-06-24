@@ -615,7 +615,7 @@ func (s *Storage) GetSqlAvgExecutionTimeStatistic(limit uint) ([]*SqlExecuteStat
 		Joins("left join workflow_instance_records wir on wr.id = wir.workflow_record_id").
 		Joins("left join tasks t on wir.task_id = t.id").
 		Where("t.status = ?", TaskStatusExecuteSucceeded).
-		Group("t.instance_id").Order("avg_execution_time desc").Limit(limit).
+		Group("t.instance_id").Order("avg_execution_time desc").Limit(int(limit)).
 		Scan(&sqlExecuteStatistics).Error
 	if err != nil {
 		return nil, errors.ConnectStorageErrWrapper(err)

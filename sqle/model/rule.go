@@ -280,7 +280,7 @@ func (s *Storage) GetGlobalAndProjectRuleTemplateByNameAndProjectId(name string,
 }
 
 func (s *Storage) IsRuleTemplateExistFromAnyProject(projectId ProjectUID, name string) (bool, error) {
-	var count int
+	var count int64
 	err := s.db.Model(&RuleTemplate{}).Where("name = ? and project_id = ?", name, string(projectId)).Count(&count).Error
 	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
@@ -439,7 +439,7 @@ func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []stri
 	if len(projectIds) <= 0 {
 		return false, nil
 	}
-	var count int
+	var count int64
 	err := s.db.Table("rule_templates").
 		Where("name = ?", ruleTemplateName).
 		Where("deleted_at IS NULL").

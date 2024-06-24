@@ -954,8 +954,8 @@ func (s *Storage) GetWorkflowHistoryById(id uint) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (uint32, error) {
-	var count uint32
+func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (int64, error) {
+	var count int64
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error
 	if err != nil {
 		return 0, errors.New(errors.ConnectStorageError, err)
@@ -1062,7 +1062,7 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 }
 
 func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, error) {
-	count := 0
+	var count int64
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
 		Where("workflow_records.status = ? OR workflow_records.status = ?", WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution).
@@ -1150,12 +1150,12 @@ WHERE a.id =
 	return workflowStepsBO, s.db.Raw(query).Scan(&workflowStepsBO).Error
 }
 
-func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
+func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int64, error) {
 	if len(stepTypes) == 0 {
 		return 0, nil
 	}
 
-	var count int
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Joins("left join workflow_steps on workflow_records.current_workflow_step_id = workflow_steps.id").
@@ -1166,8 +1166,8 @@ func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	return count, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
-	var count int
+func (s *Storage) GetWorkflowCountByStatus(status string) (int64, error) {
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status = ?", status).
@@ -1183,7 +1183,7 @@ func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 func (s *Storage) HasNotEndWorkflowByProjectId(projectId string) (bool, error) {
 	endStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusCancel}
 
-	var count int
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status NOT IN (?)", endStatus).
@@ -1195,7 +1195,7 @@ func (s *Storage) HasNotEndWorkflowByProjectId(projectId string) (bool, error) {
 // GetApprovedWorkflowCount
 // 返回审核通过的工单数（工单状态是 待上线,正在上线,上线成功,上线失败 中任意一个表示工单通过审核）
 // 工单状态是 待审核,已驳回,已关闭 中任意一个表示工单未通过审核
-func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
+func (s *Storage) GetApprovedWorkflowCount() (count int64, err error) {
 	notPassAuditStatus := []string{WorkflowStatusWaitForAudit, WorkflowStatusReject, WorkflowStatusCancel}
 
 	err = s.db.Model(&Workflow{}).
@@ -1209,8 +1209,8 @@ func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
 	return count, nil
 }
 
-func (s *Storage) GetAllWorkflowCount() (int, error) {
-	var count int
+func (s *Storage) GetAllWorkflowCount() (int64, error) {
+	var count int64
 	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
 }
 
@@ -1443,8 +1443,8 @@ func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectUid
 	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int, error) {
-	var count int
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int64, error) {
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status = ? and workflows.project_id=?", status, projectUid).

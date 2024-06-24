@@ -485,7 +485,7 @@ const DefaultProject = "default"
 // }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {
-	var count int
+	var count int64
 	err := s.db.Model(model).Where(model).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)

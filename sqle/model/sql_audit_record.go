@@ -45,7 +45,7 @@ func (s *Storage) UpdateSQLAuditRecordById(SQLAuditRecordId string, data SQLAudi
 }
 
 func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId string, SQLAuditRecordId string) (bool, error) {
-	count := 0
+	var count int64
 	if err := s.db.Table("sql_audit_records").
 		Where("audit_record_id = ?", SQLAuditRecordId).
 		Where("creator_id = ?", userId).
