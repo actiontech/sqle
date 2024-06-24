@@ -64,8 +64,6 @@ func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 		err = i.checkInvalidDelete(stmt)
 	case *ast.SelectStmt:
 		err = i.checkInvalidSelect(stmt)
-	case *ast.UnparsedStmt:
-		err = i.checkUnparsedStmt(stmt)
 	}
 
 	if err != nil && session.IsParseShowCreateTableContentErr(err) {
@@ -104,8 +102,6 @@ func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
 		err = i.checkInvalidCreateIndexOffline(stmt)
 	case *ast.InsertStmt:
 		err = i.checkInvalidInsertOffline(stmt)
-	case *ast.UnparsedStmt:
-		err = i.checkUnparsedStmt(stmt)
 	}
 	if err != nil {
 		return fmt.Errorf(CheckInvalidErrorFormat, err)
@@ -1172,11 +1168,5 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		i.result.Add(driverV2.RuleLevelError, "", TableNotExistMessage,
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
-	return nil
-}
-
-// checkUnparsedStmt might add more check in future.
-func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性")
 	return nil
 }
