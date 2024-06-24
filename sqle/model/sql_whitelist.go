@@ -5,7 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const (

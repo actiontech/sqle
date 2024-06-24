@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuditPlanReportV2 struct {

@@ -11,7 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type WorkflowTemplate struct {

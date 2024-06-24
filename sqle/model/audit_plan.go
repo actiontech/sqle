@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuditPlan struct {
