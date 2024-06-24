@@ -27,7 +27,7 @@ const (
 // SystemVariable store misc K-V.
 type SystemVariable struct {
 	Key   string `gorm:"primary_key"`
-	Value string `gorm:"not null"`
+	Value string `gorm:"not null;type:varchar(255)"`
 }
 
 func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
@@ -112,13 +112,13 @@ const (
 
 type IM struct {
 	Model
-	AppKey           string `json:"app_key" gorm:"column:app_key"`
+	AppKey           string `json:"app_key" gorm:"column:app_key; type:varchar(255)"`
 	AppSecret        string `json:"-" gorm:"-"`
 	IsEnable         bool   `json:"is_enable" gorm:"column:is_enable"`
-	ProcessCode      string `json:"process_code" gorm:"column:process_code"`
-	EncryptAppSecret string `json:"encrypt_app_secret" gorm:"column:encrypt_app_secret"`
+	ProcessCode      string `json:"process_code" gorm:"column:process_code; type:varchar(255)"`
+	EncryptAppSecret string `json:"encrypt_app_secret" gorm:"column:encrypt_app_secret; type:varchar(255)"`
 	// 类型唯一
-	Type string `json:"type" gorm:"unique"`
+	Type string `json:"type" gorm:"index:unique; type:varchar(255)"`
 }
 
 func (i *IM) TableName() string {
@@ -200,11 +200,11 @@ const (
 
 type DingTalkInstance struct {
 	Model
-	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance; type:varchar(255)"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id; type:varchar(255)"`
 	// 审批实例 taskID
 	TaskID int64  `json:"task_id" gorm:"column:task_id"`
-	Status string `json:"status" gorm:"default:\"initialized\""`
+	Status string `json:"status" gorm:"default:\"initialized\"; type:varchar(255)"`
 }
 
 func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId string) (*DingTalkInstance, bool, error) {
@@ -251,11 +251,11 @@ const (
 
 type FeishuInstance struct {
 	Model
-	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance; type:varchar(255)"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id; type:varchar(255)"`
 	// 审批实例 taskID
-	TaskID string `json:"task_id" gorm:"column:task_id"`
-	Status string `json:"status" gorm:"default:\"INITIALIZED\""`
+	TaskID string `json:"task_id" gorm:"column:task_id; type:varchar(255)"`
+	Status string `json:"status" gorm:"default:\"INITIALIZED\"; type:varchar(255)"`
 }
 
 func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []string) ([]FeishuInstance, error) {
@@ -304,8 +304,8 @@ const (
 type WechatRecord struct {
 	Model
 	TaskId   uint   `json:"task_id" gorm:"column:task_id"`
-	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
-	SpNo     string `json:"sp_no" gorm:"column:sp_no"`
+	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\";type:varchar(255)"`
+	SpNo     string `json:"sp_no" gorm:"column:sp_no;type:varchar(255)"`
 
 	Task *Task `gorm:"foreignkey:TaskId"`
 }
@@ -377,8 +377,8 @@ func (s *Storage) DeleteWechatRecordByTaskId(taskId uint) error {
 type FeishuScheduledRecord struct {
 	Model
 	TaskId              uint   `json:"task_id" gorm:"column:task_id"`
-	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
-	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code"`
+	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\";type:varchar(255)"`
+	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code;type:varchar(255)"`
 
 	Task *Task `gorm:"foreignkey:TaskId"`
 }

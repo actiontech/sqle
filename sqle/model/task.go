@@ -44,20 +44,20 @@ const ExecModeSqls = "sqls"
 type Task struct {
 	Model
 	InstanceId      uint64  `json:"instance_id"`
-	Schema          string  `json:"instance_schema" gorm:"column:instance_schema" example:"db1"`
+	Schema          string  `json:"instance_schema" gorm:"column:instance_schema;type:varchar(255)" example:"db1"`
 	PassRate        float64 `json:"pass_rate"`
 	Score           int32   `json:"score"`
-	AuditLevel      string  `json:"audit_level"`
-	SQLSource       string  `json:"sql_source" gorm:"column:sql_source"`
-	DBType          string  `json:"db_type" gorm:"default:'mysql'" example:"mysql"`
-	Status          string  `json:"status" gorm:"default:\"initialized\""`
+	AuditLevel      string  `json:"audit_level" gorm:"type:varchar(255)"`
+	SQLSource       string  `json:"sql_source" gorm:"column:sql_source;type:varchar(255)"`
+	DBType          string  `json:"db_type" gorm:"default:'mysql';type:varchar(255)" example:"mysql"`
+	Status          string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
 	GroupId         uint    `json:"group_id" gorm:"column:group_id"`
 	CreateUserId    uint64
 	ExecStartAt     *time.Time
 	ExecEndAt       *time.Time
-	ExecMode        string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
-	FileOrderMethod string `json:"file_order_method" gorm:"column:file_order_method"`
-	Instance        *Instance
+	ExecMode        string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
+	FileOrderMethod string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
+	Instance        *Instance      `json:"-" gorm:"-"`
 	ExecuteSQLs     []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs    []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 	AuditFiles      []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
@@ -111,18 +111,18 @@ type BaseSQL struct {
 	// Split Content to single SQL before execute RollbackSQL.
 	Content         string `json:"sql" gorm:"type:longtext"`
 	Description     string `json:"description" gorm:"type:text"`
-	StartBinlogFile string `json:"start_binlog_file"`
+	StartBinlogFile string `json:"start_binlog_file" gorm:"type:varchar(255)"`
 	StartBinlogPos  int64  `json:"start_binlog_pos"`
-	EndBinlogFile   string `json:"end_binlog_file"`
+	EndBinlogFile   string `json:"end_binlog_file" gorm:"type:varchar(255)"`
 	EndBinlogPos    int64  `json:"end_binlog_pos"`
 	RowAffects      int64  `json:"row_affects"`
 	ExecStatus      string `json:"exec_status" gorm:"default:\"initialized\""`
 	ExecResult      string `json:"exec_result" gorm:"type:text"`
 	ExecBatchId     uint64 `json:"exec_batch_id"`
-	Schema          string `json:"schema"`
-	SourceFile      string `json:"source_file"`
+	Schema          string `json:"schema" gorm:"type:varchar(255)"`
+	SourceFile      string `json:"source_file" gorm:"type:varchar(255)"`
 	StartLine       uint64 `json:"start_line" gorm:"not null"`
-	SQLType         string `json:"sql_type"` // such as DDL,DML,DQL...
+	SQLType         string `json:"sql_type" gorm:"type:varchar(255)"` // such as DDL,DML,DQL...
 }
 
 func (s *BaseSQL) GetExecStatusDesc() string {
@@ -187,7 +187,7 @@ type ExecuteSQL struct {
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
-	AuditLevel string `json:"audit_level"`
+	AuditLevel string `json:"audit_level" gorm:"type:varchar(255)"`
 }
 
 func (s ExecuteSQL) TableName() string {

@@ -45,7 +45,7 @@ type SqlQueryHistory struct {
 	Model
 	CreateUserId uint                    `json:"create_user_id" gorm:"not null;index"`
 	InstanceId   uint                    `json:"instance_id" gorm:"not null;index"`
-	Schema       string                  `json:"schema"`
+	Schema       string                  `json:"schema" gorm:"type:varchar(255)"`
 	RawSql       string                  `json:"raw_sql" gorm:"type:text;not null"`
 	ExecSQLs     []*SqlQueryExecutionSql `json:"-" gorm:"foreignkey:SqlQueryHistoryId"`
 }

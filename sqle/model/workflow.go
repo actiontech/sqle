@@ -16,12 +16,12 @@ import (
 
 type WorkflowTemplate struct {
 	Model
-	ProjectId                     ProjectUID `gorm:"index; not null"`
-	Name                          string
-	Desc                          string
-	AllowSubmitWhenLessAuditLevel string
+	ProjectId                     ProjectUID `gorm:"index; not null; type:varchar(255)"`
+	Name                          string     `gorm:"type:varchar(255)"`
+	Desc                          string     `gorm:"type:varchar(255)"`
+	AllowSubmitWhenLessAuditLevel string     `gorm:"type:varchar(255)"`
 
-	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:workflowTemplateId"`
+	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:WorkflowTemplateId"`
 	// Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
@@ -34,14 +34,14 @@ const (
 
 type WorkflowStepTemplate struct {
 	Model
-	Number               uint   `gorm:"index; column:step_number"`
-	WorkflowTemplateId   int    `gorm:"index"`
-	Typ                  string `gorm:"column:type; not null"`
-	Desc                 string
+	Number               uint         `gorm:"index; column:step_number"`
+	WorkflowTemplateId   int          `gorm:"index"`
+	Typ                  string       `gorm:"column:type; not null; type:varchar(255)"`
+	Desc                 string       `gorm:"type:varchar(255)"`
 	ApprovedByAuthorized sql.NullBool `gorm:"column:approved_by_authorized"`
 	ExecuteByAuthorized  sql.NullBool `gorm:"column:execute_by_authorized"`
 
-	Users string // `gorm:"many2many:workflow_step_template_user"` // dms-todo: 调整存储格式
+	Users string `gorm:"type:varchar(255)"` // `gorm:"many2many:workflow_step_template_user"` // dms-todo: 调整存储格式
 }
 
 func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
@@ -180,19 +180,19 @@ func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 
 type Workflow struct {
 	Model
-	Subject          string
-	WorkflowId       string `gorm:"unique"`
+	Subject          string `gorm:"type:varchar(255)"`
+	WorkflowId       string `gorm:"index:unique; type:varchar(255)"`
 	Desc             string `gorm:"type:varchar(3000)"`
-	CreateUserId     string
+	CreateUserId     string `gorm:"type:varchar(255)"`
 	WorkflowRecordId uint
-	ProjectId        ProjectUID `gorm:"index; not null"`
+	ProjectId        ProjectUID `gorm:"index; not null; type:varchar(255)"`
 
 	Record *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
 	// Project       *Project          `gorm:"foreignkey:ProjectId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history"`
 
-	Mode     string
-	ExecMode string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
+	Mode     string `gorm:"type:varchar(255)"`
+	ExecMode string `json:"exec_mode" gorm:"default:'sqls'; type:varchar(255)" example:"sqls"`
 }
 
 const (
@@ -221,7 +221,7 @@ var WorkflowStatus = map[string]string{
 type WorkflowRecord struct {
 	Model
 	CurrentWorkflowStepId uint
-	Status                string                    `gorm:"default:\"wait_for_audit\""`
+	Status                string                    `gorm:"default:\"wait_for_audit\";type:varchar(255)"`
 	InstanceRecords       []*WorkflowInstanceRecord `gorm:"foreignkey:WorkflowRecordId"`
 
 	// 当workflow只有部分数据源已上线时，current step仍处于"sql_execute"步骤
@@ -239,10 +239,10 @@ type WorkflowInstanceRecord struct {
 	WorkflowRecordId uint `gorm:"index; not null"`
 	InstanceId       uint64
 	ScheduledAt      *time.Time
-	ScheduleUserId   string
+	ScheduleUserId   string `gorm:"type:varchar(255)"`
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
-	ExecutionUserId string
+	ExecutionUserId string `gorm:"type:varchar(255)"`
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
 	// NeedScheduledTaskNotify为true时，该字段生效
@@ -251,7 +251,7 @@ type WorkflowInstanceRecord struct {
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
-	ExecutionAssignees string
+	ExecutionAssignees string `gorm:"type:varchar(255)"`
 }
 
 func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
@@ -301,15 +301,15 @@ const (
 
 type WorkflowStep struct {
 	Model
-	OperationUserId        string
+	OperationUserId        string `gorm:"type:varchar(255)"`
 	OperateAt              *time.Time
-	WorkflowId             string `gorm:"index; not null"`
+	WorkflowId             string `gorm:"index; not null; type:varchar(255)"`
 	WorkflowRecordId       uint   `gorm:"index; not null"`
 	WorkflowStepTemplateId uint   `gorm:"index; not null"`
-	State                  string `gorm:"default:\"initialized\""`
-	Reason                 string
+	State                  string `gorm:"default:\"initialized\"; type:varchar(255)"`
+	Reason                 string `gorm:"type:varchar(255)"`
 
-	Assignees string                // `gorm:"many2many:workflow_step_user"`
+	Assignees string                `gorm:"type:varchar(255)"` // `gorm:"many2many:workflow_step_user"`
 	Template  *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
 	// OperationUser string                // `gorm:"foreignkey:OperationUserId"`
 }

@@ -17,27 +17,27 @@ type AuditPlan struct {
 	Model
 	ProjectId        ProjectUID    `gorm:"index; not null"`
 	Name             string        `json:"name" gorm:"not null;index"`
-	CronExpression   string        `json:"cron_expression" gorm:"not null"`
-	DBType           string        `json:"db_type" gorm:"not null"`
-	Token            string        `json:"token" gorm:"not null"`
-	InstanceName     string        `json:"instance_name"`
-	CreateUserID     string        `json:"create_user_id"`
-	InstanceDatabase string        `json:"instance_database"`
-	Type             string        `json:"type"`
-	RuleTemplateName string        `json:"rule_template_name"`
+	CronExpression   string        `json:"cron_expression" gorm:"not null;type:varchar(255)"`
+	DBType           string        `json:"db_type" gorm:"not null;type:varchar(255)"`
+	Token            string        `json:"token" gorm:"not null;type:varchar(255)"`
+	InstanceName     string        `json:"instance_name" gorm:"type:varchar(255)"`
+	CreateUserID     string        `json:"create_user_id" gorm:"type:varchar(255)"`
+	InstanceDatabase string        `json:"instance_database" gorm:"type:varchar(255)"`
+	Type             string        `json:"type" gorm:"type:varchar(255)"`
+	RuleTemplateName string        `json:"rule_template_name" gorm:"type:varchar(255)"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
 	NotifyInterval      int    `json:"notify_interval" gorm:"default:10"`
-	NotifyLevel         string `json:"notify_level" gorm:"default:'warn'"`
+	NotifyLevel         string `json:"notify_level" gorm:"default:'warn';type:varchar(255)"`
 	EnableEmailNotify   bool   `json:"enable_email_notify"`
 	EnableWebHookNotify bool   `json:"enable_web_hook_notify"`
-	WebHookURL          string `json:"web_hook_url"`
-	WebHookTemplate     string `json:"web_hook_template"`
+	WebHookURL          string `json:"web_hook_url" gorm:"type:varchar(255)"`
+	WebHookTemplate     string `json:"web_hook_template" gorm:"type:varchar(255)"`
 
-	ProjectStatus string `gorm:"default:'active'"` // dms-todo: 暂时将项目状态放在这里
+	ProjectStatus string `gorm:"default:'active';type:varchar(255)"` // dms-todo: 暂时将项目状态放在这里
 
 	// CreateUser    *User             // TODO 移除 `gorm:"foreignkey:CreateUserId"`
-	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
+	Instance      *Instance         `gorm:"foreignkey:Name;references:InstanceName"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
 }
 
