@@ -74,8 +74,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid 
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Where("audit_plans.project_id=?", projectUid).
 		Where("audit_plans.instance_name in (?)", instanceNames).
-		Group("audit_plans.db_type, audit_plans.instance_name").
-		SubQuery()
+		Group("audit_plans.db_type, audit_plans.instance_name")
 
 	err := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, audit_plan_reports_v2.score").
