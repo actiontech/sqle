@@ -977,7 +977,7 @@ func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
 		Joins("LEFT JOIN workflow_instance_records AS h_wir ON "+
 			"h_wir.workflow_record_id = workflow_record_history.workflow_record_id").
 		Where("wir.task_id = ? OR h_wir.task_id = ? AND workflows.id IS NOT NULL", id, id).
-		Limit(1).Group("workflows.id").Scan(workflow).Error
+		Limit(1).Group("workflows.id").First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}

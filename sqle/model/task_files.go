@@ -48,20 +48,20 @@ func GenUniqueFileName() string {
 
 func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
 	auditFiles := []*AuditFile{}
-	err := s.db.Where("task_id = ?", taskId).Find(&auditFiles).Error
-	if err == gorm.ErrRecordNotFound {
+	result := s.db.Where("task_id = ?", taskId).Find(&auditFiles)
+	if result.RowsAffected == 0 {
 		return nil, nil
 	}
-	return auditFiles, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, result.Error)
 }
 
 func (s *Storage) GetFileByIds(fileIds []uint) ([]*AuditFile, error) {
 	auditFiles := []*AuditFile{}
-	err := s.db.Where("id in (?)", fileIds).Find(&auditFiles).Error
-	if err == gorm.ErrRecordNotFound {
+	result := s.db.Where("id in (?)", fileIds).Find(&auditFiles)
+	if result.RowsAffected == 0 {
 		return auditFiles, nil
 	}
-	return auditFiles, errors.New(errors.ConnectStorageError, err)
+	return auditFiles, errors.New(errors.ConnectStorageError, result.Error)
 }
 
 // expired time 24hour
@@ -73,7 +73,7 @@ func (s *Storage) GetExpiredFileWithNoWorkflow() ([]AuditFile, error) {
 		Where("audit_files.file_host = ?", config.GetOptions().SqleOptions.ReportHost). // 删除本机文件
 		Where("audit_files.created_at < ?", time.Now().Add(-24*time.Hour)).             // 减少提交前文件就被删除的几率
 		Find(&auditFiles).Error
-	if err == gorm.ErrRecordNotFound {
+	if len(auditFiles) == 0 {
 		return nil, nil
 	}
 	return auditFiles, errors.New(errors.ConnectStorageError, err)
@@ -86,7 +86,7 @@ func (s *Storage) GetExpiredFile() ([]AuditFile, error) {
 		Where("audit_files.file_host = ?", config.GetOptions().SqleOptions.ReportHost). // 删除本机文件
 		Where("audit_files.created_at < ?", time.Now().Add(-7*24*time.Hour)).           // 减少提交前文件就被删除的几率
 		Find(&auditFiles).Error
-	if err == gorm.ErrRecordNotFound {
+	if len(auditFiles) == 0 {
 		return nil, nil
 	}
 	return auditFiles, errors.New(errors.ConnectStorageError, err)

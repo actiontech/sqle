@@ -120,7 +120,7 @@ func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
 
 func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -129,7 +129,7 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -140,7 +140,7 @@ func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).
 		Where("project_status = ?", ProjectStatusActive).
-		Where("id = ?", id).Find(ap).Error
+		Where("id = ?", id).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -149,7 +149,7 @@ func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanFromProjectByName(projectId, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -158,7 +158,7 @@ func (s *Storage) GetAuditPlanFromProjectByName(projectId, AuditPlanName string)
 
 func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReportV2, bool, error) {
 	ap := &AuditPlanReportV2{}
-	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").Find(ap).Error
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
