@@ -17,15 +17,15 @@ func init() {
 
 type SQLOptimizationRecord struct {
 	Model
-	OptimizationId     string  `json:"optimization_id"`
-	OptimizationName   string  `json:"optimization_name"`
-	DBType             string  `json:"db_type"`
-	ProjectId          string  `json:"project_id"`
+	OptimizationId     string  `json:"optimization_id" gorm:"size:255"`
+	OptimizationName   string  `json:"optimization_name" gorm:"size:255"`
+	DBType             string  `json:"db_type" gorm:"size:255"`
+	ProjectId          string  `json:"project_id" gorm:"size:255"`
 	InstanceId         uint64  `json:"instance_id"`
-	InstanceName       string  `json:"instance_name"`
-	SchemaName         string  `json:"schema_name"`
-	Creator            string  `json:"creator"`
-	Status             string  `json:"status"`
+	InstanceName       string  `json:"instance_name" gorm:"size:255"`
+	SchemaName         string  `json:"schema_name" gorm:"size:255"`
+	Creator            string  `json:"creator" gorm:"size:255"`
+	Status             string  `json:"status" gorm:"size:255"`
 	PerformanceImprove float64 `json:"performance_improve"`
 	// summary
 	NumberOfQuery          int       `json:"number_of_query"`
@@ -45,7 +45,7 @@ func (sm SQLOptimizationRecord) TableName() string {
 
 type OptimizationSQL struct {
 	Model
-	OptimizationId           string                  `json:"optimization_id"`
+	OptimizationId           string                  `json:"optimization_id" gorm:"size:255"`
 	OriginalSQL              string                  `json:"original_sql" gorm:"type:text;not null"`
 	OptimizedSQL             string                  `json:"optimized_sql" gorm:"type:text;not null"`
 	NumberOfRewrite          int                     `json:"number_of_rewrite"`
@@ -53,7 +53,7 @@ type OptimizationSQL struct {
 	NumberOfIndex            int                     `json:"number_of_index"`
 	NumberOfHitIndex         int                     `json:"number_of_hit_index"`
 	Performance              float64                 `json:"performance"`
-	ContributingIndices      string                  `json:"contributing_indices"`
+	ContributingIndices      string                  `json:"contributing_indices" gorm:"size:255"`
 	TriggeredRules           RewriteRules            `json:"triggered_rules" gorm:"type:json"`       // 触发的规则
 	IndexRecommendations     DBStrings               `json:"index_recommendations" gorm:"type:json"` // 索引建议
 	ExplainValidationDetails ExplainValidationDetail `json:"explain_validation_details" gorm:"type:json"`
