@@ -217,13 +217,6 @@ func getAuditList(workflow *model.Workflow) (workflowList []string) {
 	return auditNodeList
 }
 
-func addDelUserTag(user *model.User) string {
-	if user != nil {
-		return utils.AddDelTag(user.DeletedAt, user.Name)
-	}
-	return ""
-}
-
 func getWorkflowTemplate(c echo.Context) error {
 	s := model.GetStorage()
 
