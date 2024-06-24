@@ -326,12 +326,12 @@ func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string,
 }
 
 func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {
-	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Update(attrs).Error
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) error {
-	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 

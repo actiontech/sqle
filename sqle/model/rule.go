@@ -556,8 +556,8 @@ func (s *Storage) GetCustomRulesByDescAndDBType(filterDesc, filterDbType string)
 	return rule, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs ...interface{}) error {
-	err := s.db.Table("custom_rules").Where("rule_id = ?", ruleId).Update(attrs...).Error
+func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs interface{}) error {
+	err := s.db.Table("custom_rules").Where("rule_id = ?", ruleId).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 

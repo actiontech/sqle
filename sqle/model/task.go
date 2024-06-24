@@ -351,8 +351,10 @@ func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
-func (s *Storage) UpdateTask(task *Task, attrs ...interface{}) error {
-	err := s.db.Table("tasks").Where("id = ?", task.ID).Update(attrs...).Error
+func (s *Storage) UpdateTask(task *Task, attrs interface{}) error {
+	err := s.db.Table("tasks").Where("id = ?", task.ID).Updates(attrs).Error
+
+	// .Update(attrs...).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -386,13 +388,13 @@ func (s *Storage) UpdateTaskStatusById(taskId uint, status string) error {
 }
 
 func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
-	return tx.Model(&Task{}).Where("id = ?", taskId).Update(map[string]string{
+	return tx.Model(&Task{}).Where("id = ?", taskId).Updates(map[string]string{
 		"status": status,
 	}).Error
 }
 
-func (s *Storage) UpdateTaskStatusByIDs(taskIDs []uint, attrs ...interface{}) error {
-	err := s.db.Model(&Task{}).Where("id IN (?)", taskIDs).Update(attrs...).Error
+func (s *Storage) UpdateTaskStatusByIDs(taskIDs []uint, attrs interface{}) error {
+	err := s.db.Model(&Task{}).Where("id IN (?)", taskIDs).Updates(attrs).Error
 	return errors.ConnectStorageErrWrapper(err)
 }
 
@@ -414,8 +416,8 @@ func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string
 	return s.UpdateExecuteSQLById(fmt.Sprintf("%v", baseSQL.ID), attr)
 }
 
-func (s *Storage) UpdateExecuteSQLById(executeSQLId string, attrs ...interface{}) error {
-	err := s.db.Table(ExecuteSQL{}.TableName()).Where("id = ?", executeSQLId).Update(attrs...).Error
+func (s *Storage) UpdateExecuteSQLById(executeSQLId string, attrs interface{}) error {
+	err := s.db.Table(ExecuteSQL{}.TableName()).Where("id = ?", executeSQLId).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -432,8 +434,8 @@ func (s *Storage) UpdateRollbackSqlStatus(baseSQL *BaseSQL, status, result strin
 	return s.UpdateRollbackSQLById(fmt.Sprintf("%v", baseSQL.ID), attr)
 }
 
-func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs ...interface{}) error {
-	err := s.db.Table(RollbackSQL{}.TableName()).Where("id = ?", rollbackSQLId).Update(attrs...).Error
+func (s *Storage) UpdateRollbackSQLById(rollbackSQLId string, attrs interface{}) error {
+	err := s.db.Table(RollbackSQL{}.TableName()).Where("id = ?", rollbackSQLId).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
