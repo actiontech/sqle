@@ -404,8 +404,7 @@ func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectUid st
 		Select("audit_plans.id as audit_plan_id, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plan_reports_v2 on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Where("audit_plans.project_id=? and audit_plans.deleted_at is null and audit_plan_reports_v2.id is not null", projectUid).
-		Group("audit_plans.id").
-		SubQuery()
+		Group("audit_plans.id")
 
 	err := s.db.Model(&AuditPlan{}).
 		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").
