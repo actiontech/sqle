@@ -2396,7 +2396,7 @@ SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
 `, newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
-		newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"),
+		newTestResult().addResult(rulepkg.ConfigParsingSQLFailure),
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 }
 
@@ -2428,7 +2428,7 @@ CREATE
 `,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -2439,7 +2439,7 @@ CREATE
 		`CREATE TRIGGER my_trigger BEEEFORE INSERT ON t1 FOR EACH ROW insert into t2(id, c1) values(1, '2');`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
@@ -2457,7 +2457,7 @@ CREATE
 `,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
@@ -2467,7 +2467,7 @@ CREATE
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
@@ -2514,7 +2514,7 @@ select * from t1;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).
 				addResult(rulepkg.DDLCheckCreateProcedure))
 	}
 
@@ -2549,7 +2549,7 @@ end;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspectOffline(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
@@ -3746,7 +3746,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`create event my_event on schedule every 10 second do update schema.table set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with DEFINER`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3755,7 +3755,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`create DEFINER=user event my_event on schedule every 10 second do update schema.table set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`alter event`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3771,7 +3771,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			  -- 修改事件的具体操作
 			  UPDATE your_table SET your_column = your_value WHERE your_condition;
 			`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`alter event with DEFINER`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3787,7 +3787,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 			  -- 修改事件的具体操作
 			  UPDATE your_table SET your_column = your_value WHERE your_condition;
 			`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with blank line`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3799,7 +3799,7 @@ func TestDDLAvoidEvent(t *testing.T) {
 
 			
 			create event my_event on schedule every 10 second do update schema.table set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 	t.Run(`create event with space`, func(t *testing.T) {
 		runSingleRuleInspectCase(
@@ -3808,6 +3808,6 @@ func TestDDLAvoidEvent(t *testing.T) {
 			``,
 			DefaultMysqlInspectOffline(),
 			`       create event my_event on schedule every 10 second do update schema.table set mycol = mycol + 1;`,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLAvoidEvent))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLAvoidEvent))
 	})
 }
