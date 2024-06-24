@@ -5,7 +5,7 @@ package model
 
 import (
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // 源项目id与sqle项目名称映射表
@@ -20,7 +20,7 @@ func (s *Storage) GetIdProjectNamePairsByIds(ids []int64) ([]IdProjectNamePair, 
 	err := s.db.
 		Model(&IdProjectNamePair{}).
 		Where("origin_project_id IN (?)", ids).
-		Find(&IdProjectNamePairs).
+		First(&IdProjectNamePairs).
 		Error
 	if err == gorm.ErrRecordNotFound {
 		return IdProjectNamePairs, false, nil

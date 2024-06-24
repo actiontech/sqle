@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const (
@@ -110,7 +110,7 @@ WHERE sm.deleted_at IS NULL  AND sm.project_id = ?
 
 func (s *Storage) GetSqlManageByFingerprintSourceInstNameSchemaMd5(projFpSourceInstSchemaMd5 string) (*SqlManage, bool, error) {
 	sqlManage := &SqlManage{}
-	err := s.db.Where("proj_fp_source_inst_schema_md5 = ?", projFpSourceInstSchemaMd5).Find(sqlManage).Error
+	err := s.db.Where("proj_fp_source_inst_schema_md5 = ?", projFpSourceInstSchemaMd5).First(sqlManage).Error
 	if e.Is(err, gorm.ErrRecordNotFound) {
 		return sqlManage, false, nil
 	}
@@ -497,7 +497,7 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 			data["assignees"] = strings.Join(assignees, ",")
 		}
 		if len(data) > 0 {
-			err := tx.Model(&SqlManage{}).Where("id in (?)", idList).Update(data).Error
+			err := tx.Model(&SqlManage{}).Where("id in (?)", idList).Updates(data).Error
 			if err != nil {
 				return err
 			}
@@ -511,7 +511,7 @@ func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
 	sqlManage := new(SqlManage)
 	err := s.db.Where("id = ?", id).First(&sqlManage).Error
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if e.Is(gorm.ErrRecordNotFound, err) {
 			return sqlManage, false, nil
 		}
 		return nil, false, errors.New(errors.ConnectStorageError, err)

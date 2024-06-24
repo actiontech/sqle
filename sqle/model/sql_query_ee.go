@@ -27,8 +27,8 @@ func (s *Storage) GetSqlQueryRawSqlByUserId(userID, instanceId uint, pageIndex, 
 	if fuzzyKey != "" {
 		query = query.Where("raw_sql LIKE ?", fmt.Sprintf("%%%s%%", fuzzyKey))
 	}
-	if err := query.Group("raw_sql").Order("max(created_at) desc").Offset((pageIndex - 1) * pageSize).
-		Limit(pageSize).
+	if err := query.Group("raw_sql").Order("max(created_at) desc").Offset(int((pageIndex - 1) * pageSize)).
+		Limit(int(pageSize)).
 		Find(&res).Error; err != nil {
 		return nil, err
 	}

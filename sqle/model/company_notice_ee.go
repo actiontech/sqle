@@ -4,7 +4,7 @@ import (
 	e "errors"
 
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 func (s *Storage) GetCompanyNotice() (*CompanyNotice, error) {
