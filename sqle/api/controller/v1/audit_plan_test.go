@@ -15,6 +15,9 @@ func TestIsSqlInBlackList(t *testing.T) {
 		}, {
 			FilterContent: "table_1",
 			FilterType:    "SQL",
+		},{
+			FilterContent: "ignored_service",
+			FilterType:    "SQL",
 		},
 	})
 
@@ -22,6 +25,9 @@ func TestIsSqlInBlackList(t *testing.T) {
 		"SELECT * FROM users",
 		"DELETE From tAble_1",
 		"SELECT COUNT(*) FROM table_2",
+		`/* this is a comment, Service: ignored_service */ 
+		select * from table_ignored where id < 123;`,
+		`/* this is a comment, Service: ignored_service */ update * from table_ignored where id < 123;`,
 	}
 	for _, matchSql := range matchSqls {
 		if !filter.IsSqlInBlackList(matchSql) {
@@ -32,6 +38,8 @@ func TestIsSqlInBlackList(t *testing.T) {
 		"INSERT INTO users VALUES (1, 'John')",
 		"DELETE  From schools",
 		"SHOW CREATE TABLE table_2",
+		`/* this is a comment, Service: ignored_
+		service */ update * from table_ignored where id < 123;`,
 	}
 	for _, notMatchSql := range notMatchSqls {
 		if filter.IsSqlInBlackList(notMatchSql) {
