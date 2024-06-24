@@ -104,7 +104,7 @@ func NewStorage(user, password, host, port, schema string, debug bool) (*Storage
 	if debug {
 		config.Logger = log.NewGormLogWrapper(logger.Info)
 	} else {
-		config.Logger.LogMode(logger.Silent)
+		config.Logger = log.NewGormLogWrapper(logger.Silent)
 	}
 	db, err := gorm.Open(mysql.Open(dsn), config)
 	if err != nil {
