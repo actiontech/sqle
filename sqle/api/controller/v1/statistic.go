@@ -184,13 +184,13 @@ func GetWorkflowCreatedCountsEachDayV1(c echo.Context) error {
 }
 
 type WorkflowStatusCountV1 struct {
-	ExecutionSuccessCount    int `json:"execution_success_count"`
-	ExecutingCount           int `json:"executing_count"`
-	ExecutingFailedCount     int `json:"executing_failed_count"`
-	WaitingForExecutionCount int `json:"waiting_for_execution_count"`
-	RejectedCount            int `json:"rejected_count"`
-	WaitingForAuditCount     int `json:"waiting_for_audit_count"`
-	ClosedCount              int `json:"closed_count"`
+	ExecutionSuccessCount    int64 `json:"execution_success_count"`
+	ExecutingCount           int64 `json:"executing_count"`
+	ExecutingFailedCount     int64 `json:"executing_failed_count"`
+	WaitingForExecutionCount int64 `json:"waiting_for_execution_count"`
+	RejectedCount            int64 `json:"rejected_count"`
+	WaitingForAuditCount     int64 `json:"waiting_for_audit_count"`
+	ClosedCount              int64 `json:"closed_count"`
 }
 
 type GetWorkflowStatusCountResV1 struct {
@@ -521,7 +521,7 @@ type dbErr struct {
 	err error
 }
 
-func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectUid string) (count int) {
+func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectUid string) (count int64) {
 	if d.err != nil {
 		return 0
 	}
