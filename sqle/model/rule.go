@@ -7,7 +7,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type RuleTemplate struct {

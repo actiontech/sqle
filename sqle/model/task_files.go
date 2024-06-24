@@ -7,7 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuditFile struct {

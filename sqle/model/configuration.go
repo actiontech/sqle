@@ -9,7 +9,7 @@ import (
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const globalConfigurationTablePrefix = "global_configuration"
