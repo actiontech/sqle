@@ -44,7 +44,9 @@ var MockTime, _ = time.Parse("0000-00-00 00:00:00.0000000", "0000-00-00 00:00:00
 func InitMockStorage(db *sql.DB) {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
-	gormDB, err := gorm.Open("mysql", db)
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn: db,
+	}), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +56,7 @@ func InitMockStorage(db *sql.DB) {
 	// 	When mock SQL which will update CreateAt/UpdateAt fields,
 	// 	GORM will auto-update this field by NowFunc(when is is empty),
 	// 	then it will never equal to our expectation(always later than our expectation).
-	gorm.NowFunc = func() time.Time {
+	gormDB.NowFunc = func() time.Time {
 		return MockTime
 	}
 }
@@ -63,13 +65,6 @@ func GetStorage() *Storage {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
 	return storage
-}
-
-func UpdateStorage(newStorage *Storage) {
-	storageMutex.Lock()
-	defer storageMutex.Unlock()
-	storage.db.Close()
-	storage = newStorage
 }
 
 func GetDb() *gorm.DB {
@@ -514,7 +509,10 @@ func (s *Storage) HardDelete(model interface{}) error {
 }
 
 func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
-	db := s.db.DB()
+	db, err := s.db.DB()
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
@@ -647,7 +645,10 @@ func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result int
 		return err
 	}
 
-	sqlxDb := GetSqlxDb()
+	sqlxDb, err := GetSqlxDb()
+	if err != nil {
+		return err
+	}
 
 	query, args, err := sqlx.Named(buff.String(), data)
 	if err != nil {

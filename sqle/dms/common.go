@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -14,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"gorm.io/gorm"
 )
 
 func GetAllUsers(ctx context.Context, dmsAddr string) ([]*model.User, error) {
@@ -65,7 +65,7 @@ func convertListUserToModel(user *dmsV1.ListUser) *model.User {
 	model_ := model.Model{ID: uint(id)}
 	if user.IsDeleted {
 		// 仅记录为已删除
-		model_.DeletedAt = &time.Time{}
+		model_.DeletedAt = gorm.DeletedAt{Valid: true}
 	}
 	ret := &model.User{
 		Model:    model_,
