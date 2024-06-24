@@ -17,10 +17,12 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
-	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	xerrors "github.com/pkg/errors"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var storage *Storage
@@ -74,10 +76,14 @@ func GetDb() *gorm.DB {
 	return storage.db
 }
 
-func GetSqlxDb() *sqlx.DB {
-	db := sqlx.NewDb(storage.db.DB(), dbDriver)
+func GetSqlxDb() (*sqlx.DB, error) {
+	sdb, err := storage.db.DB()
+	if err != nil {
+		return nil, err
+	}
+	db := sqlx.NewDb(sdb, dbDriver)
 	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	return db
+	return db, nil
 }
 
 type Model struct {
@@ -94,15 +100,21 @@ func (m Model) GetIDStr() string {
 func NewStorage(user, password, host, port, schema string, debug bool) (*Storage, error) {
 	log.Logger().Infof("connecting to storage, host: %s, port: %s, user: %s, schema: %s",
 		host, port, user, schema)
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		user, password, host, port, schema))
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		user, password, host, port, schema)
+
+	config := &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	}
+	if debug {
+		config.Logger = log.NewGormLogWrapper(logger.Info)
+	} else {
+		config.Logger.LogMode(logger.Silent)
+	}
+	db, err := gorm.Open(mysql.Open(dsn), config)
 	if err != nil {
 		log.Logger().Errorf("connect to storage failed, error: %v", err)
 		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	if debug {
-		db.SetLogger(log.Logger().WithField("type", "sql"))
-		db.LogMode(true)
 	}
 	log.Logger().Info("connected to storage")
 	return &Storage{db: db}, errors.New(errors.ConnectStorageError, err)
@@ -155,30 +167,17 @@ var autoMigrateList = []interface{}{
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(autoMigrateList...).Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
-		"audit_plan_id", "fingerprint_md5").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(BlackListAuditPlanSQL{}).AddUniqueIndex("uniq_type_content", "filter_type", "filter_content").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(&SqlManage{}).AddIndex("idx_project_id_status_deleted_at", "project_id", "status", "deleted_at").Error
+	err := s.db.AutoMigrate(autoMigrateList...)
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
-	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
-		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
+	if !s.db.Migrator().HasIndex(&SqlManage{}, "idx_project_id_status_deleted_at") {
+		err = s.db.Exec("CREATE INDEX idx_project_id_status_deleted_at ON sql_manages (project_id, status, deleted_at)").Error
+		if err != nil {
 			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-
 	return nil
 }
 
