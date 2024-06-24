@@ -19,7 +19,7 @@ type SqlWhitelist struct {
 	// Value store SQL text.
 	Value            string `json:"value" gorm:"not null;type:text"`
 	CapitalizedValue string `json:"-" gorm:"-"`
-	Desc             string `json:"desc"`
+	Desc             string `json:"desc" gorm:"type:varchar(255)"`
 	// MessageDigest deprecated after 1.1.0, keep it for compatibility.
 	MessageDigest string `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
 	MatchType     string `json:"match_type" gorm:"default:\"exact_match\""`

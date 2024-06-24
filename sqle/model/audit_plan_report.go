@@ -14,7 +14,7 @@ type AuditPlanReportV2 struct {
 	AuditPlanReportSQLs []*AuditPlanReportSQLV2 `gorm:"foreignkey:AuditPlanReportID"`
 	PassRate            float64                 `json:"pass_rate"`
 	Score               int32                   `json:"score"`
-	AuditLevel          string                  `json:"audit_level"`
+	AuditLevel          string                  `json:"audit_level" gorm:"type:varchar(255)"`
 }
 
 func (a AuditPlanReportV2) TableName() string {

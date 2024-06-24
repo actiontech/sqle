@@ -87,10 +87,10 @@ func GetSqlxDb() (*sqlx.DB, error) {
 }
 
 type Model struct {
-	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
-	CreatedAt time.Time  `json:"created_at" gorm:"default:current_timestamp" example:"2018-10-21T16:40:23+08:00"`
-	UpdatedAt time.Time  `json:"updated_at" gorm:"default:current_timestamp on update current_timestamp" example:"2018-10-21T16:40:23+08:00"`
-	DeletedAt *time.Time `json:"-" sql:"index"`
+	ID        uint           `json:"id" gorm:"primary_key" example:"1"`
+	CreatedAt time.Time      `json:"created_at" gorm:"default:current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
+	UpdatedAt time.Time      `json:"updated_at" gorm:"default:current_timestamp(3) on update current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
+	DeletedAt gorm.DeletedAt `json:"-" sql:"index"`
 }
 
 func (m Model) GetIDStr() string {

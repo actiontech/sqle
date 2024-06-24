@@ -14,9 +14,9 @@ type RuleTemplate struct {
 	Model
 	// global rule-template has no ProjectId
 	ProjectId      ProjectUID               `gorm:"index"`
-	Name           string                   `json:"name"`
-	Desc           string                   `json:"desc"`
-	DBType         string                   `json:"db_type"`
+	Name           string                   `json:"name" gorm:"type:varchar(255)"`
+	Desc           string                   `json:"desc" gorm:"type:varchar(255)"`
+	DBType         string                   `json:"db_type" gorm:"type:varchar(255)"`
 	RuleList       []RuleTemplateRule       `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 	CustomRuleList []RuleTemplateCustomRule `json:"custom_rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -64,12 +64,12 @@ func (r *RuleKnowledge) GetContent() string {
 }
 
 type Rule struct {
-	Name            string         `json:"name" gorm:"primary_key; not null"`
-	DBType          string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\""`
-	Desc            string         `json:"desc"`
-	Annotation      string         `json:"annotation" gorm:"column:annotation"`
-	Level           string         `json:"level" example:"error"` // notice, warn, error
-	Typ             string         `json:"type" gorm:"column:type; not null"`
+	Name            string         `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
+	DBType          string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
+	Desc            string         `json:"desc" gorm:"type:varchar(255)"`
+	Annotation      string         `json:"annotation" gorm:"column:annotation;type:varchar(255)"`
+	Level           string         `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	Typ             string         `json:"type" gorm:"column:type; not null;type:varchar(255)"`
 	Params          params.Params  `json:"params" gorm:"type:varchar(1000)"`
 	KnowledgeId     uint           `json:"knowledge_id"`
 	Knowledge       *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
@@ -83,12 +83,12 @@ func (r Rule) TableName() string {
 
 type RuleTemplateRule struct {
 	RuleTemplateId uint          `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
-	RuleName       string        `json:"name" gorm:"primary_key;"`
-	RuleLevel      string        `json:"level" gorm:"column:level;"`
+	RuleName       string        `json:"name" gorm:"primary_key;type:varchar(255)"`
+	RuleLevel      string        `json:"level" gorm:"column:level;type:varchar(255)"`
 	RuleParams     params.Params `json:"value" gorm:"column:rule_params;type:varchar(1000)"`
-	RuleDBType     string        `json:"rule_db_type" gorm:"column:db_type; not null;"`
+	RuleDBType     string        `json:"rule_db_type" gorm:"column:db_type; not null; type:varchar(255)"`
 
-	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;association_foreignkey:RuleName,RuleDBType"`
+	Rule *Rule `json:"-" gorm:"foreignkey:Name,DBType;references:RuleName,RuleDBType"`
 }
 
 func (rtr *RuleTemplateRule) TableName() string {
@@ -132,11 +132,11 @@ func (rtr *RuleTemplateRule) GetOptimizationRule() *Rule {
 
 type RuleTemplateCustomRule struct {
 	RuleTemplateId uint   `json:"rule_template_id" gorm:"primary_key;auto_increment:false;"`
-	RuleId         string `json:"rule_id" gorm:"primary_key;"`
-	RuleLevel      string `json:"level" gorm:"column:level;"`
-	RuleDBType     string `json:"rule_db_type" gorm:"column:db_type; not null;"`
+	RuleId         string `json:"rule_id" gorm:"primary_key;type:varchar(255)"`
+	RuleLevel      string `json:"level" gorm:"column:level;type:varchar(255)"`
+	RuleDBType     string `json:"rule_db_type" gorm:"column:db_type; not null;type:varchar(255)"`
 
-	CustomRule *CustomRule `json:"-" gorm:"foreignkey:RuleId;association_foreignkey:RuleId"`
+	CustomRule *CustomRule `json:"-" gorm:"foreignkey:RuleId;references:RuleId"`
 }
 
 func NewRuleTemplateCustomRule(t *RuleTemplate, r *CustomRule) RuleTemplateCustomRule {
@@ -506,14 +506,15 @@ func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
 
 type CustomRule struct {
 	Model
-	RuleId      string         `json:"rule_id" gorm:"unique; not null"`
-	Desc        string         `json:"desc" gorm:"not null"`
-	Annotation  string         `json:"annotation"`
-	DBType      string         `json:"db_type" gorm:"not null; default:\"mysql\""`
-	Level       string         `json:"level" example:"error"` // notice, warn, error
-	Typ         string         `json:"type" gorm:"column:type; not null"`
+	RuleId      string         `json:"rule_id" gorm:"index:unique; not null; type:varchar(255)"`
+
+	Desc        string         `json:"desc" gorm:"not null; type:varchar(255)"`
+	Annotation  string         `json:"annotation" gorm:"type:varchar(255)"`
+	DBType      string         `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
+	Level       string         `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	Typ         string         `json:"type" gorm:"column:type; not null; type:varchar(255)"`
 	RuleScript  string         `json:"rule_script" gorm:"type:text"`
-	ScriptType  string         `json:"script_type" gorm:"not null; default:\"regular\""`
+	ScriptType  string         `json:"script_type" gorm:"not null; default:\"regular\"; type:varchar(255)"`
 	KnowledgeId uint           `json:"knowledge_id"`
 	Knowledge   *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
 }
