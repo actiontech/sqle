@@ -126,11 +126,11 @@ func (i *IM) TableName() string {
 }
 
 // BeforeSave is a hook implement gorm model before exec create.
-func (i *IM) BeforeSave() error {
-	return i.encryptAppSecret()
+func (i *IM) BeforeSave(tx *gorm.DB) error {
+	return i.encryptAppSecret(tx)
 }
 
-func (i *IM) encryptAppSecret() error {
+func (i *IM) encryptAppSecret(tx *gorm.DB) error {
 	if i == nil {
 		return nil
 	}
@@ -138,12 +138,12 @@ func (i *IM) encryptAppSecret() error {
 	if err != nil {
 		return err
 	}
-	i.EncryptAppSecret = data
+	tx.Statement.SetColumn("EncryptAppSecret", data)
 	return nil
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db.
-func (i *IM) AfterFind() error {
+func (i *IM) AfterFind(tx *gorm.DB) error {
 	err := i.decryptAppSecret()
 	if err != nil {
 		log.NewEntry().Errorf("decrypt app secret for IM server configuration failed, error: %v", err)

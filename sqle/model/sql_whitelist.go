@@ -26,13 +26,13 @@ type SqlWhitelist struct {
 }
 
 // BeforeSave is a hook implement gorm model before exec create
-func (s *SqlWhitelist) BeforeSave() error {
-	s.MessageDigest = "deprecated after 1.1.0"
+func (s *SqlWhitelist) BeforeSave(tx *gorm.DB) error {
+	tx.Statement.SetColumn("MessageDigest", "deprecated after 1.1.0")
 	return nil
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db
-func (s *SqlWhitelist) AfterFind() error {
+func (s *SqlWhitelist) AfterFind(tx *gorm.DB) error {
 	s.CapitalizedValue = strings.ToUpper(s.Value)
 	return nil
 }
