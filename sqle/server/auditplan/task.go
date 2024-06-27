@@ -1,5 +1,6 @@
 package auditplan
 
+import "C"
 import (
 	"bytes"
 	"context"
@@ -1740,7 +1741,7 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 }
 
 func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreSQLTableColumnInfo, constraints []*PostgreSQLConstraint, indexes []*PostgreSQLIndex) *PostgreSQLCreateTableSql {
-	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableOrViewName)
+	tableDDl := fmt.Sprintf(`CREATE TABLE %s.%s(`, schema, tableOrViewName)
 	// 列信息
 	for _, columnInfo := range columnsInfo {
 		schemaName, tableName := columnInfo.schemaName, columnInfo.tableName
@@ -1775,9 +1776,10 @@ func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreS
 
 func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, database string) ([]*PostgreSQLSchema, error) {
 	result := make([]*PostgreSQLSchema, 0)
-	querySql := fmt.Sprintf("SELECT schema_name FROM information_schema.schemata"+
-		" WHERE catalog_name = '%s'"+
-		" AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name", database)
+	querySql := fmt.Sprintf(`
+        SELECT schema_name FROM information_schema.schemata
+		WHERE catalog_name = '%s'
+		AND schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
 	res, err := at.GetResult(plugin, querySql)
 	if err != nil {
 		return result, err
@@ -1795,9 +1797,9 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plugin, database string) ([]*PostgreSQLTablesAndViews, error) {
-	querySql := fmt.Sprintf("select table_schema, table_name, table_type from information_schema.tables "+
-		" where table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
-		" ORDER BY table_name", database)
+	querySql := fmt.Sprintf(`select table_schema, table_name, table_type from information_schema.tables 
+		where table_catalog = '%s' and table_schema not like 'pg_%' AND table_schema != 'information_schema'
+		ORDER BY table_name`, database)
 	result := make([]*PostgreSQLTablesAndViews, 0)
 	ret, err := at.GetResult(plugin, querySql)
 	if err != nil {
@@ -1817,24 +1819,27 @@ func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plug
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin, database string) ([]*PostgreSQLTableColumnInfo, error) {
-	columns := fmt.Sprintf("SELECT table_schema, table_name, string_agg(column_name || ' ' || "+
-		"CASE "+
-		" WHEN lower(data_type) IN ('char', 'varchar', 'character', 'character varying') "+
-		" THEN data_type || '(' || COALESCE(character_maximum_length, 0) || ')' "+
-		" WHEN lower(data_type) IN ('numeric', 'decimal') "+
-		" THEN data_type || '(' || COALESCE(numeric_precision, 0) || ',' || COALESCE(numeric_scale, 0) || ')' "+
-		" WHEN lower(data_type) IN ('integer', 'smallint', 'bigint', 'text') THEN data_type "+
-		" ELSE udt_name "+
-		" END "+
-		" || "+
-		" CASE "+
-		" WHEN column_default != '' THEN ' DEFAULT ' || column_default ELSE '' END "+
-		" || "+
-		" CASE "+
-		" WHEN is_nullable = 'NO' THEN ' NOT NULL' ELSE '' END, ',\n ' ORDER BY ordinal_position) AS columns_sql"+
-		" FROM information_schema.columns "+
-		" WHERE table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema' "+
-		" GROUP BY table_schema, table_name", database)
+	columns := fmt.Sprintf(`select table_schema, table_name,
+		string_agg(
+			concat(
+				column_name, ' ', 
+				case 
+					when lower(data_type) in ('char', 'varchar', 'character', 'character varying') then concat(data_type, '(', coalesce(character_maximum_length, 0), ')') 
+					when lower(data_type) in ('numeric', 'decimal') then concat(data_type, '(', coalesce(numeric_precision, 0), ',', coalesce(numeric_scale, 0), ')') 
+					when lower(data_type) in ('integer', 'smallint', 'bigint', 'text') then data_type
+					else udt_name 
+				end,
+				case 
+					when column_default != '' then concat(' default ', column_default) else '' 
+				end,
+				case 
+					when is_nullable = 'no' then ' not null' else '' 
+				end
+			), ',\n ' order by ordinal_position
+		) as columns_sql
+	from information_schema.columns 
+	where table_catalog = '%s' and table_schema not like 'pg_%' and table_schema != 'information_schema' 
+	group by table_schema, table_name`, database)
 	result := make([]*PostgreSQLTableColumnInfo, 0)
 	ret, err := at.GetResult(plugin, columns)
 	if err != nil {
@@ -1854,11 +1859,17 @@ func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin,
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetAllConstraintsForPg(plugin driver.Plugin) ([]*PostgreSQLConstraint, error) {
-	querySql := fmt.Sprintf("SELECT n.nspname as schema_name, c.relname as table_name, " +
-		" 'CONSTRAINT ' || r.conname || ' ' || pg_catalog.pg_get_constraintdef ( r.OID, TRUE ) AS constraint_definition" +
-		" FROM pg_catalog.pg_constraint r JOIN pg_catalog.pg_class c ON C.OID = r.conrelid " +
-		" JOIN pg_catalog.pg_namespace n ON n.OID = c.relnamespace " +
-		" where n.nspname not like 'pg_%%' and n.nspname != 'information_schema'")
+	querySql := `select
+		n.nspname as schema_name,
+		c.relname as table_name,
+		concat ( 'constraint ', r.conname, ' ', pg_catalog.pg_get_constraintdef ( r.oid, true ) ) as constraint_definition 
+	from
+		pg_catalog.pg_constraint r
+		join pg_catalog.pg_class c on c.oid = r.conrelid
+		join pg_catalog.pg_namespace n on n.oid = c.relnamespace 
+	where
+		n.nspname not like'pg_%' 
+		and n.nspname != 'information_schema'`
 	result := make([]*PostgreSQLConstraint, 0)
 	ret, err := at.GetResult(plugin, querySql)
 	if err != nil {
@@ -1878,8 +1889,8 @@ func (at *PostgreSQLSchemaMetaTask) GetAllConstraintsForPg(plugin driver.Plugin)
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetAllIndexesForPg(plugin driver.Plugin) ([]*PostgreSQLIndex, error) {
-	querySql := "SELECT schemaname, tablename, indexname, indexdef FROM pg_indexes " +
-		" where schemaname not like 'pg_%' AND schemaname != 'information_schema'"
+	querySql := `select schemaname, tablename, indexname, indexdef from pg_indexes
+		         where schemaname not like 'pg_%' and schemaname != 'information_schema'`
 	result := make([]*PostgreSQLIndex, 0)
 	ret, err := at.GetResult(plugin, querySql)
 	if err != nil {
@@ -1900,10 +1911,13 @@ func (at *PostgreSQLSchemaMetaTask) GetAllIndexesForPg(plugin driver.Plugin) ([]
 }
 
 func (at *PostgreSQLSchemaMetaTask) GetAllViewsSqlForPg(plugin driver.Plugin, database string) ([]*PostgreSQLViewInfo, error) {
-	querySql := fmt.Sprintf("SELECT table_schema, table_name, "+
-		" 'CREATE OR REPLACE VIEW ' || table_schema || '.' || table_name || ' AS ' || view_definition "+
-		" AS create_view_statement FROM information_schema.views WHERE table_catalog = '%s' "+
-		" AND table_schema not like 'pg_%%' AND table_schema != 'information_schema' order by table_name", database)
+	querySql := fmt.Sprintf(`select table_schema, table_name, 
+		concat('create or replace view ', table_schema, '.', table_name, ' as ', view_definition) as create_view_statement 
+	from information_schema.views 
+	where table_catalog = '%s' 
+		and table_schema not like 'pg_%' 
+		and table_schema != 'information_schema' 
+	order by table_name`, database)
 	result := make([]*PostgreSQLViewInfo, 0)
 	ret, err := at.GetResult(plugin, querySql)
 	if err != nil {
