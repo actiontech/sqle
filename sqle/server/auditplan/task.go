@@ -1706,7 +1706,7 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 			}
 			if dataObjectType == "table" {
 				createDDL := createTableSqlForPg(currentSchema, tableOrViewName, columnsInfo, constraints, indexes)
-				tableDDl := fmt.Sprintf("%s;\n%s", createDDL.createTableSql, createDDL.createIndexSql)
+				tableDDl := fmt.Sprintf("%s;%s", createDDL.createTableSql, createDDL.createIndexSql)
 				createTableSqls = append(createTableSqls, tableDDl)
 			} else if dataObjectType == "view" {
 				if !isCollectView {
@@ -1741,7 +1741,7 @@ func (at *PostgreSQLSchemaMetaTask) collectorDo() {
 }
 
 func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreSQLTableColumnInfo, constraints []*PostgreSQLConstraint, indexes []*PostgreSQLIndex) *PostgreSQLCreateTableSql {
-	tableDDl := fmt.Sprintf(`CREATE TABLE %s.%s(`, schema, tableOrViewName)
+	tableDDl := fmt.Sprintf("CREATE TABLE %s.%s(", schema, tableOrViewName)
 	// 列信息
 	for _, columnInfo := range columnsInfo {
 		schemaName, tableName := columnInfo.schemaName, columnInfo.tableName
@@ -1756,7 +1756,7 @@ func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreS
 		if schemaName != schema || tableName != tableOrViewName {
 			continue
 		}
-		tableDDl += ",\n" + constraintInfo.constraintDefinition
+		tableDDl += fmt.Sprintf(",%s\n", constraintInfo.constraintDefinition)
 	}
 	tableDDl += ")"
 	indexDDl := ""
@@ -1766,7 +1766,7 @@ func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreS
 		if schemaName != schema || tableName != tableOrViewName {
 			continue
 		}
-		indexDDl += indexInfo.indexDefinition
+		indexDDl += fmt.Sprintf("%s;\n", indexInfo.indexDefinition)
 	}
 	return &PostgreSQLCreateTableSql{
 		createTableSql: tableDDl,
@@ -1780,12 +1780,10 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
         SELECT schema_name FROM information_schema.schemata
 		WHERE catalog_name = '%s'
 		AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
-	fmt.Printf("GetAllUserSchemas-->querySql:%s\n", querySql)
 	res, err := at.GetResult(plugin, querySql)
 	if err != nil {
 		return result, err
 	}
-	fmt.Printf("GetAllUserSchemas->error:%+v\n", err)
 	for _, value := range res {
 		if len(value) == 0 {
 			continue
@@ -1837,7 +1835,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin,
 				case 
 					when is_nullable = 'no' then ' not null' else '' 
 				end
-			), ',\n ' order by ordinal_position
+			), ', ' order by ordinal_position
 		) as columns_sql
 	from information_schema.columns 
 	where table_catalog = '%s' and table_schema not like 'pg_%%' and table_schema != 'information_schema' 
