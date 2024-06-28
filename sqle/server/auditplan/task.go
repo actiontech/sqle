@@ -1780,10 +1780,12 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
         SELECT schema_name FROM information_schema.schemata
 		WHERE catalog_name = '%s'
 		AND schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
+	fmt.Printf("GetAllUserSchemas-->querySql:%s\n", querySql)
 	res, err := at.GetResult(plugin, querySql)
 	if err != nil {
 		return result, err
 	}
+	fmt.Printf("GetAllUserSchemas->error:%+v\n", err)
 	for _, value := range res {
 		if len(value) == 0 {
 			continue
