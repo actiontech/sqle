@@ -10,34 +10,34 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuditPlan struct {
 	Model
 	ProjectId        ProjectUID    `gorm:"index; not null"`
 	Name             string        `json:"name" gorm:"not null;index"`
-	CronExpression   string        `json:"cron_expression" gorm:"not null"`
-	DBType           string        `json:"db_type" gorm:"not null"`
-	Token            string        `json:"token" gorm:"not null"`
-	InstanceName     string        `json:"instance_name"`
-	CreateUserID     string        `json:"create_user_id"`
-	InstanceDatabase string        `json:"instance_database"`
-	Type             string        `json:"type"`
-	RuleTemplateName string        `json:"rule_template_name"`
+	CronExpression   string        `json:"cron_expression" gorm:"not null;type:varchar(255)"`
+	DBType           string        `json:"db_type" gorm:"not null;type:varchar(255)"`
+	Token            string        `json:"token" gorm:"not null;type:varchar(255)"`
+	InstanceName     string        `json:"instance_name" gorm:"type:varchar(255)"`
+	CreateUserID     string        `json:"create_user_id" gorm:"type:varchar(255)"`
+	InstanceDatabase string        `json:"instance_database" gorm:"type:varchar(255)"`
+	Type             string        `json:"type" gorm:"type:varchar(255)"`
+	RuleTemplateName string        `json:"rule_template_name" gorm:"type:varchar(255)"`
 	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
 
 	NotifyInterval      int    `json:"notify_interval" gorm:"default:10"`
-	NotifyLevel         string `json:"notify_level" gorm:"default:'warn'"`
+	NotifyLevel         string `json:"notify_level" gorm:"default:'warn';type:varchar(255)"`
 	EnableEmailNotify   bool   `json:"enable_email_notify"`
 	EnableWebHookNotify bool   `json:"enable_web_hook_notify"`
-	WebHookURL          string `json:"web_hook_url"`
-	WebHookTemplate     string `json:"web_hook_template"`
+	WebHookURL          string `json:"web_hook_url" gorm:"type:varchar(255)"`
+	WebHookTemplate     string `json:"web_hook_template" gorm:"type:varchar(255)"`
 
-	ProjectStatus string `gorm:"default:'active'"` // dms-todo: 暂时将项目状态放在这里
+	ProjectStatus string `gorm:"default:'active';type:varchar(255)"` // dms-todo: 暂时将项目状态放在这里
 
 	// CreateUser    *User             // TODO 移除 `gorm:"foreignkey:CreateUserId"`
-	Instance      *Instance         `gorm:"foreignkey:InstanceName;association_foreignkey:Name"`
+	Instance      *Instance         `gorm:"foreignkey:Name;references:InstanceName"`
 	AuditPlanSQLs []*AuditPlanSQLV2 `gorm:"foreignkey:AuditPlanID"`
 }
 
@@ -46,9 +46,9 @@ type AuditPlanSQLV2 struct {
 
 	// add unique index on fingerprint and audit_plan_id
 	// it's done by AutoMigrate() because gorm can't create index on TEXT column directly by tag.
-	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null"`
+	AuditPlanID    uint   `json:"audit_plan_id" gorm:"not null;uniqueIndex:uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5"`
 	Fingerprint    string `json:"fingerprint" gorm:"type:mediumtext;not null"`
-	FingerprintMD5 string `json:"fingerprint_md5" gorm:"column:fingerprint_md5;not null"`
+	FingerprintMD5 string `json:"fingerprint_md5" gorm:"type:varchar(512);column:fingerprint_md5;not null;uniqueIndex:uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5"`
 	SQLContent     string `json:"sql" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"`
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
@@ -99,8 +99,8 @@ func (a *AuditPlanSQLV2) GetFingerprintMD5() string {
 }
 
 // BeforeSave is a hook implement gorm model before exec create.
-func (a *AuditPlanSQLV2) BeforeSave() error {
-	a.FingerprintMD5 = a.GetFingerprintMD5()
+func (a *AuditPlanSQLV2) BeforeSave(tx *gorm.DB) error {
+	tx.Statement.SetColumn("FingerprintMD5", a.GetFingerprintMD5())
 	return nil
 }
 
@@ -120,7 +120,7 @@ func (s *Storage) GetActiveAuditPlans() ([]*AuditPlan, error) {
 
 func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -129,7 +129,7 @@ func (s *Storage) GetAuditPlanByName(name string) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -140,7 +140,7 @@ func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).
 		Where("project_status = ?", ProjectStatusActive).
-		Where("id = ?", id).Find(ap).Error
+		Where("id = ?", id).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -149,7 +149,7 @@ func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 
 func (s *Storage) GetAuditPlanFromProjectByName(projectId, AuditPlanName string) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
-	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).Find(ap).Error
+	err := s.db.Model(AuditPlan{}).Where("project_id = ? AND name = ?", projectId, AuditPlanName).First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -158,7 +158,7 @@ func (s *Storage) GetAuditPlanFromProjectByName(projectId, AuditPlanName string)
 
 func (s *Storage) GetAuditPlanReportByID(auditPlanId, id uint) (*AuditPlanReportV2, bool, error) {
 	ap := &AuditPlanReportV2{}
-	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").Find(ap).Error
+	err := s.db.Model(AuditPlanReportV2{}).Where("id = ? AND audit_plan_id = ?", id, auditPlanId).Preload("AuditPlan").First(ap).Error
 	if err == gorm.ErrRecordNotFound {
 		return ap, false, nil
 	}
@@ -326,12 +326,12 @@ func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string,
 }
 
 func (s *Storage) UpdateAuditPlanByName(name string, attrs map[string]interface{}) error {
-	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Update(attrs).Error
+	err := s.db.Model(AuditPlan{}).Where("name = ?", name).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) UpdateAuditPlanById(id uint, attrs map[string]interface{}) error {
-	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Update(attrs).Error
+	err := s.db.Model(AuditPlan{}).Where("id = ?", id).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
 
@@ -404,8 +404,7 @@ func (s *Storage) GetAuditPlanSQLCountAndTriggerRuleCountByProject(projectUid st
 		Select("audit_plans.id as audit_plan_id, MAX(audit_plan_reports_v2.created_at) as latest_created_at").
 		Joins("left join audit_plan_reports_v2 on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Where("audit_plans.project_id=? and audit_plans.deleted_at is null and audit_plan_reports_v2.id is not null", projectUid).
-		Group("audit_plans.id").
-		SubQuery()
+		Group("audit_plans.id")
 
 	err := s.db.Model(&AuditPlan{}).
 		Select("count(report_sqls.id) sql_count, count(case when JSON_TYPE(report_sqls.audit_results)<>'NULL' then 1 else null end) trigger_rule_count").

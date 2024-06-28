@@ -16,6 +16,7 @@ func TestManager(t *testing.T) {
 	mockDB, mockHandle, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
 	defer mockDB.Close()
+	mockHandle.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	model.InitMockStorage(mockDB)
 	storage := model.GetStorage()
 
@@ -26,15 +27,15 @@ func TestManager(t *testing.T) {
 	nextTime := m.lastSyncTime.Add(5 * time.Second)
 
 	// test init
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?))").
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE project_status = ? AND `audit_plans`.`deleted_at` IS NULL").
 		WithArgs("active").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(1, "test_ap_1", "default", "*/1 * * * *"))
 
-	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE (updated_at > ?) ORDER BY updated_at").
+	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE updated_at > ? ORDER BY updated_at").
 		WithArgs(m.lastSyncTime).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(2, nextTime))
 
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?)) ").
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE project_status = ? AND id = ? AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 		WithArgs("active", 2).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(2, "test_ap_2", "default", "*/2 * * * *"))
 
@@ -61,11 +62,11 @@ func TestManager(t *testing.T) {
 	// test add task
 
 	nextTimeMore := nextTime.Add(6 * time.Second)
-	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE (updated_at > ?) ORDER BY updated_at").
+	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE updated_at > ? ORDER BY updated_at").
 		WithArgs(nextTime).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(3, nextTimeMore))
 
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?))").
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE project_status = ? AND id = ? AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 		WithArgs("active", 3).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}).AddRow(3, "test_ap_3", "default", "*/3 * * * *"))
 
@@ -83,11 +84,11 @@ func TestManager(t *testing.T) {
 
 	// test delete task
 	nextTimeMore2 := nextTimeMore.Add(6 * time.Second)
-	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE (updated_at > ?) ORDER BY updated_at").
+	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE updated_at > ? ORDER BY updated_at").
 		WithArgs(nextTimeMore).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}).AddRow(3, nextTimeMore2))
 
-	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_status = ?) AND (id = ?))").
+	mockHandle.ExpectQuery("SELECT * FROM `audit_plans` WHERE project_status = ? AND id = ? AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 		WithArgs("active", 3).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "type", "cron_expression"}))
 
@@ -101,7 +102,7 @@ func TestManager(t *testing.T) {
 	assert.Equal(t, true, m.isFullSyncDone)
 
 	// test no task change
-	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE (updated_at > ?) ORDER BY updated_at").
+	mockHandle.ExpectQuery("SELECT id, updated_at FROM `audit_plans` WHERE updated_at > ? ORDER BY updated_at").
 		WithArgs(nextTimeMore2).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "updated_at"}))
 

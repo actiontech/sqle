@@ -35,7 +35,7 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"),true)
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -160,7 +160,7 @@ type GetAuditWhitelistReqV1 struct {
 type GetAuditWhitelistResV1 struct {
 	controller.BaseRes
 	Data      []*AuditWhitelistResV1 `json:"data"`
-	TotalNums uint32                 `json:"total_nums"`
+	TotalNums int64                  `json:"total_nums"`
 }
 
 type AuditWhitelistResV1 struct {

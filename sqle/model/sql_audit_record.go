@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 
 	"github.com/actiontech/sqle/sqle/errors"
 )
@@ -15,9 +15,9 @@ type SQLAuditRecordTags struct {
 
 type SQLAuditRecord struct {
 	Model
-	ProjectId     string `gorm:"index;not null"`
-	CreatorId     string `gorm:"not null"`
-	AuditRecordId string `gorm:"unique;not null"`
+	ProjectId string `gorm:"index;not null;type:varchar(255)"`
+	CreatorId string `gorm:"not null;type:varchar(255)"`
+	AuditRecordId string `gorm:"not null;type:varchar(255);index:unique"`
 	Tags          JSON
 
 	TaskId uint  `gorm:"not null"`
@@ -45,7 +45,7 @@ func (s *Storage) UpdateSQLAuditRecordById(SQLAuditRecordId string, data SQLAudi
 }
 
 func (s *Storage) IsSQLAuditRecordBelongToCurrentUser(userId, projectId string, SQLAuditRecordId string) (bool, error) {
-	count := 0
+	var count int64
 	if err := s.db.Table("sql_audit_records").
 		Where("audit_record_id = ?", SQLAuditRecordId).
 		Where("creator_id = ?", userId).
@@ -59,7 +59,7 @@ func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId strin
 	record = &SQLAuditRecord{}
 	if err = s.db.Preload("Task").Preload("Task.ExecuteSQLs").
 		Where("project_id = ?", projectId).Where("audit_record_id = ?", SQLAuditRecordId).
-		Find(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
+		First(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	} else if err != nil {
 		return nil, false, errors.New(errors.ConnectStorageError, err)

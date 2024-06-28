@@ -11,17 +11,17 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type WorkflowTemplate struct {
 	Model
-	ProjectId                     ProjectUID `gorm:"index; not null"`
-	Name                          string
-	Desc                          string
-	AllowSubmitWhenLessAuditLevel string
+	ProjectId                     ProjectUID `gorm:"index; not null; type:varchar(255)"`
+	Name                          string     `gorm:"type:varchar(255)"`
+	Desc                          string     `gorm:"type:varchar(255)"`
+	AllowSubmitWhenLessAuditLevel string     `gorm:"type:varchar(255)"`
 
-	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:workflowTemplateId"`
+	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:WorkflowTemplateId"`
 	// Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
@@ -34,14 +34,14 @@ const (
 
 type WorkflowStepTemplate struct {
 	Model
-	Number               uint   `gorm:"index; column:step_number"`
-	WorkflowTemplateId   int    `gorm:"index"`
-	Typ                  string `gorm:"column:type; not null"`
-	Desc                 string
+	Number               uint         `gorm:"index; column:step_number"`
+	WorkflowTemplateId   int          `gorm:"index"`
+	Typ                  string       `gorm:"column:type; not null; type:varchar(255)"`
+	Desc                 string       `gorm:"type:varchar(255)"`
 	ApprovedByAuthorized sql.NullBool `gorm:"column:approved_by_authorized"`
 	ExecuteByAuthorized  sql.NullBool `gorm:"column:execute_by_authorized"`
 
-	Users string // `gorm:"many2many:workflow_step_template_user"` // dms-todo: 调整存储格式
+	Users string `gorm:"type:varchar(255)"` // `gorm:"many2many:workflow_step_template_user"` // dms-todo: 调整存储格式
 }
 
 func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
@@ -180,19 +180,19 @@ func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 
 type Workflow struct {
 	Model
-	Subject          string
-	WorkflowId       string `gorm:"unique"`
+	Subject          string `gorm:"type:varchar(255)"`
+	WorkflowId       string `gorm:"index:unique; type:varchar(255)"`
 	Desc             string `gorm:"type:varchar(3000)"`
-	CreateUserId     string
+	CreateUserId     string `gorm:"type:varchar(255)"`
 	WorkflowRecordId uint
-	ProjectId        ProjectUID `gorm:"index; not null"`
+	ProjectId        ProjectUID `gorm:"index; not null; type:varchar(255)"`
 
 	Record *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
 	// Project       *Project          `gorm:"foreignkey:ProjectId"`
 	RecordHistory []*WorkflowRecord `gorm:"many2many:workflow_record_history"`
 
-	Mode     string
-	ExecMode string `json:"exec_mode" gorm:"default:'sqls'" example:"sqls"`
+	Mode     string `gorm:"type:varchar(255)"`
+	ExecMode string `json:"exec_mode" gorm:"default:'sqls'; type:varchar(255)" example:"sqls"`
 }
 
 const (
@@ -221,7 +221,7 @@ var WorkflowStatus = map[string]string{
 type WorkflowRecord struct {
 	Model
 	CurrentWorkflowStepId uint
-	Status                string                    `gorm:"default:\"wait_for_audit\""`
+	Status                string                    `gorm:"default:\"wait_for_audit\";type:varchar(255)"`
 	InstanceRecords       []*WorkflowInstanceRecord `gorm:"foreignkey:WorkflowRecordId"`
 
 	// 当workflow只有部分数据源已上线时，current step仍处于"sql_execute"步骤
@@ -239,10 +239,10 @@ type WorkflowInstanceRecord struct {
 	WorkflowRecordId uint `gorm:"index; not null"`
 	InstanceId       uint64
 	ScheduledAt      *time.Time
-	ScheduleUserId   string
+	ScheduleUserId   string `gorm:"type:varchar(255)"`
 	// 用于区分工单处于上线步骤时，某个数据源是否已上线，因为数据源可以分批上线
 	IsSQLExecuted   bool
-	ExecutionUserId string
+	ExecutionUserId string `gorm:"type:varchar(255)"`
 	// 定时上线是否需要发生通知
 	NeedScheduledTaskNotify bool
 	// NeedScheduledTaskNotify为true时，该字段生效
@@ -251,7 +251,7 @@ type WorkflowInstanceRecord struct {
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
-	ExecutionAssignees string
+	ExecutionAssignees string `gorm:"type:varchar(255)"`
 }
 
 func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
@@ -301,15 +301,15 @@ const (
 
 type WorkflowStep struct {
 	Model
-	OperationUserId        string
+	OperationUserId        string `gorm:"type:varchar(255)"`
 	OperateAt              *time.Time
-	WorkflowId             string `gorm:"index; not null"`
+	WorkflowId             string `gorm:"index; not null; type:varchar(255)"`
 	WorkflowRecordId       uint   `gorm:"index; not null"`
 	WorkflowStepTemplateId uint   `gorm:"index; not null"`
-	State                  string `gorm:"default:\"initialized\""`
-	Reason                 string
+	State                  string `gorm:"default:\"initialized\"; type:varchar(255)"`
+	Reason                 string `gorm:"type:varchar(255)"`
 
-	Assignees string                // `gorm:"many2many:workflow_step_user"`
+	Assignees string                `gorm:"type:varchar(255)"` // `gorm:"many2many:workflow_step_user"`
 	Template  *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
 	// OperationUser string                // `gorm:"foreignkey:OperationUserId"`
 }
@@ -792,7 +792,7 @@ func (s *Storage) UpdateWorkflowRecordByID(id uint, workFlow map[string]interfac
 }
 
 func (s *Storage) UpdateInstanceRecordSchedule(ir *WorkflowInstanceRecord, userId string, scheduleTime *time.Time) error {
-	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Update(map[string]interface{}{
+	err := s.db.Model(&WorkflowInstanceRecord{}).Where("id = ?", ir.ID).Updates(map[string]interface{}{
 		"scheduled_at":     scheduleTime,
 		"schedule_user_id": userId,
 	}).Error
@@ -954,8 +954,8 @@ func (s *Storage) GetWorkflowHistoryById(id uint) ([]*WorkflowRecord, error) {
 	return records, nil
 }
 
-func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (uint32, error) {
-	var count uint32
+func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (int64, error) {
+	var count int64
 	err := s.db.Model(&WorkflowInstanceRecord{}).Where("workflow_instance_records.task_id IN (?)", ids).Count(&count).Error
 	if err != nil {
 		return 0, errors.New(errors.ConnectStorageError, err)
@@ -977,7 +977,7 @@ func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
 		Joins("LEFT JOIN workflow_instance_records AS h_wir ON "+
 			"h_wir.workflow_record_id = workflow_record_history.workflow_record_id").
 		Where("wir.task_id = ? OR h_wir.task_id = ? AND workflows.id IS NOT NULL", id, id).
-		Limit(1).Group("workflows.id").Scan(workflow).Error
+		Limit(1).Group("workflows.id").First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
@@ -1062,7 +1062,7 @@ func (s *Storage) GetWorkflowBySubject(subject string) (*Workflow, bool, error) 
 }
 
 func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, error) {
-	count := 0
+	var count int64
 	err := s.db.Table("workflow_records").
 		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
 		Where("workflow_records.status = ? OR workflow_records.status = ?", WorkflowStatusWaitForAudit, WorkflowStatusWaitForExecution).
@@ -1150,12 +1150,12 @@ WHERE a.id =
 	return workflowStepsBO, s.db.Raw(query).Scan(&workflowStepsBO).Error
 }
 
-func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
+func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int64, error) {
 	if len(stepTypes) == 0 {
 		return 0, nil
 	}
 
-	var count int
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Joins("left join workflow_steps on workflow_records.current_workflow_step_id = workflow_steps.id").
@@ -1166,8 +1166,8 @@ func (s *Storage) GetWorkflowCountByStepType(stepTypes []string) (int, error) {
 	return count, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
-	var count int
+func (s *Storage) GetWorkflowCountByStatus(status string) (int64, error) {
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status = ?", status).
@@ -1183,7 +1183,7 @@ func (s *Storage) GetWorkflowCountByStatus(status string) (int, error) {
 func (s *Storage) HasNotEndWorkflowByProjectId(projectId string) (bool, error) {
 	endStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusCancel}
 
-	var count int
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status NOT IN (?)", endStatus).
@@ -1195,7 +1195,7 @@ func (s *Storage) HasNotEndWorkflowByProjectId(projectId string) (bool, error) {
 // GetApprovedWorkflowCount
 // 返回审核通过的工单数（工单状态是 待上线,正在上线,上线成功,上线失败 中任意一个表示工单通过审核）
 // 工单状态是 待审核,已驳回,已关闭 中任意一个表示工单未通过审核
-func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
+func (s *Storage) GetApprovedWorkflowCount() (count int64, err error) {
 	notPassAuditStatus := []string{WorkflowStatusWaitForAudit, WorkflowStatusReject, WorkflowStatusCancel}
 
 	err = s.db.Model(&Workflow{}).
@@ -1209,8 +1209,8 @@ func (s *Storage) GetApprovedWorkflowCount() (count int, err error) {
 	return count, nil
 }
 
-func (s *Storage) GetAllWorkflowCount() (int, error) {
-	var count int
+func (s *Storage) GetAllWorkflowCount() (int64, error) {
+	var count int64
 	return count, errors.New(errors.ConnectStorageError, s.db.Model(&Workflow{}).Count(&count).Error)
 }
 
@@ -1443,8 +1443,8 @@ func (s *Storage) GetSqlCountAndTriggerRuleCountFromWorkflowByProject(projectUid
 	return sqlCountAndTriggerRuleCount, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int, error) {
-	var count int
+func (s *Storage) GetWorkflowCountByStatusAndProject(status string, projectUid string) (int64, error) {
+	var count int64
 	err := s.db.Table("workflows").
 		Joins("left join workflow_records on workflows.workflow_record_id = workflow_records.id").
 		Where("workflow_records.status = ? and workflows.project_id=?", status, projectUid).
