@@ -1779,7 +1779,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
 	querySql := fmt.Sprintf(`
         SELECT schema_name FROM information_schema.schemata
 		WHERE catalog_name = '%s'
-		AND schema_name NOT LIKE 'pg_%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
+		AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
 	fmt.Printf("GetAllUserSchemas-->querySql:%s\n", querySql)
 	res, err := at.GetResult(plugin, querySql)
 	if err != nil {
@@ -1800,7 +1800,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, data
 
 func (at *PostgreSQLSchemaMetaTask) GetAllTablesAndViewsForPg(plugin driver.Plugin, database string) ([]*PostgreSQLTablesAndViews, error) {
 	querySql := fmt.Sprintf(`select table_schema, table_name, table_type from information_schema.tables 
-		where table_catalog = '%s' and table_schema not like 'pg_%' AND table_schema != 'information_schema'
+		where table_catalog = '%s' and table_schema not like 'pg_%%' AND table_schema != 'information_schema'
 		ORDER BY table_name`, database)
 	result := make([]*PostgreSQLTablesAndViews, 0)
 	ret, err := at.GetResult(plugin, querySql)
@@ -1840,7 +1840,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllColumnsInfoForPg(plugin driver.Plugin,
 			), ',\n ' order by ordinal_position
 		) as columns_sql
 	from information_schema.columns 
-	where table_catalog = '%s' and table_schema not like 'pg_%' and table_schema != 'information_schema' 
+	where table_catalog = '%s' and table_schema not like 'pg_%%' and table_schema != 'information_schema' 
 	group by table_schema, table_name`, database)
 	result := make([]*PostgreSQLTableColumnInfo, 0)
 	ret, err := at.GetResult(plugin, columns)
@@ -1917,7 +1917,7 @@ func (at *PostgreSQLSchemaMetaTask) GetAllViewsSqlForPg(plugin driver.Plugin, da
 		concat('create or replace view ', table_schema, '.', table_name, ' as ', view_definition) as create_view_statement 
 	from information_schema.views 
 	where table_catalog = '%s' 
-		and table_schema not like 'pg_%' 
+		and table_schema not like 'pg_%%' 
 		and table_schema != 'information_schema' 
 	order by table_name`, database)
 	result := make([]*PostgreSQLViewInfo, 0)
