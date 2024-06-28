@@ -1671,17 +1671,22 @@ type DynPerformancePgColumns struct {
 
 const (
 	DynPerformanceViewPgTpl = `
-SELECT query as sql_fulltext,
-sum(calls) as executions,
-sum(total_exec_time) AS elapsed_time,
-sum(shared_blks_read) AS disk_reads, -- 表示从共享缓冲区中读取的块数。这个值表示数据库系统从磁盘或其他存储介质中读取的数据块数量，而不是从内存中读取的数据。
-sum(shared_blks_hit) AS buffer_gets, -- 表示从共享缓冲区中命中的块数。这个值表示数据库系统从内存中读取的数据块数量，而不是从磁盘或其他存储介质中读取的数据。
-sum(blk_read_time) as user_io_wait_time
-FROM pg_stat_statements
-WHERE calls > 0
-AND query <> '<insufficient privilege>' -- 过滤包含"<insufficient privilege>"的SQL语句 https://github.com/actiontech/sqle-ee/issues/1586
-group by query
-ORDER BY %v DESC limit %v`
+	select
+		pss.query as sql_fulltext,
+		sum ( pss.calls ) as executions,
+		sum ( pss.total_exec_time ) as elapsed_time,
+		sum ( pss.shared_blks_read ) as disk_reads,
+		sum ( pss.shared_blks_hit ) as buffer_gets,
+		sum ( pss.blk_read_time ) as user_io_wait_time 
+	from
+		pg_stat_statements pss
+		join pg_database pd on pss.dbid = pd.oid 
+	where
+		pss.calls > 0 
+		and query <> '<insufficient privilege>'
+		and pd.datname = '%v' 
+	group by pss.query 
+	order by %v desc limit '%v'`
 	DynPerformanceViewPgSQLColumnExecutions     = "executions"
 	DynPerformanceViewPgSQLColumnElapsedTime    = "elapsed_time"
 	DynPerformanceViewPgSQLColumnDiskReads      = "disk_reads"
@@ -1715,6 +1720,11 @@ func (at *PostgreSQLTopSQLTask) collectorDo() {
 	if at.ap.InstanceName == "" {
 		at.logger.Warnf("instance is not configured")
 		return
+	}
+
+	// 设置默认数据库为：postgres，因为连接PG必须指定数据库
+	if len(at.ap.InstanceDatabase) == 0 {
+		at.ap.InstanceDatabase = "postgres"
 	}
 
 	// 超时2分钟
@@ -1766,10 +1776,19 @@ func queryTopSQLsForPg(inst *model.Instance, database string, orderBy string, to
 	}
 	defer plugin.Close(context.TODO())
 
+	ctxForCreatePgExtension, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	// 执行创建pg_stat_statements扩展
+	_, err = plugin.Exec(ctxForCreatePgExtension, `CREATE EXTENSION IF NOT EXISTS pg_stat_statements`)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 
-	sql := fmt.Sprintf(DynPerformanceViewPgTpl, orderBy, topN)
+	sql := fmt.Sprintf(DynPerformanceViewPgTpl, database, orderBy, topN)
 	result, err := plugin.Query(ctx, sql, &driverV2.QueryConf{TimeOutSecond: 120})
 	if err != nil {
 		return nil, err
