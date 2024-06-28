@@ -62,11 +62,11 @@ default: install
 ######################################## Code Check ####################################################
 ## Static Code Analysis
 vet: swagger
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
+	GOOS=$(GOOS) GOARCH=amd64 go vet $$(GOOS=${GOOS} GOARCH=${GOARCH} go list ./...)
 
 ## Unit Test
-test:
-	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=$(GOARCH) go test -v ./... -count 1
+test: 
+	cd $(PROJECT_NAME) && GOOS=$(GOOS) GOARCH=amd64 go test -v ./... -count 1
 
 clean:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go clean
@@ -82,12 +82,12 @@ install_scannerd:
 dlv_install:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -gcflags "all=-N -l" $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 swagger:
-	GOARCH=$(GOARCH) go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
+	GOARCH=amd64 go build -o ${shell pwd}/bin/swag ${shell pwd}/build/swag/main.go
 	rm -rf ${shell pwd}/sqle/docs
 	${shell pwd}/bin/swag init -g ./$(PROJECT_NAME)/api/app.go -o ${shell pwd}/sqle/docs
 
 parser:
-	cd build/goyacc && GOOS=${GOOS} GOARCH=$(GOARCH) GOBIN=$(GOBIN) go install
+	cd build/goyacc && GOOS=${GOOS} GOARCH=amd64 GOBIN=$(GOBIN) go install
 	$(GOBIN)/goyacc -o /dev/null ${PARSER_PATH}/parser.y
 	$(GOBIN)/goyacc -o ${PARSER_PATH}/parser.go ${PARSER_PATH}/parser.y 2>&1 | egrep "(shift|reduce)/reduce" | awk '{print} END {if (NR > 0) {print "Find conflict in parser.y. Please check y.output for more information."; exit 1;}}'
 	rm -f y.output
