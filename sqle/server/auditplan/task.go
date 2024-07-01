@@ -1777,8 +1777,7 @@ func createTableSqlForPg(schema, tableOrViewName string, columnsInfo []*PostgreS
 func (at *PostgreSQLSchemaMetaTask) GetAllUserSchemas(plugin driver.Plugin, database string) ([]*PostgreSQLSchema, error) {
 	result := make([]*PostgreSQLSchema, 0)
 	querySql := fmt.Sprintf(`
-        SELECT schema_name FROM information_schema.schemata
-		WHERE catalog_name = '%s'
+        SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '%s'
 		AND schema_name NOT LIKE 'pg_%%' AND schema_name != 'information_schema' ORDER BY schema_name`, database)
 	res, err := at.GetResult(plugin, querySql)
 	if err != nil {
