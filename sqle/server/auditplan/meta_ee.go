@@ -15,6 +15,7 @@ const (
 	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
+	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
 )
 
 const (
@@ -129,6 +130,26 @@ var EEMetas = []Meta{
 				Desc:  "采集周期（分钟）",
 				Value: "60",
 				Type:  params.ParamTypeInt,
+			},
+		},
+	},
+	{
+		Type:         TypePostgreSQLSchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypePostgreSQL,
+		CreateTask:   NewPostgreSQLSchemaMetaTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "collect_view",
+				Desc:  "是否采集视图信息",
+				Value: "0",
+				Type:  params.ParamTypeBool,
 			},
 		},
 	},
