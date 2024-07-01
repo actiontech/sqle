@@ -207,6 +207,7 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+	ConfigParsingSQLFailure        = "parsing_sql_failure"
 )
 
 // 计算单位
@@ -5989,6 +5990,13 @@ func checkCharLength(input *RuleHandlerInput) error {
 	}
 	if charLength > max {
 		addResult(input.Res, input.Rule, input.Rule.Name, max)
+	}
+	return nil
+}
+
+func checkSQLParsing(input *RuleHandlerInput) error {
+	if _, ok := input.Node.(*ast.UnparsedStmt); ok {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }

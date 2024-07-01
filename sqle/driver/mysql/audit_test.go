@@ -120,7 +120,8 @@ func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
 }
 
 func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
-	i.rules = []*driverV2.Rule{&rule}
+	parsingSQLFailureRule := rulepkg.RuleHandlerMap[rulepkg.ConfigParsingSQLFailure].Rule
+	i.rules = []*driverV2.Rule{&parsingSQLFailureRule, &rule}
 	inspectCase(t, desc, i, sql, results...)
 }
 
@@ -4434,7 +4435,7 @@ SELECT * FROM exist_db.exist_tb_1;
 OPTIMIZE TABLE exist_db.exist_tb_1;
 SELECT * FROM exist_db.exist_tb_2;
 `, newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid),
-		newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"),
+		newTestResult().addResult(rulepkg.ConfigParsingSQLFailure),
 		newTestResult().addResult(rulepkg.DMLCheckWhereIsInvalid))
 }
 
@@ -4467,7 +4468,7 @@ CREATE
 `,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateTrigger))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLCheckCreateTrigger))
 	}
 
 	for _, sql := range []string{
@@ -4480,7 +4481,7 @@ CREATE
 		`AFTER CREATE`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateTrigger].Rule, t, "", DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
@@ -4498,7 +4499,7 @@ CREATE
 `,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").addResult(rulepkg.DDLCheckCreateFunction))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).addResult(rulepkg.DDLCheckCreateFunction))
 	}
 
 	for _, sql := range []string{
@@ -4508,7 +4509,7 @@ CREATE
 		`CREATE DEFINER='sqle_op'@'localhost' hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!');`,
 	} {
 		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateFunction].Rule, t, "", DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
@@ -4555,7 +4556,7 @@ select * from t1;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性").
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure).
 				addResult(rulepkg.DDLCheckCreateProcedure))
 	}
 
@@ -4590,7 +4591,7 @@ end;`,
 		runSingleRuleInspectCase(
 			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
 			DefaultMysqlInspect(), sql,
-			newTestResult().add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性"))
+			newTestResult().addResult(rulepkg.ConfigParsingSQLFailure))
 	}
 }
 
