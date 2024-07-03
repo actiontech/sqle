@@ -83,6 +83,7 @@ require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/xen0n/go-workwx v1.7.0
 	golang.org/x/text v0.13.0
+	gorm.io/gorm v1.24.3
 )
 
 require (
@@ -135,6 +136,7 @@ require (
 	github.com/jackc/pgtype v1.8.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
