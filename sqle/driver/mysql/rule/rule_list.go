@@ -2144,6 +2144,6 @@ var RuleHandlers = []RuleHandler{
 		},
 		AllowOffline: true,
 		Message:      "语法错误或者解析器不支持，请人工确认SQL正确性。",
-		Func:         checkSQLParsing,
+		Func: nil,
 	},
 }

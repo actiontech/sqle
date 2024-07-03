@@ -5993,10 +5993,3 @@ func checkCharLength(input *RuleHandlerInput) error {
 	}
 	return nil
 }
-
-func checkSQLParsing(input *RuleHandlerInput) error {
-	if _, ok := input.Node.(*ast.UnparsedStmt); ok {
-		addResult(input.Res, input.Rule, input.Rule.Name)
-	}
-	return nil
-}

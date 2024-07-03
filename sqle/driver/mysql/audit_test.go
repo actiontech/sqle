@@ -121,6 +121,8 @@ func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
 
 func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	parsingSQLFailureRule := rulepkg.RuleHandlerMap[rulepkg.ConfigParsingSQLFailure].Rule
+	i.cnf.parsingSQLFailureCheckEnable = true
+	i.cnf.parsingSQLFailureLevel = parsingSQLFailureRule.Level
 	i.rules = []*driverV2.Rule{&parsingSQLFailureRule, &rule}
 	inspectCase(t, desc, i, sql, results...)
 }
