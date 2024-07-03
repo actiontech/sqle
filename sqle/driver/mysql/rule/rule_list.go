@@ -2142,6 +2142,7 @@ var RuleHandlers = []RuleHandler{
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeGlobalConfig,
 		},
-		Func: nil,
+		Message: "语法错误或者解析器不支持，请人工确认SQL正确性。",
+		Func:    nil,
 	},
 }
