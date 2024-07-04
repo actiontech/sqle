@@ -42,7 +42,6 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jackc/pgx/v4 v4.13.0
-	github.com/jinzhu/gorm v1.9.15
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
@@ -182,6 +181,6 @@ replace (
 	cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.1.0
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240704052347-b6199b7bccae
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
