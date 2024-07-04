@@ -185,7 +185,6 @@ replace (
 	cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.1.0
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
-	github.com/swaggo/swag => github.com/swaggo/swag v1.6.7
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240704052347-b6199b7bccae
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
