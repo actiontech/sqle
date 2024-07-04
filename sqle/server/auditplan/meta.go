@@ -19,26 +19,27 @@ type Meta struct {
 }
 
 const (
-	TypeDefault               = "default"
-	TypeMySQLSlowLog          = "mysql_slow_log"
-	TypeMySQLMybatis          = "mysql_mybatis"
-	TypeMySQLSchemaMeta       = "mysql_schema_meta"
-	TypeMySQLProcesslist      = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog    = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
-	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL          = "oracle_top_sql"
-	TypeTiDBAuditLog          = "tidb_audit_log"
-	TypeAllAppExtract         = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
-	TypeSQLFile               = "sql_file"
+	TypeDefault              = "default"
+	TypeMySQLSlowLog         = "mysql_slow_log"
+	TypeMySQLMybatis         = "mysql_mybatis"
+	TypeMySQLSchemaMeta      = "mysql_schema_meta"
+	TypeMySQLProcesslist     = "mysql_processlist"
+	TypeAliRdsMySQLSlowLog   = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog  = "ali_rds_mysql_audit_log"
+	TypeOracleTopSQL         = "oracle_top_sql"
+	TypeTiDBAuditLog         = "tidb_audit_log"
+	TypeAllAppExtract        = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog = "baidu_rds_mysql_slow_log"
+	TypeSQLFile              = "sql_file"
+	TypePostgreSQLSchemaMeta = "Postgresql_schema_meta"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll        = ""
+	InstanceTypeMySQL      = "MySQL"
+	InstanceTypeOracle     = "Oracle"
+	InstanceTypeTiDB       = "TiDB"
+	InstanceTypePostgreSQL = "PostgreSQL"
 )
 
 const (
@@ -370,6 +371,26 @@ var Metas = []Meta{
 		Desc:         "SQL文件",
 		InstanceType: InstanceTypeAll,
 		CreateTask:   NewDefaultTask,
+	},
+	{
+		Type:         TypePostgreSQLSchemaMeta,
+		Desc:         "库表元数据",
+		InstanceType: InstanceTypePostgreSQL,
+		CreateTask:   NewPostgreSQLSchemaMetaTask,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "collect_view",
+				Desc:  "是否采集视图信息",
+				Value: "0",
+				Type:  params.ParamTypeBool,
+			},
+		},
 	},
 }
 
