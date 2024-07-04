@@ -134,5 +134,6 @@ func isReservedKeyWord(input string) bool {
 func (d *Delimiter) reset() {
 	d.line = 0
 	d.startPos = 0
+	//nolint:errcheck
 	d.setDelimiter(DefaultDelimiterString)
 }
