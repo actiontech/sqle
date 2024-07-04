@@ -9,7 +9,7 @@ import (
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const globalConfigurationTablePrefix = "global_configuration"
@@ -27,7 +27,7 @@ const (
 // SystemVariable store misc K-V.
 type SystemVariable struct {
 	Key   string `gorm:"primary_key"`
-	Value string `gorm:"not null"`
+	Value string `gorm:"not null;type:varchar(255)"`
 }
 
 func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
@@ -112,13 +112,13 @@ const (
 
 type IM struct {
 	Model
-	AppKey           string `json:"app_key" gorm:"column:app_key"`
+	AppKey           string `json:"app_key" gorm:"column:app_key; type:varchar(255)"`
 	AppSecret        string `json:"-" gorm:"-"`
 	IsEnable         bool   `json:"is_enable" gorm:"column:is_enable"`
-	ProcessCode      string `json:"process_code" gorm:"column:process_code"`
-	EncryptAppSecret string `json:"encrypt_app_secret" gorm:"column:encrypt_app_secret"`
+	ProcessCode      string `json:"process_code" gorm:"column:process_code; type:varchar(255)"`
+	EncryptAppSecret string `json:"encrypt_app_secret" gorm:"column:encrypt_app_secret; type:varchar(255)"`
 	// 类型唯一
-	Type string `json:"type" gorm:"unique"`
+	Type string `json:"type" gorm:"index:unique; type:varchar(255)"`
 }
 
 func (i *IM) TableName() string {
@@ -126,11 +126,11 @@ func (i *IM) TableName() string {
 }
 
 // BeforeSave is a hook implement gorm model before exec create.
-func (i *IM) BeforeSave() error {
-	return i.encryptAppSecret()
+func (i *IM) BeforeSave(tx *gorm.DB) error {
+	return i.encryptAppSecret(tx)
 }
 
-func (i *IM) encryptAppSecret() error {
+func (i *IM) encryptAppSecret(tx *gorm.DB) error {
 	if i == nil {
 		return nil
 	}
@@ -138,12 +138,12 @@ func (i *IM) encryptAppSecret() error {
 	if err != nil {
 		return err
 	}
-	i.EncryptAppSecret = data
+	tx.Statement.SetColumn("EncryptAppSecret", data)
 	return nil
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db.
-func (i *IM) AfterFind() error {
+func (i *IM) AfterFind(tx *gorm.DB) error {
 	err := i.decryptAppSecret()
 	if err != nil {
 		log.NewEntry().Errorf("decrypt app secret for IM server configuration failed, error: %v", err)
@@ -200,11 +200,11 @@ const (
 
 type DingTalkInstance struct {
 	Model
-	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance; type:varchar(255)"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id; type:varchar(255)"`
 	// 审批实例 taskID
 	TaskID int64  `json:"task_id" gorm:"column:task_id"`
-	Status string `json:"status" gorm:"default:\"initialized\""`
+	Status string `json:"status" gorm:"default:\"initialized\"; type:varchar(255)"`
 }
 
 func (s *Storage) GetDingTalkInstanceByWorkflowID(workflowId string) (*DingTalkInstance, bool, error) {
@@ -251,11 +251,11 @@ const (
 
 type FeishuInstance struct {
 	Model
-	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance"`
-	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id"`
+	ApproveInstanceCode string `json:"approve_instance" gorm:"column:approve_instance; type:varchar(255)"`
+	WorkflowId          string `json:"workflow_id" gorm:"column:workflow_id; type:varchar(255)"`
 	// 审批实例 taskID
-	TaskID string `json:"task_id" gorm:"column:task_id"`
-	Status string `json:"status" gorm:"default:\"INITIALIZED\""`
+	TaskID string `json:"task_id" gorm:"column:task_id; type:varchar(255)"`
+	Status string `json:"status" gorm:"default:\"INITIALIZED\"; type:varchar(255)"`
 }
 
 func (s *Storage) GetFeishuInstanceListByWorkflowIDs(workflowIds []string) ([]FeishuInstance, error) {
@@ -304,8 +304,8 @@ const (
 type WechatRecord struct {
 	Model
 	TaskId   uint   `json:"task_id" gorm:"column:task_id"`
-	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
-	SpNo     string `json:"sp_no" gorm:"column:sp_no"`
+	OaResult string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\";type:varchar(255)"`
+	SpNo     string `json:"sp_no" gorm:"column:sp_no;type:varchar(255)"`
 
 	Task *Task `gorm:"foreignkey:TaskId"`
 }
@@ -377,8 +377,8 @@ func (s *Storage) DeleteWechatRecordByTaskId(taskId uint) error {
 type FeishuScheduledRecord struct {
 	Model
 	TaskId              uint   `json:"task_id" gorm:"column:task_id"`
-	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\""`
-	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code"`
+	OaResult            string `json:"oa_result" gorm:"column:oa_result;default:\"INITIALIZED\";type:varchar(255)"`
+	ApproveInstanceCode string `json:"approve_instance_code" gorm:"column:approve_instance_code;type:varchar(255)"`
 
 	Task *Task `gorm:"foreignkey:TaskId"`
 }

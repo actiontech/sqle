@@ -160,6 +160,7 @@ func TestAction_validation(t *testing.T) {
 func Test_action_audit_UpdateTask(t *testing.T) {
 	mockDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	model.InitMockStorage(mockDB)
 
 	whitelist := model.SqlWhitelist{
@@ -168,7 +169,7 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 	}
 	act := getAction([]string{"select * from t1"}, ActionTypeAudit, &mockDriver{})
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist` WHERE `sql_whitelist`.`deleted_at` IS NULL AND ((sql_whitelist.project_id = ?))")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `sql_whitelist` WHERE sql_whitelist.project_id = ? AND `sql_whitelist`.`deleted_at` IS NULL")).
 		WithArgs("").
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 
@@ -193,8 +194,8 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 func Test_action_execute(t *testing.T) {
 	driver.GetPluginManager().Start("", nil)
 	mockUpdateTaskStatus := func(t *testing.T) {
-		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr ...interface{}) error {
-			a, ok := attr[0].(map[string]interface{})
+		gomonkey.ApplyMethod(reflect.TypeOf(&model.Storage{}), "UpdateTask", func(_ *model.Storage, _ *model.Task, attr interface{}) error {
+			a, ok := attr.(map[string]interface{})
 			if !ok {
 				assert.Error(t, fmt.Errorf("updateTask args type expect is map[string]interface{}"))
 				return nil
@@ -301,7 +302,10 @@ func Test_action_execute(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			d, err := tt.setUp(t)
 			assert.NoError(t, err)
-
+			mockDB, mock, err := sqlmock.New()
+			assert.NoError(t, err)
+			mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
+			model.InitMockStorage(mockDB)
 			a := getAction(tt.sqls, ActionTypeExecute, d)
 			if err := a.execute(); (err != nil) != tt.wantErr {
 				t.Errorf("action.execute() error = %v, wantErr %v", err, tt.wantErr)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 const (
@@ -19,20 +19,20 @@ type SqlWhitelist struct {
 	// Value store SQL text.
 	Value            string `json:"value" gorm:"not null;type:text"`
 	CapitalizedValue string `json:"-" gorm:"-"`
-	Desc             string `json:"desc"`
+	Desc             string `json:"desc" gorm:"type:varchar(255)"`
 	// MessageDigest deprecated after 1.1.0, keep it for compatibility.
 	MessageDigest string `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
 	MatchType     string `json:"match_type" gorm:"default:\"exact_match\""`
 }
 
 // BeforeSave is a hook implement gorm model before exec create
-func (s *SqlWhitelist) BeforeSave() error {
-	s.MessageDigest = "deprecated after 1.1.0"
+func (s *SqlWhitelist) BeforeSave(tx *gorm.DB) error {
+	tx.Statement.SetColumn("MessageDigest", "deprecated after 1.1.0")
 	return nil
 }
 
 // AfterFind is a hook implement gorm model after query, ignore err if query from db
-func (s *SqlWhitelist) AfterFind() error {
+func (s *SqlWhitelist) AfterFind(tx *gorm.DB) error {
 	s.CapitalizedValue = strings.ToUpper(s.Value)
 	return nil
 }
@@ -84,8 +84,8 @@ func (s *Storage) GetSqlWhitelistByIdAndProjectUID(sqlWhiteId string, projectUID
 // 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 // }
 
-func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID) ([]SqlWhitelist, uint32, error) {
-	var count uint32
+func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID) ([]SqlWhitelist, int64, error) {
+	var count int64
 	sqlWhitelist := []SqlWhitelist{}
 	query := s.db.Table("sql_whitelist").
 		Where("project_id = ?", projectUID).Where("deleted_at IS NULL")
@@ -97,7 +97,7 @@ func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projec
 	if err != nil {
 		return sqlWhitelist, 0, errors.New(errors.ConnectStorageError, err)
 	}
-	err = query.Offset((pageIndex - 1) * pageSize).Limit(pageSize).Order("id desc").Find(&sqlWhitelist).Error
+	err = query.Offset(int((pageIndex - 1) * pageSize)).Limit(int(pageSize)).Order("id desc").Find(&sqlWhitelist).Error
 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 }
 

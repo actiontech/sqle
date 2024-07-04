@@ -7,22 +7,22 @@ import (
 type SqlManage struct {
 	Model
 	SqlFingerprint            string       `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
-	ProjFpSourceInstSchemaMd5 string       `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:proj_fp_source_inst_schema_md5;not null"`
+	ProjFpSourceInstSchemaMd5 string       `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:proj_fp_source_inst_schema_md5;not null;type:varchar(255)"`
 	SqlText                   string       `json:"sql_text" gorm:"type:mediumtext;not null"`
-	Source                    string       `json:"source"`
-	AuditLevel                string       `json:"audit_level"`
+	Source                    string       `json:"source" gorm:"type:varchar(255)"`
+	AuditLevel                string       `json:"audit_level" gorm:"type:varchar(255)"`
 	AuditResults              AuditResults `json:"audit_results" gorm:"type:json"`
 	FpCount                   uint64       `json:"fp_count"`
 	FirstAppearTimestamp      *time.Time   `json:"first_appear_timestamp"`
 	LastReceiveTimestamp      *time.Time   `json:"last_receive_timestamp"`
-	InstanceName              string       `json:"instance_name"`
-	SchemaName                string       `json:"schema_name"`
+	InstanceName              string       `json:"instance_name" gorm:"type:varchar(255)"`
+	SchemaName                string       `json:"schema_name" gorm:"type:varchar(255)"`
 
-	Assignees string `json:"assignees"`
-	Status    string `json:"status" gorm:"default:\"unhandled\""`
+	Assignees string `json:"assignees" gorm:"type:varchar(255)"`
+	Status    string `json:"status" gorm:"default:\"unhandled\"; type:varchar(255)"`
 	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
 
-	ProjectId string `json:"project_id"`
+	ProjectId string `json:"project_id" gorm:"type:varchar(255)"`
 
 	AuditPlanId uint       `json:"audit_plan_id"`
 	AuditPlan   *AuditPlan `gorm:"foreignkey:AuditPlanId"`
@@ -39,8 +39,8 @@ func (sm SqlManageSqlAuditRecord) TableName() string {
 
 type SqlManageEndpoint struct {
 	Model
-	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:uniq_md5_endpoint;"`
-	Endpoint                  string `json:"endpoint" gorm:"unique_index:uniq_md5_endpoint;"`
+	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"unique_index:uniq_md5_endpoint;type:varchar(255)"`
+	Endpoint                  string `json:"endpoint" gorm:"unique_index:uniq_md5_endpoint;type:varchar(255)"`
 }
 
 func (sm SqlManageEndpoint) TableName() string {
