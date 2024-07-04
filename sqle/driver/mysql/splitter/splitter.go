@@ -45,6 +45,8 @@ func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) []ast.
 			}
 			result.sql = trimmedSQL + ";"
 		}
+		// 根据解析结果生成得到sql的抽象语法树，这里不需要检查error
+		//nolint:errcheck
 		s.parser.Parse(result.sql, "", "")
 		if len(s.parser.Result()) == 1 {
 			// 若结果集长度为1，则为单条且可解析的SQL
