@@ -6038,6 +6038,45 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_parse": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "parse sql",
+                "tags": [
+                    "sql_parse"
+                ],
+                "summary": "解析SQL",
+                "operationId": "parseSQL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance type",
+                        "name": "instance_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql",
+                        "name": "sql",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DirectParseSQLRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -9472,6 +9511,25 @@ var doc = `{
                 }
             }
         },
+        "v1.DirectParseSQLRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ParseSQLResData"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.DriversResV1": {
             "type": "object",
             "properties": {
@@ -9520,6 +9578,17 @@ var doc = `{
                 },
                 "perform_improve_per": {
                     "type": "number"
+                }
+            }
+        },
+        "v1.ExtractTable": {
+            "type": "object",
+            "properties": {
+                "schema_name": {
+                    "type": "string"
+                },
+                "table_name": {
+                    "type": "string"
                 }
             }
         },
@@ -11749,6 +11818,23 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.ParseSQLResData": {
+            "type": "object",
+            "properties": {
+                "extract_table": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ExtractTable"
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_type": {
+                    "type": "string"
                 }
             }
         },
