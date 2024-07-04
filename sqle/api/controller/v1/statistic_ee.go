@@ -356,7 +356,7 @@ func getWorkflowStatusCountV1(c echo.Context) error {
 	})
 }
 
-func (d *dbErr) getWorkFlowStatusCount(status string) (count int) {
+func (d *dbErr) getWorkFlowStatusCount(status string) (count int64) {
 	if d.err != nil {
 		return 0
 	}

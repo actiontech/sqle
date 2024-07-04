@@ -18,7 +18,7 @@ const leaderTableAnchor = 1
 
 type Leader struct {
 	Anchor       int       `gorm:"primary_key"` // 常量值，保证该表仅有一行不重复记录。无其他意义。
-	ServerId     string    `gorm:"not null"`
+	ServerId     string    `gorm:"not null;size:255"`
 	LastSeenTime time.Time `gorm:"not null"`
 }
 
@@ -48,7 +48,8 @@ func (s *Storage) MaintainClusterLeader(serverId string) error {
 
 type Node struct {
 	Model
-	ServerId     string `json:"server_id" gorm:"unique"`
+	ServerId     string `json:"server_id" gorm:"size:255;index:unique"`
+
 	HardwareSign string `json:"hardware_sign" gorm:"type:varchar(3000)"`
 }
 
