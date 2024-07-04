@@ -16,7 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
@@ -98,8 +98,9 @@ func TestScannerVerifier(t *testing.T) {
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(driver.Value(testUser), "test-token"))
 		mock.ExpectClose()
@@ -119,12 +120,12 @@ func TestScannerVerifier(t *testing.T) {
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUID, apName).
 			WillReturnError(gorm.ErrRecordNotFound)
 		assert.NoError(t, err)
-		model.InitMockStorage(mockDB)
 		mock.ExpectClose()
 
 		ctx, _ := newContextFunc(token, apName)
@@ -142,8 +143,9 @@ func TestScannerVerifier(t *testing.T) {
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
@@ -164,8 +166,9 @@ func TestScannerVerifier(t *testing.T) {
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUID, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
 		mock.ExpectClose()
@@ -213,8 +216,9 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUid, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
 		mock.ExpectClose()
@@ -247,8 +251,9 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		assert.NoError(t, err)
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
+		mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 		model.InitMockStorage(mockDB)
-		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((project_id = ? AND name = ?))").
+		mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE (project_id = ? AND name = ?) AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 			WithArgs(projectUid, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
 		mock.ExpectClose()

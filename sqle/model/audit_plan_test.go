@@ -10,6 +10,7 @@ import (
 func TestStorage_GetAuditPlans(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
 	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL").
 		WithArgs().
@@ -27,8 +28,9 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 1. test record exist
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
+	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE name = ? AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow("audit_plan_1"))
 	mock.ExpectClose()
@@ -43,8 +45,9 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 	// 2. test record not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE `audit_plans`.`deleted_at` IS NULL AND ((name = ?))").
+	mock.ExpectQuery("SELECT * FROM `audit_plans` WHERE name = ? AND `audit_plans`.`deleted_at` IS NULL ORDER BY `audit_plans`.`id` LIMIT 1").
 		WithArgs("audit_plan_for_java_repo1").
 		WillReturnRows(sqlmock.NewRows([]string{"name"}))
 	mock.ExpectClose()
@@ -92,11 +95,12 @@ func TestStorage_GetAuditPlanByName(t *testing.T) {
 func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
 
 	mockAuditPlanRow := AuditPlan{Model: Model{ID: 1}}
 
-	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2`  WHERE `audit_plan_sqls_v2`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
+	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2` WHERE audit_plan_id = ? AND `audit_plan_sqls_v2`.`deleted_at` IS NULL").
 		WithArgs(mockAuditPlanRow.ID).
 		WillReturnRows(sqlmock.NewRows([]string{"fingerprint"}).AddRow("select * from t1 where id = ?").AddRow("select * from t2 where id = ?"))
 	mock.ExpectClose()
@@ -110,8 +114,9 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 	// 2. test update audit plan not exist
 	mockDB, mock, err = sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
-	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2`  WHERE `audit_plan_sqls_v2`.`deleted_at` IS NULL AND ((audit_plan_id = ?))").
+	mock.ExpectQuery("SELECT * FROM `audit_plan_sqls_v2` WHERE audit_plan_id = ? AND `audit_plan_sqls_v2`.`deleted_at` IS NULL").
 		WithArgs(2).
 		WillReturnRows(sqlmock.NewRows([]string{"audit_plan_id"}))
 	mock.ExpectClose()
@@ -125,6 +130,7 @@ func TestStorage_GetAuditPlanSQLs(t *testing.T) {
 func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	assert.NoError(t, err)
+	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
 
 	ap := &AuditPlan{
@@ -144,7 +150,7 @@ func TestStorage_OverrideAuditPlanSQLs(t *testing.T) {
 
 	mock.ExpectBegin()
 	// expect hard delete
-	mock.ExpectExec("DELETE FROM `audit_plan_sqls_v2` WHERE (audit_plan_id = ?)").
+	mock.ExpectExec("DELETE FROM `audit_plan_sqls_v2` WHERE audit_plan_id = ?").
 		WithArgs(ap.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()

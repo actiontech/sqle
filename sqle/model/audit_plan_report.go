@@ -3,7 +3,7 @@ package model
 import (
 	"github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type AuditPlanReportV2 struct {
@@ -14,7 +14,7 @@ type AuditPlanReportV2 struct {
 	AuditPlanReportSQLs []*AuditPlanReportSQLV2 `gorm:"foreignkey:AuditPlanReportID"`
 	PassRate            float64                 `json:"pass_rate"`
 	Score               int32                   `json:"score"`
-	AuditLevel          string                  `json:"audit_level"`
+	AuditLevel          string                  `json:"audit_level" gorm:"type:varchar(255)"`
 }
 
 func (a AuditPlanReportV2) TableName() string {
@@ -40,7 +40,7 @@ func (s *Storage) GetAuditPlanReportSQLV2ByReportIDAndNumber(reportId, number ui
 	auditPlanReportSQLV2 *AuditPlanReportSQLV2, exist bool, err error) {
 
 	auditPlanReportSQLV2 = &AuditPlanReportSQLV2{}
-	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).Find(auditPlanReportSQLV2).Error
+	err = s.db.Where("audit_plan_report_id = ? and number = ?", reportId, number).First(auditPlanReportSQLV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportSQLV2, false, nil
 	}
@@ -74,8 +74,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid 
 		Joins("left join audit_plans on audit_plan_reports_v2.audit_plan_id=audit_plans.id").
 		Where("audit_plans.project_id=?", projectUid).
 		Where("audit_plans.instance_name in (?)", instanceNames).
-		Group("audit_plans.db_type, audit_plans.instance_name").
-		SubQuery()
+		Group("audit_plans.db_type, audit_plans.instance_name")
 
 	err := s.db.Model(&AuditPlanReportV2{}).
 		Select("audit_plans.db_type, audit_plans.instance_name, audit_plan_reports_v2.score").
@@ -89,7 +88,7 @@ func (s *Storage) GetLatestAuditPlanReportScoreFromInstanceByProject(projectUid 
 
 func (s *Storage) GetReportWithAuditPlanByReportID(reportId int) (auditPlanReportV2 *AuditPlanReportV2, exist bool, err error) {
 	auditPlanReportV2 = &AuditPlanReportV2{}
-	err = s.db.Preload("AuditPlan").Preload("AuditPlanReportSQLs").Where("id=?", reportId).Find(auditPlanReportV2).Error
+	err = s.db.Preload("AuditPlan").Preload("AuditPlanReportSQLs").Where("id=?", reportId).First(auditPlanReportV2).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlanReportV2, false, nil
 	}

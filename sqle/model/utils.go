@@ -17,10 +17,12 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
-	"github.com/jinzhu/gorm"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	xerrors "github.com/pkg/errors"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var storage *Storage
@@ -42,7 +44,9 @@ var MockTime, _ = time.Parse("0000-00-00 00:00:00.0000000", "0000-00-00 00:00:00
 func InitMockStorage(db *sql.DB) {
 	storageMutex.Lock()
 	defer storageMutex.Unlock()
-	gormDB, err := gorm.Open("mysql", db)
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn: db,
+	}), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +56,7 @@ func InitMockStorage(db *sql.DB) {
 	// 	When mock SQL which will update CreateAt/UpdateAt fields,
 	// 	GORM will auto-update this field by NowFunc(when is is empty),
 	// 	then it will never equal to our expectation(always later than our expectation).
-	gorm.NowFunc = func() time.Time {
+	gormDB.NowFunc = func() time.Time {
 		return MockTime
 	}
 }
@@ -63,28 +67,25 @@ func GetStorage() *Storage {
 	return storage
 }
 
-func UpdateStorage(newStorage *Storage) {
-	storageMutex.Lock()
-	defer storageMutex.Unlock()
-	storage.db.Close()
-	storage = newStorage
-}
-
 func GetDb() *gorm.DB {
 	return storage.db
 }
 
-func GetSqlxDb() *sqlx.DB {
-	db := sqlx.NewDb(storage.db.DB(), dbDriver)
+func GetSqlxDb() (*sqlx.DB, error) {
+	sdb, err := storage.db.DB()
+	if err != nil {
+		return nil, err
+	}
+	db := sqlx.NewDb(sdb, dbDriver)
 	db.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
-	return db
+	return db, nil
 }
 
 type Model struct {
-	ID        uint       `json:"id" gorm:"primary_key" example:"1"`
-	CreatedAt time.Time  `json:"created_at" gorm:"default:current_timestamp" example:"2018-10-21T16:40:23+08:00"`
-	UpdatedAt time.Time  `json:"updated_at" gorm:"default:current_timestamp on update current_timestamp" example:"2018-10-21T16:40:23+08:00"`
-	DeletedAt *time.Time `json:"-" sql:"index"`
+	ID        uint           `json:"id" gorm:"primary_key" example:"1"`
+	CreatedAt time.Time      `json:"created_at" gorm:"default:current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
+	UpdatedAt time.Time      `json:"updated_at" gorm:"default:current_timestamp(3) on update current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
+	DeletedAt gorm.DeletedAt `json:"-" sql:"index"`
 }
 
 func (m Model) GetIDStr() string {
@@ -94,15 +95,21 @@ func (m Model) GetIDStr() string {
 func NewStorage(user, password, host, port, schema string, debug bool) (*Storage, error) {
 	log.Logger().Infof("connecting to storage, host: %s, port: %s, user: %s, schema: %s",
 		host, port, user, schema)
-	db, err := gorm.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		user, password, host, port, schema))
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		user, password, host, port, schema)
+
+	config := &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	}
+	if debug {
+		config.Logger = log.NewGormLogWrapper(logger.Info)
+	} else {
+		config.Logger = log.NewGormLogWrapper(logger.Silent)
+	}
+	db, err := gorm.Open(mysql.Open(dsn), config)
 	if err != nil {
 		log.Logger().Errorf("connect to storage failed, error: %v", err)
 		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	if debug {
-		db.SetLogger(log.Logger().WithField("type", "sql"))
-		db.LogMode(true)
 	}
 	log.Logger().Info("connected to storage")
 	return &Storage{db: db}, errors.New(errors.ConnectStorageError, err)
@@ -155,30 +162,17 @@ var autoMigrateList = []interface{}{
 }
 
 func (s *Storage) AutoMigrate() error {
-	err := s.db.AutoMigrate(autoMigrateList...).Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(AuditPlanSQLV2{}).AddUniqueIndex("uniq_audit_plan_sqls_v2_audit_plan_id_fingerprint_md5",
-		"audit_plan_id", "fingerprint_md5").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(BlackListAuditPlanSQL{}).AddUniqueIndex("uniq_type_content", "filter_type", "filter_content").Error
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.db.Model(&SqlManage{}).AddIndex("idx_project_id_status_deleted_at", "project_id", "status", "deleted_at").Error
+	err := s.db.AutoMigrate(autoMigrateList...)
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
-	if s.db.Dialect().HasColumn(Rule{}.TableName(), "is_default") {
-		if err = s.db.Model(&Rule{}).DropColumn("is_default").Error; err != nil {
+	if !s.db.Migrator().HasIndex(&SqlManage{}, "idx_project_id_status_deleted_at") {
+		err = s.db.Exec("CREATE INDEX idx_project_id_status_deleted_at ON sql_manages (project_id, status, deleted_at)").Error
+		if err != nil {
 			return errors.New(errors.ConnectStorageError, err)
 		}
 	}
-
 	return nil
 }
 
@@ -486,7 +480,7 @@ const DefaultProject = "default"
 // }
 
 func (s *Storage) Exist(model interface{}) (bool, error) {
-	var count int
+	var count int64
 	err := s.db.Model(model).Where(model).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
@@ -515,7 +509,10 @@ func (s *Storage) HardDelete(model interface{}) error {
 }
 
 func (s *Storage) TxExec(fn func(tx *sql.Tx) error) error {
-	db := s.db.DB()
+	db, err := s.db.DB()
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 	tx, err := db.Begin()
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
@@ -648,7 +645,10 @@ func (s *Storage) getTemplateQueryResult(data map[string]interface{}, result int
 		return err
 	}
 
-	sqlxDb := GetSqlxDb()
+	sqlxDb, err := GetSqlxDb()
+	if err != nil {
+		return err
+	}
 
 	query, args, err := sqlx.Named(buff.String(), data)
 	if err != nil {
