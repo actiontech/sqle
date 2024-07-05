@@ -139,7 +139,7 @@ func (w *WorkflowNotification) NotificationBody() string {
 	buf.WriteString(head)
 
 	if w.config.SQLEUrl != nil {
-		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/order/%v",
+		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/exec-workflow/%v",
 			strings.TrimRight(*w.config.SQLEUrl, "/"),
 			w.workflow.ProjectId,
 			w.workflow.WorkflowId,
