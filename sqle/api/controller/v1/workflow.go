@@ -891,7 +891,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	err = s.UpdateTaskStatusByIDs(terminatingTaskIDs,
-		map[string]string{"status": model.TaskStatusTerminating})
+		map[string]interface{}{"status": model.TaskStatusTerminating})
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
@@ -955,7 +955,7 @@ func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
 	}
 
 	err = s.UpdateTaskStatusByIDs([]uint{uint(taskID)},
-		map[string]string{"status": model.TaskStatusTerminating})
+		map[string]interface{}{"status": model.TaskStatusTerminating})
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 }
