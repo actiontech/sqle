@@ -388,7 +388,7 @@ func (s *Storage) UpdateTaskStatusById(taskId uint, status string) error {
 }
 
 func updateTaskStatusById(tx *gorm.DB, taskId uint, status string) error {
-	return tx.Model(&Task{}).Where("id = ?", taskId).Updates(map[string]string{
+	return tx.Model(&Task{}).Where("id = ?", taskId).Updates(map[string]interface{}{
 		"status": status,
 	}).Error
 }
