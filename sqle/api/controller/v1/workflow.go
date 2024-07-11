@@ -710,6 +710,62 @@ func GetWorkflowsV1(c echo.Context) error {
 	})
 }
 
+type GetUnfinishedWorkflowsCountOfInstancesResV1 struct {
+	controller.BaseRes
+	Data []*UnfinishedWorkflowsCountV1 `json:"data"`
+}
+
+type UnfinishedWorkflowsCountV1 struct {
+	InstanceId      int64 `json:"instance_id"`
+	UnfinishedCount int64 `json:"unfinished_count"`
+}
+
+// GetUnfinishedWorkflowsCountOfInstances
+// @Summary 获取实例上未完成的工单数量
+// @Description Get Unfinished Workflows Count Of Instances
+// @Tags workflow
+// @Id GetUnfinishedWorkflowsCountOfInstances
+// @Security ApiKeyAuth
+// @Param instance_id query string true "instance id"
+// @Success 200 {object} v1.GetUnfinishedWorkflowsCountOfInstancesResV1
+// @router /v1/workflows_info_of_instances [get]
+func GetUnfinishedWorkflowsCountOfInstances(c echo.Context) error {
+	instanceIds := c.QueryParams()["instance_id"]
+	if len(instanceIds) == 0 {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("query param instance_id requied"))
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if user.Name != model.DefaultAdminUser && user.Name != model.DefaultSysUser {
+		// dms-todo: 判断是否是超级管理员/系统用户
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("permission denied"))
+	}
+
+	s := model.GetStorage()
+	unfinishedStatuses := []string{model.WorkflowStatusWaitForAudit, model.WorkflowStatusWaitForExecution, model.WorkflowStatusExecuting}
+	results, err := s.GetWorkflowStatusesCountOfInstances(unfinishedStatuses, instanceIds)
+	if err != nil {
+		return err
+	}
+
+	workflowsInfoV1 := make([]*UnfinishedWorkflowsCountV1, len(results))
+	for k, v := range results {
+		workflowsInfoV1[k] = &UnfinishedWorkflowsCountV1{
+			InstanceId:      v.InstanceId,
+			UnfinishedCount: v.Count,
+		}
+	}
+
+	return c.JSON(http.StatusOK, GetUnfinishedWorkflowsCountOfInstancesResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    workflowsInfoV1,
+	})
+}
+
 type UpdateWorkflowReqV1 struct {
 	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
