@@ -7040,6 +7040,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows_info_of_instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get Unfinished Workflows Count Of Instances",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取实例上未完成的工单数量",
+                "operationId": "GetUnfinishedWorkflowsCountOfInstances",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "instance_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetUnfinishedWorkflowsCountOfInstancesResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/audit_files": {
             "post": {
                 "security": [
@@ -10838,6 +10870,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetUnfinishedWorkflowsCountOfInstancesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UnfinishedWorkflowsCountV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserTipsResV1": {
             "type": "object",
             "properties": {
@@ -12785,6 +12836,17 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.UnfinishedWorkflowsCountV1": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "integer"
+                },
+                "unfinished_count": {
+                    "type": "integer"
                 }
             }
         },
