@@ -1700,6 +1700,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetUnfinishedWorkflowsCountOfInstancesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.UnfinishedWorkflowsCountV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -3013,6 +3026,13 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.UnfinishedWorkflowsCountV1:
+    properties:
+      instance_id:
+        type: integer
+      unfinished_count:
+        type: integer
     type: object
   v1.UpdateAuditPlanNotifyConfigReqV1:
     properties:
@@ -8859,6 +8879,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取全局工单列表
+      tags:
+      - workflow
+  /v1/workflows_info_of_instances:
+    get:
+      description: Get Unfinished Workflows Count Of Instances
+      operationId: GetUnfinishedWorkflowsCountOfInstances
+      parameters:
+      - description: instance id
+        in: query
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetUnfinishedWorkflowsCountOfInstancesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例上未完成的工单数量
       tags:
       - workflow
   /v2/audit_files:
