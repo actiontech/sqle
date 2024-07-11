@@ -12,6 +12,18 @@ import (
 var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
+			Name:       DMLNotAllowInsertAutoincrement,
+			Desc:       "禁止手动设置自增字段值",
+			Annotation: "手动赋值可能会造成数据空洞，主键冲突",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeDMLConvention,
+		},
+		Message:      "禁止手动设置自增字段值",
+		AllowOffline: false,
+		Func:         notAllowInsertAutoincrement,
+	},
+	{
+		Rule: driverV2.Rule{
 			Name:       ConfigDMLRollbackMaxRows,
 			Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
 			Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
