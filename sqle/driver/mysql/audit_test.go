@@ -7709,3 +7709,26 @@ func Test_CheckMybatisSQLIndex(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
 		"", inspect1, `update exist_tb_2 set v1=? where v2=?`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 }
+
+func TestNotAllowInsertAutoincrement(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLNotAllowInsertAutoincrement].Rule
+	sqls := []string{
+		`INSERT INTO exist_tb_1(id,v1) VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_1 VALUES(1,"sqle","action")`,
+		`INSERT INTO exist_tb_1(id) SELECT id FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_1 SET id=1 WHERE id=2`,
+		`INSERT exist_tb_1 SET id=1,v1="sqle"`,
+
+		`INSERT INTO exist_tb_12(id,data) VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_12 VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_12(id) SELECT id FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_12 SET id=1 WHERE id=2`,
+		`INSERT exist_tb_12 SET id=1`,
+	}
+	for _, sql := range sqls {
+		runSingleRuleInspectCase(rule, t, sql,
+			DefaultMysqlInspect(), sql,
+			newTestResult().addResult(rulepkg.DMLNotAllowInsertAutoincrement),
+		)
+	}
+}

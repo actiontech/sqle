@@ -125,6 +125,7 @@ const (
 
 // inspector DML rules
 const (
+	DMLNotAllowInsertAutoincrement            = "dml_not_allow_insert_autoincrement"
 	DMLCheckWithLimit                         = "dml_check_with_limit"
 	DMLCheckSelectLimit                       = "dml_check_select_limit"
 	DMLCheckWithOrderBy                       = "dml_check_with_order_by"
@@ -5990,5 +5991,72 @@ func checkCharLength(input *RuleHandlerInput) error {
 	if charLength > max {
 		addResult(input.Res, input.Rule, input.Rule.Name, max)
 	}
+	return nil
+}
+
+func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
+	// 获取插值字段和表名
+	colNames := make([]string, 0)
+	var table *ast.TableName
+	switch stmt := input.Node.(type) {
+	// 获取两种语句的指定了值的字段
+	case *ast.InsertStmt:
+		// INSERT ... VALUES
+		for _, col := range stmt.Columns {
+			colNames = append(colNames, col.Name.O)
+		}
+		// INSERT ... SET
+		if len(colNames) == 0 {
+			for _, assign := range stmt.Setlist {
+				colNames = append(colNames, assign.Column.Name.O)
+			}
+		}
+		source, _ := stmt.Table.TableRefs.Left.(*ast.TableSource)
+		t, _ := source.Source.(*ast.TableName)
+		table = t
+	case *ast.UpdateStmt:
+		for _, assignment := range stmt.List {
+			colNames = append(colNames, assignment.Column.Name.L)
+		}
+		source, _ := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		t, _ := source.Source.(*ast.TableName)
+		table = t
+	default:
+		// 其他类型语句直接退出
+		return nil
+	}
+	// 在线获取表的信息
+	info, _ := input.Ctx.GetTableInfo(table)
+	// 如果INSERT没有指定字段，则默认指定的是所有字段
+	// INSERT tb VALUES(1,2)
+	if len(colNames) == 0 {
+		for _, c := range info.OriginalTable.Cols {
+			colNames = append(colNames, c.Name.Name.O)
+		}
+	}
+	// MySQL中每张表最多一个自增字段
+	incrName := ""
+	// 获取自增字段
+	for _, c := range info.OriginalTable.Cols {
+		for _, option := range c.Options {
+			if option.Tp == ast.ColumnOptionAutoIncrement {
+				incrName = c.Name.Name.O
+				break
+			}
+		}
+		if incrName != "" {
+			break
+		}
+	}
+	if incrName != "" {
+		// 查看是否包含自增字段
+		for _, col := range colNames {
+			if col == incrName {
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				break
+			}
+		}
+	}
+
 	return nil
 }
