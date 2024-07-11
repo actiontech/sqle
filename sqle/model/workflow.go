@@ -1072,6 +1072,28 @@ func (s *Storage) IsWorkflowUnFinishedByInstanceId(instanceId int64) (bool, erro
 	return count > 0, errors.New(errors.ConnectStorageError, err)
 }
 
+type WorkflowCountOfInstance struct {
+	InstanceId int64
+	Count      int64
+}
+
+func (s *Storage) GetWorkflowStatusesCountOfInstances(statuses, instanceIds []string) ([]WorkflowCountOfInstance, error) {
+	var results []WorkflowCountOfInstance
+	err := s.db.Table("workflow_records").
+		Select("workflow_instance_records.instance_id as instance_id, count(workflow_records.id) as count").
+		Joins("LEFT JOIN workflow_instance_records ON workflow_records.id = workflow_instance_records.workflow_record_id").
+		Where("workflow_records.status in ?", statuses).
+		Where("workflow_instance_records.instance_id in ?", instanceIds).
+		Where("workflow_instance_records.deleted_at IS NULL").
+		Group("workflow_instance_records.instance_id").
+		Scan(&results).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return results, nil
+}
+
 func (s *Storage) GetInstanceIdsByWorkflowID(workflowID string) ([]uint64, error) {
 	query := `
 SELECT wir.instance_id id
