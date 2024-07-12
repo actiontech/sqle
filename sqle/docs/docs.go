@@ -7040,6 +7040,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/workflows/statistic_of_instances": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get Workflows Statistic Of Instances",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取实例上工单的统计信息",
+                "operationId": "GetWorkflowStatisticOfInstances",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "instance_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowStatisticOfInstancesResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/audit_files": {
             "post": {
                 "security": [
@@ -11048,6 +11080,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWorkflowStatisticOfInstancesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowStatisticOfInstance"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowStatusCountResV1": {
             "type": "object",
             "properties": {
@@ -13391,6 +13442,17 @@ var doc = `{
             "type": "object",
             "properties": {
                 "minutes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowStatisticOfInstance": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "integer"
+                },
+                "unfinished_count": {
                     "type": "integer"
                 }
             }
