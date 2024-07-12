@@ -9,6 +9,7 @@ import (
 
 const (
 	DefaultAdminUser = "admin"
+	DefaultSysUser   = "sys"
 )
 
 func IsDefaultAdminUser(user string) bool {

@@ -1847,6 +1847,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowStatisticOfInstancesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowStatisticOfInstance'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowStatusCountResV1:
     properties:
       code:
@@ -3421,6 +3434,13 @@ definitions:
   v1.WorkflowStageDuration:
     properties:
       minutes:
+        type: integer
+    type: object
+  v1.WorkflowStatisticOfInstance:
+    properties:
+      instance_id:
+        type: integer
+      unfinished_count:
         type: integer
     type: object
   v1.WorkflowStatisticsResV1:
@@ -8859,6 +8879,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取全局工单列表
+      tags:
+      - workflow
+  /v1/workflows/statistic_of_instances:
+    get:
+      description: Get Workflows Statistic Of Instances
+      operationId: GetWorkflowStatisticOfInstances
+      parameters:
+      - description: instance id
+        in: query
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowStatisticOfInstancesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例上工单的统计信息
       tags:
       - workflow
   /v2/audit_files:
