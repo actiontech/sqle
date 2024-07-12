@@ -1700,19 +1700,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetUnfinishedWorkflowsCountOfInstancesResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.UnfinishedWorkflowsCountV1'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -1856,6 +1843,19 @@ definitions:
       data:
         $ref: '#/definitions/v1.WorkflowResV1'
         type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetWorkflowStatisticOfInstancesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowStatisticOfInstance'
+        type: array
       message:
         example: ok
         type: string
@@ -3027,13 +3027,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.UnfinishedWorkflowsCountV1:
-    properties:
-      instance_id:
-        type: integer
-      unfinished_count:
-        type: integer
-    type: object
   v1.UpdateAuditPlanNotifyConfigReqV1:
     properties:
       enable_email_notify:
@@ -3441,6 +3434,13 @@ definitions:
   v1.WorkflowStageDuration:
     properties:
       minutes:
+        type: integer
+    type: object
+  v1.WorkflowStatisticOfInstance:
+    properties:
+      instance_id:
+        type: integer
+      unfinished_count:
         type: integer
     type: object
   v1.WorkflowStatisticsResV1:
@@ -8881,10 +8881,10 @@ paths:
       summary: 获取全局工单列表
       tags:
       - workflow
-  /v1/workflows_info_of_instances:
+  /v1/workflows/statistic_of_instances:
     get:
-      description: Get Unfinished Workflows Count Of Instances
-      operationId: GetUnfinishedWorkflowsCountOfInstances
+      description: Get Workflows Statistic Of Instances
+      operationId: GetWorkflowStatisticOfInstances
       parameters:
       - description: instance id
         in: query
@@ -8895,10 +8895,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetUnfinishedWorkflowsCountOfInstancesResV1'
+            $ref: '#/definitions/v1.GetWorkflowStatisticOfInstancesResV1'
       security:
       - ApiKeyAuth: []
-      summary: 获取实例上未完成的工单数量
+      summary: 获取实例上工单的统计信息
       tags:
       - workflow
   /v2/audit_files:
