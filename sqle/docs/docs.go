@@ -7040,19 +7040,19 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows_info_of_instances": {
+        "/v1/workflows/statistic_of_instances": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Get Unfinished Workflows Count Of Instances",
+                "description": "Get Workflows Statistic Of Instances",
                 "tags": [
                     "workflow"
                 ],
-                "summary": "获取实例上未完成的工单数量",
-                "operationId": "GetUnfinishedWorkflowsCountOfInstances",
+                "summary": "获取实例上工单的统计信息",
+                "operationId": "GetWorkflowStatisticOfInstances",
                 "parameters": [
                     {
                         "type": "string",
@@ -7066,7 +7066,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetUnfinishedWorkflowsCountOfInstancesResV1"
+                            "$ref": "#/definitions/v1.GetWorkflowStatisticOfInstancesResV1"
                         }
                     }
                 }
@@ -10870,25 +10870,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetUnfinishedWorkflowsCountOfInstancesResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.UnfinishedWorkflowsCountV1"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetUserTipsResV1": {
             "type": "object",
             "properties": {
@@ -11092,6 +11073,25 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetWorkflowStatisticOfInstancesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowStatisticOfInstance"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -12839,17 +12839,6 @@ var doc = `{
                 }
             }
         },
-        "v1.UnfinishedWorkflowsCountV1": {
-            "type": "object",
-            "properties": {
-                "instance_id": {
-                    "type": "integer"
-                },
-                "unfinished_count": {
-                    "type": "integer"
-                }
-            }
-        },
         "v1.UpdateAuditPlanNotifyConfigReqV1": {
             "type": "object",
             "properties": {
@@ -13453,6 +13442,17 @@ var doc = `{
             "type": "object",
             "properties": {
                 "minutes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.WorkflowStatisticOfInstance": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "integer"
+                },
+                "unfinished_count": {
                     "type": "integer"
                 }
             }
