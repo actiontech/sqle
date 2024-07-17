@@ -5998,40 +5998,73 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 	// 获取插值字段和表名
 	colNames := make([]string, 0)
 	var table *ast.TableName
+	isInsert := true
 	switch stmt := input.Node.(type) {
-	// 获取两种语句的指定了值的字段
+	// 获取两种语句的指定了值的字段以及表名
 	case *ast.InsertStmt:
-		// INSERT ... VALUES
+		isInsert = true
+		// INSERT tb(v1,v2) VALUES (1,2)
 		for _, col := range stmt.Columns {
 			colNames = append(colNames, col.Name.O)
 		}
-		// INSERT ... SET
+		// INSERT tb SET v1=?,v2=?
 		if len(colNames) == 0 {
 			for _, assign := range stmt.Setlist {
 				colNames = append(colNames, assign.Column.Name.O)
 			}
 		}
-		source, _ := stmt.Table.TableRefs.Left.(*ast.TableSource)
-		t, _ := source.Source.(*ast.TableName)
+		source, ok := stmt.Table.TableRefs.Left.(*ast.TableSource)
+		if !ok {
+			return nil
+		}
+		t, ok := source.Source.(*ast.TableName)
+		if !ok {
+			return nil
+		}
 		table = t
 	case *ast.UpdateStmt:
 		for _, assignment := range stmt.List {
 			colNames = append(colNames, assignment.Column.Name.L)
 		}
-		source, _ := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
-		t, _ := source.Source.(*ast.TableName)
+		source, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		if !ok {
+			return nil
+		}
+		t, ok := source.Source.(*ast.TableName)
+		if !ok {
+			return nil
+		}
 		table = t
 	default:
 		// 其他类型语句直接退出
 		return nil
 	}
 	// 在线获取表的信息
-	info, _ := input.Ctx.GetTableInfo(table)
-	// 如果INSERT没有指定字段，则默认指定的是所有字段
-	// INSERT tb VALUES(1,2)
+	info, tableExist := input.Ctx.GetTableInfo(table)
+	if !tableExist {
+		return nil
+	}
 	if len(colNames) == 0 {
-		for _, c := range info.OriginalTable.Cols {
-			colNames = append(colNames, c.Name.Name.O)
+		// 如果INSERT没有指定字段，则默认向所有字段插值
+		// INSERT tb VALUES(1,2)
+		if isInsert {
+			for _, c := range info.OriginalTable.Cols {
+				colNames = append(colNames, c.Name.Name.O)
+			}
+		}
+	} else {
+		// 检查插值字段是否在表中存在
+		for _, name := range colNames {
+			exist := false
+			for _, c := range info.OriginalTable.Cols {
+				if c.Name.Name.O == name {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				return nil
+			}
 		}
 	}
 	// MySQL中每张表最多一个自增字段
@@ -6057,6 +6090,5 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 			}
 		}
 	}
-
 	return nil
 }
