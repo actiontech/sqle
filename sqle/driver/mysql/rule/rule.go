@@ -6013,27 +6013,15 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 				colNames = append(colNames, assign.Column.Name.O)
 			}
 		}
-		source, ok := stmt.Table.TableRefs.Left.(*ast.TableSource)
-		if !ok {
-			return nil
-		}
-		t, ok := source.Source.(*ast.TableName)
-		if !ok {
-			return nil
-		}
+		source, _ := stmt.Table.TableRefs.Left.(*ast.TableSource)
+		t, _ := source.Source.(*ast.TableName)
 		table = t
 	case *ast.UpdateStmt:
 		for _, assignment := range stmt.List {
 			colNames = append(colNames, assignment.Column.Name.L)
 		}
-		source, ok := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
-		if !ok {
-			return nil
-		}
-		t, ok := source.Source.(*ast.TableName)
-		if !ok {
-			return nil
-		}
+		source, _ := stmt.TableRefs.TableRefs.Left.(*ast.TableSource)
+		t, _ := source.Source.(*ast.TableName)
 		table = t
 	default:
 		// 其他类型语句直接退出
@@ -6050,20 +6038,6 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 		if isInsert {
 			for _, c := range info.OriginalTable.Cols {
 				colNames = append(colNames, c.Name.Name.O)
-			}
-		}
-	} else {
-		// 检查插值字段是否在表中存在
-		for _, name := range colNames {
-			exist := false
-			for _, c := range info.OriginalTable.Cols {
-				if c.Name.Name.O == name {
-					exist = true
-					break
-				}
-			}
-			if !exist {
-				return nil
 			}
 		}
 	}
@@ -6092,3 +6066,4 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 	}
 	return nil
 }
+

@@ -160,6 +160,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckSelectRows:                          {},
 		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
 		rulepkg.DDLCheckCharLength:                          {},
+		rulepkg.DMLNotAllowInsertAutoincrement:              {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -7732,3 +7733,4 @@ func TestNotAllowInsertAutoincrement(t *testing.T) {
 		)
 	}
 }
+
