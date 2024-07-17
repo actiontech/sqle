@@ -5998,7 +5998,7 @@ func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
 	// 获取插值字段和表名
 	colNames := make([]string, 0)
 	var table *ast.TableName
-	isInsert := true
+	isInsert := false
 	switch stmt := input.Node.(type) {
 	// 获取两种语句的指定了值的字段以及表名
 	case *ast.InsertStmt:
