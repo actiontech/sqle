@@ -32,7 +32,6 @@ const (
 	TypeAllAppExtract         = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
 	TypeSQLFile               = "sql_file"
-	TypeTBasePgLog            = "tbase_pg_log"
 )
 
 const (
@@ -40,7 +39,6 @@ const (
 	InstanceTypeMySQL  = "MySQL"
 	InstanceTypeOracle = "Oracle"
 	InstanceTypeTiDB   = "TiDB"
-	InstanceTypePg     = "PostgreSQL"
 )
 
 const (
@@ -371,12 +369,6 @@ var Metas = []Meta{
 		Type:         TypeSQLFile,
 		Desc:         "SQL文件",
 		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
-	},
-	{
-		Type:         TypeTBasePgLog,
-		Desc:         "TBase pg log",
-		InstanceType: InstanceTypePg,
 		CreateTask:   NewDefaultTask,
 	},
 }
