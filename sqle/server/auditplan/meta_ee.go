@@ -16,6 +16,7 @@ const (
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
+	TypeTBaseSlowLog               = "TBase_slow_log"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 	InstanceTypeTDSQL             = "TDSQL For InnoDB"
 	InstanceTypeDm                = "DM"
 	InstanceTypePostgreSQL        = "PostgreSQL"
+	InstanceTypeTBase             = "TBase"
 )
 
 const (
@@ -230,6 +232,20 @@ var EEMetas = []Meta{
 				Type:  params.ParamTypeString,
 			},
 		},
+	},
+	{
+		Type:         TypeTBaseSlowLog,
+		Desc:         "慢日志",
+		InstanceType: InstanceTypeTBase,
+		Params: []*params.Param{
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+		},
+		CreateTask: NewTBasePgLog,
 	},
 }
 
