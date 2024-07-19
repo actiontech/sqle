@@ -31,7 +31,11 @@ func (at *TBasePgLog) PartialSyncSQLs(sqls []*SQL) error {
 }
 
 func (at *TBasePgLog) Audit() (*AuditResultResp, error) {
-	return auditWithSchema(at.logger, at.persist, at.ap)
+	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
+	if err != nil {
+		return nil, err
+	}
+	return at.baseTask.audit(task)
 }
 
 func (at *TBasePgLog) GetSQLs(args map[string]interface{}) (
