@@ -16,7 +16,7 @@ const (
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
-	TypeTBasePgLog               = "TBase_pg_log"
+	TypeTBaseSlowLog               = "TBase_slow_log"
 )
 
 const (
@@ -234,8 +234,8 @@ var EEMetas = []Meta{
 		},
 	},
 	{
-		Type:         TypeTBasePgLog,
-		Desc:         "TBase pg_log",
+		Type:         TypeTBaseSlowLog,
+		Desc:         "慢日志",
 		InstanceType: InstanceTypeTBase,
 		Params: []*params.Param{
 			{
