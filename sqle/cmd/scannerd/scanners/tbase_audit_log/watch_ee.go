@@ -6,7 +6,6 @@ package tbase_audit_log
 import (
 	"log"
 	"path/filepath"
-	"regexp"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ func NewWatcher() *Watcher {
 	}
 }
 
-func (w *Watcher) WatchFileCreated(path string) {
+func (w *Watcher) WatchFileCreated(path, fileNameFormat string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -43,9 +42,12 @@ func (w *Watcher) WatchFileCreated(path string) {
 				return
 			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
-				regex := regexp.MustCompile(`^postgresql-.*\.csv$`)
 				fileName := filepath.Base(event.Name)
-				if regex.MatchString(fileName) {
+				isMatch, err := filepath.Match(fileNameFormat, fileName)
+				if err != nil {
+					w.l.Error(err)
+				}
+				if isMatch {
 					w.NewFiles <- event.Name
 				}
 			}

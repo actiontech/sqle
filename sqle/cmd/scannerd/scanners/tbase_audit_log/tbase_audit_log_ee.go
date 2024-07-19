@@ -21,8 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CsvFileFormat = "postgresql-*.csv"
-
 type AuditLog struct {
 	l *logrus.Entry
 	c *scanner.Client
@@ -31,25 +29,28 @@ type AuditLog struct {
 
 	sqlCh chan scanners.SQL
 
-	apName  string
-	parser  *TbaseParser
-	Watcher *Watcher
+	apName     string
+	parser     *TbaseParser
+	Watcher    *Watcher
+	fileFormat string
 }
 
 type Params struct {
-	LogFolder string
-	APName    string
+	LogFolder      string
+	APName         string
+	FileNameFormat string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*AuditLog, error) {
 	return &AuditLog{
-		l:         l,
-		c:         c,
-		sqlCh:     make(chan scanners.SQL, 10),
-		Watcher:   NewWatcher(),
-		parser:    NewTbaseParser(),
-		logFolder: params.LogFolder,
-		apName:    params.APName,
+		l:          l,
+		c:          c,
+		sqlCh:      make(chan scanners.SQL, 10),
+		Watcher:    NewWatcher(),
+		parser:     NewTbaseParser(),
+		logFolder:  params.LogFolder,
+		apName:     params.APName,
+		fileFormat: params.FileNameFormat,
 	}, nil
 }
 
@@ -85,7 +86,7 @@ func (a *AuditLog) GetSQLFromCsvFile(ctx context.Context, filePath string, waitF
 		}
 		if err != nil {
 			a.l.Errorf("tbase log read csv record failed, error: %v", err)
-			continue
+			return
 		}
 		tlog, err := a.parser.parseRecord(record)
 		if err != nil {
@@ -110,7 +111,7 @@ func (a *AuditLog) GetSQLFromCsvFile(ctx context.Context, filePath string, waitF
 // 所以需要解析现有的日志文件，还需要监听是否有新的日志文件被创建，如果有，需要读取新的日志文件
 // 具体参见：https://github.com/actiontech/sqle-ee/issues/1621
 func (t *AuditLog) Run(ctx context.Context) error {
-	sortedFiles, err := getSortedFilesByFolderPath(path.Join(t.logFolder, CsvFileFormat))
+	sortedFiles, err := getSortedFilesByFolderPath(path.Join(t.logFolder, t.fileFormat))
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,7 @@ func (t *AuditLog) Run(ctx context.Context) error {
 		}
 	}()
 
-	go t.Watcher.WatchFileCreated(filepath.Dir(newestLogFile))
+	go t.Watcher.WatchFileCreated(filepath.Dir(newestLogFile), t.fileFormat)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go t.GetSQLFromCsvFile(ctx, newestLogFile, true)

@@ -20,14 +20,16 @@ import (
 
 var (
 	tbaseLogFolder string
+	fileFormat     string
 
 	tbaseLogCmd = &cobra.Command{
 		Use:   "tbase-audit-log",
 		Short: "Parse tbase pg_log",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tbase_audit_log.Params{
-				LogFolder: tbaseLogFolder,
-				APName:    rootCmdFlags.auditPlanName,
+				LogFolder:      tbaseLogFolder,
+				APName:         rootCmdFlags.auditPlanName,
+				FileNameFormat: fileFormat,
 			}
 			log := logrus.WithField("scanner", "tbase-audit-log")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -48,6 +50,7 @@ var (
 
 func init() {
 	tbaseLogCmd.Flags().StringVarP(&tbaseLogFolder, "dir", "D", "", "log file absolute path")
+	tbaseLogCmd.Flags().StringVarP(&fileFormat, "format", "F", "postgresql-*.csv", "log file name format")
 	_ = tbaseLogCmd.MarkFlagRequired("log-folder")
 	rootCmd.AddCommand(tbaseLogCmd)
 }
