@@ -108,6 +108,9 @@ func (a *AuditLog) GetSQLFromCsvFile(ctx context.Context, filePath string, waitF
 	}
 }
 
+// 客户日志的保留时间为7天,日志默认每两小时切换一个
+// 所以需要解析现有的日志文件，还需要监听是否有新的日志文件被创建，如果有，需要读取新的日志文件
+// 具体参见：https://github.com/actiontech/sqle-ee/issues/1621
 func (t *AuditLog) Run(ctx context.Context) error {
 	sortedFiles, err := getSortedFilesByFolderPath(path.Join(t.logFolder, CsvFileFormat))
 	if err != nil {
