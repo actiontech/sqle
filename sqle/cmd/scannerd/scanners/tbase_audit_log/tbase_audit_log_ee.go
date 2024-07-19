@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"path"
@@ -94,7 +93,6 @@ func (a *AuditLog) GetSQLFromCsvFile(ctx context.Context, filePath string, waitF
 			continue
 		}
 		if tlog != nil {
-			fmt.Println(tlog.SQLText)
 			a.sqlCh <- scanners.SQL{
 				RawText:   tlog.SQLText,
 				Counter:   1,
