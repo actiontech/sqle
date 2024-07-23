@@ -4823,6 +4823,45 @@
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/attachment": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow attachment",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单附件",
+                "operationId": "getWorkflowAttachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "get workflow attachment",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate": {
             "post": {
                 "security": [
