@@ -1106,3 +1106,17 @@ type UpdateSqlFileOrderV1Req struct {
 func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
 	return updateSqlFileOrderByWorkflow(c)
 }
+
+// GetWorkflowAttachment
+// @Summary 获取工单附件
+// @Description get workflow attachment
+// @Tags workflow
+// @Id getWorkflowAttachment
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
+// @Success 200 {file} file "get workflow attachment"
+// @Router /v1/projects/{project_name}/workflows/{workflow_id}/attachment [get]
+func GetWorkflowAttachment(c echo.Context) error {
+	return nil
+}
