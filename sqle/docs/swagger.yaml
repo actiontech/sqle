@@ -7329,6 +7329,31 @@ paths:
       summary: 创建工单
       tags:
       - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/attachment:
+    get:
+      description: get workflow attachment
+      operationId: getWorkflowAttachment
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: get workflow attachment
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单附件
+      tags:
+      - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file:
     post:
       consumes:
