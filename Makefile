@@ -58,6 +58,12 @@ RPM_BUILD_IMAGE ?= rpmbuild/centos7
 GOBIN = ${shell pwd}/bin
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
 
+## Arm Build
+ARM_CGO_BUILD_FLAG =
+ifeq ($(EDITION)_$(GOARCH),ee_arm64)
+    ARM_CGO_BUILD_FLAG = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc
+endif
+
 default: install
 ######################################## Code Check ####################################################
 ## Static Code Analysis
@@ -77,7 +83,7 @@ install_sqled: swagger
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
 
 install_scannerd:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/scannerd ./$(PROJECT_NAME)/cmd/scannerd
+	$(ARM_CGO_BUILD_FLAG) GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/scannerd ./$(PROJECT_NAME)/cmd/scannerd
 
 dlv_install:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -gcflags "all=-N -l" $(GO_BUILD_FLAGS) ${LDFLAGS} -tags $(GO_BUILD_TAGS) -o $(GOBIN)/sqled ./$(PROJECT_NAME)/cmd/sqled
