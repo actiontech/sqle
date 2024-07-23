@@ -59,11 +59,9 @@ GOBIN = ${shell pwd}/bin
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
 
 ## Arm Build
-ARM_CGO_BUILD_FLAG = 
-ifeq ($(EDITION),ee)
-    ifeq ($(GOARCH),arm64)
-        ARM_CGO_BUILD_FLAG = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc 
-    endif
+ARM_CGO_BUILD_FLAG =
+ifeq ($(EDITION)_$(GOARCH),ee_arm64)
+    ARM_CGO_BUILD_FLAG = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc
 endif
 
 default: install
