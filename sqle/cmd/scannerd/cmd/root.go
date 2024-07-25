@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 
 	pkgScanner "github.com/actiontech/sqle/sqle/pkg/scanner"
 
@@ -33,7 +33,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.token, "token", "A", "", "sqle token")
 	rootCmd.PersistentFlags().IntVarP(&rootCmdFlags.timeout, "timeout", "T", pkgScanner.DefaultTimeoutNum, "request sqle timeout in seconds")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.project, "project", "J", "default", "project name")
-	_ = rootCmd.MarkPersistentFlagRequired("name")
 	_ = rootCmd.MarkPersistentFlagRequired("token")
 }
 
