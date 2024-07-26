@@ -35,6 +35,11 @@ const (
 
 var EEMetaBuilderList = []MetaBuilder{
 	{
+		Type:          TypeMySQLSlowLog,
+		Desc:          "慢日志",
+		TaskHandlerFn: NewSlowLogTaskV2Fn(),
+	},
+	{
 		Type:          TypeTDSQLSlowLog,
 		Desc:          "慢日志",
 		TaskHandlerFn: NewTDMySQLSlowLogTaskV2Fn(),
