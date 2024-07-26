@@ -20,6 +20,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -106,13 +107,12 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			})
 		}
 
-		source := &Source{Type: sqlManage.Source}
-		if sqlManage.ApName != nil {
-			source.AuditPlanName = *sqlManage.ApName
+		source := &Source{
+			SqlSourceType: sqlManage.Source,
+			SqlSourceID:   sqlManage.SourceID,
 		}
-		if len(sqlManage.SqlAuditRecordIDs) > 0 {
-			source.SqlAuditRecordIds = sqlManage.SqlAuditRecordIDs
-		}
+		auditPlanDesc := ConvertAuditPlanDescByType(sqlManage.Source)
+		source.SqlSourceDesc = auditPlanDesc
 		sqlMgr.Source = source
 
 		if sqlManage.AppearTimestamp != nil {
@@ -130,9 +130,9 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			}
 		}
 
-		sqlMgr.Status = sqlManage.Status
-		sqlMgr.Remark = sqlManage.Remark
-		sqlMgr.Endpoint = strings.Join(sqlManage.Endpoints, ",")
+		sqlMgr.Status = sqlManage.Status.String
+		sqlMgr.Remark = sqlManage.Remark.String
+		sqlMgr.Endpoint = sqlManage.Endpoints.String
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
@@ -152,7 +152,7 @@ func batchUpdateSqlManage(c echo.Context) error {
 	s := model.GetStorage()
 
 	distinctSqlManageIDs := utils.RemoveDuplicatePtrUint64(req.SqlManageIdList)
-	sqlManages, err := s.GetSqlManageListByIDs(distinctSqlManageIDs)
+	sqlManages, err := s.GetSqlManagerListByIDs(distinctSqlManageIDs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -161,7 +161,7 @@ func batchUpdateSqlManage(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("sql manage record not exist")))
 	}
 
-	err = s.BatchUpdateSqlManage(distinctSqlManageIDs, req.Status, req.Remark, req.Assignees)
+	err = s.BatchUpdateSqlManager(distinctSqlManageIDs, req.Status, req.Remark, req.Assignees)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -230,9 +230,6 @@ func exportSqlManagesV1(c echo.Context) error {
 		"数据源",
 		"SCHEMA",
 		"审核结果",
-		"初次出现时间",
-		"最后一次出现时间",
-		"出现数量",
 		"端点信息",
 		"负责人",
 		"状态",
@@ -258,17 +255,14 @@ func exportSqlManagesV1(c echo.Context) error {
 			newRow,
 			sqlManage.SqlFingerprint,
 			sqlManage.SqlText,
-			model.SqlManageSourceMap[sqlManage.Source],
+			ConvertAuditPlanDescByType(sqlManage.Source),
 			sqlManage.InstanceName,
 			sqlManage.SchemaName,
 			spliceAuditResults(sqlManage.AuditResults),
-			sqlManage.FirstAppearTime(),
-			sqlManage.LastReceiveTime(),
-			strconv.FormatUint(sqlManage.FpCount, 10),
-			strings.Join(sqlManage.Endpoints, ","),
+			sqlManage.Endpoints.String,
 			strings.Join(assignees, ","),
-			model.SqlManageStatusMap[sqlManage.Status],
-			sqlManage.Remark,
+			model.SqlManageStatusMap[sqlManage.Status.String],
+			sqlManage.Remark.String,
 		)
 
 		if err := csvWriter.Write(newRow); err != nil {
@@ -298,7 +292,7 @@ func getSqlManageRuleTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	sqlManageRuleTips, err := s.GetSqlManageRuleTips(projectUid)
+	sqlManageRuleTips, err := s.GetSqlManagerRuleTips(projectUid)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -333,7 +327,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 	mgID := c.Param("sql_manage_id")
 
 	s := model.GetStorage()
-	mg, exist, err := s.GetSqlManageByID(mgID)
+	omg, exist, err := s.GetOriginManageSqlByID(mgID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -341,7 +335,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v not exist", mgID)))
 	}
 
-	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), mg.ProjectId, mg.InstanceName)
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), omg.ProjectId, omg.InstanceName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -350,14 +344,14 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 	}
 
 	entry := log.NewEntry().WithField("sql_manage_analysis", mgID)
-	analysisResp, err := GetSQLAnalysisResult(entry, instance, mg.SchemaName, mg.SqlText)
+	analysisResp, err := GetSQLAnalysisResult(entry, instance, omg.SchemaName, omg.SqlText)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(analysisResp, mg.SqlText),
+		Data:    convertSQLAnalysisResultToRes(analysisResp, omg.SqlText),
 	})
 }
 
@@ -471,4 +465,22 @@ func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnaly
 	}
 
 	return data
+}
+
+func getUnsolvedSQLCountByManagerStatus(id uint) (int64, error) {
+	s := model.GetStorage()
+	count, err := s.GetUnsolvedSQLCount(id, []string{model.SQLManageStatusIgnored, model.SQLManageStatusSolved})
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
+func ConvertAuditPlanDescByType(auditPlanType string) string {
+	for _, meta := range auditplan.Metas {
+		if meta.Type == auditPlanType {
+			return meta.Desc
+		}
+	}
+	return ""
 }
