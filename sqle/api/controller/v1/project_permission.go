@@ -170,6 +170,45 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
 }
 
+func GetInstanceAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, instanceAuditPlanID string, opType v1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
+	storage := model.GetStorage()
+
+	ap, exist, err := storage.GetInstanceAuditPlanDetail(instanceAuditPlanID)
+	if err != nil || !exist {
+		return nil, exist, err
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if ap.CreateUserID == user.GetIDStr() {
+		return ap, true, nil
+	}
+
+	_, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
+	if err != nil {
+		return nil, false, err
+	}
+	if isAdmin {
+		return ap, true, nil
+	}
+
+	if opType != "" {
+		instances, err := GetCanOperationInstances(c.Request().Context(), user, "", projectId, opType)
+		if err != nil {
+			return nil, false, errors.NewUserNotPermissionError(string(opType))
+		}
+		for _, instance := range instances {
+			if ap.InstanceName == instance.Name {
+				return ap, true, nil
+			}
+		}
+	}
+	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+}
+
 func GetAuditPlantReportAndInstance(c echo.Context, projectId, auditPlanName string, reportID, sqlNumber int) (
 	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
 	err error) {

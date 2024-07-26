@@ -433,11 +433,13 @@ func getTaskById(ctx context.Context, taskId string) (*model.Task, error) {
 	}
 	task.AuditFiles = files
 
-	instance, exist, err := dms.GetInstancesById(ctx, task.InstanceId)
+	instance, exist, err := dms.GetInstancesById(ctx, fmt.Sprintf("%d", task.InstanceId))
 	if err != nil {
 		return nil, err
 	}
-	task.Instance = instance
+	if exist {
+		task.Instance = instance
+	}
 
 	return task, nil
 }

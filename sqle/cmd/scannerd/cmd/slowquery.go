@@ -9,7 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/slowquery"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,12 +23,12 @@ var (
 	excludeSchemas string
 
 	slowlogCmd = &cobra.Command{
-		Use:   "slowquery",
+		Use:   pkgAP.TypeMySQLSlowLog,
 		Short: "Parse slow query",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &slowquery.Params{
 				LogFilePath:    logFilePath,
-				APName:         rootCmdFlags.auditPlanName,
+				InstAPID:       rootCmdFlags.instanceAuditPlanId,
 				IncludeUsers:   includeUsers,
 				ExcludeUsers:   excludeUsers,
 				IncludeSchemas: includeSchemas,

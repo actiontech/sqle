@@ -31,3 +31,7 @@ func getSqlManageRuleTips(c echo.Context) error {
 func getSqlManageSqlAnalysisV1(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func getUnsolvedSQLCountByManagerStatus(id uint) (int64, error) {
+	return 0, nil
+}
