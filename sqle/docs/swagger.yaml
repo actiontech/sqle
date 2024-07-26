@@ -9,6 +9,13 @@ definitions:
         example: ok
         type: string
     type: object
+  params.EnumsValue:
+    properties:
+      desc:
+        type: string
+      value:
+        type: string
+    type: object
   v1.AffectRows:
     properties:
       count:
@@ -19,6 +26,22 @@ definitions:
   v1.AuditFileResp:
     properties:
       file_name:
+        type: string
+    type: object
+  v1.AuditPlan:
+    properties:
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamReqV1'
+        type: array
+      audit_plan_type:
+        example: slow log
+        type: string
+      rule_template_name:
+        example: default_MySQL
+        type: string
+      schema_name:
+        example: test
         type: string
     type: object
   v1.AuditPlanCount:
@@ -54,6 +77,10 @@ definitions:
     properties:
       desc:
         type: string
+      enums_value:
+        items:
+          $ref: '#/definitions/params.EnumsValue'
+        type: array
       key:
         type: string
       type:
@@ -99,6 +126,22 @@ definitions:
         example: 1
         type: integer
     type: object
+  v1.AuditPlanRes:
+    properties:
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamResV1'
+        type: array
+      audit_plan_type:
+        $ref: '#/definitions/v1.AuditPlanTypeResBase'
+        type: object
+      rule_template_name:
+        example: default_MySQL
+        type: string
+      schema_name:
+        example: test
+        type: string
+    type: object
   v1.AuditPlanResV1:
     properties:
       audit_plan_cron:
@@ -126,11 +169,18 @@ definitions:
         example: default_MySQL
         type: string
     type: object
+  v1.AuditPlanRuleTemplate:
+    properties:
+      is_global_rule_template:
+        type: boolean
+      name:
+        type: string
+    type: object
   v1.AuditPlanSQLHeadV1:
     properties:
       desc:
         type: string
-      name:
+      field_name:
         type: string
       type:
         enum:
@@ -182,6 +232,13 @@ definitions:
             type: string
           type: object
         type: array
+    type: object
+  v1.AuditPlanTypeResBase:
+    properties:
+      desc:
+        type: string
+      type:
+        type: string
     type: object
   v1.AuditPlanTypesV1:
     properties:
@@ -447,6 +504,23 @@ definitions:
       notice_str:
         type: string
     type: object
+  v1.CreatInstanceAuditPlanRes:
+    properties:
+      instance_audit_plan_id:
+        type: string
+    type: object
+  v1.CreatInstanceAuditPlanResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CreatInstanceAuditPlanRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.CreateAuditPlanReqV1:
     properties:
       audit_plan_cron:
@@ -559,6 +633,27 @@ definitions:
       type:
         example: DDL规则
         type: string
+    type: object
+  v1.CreateInstanceAuditPlanReqV1:
+    properties:
+      audit_plans:
+        description: 扫描类型
+        items:
+          $ref: '#/definitions/v1.AuditPlan'
+        type: array
+      business:
+        example: test
+        type: string
+      instance_name:
+        example: test_mysql
+        type: string
+      instance_type:
+        example: mysql
+        type: string
+      static_audit:
+        description: 静态审核
+        example: true
+        type: boolean
     type: object
   v1.CreateProjectRuleTemplateReqV1:
     properties:
@@ -1113,6 +1208,46 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetInstanceAuditPlanDetailResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.InstanceAuditPlanDetailResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceAuditPlanOverviewResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceAuditPlanInfo'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetInstanceAuditPlansResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceAuditPlanResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetInstanceConnectableResV1:
     properties:
@@ -1964,6 +2099,87 @@ definitions:
         example: "0"
         type: string
     type: object
+  v1.InstanceAuditPlanDetailResV1:
+    properties:
+      audit_plans:
+        description: 扫描类型
+        items:
+          $ref: '#/definitions/v1.AuditPlanRes'
+        type: array
+      business:
+        example: test
+        type: string
+      instance_name:
+        description: InstanceId   string `json:"instance_id"   example:"test_mysql"`
+        example: test_mysql
+        type: string
+      instance_type:
+        example: mysql
+        type: string
+      static_audit:
+        description: 静态审核
+        example: true
+        type: boolean
+    type: object
+  v1.InstanceAuditPlanInfo:
+    properties:
+      active_status:
+        enum:
+        - normal
+        - disabled
+        type: string
+      audit_plan_db_type:
+        example: mysql
+        type: string
+      audit_plan_instance_name:
+        example: test_mysql
+        type: string
+      audit_plan_instance_schema_name:
+        example: app1
+        type: string
+      audit_plan_rule_template:
+        $ref: '#/definitions/v1.AuditPlanRuleTemplate'
+        type: object
+      audit_plan_type:
+        $ref: '#/definitions/v1.AuditPlanTypeResBase'
+        type: object
+      exec_cmd:
+        example: ./scanner xxx
+        type: string
+      id:
+        type: integer
+      last_collection_time:
+        type: string
+      total_sql_nums:
+        type: integer
+      unsolved_sql_nums:
+        type: integer
+    type: object
+  v1.InstanceAuditPlanResV1:
+    properties:
+      active_status:
+        enum:
+        - normal
+        - disabled
+        type: string
+      audit_plan_types:
+        items:
+          $ref: '#/definitions/v1.AuditPlanTypeResBase'
+        type: array
+      business:
+        type: string
+      create_time:
+        description: TODO 采集状态
+        type: string
+      creator:
+        type: string
+      instance_audit_plan_id:
+        type: integer
+      instance_name:
+        type: string
+      instance_type:
+        type: string
+    type: object
   v1.InstanceConnectableResV1:
     properties:
       connect_error_message:
@@ -2666,16 +2882,11 @@ definitions:
     type: object
   v1.Source:
     properties:
-      audit_plan_name:
+      sql_source_desc:
         type: string
-      sql_audit_record_ids:
-        items:
-          type: string
-        type: array
-      type:
-        enum:
-        - audit_plan
-        - sql_audit_record
+      sql_source_id:
+        type: string
+      sql_source_type:
         type: string
     type: object
   v1.SqlAnalysis:
@@ -3068,6 +3279,15 @@ definitions:
         example: default_MySQL
         type: string
     type: object
+  v1.UpdateAuditPlanStatusReqV1:
+    properties:
+      active:
+        description: 任务状态
+        enum:
+        - normal
+        - disabled
+        type: string
+    type: object
   v1.UpdateAuditTaskSQLsReqV1:
     properties:
       description:
@@ -3140,6 +3360,23 @@ definitions:
     - app_id
     - app_secret
     - is_feishu_notification_enabled
+    type: object
+  v1.UpdateInstanceAuditPlanReqV1:
+    properties:
+      audit_plans:
+        description: 扫描类型
+        items:
+          $ref: '#/definitions/v1.AuditPlan'
+        type: array
+    type: object
+  v1.UpdateInstanceAuditPlanStatusReqV1:
+    properties:
+      active:
+        description: 任务状态
+        enum:
+        - normal
+        - disabled
+        type: string
     type: object
   v1.UpdateProjectRuleTemplateReqV1:
     properties:
@@ -4156,9 +4393,7 @@ definitions:
           $ref: '#/definitions/v1.AuditResult'
         type: array
       endpoints:
-        items:
-          type: string
-        type: array
+        type: string
       first_appear_timestamp:
         type: string
       fp_count:
@@ -4227,6 +4462,13 @@ definitions:
         type: string
       schedule_time:
         type: string
+    type: object
+  v2.UploadInstanceAuditPlanSQLsReqV2:
+    properties:
+      audit_plan_sql_list:
+        items:
+          $ref: '#/definitions/v2.AuditPlanSQLReqV2'
+        type: array
     type: object
   v2.WorkflowRecordResV2:
     properties:
@@ -4771,7 +5013,7 @@ paths:
       operationId: getRuleTypeByDBTypeV1
       parameters:
       - description: db type
-        in: query
+        in: path
         name: db_type
         required: true
         type: string
@@ -5503,6 +5745,7 @@ paths:
       - audit_plan
   /v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger:
     post:
+      deprecated: true
       description: trigger audit plan
       operationId: triggerAuditPlanV1
       parameters:
@@ -5640,6 +5883,327 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/projects/{project_name}/instance_audit_plans:
+    get:
+      description: get instance audit plan info list
+      operationId: getInstanceAuditPlansV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter by business
+        in: query
+        name: filter_by_business
+        type: string
+      - description: filter by db type
+        in: query
+        name: filter_by_db_type
+        type: string
+      - description: filter by instance name
+        in: query
+        name: filter_by_instance_name
+        type: string
+      - description: filter instance audit plan type
+        in: query
+        name: filter_by_audit_plan_type
+        type: string
+      - description: filter instance audit plan active status
+        in: query
+        name: filter_by_active_status
+        type: boolean
+      - description: fuzzy search
+        in: query
+        name: fuzzy_search
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceAuditPlansResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例扫描任务列表
+      tags:
+      - instance_audit_plan
+    post:
+      consumes:
+      - application/json
+      description: create instance audit plan
+      operationId: createInstanceAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: create instance audit plan
+        in: body
+        name: instannce_audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateInstanceAuditPlanReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreatInstanceAuditPlanResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加实例扫描任务
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}:
+    get:
+      description: get instance audit plan detail
+      operationId: getInstanceAuditPlanDetailV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceAuditPlanDetailResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例扫描任务详情
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/:
+    delete:
+      description: delete instance audit plan
+      operationId: deleteInstanceAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除实例扫描任务
+      tags:
+      - instance_audit_plan
+    patch:
+      description: stop/start instance audit plan
+      operationId: updateInstanceAuditPlanStatusV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: update instance audit plan
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateInstanceAuditPlanStatusReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新实例扫描任务状态
+      tags:
+      - instance_audit_plan
+    put:
+      description: update instance audit plan
+      operationId: updateInstanceAuditPlanV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: update instance audit plan
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateInstanceAuditPlanReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新实例扫描任务配置
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans:
+    get:
+      description: get audit plan overview
+      operationId: getInstanceAuditPlanOverviewV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceAuditPlanOverviewResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例扫描任务概览
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/:
+    delete:
+      description: delete audit plan by type
+      operationId: deleteAuditPlanByTypeV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan type
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除扫描任务
+      tags:
+      - instance_audit_plan
+    patch:
+      description: stop/start audit plan
+      operationId: updateAuditPlanStatusV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      - description: update audit plan status
+        in: body
+        name: audit_plan
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateAuditPlanStatusReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新扫描任务状态
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls:
+    get:
+      description: get audit plan SQLs
+      operationId: getInstanceAuditPlanSQLsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQLs信息
+      tags:
+      - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
     get:
       description: get instance tip list
@@ -9144,6 +9708,42 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
+  /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload:
+    post:
+      description: upload intance audit plan SQLs
+      operationId: UploadInstanceAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: integer
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      - description: upload instance audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 同步SQL到扫描任务
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
@@ -9231,6 +9831,10 @@ paths:
       - description: db type
         in: query
         name: filter_db_type
+        type: string
+      - description: business
+        in: query
+        name: filter_business
         type: string
       - description: fuzzy search endpoint
         in: query
