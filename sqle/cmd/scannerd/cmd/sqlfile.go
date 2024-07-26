@@ -16,7 +16,10 @@ import (
 )
 
 var (
-	skipErrorSqlFile bool
+	skipErrorSqlFile  bool
+	dbTypeSqlFile     string
+	instNameSqlFile   string
+	schemaNameSqlFile string
 
 	sqlFileCmd = &cobra.Command{
 		Use:   "sqlFile",
@@ -24,10 +27,11 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &sqlFile.Params{
 				SQLDir:           dir,
-				APName:           rootCmdFlags.auditPlanName,
 				SkipErrorQuery:   skipErrorQuery,
 				SkipErrorSqlFile: skipErrorSqlFile,
-				SkipAudit:        skipAudit,
+				DbType:           dbTypeSqlFile,
+				InstName:         instNameSqlFile,
+				SchemaName:       schemaNameSqlFile,
 			}
 			log := logrus.WithField("scanner", "sqlFile")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -50,7 +54,9 @@ var (
 func init() {
 	sqlFileCmd.Flags().StringVarP(&dir, "dir", "D", "", "sql file directory")
 	sqlFileCmd.Flags().BoolVarP(&skipErrorSqlFile, "skip-error-sql-file", "S", false, "skip the sql file that failed to parse")
-	sqlFileCmd.Flags().BoolVarP(&skipAudit, "skip-sql-file-audit", "K", false, "only upload sql to sqle, not audit")
+	sqlFileCmd.Flags().StringVarP(&dbTypeSqlFile, "db-type", "B", "", "database type")
+	sqlFileCmd.Flags().StringVarP(&instNameSqlFile, "instance-name", "I", "", "instance name")
+	sqlFileCmd.Flags().StringVarP(&schemaNameSqlFile, "schema-name", "C", "", "schema name")
 	_ = sqlFileCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(sqlFileCmd)
 }

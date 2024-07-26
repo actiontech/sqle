@@ -2,10 +2,12 @@ package common
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 )
 
@@ -42,4 +44,19 @@ func Audit(c *scanner.Client, apName string) error {
 		return err
 	}
 	return c.GetAuditReportReq(apName, reportID)
+}
+
+func DirectAudit(ctx context.Context, c *scanner.Client, sqlList []driverV2.Node, dbType, instName, schemaName string) error {
+	sqlAuditReq := new(scanner.CreateSqlAuditReq)
+	sqlAuditReq.DbType = dbType
+	sqlAuditReq.InstanceName = instName
+	sqlAuditReq.InstanceSchema = schemaName
+
+	var sb strings.Builder
+	for _, sql := range sqlList {
+		sb.WriteString(sql.Text)
+	}
+	sqlAuditReq.Sqls = sb.String()
+
+	return c.DirectAudit(ctx, sqlAuditReq)
 }

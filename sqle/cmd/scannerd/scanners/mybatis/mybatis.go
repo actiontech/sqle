@@ -7,7 +7,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 
 	"github.com/sirupsen/logrus"
@@ -17,36 +16,33 @@ type MyBatis struct {
 	l *logrus.Entry
 	c *scanner.Client
 
-	sqls []scanners.SQL
-
-	allSQL []driverV2.Node
-	getAll chan struct{}
-
-	apName         string
 	xmlDir         string
 	skipErrorQuery bool
 	skipErrorXml   bool
-	skipAudit      bool
+	dbType         string
+	instName       string
+	schemaName     string
 }
 
 type Params struct {
 	XMLDir         string
-	APName         string
 	SkipErrorQuery bool
 	SkipErrorXml   bool
-	SkipAudit      bool
+	DbType         string
+	InstName       string
+	SchemaName     string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 	return &MyBatis{
 		xmlDir:         params.XMLDir,
-		apName:         params.APName,
 		skipErrorQuery: params.SkipErrorQuery,
 		skipErrorXml:   params.SkipErrorXml,
-		skipAudit:      params.SkipAudit,
+		dbType:         params.DbType,
+		instName:       params.InstName,
+		schemaName:     params.SchemaName,
 		l:              l,
 		c:              c,
-		getAll:         make(chan struct{}),
 	}, nil
 }
 
@@ -56,38 +52,13 @@ func (mb *MyBatis) Run(ctx context.Context) error {
 		return err
 	}
 
-	mb.allSQL = sqls
-	close(mb.getAll)
-
-	<-ctx.Done()
-	return nil
+	return common.DirectAudit(ctx, mb.c, sqls, mb.dbType, mb.instName, mb.schemaName)
 }
 
 func (mb *MyBatis) SQLs() <-chan scanners.SQL {
-	// todo: channel size configurable
-	sqlCh := make(chan scanners.SQL, 10240)
-
-	go func() {
-		<-mb.getAll
-		for _, sql := range mb.allSQL {
-			sqlCh <- scanners.SQL{
-				Fingerprint: sql.Fingerprint,
-				RawText:     sql.Text,
-			}
-		}
-		close(sqlCh)
-	}()
-	return sqlCh
+	return nil
 }
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
-	mb.sqls = append(mb.sqls, sqls...)
-	err := common.Upload(ctx, mb.sqls, mb.c, mb.apName)
-	if err != nil {
-		return err
-	}
-	if mb.skipAudit {
-		return nil
-	}
-	return common.Audit(mb.c, mb.apName)
+	return nil
 }

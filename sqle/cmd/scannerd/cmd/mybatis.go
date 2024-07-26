@@ -19,7 +19,9 @@ var (
 	dir            string
 	skipErrorQuery bool
 	skipErrorXml   bool
-	skipAudit      bool
+	dbTypeXml      string
+	instNameXml    string
+	schemaNameXml  string
 
 	mybatisCmd = &cobra.Command{
 		Use:   "mybatis",
@@ -27,10 +29,11 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &mybatis.Params{
 				XMLDir:         dir,
-				APName:         rootCmdFlags.auditPlanName,
 				SkipErrorQuery: skipErrorQuery,
 				SkipErrorXml:   skipErrorXml,
-				SkipAudit:      skipAudit,
+				DbType:         dbTypeXml,
+				InstName:       instNameXml,
+				SchemaName:     schemaNameXml,
 			}
 			log := logrus.WithField("scanner", "mybatis")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -54,7 +57,9 @@ func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
 	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip the statement that the scanner failed to parse from within the xml file")
 	mybatisCmd.Flags().BoolVarP(&skipErrorXml, "skip-error-xml", "X", false, "skip the xml file that failed to parse")
-	mybatisCmd.Flags().BoolVarP(&skipAudit, "skip-audit", "K", false, "only upload sql to sqle, not audit")
+	mybatisCmd.Flags().StringVarP(&dbTypeXml, "db-type", "B", "", "database type")
+	mybatisCmd.Flags().StringVarP(&instNameXml, "instance-name", "I", "", "instance name")
+	mybatisCmd.Flags().StringVarP(&schemaNameXml, "schema-name", "C", "", "schema name")
 	_ = mybatisCmd.MarkFlagRequired("dir")
 	rootCmd.AddCommand(mybatisCmd)
 }
