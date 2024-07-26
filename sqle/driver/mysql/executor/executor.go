@@ -274,6 +274,14 @@ func Ping(entry *logrus.Entry, instance *driverV2.DSN) error {
 	return conn.Db.Ping()
 }
 
+func (c *Executor) UseSchema(schemaName string) error {
+	_, err := c.Db.Exec(fmt.Sprintf("use %s", schemaName))
+	if err != nil {
+		return errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	return nil
+}
+
 // When using keywords as table names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 	query := fmt.Sprintf("show create table %s", tableName)
