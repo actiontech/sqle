@@ -16,6 +16,7 @@ type GetSqlManageListReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
+	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
 	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
 	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
@@ -57,9 +58,9 @@ type AuditResult struct {
 }
 
 type Source struct {
-	Type              string   `json:"type" enums:"audit_plan,sql_audit_record"`
-	AuditPlanName     string   `json:"audit_plan_name"`
-	SqlAuditRecordIds []string `json:"sql_audit_record_ids"`
+	SqlSourceType string `json:"sql_source_type"`
+	SqlSourceDesc string `json:"sql_source_desc"`
+	SqlSourceID   string `json:"sql_source_id"`
 }
 
 // todo : 该接口已废弃，后续会删除

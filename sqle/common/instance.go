@@ -33,6 +33,13 @@ func CheckDeleteInstance(instanceId int64) error {
 	if isUnFinished {
 		return errors.New("has unfinished workflows")
 	}
+	_, isBoundToAuditPlan, err := s.GetInstanceAuditPlanByInstanceID(instanceId)
+	if err != nil {
+		return fmt.Errorf("check that all audit plans are unbound failed: %v", err)
+	}
+	if isBoundToAuditPlan {
+		return errors.New("there is an unbound audit plan")
+	}
 
 	return nil
 }

@@ -845,7 +845,7 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 		ExecStartTime:  record.Task.ExecStartAt,
 		ExecEndTime:    record.Task.ExecEndAt,
 	}
-	instance, exist, err := dms.GetInstancesById(c.Request().Context(), record.Task.InstanceId)
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), fmt.Sprintf("%d", record.Task.InstanceId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -96,7 +96,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 		goto Error
 	}
 	if task.InstanceId != 0 {
-		instance, exist, err = dms.GetInstancesById(context.Background(), task.InstanceId)
+		instance, exist, err = dms.GetInstancesById(context.Background(), fmt.Sprintf("%d", task.InstanceId))
 		if err != nil {
 			goto Error
 		}

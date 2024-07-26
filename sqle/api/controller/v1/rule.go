@@ -1461,7 +1461,7 @@ type GetRuleTypeByDBTypeResV1 struct {
 // @Id getRuleTypeByDBTypeV1
 // @Tags rule_template
 // @Security ApiKeyAuth
-// @Param db_type query string true "db type"
+// @Param db_type path string true "db type"
 // @Success 200 {object} v1.GetRuleTypeByDBTypeResV1
 // @router /v1/custom_rules/{db_type}/rule_types [get]
 func GetRuleTypeByDBType(c echo.Context) error {
