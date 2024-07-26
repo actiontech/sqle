@@ -91,6 +91,14 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		}
 		instanceID = inst.ID
 		instanceType = inst.DbType
+		// check instance audit plan exist
+		_, exist, err = model.GetStorage().GetInstanceAuditPlanByInstanceID(int64(inst.ID))
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if exist {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("current instance has audit plan"))
+		}
 		// check operation
 		user, err := controller.GetCurrentUser(c, dms.GetUser)
 		if err != nil {
@@ -103,6 +111,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		if !canCreateAuditPlan {
 			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
 		}
+
 	} else {
 		instanceType = req.InstanceType
 	}
