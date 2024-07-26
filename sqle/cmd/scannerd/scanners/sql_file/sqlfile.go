@@ -2,6 +2,7 @@ package sqlFile
 
 import (
 	"context"
+
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
@@ -9,6 +10,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,15 +23,18 @@ type SQLFile struct {
 	allSQL []driverV2.Node
 	getAll chan struct{}
 
-	apName           string
+	InstanceAPID     string
+	AuditPlanType    string
 	sqlDir           string
 	skipErrorSqlFile bool
 	skipAudit        bool
 }
 
 type Params struct {
-	SQLDir           string
-	APName           string
+	SQLDir string
+
+	InstanceAPID     string
+	AuditPlanType    string
 	SkipErrorQuery   bool
 	SkipErrorSqlFile bool
 	SkipAudit        bool
@@ -38,7 +43,8 @@ type Params struct {
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
 	return &SQLFile{
 		sqlDir:           params.SQLDir,
-		apName:           params.APName,
+		InstanceAPID:     params.InstanceAPID,
+		AuditPlanType:    params.AuditPlanType,
 		skipErrorSqlFile: params.SkipErrorSqlFile,
 		skipAudit:        params.SkipAudit,
 		l:                l,
@@ -79,7 +85,7 @@ func (sf *SQLFile) SQLs() <-chan scanners.SQL {
 
 func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	sf.sqls = append(sf.sqls, sqls...)
-	err := common.Upload(ctx, sf.sqls, sf.c, sf.apName)
+	err := common.Upload(ctx, sf.sqls, sf.c, sf.InstanceAPID, pkgAP.TypeSQLFile)
 	if err != nil {
 		return err
 	}
@@ -88,5 +94,5 @@ func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		return nil
 	}
 
-	return common.Audit(sf.c, sf.apName)
+	return nil
 }
