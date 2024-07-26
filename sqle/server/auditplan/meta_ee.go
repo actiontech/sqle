@@ -14,7 +14,7 @@ const (
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
-	TypeTBaseSlowLog               = "TBase_slow_log"
+	TypeTBaseSlowLog             = "TBase_slow_log"
 )
 
 const (
@@ -75,23 +75,14 @@ var EEMetaBuilderList = []MetaBuilder{
 		TaskHandlerFn: NewObForOracleTopSQLTaskV2Fn(),
 	},
 	{
-		Type:          TypePostgreSQLTopSQL,
-		Desc:          "TOP SQL",
-		TaskHandlerFn: NewPGTopSQLTaskV2Fn(),
-	},
+		Type: TypePostgreSQLTopSQL,
+		Desc: "TOP SQL",
+
+		TaskHandlerFn: NewPGTopSQLTaskV2Fn()},
 	{
-		Type:         TypeTBaseSlowLog,
-		Desc:         "慢日志",
-		InstanceType: InstanceTypeTBase,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
-		CreateTask: NewTBasePgLog,
+		Type:          TypeTBaseSlowLog,
+		Desc:          "慢日志",
+		TaskHandlerFn: NewTBaseSlowLogTaskV2Fn(),
 	},
 }
 

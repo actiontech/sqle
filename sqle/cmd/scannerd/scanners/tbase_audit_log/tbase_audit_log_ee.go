@@ -18,6 +18,9 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/actiontech/sqle/sqle/utils"
 	pgParser "github.com/pganalyze/pg_query_go/v4/parser"
+
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,28 +32,28 @@ type AuditLog struct {
 
 	sqlCh chan scanners.SQL
 
-	apName     string
-	parser     *TbaseParser
-	Watcher    *Watcher
-	fileFormat string
+	instanceApID string
+	parser       *TbaseParser
+	Watcher      *Watcher
+	fileFormat   string
 }
 
 type Params struct {
 	LogFolder      string
-	APName         string
+	InstanceApID   string
 	FileNameFormat string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*AuditLog, error) {
 	return &AuditLog{
-		l:          l,
-		c:          c,
-		sqlCh:      make(chan scanners.SQL, 10),
-		Watcher:    NewWatcher(),
-		parser:     NewTbaseParser(),
-		logFolder:  params.LogFolder,
-		apName:     params.APName,
-		fileFormat: params.FileNameFormat,
+		l:            l,
+		c:            c,
+		sqlCh:        make(chan scanners.SQL, 10),
+		Watcher:      NewWatcher(),
+		parser:       NewTbaseParser(),
+		logFolder:    params.LogFolder,
+		instanceApID: params.InstanceApID,
+		fileFormat:   params.FileNameFormat,
 	}, nil
 }
 
@@ -219,5 +222,5 @@ func (t *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	return t.c.UploadReq(scanner.PartialUpload, t.apName, sqlListReq)
+	return t.c.UploadReq(scanner.PartialUpload, t.instanceApID, pkgAP.TypeTBaseSlowLog, sqlListReq)
 }
