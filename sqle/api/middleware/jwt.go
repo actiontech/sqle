@@ -1,14 +1,13 @@
 package middleware
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
-	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
@@ -43,7 +42,7 @@ func JWTWithConfig(key interface{}) echo.MiddlewareFunc {
 	return middleware.JWTWithConfig(c)
 }
 
-var errAuditPlanMisMatch = errors.New("audit plan name don't match the token or audit plan not found")
+var errAuditPlanMisMatch = errors.New("audit plan don't match the token or audit plan not found")
 
 // ScannerVerifier is a `echo` middleware. Every audit plan should be
 // scanner-scoped which means that scanner-A should not push SQL to scanner-B.
@@ -59,27 +58,27 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				token = parts[1]
 			}
 
-			apnInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
+			// check token belong to instance audit plan
+			iapidInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
 
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			apnInParam := c.Param("audit_plan_name")
-			// 由于对生成的JWT Token的负载使用MD5算法进行预处理，因此在验证的时候也需要对param中的apn使用MD5处理
-			// 为了兼容老版本的JWT Token需要增加不经MD5处理的apnInParam和apnInToken的判断
-			if apnInToken != apnInParam && apnInToken != utils.Md5(apnInParam) {
+			if iapidInToken != utils.Md5(c.Param("instance_audit_plan_id")) {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			apn, apnExist, err := model.GetStorage().GetAuditPlanFromProjectByName(projectUid, apnInParam)
+			iapidInParam, err := strconv.Atoi(c.Param("instance_audit_plan_id"))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			if !apnExist || apn.Token != token {
+			aptypParam := c.Param("audit_plan_type")
+
+			apn, err := model.GetStorage().GetAuditPlanDetailByIDType(iapidInParam, aptypParam)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			if apn.Token != token {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 

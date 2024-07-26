@@ -9,7 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +22,8 @@ type MyBatis struct {
 	allSQL []driverV2.Node
 	getAll chan struct{}
 
-	apName         string
+	instanceAPID   string
+	auditPlanType  string
 	xmlDir         string
 	skipErrorQuery bool
 	skipErrorXml   bool
@@ -31,7 +32,8 @@ type MyBatis struct {
 
 type Params struct {
 	XMLDir         string
-	APName         string
+	InstanceAPID   string
+	AuditPlanType  string
 	SkipErrorQuery bool
 	SkipErrorXml   bool
 	SkipAudit      bool
@@ -40,7 +42,8 @@ type Params struct {
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 	return &MyBatis{
 		xmlDir:         params.XMLDir,
-		apName:         params.APName,
+		instanceAPID:   params.InstanceAPID,
+		auditPlanType:  params.AuditPlanType,
 		skipErrorQuery: params.SkipErrorQuery,
 		skipErrorXml:   params.SkipErrorXml,
 		skipAudit:      params.SkipAudit,
@@ -82,12 +85,13 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 
 func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
 	mb.sqls = append(mb.sqls, sqls...)
-	err := common.Upload(ctx, mb.sqls, mb.c, mb.apName)
+	err := common.Upload(ctx, mb.sqls, mb.c, mb.instanceAPID, pkgAP.TypeMySQLMybatis)
 	if err != nil {
 		return err
 	}
 	if mb.skipAudit {
 		return nil
 	}
-	return common.Audit(mb.c, mb.apName)
+
+	return nil
 }

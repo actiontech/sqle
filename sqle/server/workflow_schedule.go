@@ -77,7 +77,7 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		if !exist {
 			return errors.New(errors.DataNotExist, fmt.Errorf("task is not exist. taskID=%v", taskId))
 		}
-		instance, exist, err := dms.GetInstancesById(context.Background(), task.InstanceId)
+		instance, exist, err := dms.GetInstancesById(context.Background(), fmt.Sprintf("%d", task.InstanceId))
 		if err != nil {
 			return err
 		}

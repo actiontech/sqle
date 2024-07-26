@@ -125,6 +125,10 @@ func NewAuditPlanNotExistErr() error {
 	return New(DataNotExist, fmt.Errorf("audit plan is not exist"))
 }
 
+func NewInstanceAuditPlanNotExistErr() error {
+	return New(DataNotExist, fmt.Errorf("instance audit plan is not exist"))
+}
+
 func NewNotSupportGetAuditPlanAnalysisDataErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("get audit plan analysis data is enterprise version function"))
 }

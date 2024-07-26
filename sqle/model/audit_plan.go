@@ -136,6 +136,10 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetActiveAuditPlanByIdV2(id uint) (*AuditPlanDetail, bool, error) {
+	return s.getAuditPlanDetailByID(id)
+}
+
 func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).
@@ -170,6 +174,11 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
+func (s *Storage) GetAuditPlanSQLsV2Unaudit(auditPlanId uint) ([]*OriginManageSQL, error) {
+	var sqls []*OriginManageSQL
+	err := s.db.Model(&OriginManageSQL{}).Where("source_id = ? AND audit_level IS NULL", auditPlanId).Find(&sqls).Error
+	return sqls, errors.New(errors.ConnectStorageError, err)
+}
 
 func (s *Storage) GetLatestStartTimeAuditPlanSQL(auditPlanId uint) (string, error) {
 	var info = struct {
@@ -178,6 +187,18 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQL(auditPlanId uint) (string, erro
 	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time')), '%Y-%m-%dT%H:%i:%s.%fZ')) 
 					AS max_start_time FROM audit_plan_sqls_v2 WHERE audit_plan_id = ?`, auditPlanId).Scan(&info).Error
 	return info.StartTime, err
+}
+
+func (s *Storage) OverrideAuditPlanSQLsV2(auditPlanId uint, sqls []*OriginManageSQL) error {
+	err := s.db.Unscoped().
+		Model(AuditPlanSQLV2{}).
+		Where("audit_plan_id = ?", auditPlanId).
+		Delete(&AuditPlanSQLV2{}).Error
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	raw, args := getBatchInsertRawSQLV2(auditPlanId, sqls)
+	return errors.New(errors.ConnectStorageError, s.db.Exec(fmt.Sprintf("%v;", raw), args...).Error)
 }
 
 func (s *Storage) OverrideAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
@@ -278,6 +299,43 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
+func (s *Storage) UpdateSlowLogCollectAuditPlanSQLsV2(auditPlanId uint, sqls []*OriginManageSQL) error {
+	raw, args := getBatchInsertRawSQLV2(auditPlanId, sqls)
+	// counter column is a accumulate value when update.
+	raw += `
+ON DUPLICATE KEY UPDATE sql_text = VALUES(sql_text),
+                        info        = JSON_SET(COALESCE(info, '{}'),
+											  '$.counter', CAST(COALESCE(JSON_EXTRACT(values(info), '$.counter'), 0) +
+                                                                COALESCE(JSON_EXTRACT(info, '$.counter'), 0) AS SIGNED),
+                                              '$.last_receive_timestamp',
+                                              JSON_EXTRACT(values(info), '$.last_receive_timestamp'),
+											  '$.average_query_time',
+											  CAST(
+												((JSON_EXTRACT(info, '$.average_query_time') + 0) * (JSON_EXTRACT(info, '$.counter'))
+												+ (JSON_EXTRACT(VALUES(info), '$.average_query_time') + 0) * (JSON_EXTRACT(VALUES(info), '$.counter')))
+												/ (JSON_EXTRACT(info, '$.counter') + JSON_EXTRACT(VALUES(info), '$.counter'))
+												AS UNSIGNED
+											  ),
+											  '$.row_examined_avg', CAST(
+                                                       (
+                                                           COALESCE(JSON_EXTRACT(info, '$.row_examined_avg'),
+                                                                    JSON_EXTRACT(VALUES(info), '$.row_examined_avg')) *
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               +
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.row_examined_avg'), 0) *
+                                                           COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 0)
+                                                           ) / (
+                                                           COALESCE(JSON_EXTRACT(info, '$.counter'), 0)
+                                                               + COALESCE(JSON_EXTRACT(VALUES(info), '$.counter'), 1)
+                                                           )
+                                                   AS DECIMAL(65,6)),
+											  '$.start_time',
+											  JSON_EXTRACT(values(info), '$.start_time'));`
+
+	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+
+}
+
 func (s *Storage) UpdateSlowLogCollectAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlanSQLV2) error {
 	raw, args := getBatchInsertRawSQL(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
@@ -312,6 +370,18 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 											  JSON_EXTRACT(values(info), '$.start_time'));`
 
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
+
+}
+
+func getBatchInsertRawSQLV2(auditPlanId uint, sqls []*OriginManageSQL) (raw string, args []interface{}) {
+	pattern := make([]string, 0, len(sqls))
+	for _, sql := range sqls {
+		pattern = append(pattern, "(?, ?, ?, ?, ?, ?,?, ?, ?)")
+		args = append(args, "audit_plan", auditPlanId, sql.ProjectId, sql.InstanceName, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.GetFingerprintMD5())
+	}
+	raw = fmt.Sprintf("INSERT INTO `origin_manage_sqls` (`source`,`source_id`,`project_id`,`instance_name`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`,`proj_fp_source_inst_schema_md5`) VALUES %s",
+		strings.Join(pattern, ", "))
+	return
 }
 
 func getBatchInsertRawSQL(auditPlanId uint, sqls []*AuditPlanSQLV2) (raw string, args []interface{}) {
