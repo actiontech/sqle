@@ -3,19 +3,25 @@ package auditplan
 import (
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/oracle"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Meta struct {
-	Type         string                                              `json:"audit_plan_type"`
-	Desc         string                                              `json:"audit_plan_type_desc"`
-	InstanceType string                                              `json:"instance_type"`
-	Params       params.Params                                       `json:"audit_plan_params,omitempty"`
-	CreateTask   func(entry *logrus.Entry, ap *model.AuditPlan) Task `json:"-"`
+	Type         string        `json:"audit_plan_type"`
+	Desc         string        `json:"audit_plan_type_desc"`
+	InstanceType string        `json:"instance_type"`
+	Params       params.Params `json:"audit_plan_params,omitempty"`
+	Metrics      []string
+	CreateTask   func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
+	Handler      AuditPlanHandler
+}
+
+type MetaBuilder struct {
+	Type          string
+	Desc          string
+	TaskHandlerFn func() interface{}
 }
 
 const (
@@ -44,7 +50,6 @@ const (
 const (
 	paramKeyCollectIntervalSecond               = "collect_interval_second"
 	paramKeyCollectIntervalMinute               = "collect_interval_minute"
-	paramKeySlowLogCollectInput                 = "slow_log_collect_input"
 	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
 	paramKeySQLMinSecond                        = "sql_min_second"
 	paramKeyDBInstanceId                        = "db_instance_id"
@@ -56,328 +61,99 @@ const (
 	paramKeyRegion                              = "region"
 )
 
-var Metas = []Meta{
+var MetaBuilderList = []MetaBuilder{
 	{
-		Type:         TypeDefault,
-		Desc:         "自定义",
-		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
+		Type:          TypeDefault,
+		Desc:          "自定义",
+		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
-		Type:         TypeMySQLSlowLog,
-		Desc:         "慢日志",
-		InstanceType: InstanceTypeMySQL,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟，仅对 mysql.slow_log 有效）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeySlowLogCollectInput,
-				Desc:  "采集来源。0：mysql-slow.log 文件；1：mysql.slow_log 表",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
-		CreateTask: NewSlowLogTask,
+		Type:          TypeMySQLMybatis,
+		Desc:          "Mybatis 扫描",
+		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
-		Type:         TypeMySQLMybatis,
-		Desc:         "Mybatis 扫描",
-		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
+		Type:          TypeMySQLSchemaMeta,
+		Desc:          "MySQL库表元数据",
+		TaskHandlerFn: NewMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
-		Type:         TypeMySQLSchemaMeta,
-		Desc:         "库表元数据",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewSchemaMetaTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "collect_view",
-				Desc:  "是否采集视图信息",
-				Value: "0",
-				Type:  params.ParamTypeBool,
-			},
-		},
+		Type:          TypeMySQLProcesslist,
+		Desc:          "processlist 列表",
+		TaskHandlerFn: NewMySQLProcessListTaskV2Fn(),
 	},
 	{
-		Type:         TypeMySQLProcesslist,
-		Desc:         "processlist 列表",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewMySQLProcesslistTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalSecond,
-				Desc:  "采集周期（秒）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeySQLMinSecond,
-				Desc:  "SQL 最小执行时间（秒）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
+		Type:          TypeAliRdsMySQLSlowLog,
+		Desc:          "阿里RDS MySQL慢日志",
+		TaskHandlerFn: NewMySQLSlowLogAliTaskV2Fn(),
 	},
 	{
-		Type:         TypeAliRdsMySQLSlowLog,
-		Desc:         "阿里RDS MySQL慢日志",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewAliRdsMySQLSlowLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyDBInstanceId,
-				Desc:  "实例ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyAccessKeyId,
-				Desc:  "Access Key ID",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyAccessKeySecret,
-				Desc:  "Access Key Secret",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大31天)",
-				Value: "",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyRdsPath,
-				Desc:  "RDS Open API地址",
-				Value: "rds.aliyuncs.com",
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeAliRdsMySQLAuditLog,
+		Desc:          "阿里RDS MySQL审计日志",
+		TaskHandlerFn: NewMySQLAuditLogAliTaskV2Fn(),
 	},
 	{
-		Type:         TypeAliRdsMySQLAuditLog,
-		Desc:         "阿里RDS MySQL审计日志",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewAliRdsMySQLAuditLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyDBInstanceId,
-				Desc:  "实例ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyAccessKeyId,
-				Desc:  "Access Key ID",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyAccessKeySecret,
-				Desc:  "Access Key Secret",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "启动任务时拉取日志时间范围(单位:小时,最大31天)",
-				Value: "",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyRdsPath,
-				Desc:  "RDS Open API地址",
-				Value: "rds.aliyuncs.com",
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeBaiduRdsMySQLSlowLog,
+		Desc:          "百度云RDS MySQL慢日志",
+		TaskHandlerFn: NewMySQLSlowLogBaiduTaskV2Fn(),
 	},
 	{
-		Type:         TypeBaiduRdsMySQLSlowLog,
-		Desc:         "百度云RDS MySQL慢日志",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewBaiduRdsMySQLSlowLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyDBInstanceId,
-				Desc:  "实例ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyAccessKeyId,
-				Desc:  "Access Key ID",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyAccessKeySecret,
-				Desc:  "Access Key Secret",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
-				// 百度云RDS慢日志只能拉取最近7天的数据
-				// https://cloud.baidu.com/doc/RDS/s/Tjwvz046g
-				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大7天)",
-				Value: "",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyRdsPath,
-				Desc:  "RDS Open API地址",
-				Value: "rds.bj.baidubce.com",
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeHuaweiRdsMySQLSlowLog,
+		Desc:          "华为云RDS MySQL慢日志",
+		TaskHandlerFn: NewMySQLSlowLogHuaweiTaskV2Fn(),
 	},
 	{
-		Type:         TypeHuaweiRdsMySQLSlowLog,
-		Desc:         "华为云RDS MySQL慢日志",
-		InstanceType: InstanceTypeMySQL,
-		CreateTask:   NewHuaweiRdsMySQLSlowLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyProjectId,
-				Desc:  "项目ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyDBInstanceId,
-				Desc:  "实例ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyAccessKeyId,
-				Desc:  "Access Key ID",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyAccessKeySecret,
-				Desc:  "Access Key Secret",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
-				Value: "",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyRegion,
-				Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeOracleTopSQL,
+		Desc:          "Oracle TOP SQL",
+		TaskHandlerFn: NewOracleTopSQLTaskV2Fn(),
 	},
 	{
-		Type:         TypeOracleTopSQL,
-		Desc:         "Oracle TOP SQL",
-		InstanceType: InstanceTypeOracle,
-		CreateTask:   NewOracleTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "top_n",
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "order_by_column",
-				Desc:  "V$SQLAREA中的排序字段",
-				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeAllAppExtract,
+		Desc:          "应用程序SQL抓取",
+		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
-		Type:         TypeAllAppExtract,
-		Desc:         "应用程序SQL抓取",
-		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
+		Type:          TypeTiDBAuditLog,
+		Desc:          "TiDB审计日志",
+		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
 	},
 	{
-		Type:         TypeTiDBAuditLog,
-		Desc:         "TiDB审计日志",
-		InstanceType: InstanceTypeTiDB,
-		CreateTask:   NewTiDBAuditLogTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
-	},
-	{
-		Type:         TypeSQLFile,
-		Desc:         "SQL文件",
-		InstanceType: InstanceTypeAll,
-		CreateTask:   NewDefaultTask,
+		Type:          TypeSQLFile,
+		Desc:          "SQL文件",
+		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 }
 
 var MetaMap = map[string]Meta{}
+var Metas = []Meta{}
+
+func buildMeta(b MetaBuilder) Meta {
+	task := b.TaskHandlerFn()
+
+	handler, ok := task.(AuditPlanHandler)
+	if !ok {
+		panic(fmt.Sprintf("task %s don't implement audit plan handler interface, ", b.Type))
+	}
+	taskMeta, ok := task.(AuditPlanMeta)
+	if !ok {
+		panic(fmt.Sprintf("task %s don't implement audit plan meta interface, ", b.Type))
+	}
+	return Meta{
+		Type:         b.Type,
+		Desc:         b.Desc,
+		InstanceType: taskMeta.InstanceType(),
+		Params:       taskMeta.Params(),
+		Metrics:      taskMeta.Metrics(),
+		Handler:      handler,
+		CreateTask:   NewTaskWrap(b.TaskHandlerFn),
+	}
+}
 
 func init() {
-	for _, meta := range Metas {
-		MetaMap[meta.Type] = meta
+	for _, b := range MetaBuilderList {
+		meta := buildMeta(b)
+		Metas = append(Metas, meta)
+		MetaMap[b.Type] = meta
 	}
 }
 
@@ -394,6 +170,17 @@ func GetMeta(typ string) (Meta, error) {
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
 		Params:       meta.Params.Copy(),
+		Metrics:      meta.Metrics,
 		CreateTask:   meta.CreateTask,
+		Handler:      meta.Handler,
 	}, nil
+}
+
+func GetSupportedScannerAuditPlanType() map[string]struct{} {
+	return map[string]struct{}{
+		TypeMySQLSlowLog: {},
+		TypeMySQLMybatis: {},
+		TypeSQLFile:      {},
+		TypeTiDBAuditLog: {},
+	}
 }
