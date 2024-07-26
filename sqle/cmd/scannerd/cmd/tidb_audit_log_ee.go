@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/tidb_audit_log"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,12 +21,12 @@ var (
 	tidbAuditLogPath string
 
 	tidbAuditLogCmd = &cobra.Command{
-		Use:   "tidb-audit-log",
+		Use:   pkgAP.TypeTiDBAuditLog,
 		Short: "Parse TiDB audit log file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tidb_audit_log.Params{
 				AuditLogPath: tidbAuditLogPath,
-				APName:       rootCmdFlags.auditPlanName,
+				InstanceApID: rootCmdFlags.instanceAuditPlanId,
 			}
 			log := logrus.WithField("scanner", "tidb-audit-log")
 			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
