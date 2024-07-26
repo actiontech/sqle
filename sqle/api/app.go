@@ -264,6 +264,20 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v1ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 
+		// instance audti plan 实例智能扫描任务
+		v1ProjectRouter.POST("/:project_name/instance_audit_plans", v1.CreateInstanceAuditPlan)
+		v1ProjectRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.DeleteInstanceAuditPlan)
+		v1ProjectRouter.PUT("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlan)
+		v1ProjectRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlanStatus)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans", v1.GetInstanceAuditPlans)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id", v1.GetInstanceAuditPlanDetail)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans", v1.GetInstanceAuditPlanOverview)
+
+		// audit plan; 智能扫描任务
+		v1ProjectRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/", v1.DeleteAuditPlanByType)
+		v1ProjectRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/", v1.UpdateAuditPlanStatus)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sqls", v1.GetInstanceAuditPlanSQLs)
+
 		// sql manager
 		v1ProjectRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
 		v1ProjectRouter.PATCH("/:project_name/sql_manages/batch", v1.BatchUpdateSqlManage)
@@ -315,13 +329,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+
 		// sql managers
 		v2ProjectRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
 
 		// scanner token auth
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-
+		v2ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	}
 
 	{
