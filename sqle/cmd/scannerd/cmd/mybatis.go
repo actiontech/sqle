@@ -19,7 +19,6 @@ var (
 	dir            string
 	skipErrorQuery bool
 	skipErrorXml   bool
-	skipAudit      bool
 	dbTypeXml      string
 	instNameXml    string
 	schemaNameXml  string
@@ -32,7 +31,6 @@ var (
 				XMLDir:         dir,
 				SkipErrorQuery: skipErrorQuery,
 				SkipErrorXml:   skipErrorXml,
-				SkipAudit:      skipAudit,
 				DbType:         dbTypeXml,
 				InstName:       instNameXml,
 				SchemaName:     schemaNameXml,
@@ -59,7 +57,6 @@ func init() {
 	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
 	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip the statement that the scanner failed to parse from within the xml file")
 	mybatisCmd.Flags().BoolVarP(&skipErrorXml, "skip-error-xml", "X", false, "skip the xml file that failed to parse")
-	mybatisCmd.Flags().BoolVarP(&skipAudit, "skip-audit", "K", false, "only upload sql to sqle, not audit")
 	mybatisCmd.Flags().StringVarP(&dbTypeXml, "db-type", "B", "", "database type")
 	mybatisCmd.Flags().StringVarP(&instNameXml, "instance-name", "I", "", "instance name")
 	mybatisCmd.Flags().StringVarP(&schemaNameXml, "schema-name", "C", "", "schema name")

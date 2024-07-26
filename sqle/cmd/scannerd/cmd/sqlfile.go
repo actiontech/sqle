@@ -29,7 +29,6 @@ var (
 				SQLDir:           dir,
 				SkipErrorQuery:   skipErrorQuery,
 				SkipErrorSqlFile: skipErrorSqlFile,
-				SkipAudit:        skipAudit,
 				DbType:           dbTypeSqlFile,
 				InstName:         instNameSqlFile,
 				SchemaName:       schemaNameSqlFile,
@@ -55,7 +54,6 @@ var (
 func init() {
 	sqlFileCmd.Flags().StringVarP(&dir, "dir", "D", "", "sql file directory")
 	sqlFileCmd.Flags().BoolVarP(&skipErrorSqlFile, "skip-error-sql-file", "S", false, "skip the sql file that failed to parse")
-	sqlFileCmd.Flags().BoolVarP(&skipAudit, "skip-sql-file-audit", "K", false, "only upload sql to sqle, not audit")
 	sqlFileCmd.Flags().StringVarP(&dbTypeSqlFile, "db-type", "B", "", "database type")
 	sqlFileCmd.Flags().StringVarP(&instNameSqlFile, "instance-name", "I", "", "instance name")
 	sqlFileCmd.Flags().StringVarP(&schemaNameSqlFile, "schema-name", "C", "", "schema name")

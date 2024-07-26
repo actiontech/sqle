@@ -19,7 +19,6 @@ type MyBatis struct {
 	xmlDir         string
 	skipErrorQuery bool
 	skipErrorXml   bool
-	skipAudit      bool
 	dbType         string
 	instName       string
 	schemaName     string
@@ -29,7 +28,6 @@ type Params struct {
 	XMLDir         string
 	SkipErrorQuery bool
 	SkipErrorXml   bool
-	SkipAudit      bool
 	DbType         string
 	InstName       string
 	SchemaName     string
@@ -40,7 +38,6 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 		xmlDir:         params.XMLDir,
 		skipErrorQuery: params.SkipErrorQuery,
 		skipErrorXml:   params.SkipErrorXml,
-		skipAudit:      params.SkipAudit,
 		dbType:         params.DbType,
 		instName:       params.InstName,
 		schemaName:     params.SchemaName,
@@ -53,10 +50,6 @@ func (mb *MyBatis) Run(ctx context.Context) error {
 	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, utils.MybatisFileSuffix)
 	if err != nil {
 		return err
-	}
-
-	if mb.skipAudit {
-		return nil
 	}
 
 	return common.DirectAudit(ctx, mb.c, sqls, mb.dbType, mb.instName, mb.schemaName)
