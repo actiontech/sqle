@@ -22,10 +22,16 @@ const (
 )
 
 type Param struct {
-	Key   string    `json:"key"`
-	Value string    `json:"value"`
-	Desc  string    `json:"desc"`
-	Type  ParamType `json:"type"`
+	Key   string       `json:"key"`
+	Value string       `json:"value"`
+	Desc  string       `json:"desc"`
+	Type  ParamType    `json:"type"`
+	Enums []EnumsValue `json:"enums"`
+}
+
+type EnumsValue struct {
+	Value string `json:"value"`
+	Desc  string `json:"desc"`
 }
 
 func (r *Params) SetParamValue(key, value string) error {
