@@ -84,7 +84,7 @@ func (at *BaseSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, 
 			return nil, fmt.Errorf("use schema fail, error: %v", err)
 		}
 		for _, table := range tables {
-			sql, err := db.ShowCreateTable(utils.SupplementalQuotationMarks(ap.InstanceDatabase), utils.SupplementalQuotationMarks(table))
+			sql, err := db.ShowCreateTable(utils.SupplementalQuotationMarks(schema), utils.SupplementalQuotationMarks(table))
 			if err != nil {
 				return nil, fmt.Errorf("show create table fail, error: %v", err)
 			}
