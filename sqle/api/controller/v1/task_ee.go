@@ -35,7 +35,7 @@ func getTaskAnalysisData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
-	instance, exist, err := dms.GetInstancesById(c.Request().Context(), task.InstanceId)
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), fmt.Sprintf("%d", task.InstanceId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

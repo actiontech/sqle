@@ -4,6 +4,7 @@
 package model
 
 import (
+	"database/sql"
 	e "errors"
 	"fmt"
 	"strings"
@@ -108,6 +109,18 @@ WHERE sm.deleted_at IS NULL  AND sm.project_id = ?
 	return sqlManageRuleTips, nil
 }
 
+func (s *Storage) GetSqlManagerRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
+	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
+	err := s.db.Table("origin_manage_sqls oms").
+		Joins("LEFT JOIN audit_plans_v2 ap ON ap.id = oms.source_id").
+		Joins("LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
+		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
+		Where("oms.audit_results LIKE CONCAT('%' , rules.name , '%') AND oms.project_id = ?", projectID).
+		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Scan(&sqlManageRuleTips).Error
+	return sqlManageRuleTips, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetSqlManageByFingerprintSourceInstNameSchemaMd5(projFpSourceInstSchemaMd5 string) (*SqlManage, bool, error) {
 	sqlManage := &SqlManage{}
 	err := s.db.Where("proj_fp_source_inst_schema_md5 = ?", projFpSourceInstSchemaMd5).First(sqlManage).Error
@@ -126,23 +139,24 @@ type SqlManageResp struct {
 }
 
 type SqlManageDetail struct {
-	ID                   uint         `json:"id"`
-	SqlFingerprint       string       `json:"sql_fingerprint"`
-	SqlText              string       `json:"sql_text"`
-	Source               string       `json:"source"`
-	AuditLevel           string       `json:"audit_level"`
-	AuditResults         AuditResults `json:"audit_results"`
-	FpCount              uint64       `json:"fp_count"`
-	AppearTimestamp      *time.Time   `json:"first_appear_timestamp"`
-	LastReceiveTimestamp *time.Time   `json:"last_receive_timestamp"`
-	InstanceName         string       `json:"instance_name"`
-	SchemaName           string       `json:"schema_name"`
-	Status               string       `json:"status"`
-	Remark               string       `json:"remark"`
-	Assignees            *string      `json:"assignees"`
-	ApName               *string      `json:"ap_name"`
-	SqlAuditRecordIDs    RowList      `json:"sql_audit_record_ids"`
-	Endpoints            RowList      `json:"endpoints"`
+	ID                   uint           `json:"id"`
+	SqlFingerprint       string         `json:"sql_fingerprint"`
+	SqlText              string         `json:"sql_text"`
+	Source               string         `json:"source"`
+	SourceID             string         `json:"source_id"`
+	AuditLevel           sql.NullString `json:"audit_level"`
+	AuditResults         AuditResults   `json:"audit_results"`
+	FpCount              uint64         `json:"fp_count"`
+	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
+	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
+	InstanceName         string         `json:"instance_name"`
+	SchemaName           string         `json:"schema_name"`
+	Status               sql.NullString `json:"status"`
+	Remark               sql.NullString `json:"remark"`
+	Assignees            *string        `json:"assignees"`
+	ApName               *string        `json:"ap_name"`
+	SqlAuditRecordIDs    RowList        `json:"sql_audit_record_ids"`
+	Endpoints            sql.NullString `json:"endpoints"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
@@ -274,6 +288,114 @@ AND sm.status = 'solved'
 {{ end }}
 `
 
+var sqlManagerTotalCount = `
+SELECT COUNT(DISTINCT oms.id)
+
+{{- template "body" . -}}
+`
+
+var sqlManagerQueryTpl = `
+SELECT 
+	oms.id,
+	oms.sql_fingerprint,
+	oms.sql_text,
+	oms.source,
+	oms.audit_level,
+	oms.audit_results,
+	oms.instance_name,
+	oms.schema_name,
+	oms.end_point as endpoints,
+	sm.status,
+	sm.remark,
+	sm.assignees as assignees,
+	iap.id as source_id
+
+{{- template "body" . -}} 
+
+ORDER BY 
+{{- if and .sort_field .sort_order }}
+	{{ .sort_field }} {{ .sort_order }}
+{{- else }}
+	oms.id desc
+{{- end }}
+
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var sqlManagerBodyTpl = `
+{{ define "body" }}
+
+FROM origin_manage_sqls oms
+         LEFT JOIN sql_managers sm ON sm.origin_manage_sql_id = oms.id
+		 LEFT JOIN audit_plans_v2 ap ON ap.id = oms.source_id
+		 LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id
+
+WHERE oms.project_id = :project_id
+  AND oms.deleted_at IS NULL
+  AND oms.audit_results IS NOT NULL
+
+{{- if .fuzzy_search_sql_fingerprint }}
+AND oms.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
+{{- end }}
+
+{{- if .filter_assignee }}
+AND sm.assignees REGEXP :filter_assignee
+{{- end }}
+
+{{- if .filter_instance_name }}
+AND oms.instance_name = :filter_instance_name
+{{- end }}
+
+{{- if .filter_source }}
+AND oms.source = :filter_source
+{{- end }}
+
+{{- if .filter_audit_level }}
+AND oms.audit_level in ({{range $index, $element := .filter_audit_level}}{{if $index}}, {{end}}'{{$element}}'{{end}})
+{{- end }}
+
+{{- if .filter_db_type }}
+AND iap.db_type = :filter_db_type
+{{- end }}
+
+{{- if .filter_rule_name }}
+AND JSON_CONTAINS(JSON_EXTRACT(oms.audit_results,'$[*].rule_name'), '"{{ .filter_rule_name }}"') > 0 
+{{- end }}
+
+{{- if .filter_last_audit_start_time_from }}
+AND oms.updated_at >= :filter_last_audit_start_time_from
+{{- end }}
+
+{{- if .filter_last_audit_start_time_to }}
+AND oms.updated_at <= :filter_last_audit_start_time_to
+{{- end }}
+
+{{- if .fuzzy_search_schema_name }}
+AND oms.schema_name LIKE '%{{ .fuzzy_search_schema_name }}%'
+{{- end }}
+
+{{- if .filter_status }}
+AND sm.status = :filter_status
+{{- end }}
+
+{{- if .filter_business }}
+AND iap.business = :filter_business
+{{- end }}
+
+{{- if .count_bad_sql }}
+AND ( oms.audit_level = 'warn' OR oms.audit_level = 'error' )
+AND sm.status = 'unhandled'
+{{- end }}
+
+{{- if .count_solved }}
+AND sm.status = 'solved'
+{{- end }}
+
+{{ end }}
+`
+
 // 获取大于等于传参的审核等级
 // 比如：传参的值为warn，需要返回的审核等级为warn和error；传参的值为notice，需要返回notice，warn和error
 func getAuditLevelsByLowestLevel(auditLevel string) []string {
@@ -304,12 +426,12 @@ func (s *Storage) GetSqlManageListByReq(data map[string]interface{}) (list *SqlM
 		data["filter_audit_level"] = getAuditLevelsByLowestLevel(auditLevelStr)
 	}
 
-	err = s.getListResult(sqlManageQueryTpl, sqlManageBodyTpl, data, &sqlManageList)
+	err = s.getListResult(sqlManagerQueryTpl, sqlManagerBodyTpl, data, &sqlManageList)
 	if err != nil {
 		return nil, err
 	}
 
-	totalCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, data)
+	totalCount, err := s.getCountResult(sqlManagerBodyTpl, sqlManagerTotalCount, data)
 	if err != nil {
 		return nil, err
 	}
@@ -323,12 +445,12 @@ func (s *Storage) GetSqlManageListByReq(data map[string]interface{}) (list *SqlM
 		return newData
 	}
 
-	badSqlCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, fn(data, "count_bad_sql"))
+	badSqlCount, err := s.getCountResult(sqlManagerBodyTpl, sqlManagerTotalCount, fn(data, "count_bad_sql"))
 	if err != nil {
 		return nil, err
 	}
 
-	solvedCount, err := s.getCountResult(sqlManageBodyTpl, sqlManageTotalCount, fn(data, "count_solved"))
+	solvedCount, err := s.getCountResult(sqlManagerBodyTpl, sqlManagerTotalCount, fn(data, "count_solved"))
 	if err != nil {
 		return nil, err
 	}
@@ -507,6 +629,31 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 	})
 }
 
+func (s *Storage) BatchUpdateSqlManager(idList []*uint64, status *string, remark *string, assignees []string) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		data := map[string]interface{}{}
+		if status != nil {
+			data["status"] = *status
+		}
+
+		if remark != nil {
+			data["remark"] = *remark
+		}
+
+		if len(assignees) != 0 {
+			data["assignees"] = strings.Join(assignees, ",")
+		}
+		if len(data) > 0 {
+			err := tx.Model(&SQLManager{}).Where("origin_manage_sql_id in (?)", idList).Updates(data).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
 	sqlManage := new(SqlManage)
 	err := s.db.Where("id = ?", id).First(&sqlManage).Error
@@ -519,6 +666,18 @@ func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
 	return sqlManage, true, nil
 }
 
+func (s *Storage) GetOriginManageSqlByID(id string) (*OriginManageSQL, bool, error) {
+	originManageSQL := new(OriginManageSQL)
+	err := s.db.Where("id = ?", id).First(&originManageSQL).Error
+	if err != nil {
+		if e.Is(gorm.ErrRecordNotFound, err) {
+			return originManageSQL, false, nil
+		}
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return originManageSQL, true, nil
+}
+
 func (s *Storage) GetSqlManageListByIDs(ids []*uint64) ([]*SqlManage, error) {
 	sqlManageList := []*SqlManage{}
 	err := s.db.Model(SqlManage{}).Where("id IN (?)", ids).Find(&sqlManageList).Error
@@ -526,4 +685,35 @@ func (s *Storage) GetSqlManageListByIDs(ids []*uint64) ([]*SqlManage, error) {
 		return nil, err
 	}
 	return sqlManageList, nil
+}
+
+func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManager, error) {
+	sqlManagerList := []*SQLManager{}
+	err := s.db.Model(SQLManager{}).Where("origin_manage_sql_id IN (?)", ids).Find(&sqlManagerList).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqlManagerList, nil
+}
+
+func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
+	query := `SELECT
+					count(oms.id)
+				FROM
+					origin_manage_sqls AS oms
+				LEFT JOIN sql_managers AS sm ON
+					sm.origin_manage_sql_id = oms.id 
+					AND sm.deleted_at IS NULL
+				WHERE
+					oms.source_id = ?
+					AND oms.deleted_at IS NULL
+					AND oms.audit_results IS NOT NULL
+					AND ((sm.status IS NULL)
+						OR (sm.status NOT IN(?)));`
+	var count int64
+	err := s.db.Raw(query, id, status).Count(&count).Error
+	if err != nil {
+		return count, errors.New(errors.ConnectStorageError, err)
+	}
+	return count, errors.ConnectStorageErrWrapper(err)
 }

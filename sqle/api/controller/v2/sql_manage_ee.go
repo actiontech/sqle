@@ -48,6 +48,7 @@ func getSqlManageList(c echo.Context) error {
 		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"filter_business":                   req.FilterBusiness,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
 		"fuzzy_search_schema_name":          req.FuzzySearchSchemaName,
 		"sort_field":                        req.SortField,
@@ -100,13 +101,12 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			})
 		}
 
-		source := &v1.Source{Type: sqlManage.Source}
-		if sqlManage.ApName != nil {
-			source.AuditPlanName = *sqlManage.ApName
+		source := &v1.Source{
+			SqlSourceType: sqlManage.Source,
+			SqlSourceID:   sqlManage.SourceID,
 		}
-		if len(sqlManage.SqlAuditRecordIDs) > 0 {
-			source.SqlAuditRecordIds = sqlManage.SqlAuditRecordIDs
-		}
+		auditPlanDesc := v1.ConvertAuditPlanDescByType(sqlManage.Source)
+		source.SqlSourceDesc = auditPlanDesc
 		sqlMgr.Source = source
 
 		if sqlManage.AppearTimestamp != nil {
@@ -125,9 +125,9 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			}
 		}
 
-		sqlMgr.Status = sqlManage.Status
-		sqlMgr.Remark = sqlManage.Remark
-		sqlMgr.Endpoints = sqlManage.Endpoints
+		sqlMgr.Status = sqlManage.Status.String
+		sqlMgr.Remark = sqlManage.Remark.String
+		sqlMgr.Endpoints = sqlManage.Endpoints.String
 
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}

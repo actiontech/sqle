@@ -3,8 +3,6 @@
 
 package auditplan
 
-import "github.com/actiontech/sqle/sqle/pkg/params"
-
 const (
 	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
@@ -16,7 +14,7 @@ const (
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
-	TypeTBaseSlowLog               = "TBase_slow_log"
+	TypeTBaseSlowLog             = "TBase_slow_log"
 )
 
 const (
@@ -30,228 +28,68 @@ const (
 )
 
 const (
-	paramKeyIndicator = "indicator"
-	paramKeyTopN      = "top_n"
+	paramKeyIndicator           = "indicator"
+	paramKeyTopN                = "top_n"
+	paramKeySlowLogCollectInput = "slow_log_collect_input"
 )
 
-var EEMetas = []Meta{
+var EEMetaBuilderList = []MetaBuilder{
 	{
-		Type:         TypeTDSQLSlowLog,
-		Desc:         "慢日志",
-		InstanceType: InstanceTypeTDSQL,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
-		CreateTask: NewSlowLogTask,
+		Type:          TypeTDSQLSlowLog,
+		Desc:          "慢日志",
+		TaskHandlerFn: NewTDMySQLSlowLogTaskV2Fn(),
 	},
 	{
-		Type:         TypeOceanBaseForMySQLTopSQL,
-		Desc:         "Top SQL",
-		InstanceType: InstanceTypeOceanBaseForMySQL,
-		CreateTask:   NewOBMySQLTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyTopN,
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyIndicator,
-				Desc:  "关注指标",
-				Value: OBMySQLIndicatorElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeOceanBaseForMySQLTopSQL,
+		Desc:          "Top SQL",
+		TaskHandlerFn: NewObForMysqlTopSQLTaskV2Fn(),
 	},
 	{
-		Type:         TypeDB2TopSQL,
-		Desc:         "DB2 Top SQL",
-		InstanceType: InstanceTypeDB2,
-		CreateTask:   NewDB2TopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyTopN,
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyIndicator,
-				Desc:  "关注指标",
-				Value: DB2IndicatorAverageElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeDB2TopSQL,
+		Desc:          "DB2 Top SQL",
+		TaskHandlerFn: NewDB2TopSQLTaskV2Fn(),
 	},
 	{
-		Type:         TypeDB2SchemaMeta,
-		Desc:         "库表元数据",
-		InstanceType: InstanceTypeDB2,
-		CreateTask:   NewDB2SchemaMetaTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "collect_view",
-				Desc:  "是否采集视图信息",
-				Value: "0",
-				Type:  params.ParamTypeBool,
-			},
-		},
+		Type:          TypeDB2SchemaMeta,
+		Desc:          "DB2库表元数据",
+		TaskHandlerFn: NewDB2SchemaMetaTaskV2Fn(),
 	},
 	{
-		Type:         TypeTDSQLSchemaMeta,
-		Desc:         "库表元数据",
-		InstanceType: InstanceTypeTDSQL,
-		CreateTask:   NewSchemaMetaTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-		},
+		Type:          TypeTDSQLSchemaMeta,
+		Desc:          "TDSQL库表元数据",
+		TaskHandlerFn: NewTDMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
-		Type:         TypePostgreSQLSchemaMeta,
-		Desc:         "库表元数据",
-		InstanceType: InstanceTypePostgreSQL,
-		CreateTask:   NewPostgreSQLSchemaMetaTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "collect_view",
-				Desc:  "是否采集视图信息",
-				Value: "0",
-				Type:  params.ParamTypeBool,
-			},
-		},
+		Type:          TypePostgreSQLSchemaMeta,
+		Desc:          "PostgreSQL库表元数据",
+		TaskHandlerFn: NewPGSchemaMetaTaskV2Fn(),
 	},
 	{
-		Type:         TypeDmTopSQL,
-		Desc:         "DM TOP SQL",
-		InstanceType: InstanceTypeDm,
-		CreateTask:   NewDmTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "top_n",
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "order_by_column",
-				Desc:  "排序字段",
-				Value: DmTopSQLMetricTotalExecTime,
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeDmTopSQL,
+		Desc:          "DM TOP SQL",
+		TaskHandlerFn: NewDmTopSQLTaskV2Fn(),
 	},
 	{
-		Type:         TypeObForOracleTopSQL,
-		Desc:         "OceanBase For Oracle TOP SQL",
-		InstanceType: InstanceTypeObForOracle,
-		CreateTask:   NewObForOracleTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "top_n",
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "order_by_column",
-				Desc:  "排序字段",
-				Value: DynPerformanceViewObForOracleColumnElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
+		Type:          TypeObForOracleTopSQL,
+		Desc:          "OceanBase For Oracle TOP SQL",
+		TaskHandlerFn: NewObForOracleTopSQLTaskV2Fn(),
 	},
 	{
-		Type:         TypePostgreSQLTopSQL,
-		Desc:         "TOP SQL",
-		InstanceType: InstanceTypePostgreSQL,
-		CreateTask:   NewPostgreSQLTopSQLTask,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "top_n",
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   "order_by_column",
-				Desc:  "排序字段",
-				Value: DynPerformanceViewPgSQLColumnElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		},
-	},
+		Type: TypePostgreSQLTopSQL,
+		Desc: "TOP SQL",
+
+		TaskHandlerFn: NewPGTopSQLTaskV2Fn()},
 	{
-		Type:         TypeTBaseSlowLog,
-		Desc:         "慢日志",
-		InstanceType: InstanceTypeTBase,
-		Params: []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		},
-		CreateTask: NewTBasePgLog,
+		Type:          TypeTBaseSlowLog,
+		Desc:          "慢日志",
+		TaskHandlerFn: NewTBaseSlowLogTaskV2Fn(),
 	},
 }
 
 func init() {
-	for _, meta := range EEMetas {
+	for _, b := range EEMetaBuilderList {
+		meta := buildMeta(b)
 		Metas = append(Metas, meta)
-		MetaMap[meta.Type] = meta
+		MetaMap[b.Type] = meta
 	}
 }
