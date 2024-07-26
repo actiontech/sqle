@@ -28,7 +28,7 @@ type SqlManage struct {
 	Assignees            []string          `json:"assignees"`
 	Status               string            `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
 	Remark               string            `json:"remark"`
-	Endpoints            []string          `json:"endpoints"`
+	Endpoints            string            `json:"endpoints"`
 }
 
 // GetSqlManageList
@@ -48,6 +48,7 @@ type SqlManage struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
+// @Param filter_business query string false "business"
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
 // @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)

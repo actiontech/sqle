@@ -262,14 +262,14 @@ func GetInstanceNamesInProject(ctx context.Context, projectUid string) ([]string
 	return ret, nil
 }
 
-func GetInstancesById(ctx context.Context, instanceId uint64) (*model.Instance, bool, error) {
-	if instanceId == 0 {
+func GetInstancesById(ctx context.Context, instanceId string) (*model.Instance, bool, error) {
+	if instanceId == "" {
 		return nil, false, nil
 	}
 
 	return getInstance(ctx, dmsV1.ListDBServiceReq{
 		PageSize:    1,
-		FilterByUID: strconv.FormatUint(instanceId, 10),
+		FilterByUID: instanceId,
 	})
 }
 
@@ -428,6 +428,40 @@ func GetAuditPlanWithInstanceFromProjectByName(projectId, name string, fn func(p
 		auditPlan.Instance = instance
 	}
 	return auditPlan, true, nil
+}
+
+func ListActiveAuditPlansWithInstanceV2(fn func() ([]*model.AuditPlanDetail, error)) ([]*model.AuditPlanDetail, error) {
+	auditPlans, err := fn()
+	if err != nil {
+		return nil, err
+	}
+
+	for i, item := range auditPlans {
+		instance, exists, err := GetInstanceInProjectByName(context.Background(), string(item.GetBaseInfo().ProjectId), item.InstanceName)
+		if err != nil {
+			continue
+		}
+		if exists {
+			auditPlans[i].Instance = instance
+			auditPlans[i].ProjectId = instance.ProjectId
+		}
+	}
+	return auditPlans, nil
+}
+func GetAuditPlansWithInstanceV2(id uint, fn func(id uint) (*model.AuditPlanDetail, error)) (*model.AuditPlanDetail, error) {
+	auditPlan, err := fn(id)
+	if err != nil {
+		return nil, err
+	}
+
+	instance, exists, err := GetInstanceInProjectByName(context.Background(), auditPlan.ProjectId, auditPlan.InstanceName)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		auditPlan.Instance = instance
+	}
+	return auditPlan, nil
 }
 
 func GetActiveAuditPlansWithInstance(fn func() ([]*model.AuditPlan, error)) ([]*model.AuditPlan, error) {

@@ -7,18 +7,73 @@ import (
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
+type AuditPlan struct {
+	ID               uint
+	ProjectId        string
+	Name             string
+	CronExpression   string
+	DBType           string
+	Token            string
+	InstanceName     string
+	SchemaName       string
+	CreateUserID     string
+	InstanceDatabase string
+	Type             string
+	RuleTemplateName string
+	Params           params.Params
+
+	Instance *model.Instance
+}
+
+func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
+	return &AuditPlan{
+		ID:               a.ID,
+		ProjectId:        string(a.ProjectId),
+		Name:             a.Name,
+		CronExpression:   a.CronExpression,
+		DBType:           a.DBType,
+		Token:            a.Token,
+		InstanceName:     a.InstanceName,
+		SchemaName:       a.InstanceDatabase,
+		CreateUserID:     a.CreateUserID,
+		InstanceDatabase: a.InstanceDatabase,
+		Type:             a.Type,
+		RuleTemplateName: a.RuleTemplateName,
+		Params:           a.Params,
+		Instance:         a.Instance,
+	}
+}
+
+func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
+	return &AuditPlan{
+		ID:        a.ID,
+		ProjectId: a.ProjectId,
+		Name:      a.InstanceName + "-" + a.Type,
+		// CronExpression:   "",
+		DBType:           a.DBType,
+		Token:            a.Token,
+		InstanceName:     a.InstanceName,
+		SchemaName:       a.SchemaName,
+		CreateUserID:     a.CreateUserID,
+		InstanceDatabase: a.SchemaName,
+		Type:             a.Type,
+		RuleTemplateName: a.RuleTemplateName,
+		Params:           a.Params,
+	}
+}
+
 var ErrAuditPlanNotExist = errors.New(errors.DataNotExist, fmt.Errorf("audit plan not exist"))
 var ErrAuditPlanExisted = errors.New(errors.DataExist, fmt.Errorf("audit plan existed"))
 
-func audit(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
+func auditV2(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
 	auditResultResp, err := task.Audit()
 	if err != nil {
 		return nil, err
@@ -47,29 +102,20 @@ func audit(auditPlanId uint, task Task) (*model.AuditPlanReportV2, error) {
 		return nil, err
 	}
 
-	go func() {
-		syncFromAuditPlan := NewSyncFromAuditPlan(auditPlanReport, auditResultResp.FilteredSqls, taskResp)
-		if err := syncFromAuditPlan.SyncSqlManager(); err != nil {
-			log.NewEntry().WithField("name", auditResultResp.AuditPlanID).Errorf("schedule to save sql manage failed, error: %v", err)
-		}
-	}()
-
 	return auditPlanReport, notification.NotifyAuditPlan(auditPlanId, auditPlanReport)
 }
 
-func Audit(entry *logrus.Entry, ap *model.AuditPlan) (*model.AuditPlanReportV2, error) {
+func Audit(entry *logrus.Entry, ap *AuditPlan) (*model.AuditPlanReportV2, error) {
 	task := NewTask(entry, ap)
-	return audit(ap.ID, task)
+	return auditV2(ap.ID, task)
 }
 
-func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartialSync bool) error {
-	go func() {
-		err := SyncToSqlManage(sqls, ap)
-		if err != nil {
-			log.NewEntry().WithField("name", ap.Name).Errorf("schedule to save sql manage failed, error: %v", err)
-		}
-	}()
+func UploadSQLsV2(entry *logrus.Entry, ap *AuditPlan, sqls []*SQL) error {
+	task := NewTask(entry, ap)
+	return task.FullSyncSQLs(sqls)
+}
 
+func UploadSQLs(entry *logrus.Entry, ap *AuditPlan, sqls []*SQL, isPartialSync bool) error {
 	task := NewTask(entry, ap)
 	if isPartialSync {
 		return task.PartialSyncSQLs(sqls)
@@ -78,14 +124,15 @@ func UploadSQLs(entry *logrus.Entry, ap *model.AuditPlan, sqls []*SQL, isPartial
 	}
 }
 
-func GetSQLs(entry *logrus.Entry, ap *model.AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+func GetSQLs(entry *logrus.Entry, ap *AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	args["audit_plan_id"] = ap.ID
+	args["audit_plan_type"] = ap.Type
 	task := NewTask(entry, ap)
 	return task.GetSQLs(args)
 }
 
 func init() {
-	server.OnlyRunOnLeaderJobs = append(server.OnlyRunOnLeaderJobs, NewManager)
+	server.OnlyRunOnLeaderJobs = append(server.OnlyRunOnLeaderJobs, NewManager, NewAuditPlanHandlerJob, NewAuditPlanAlertJob)
 }
 
 func NewManager(entry *logrus.Entry) server.ServerJob {
@@ -107,6 +154,7 @@ func NewManager(entry *logrus.Entry) server.ServerJob {
 
 // Manager is the struct managing the persistent AuditPlans.
 type Manager struct {
+	// v3.2407 Deprecated
 	scheduler *scheduler
 
 	// persist is a database handle which store AuditPlan.
@@ -124,7 +172,8 @@ type Manager struct {
 }
 
 func (mgr *Manager) Start() {
-	mgr.scheduler.start()
+	// 删除定时审核扫描任务定时任务，后续采集结束会直接审核保存
+	// mgr.scheduler.start()
 	mgr.logger.Infoln("audit plan manager started")
 
 	go func() {
@@ -148,7 +197,7 @@ func (mgr *Manager) Start() {
 func (mgr *Manager) sync() error {
 	// 全量同步智能扫描任务，仅需成功做一次
 	if !mgr.isFullSyncDone {
-		aps, err := dms.GetActiveAuditPlansWithInstance(mgr.persist.GetActiveAuditPlans)
+		aps, err := dms.ListActiveAuditPlansWithInstanceV2(mgr.persist.ListActiveAuditPlanDetail)
 		if err != nil {
 			return err
 		}
@@ -156,14 +205,14 @@ func (mgr *Manager) sync() error {
 		for _, v := range aps {
 			ap := v
 
-			err := mgr.startAuditPlan(ap)
+			err := mgr.startAuditPlan(ConvertModelToAuditPlanV2(ap))
 			if err != nil {
-				mgr.logger.WithField("name", ap.Name).Errorf("start audit task failed, error: %v", err)
+				mgr.logger.WithField("name", ap.Type).Errorf("start audit task failed, error: %v", err)
 			}
 		}
 	}
 	// 增量同步智能扫描任务，根据数据库记录的更新时间筛选，更新后将下次筛选的时间为上一次记录的最晚的更新时间。
-	aps, err := mgr.persist.GetLatestAuditPlanRecords(*mgr.lastSyncTime)
+	aps, err := mgr.persist.GetLatestAuditPlanRecordsV2(*mgr.lastSyncTime)
 	if err != nil {
 		return err
 	}
@@ -172,7 +221,7 @@ func (mgr *Manager) sync() error {
 		ap := v
 		err := mgr.syncTask(ap.ID)
 		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("sync audit task failed, error: %v", err)
+			mgr.logger.WithField("id", ap.ID).Errorf("sync audit task failed, error: %v", err)
 		}
 		mgr.lastSyncTime = &ap.UpdatedAt
 	}
@@ -195,24 +244,18 @@ func (mgr *Manager) Stop() {
 }
 
 func (mgr *Manager) syncTask(auditPlanId uint) error {
-	ap, exist, err := mgr.persist.GetActiveAuditPlanById(auditPlanId)
+	ap, exist, err := mgr.persist.GetActiveAuditPlanByIdV2(auditPlanId)
 	if err != nil {
 		return err
 	}
 	if !exist {
 		return mgr.deleteAuditPlan(auditPlanId)
 	} else {
-		return mgr.startAuditPlan(ap)
+		return mgr.startAuditPlan(ConvertModelToAuditPlanV2(ap))
 	}
 }
 
-func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
-	if mgr.scheduler.hasJob(ap.ID) {
-		err := mgr.scheduler.removeJob(mgr.logger, ap.ID)
-		if err != nil {
-			return err
-		}
-	}
+func (mgr *Manager) startAuditPlan(ap *AuditPlan) error {
 	task, ok := mgr.tasks[ap.ID]
 	if ok {
 		err := task.Stop()
@@ -227,12 +270,7 @@ func (mgr *Manager) startAuditPlan(ap *model.AuditPlan) error {
 	}
 	mgr.tasks[ap.ID] = task
 
-	return mgr.scheduler.addJob(mgr.logger, ap, func() {
-		_, err := audit(ap.ID, task)
-		if err != nil {
-			mgr.logger.WithField("name", ap.Name).Errorf("schedule to audit task failed, error: %v", err)
-		}
-	})
+	return nil
 }
 
 func (mgr *Manager) deleteAuditPlan(id uint) error {
@@ -285,7 +323,7 @@ func (s *scheduler) removeJob(entry *logrus.Entry, auditPlanId uint) error {
 	return nil
 }
 
-func (s *scheduler) addJob(entry *logrus.Entry, ap *model.AuditPlan, do func()) error {
+func (s *scheduler) addJob(entry *logrus.Entry, ap *AuditPlan, do func()) error {
 	_, ok := s.entryIDs[ap.ID]
 	if ok {
 		return ErrAuditPlanExisted
