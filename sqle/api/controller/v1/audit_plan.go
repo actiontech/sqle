@@ -57,10 +57,11 @@ type AuditPlanMetaV1 struct {
 }
 
 type AuditPlanParamResV1 struct {
-	Key   string `json:"key"`
-	Desc  string `json:"desc"`
-	Value string `json:"value"`
-	Type  string `json:"type" enums:"string,int,bool,password"`
+	Key         string              `json:"key"`
+	Desc        string              `json:"desc"`
+	Value       string              `json:"value"`
+	Type        string              `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []params.EnumsValue `json:"enums_value"`
 }
 
 func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
@@ -77,10 +78,11 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 				val = ""
 			}
 			paramRes := AuditPlanParamResV1{
-				Key:   p.Key,
-				Desc:  p.Desc,
-				Type:  string(p.Type),
-				Value: val,
+				Key:         p.Key,
+				Desc:        p.Desc,
+				Type:        string(p.Type),
+				Value:       val,
+				EnumsValues: p.Enums,
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}
@@ -936,7 +938,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, false))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, auditplan.ConvertModelToAuditPlan(ap), sqls, false))
 }
 
 type PartialSyncAuditPlanSQLsReqV1 struct {
@@ -991,7 +993,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, true))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, auditplan.ConvertModelToAuditPlan(ap), sqls, true))
 }
 
 func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV1) ([]*auditplan.SQL, error) {
@@ -1077,6 +1079,7 @@ type TriggerAuditPlanResV1 struct {
 	Data AuditPlanReportResV1 `json:"data"`
 }
 
+// @Deprecated v3.2407
 // @Summary 触发扫描任务
 // @Description trigger audit plan
 // @Id triggerAuditPlanV1
@@ -1101,7 +1104,7 @@ func TriggerAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanNotExist)
 	}
 
-	report, err := auditplan.Audit(log.NewEntry(), ap)
+	report, err := auditplan.Audit(log.NewEntry(), auditplan.ConvertModelToAuditPlan(ap))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1361,7 +1364,7 @@ type AuditPlanSQLResV1 struct {
 }
 
 type AuditPlanSQLHeadV1 struct {
-	Name string `json:"name"`
+	Name string `json:"field_name"`
 	Desc string `json:"desc"`
 	Type string `json:"type,omitempty" enums:"sql"`
 }
@@ -1404,7 +1407,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		"offset": offset,
 	}
 
-	head, rows, count, err := auditplan.GetSQLs(log.NewEntry(), ap, data)
+	head, rows, count, err := auditplan.GetSQLs(log.NewEntry(), auditplan.ConvertModelToAuditPlan(ap), data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

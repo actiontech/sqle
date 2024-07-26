@@ -326,14 +326,14 @@ func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV2, blackList []*model.BlackLi
 	return filteredSQLs
 }
 
-func convertToModelAuditPlanSQL(c echo.Context, auditPlan *model.AuditPlan, reqSQLs []*AuditPlanSQLReqV2) ([]*auditplan.SQL, error) {
+func convertToModelAuditPlanSQL(dbType string, reqSQLs []*AuditPlanSQLReqV2) ([]*auditplan.SQL, error) {
 	var p driver.Plugin
 	var err error
 
 	// lazy load driver
 	initDriver := func() error {
 		if p == nil {
-			p, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), auditPlan.DBType)
+			p, err = common.NewDriverManagerWithoutCfg(log.NewEntry(), dbType)
 			if err != nil {
 				return err
 			}
@@ -456,11 +456,11 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	if len(reqSQLs) == 0 {
 		return controller.JSONBaseErrorReq(c, nil)
 	}
-	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
+	sqls, err := convertToModelAuditPlanSQL(ap.DBType, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, true))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, auditplan.ConvertModelToAuditPlan(ap), sqls, true))
 }
 
 type FullSyncAuditPlanSQLsReqV2 struct {
@@ -510,10 +510,62 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 	if len(reqSQLs) == 0 {
 		return controller.JSONBaseErrorReq(c, nil)
 	}
-	sqls, err := convertToModelAuditPlanSQL(c, ap, reqSQLs)
+	sqls, err := convertToModelAuditPlanSQL(ap.DBType, reqSQLs)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, ap, sqls, false))
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLs(l, auditplan.ConvertModelToAuditPlan(ap), sqls, false))
+}
+
+type UploadInstanceAuditPlanSQLsReqV2 struct {
+	SQLs []*AuditPlanSQLReqV2 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+}
+
+// UploadIntanceAuditPlanSQLs
+// @Summary 同步SQL到扫描任务
+// @Description upload intance audit plan SQLs
+// @Id UploadInstanceAuditPlanSQLsV2
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path int true "instance audit plan id"
+// @Param audit_plan_type path string true "audit plan type"
+// @Param sqls body v2.UploadInstanceAuditPlanSQLsReqV2 true "upload instance audit plan SQLs request"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload [post]
+func UploadInstanceAuditPlanSQLs(c echo.Context) error {
+	req := new(UploadInstanceAuditPlanSQLsReqV2)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	iapID, err := strconv.Atoi(c.Param("instance_audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	apType := c.Param("audit_plan_type")
+
+	s := model.GetStorage()
+
+	ap, err := s.GetAuditPlanDetailByIDType(iapID, apType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	l := log.NewEntry()
+	reqSQLs := req.SQLs
+	blackList, err := s.GetBlackListAuditPlanSQLs()
+	if err == nil {
+		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
+	} else {
+		l.Warnf("blacklist is not used, err:%v", err)
+	}
+	if len(reqSQLs) == 0 {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
+	sqls, err := convertToModelAuditPlanSQL(ap.DBType, reqSQLs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLsV2(l, auditplan.ConvertModelToAuditPlanV2(ap), sqls))
 }
