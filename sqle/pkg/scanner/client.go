@@ -33,6 +33,14 @@ const (
 	GetAuditReport = "/sqle/v1/projects/%v/audit_plans/%s/reports/%v/sqls?page_index=%d&page_size=%d"
 )
 
+// %s = project name
+// %s = instance audit plan id
+// %s = instance audit plan type
+const (
+	// Post
+	UploadSQL = "/sqle/v2/projects/%v/instance_audit_plans/%s/audit_plans/%s/sqls/upload"
+)
+
 type (
 	BaseRes                     = controller.BaseRes
 	GetAuditPlanReportSQLsRes   = v1.GetAuditPlanReportSQLsResV1
@@ -75,7 +83,7 @@ func (sc *Client) WithProject(project string) *Client {
 	return &sc2
 }
 
-func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []*AuditPlanSQLReq) error {
+func (sc *Client) UploadReq(uri string, instanceAuditPlanID string, auditPlanType string, sqlList []*AuditPlanSQLReq) error {
 	bodyBuf := &bytes.Buffer{}
 	encoder := json.NewEncoder(bodyBuf)
 	encoder.SetEscapeHTML(false)
@@ -86,7 +94,7 @@ func (sc *Client) UploadReq(uri string, auditPlanName string, sqlList []*AuditPl
 		return err
 	}
 
-	url := sc.baseURL + fmt.Sprintf(uri, sc.project, auditPlanName)
+	url := sc.baseURL + fmt.Sprintf(uri, sc.project, instanceAuditPlanID, auditPlanType)
 	resBody, err := sc.httpClient.sendRequest(context.TODO(), url, http.MethodPost, sc.token, bytes.NewBuffer(bodyBuf.Bytes()))
 	if err != nil {
 		return err

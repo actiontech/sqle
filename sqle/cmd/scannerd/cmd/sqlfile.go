@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 
+	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
+
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -19,12 +21,13 @@ var (
 	skipErrorSqlFile bool
 
 	sqlFileCmd = &cobra.Command{
-		Use:   "sqlFile",
+		Use:   pkgAP.TypeSQLFile,
 		Short: "Parse sql file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &sqlFile.Params{
 				SQLDir:           dir,
-				APName:           rootCmdFlags.auditPlanName,
+				InstanceAPID:     rootCmdFlags.instanceAuditPlanId,
+				AuditPlanType:    rootCmdFlags.instanceAuditPlanId,
 				SkipErrorQuery:   skipErrorQuery,
 				SkipErrorSqlFile: skipErrorSqlFile,
 				SkipAudit:        skipAudit,

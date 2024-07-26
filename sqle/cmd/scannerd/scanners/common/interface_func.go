@@ -2,14 +2,14 @@ package common
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 )
 
-func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName string) error {
+func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, instAPID, auditPlanType string) error {
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(sqls))
 
@@ -32,7 +32,7 @@ func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, apName 
 		})
 	}
 
-	err := c.UploadReq(scanner.FullUpload, apName, reqBody)
+	err := c.UploadReq(scanner.UploadSQL, instAPID, auditPlanType, reqBody)
 	return err
 }
 
