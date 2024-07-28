@@ -423,7 +423,7 @@ func getTestCreateTableStmt12() *ast.CreateTableStmt {
 	baseCreateQuery := `
 		CREATE TABLE exist_db.exist_tb_12 (
 			id INT NOT NULL AUTO_INCREMENT,
-			data VARCHAR(255) NOT NULL,
+			v1 VARCHAR(255) NOT NULL,
 			UNIQUE KEY unique_id (id)
 		);
 	`
