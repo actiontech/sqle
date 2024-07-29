@@ -40,9 +40,6 @@ definitions:
       rule_template_name:
         example: default_MySQL
         type: string
-      schema_name:
-        example: test
-        type: string
     type: object
   v1.AuditPlanCount:
     properties:
@@ -137,9 +134,6 @@ definitions:
         type: object
       rule_template_name:
         example: default_MySQL
-        type: string
-      schema_name:
-        example: test
         type: string
     type: object
   v1.AuditPlanResV1:
@@ -2110,7 +2104,6 @@ definitions:
         example: test
         type: string
       instance_name:
-        description: InstanceId   string `json:"instance_id"   example:"test_mysql"`
         example: test_mysql
         type: string
       instance_type:
@@ -2133,9 +2126,6 @@ definitions:
         type: string
       audit_plan_instance_name:
         example: test_mysql
-        type: string
-      audit_plan_instance_schema_name:
-        example: app1
         type: string
       audit_plan_rule_template:
         $ref: '#/definitions/v1.AuditPlanRuleTemplate'
