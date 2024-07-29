@@ -42,6 +42,7 @@ var (
 
 type GetAuditPlanMetasReqV1 struct {
 	FilterInstanceType *string `json:"filter_instance_type" query:"filter_instance_type"`
+	FilterInstanceID   string  `json:"filter_instance_id" query:"filter_instance_id"`
 }
 
 type GetAuditPlanMetasResV1 struct {
@@ -62,6 +63,37 @@ type AuditPlanParamResV1 struct {
 	Value       string              `json:"value"`
 	Type        string              `json:"type" enums:"string,int,bool,password"`
 	EnumsValues []params.EnumsValue `json:"enums_value"`
+}
+
+func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
+	res := AuditPlanMetaV1{
+		Type:         meta.Type,
+		Desc:         meta.Desc,
+		InstanceType: meta.InstanceType,
+	}
+	if meta.Params != nil && len(meta.Params) > 0 {
+		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
+		for _, p := range meta.Params {
+			val := p.Value
+			if p.Type == params.ParamTypePassword {
+				val = ""
+			}
+			paramRes := AuditPlanParamResV1{
+				Key:         p.Key,
+				Desc:        p.Desc,
+				Type:        string(p.Type),
+				Value:       val,
+				EnumsValues: p.Enums,
+			}
+			if enumValues := auditplan.GetEnumsByInstanceId(p.Key, instanceId); enumValues != nil {
+				paramRes.EnumsValues = enumValues
+			}
+
+			paramsRes = append(paramsRes, paramRes)
+		}
+		res.Params = paramsRes
+	}
+	return res
 }
 
 func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
@@ -97,6 +129,7 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 // @Tags audit_plan
 // @Security ApiKeyAuth
 // @Param filter_instance_type query string false "filter instance type"
+// @Param filter_instance_id query string false "filter instance id"
 // @Success 200 {object} v1.GetAuditPlanMetasResV1
 // @router /v1/audit_plan_metas [get]
 func GetAuditPlanMetas(c echo.Context) error {
@@ -110,7 +143,7 @@ func GetAuditPlanMetas(c echo.Context) error {
 		if req.FilterInstanceType == nil ||
 			meta.InstanceType == auditplan.InstanceTypeAll ||
 			meta.InstanceType == *req.FilterInstanceType {
-			metas = append(metas, ConvertAuditPlanMetaToRes(meta))
+			metas = append(metas, ConvertAuditPlanMetaWithInstanceIdToRes(meta, req.FilterInstanceID))
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{

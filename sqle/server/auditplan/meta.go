@@ -1,8 +1,13 @@
 package auditplan
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/sirupsen/logrus"
@@ -59,6 +64,7 @@ const (
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
 	paramKeyProjectId                           = "project_id"
 	paramKeyRegion                              = "region"
+	paramKeySchema                              = "schema"
 )
 
 var MetaBuilderList = []MetaBuilder{
@@ -179,8 +185,65 @@ func GetMeta(typ string) (Meta, error) {
 func GetSupportedScannerAuditPlanType() map[string]struct{} {
 	return map[string]struct{}{
 		TypeMySQLSlowLog: {},
-		TypeMySQLMybatis: {},
-		TypeSQLFile:      {},
 		TypeTiDBAuditLog: {},
 	}
+}
+
+const (
+	ParamsKeySchema = paramKeySchema
+)
+
+func GetEnumsByInstanceId(paramKey, instanceId string) (enumsValues []params.EnumsValue) {
+	logger := log.NewEntry()
+
+	switch paramKey {
+	case paramKeySchema:
+		if instanceId == "" {
+			return
+		}
+		inst, exist, err := dms.GetInstancesById(context.Background(), instanceId)
+		if err != nil {
+			logger.Errorf("can't find instance by id, %v", instanceId)
+			return
+		}
+		if !exist {
+			return
+		}
+		if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+			logger.Errorf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+			return
+		}
+
+		plugin, err := driver.GetPluginManager().OpenPlugin(logger, inst.DbType, &driverV2.Config{
+			DSN: &driverV2.DSN{
+				Host:             inst.Host,
+				Port:             inst.Port,
+				User:             inst.User,
+				Password:         inst.Password,
+				AdditionalParams: inst.AdditionalParams,
+			},
+		})
+		if err != nil {
+			logger.Errorf("get plugin failed, error: %v", err)
+			return
+		}
+		defer plugin.Close(context.Background())
+
+		schemas, err := plugin.Schemas(context.Background())
+		if err != nil {
+			logger.Errorf("show schema failed, error: %v", err)
+			return
+		}
+
+		for _, schema := range schemas {
+			enumsValues = append(enumsValues, params.EnumsValue{
+				Value: schema,
+				Desc:  schema,
+			})
+		}
+	default:
+		return
+	}
+	return
+
 }
