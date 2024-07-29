@@ -60,7 +60,7 @@ func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 		SourceId:     ap.ID,
 		ProjectId:    ap.ProjectId,
 		InstanceName: ap.InstanceName,
-		SchemaName:   ap.SchemaName,
+		SchemaName:   sql.Schema,
 		SQLContent:   sql.SQLContent,
 		Fingerprint:  sql.Fingerprint,
 	}
