@@ -78,6 +78,12 @@ var doc = `{
                         "description": "filter instance type",
                         "name": "filter_instance_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {

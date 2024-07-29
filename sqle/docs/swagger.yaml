@@ -4597,6 +4597,10 @@ paths:
         in: query
         name: filter_instance_type
         type: string
+      - description: filter instance id
+        in: query
+        name: filter_instance_id
+        type: string
       responses:
         "200":
           description: OK
