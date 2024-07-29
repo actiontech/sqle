@@ -95,11 +95,11 @@ func (s *Storage) getAuditPlanDetailByID(id uint) (*AuditPlanDetail, bool, error
 		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_name,instance_audit_plans.create_user_id").
 		Where("audit_plans_v2.active_status = ? AND instance_audit_plans.active_status = ?", ActiveStatusNormal, ActiveStatusNormal).
 		Scan(&ap).Error
-
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	} else if err != nil {
+	if err != nil {
 		return ap, false, errors.New(errors.ConnectStorageError, err)
+	}
+	if ap == nil {
+		return nil, false, nil
 	}
 	return ap, true, nil
 }
