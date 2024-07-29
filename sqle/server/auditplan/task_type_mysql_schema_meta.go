@@ -277,6 +277,10 @@ func (at *BaseSchemaMetaTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, a
 			Type: "sql",
 		},
 		{
+			Name: model.AuditResultName,
+			Desc: model.AuditResultDesc,
+		},
+		{
 			Name: "schema_name",
 			Desc: "schema",
 		},
@@ -287,10 +291,6 @@ func (at *BaseSchemaMetaTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, a
 		{
 			Name: MetricNameMetaType,
 			Desc: "对象类型",
-		},
-		{
-			Name: model.AuditResultName,
-			Desc: model.AuditResultDesc,
 		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
