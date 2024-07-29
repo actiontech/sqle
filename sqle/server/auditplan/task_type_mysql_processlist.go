@@ -121,15 +121,14 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
+
 	db, err := executor.NewExecutor(logger, &driverV2.DSN{
 		Host:             instance.Host,
 		Port:             instance.Port,
 		User:             instance.User,
 		Password:         instance.Password,
 		AdditionalParams: instance.AdditionalParams,
-		DatabaseName:     ap.InstanceDatabase,
-	},
-		ap.InstanceDatabase)
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
 	}
@@ -182,5 +181,5 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 }
 
 func (at *MySQLProcessListTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	return nil, nil, 0, nil
+	return baseTaskGetSQLs(args, persist)
 }

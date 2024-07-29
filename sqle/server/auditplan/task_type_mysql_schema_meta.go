@@ -41,6 +41,7 @@ func (at *BaseSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, 
 	if ap.InstanceName == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
+
 	sqls := []*SchemaMetaSQL{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
@@ -54,9 +55,7 @@ func (at *BaseSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, 
 		User:             instance.User,
 		Password:         instance.Password,
 		AdditionalParams: instance.AdditionalParams,
-		DatabaseName:     ap.InstanceDatabase,
-	},
-		ap.InstanceDatabase)
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
 	}

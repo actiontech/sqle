@@ -24,7 +24,6 @@ type AuditPlan struct {
 	Token            string
 	InstanceName     string
 	CreateUserID     string
-	InstanceDatabase string
 	Type             string
 	RuleTemplateName string
 	Params           params.Params
@@ -42,7 +41,6 @@ func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
 		Token:            a.Token,
 		InstanceName:     a.InstanceName,
 		CreateUserID:     a.CreateUserID,
-		InstanceDatabase: a.InstanceDatabase,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
 		Params:           a.Params,
@@ -59,7 +57,6 @@ func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
 		Token:            a.Token,
 		InstanceName:     a.InstanceName,
 		CreateUserID:     a.CreateUserID,
-		InstanceDatabase: a.SchemaName,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
 		Params:           a.Params,
