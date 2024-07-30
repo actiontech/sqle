@@ -31,26 +31,28 @@ func (at *PGTopSQLTaskV2) InstanceType() string {
 	return InstanceTypePostgreSQL
 }
 
-func (at *PGTopSQLTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "top_n",
-			Desc:  "Top N",
-			Value: "3",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "order_by_column",
-			Desc:  "排序字段",
-			Value: DynPerformanceViewPgSQLColumnElapsedTime,
-			Type:  params.ParamTypeString,
-		},
+func (at *PGTopSQLTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: DynPerformanceViewPgSQLColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		}
 	}
 }
 
@@ -187,11 +189,12 @@ func (at *PGTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	// 设置默认数据库为：postgres，因为连接PG必须指定数据库
-	if len(ap.InstanceDatabase) == 0 {
-		ap.InstanceDatabase = "postgres"
-	}
+	schema := ap.Params.GetParam(paramKeySchema).String()
 
+	// 设置默认数据库为：postgres，因为连接PG必须指定数据库
+	if len(schema) == 0 {
+		schema = "postgres"
+	}
 	// 超时2分钟
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
@@ -200,7 +203,7 @@ func (at *PGTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 
-	sqls, err := at.queryTopSQLsForPg(inst, ap.InstanceDatabase, ap.Params.GetParam("order_by_column").String(),
+	sqls, err := at.queryTopSQLsForPg(inst, schema, ap.Params.GetParam("order_by_column").String(),
 		ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)

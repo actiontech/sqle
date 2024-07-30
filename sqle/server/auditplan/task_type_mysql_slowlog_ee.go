@@ -33,29 +33,31 @@ func (at *SlowLogTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *SlowLogTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟，仅对 mysql.slow_log 有效）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeySlowLogCollectInput,
-			Desc:  "采集来源",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-			Enums: []params.EnumsValue{
-				{Value: "0", Desc: "从slow.log 文件采集,需要适配scanner"}, {Value: "1", Desc: "从mysql.slow_log 表采集"},
+func (at *SlowLogTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟，仅对 mysql.slow_log 有效）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
 			},
-		},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeySlowLogCollectInput,
+				Desc:  "采集来源",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+				Enums: []params.EnumsValue{
+					{Value: "0", Desc: "从slow.log 文件采集,需要适配scanner"}, {Value: "1", Desc: "从mysql.slow_log 表采集"},
+				},
+			},
+		}
 	}
 }
 
@@ -183,9 +185,7 @@ func (at *SlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist
 		User:             instance.User,
 		Password:         instance.Password,
 		AdditionalParams: instance.AdditionalParams,
-		DatabaseName:     ap.InstanceDatabase,
-	},
-		ap.InstanceDatabase)
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
 	}

@@ -31,26 +31,28 @@ func (at *DmTopSQLTaskV2) InstanceType() string {
 	return InstanceTypeDm
 }
 
-func (at *DmTopSQLTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "top_n",
-			Desc:  "Top N",
-			Value: "3",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "order_by_column",
-			Desc:  "排序字段",
-			Value: DmTopSQLMetricTotalExecTime,
-			Type:  params.ParamTypeString,
-		},
+func (at *DmTopSQLTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "排序字段",
+				Value: DmTopSQLMetricTotalExecTime,
+				Type:  params.ParamTypeString,
+			},
+		}
 	}
 }
 
@@ -202,7 +204,7 @@ func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 
-	sqls, err := at.queryTopSQLsForDm(inst, ap.InstanceDatabase, ap.Params.GetParam("order_by_column").String(),
+	sqls, err := at.queryTopSQLsForDm(inst, "", ap.Params.GetParam("order_by_column").String(),
 		ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)

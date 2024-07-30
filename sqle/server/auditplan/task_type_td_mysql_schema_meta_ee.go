@@ -25,13 +25,15 @@ func (at *TDMySQLSchemaMetaTaskV2) InstanceType() string {
 	return InstanceTypeTDSQL
 }
 
-func (at *TDMySQLSchemaMetaTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
+func (at *TDMySQLSchemaMetaTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+		}
 	}
 }

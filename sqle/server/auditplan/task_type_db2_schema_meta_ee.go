@@ -85,12 +85,11 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 		User:             instance.User,
 		Password:         instance.Password,
 		AdditionalParams: instance.AdditionalParams,
-		// DatabaseName:     ap.InstanceDatabase,
 	}})
 	if err != nil {
 		return nil, fmt.Errorf("connect to instance fail, %v", err)
 	}
-	tempVariableName := fmt.Sprintf("%v.sqle_get_ddl_token", ap.InstanceDatabase)
+	tempVariableName := fmt.Sprintf("%v.sqle_get_ddl_token", ap.ID)
 	valIsCreated := false
 	defer func() {
 		if valIsCreated {
@@ -110,16 +109,16 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 	sqls := []*SchemaMetaSQL{}
 
 	for _, schema := range schemas {
-		tables, err := at.getTablesFromSchema(context.Background(), plugin, ap.InstanceDatabase)
+		tables, err := at.getTablesFromSchema(context.Background(), plugin, schema)
 		if err != nil {
-			return nil, fmt.Errorf("get tables from schema [%v] failed, error: %v", ap.InstanceDatabase, err)
+			return nil, fmt.Errorf("get tables from schema [%v] failed, error: %v", schema, err)
 		}
 
 		var views []string
 		if ap.Params.GetParam("collect_view").Bool() {
-			views, err = at.getViewsFromSchema(context.Background(), plugin, ap.InstanceDatabase)
+			views, err = at.getViewsFromSchema(context.Background(), plugin, schema)
 			if err != nil {
-				return nil, fmt.Errorf("get views from schema [%v] failed, error: %v", ap.InstanceDatabase, err)
+				return nil, fmt.Errorf("get views from schema [%v] failed, error: %v", schema, err)
 			}
 		}
 
@@ -129,7 +128,7 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 		}
 		valIsCreated = true
 		for _, table := range tables {
-			sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',%v)`, ap.InstanceDatabase, table, tempVariableName)
+			sql := fmt.Sprintf(`CALL SYSPROC.DB2LK_GENERATE_DDL('-t %v.%v -e',%v)`, schema, table, tempVariableName)
 			_, err = plugin.Exec(context.Background(), sql)
 			if err != nil {
 				logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
@@ -152,7 +151,7 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 				createTableDDL = value.Value
 			}
 			if createTableDDL == "" {
-				logger.Errorf("get empty create table ddl for table %v.%v", ap.InstanceDatabase, table)
+				logger.Errorf("get empty create table ddl for table %v.%v", schema, table)
 				continue
 			}
 			sqls = append(sqls, &SchemaMetaSQL{
@@ -164,7 +163,7 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 		}
 
 		for _, view := range views {
-			sql := fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',%v)`, ap.InstanceDatabase, view, tempVariableName)
+			sql := fmt.Sprintf(`call SYSPROC.DB2LK_GENERATE_DDL('-v %v.%v -e',%v)`, schema, view, tempVariableName)
 			_, err = plugin.Exec(context.Background(), sql)
 			if err != nil {
 				logger.Errorf("generate ddl failed, sql: %s, error: %v", sql, err)
@@ -187,7 +186,7 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 				createViewDDL = value.Value
 			}
 			if createViewDDL == "" {
-				logger.Errorf("get empty create view ddl for view %v.%v", ap.InstanceDatabase, view)
+				logger.Errorf("get empty create view ddl for view %v.%v", schema, view)
 				continue
 			}
 			sqls = append(sqls, &SchemaMetaSQL{
