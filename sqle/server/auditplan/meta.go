@@ -74,7 +74,7 @@ var MetaBuilderList = []MetaBuilder{
 	},
 	{
 		Type:          TypeMySQLSchemaMeta,
-		Desc:          "MySQL库表元数据",
+		Desc:          "库表元数据",
 		TaskHandlerFn: NewMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
