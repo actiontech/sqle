@@ -2522,6 +2522,107 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL列表",
+                "operationId": "getInstanceAuditPlanSQLDataV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan type",
+                        "name": "audit_plan_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "audit plan sql data request",
+                        "name": "audit_plan_sql_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLDataReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQL meta",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQL列表元信息",
+                "operationId": "getInstanceAuditPlanSQLMetaV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan type",
+                        "name": "audit_plan_type",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.AuditPlanSQLMetaResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls": {
             "get": {
                 "security": [
@@ -9254,6 +9355,20 @@ var doc = `{
                 }
             }
         },
+        "v1.AuditPlanSQLDataResV1": {
+            "type": "object",
+            "properties": {
+                "rows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "v1.AuditPlanSQLHeadV1": {
             "type": "object",
             "properties": {
@@ -9263,11 +9378,31 @@ var doc = `{
                 "field_name": {
                     "type": "string"
                 },
+                "sortable": {
+                    "type": "boolean"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
                         "sql"
                     ]
+                }
+            }
+        },
+        "v1.AuditPlanSQLMetaResV1": {
+            "type": "object",
+            "properties": {
+                "filter_meta_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.FilterMeta"
+                    }
+                },
+                "head": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanSQLHeadV1"
+                    }
                 }
             }
         },
@@ -10309,6 +10444,78 @@ var doc = `{
                 }
             }
         },
+        "v1.Filter": {
+            "type": "object",
+            "properties": {
+                "filter_between_value": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.FilterBetweenValue"
+                },
+                "filter_compare_value": {
+                    "type": "string"
+                },
+                "filter_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.FilterBetweenValue": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.FilterMeta": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "filter_input_type": {
+                    "type": "string",
+                    "enum": [
+                        "int",
+                        "string",
+                        "date_time"
+                    ]
+                },
+                "filter_name": {
+                    "type": "string"
+                },
+                "filter_op_type": {
+                    "type": "string",
+                    "enum": [
+                        "equal",
+                        "between"
+                    ]
+                },
+                "filter_tip_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.FilterTips"
+                    }
+                }
+            }
+        },
+        "v1.FilterTips": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "group": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.FullSyncAuditPlanSQLsReqV1": {
             "type": "object",
             "properties": {
@@ -10471,6 +10678,49 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetAuditPlanSQLDataReqV1": {
+            "type": "object",
+            "properties": {
+                "filter_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Filter"
+                    }
+                },
+                "is_asc": {
+                    "type": "boolean"
+                },
+                "order_by": {
+                    "type": "string"
+                },
+                "page_index": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditPlanSQLDataResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanSQLDataResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
