@@ -60,7 +60,6 @@ const (
 	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
 	paramKeyProjectId                           = "project_id"
 	paramKeyRegion                              = "region"
-	paramKeySchema                              = "schema"
 )
 
 var MetaBuilderList = []MetaBuilder{
