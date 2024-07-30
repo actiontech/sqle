@@ -30,10 +30,8 @@ func (at *TBaseSlowLogTaskV2) InstanceType() string {
 	return InstanceTypeTBase
 }
 
-func (at *TBaseSlowLogTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params {
-		return []*params.Param{}
-	}
+func (at *TBaseSlowLogTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{}
 }
 
 func (at *TBaseSlowLogTaskV2) Metrics() []string {

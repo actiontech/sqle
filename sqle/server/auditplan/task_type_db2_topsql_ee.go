@@ -30,28 +30,26 @@ func (at *DB2TopSQLTaskV2) InstanceType() string {
 	return InstanceTypeDB2
 }
 
-func (at *DB2TopSQLTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params {
-		return []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalMinute,
-				Desc:  "采集周期（分钟）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyTopN,
-				Desc:  "Top N",
-				Value: "3",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyIndicator,
-				Desc:  "关注指标",
-				Value: DB2IndicatorAverageElapsedTime,
-				Type:  params.ParamTypeString,
-			},
-		}
+func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{
+		{
+			Key:   paramKeyCollectIntervalMinute,
+			Desc:  "采集周期（分钟）",
+			Value: "60",
+			Type:  params.ParamTypeInt,
+		},
+		{
+			Key:   paramKeyTopN,
+			Desc:  "Top N",
+			Value: "3",
+			Type:  params.ParamTypeInt,
+		},
+		{
+			Key:   paramKeyIndicator,
+			Desc:  "关注指标",
+			Value: DB2IndicatorAverageElapsedTime,
+			Type:  params.ParamTypeString,
+		},
 	}
 }
 
