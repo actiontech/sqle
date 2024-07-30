@@ -27,7 +27,7 @@ func (at *OracleTopSQLTaskV2) InstanceType() string {
 	return TypeOracleTopSQL
 }
 
-func (at *OracleTopSQLTaskV2) Params() params.Params {
+func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,

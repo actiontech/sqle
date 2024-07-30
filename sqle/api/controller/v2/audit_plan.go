@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/labstack/echo/v4"
 
@@ -122,7 +123,7 @@ func GetAuditPlans(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		meta.Params = ap.Params
+		meta.Params = func(instanceId ...string) params.Params { return ap.Params }
 
 		ruleTemplateName := ap.RuleTemplateName.String
 		ruleTemplate := &RuleTemplateV2{

@@ -44,7 +44,7 @@ func (at *TiDBAuditLogTaskV2) InstanceType() string {
 	return InstanceTypeTiDB
 }
 
-func (at *TiDBAuditLogTaskV2) Params() params.Params {
+func (at *TiDBAuditLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,

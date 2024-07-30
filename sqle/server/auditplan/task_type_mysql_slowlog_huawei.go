@@ -33,7 +33,7 @@ func (at *MySQLSlowLogHuaweiTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLSlowLogHuaweiTaskV2) Params() params.Params {
+func (at *MySQLSlowLogHuaweiTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyProjectId,

@@ -23,9 +23,7 @@ type AuditPlan struct {
 	DBType           string
 	Token            string
 	InstanceName     string
-	SchemaName       string
 	CreateUserID     string
-	InstanceDatabase string
 	Type             string
 	RuleTemplateName string
 	Params           params.Params
@@ -42,9 +40,7 @@ func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
 		DBType:           a.DBType,
 		Token:            a.Token,
 		InstanceName:     a.InstanceName,
-		SchemaName:       a.InstanceDatabase,
 		CreateUserID:     a.CreateUserID,
-		InstanceDatabase: a.InstanceDatabase,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
 		Params:           a.Params,
@@ -54,16 +50,13 @@ func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
 
 func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
 	return &AuditPlan{
-		ID:        a.ID,
-		ProjectId: a.ProjectId,
-		Name:      a.InstanceName + "-" + a.Type,
-		// CronExpression:   "",
+		ID:               a.ID,
+		ProjectId:        a.ProjectId,
+		Name:             a.InstanceName + "-" + a.Type,
 		DBType:           a.DBType,
 		Token:            a.Token,
 		InstanceName:     a.InstanceName,
-		SchemaName:       a.SchemaName,
 		CreateUserID:     a.CreateUserID,
-		InstanceDatabase: a.SchemaName,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
 		Params:           a.Params,

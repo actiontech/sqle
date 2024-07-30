@@ -372,7 +372,6 @@ func getTaskWithInstanceByAuditPlan(ap *AuditPlan, persist *model.Storage) (*mod
 		}
 		task = &model.Task{
 			Instance: instance,
-			Schema:   ap.InstanceDatabase,
 			DBType:   ap.DBType,
 		}
 	}

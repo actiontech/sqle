@@ -78,6 +78,12 @@ var doc = `{
                         "description": "filter instance type",
                         "name": "filter_instance_type",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -9212,10 +9218,6 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string",
                     "example": "default_MySQL"
-                },
-                "schema_name": {
-                    "type": "string",
-                    "example": "test"
                 }
             }
         },
@@ -9355,10 +9357,6 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string",
                     "example": "default_MySQL"
-                },
-                "schema_name": {
-                    "type": "string",
-                    "example": "test"
                 }
             }
         },
@@ -12375,7 +12373,6 @@ var doc = `{
                     "example": "test"
                 },
                 "instance_name": {
-                    "description": "InstanceId   string ` + "`" + `json:\"instance_id\"   example:\"test_mysql\"` + "`" + `",
                     "type": "string",
                     "example": "test_mysql"
                 },
@@ -12407,10 +12404,6 @@ var doc = `{
                 "audit_plan_instance_name": {
                     "type": "string",
                     "example": "test_mysql"
-                },
-                "audit_plan_instance_schema_name": {
-                    "type": "string",
-                    "example": "app1"
                 },
                 "audit_plan_rule_template": {
                     "type": "object",
