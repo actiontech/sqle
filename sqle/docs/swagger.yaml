@@ -176,16 +176,38 @@ definitions:
       name:
         type: string
     type: object
+  v1.AuditPlanSQLDataResV1:
+    properties:
+      rows:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+    type: object
   v1.AuditPlanSQLHeadV1:
     properties:
       desc:
         type: string
       field_name:
         type: string
+      sortable:
+        type: boolean
       type:
         enum:
         - sql
         type: string
+    type: object
+  v1.AuditPlanSQLMetaResV1:
+    properties:
+      filter_meta_list:
+        items:
+          $ref: '#/definitions/v1.FilterMeta'
+        type: array
+      head:
+        items:
+          $ref: '#/definitions/v1.AuditPlanSQLHeadV1'
+        type: array
     type: object
   v1.AuditPlanSQLReqV1:
     properties:
@@ -902,6 +924,54 @@ definitions:
       new_index:
         type: integer
     type: object
+  v1.Filter:
+    properties:
+      filter_between_value:
+        $ref: '#/definitions/v1.FilterBetweenValue'
+        type: object
+      filter_compare_value:
+        type: string
+      filter_name:
+        type: string
+    type: object
+  v1.FilterBetweenValue:
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+    type: object
+  v1.FilterMeta:
+    properties:
+      desc:
+        type: string
+      filter_input_type:
+        enum:
+        - int
+        - string
+        - date_time
+        type: string
+      filter_name:
+        type: string
+      filter_op_type:
+        enum:
+        - equal
+        - between
+        type: string
+      filter_tip_list:
+        items:
+          $ref: '#/definitions/v1.FilterTips'
+        type: array
+    type: object
+  v1.FilterTips:
+    properties:
+      desc:
+        type: string
+      group:
+        type: string
+      value:
+        type: string
+    type: object
   v1.FullSyncAuditPlanSQLsReqV1:
     properties:
       audit_plan_sql_list:
@@ -1014,6 +1084,35 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetAuditPlanSQLDataReqV1:
+    properties:
+      filter_list:
+        items:
+          $ref: '#/definitions/v1.Filter'
+        type: array
+      is_asc:
+        type: boolean
+      order_by:
+        type: string
+      page_index:
+        type: integer
+      page_size:
+        type: integer
+    type: object
+  v1.GetAuditPlanSQLDataResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditPlanSQLDataResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.GetAuditPlanSQLsResV1:
     properties:
@@ -6162,6 +6261,72 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新扫描任务状态
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data:
+    post:
+      description: get audit plan SQLs
+      operationId: getInstanceAuditPlanSQLDataV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      - description: audit plan sql data request
+        in: body
+        name: audit_plan_sql_request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetAuditPlanSQLDataReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQL列表
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta:
+    get:
+      description: get audit plan SQL meta
+      operationId: getInstanceAuditPlanSQLMetaV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan type
+        in: path
+        name: audit_plan_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.AuditPlanSQLMetaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQL列表元信息
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls:
