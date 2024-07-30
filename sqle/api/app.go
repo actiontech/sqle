@@ -276,7 +276,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// audit plan; 智能扫描任务
 		v1ProjectRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/", v1.DeleteAuditPlanByType)
 		v1ProjectRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/", v1.UpdateAuditPlanStatus)
-		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sqls", v1.GetInstanceAuditPlanSQLs)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sqls", v1.GetInstanceAuditPlanSQLs) // 弃用
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sql_meta", v1.GetInstanceAuditPlanSQLMeta)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sql_data", v1.GetInstanceAuditPlanSQLData)
 
 		// sql manager
 		v1ProjectRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
