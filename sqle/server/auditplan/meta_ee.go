@@ -31,6 +31,7 @@ const (
 	paramKeyIndicator           = "indicator"
 	paramKeyTopN                = "top_n"
 	paramKeySlowLogCollectInput = "slow_log_collect_input"
+	paramKeySchema              = "schema"
 )
 
 var EEMetaBuilderList = []MetaBuilder{
