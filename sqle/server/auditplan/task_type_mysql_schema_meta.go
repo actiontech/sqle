@@ -199,7 +199,7 @@ func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, 
 		return nil, nil
 	}
 
-	sqls, err := at.extractSQL(logger, ap, persist)
+	sqls, err := at.extract(logger, ap, persist)
 	if err != nil {
 		return nil, err
 	}
