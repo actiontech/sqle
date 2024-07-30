@@ -28,44 +28,46 @@ func (at *MySQLAuditLogAliTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLAuditLogAliTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyDBInstanceId,
-			Desc:  "实例ID",
-			Value: "",
-			Type:  params.ParamTypeString,
-		},
-		{
-			Key:   paramKeyAccessKeyId,
-			Desc:  "Access Key ID",
-			Value: "",
-			Type:  params.ParamTypePassword,
-		},
-		{
-			Key:   paramKeyAccessKeySecret,
-			Desc:  "Access Key Secret",
-			Value: "",
-			Type:  params.ParamTypePassword,
-		},
-		{
-			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-			Desc:  "启动任务时拉取日志时间范围(单位:小时,最大31天)",
-			Value: "",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeyRdsPath,
-			Desc:  "RDS Open API地址",
-			Value: "rds.aliyuncs.com",
-			Type:  params.ParamTypeString,
-		},
+func (at *MySQLAuditLogAliTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyDBInstanceId,
+				Desc:  "实例ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypePassword,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypePassword,
+			},
+			{
+				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+				Desc:  "启动任务时拉取日志时间范围(单位:小时,最大31天)",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyRdsPath,
+				Desc:  "RDS Open API地址",
+				Value: "rds.aliyuncs.com",
+				Type:  params.ParamTypeString,
+			},
+		}
 	}
 }
 

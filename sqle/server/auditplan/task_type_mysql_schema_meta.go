@@ -121,20 +121,22 @@ type SchemaMetaSQL struct {
 	SQLContent string
 }
 
-func (at *BaseSchemaMetaTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "collect_view",
-			Desc:  "是否采集视图信息",
-			Value: "0",
-			Type:  params.ParamTypeBool,
-		},
+func (at *BaseSchemaMetaTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "collect_view",
+				Desc:  "是否采集视图信息",
+				Value: "0",
+				Type:  params.ParamTypeBool,
+			},
+		}
 	}
 }
 

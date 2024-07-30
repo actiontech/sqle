@@ -590,10 +590,10 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 		if err != nil {
 			return nil, err
 		}
-		meta.Params = v.Params
-		if meta.Params != nil && len(meta.Params) > 0 {
-			paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
-			for _, p := range meta.Params {
+		meta.Params = func(instanceId ...string) params.Params { return v.Params }
+		if meta.Params != nil && len(meta.Params()) > 0 {
+			paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params()))
+			for _, p := range meta.Params() {
 				val := p.Value
 				if p.Type == params.ParamTypePassword {
 					val = ""

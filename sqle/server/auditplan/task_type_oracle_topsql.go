@@ -27,26 +27,28 @@ func (at *OracleTopSQLTaskV2) InstanceType() string {
 	return TypeOracleTopSQL
 }
 
-func (at *OracleTopSQLTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "top_n",
-			Desc:  "Top N",
-			Value: "3",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   "order_by_column",
-			Desc:  "V$SQLAREA中的排序字段",
-			Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
-			Type:  params.ParamTypeString,
-		},
+func (at *OracleTopSQLTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyCollectIntervalMinute,
+				Desc:  "采集周期（分钟）",
+				Value: "60",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "top_n",
+				Desc:  "Top N",
+				Value: "3",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   "order_by_column",
+				Desc:  "V$SQLAREA中的排序字段",
+				Value: oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
+				Type:  params.ParamTypeString,
+			},
+		}
 	}
 }
 
