@@ -898,3 +898,80 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 		TotalNums: count,
 	})
 }
+
+type AuditPlanSQLMetaResV1 struct {
+	Head           []AuditPlanSQLHeadV1 `json:"head"`
+	FilterMetaList []FilterMeta         `json:"filter_meta_list"`
+}
+
+type FilterMeta struct {
+	Name            string       `json:"filter_name"`
+	Desc            string       `json:"desc"`
+	FilterInputType string       `json:"filter_input_type" enums:"int,string,date_time"`
+	FilterOperation string       `json:"filter_op_type" enums:"equal,between"`
+	FilterTips      []FilterTips `json:"filter_tip_list"`
+}
+
+type FilterTips struct {
+	Value string `json:"value"`
+	Desc  string `json:"desc"`
+	Group string `json:"group"`
+}
+
+type Filter struct {
+	Name                  string             `json:"filter_name"`
+	FilterComparisonValue string             `json:"filter_compare_value"`
+	FilterBetweenValue    FilterBetweenValue `json:"filter_between_value"`
+}
+
+type FilterBetweenValue struct {
+	From string
+	To   string
+}
+
+// @Summary 获取指定扫描任务的SQL列表元信息
+// @Description get audit plan SQL meta
+// @Id getInstanceAuditPlanSQLMetaV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_type path string true "audit plan type"
+// @Success 200 {object} v1.AuditPlanSQLMetaResV1
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta [get]
+func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
+	return nil
+}
+
+type GetAuditPlanSQLDataReqV1 struct {
+	PageIndex uint32   `json:"page_index" query:"page_index" valid:"required"`
+	PageSize  uint32   `json:"page_size" query:"page_size" valid:"required"`
+	OrderBy   string   `json:"order_by"`
+	IsAsc     bool     `json:"is_asc"`
+	Filters   []Filter `json:"filter_list"`
+}
+
+type GetAuditPlanSQLDataResV1 struct {
+	controller.BaseRes
+	Data      AuditPlanSQLDataResV1 `json:"data"`
+	TotalNums uint64                `json:"total_nums"`
+}
+
+type AuditPlanSQLDataResV1 struct {
+	Rows []map[string] /* head name */ string `json:"rows"`
+}
+
+// @Summary 获取指定扫描任务的SQL列表
+// @Description get audit plan SQLs
+// @Id getInstanceAuditPlanSQLDataV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_type path string true "audit plan type"
+// @param audit_plan_sql_request body v1.GetAuditPlanSQLDataReqV1 true "audit plan sql data request"
+// @Success 200 {object} v1.GetAuditPlanSQLDataResV1
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data [post]
+func GetInstanceAuditPlanSQLData(c echo.Context) error {
+	return nil
+}
