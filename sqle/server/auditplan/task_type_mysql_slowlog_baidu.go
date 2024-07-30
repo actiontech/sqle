@@ -27,7 +27,7 @@ func (at *MySQLSlowLogBaiduTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLSlowLogBaiduTaskV2) Params() params.Params {
+func (at *MySQLSlowLogBaiduTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyDBInstanceId,

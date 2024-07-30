@@ -9,13 +9,14 @@ import (
 )
 
 type Meta struct {
-	Type         string        `json:"audit_plan_type"`
-	Desc         string        `json:"audit_plan_type_desc"`
-	InstanceType string        `json:"instance_type"`
-	Params       params.Params `json:"audit_plan_params,omitempty"`
-	Metrics      []string
-	CreateTask   func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
-	Handler      AuditPlanHandler
+	Type         string `json:"audit_plan_type"`
+	Desc         string `json:"audit_plan_type_desc"`
+	InstanceType string `json:"instance_type"`
+	// instanceId means gen `enums` by db conn, default is a constant definition
+	Params     func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
+	Metrics    []string
+	CreateTask func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
+	Handler    AuditPlanHandler
 }
 
 type MetaBuilder struct {
@@ -142,10 +143,12 @@ func buildMeta(b MetaBuilder) Meta {
 		Type:         b.Type,
 		Desc:         b.Desc,
 		InstanceType: taskMeta.InstanceType(),
-		Params:       taskMeta.Params(),
-		Metrics:      taskMeta.Metrics(),
-		Handler:      handler,
-		CreateTask:   NewTaskWrap(b.TaskHandlerFn),
+		Params: func(instanceId ...string) params.Params {
+			return taskMeta.Params(instanceId...)
+		},
+		Metrics:    taskMeta.Metrics(),
+		Handler:    handler,
+		CreateTask: NewTaskWrap(b.TaskHandlerFn),
 	}
 }
 
@@ -169,7 +172,7 @@ func GetMeta(typ string) (Meta, error) {
 		Type:         meta.Type,
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
-		Params:       meta.Params.Copy(),
+		Params:       meta.Params,
 		Metrics:      meta.Metrics,
 		CreateTask:   meta.CreateTask,
 		Handler:      meta.Handler,
@@ -179,8 +182,6 @@ func GetMeta(typ string) (Meta, error) {
 func GetSupportedScannerAuditPlanType() map[string]struct{} {
 	return map[string]struct{}{
 		TypeMySQLSlowLog: {},
-		TypeMySQLMybatis: {},
-		TypeSQLFile:      {},
 		TypeTiDBAuditLog: {},
 	}
 }
