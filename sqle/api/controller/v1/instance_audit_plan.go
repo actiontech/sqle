@@ -905,14 +905,14 @@ type AuditPlanSQLMetaResV1 struct {
 }
 
 type FilterMeta struct {
-	Name            string       `json:"filter_name"`
-	Desc            string       `json:"desc"`
-	FilterInputType string       `json:"filter_input_type" enums:"int,string,date_time"`
-	FilterOperation string       `json:"filter_op_type" enums:"equal,between"`
-	FilterTips      []FilterTips `json:"filter_tip_list"`
+	Name            string      `json:"filter_name"`
+	Desc            string      `json:"desc"`
+	FilterInputType string      `json:"filter_input_type" enums:"int,string,date_time"`
+	FilterOpType    string      `json:"filter_op_type" enums:"equal,between"`
+	FilterTips      []FilterTip `json:"filter_tip_list"`
 }
 
-type FilterTips struct {
+type FilterTip struct {
 	Value string `json:"value"`
 	Desc  string `json:"desc"`
 	Group string `json:"group"`
@@ -973,5 +973,26 @@ type AuditPlanSQLDataResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanSQLDataResV1
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data [post]
 func GetInstanceAuditPlanSQLData(c echo.Context) error {
+	return nil
+}
+
+type GetAuditPlanSQLExportReqV1 struct {
+	OrderBy string   `json:"order_by"`
+	IsAsc   bool     `json:"is_asc"`
+	Filters []Filter `json:"filter_list"`
+}
+
+// @Summary 导出指定扫描任务的 SQL CSV 列表
+// @Description export audit plan SQL report as CSV
+// @Id getInstanceAuditPlanSQLExportV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_type path string true "audit plan type"
+// @param audit_plan_sql_request body v1.GetAuditPlanSQLExportReqV1 true "audit plan sql export request"
+// @Success 200 {file} file "export audit plan sql report"
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_export [post]
+func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	return nil
 }
