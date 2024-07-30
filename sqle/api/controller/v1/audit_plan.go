@@ -1364,9 +1364,10 @@ type AuditPlanSQLResV1 struct {
 }
 
 type AuditPlanSQLHeadV1 struct {
-	Name string `json:"field_name"`
-	Desc string `json:"desc"`
-	Type string `json:"type,omitempty" enums:"sql"`
+	Name     string `json:"field_name"`
+	Desc     string `json:"desc"`
+	Type     string `json:"type,omitempty" enums:"sql"`
+	Sortable bool   `json:"sortable"`
 }
 
 // @Summary 获取指定扫描任务的SQLs信息(不包括扫描结果)
