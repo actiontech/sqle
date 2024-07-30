@@ -41,10 +41,6 @@ func (at *PGSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 	if ap.InstanceName == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
-	// if ap.InstanceDatabase == "" {
-	// 	logger.Warnf("instance database is not configured")
-	// 	return nil, nil
-	// }
 	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(ap.ProjectId), ap.InstanceName)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)

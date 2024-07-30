@@ -32,6 +32,10 @@ func (at *PGTopSQLTaskV2) InstanceType() string {
 }
 
 func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
+	id := ""
+	if len(instanceId) != 0 {
+		id = instanceId[0]
+	}
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -50,6 +54,13 @@ func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Desc:  "排序字段",
 			Value: DynPerformanceViewPgSQLColumnElapsedTime,
 			Type:  params.ParamTypeString,
+		},
+		{
+			Key:   paramKeySchema,
+			Desc:  "schema",
+			Value: "postgres",
+			Type:  params.ParamTypeString,
+			Enums: ShowSchemaEnumsByInstanceId(id),
 		},
 	}
 }

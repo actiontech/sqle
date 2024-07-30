@@ -81,9 +81,8 @@ var EEMetaBuilderList = []MetaBuilder{
 		TaskHandlerFn: NewObForOracleTopSQLTaskV2Fn(),
 	},
 	{
-		Type: TypePostgreSQLTopSQL,
-		Desc: "TOP SQL",
-
+		Type:          TypePostgreSQLTopSQL,
+		Desc:          "TOP SQL",
 		TaskHandlerFn: NewPGTopSQLTaskV2Fn()},
 	{
 		Type:          TypeTBaseSlowLog,
