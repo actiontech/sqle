@@ -1,8 +1,13 @@
 package auditplan
 
 import (
+	"context"
 	"strconv"
 
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
@@ -20,8 +25,8 @@ func (at *DefaultTaskV2) InstanceType() string {
 	return InstanceTypeAll
 }
 
-func (at *DefaultTaskV2) Params() params.Params {
-	return []*params.Param{}
+func (at *DefaultTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params { return []*params.Param{} }
 }
 
 func (at *DefaultTaskV2) Metrics() []string {
@@ -109,4 +114,52 @@ func (at *DefaultTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 		})
 	}
 	return head, rows, count, nil
+}
+
+func ShowSchemaEnumsByInstanceId(instanceId string) (enumsValues []params.EnumsValue) {
+	logger := log.NewEntry()
+	if instanceId == "" {
+		return
+	}
+	inst, exist, err := dms.GetInstancesById(context.Background(), instanceId)
+	if err != nil {
+		logger.Errorf("can't find instance by id, %v", instanceId)
+		return
+	}
+	if !exist {
+		return
+	}
+	if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
+		logger.Errorf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
+		return
+	}
+
+	plugin, err := driver.GetPluginManager().OpenPlugin(logger, inst.DbType, &driverV2.Config{
+		DSN: &driverV2.DSN{
+			Host:             inst.Host,
+			Port:             inst.Port,
+			User:             inst.User,
+			Password:         inst.Password,
+			AdditionalParams: inst.AdditionalParams,
+		},
+	})
+	if err != nil {
+		logger.Errorf("get plugin failed, error: %v", err)
+		return
+	}
+	defer plugin.Close(context.Background())
+
+	schemas, err := plugin.Schemas(context.Background())
+	if err != nil {
+		logger.Errorf("show schema failed, error: %v", err)
+		return
+	}
+
+	for _, schema := range schemas {
+		enumsValues = append(enumsValues, params.EnumsValue{
+			Value: schema,
+			Desc:  schema,
+		})
+	}
+	return
 }

@@ -1,26 +1,22 @@
 package auditplan
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/driver"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Meta struct {
-	Type         string        `json:"audit_plan_type"`
-	Desc         string        `json:"audit_plan_type_desc"`
-	InstanceType string        `json:"instance_type"`
-	Params       params.Params `json:"audit_plan_params,omitempty"`
-	Metrics      []string
-	CreateTask   func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
-	Handler      AuditPlanHandler
+	Type         string `json:"audit_plan_type"`
+	Desc         string `json:"audit_plan_type_desc"`
+	InstanceType string `json:"instance_type"`
+	// instanceId means gen `enums` by db conn, default is a constant definition
+	Params     func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
+	Metrics    []string
+	CreateTask func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
+	Handler    AuditPlanHandler
 }
 
 type MetaBuilder struct {
@@ -175,7 +171,7 @@ func GetMeta(typ string) (Meta, error) {
 		Type:         meta.Type,
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
-		Params:       meta.Params.Copy(),
+		Params:       meta.Params,
 		Metrics:      meta.Metrics,
 		CreateTask:   meta.CreateTask,
 		Handler:      meta.Handler,
@@ -187,63 +183,4 @@ func GetSupportedScannerAuditPlanType() map[string]struct{} {
 		TypeMySQLSlowLog: {},
 		TypeTiDBAuditLog: {},
 	}
-}
-
-const (
-	ParamsKeySchema = paramKeySchema
-)
-
-func GetEnumsByInstanceId(paramKey, instanceId string) (enumsValues []params.EnumsValue) {
-	logger := log.NewEntry()
-
-	switch paramKey {
-	case paramKeySchema:
-		if instanceId == "" {
-			return
-		}
-		inst, exist, err := dms.GetInstancesById(context.Background(), instanceId)
-		if err != nil {
-			logger.Errorf("can't find instance by id, %v", instanceId)
-			return
-		}
-		if !exist {
-			return
-		}
-		if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
-			logger.Errorf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
-			return
-		}
-
-		plugin, err := driver.GetPluginManager().OpenPlugin(logger, inst.DbType, &driverV2.Config{
-			DSN: &driverV2.DSN{
-				Host:             inst.Host,
-				Port:             inst.Port,
-				User:             inst.User,
-				Password:         inst.Password,
-				AdditionalParams: inst.AdditionalParams,
-			},
-		})
-		if err != nil {
-			logger.Errorf("get plugin failed, error: %v", err)
-			return
-		}
-		defer plugin.Close(context.Background())
-
-		schemas, err := plugin.Schemas(context.Background())
-		if err != nil {
-			logger.Errorf("show schema failed, error: %v", err)
-			return
-		}
-
-		for _, schema := range schemas {
-			enumsValues = append(enumsValues, params.EnumsValue{
-				Value: schema,
-				Desc:  schema,
-			})
-		}
-	default:
-		return
-	}
-	return
-
 }

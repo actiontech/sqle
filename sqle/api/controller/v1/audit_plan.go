@@ -71,25 +71,20 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
 	}
-	if meta.Params != nil && len(meta.Params) > 0 {
-		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
-		for _, p := range meta.Params {
+	if meta.Params != nil && len(meta.Params()) > 0 {
+		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params()))
+		for _, p := range meta.Params(instanceId) {
 			val := p.Value
 			if p.Type == params.ParamTypePassword {
 				val = ""
 			}
-			paramRes := AuditPlanParamResV1{
+			paramsRes = append(paramsRes, AuditPlanParamResV1{
 				Key:         p.Key,
 				Desc:        p.Desc,
 				Type:        string(p.Type),
 				Value:       val,
 				EnumsValues: p.Enums,
-			}
-			if enumValues := auditplan.GetEnumsByInstanceId(p.Key, instanceId); enumValues != nil {
-				paramRes.EnumsValues = enumValues
-			}
-
-			paramsRes = append(paramsRes, paramRes)
+			})
 		}
 		res.Params = paramsRes
 	}
@@ -102,9 +97,9 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 		Desc:         meta.Desc,
 		InstanceType: meta.InstanceType,
 	}
-	if meta.Params != nil && len(meta.Params) > 0 {
-		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
-		for _, p := range meta.Params {
+	if meta.Params != nil && len(meta.Params()) > 0 {
+		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params()))
+		for _, p := range meta.Params() {
 			val := p.Value
 			if p.Type == params.ParamTypePassword {
 				val = ""
@@ -212,26 +207,30 @@ func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsR
 		return nil, fmt.Errorf("audit plan type %s not found", auditPlanType)
 	}
 	// check request params is equal params.
-	if len(paramsReq) != len(meta.Params) {
+	if len(paramsReq) != len(meta.Params()) {
 		reqParamsKey := make([]string, 0, len(paramsReq))
 		for _, p := range paramsReq {
 			reqParamsKey = append(reqParamsKey, p.Key)
 		}
-		paramsKey := make([]string, 0, len(meta.Params))
-		for _, p := range meta.Params {
+		paramsKey := make([]string, 0, len(meta.Params()))
+		for _, p := range meta.Params() {
 			paramsKey = append(paramsKey, p.Key)
 		}
 		return nil, fmt.Errorf("request params key is [%s], but need [%s]",
 			strings.Join(reqParamsKey, ", "), strings.Join(paramsKey, ", "))
 	}
+
+	resetParams := meta.Params()
 	for _, p := range paramsReq {
 		// set and valid param.
-		err := meta.Params.SetParamValue(p.Key, p.Value)
+		err := resetParams.SetParamValue(p.Key, p.Value)
 		if err != nil {
 			return nil, fmt.Errorf("set param error: %s", err)
 		}
 	}
-	return meta.Params, nil
+	meta.Params = func(instanceId ...string) params.Params { return resetParams }
+
+	return meta.Params(), nil
 }
 
 // @Summary 添加扫描任务
@@ -610,7 +609,7 @@ func GetAuditPlans(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		meta.Params = ap.Params
+		meta.Params = func(instanceId ...string) params.Params { return ap.Params }
 		auditPlansResV1[i] = AuditPlanResV1{
 			Name:             ap.Name,
 			Cron:             ap.Cron,
@@ -662,7 +661,7 @@ func GetAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	meta.Params = ap.Params
+	meta.Params = func(instanceId ...string) params.Params { return ap.Params }
 
 	return c.JSON(http.StatusOK, &GetAuditPlanResV1{
 		BaseRes: controller.NewBaseReq(nil),

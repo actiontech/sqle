@@ -27,46 +27,48 @@ func (at *MySQLSlowLogBaiduTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLSlowLogBaiduTaskV2) Params() params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyDBInstanceId,
-			Desc:  "实例ID",
-			Value: "",
-			Type:  params.ParamTypeString,
-		},
-		{
-			Key:   paramKeyAccessKeyId,
-			Desc:  "Access Key ID",
-			Value: "",
-			Type:  params.ParamTypePassword,
-		},
-		{
-			Key:   paramKeyAccessKeySecret,
-			Desc:  "Access Key Secret",
-			Value: "",
-			Type:  params.ParamTypePassword,
-		},
-		{
-			Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
-			// 百度云RDS慢日志只能拉取最近7天的数据
-			// https://cloud.baidu.com/doc/RDS/s/Tjwvz046g
-			Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大7天)",
-			Value: "",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:   paramKeyRdsPath,
-			Desc:  "RDS Open API地址",
-			Value: "rds.bj.baidubce.com",
-			Type:  params.ParamTypeString,
-		},
+func (at *MySQLSlowLogBaiduTaskV2) Params() func(instanceId ...string) params.Params {
+	return func(instanceId ...string) params.Params {
+		return []*params.Param{
+			{
+				Key:   paramKeyDBInstanceId,
+				Desc:  "实例ID",
+				Value: "",
+				Type:  params.ParamTypeString,
+			},
+			{
+				Key:   paramKeyAccessKeyId,
+				Desc:  "Access Key ID",
+				Value: "",
+				Type:  params.ParamTypePassword,
+			},
+			{
+				Key:   paramKeyAccessKeySecret,
+				Desc:  "Access Key Secret",
+				Value: "",
+				Type:  params.ParamTypePassword,
+			},
+			{
+				Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
+				// 百度云RDS慢日志只能拉取最近7天的数据
+				// https://cloud.baidu.com/doc/RDS/s/Tjwvz046g
+				Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大7天)",
+				Value: "",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+				Desc:  "审核过去时间段内抓取的SQL（分钟）",
+				Value: "0",
+				Type:  params.ParamTypeInt,
+			},
+			{
+				Key:   paramKeyRdsPath,
+				Desc:  "RDS Open API地址",
+				Value: "rds.bj.baidubce.com",
+				Type:  params.ParamTypeString,
+			},
+		}
 	}
 }
 
