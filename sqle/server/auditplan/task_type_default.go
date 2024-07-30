@@ -25,8 +25,8 @@ func (at *DefaultTaskV2) InstanceType() string {
 	return InstanceTypeAll
 }
 
-func (at *DefaultTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params { return []*params.Param{} }
+func (at *DefaultTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{}
 }
 
 func (at *DefaultTaskV2) Metrics() []string {

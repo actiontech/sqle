@@ -27,28 +27,26 @@ func (at *MySQLProcessListTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLProcessListTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params {
-		return []*params.Param{
-			{
-				Key:   paramKeyCollectIntervalSecond,
-				Desc:  "采集周期（秒）",
-				Value: "60",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeySQLMinSecond,
-				Desc:  "SQL 最小执行时间（秒）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		}
+func (at *MySQLProcessListTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{
+		{
+			Key:   paramKeyCollectIntervalSecond,
+			Desc:  "采集周期（秒）",
+			Value: "60",
+			Type:  params.ParamTypeInt,
+		},
+		{
+			Key:   paramKeySQLMinSecond,
+			Desc:  "SQL 最小执行时间（秒）",
+			Value: "0",
+			Type:  params.ParamTypeInt,
+		},
+		{
+			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+			Desc:  "审核过去时间段内抓取的SQL（分钟）",
+			Value: "0",
+			Type:  params.ParamTypeInt,
+		},
 	}
 }
 
