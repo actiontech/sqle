@@ -44,16 +44,14 @@ func (at *TiDBAuditLogTaskV2) InstanceType() string {
 	return InstanceTypeTiDB
 }
 
-func (at *TiDBAuditLogTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params {
-		return []*params.Param{
-			{
-				Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-				Desc:  "审核过去时间段内抓取的SQL（分钟）",
-				Value: "0",
-				Type:  params.ParamTypeInt,
-			},
-		}
+func (at *TiDBAuditLogTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{
+		{
+			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
+			Desc:  "审核过去时间段内抓取的SQL（分钟）",
+			Value: "0",
+			Type:  params.ParamTypeInt,
+		},
 	}
 }
 

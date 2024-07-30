@@ -143,10 +143,12 @@ func buildMeta(b MetaBuilder) Meta {
 		Type:         b.Type,
 		Desc:         b.Desc,
 		InstanceType: taskMeta.InstanceType(),
-		Params:       taskMeta.Params(),
-		Metrics:      taskMeta.Metrics(),
-		Handler:      handler,
-		CreateTask:   NewTaskWrap(b.TaskHandlerFn),
+		Params: func(instanceId ...string) params.Params {
+			return taskMeta.Params(instanceId...)
+		},
+		Metrics:    taskMeta.Metrics(),
+		Handler:    handler,
+		CreateTask: NewTaskWrap(b.TaskHandlerFn),
 	}
 }
 

@@ -33,46 +33,44 @@ func (at *MySQLSlowLogHuaweiTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *MySQLSlowLogHuaweiTaskV2) Params() func(instanceId ...string) params.Params {
-	return func(instanceId ...string) params.Params {
-		return []*params.Param{
-			{
-				Key:   paramKeyProjectId,
-				Desc:  "项目ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyDBInstanceId,
-				Desc:  "实例ID",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-			{
-				Key:   paramKeyAccessKeyId,
-				Desc:  "Access Key ID",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyAccessKeySecret,
-				Desc:  "Access Key Secret",
-				Value: "",
-				Type:  params.ParamTypePassword,
-			},
-			{
-				Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-				Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
-				Value: "",
-				Type:  params.ParamTypeInt,
-			},
-			{
-				Key:   paramKeyRegion,
-				Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
-				Value: "",
-				Type:  params.ParamTypeString,
-			},
-		}
+func (at *MySQLSlowLogHuaweiTaskV2) Params(instanceId ...string) params.Params {
+	return []*params.Param{
+		{
+			Key:   paramKeyProjectId,
+			Desc:  "项目ID",
+			Value: "",
+			Type:  params.ParamTypeString,
+		},
+		{
+			Key:   paramKeyDBInstanceId,
+			Desc:  "实例ID",
+			Value: "",
+			Type:  params.ParamTypeString,
+		},
+		{
+			Key:   paramKeyAccessKeyId,
+			Desc:  "Access Key ID",
+			Value: "",
+			Type:  params.ParamTypePassword,
+		},
+		{
+			Key:   paramKeyAccessKeySecret,
+			Desc:  "Access Key Secret",
+			Value: "",
+			Type:  params.ParamTypePassword,
+		},
+		{
+			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+			Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
+			Value: "",
+			Type:  params.ParamTypeInt,
+		},
+		{
+			Key:   paramKeyRegion,
+			Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
+			Value: "",
+			Type:  params.ParamTypeString,
+		},
 	}
 }
 

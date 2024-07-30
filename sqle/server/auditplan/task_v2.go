@@ -31,7 +31,7 @@ type SQL struct {
 
 type AuditPlanMeta interface {
 	InstanceType() string
-	Params() func(instanceId ...string) params.Params
+	Params(instanceId ...string) params.Params
 	Metrics() []string
 }
 
