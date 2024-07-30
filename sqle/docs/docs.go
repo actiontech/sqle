@@ -2577,6 +2577,61 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_export": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export audit plan SQL report as CSV",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "导出指定扫描任务的 SQL CSV 列表",
+                "operationId": "getInstanceAuditPlanSQLExportV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan type",
+                        "name": "audit_plan_type",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "audit plan sql export request",
+                        "name": "audit_plan_sql_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLExportReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "export audit plan sql report",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta": {
             "get": {
                 "security": [
@@ -10497,12 +10552,12 @@ var doc = `{
                 "filter_tip_list": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.FilterTips"
+                        "$ref": "#/definitions/v1.FilterTip"
                     }
                 }
             }
         },
-        "v1.FilterTips": {
+        "v1.FilterTip": {
             "type": "object",
             "properties": {
                 "desc": {
@@ -10721,6 +10776,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetAuditPlanSQLExportReqV1": {
+            "type": "object",
+            "properties": {
+                "filter_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Filter"
+                    }
+                },
+                "is_asc": {
+                    "type": "boolean"
+                },
+                "order_by": {
+                    "type": "string"
                 }
             }
         },
