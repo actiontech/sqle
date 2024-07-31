@@ -28,7 +28,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tbase_audit_log.Params{
 				LogFolder:      tbaseLogFolder,
-				InstanceApID:   rootCmdFlags.instanceAuditPlanId,
+				AuditPlanID:    rootCmdFlags.auditPlanID,
 				FileNameFormat: fileFormat,
 			}
 			log := logrus.WithField("scanner", "tbase-audit-log")

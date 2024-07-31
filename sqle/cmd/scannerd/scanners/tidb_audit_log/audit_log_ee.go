@@ -13,7 +13,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/pkg/errors"
 
 	"github.com/percona/go-mysql/query"
@@ -28,8 +27,8 @@ type AuditLog struct {
 
 	sqlCh chan scanners.SQL
 
-	instanceApID string
-	apType       string
+	auditPlanID string
+	apType      string
 
 	parser TiDBAuditLogParser
 }
@@ -37,18 +36,18 @@ type AuditLog struct {
 type Params struct {
 	AuditLogPath string
 
-	InstanceApID string
-	APType       string
+	AuditPlanID string
+	APType      string
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*AuditLog, error) {
 	return &AuditLog{
-		l:            l,
-		c:            c,
-		logFilePath:  params.AuditLogPath,
-		instanceApID: params.InstanceApID,
-		sqlCh:        make(chan scanners.SQL, 10),
-		parser:       GetLexerParser(),
+		l:           l,
+		c:           c,
+		logFilePath: params.AuditLogPath,
+		auditPlanID: params.AuditPlanID,
+		sqlCh:       make(chan scanners.SQL, 10),
+		parser:      GetLexerParser(),
 	}, nil
 }
 
@@ -161,6 +160,6 @@ func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			counter[sql.Fingerprint] = len(sqlsReq) - 1
 		}
 	}
-	return sq.c.UploadReq(scanner.UploadSQL, sq.instanceApID, pkgAP.TypeTiDBAuditLog, sqlsReq)
+	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, sqlsReq)
 
 }
