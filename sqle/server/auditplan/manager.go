@@ -119,7 +119,6 @@ func UploadSQLs(entry *logrus.Entry, ap *AuditPlan, sqls []*SQL, isPartialSync b
 
 func GetSQLs(entry *logrus.Entry, ap *AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	args["audit_plan_id"] = ap.ID
-	args["audit_plan_type"] = ap.Type
 	task := NewTask(entry, ap)
 	return task.GetSQLs(args)
 }
