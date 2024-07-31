@@ -38,7 +38,6 @@ type CreateInstanceAuditPlanReqV1 struct {
 }
 
 type AuditPlan struct {
-	SchemaName       string                `json:"schema_name" form:"schema_name" example:"test" valid:"required"`
 	RuleTemplateName string                `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
 	Type             string                `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
 	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
@@ -147,7 +146,6 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		}
 
 		auditPlans = append(auditPlans, &model.AuditPlanV2{
-			SchemaName:       auditPlan.SchemaName,
 			Type:             auditPlan.Type,
 			RuleTemplateName: ruleTemplateName,
 			Params:           ps,
@@ -300,7 +298,6 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
 		res := &model.AuditPlanV2{
-			SchemaName:          auditPlan.SchemaName,
 			Type:                auditPlan.Type,
 			RuleTemplateName:    ruleTemplateName,
 			Params:              ps,
@@ -309,7 +306,6 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 
 		// if the data exists in the database, update the data; if it does not exist, insert the data.
 		if dbAuditPlan, ok := dbAuditPlansMap[auditPlan.Type]; ok {
-			dbAuditPlan.SchemaName = res.SchemaName
 			dbAuditPlan.RuleTemplateName = res.RuleTemplateName
 			dbAuditPlan.Params = res.Params
 			result := dbAuditPlan
@@ -529,15 +525,13 @@ type InstanceAuditPlanDetailResV1 struct {
 	StaticAudit  bool   `json:"static_audit" example:"true"`
 	Business     string `json:"business"     example:"test"`
 	InstanceType string `json:"instance_type" example:"mysql" `
-	// InstanceId   string `json:"instance_id"   example:"test_mysql"`
 	InstanceName string `json:"instance_name" example:"test_mysql"`
-
+	InstanceID   string `json:"instance_id" example:"instance_id"`
 	// 扫描类型
 	AuditPlans []AuditPlanRes `json:"audit_plans"`
 }
 
 type AuditPlanRes struct {
-	SchemaName       string                `json:"schema_name" form:"schema_name" example:"test" valid:"required"`
 	RuleTemplateName string                `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
 	Type             AuditPlanTypeResBase  `json:"audit_plan_type" form:"audit_plan_type"`
 	Params           []AuditPlanParamResV1 `json:"audit_plan_params" valid:"dive,required"`
@@ -576,6 +570,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 		Business:     detail.Business,
 		InstanceType: detail.DBType,
 		InstanceName: detail.InstanceName,
+		InstanceID:   fmt.Sprintf("%d", detail.InstanceID),
 		AuditPlans:   auditPlans,
 	}
 	return c.JSON(http.StatusOK, &GetInstanceAuditPlanDetailResV1{
@@ -589,7 +584,6 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 	for _, v := range auditPlans {
 		typeBase := ConvertAuditPlanTypeToRes(v.Type)
 		resAuditPlan := AuditPlanRes{
-			SchemaName:       v.SchemaName,
 			RuleTemplateName: v.RuleTemplateName,
 			Type:             typeBase,
 		}
@@ -597,10 +591,10 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 		if err != nil {
 			return nil, err
 		}
-		meta.Params = v.Params
-		if meta.Params != nil && len(meta.Params) > 0 {
-			paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params))
-			for _, p := range meta.Params {
+		meta.Params = func(instanceId ...string) params.Params { return v.Params }
+		if meta.Params != nil && len(meta.Params()) > 0 {
+			paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params()))
+			for _, p := range meta.Params() {
 				val := p.Value
 				if p.Type == params.ParamTypePassword {
 					val = ""
@@ -636,7 +630,6 @@ type InstanceAuditPlanInfo struct {
 	Type               AuditPlanTypeResBase   `json:"audit_plan_type"`
 	DBType             string                 `json:"audit_plan_db_type" example:"mysql"`
 	InstanceName       string                 `json:"audit_plan_instance_name" example:"test_mysql"`
-	InstanceSchemaName string                 `json:"audit_plan_instance_schema_name" example:"app1"`
 	ExecCmd            string                 `json:"exec_cmd" example:"./scanner xxx"`
 	RuleTemplate       *AuditPlanRuleTemplate `json:"audit_plan_rule_template,omitempty" `
 	TotalSQLNums       int64                  `json:"total_sql_nums"`
@@ -699,7 +692,6 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 			Type:               typeBase,
 			DBType:             detail.DBType,
 			InstanceName:       detail.InstanceName,
-			InstanceSchemaName: v.SchemaName,
 			ExecCmd:            execCmd,
 			RuleTemplate:       ruleTemplate,
 			TotalSQLNums:       totalSQLNums,

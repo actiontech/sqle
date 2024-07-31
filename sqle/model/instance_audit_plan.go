@@ -120,7 +120,6 @@ type AuditPlanV2 struct {
 	Model
 
 	InstanceAuditPlanID *uint         `json:"instance_audit_plan_id" gorm:"not null"`
-	SchemaName          string        `json:"schema_name" gorm:"type:varchar(255)"`
 	Type                string        `json:"type" gorm:"type:varchar(255)"`
 	RuleTemplateName    string        `json:"rule_template_name" gorm:"type:varchar(255)"`
 	Params              params.Params `json:"params" gorm:"type:varchar(1000)"`
