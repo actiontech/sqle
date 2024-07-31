@@ -301,7 +301,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			Type:                auditPlan.Type,
 			RuleTemplateName:    ruleTemplateName,
 			Params:              ps,
-			InstanceAuditPlanID: &dbAuditPlans.ID,
+			InstanceAuditPlanID: dbAuditPlans.ID,
 		}
 
 		// if the data exists in the database, update the data; if it does not exist, insert the data.
@@ -727,8 +727,8 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		return ""
 	}
 
-	cmd := `./scannerd %s --project=%s --host=%s --port=%s  --instance_audit_plan_id=%d  --token=%s`
-	return fmt.Sprintf(cmd, ap.Type, projectName, ip, port, iap.ID, iap.Token)
+	cmd := `./scannerd %s --project=%s --host=%s --port=%s  --audit_plan_id=%d  --token=%s`
+	return fmt.Sprintf(cmd, ap.Type, projectName, ip, port, ap.ID, iap.Token)
 }
 
 type UpdateInstanceAuditPlanStatusReqV1 struct {

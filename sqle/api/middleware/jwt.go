@@ -59,25 +59,24 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			}
 
 			// check token belong to instance audit plan
-			iapidInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
-
+			apidInToken, err := dmsCommonJwt.ParseAuditPlanName(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			if iapidInToken != utils.Md5(c.Param("instance_audit_plan_id")) {
+
+			audit_plan_id, err := strconv.Atoi(c.Param("audit_plan_id"))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			apn, err := model.GetStorage().GetAuditPlanDetailByID(uint(audit_plan_id))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			if apidInToken != utils.Md5(fmt.Sprintf("%d", apn.InstanceAuditPlanID)) {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
-			iapidInParam, err := strconv.Atoi(c.Param("instance_audit_plan_id"))
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
-			aptypParam := c.Param("audit_plan_type")
-
-			apn, err := model.GetStorage().GetAuditPlanDetailByIDType(iapidInParam, aptypParam)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-			}
 			if apn.Token != token {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
