@@ -26,7 +26,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tidb_audit_log.Params{
 				AuditLogPath: tidbAuditLogPath,
-				InstanceApID: rootCmdFlags.instanceAuditPlanId,
+				AuditPlanID:  rootCmdFlags.auditPlanID,
 			}
 			log := logrus.WithField("scanner", "tidb-audit-log")
 			client := scanner.NewSQLEClient(scanner.DefaultTimeout, rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)

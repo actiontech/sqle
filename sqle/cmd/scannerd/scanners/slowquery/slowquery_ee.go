@@ -19,7 +19,6 @@ import (
 	"github.com/percona/go-mysql/log"
 	"github.com/percona/pmm-agent/agents/mysql/slowlog/parser"
 
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,7 +30,7 @@ type SlowQuery struct {
 
 	sqlCh chan scanners.SQL
 
-	instanceApID string
+	auditPlanID string
 
 	includeUsers   map[string]struct{} // 用户白名单: 仅采集这些用户的 SQL;
 	excludeUsers   map[string]struct{} // 用户黑名单: 不采集这些用户的 SQL;
@@ -41,7 +40,7 @@ type SlowQuery struct {
 
 type Params struct {
 	LogFilePath    string
-	InstAPID       string
+	AuditPlanID    string
 	IncludeUsers   string
 	ExcludeUsers   string
 	IncludeSchemas string
@@ -53,7 +52,7 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SlowQuery, error)
 		l:              l,
 		c:              c,
 		logFilePath:    params.LogFilePath,
-		instanceApID:   params.InstAPID,
+		auditPlanID:    params.AuditPlanID,
 		sqlCh:          make(chan scanners.SQL, 10),
 		includeUsers:   map[string]struct{}{},
 		excludeUsers:   map[string]struct{}{},
@@ -256,5 +255,5 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	return sq.c.UploadReq(scanner.UploadSQL, sq.instanceApID, pkgAP.TypeMySQLSlowLog, sqlListReq)
+	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, sqlListReq)
 }
