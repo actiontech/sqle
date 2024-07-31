@@ -526,7 +526,7 @@ type InstanceAuditPlanDetailResV1 struct {
 	Business     string `json:"business"     example:"test"`
 	InstanceType string `json:"instance_type" example:"mysql" `
 	InstanceName string `json:"instance_name" example:"test_mysql"`
-
+	InstanceID   string `json:"instance_id" example:"instance_id"`
 	// 扫描类型
 	AuditPlans []AuditPlanRes `json:"audit_plans"`
 }
@@ -570,6 +570,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 		Business:     detail.Business,
 		InstanceType: detail.DBType,
 		InstanceName: detail.InstanceName,
+		InstanceID:   fmt.Sprintf("%d", detail.InstanceID),
 		AuditPlans:   auditPlans,
 	}
 	return c.JSON(http.StatusOK, &GetInstanceAuditPlanDetailResV1{
