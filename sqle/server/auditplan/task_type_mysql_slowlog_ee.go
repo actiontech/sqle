@@ -33,7 +33,7 @@ func (at *SlowLogTaskV2) InstanceType() string {
 	return InstanceTypeMySQL
 }
 
-func (at *SlowLogTaskV2) Params() params.Params {
+func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -183,9 +183,7 @@ func (at *SlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist
 		User:             instance.User,
 		Password:         instance.Password,
 		AdditionalParams: instance.AdditionalParams,
-		DatabaseName:     ap.InstanceDatabase,
-	},
-		ap.InstanceDatabase)
+	}, "")
 	if err != nil {
 		return nil, fmt.Errorf("connect to instance fail, error: %v", err)
 	}

@@ -25,7 +25,7 @@ func (at *TDMySQLSchemaMetaTaskV2) InstanceType() string {
 	return InstanceTypeTDSQL
 }
 
-func (at *TDMySQLSchemaMetaTaskV2) Params() params.Params {
+func (at *TDMySQLSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,

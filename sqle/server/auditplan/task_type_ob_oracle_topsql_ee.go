@@ -33,7 +33,7 @@ func (at *ObForOracleTopSQLTaskV2) InstanceType() string {
 	return InstanceTypeObForOracle
 }
 
-func (at *ObForOracleTopSQLTaskV2) Params() params.Params {
+func (at *ObForOracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -264,14 +264,14 @@ func (at *ObForOracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 	}
 
 	if at.obVersion == "" {
-		at.obVersion, err = at.getOceanBaseVersion(ctx, inst, ap.InstanceDatabase)
+		at.obVersion, err = at.getOceanBaseVersion(ctx, inst, "")
 		if err != nil {
 			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", DefaultOBForOracleVersion, err)
 			at.obVersion = DefaultOBForOracleVersion
 		}
 	}
 
-	sqls, err := at.queryTopSQLs(inst, ap.InstanceDatabase, at.obVersion,
+	sqls, err := at.queryTopSQLs(inst, "", at.obVersion,
 		ap.Params.GetParam("order_by_column").String(),
 		ap.Params.GetParam("top_n").Int())
 	if err != nil {

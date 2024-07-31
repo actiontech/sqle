@@ -31,7 +31,11 @@ func (at *PGTopSQLTaskV2) InstanceType() string {
 	return InstanceTypePostgreSQL
 }
 
-func (at *PGTopSQLTaskV2) Params() params.Params {
+func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
+	id := ""
+	if len(instanceId) != 0 {
+		id = instanceId[0]
+	}
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -50,6 +54,13 @@ func (at *PGTopSQLTaskV2) Params() params.Params {
 			Desc:  "排序字段",
 			Value: DynPerformanceViewPgSQLColumnElapsedTime,
 			Type:  params.ParamTypeString,
+		},
+		{
+			Key:   paramKeySchema,
+			Desc:  "schema",
+			Value: "postgres",
+			Type:  params.ParamTypeString,
+			Enums: ShowSchemaEnumsByInstanceId(id),
 		},
 	}
 }
@@ -187,11 +198,12 @@ func (at *PGTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	// 设置默认数据库为：postgres，因为连接PG必须指定数据库
-	if len(ap.InstanceDatabase) == 0 {
-		ap.InstanceDatabase = "postgres"
-	}
+	schema := ap.Params.GetParam(paramKeySchema).String()
 
+	// 设置默认数据库为：postgres，因为连接PG必须指定数据库
+	if len(schema) == 0 {
+		schema = "postgres"
+	}
 	// 超时2分钟
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
@@ -200,7 +212,7 @@ func (at *PGTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 
-	sqls, err := at.queryTopSQLsForPg(inst, ap.InstanceDatabase, ap.Params.GetParam("order_by_column").String(),
+	sqls, err := at.queryTopSQLsForPg(inst, schema, ap.Params.GetParam("order_by_column").String(),
 		ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)

@@ -31,6 +31,7 @@ const (
 	paramKeyIndicator           = "indicator"
 	paramKeyTopN                = "top_n"
 	paramKeySlowLogCollectInput = "slow_log_collect_input"
+	paramKeySchema              = "schema"
 )
 
 var EEMetaBuilderList = []MetaBuilder{
@@ -80,9 +81,8 @@ var EEMetaBuilderList = []MetaBuilder{
 		TaskHandlerFn: NewObForOracleTopSQLTaskV2Fn(),
 	},
 	{
-		Type: TypePostgreSQLTopSQL,
-		Desc: "TOP SQL",
-
+		Type:          TypePostgreSQLTopSQL,
+		Desc:          "TOP SQL",
 		TaskHandlerFn: NewPGTopSQLTaskV2Fn()},
 	{
 		Type:          TypeTBaseSlowLog,

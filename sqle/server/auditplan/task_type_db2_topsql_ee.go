@@ -30,7 +30,7 @@ func (at *DB2TopSQLTaskV2) InstanceType() string {
 	return InstanceTypeDB2
 }
 
-func (at *DB2TopSQLTaskV2) Params() params.Params {
+func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -195,7 +195,6 @@ func (at *DB2TopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persi
 				User:             inst.User,
 				Password:         inst.Password,
 				AdditionalParams: inst.AdditionalParams,
-				DatabaseName:     ap.InstanceDatabase,
 			},
 		})
 	if err != nil {

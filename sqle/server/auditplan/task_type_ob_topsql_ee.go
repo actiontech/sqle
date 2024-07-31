@@ -29,7 +29,7 @@ func (at *ObForMysqlTopSQLTaskV2) InstanceType() string {
 	return InstanceTypeOceanBaseForMySQL
 }
 
-func (at *ObForMysqlTopSQLTaskV2) Params() params.Params {
+func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,

@@ -31,7 +31,7 @@ func (at *DmTopSQLTaskV2) InstanceType() string {
 	return InstanceTypeDm
 }
 
-func (at *DmTopSQLTaskV2) Params() params.Params {
+func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyCollectIntervalMinute,
@@ -202,7 +202,7 @@ func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 
-	sqls, err := at.queryTopSQLsForDm(inst, ap.InstanceDatabase, ap.Params.GetParam("order_by_column").String(),
+	sqls, err := at.queryTopSQLsForDm(inst, "", ap.Params.GetParam("order_by_column").String(),
 		ap.Params.GetParam("top_n").Int())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)

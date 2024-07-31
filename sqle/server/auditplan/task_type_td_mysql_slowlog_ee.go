@@ -19,7 +19,7 @@ func (at *TDMySQLSlowLogTaskV2) InstanceType() string {
 	return InstanceTypeTDSQL
 }
 
-func (at *TDMySQLSlowLogTaskV2) Params() params.Params {
+func (at *TDMySQLSlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
 			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
