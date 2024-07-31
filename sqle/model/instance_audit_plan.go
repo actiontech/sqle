@@ -74,7 +74,7 @@ func (s *Storage) GetAuditPlanDetailByIDType(id int, typ string) (*AuditPlanDeta
 }
 
 func (s *Storage) GetAuditPlanDetailByID(id uint) (*AuditPlanDetail, error) {
-	ap, exist, err := s.getAuditPlanDetailByID(id)
+	ap, exist, err := s.GetAuditPlanDetailByIDExist(id)
 	if err != nil {
 		return nil, err
 	}
@@ -84,14 +84,21 @@ func (s *Storage) GetAuditPlanDetailByID(id uint) (*AuditPlanDetail, error) {
 	return ap, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) getAuditPlanDetailByID(id uint) (*AuditPlanDetail, bool, error) {
-	var ap *AuditPlanDetail
+func (s *Storage) GetAuditPlanDetailByIDExist(id uint) (*AuditPlanDetail, bool, error) {
+	return s.getAuditPlanDetailByID(id, "")
+}
 
-	err := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
+func (s *Storage) getAuditPlanDetailByID(id uint, status string) (*AuditPlanDetail, bool, error) {
+	var ap *AuditPlanDetail
+	query := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
 		Where("audit_plans_v2.id = ?", id).
-		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_id,instance_audit_plans.create_user_id").
-		Where("audit_plans_v2.active_status = ? AND instance_audit_plans.active_status = ?", ActiveStatusNormal, ActiveStatusNormal).
-		Scan(&ap).Error
+		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_id,instance_audit_plans.create_user_id")
+
+	if status != "" {
+		query = query.Where("audit_plans_v2.active_status = ?", status)
+	}
+
+	err := query.Scan(&ap).Error
 	if err != nil {
 		return ap, false, errors.New(errors.ConnectStorageError, err)
 	}
