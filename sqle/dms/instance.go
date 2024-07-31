@@ -138,6 +138,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		Desc:              instance.Desc,
 		AdditionalParams:  additionalParams,
 		SqlQueryConfig:    sqlQueryConfig,
+		Business:          instance.Business,
 	}, nil
 }
 
