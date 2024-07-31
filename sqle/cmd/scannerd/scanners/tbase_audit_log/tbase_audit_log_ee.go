@@ -222,5 +222,5 @@ func (t *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	return t.c.UploadReq(scanner.PartialUpload, t.instanceApID, pkgAP.TypeTBaseSlowLog, sqlListReq)
+	return t.c.UploadReq(scanner.UploadSQL, t.instanceApID, pkgAP.TypeTBaseSlowLog, sqlListReq)
 }
