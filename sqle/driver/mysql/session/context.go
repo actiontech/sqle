@@ -1107,7 +1107,7 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 }
 
 func (c *Context) UseSchema(schemaName string) error {
-	_, err := c.e.Db.Exec(fmt.Sprintf("use %s", schemaName))
+	_, err := c.e.Db.Exec(fmt.Sprintf("use `%s`", schemaName))
 	if err != nil {
 		return errors.Wrap(err, "exec use schema")
 	}
