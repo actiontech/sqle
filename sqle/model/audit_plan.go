@@ -136,10 +136,6 @@ func (s *Storage) GetAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	return ap, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetActiveAuditPlanByIdV2(id uint) (*AuditPlanDetail, bool, error) {
-	return s.getAuditPlanDetailByID(id)
-}
-
 func (s *Storage) GetActiveAuditPlanById(id uint) (*AuditPlan, bool, error) {
 	ap := &AuditPlan{}
 	err := s.db.Model(AuditPlan{}).

@@ -251,6 +251,8 @@ definitions:
     type: object
   v1.AuditPlanTypeResBase:
     properties:
+      audit_plan_id:
+        type: integer
       desc:
         type: string
       type:
@@ -657,19 +659,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditPlan'
         type: array
-      business:
-        example: test
+      instance_id:
         type: string
-      instance_name:
-        example: test_mysql
-        type: string
-      instance_type:
-        example: mysql
-        type: string
-      static_audit:
-        description: 静态审核
-        example: true
-        type: boolean
     type: object
   v1.CreateProjectRuleTemplateReqV1:
     properties:
@@ -2234,10 +2225,6 @@ definitions:
       instance_type:
         example: mysql
         type: string
-      static_audit:
-        description: 静态审核
-        example: true
-        type: boolean
     type: object
   v1.InstanceAuditPlanInfo:
     properties:
@@ -6218,7 +6205,7 @@ paths:
       summary: 获取实例扫描任务概览
       tags:
       - instance_audit_plan
-  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/:
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/:
     delete:
       description: delete audit plan by type
       operationId: deleteAuditPlanByTypeV1
@@ -6228,14 +6215,14 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: instance audit plan type
+      - description: instance audit plan id
         in: path
         name: instance_audit_plan_id
         required: true
         type: string
-      - description: audit plan type
+      - description: audit plan id
         in: path
-        name: audit_plan_type
+        name: audit_plan_id
         required: true
         type: string
       responses:
@@ -6262,9 +6249,9 @@ paths:
         name: instance_audit_plan_id
         required: true
         type: string
-      - description: audit plan type
+      - description: audit plan id
         in: path
-        name: audit_plan_type
+        name: audit_plan_id
         required: true
         type: string
       - description: update audit plan status
@@ -6281,6 +6268,46 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新扫描任务状态
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sqls:
+    get:
+      description: get audit plan SQLs
+      operationId: getInstanceAuditPlanSQLsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQLs信息
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data:
@@ -6385,46 +6412,6 @@ paths:
       summary: 获取指定扫描任务的SQL列表元信息
       tags:
       - instance_audit_plan
-  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls:
-    get:
-      description: get audit plan SQLs
-      operationId: getInstanceAuditPlanSQLsV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: string
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditPlanSQLsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取指定扫描任务的SQLs信息
-      tags:
-      - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
     get:
       description: get instance tip list
@@ -6438,6 +6425,10 @@ paths:
       - description: filter db type
         in: query
         name: filter_db_type
+        type: string
+      - description: filter by business
+        in: query
+        name: filter_by_business
         type: string
       - description: filter workflow template id
         in: query
@@ -9792,6 +9783,37 @@ paths:
       summary: 获取扫描任务信息列表
       tags:
       - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload:
+    post:
+      description: upload intance audit plan SQLs
+      operationId: UploadInstanceAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      - description: upload instance audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 同步SQL到扫描任务
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
     get:
       description: get audit plan report SQLs
@@ -9929,42 +9951,6 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
-  /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload:
-    post:
-      description: upload intance audit plan SQLs
-      operationId: UploadInstanceAuditPlanSQLsV2
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: integer
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      - description: upload instance audit plan SQLs request
-        in: body
-        name: sqls
-        required: true
-        schema:
-          $ref: '#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 同步SQL到扫描任务
-      tags:
-      - instance_audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db

@@ -2429,7 +2429,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/": {
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/": {
             "delete": {
                 "security": [
                     {
@@ -2452,15 +2452,15 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "instance audit plan type",
+                        "description": "instance audit plan id",
                         "name": "instance_audit_plan_id",
                         "in": "path",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "audit plan type",
-                        "name": "audit_plan_type",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
                         "in": "path",
                         "required": true
                     }
@@ -2503,8 +2503,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "audit plan type",
-                        "name": "audit_plan_type",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
                         "in": "path",
                         "required": true
                     },
@@ -2523,6 +2523,66 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get audit plan SQLs",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取指定扫描任务的SQLs信息",
+                "operationId": "getInstanceAuditPlanSQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
                         }
                     }
                 }
@@ -2684,66 +2744,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get audit plan SQLs",
-                "tags": [
-                    "instance_audit_plan"
-                ],
-                "summary": "获取指定扫描任务的SQLs信息",
-                "operationId": "getInstanceAuditPlanSQLsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance audit plan id",
-                        "name": "instance_audit_plan_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan type",
-                        "name": "audit_plan_type",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetAuditPlanSQLsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/instance_tips": {
             "get": {
                 "security": [
@@ -2769,6 +2769,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter db type",
                         "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by business",
+                        "name": "filter_by_business",
                         "in": "query"
                     },
                     {
@@ -7893,6 +7899,54 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "upload intance audit plan SQLs",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "同步SQL到扫描任务",
+                "operationId": "UploadInstanceAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "upload instance audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
             "get": {
                 "security": [
@@ -8089,61 +8143,6 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v2.PartialSyncAuditPlanSQLsReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "upload intance audit plan SQLs",
-                "tags": [
-                    "instance_audit_plan"
-                ],
-                "summary": "同步SQL到扫描任务",
-                "operationId": "UploadInstanceAuditPlanSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "instance audit plan id",
-                        "name": "instance_audit_plan_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan type",
-                        "name": "audit_plan_type",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "upload instance audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2"
                         }
                     }
                 ],
@@ -9527,6 +9526,9 @@ var doc = `{
         "v1.AuditPlanTypeResBase": {
             "type": "object",
             "properties": {
+                "audit_plan_id": {
+                    "type": "integer"
+                },
                 "desc": {
                     "type": "string"
                 },
@@ -10118,22 +10120,8 @@ var doc = `{
                         "$ref": "#/definitions/v1.AuditPlan"
                     }
                 },
-                "business": {
-                    "type": "string",
-                    "example": "test"
-                },
-                "instance_name": {
-                    "type": "string",
-                    "example": "test_mysql"
-                },
-                "instance_type": {
-                    "type": "string",
-                    "example": "mysql"
-                },
-                "static_audit": {
-                    "description": "静态审核",
-                    "type": "boolean",
-                    "example": true
+                "instance_id": {
+                    "type": "string"
                 }
             }
         },
@@ -12400,11 +12388,6 @@ var doc = `{
                 "instance_type": {
                     "type": "string",
                     "example": "mysql"
-                },
-                "static_audit": {
-                    "description": "静态审核",
-                    "type": "boolean",
-                    "example": true
                 }
             }
         },
