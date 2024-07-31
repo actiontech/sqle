@@ -148,10 +148,11 @@ func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Ins
 	})
 }
 
-func GetInstancesInProjectByType(ctx context.Context, projectUid, dbType string) ([]*model.Instance, error) {
+func GetInstancesInProjectByTypeAndBusiness(ctx context.Context, projectUid, dbType, business string) ([]*model.Instance, error) {
 	return getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid:     projectUid,
-		FilterByDBType: dbType,
+		ProjectUid:       projectUid,
+		FilterByDBType:   dbType,
+		FilterByBusiness: business,
 	})
 }
 

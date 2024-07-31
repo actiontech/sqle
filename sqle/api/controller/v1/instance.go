@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -391,8 +392,12 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
-
-	instances, err := GetCanOperationInstances(c.Request().Context(), user, req.FilterDBType, projectUid, operationType)
+	dbServiceReq := &dmsV1.ListDBServiceReq{
+		FilterByBusiness: req.FilterByBusiness,
+		ProjectUid:       projectUid,
+		FilterByDBType:   req.FilterDBType,
+	}
+	instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, operationType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
