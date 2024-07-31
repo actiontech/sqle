@@ -275,7 +275,7 @@ func Ping(entry *logrus.Entry, instance *driverV2.DSN) error {
 }
 
 func (c *Executor) UseSchema(schemaName string) error {
-	_, err := c.Db.Exec(fmt.Sprintf("use %s", schemaName))
+	_, err := c.Db.Exec(fmt.Sprintf("use `%s`", schemaName))
 	if err != nil {
 		return errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
