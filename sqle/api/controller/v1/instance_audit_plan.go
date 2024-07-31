@@ -46,7 +46,7 @@ type AuditPlan struct {
 
 type CreatInstanceAuditPlanResV1 struct {
 	controller.BaseRes
-	Data CreatInstanceAuditPlanRes
+	Data CreatInstanceAuditPlanRes `json:"data"`
 }
 
 type CreatInstanceAuditPlanRes struct {
