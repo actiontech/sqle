@@ -29,7 +29,7 @@ var (
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.host, "host", "H", "127.0.0.1", "sqle host")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.port, "port", "P", "10000", "sqle port")
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.instanceAuditPlanId, "instance_audit_plan_id", "I", "", "instance audit plan id")
+	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.instanceAuditPlanId, "instance_audit_plan_id", "", "", "instance audit plan id")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.token, "token", "A", "", "sqle token")
 	rootCmd.PersistentFlags().IntVarP(&rootCmdFlags.timeout, "timeout", "T", pkgScanner.DefaultTimeoutNum, "request sqle timeout in seconds")
 	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.project, "project", "J", "default", "project name")
