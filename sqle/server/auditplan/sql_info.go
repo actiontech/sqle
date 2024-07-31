@@ -3,7 +3,6 @@ package auditplan
 import (
 	"encoding/json"
 
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -69,14 +68,15 @@ func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 	return s
 }
 
-func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) *SQLV2 {
-	metrics := []string{}
+func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) (*SQLV2, error) {
 	meta, err := GetMeta(sql.Source)
-	if err == nil {
-		metrics = meta.Metrics
+	if err != nil {
+		return nil, err
 	}
-	// todo: 错误处理
-	info, _ := sql.Info.OriginValue()
+	info, err := sql.Info.OriginValue()
+	if err != nil {
+		return nil, err
+	}
 	s := &SQLV2{
 		SQLId:        sql.SQLID,
 		Source:       sql.Source,
@@ -86,9 +86,9 @@ func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) *SQLV2 {
 		SchemaName:   sql.SchemaName,
 		SQLContent:   sql.SqlText,
 		Fingerprint:  sql.SqlFingerprint,
-		Info:         LoadMetrics(info, metrics),
+		Info:         LoadMetrics(info, meta.Metrics),
 	}
-	return s
+	return s, nil
 }
 
 func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
@@ -114,8 +114,7 @@ func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
 }
 
 func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
-	data, _ := json.Marshal(sql.Info.ToMap())                                                                       // todo: 错误处理
-	log.NewEntry().Infof("convert manager sql, id: %s, fp: %s, data: %s", sql.SQLId, sql.Fingerprint, string(data)) // todo: 去除debug日志
+	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
 	return &model.OriginManageSQL{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,
@@ -131,8 +130,7 @@ func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
 }
 
 func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.OriginManageSQLQueue {
-	data, _ := json.Marshal(sql.Info.ToMap())                                                                             // todo: 错误处理
-	log.NewEntry().Infof("convert manager sql queue, id: %s, fp: %s, data: %s", sql.SQLId, sql.Fingerprint, string(data)) // todo: 去除debug日志
+	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
 	return &model.OriginManageSQLQueue{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,

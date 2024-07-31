@@ -29,13 +29,15 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	}
 	cache := NewSQLV2CacheWithPersist(s)
 	for _, sql := range queues {
-		sqlV2 := ConvertMangerSQLQueueToSQLV2(sql)
-		meta, err := GetMeta(sqlV2.Source)
+		sqlV2, err := ConvertMangerSQLQueueToSQLV2(sql)
+		// 此处直接continue会导致无法审核记录本条sql，但是不影响其他sql的处理
+		// 后续会删除队列中所有的sql，需要考虑数据丢失问题
 		if err != nil {
-			entry.Warnf("get meta failed, error: %v", err)
+			entry.Warnf("convert manger sql queue to sqlv2 failed, error: %v", err)
 			// todo: 有错误咋处理
 			continue
 		}
+		meta, _ := GetMeta(sqlV2.Source)
 		if meta.Handler == nil {
 			entry.Warnf("do not support this type (%s), error: %v", sqlV2.Source, err)
 			// todo: 没有处理器咋办
@@ -65,22 +67,11 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		return
 	}
 
-	// todo: 保证事务和错误处理
-	for _, sql := range auditSQLs {
-		err := s.UpdateManagerSQL(sql)
-		if err != nil {
-			entry.Warnf("update manager sql failed, error: %v", err)
-			return
-		}
-
-		// 同时更新状态表
-		err = s.UpdateManagerSQLStatus(sql)
-		if err != nil {
-			entry.Warnf("update manager sql status failed, error: %v", err)
-			return
-		}
-
+	err = s.TxResultsOfHandling(auditSQLs)
+	if err != nil {
+		entry.Warnf("update manager sql failed, error: %v", err)
 	}
+
 	for _, sql := range queues {
 		err := s.RemoveSQLFromQueue(sql)
 		if err != nil {

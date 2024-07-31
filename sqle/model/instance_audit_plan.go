@@ -378,16 +378,33 @@ func (s *Storage) RemoveSQLFromQueue(sql *OriginManageSQLQueue) error {
 	return s.db.Unscoped().Delete(sql).Error
 }
 
-func (s *Storage) UpdateManagerSQL(sql *OriginManageSQL) error {
+func (s *Storage) UpdateManagerSQL(tx *gorm.DB, sql *OriginManageSQL) error {
 	const query = "INSERT INTO `origin_manage_sqls` (`sql_id`,`source`,`source_id`,`project_id`,`instance_name`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`) " +
 		"VALUES (?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_name` = VALUES(instance_name), " +
 		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info), `audit_level`= VALUES(audit_level), `audit_results`= VALUES(audit_results)"
-	return s.db.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceName, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults).Error
+	return tx.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceName, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults).Error
 }
 
-func (s *Storage) UpdateManagerSQLStatus(sql *OriginManageSQL) error {
+func (s *Storage) UpdateManagerSQLStatus(tx *gorm.DB, sql *OriginManageSQL) error {
 	const query = `	INSERT INTO sql_managers (origin_manage_sql_id)
 	SELECT oms.id FROM origin_manage_sqls oms WHERE oms.sql_id = ?
 	ON DUPLICATE KEY UPDATE origin_manage_sql_id = VALUES(origin_manage_sql_id);`
-	return s.db.Exec(query, sql.SQLID).Error
+	return tx.Exec(query, sql.SQLID).Error
+}
+
+func (s *Storage) TxResultsOfHandling(auditSQLs []*OriginManageSQL) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, sql := range auditSQLs {
+			err := s.UpdateManagerSQL(txDB, sql)
+			if err != nil {
+				return err
+			}
+			// 同时更新状态表
+			err = s.UpdateManagerSQLStatus(txDB, sql)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
