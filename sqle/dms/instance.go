@@ -264,6 +264,21 @@ func GetInstanceNamesInProject(ctx context.Context, projectUid string) ([]string
 	return ret, nil
 }
 
+func GetInstancesByIdWithoutError(instanceId string) (instance model.Instance) {
+	if instanceId == "" {
+		return
+	}
+
+	inst, exist, err := getInstance(context.TODO(), dmsV1.ListDBServiceReq{
+		PageSize:    1,
+		FilterByUID: instanceId,
+	})
+	if err != nil || !exist {
+		return instance
+	}
+	return *inst
+}
+
 func GetInstancesById(ctx context.Context, instanceId string) (*model.Instance, bool, error) {
 	if instanceId == "" {
 		return nil, false, nil
@@ -439,7 +454,7 @@ func ListActiveAuditPlansWithInstanceV2(fn func() ([]*model.AuditPlanDetail, err
 	}
 
 	for i, item := range auditPlans {
-		instance, exists, err := GetInstanceInProjectByName(context.Background(), string(item.GetBaseInfo().ProjectId), item.InstanceName)
+		instance, exists, err := GetInstancesById(context.Background(), item.InstanceID)
 		if err != nil {
 			continue
 		}
@@ -456,7 +471,7 @@ func GetAuditPlansWithInstanceV2(id uint, fn func(id uint) (*model.AuditPlanDeta
 		return nil, err
 	}
 
-	instance, exists, err := GetInstanceInProjectByName(context.Background(), auditPlan.ProjectId, auditPlan.InstanceName)
+	instance, exists, err := GetInstancesById(context.Background(), auditPlan.InstanceID)
 	if err != nil {
 		return nil, err
 	}

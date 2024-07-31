@@ -14,8 +14,6 @@ import (
 type InstanceAuditPlan struct {
 	Model
 	ProjectId    ProjectUID `gorm:"index; not null"`
-	Business     string     `json:"business" gorm:"type:varchar(255)"`
-	InstanceName string     `json:"instance_name" gorm:"type:varchar(255)"`
 	InstanceID   uint64     `json:"instance_id"`
 	DBType       string     `json:"db_type" gorm:"type:varchar(255) not null"`
 	Token        string     `json:"token" gorm:"not null"`
@@ -45,9 +43,8 @@ type AuditPlanDetail struct {
 	ProjectId    string `json:"project_id"`
 	DBType       string `json:"db_type"`
 	Token        string `json:"token" `
-	InstanceName string `json:"instance_name"`
+	InstanceID   string `json:"instance_id"`
 	CreateUserID string `json:"create_user_id"`
-	SchemaName   string `json:"schema_name"`
 
 	Instance *Instance `gorm:"-"`
 }
@@ -56,7 +53,7 @@ func (s *Storage) ListActiveAuditPlanDetail() ([]*AuditPlanDetail, error) {
 	var aps []*AuditPlanDetail
 	err := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
 		Where("audit_plans_v2.active_status = ? AND instance_audit_plans.active_status = ?", ActiveStatusNormal, ActiveStatusNormal).
-		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_name,instance_audit_plans.create_user_id").
+		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_id,instance_audit_plans.create_user_id").
 		Scan(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
@@ -67,7 +64,7 @@ func (s *Storage) GetAuditPlanDetailByIDType(id int, typ string) (*AuditPlanDeta
 	err := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
 		Where("audit_plans_v2.instance_audit_plan_id = ?", id).
 		Where("audit_plans_v2.type = ?", typ).
-		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_name,instance_audit_plans.create_user_id").
+		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_id,instance_audit_plans.create_user_id").
 		Scan(&aps).Error
 
 	if aps == nil {
@@ -92,7 +89,7 @@ func (s *Storage) getAuditPlanDetailByID(id uint) (*AuditPlanDetail, bool, error
 
 	err := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
 		Where("audit_plans_v2.id = ?", id).
-		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_name,instance_audit_plans.create_user_id").
+		Select("audit_plans_v2.*,instance_audit_plans.project_id,instance_audit_plans.db_type,instance_audit_plans.token,instance_audit_plans.instance_id,instance_audit_plans.create_user_id").
 		Where("audit_plans_v2.active_status = ? AND instance_audit_plans.active_status = ?", ActiveStatusNormal, ActiveStatusNormal).
 		Scan(&ap).Error
 	if err != nil {
@@ -233,6 +230,17 @@ type SQLManager struct {
 	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
 }
 
+func (s *Storage) GetAuditPlanByID(auditPlanID int) (*AuditPlanV2, bool, error) {
+	auditPlan := &AuditPlanV2{}
+	err := s.db.Model(AuditPlanV2{}).
+		Where("audit_plans_v2.id = ?", auditPlanID).
+		First(auditPlan).Error
+	if err == gorm.ErrRecordNotFound {
+		return auditPlan, false, nil
+	}
+	return auditPlan, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetAuditPlanByInstanceIdAndType(instanceAuditPlanID string, auditPlanType string) (*AuditPlanV2, bool, error) {
 	auditPlan := &AuditPlanV2{}
 	err := s.db.Model(AuditPlanV2{}).
@@ -297,24 +305,22 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 	})
 }
 
-func (s *Storage) DeleteAuditPlan(instanceAuditPlanId, auditPlanType string) error {
+func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 删除队列表中数据
 		err := txDB.Exec(`DELETE FROM origin_manage_sql_queues USING origin_manage_sql_queues
 		JOIN audit_plans_v2 ap ON ap.id=origin_manage_sql_queues.source_id
-		JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id
-		WHERE iap.ID = ? AND ap.type = ?`, instanceAuditPlanId, auditPlanType).Error
+		WHERE ap.id = ?`, auditPlanID).Error
 		if err != nil {
 			return err
 		}
-		err = txDB.Exec(`UPDATE instance_audit_plans iap 
-		LEFT JOIN audit_plans_v2 ap ON iap.id = ap.instance_audit_plan_id
+		err = txDB.Exec(`UPDATE audit_plans_v2 ap 
 		LEFT JOIN origin_manage_sqls oms ON oms.source_id = ap.id
 		LEFT JOIN sql_managers sm ON sm.origin_manage_sql_id = oms.id
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
-		WHERE iap.ID = ? AND ap.type = ?`, instanceAuditPlanId, auditPlanType).Error
+		WHERE  ap.type = ?`, auditPlanID).Error
 		if err != nil {
 			return err
 		}
@@ -346,17 +352,15 @@ func (s *Storage) GetInstanceAuditPlanByInstanceID(instanceID int64) (*InstanceA
 type OriginManageSQLQueue struct {
 	Model
 
-	Source         string       `json:"source" gorm:"type:varchar(255)"` // 智能扫描SQL/快速审核SQL/IDE审核SQL/CB审核SQL
-	SourceId       uint         `json:"source_id" gorm:"type:varchar(255)"`
-	ProjectId      string       `json:"project_id" gorm:"type:varchar(255)"`
-	InstanceName   string       `json:"instance_name" gorm:"type:varchar(255)"`
-	SchemaName     string       `json:"schema_name" gorm:"type:varchar(255)"`
-	SqlFingerprint string       `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
-	SqlText        string       `json:"sql_text" gorm:"type:mediumtext;not null"`
-	Info           JSON         `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
-	AuditLevel     string       `json:"audit_level" gorm:"type:varchar(255)"`
-	AuditResults   AuditResults `json:"audit_results" gorm:"type:json"`
-	EndPoint       string       `json:"endpoint" gorm:"type:varchar(255)"`
+	Source         string `json:"source" gorm:"type:varchar(255)"` // 智能扫描SQL/快速审核SQL/IDE审核SQL/CB审核SQL
+	SourceId       uint   `json:"source_id" gorm:"type:varchar(255)"`
+	ProjectId      string `json:"project_id" gorm:"type:varchar(255)"`
+	InstanceName   string `json:"instance_name" gorm:"type:varchar(255)"`
+	SchemaName     string `json:"schema_name" gorm:"type:varchar(255)"`
+	SqlFingerprint string `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
+	SqlText        string `json:"sql_text" gorm:"type:mediumtext;not null"`
+	Info           JSON   `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
+	EndPoint       string `json:"endpoint" gorm:"type:varchar(255)"`
 
 	// 需要将这个MD5实现与SQLManager关联的效果（审核结果也要加入md5，避免修改规则导致结果变化
 	SQLID string `json:"sql_id" gorm:"type:varchar(255);not null"`

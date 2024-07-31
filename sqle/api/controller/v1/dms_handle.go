@@ -11,8 +11,6 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
-	dms "github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -70,36 +68,5 @@ func (h BeforeDeleteDbService) Handle(ctx context.Context, currentUserId string,
 }
 
 func (h AfterUpdateDbService) Handle(ctx context.Context, currentUserId string, instanceIdStr string) error {
-	instanceId, err := strconv.ParseInt(instanceIdStr, 10, 64)
-	if err != nil {
-		return err
-	}
-	instance, _, err := dms.GetInstancesById(ctx, instanceIdStr)
-	if err != nil {
-		return err
-	}
-	s := model.GetStorage()
-	insAuditPlan, exist, err := s.GetInstanceAuditPlanByInstanceID(instanceId)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return nil
-	}
-	if needUpdate := h.isNeedUpdateService(instance, insAuditPlan); needUpdate {
-		insAuditPlan.Business = instance.Business
-		err := s.Save(insAuditPlan)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
-}
-
-func (h AfterUpdateDbService) isNeedUpdateService(instance *model.Instance, insAuditPlan *model.InstanceAuditPlan) bool {
-	needUpdate := false
-	if instance.Business != insAuditPlan.Business {
-		return true
-	}
-	return needUpdate
 }

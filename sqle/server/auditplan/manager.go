@@ -52,10 +52,9 @@ func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
 	return &AuditPlan{
 		ID:               a.ID,
 		ProjectId:        a.ProjectId,
-		Name:             a.InstanceName + "-" + a.Type,
 		DBType:           a.DBType,
 		Token:            a.Token,
-		InstanceName:     a.InstanceName,
+		InstanceName:     dms.GetInstancesByIdWithoutError(a.InstanceID).Name,
 		CreateUserID:     a.CreateUserID,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,

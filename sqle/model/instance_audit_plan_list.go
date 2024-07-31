@@ -7,9 +7,8 @@ import (
 
 type InstanceAuditPlanListDetail struct {
 	Id           uint           `json:"id"`
-	Business     string         `json:"business"`
 	DBType       string         `json:"db_type"`
-	InstanceName string         `json:"instance_name"`
+	InstanceID   string         `json:"instance_id"`
 	Token        string         `json:"token"`
 	ActiveStatus string         `json:"active_status"`
 	CreateUserId string         `json:"create_user_id"`
@@ -20,9 +19,8 @@ type InstanceAuditPlanListDetail struct {
 var instanceAuditPlanQueryTpl = `
 SELECT 
     instance_audit_plans.id,
-    instance_audit_plans.business,
     instance_audit_plans.db_type,
-    instance_audit_plans.instance_name,
+    instance_audit_plans.instance_id,
     instance_audit_plans.token,
     instance_audit_plans.active_status,
     instance_audit_plans.create_user_id,
@@ -61,8 +59,8 @@ WHERE
 {{- if not .current_user_is_admin }}
 AND (
     instance_audit_plans.create_user_id = :current_user_id
-    {{- if .accessible_instances_name }}
-    OR instance_audit_plans.instance_name IN ( {{ .accessible_instances_name }} )
+    {{- if .accessible_instances_id }}
+    OR instance_audit_plans.instance_id IN ( {{ .accessible_instances_id }} )
     {{- end }}
 )
 {{- end }}
@@ -71,20 +69,12 @@ AND (
 AND instance_audit_plans.db_type = :filter_instance_audit_plan_db_type
 {{- end }}
 
-{{- if .filter_by_business }}
-AND instance_audit_plans.business = :filter_by_business
-{{- end }}
-
-{{- if .fuzzy_search }}
-AND instance_audit_plans.business LIKE '%{{ .fuzzy_search }}%'
-{{- end }}
-
 {{- if .filter_audit_plan_type }}
 AND FIND_IN_SET(:filter_audit_plan_type, audit_plans.types)
 {{- end }}
 
-{{- if .filter_audit_plan_instance_name }}
-AND instance_audit_plans.instance_name = :filter_audit_plan_instance_name
+{{- if .filter_audit_plan_instance_id }}
+AND instance_audit_plans.instance_id = :filter_audit_plan_instance_id
 {{- end }}
 
 {{- if .filter_project_id }}

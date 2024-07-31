@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,14 +21,14 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
+	dry "github.com/ungerik/go-dry"
 
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
-	dry "github.com/ungerik/go-dry"
 )
 
 type CreateInstanceAuditPlanReqV1 struct {
-	InstanceId string `json:"instance_id" form:"instance_id"`
+	InstanceId string `json:"instance_id" form:"instance_id"  valid:"required"`
 	// 扫描类型
 	AuditPlans []AuditPlan `json:"audit_plans" form:"audit_plans" valid:"required"`
 }
@@ -64,54 +65,45 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if !dry.StringInSlice(req.InstanceType, driver.GetPluginManager().AllDrivers()) {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driverV2.DriverNotSupportedError{DriverTyp: req.InstanceType}))
-	}
-
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	// check instance
-	var instanceType string
-	var instanceID uint64
-	if req.InstanceName != "" {
-		inst, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
-		if !exist {
-			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
-		} else if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-		}
-		instanceID = inst.ID
-		instanceType = inst.DbType
-		// check instance audit plan exist
-		_, exist, err = model.GetStorage().GetInstanceAuditPlanByInstanceID(int64(inst.ID))
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if exist {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("current instance has audit plan"))
-		}
-		// check operation
-		user, err := controller.GetCurrentUser(c, dms.GetUser)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		canCreateAuditPlan, err := CheckUserCanCreateAuditPlan(c.Request().Context(), projectUid, user, []*model.Instance{inst})
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !canCreateAuditPlan {
-			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
-		}
+	inst, exist, err := dms.GetInstancesById(c.Request().Context(), req.InstanceId)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+	} else if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
 
-	} else {
-		instanceType = req.InstanceType
+	if !dry.StringInSlice(inst.DbType, driver.GetPluginManager().AllDrivers()) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DriverNotExist, &driverV2.DriverNotSupportedError{DriverTyp: inst.DbType}))
+	}
+
+	// check instance audit plan exist
+	_, exist, err = model.GetStorage().GetInstanceAuditPlanByInstanceID(int64(inst.ID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("current instance has audit plan"))
+	}
+	// check operation
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	canCreateAuditPlan, err := CheckUserCanCreateAuditPlan(c.Request().Context(), projectUid, user, []*model.Instance{inst})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !canCreateAuditPlan {
+		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
 	}
 
 	userId := controller.GetUserID(c)
-
 	s := model.GetStorage()
 
 	auditPlans := make([]*model.AuditPlanV2, 0)
@@ -126,7 +118,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 			}
 		}
 		// check rule template name
-		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlan.RuleTemplateName, req.InstanceName, req.InstanceType, projectUid)
+		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlan.RuleTemplateName, inst.Name, inst.DbType, projectUid)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -135,7 +127,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		if auditPlan.Type == "" {
 			auditPlan.Type = auditplan.TypeDefault
 		}
-		ps, err := checkAndGenerateAuditPlanParams(auditPlan.Type, instanceType, auditPlan.Params)
+		ps, err := checkAndGenerateAuditPlanParams(auditPlan.Type, inst.DbType, auditPlan.Params)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
@@ -150,9 +142,8 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 
 	ap := &model.InstanceAuditPlan{
 		ProjectId:    model.ProjectUID(projectUid),
-		InstanceName: req.InstanceName,
-		InstanceID:   instanceID,
-		DBType:       instanceType,
+		InstanceID:   inst.ID,
+		DBType:       inst.DbType,
 		CreateUserID: userId,
 		AuditPlans:   auditPlans,
 		ActiveStatus: model.ActiveStatusNormal,
@@ -267,6 +258,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", dbAuditPlans.InstanceID))
 	for _, auditPlan := range req.AuditPlans {
 		if auditPlan.RuleTemplateName != "" {
 			exist, err := s.IsRuleTemplateExist(auditPlan.RuleTemplateName, []string{projectUid, model.ProjectIdForGlobalRuleTemplate})
@@ -278,7 +270,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			}
 		}
 		// check rule template name
-		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlan.RuleTemplateName, dbAuditPlans.InstanceName, dbAuditPlans.DBType, projectUid)
+		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlan.RuleTemplateName, inst.Name, dbAuditPlans.DBType, projectUid)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -377,7 +369,7 @@ type AuditPlanTypeResBase struct {
 type GetInstanceAuditPlansReqV1 struct {
 	FilterByBusiness      string `json:"filter_by_business" query:"filter_by_business"`
 	FilterByDBType        string `json:"filter_by_db_type" query:"filter_by_db_type"`
-	FilterByInstanceName  string `json:"filter_by_instance_name" query:"filter_by_instance_name"`
+	FilterByInstanceID    string `json:"filter_by_instance_id" query:"filter_by_instance_id"`
 	FilterByAuditPlanType string `json:"filter_by_audit_plan_type" query:"filter_by_audit_plan_type"`
 	FilterByActiveStatus  string `json:"filter_by_active_status" query:"filter_by_active_status"`
 	FuzzySearch           string `json:"fuzzy_search" query:"fuzzy_search"`
@@ -413,7 +405,7 @@ type InstanceAuditPlanResV1 struct {
 // @Param project_name path string true "project name"
 // @Param filter_by_business query string false "filter by business"
 // @Param filter_by_db_type query string false "filter by db type"
-// @Param filter_by_instance_name query string false "filter by instance name"
+// @Param filter_by_instance_id query string false "filter by instance id"
 // @Param filter_by_audit_plan_type query string false "filter instance audit plan type"
 // @Param filter_by_active_status query bool false "filter instance audit plan active status"
 // @Param fuzzy_search query string false "fuzzy search"
@@ -445,7 +437,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	data := map[string]interface{}{
 		"filter_instance_audit_plan_db_type": req.FilterByDBType,
 		"filter_audit_plan_type":             req.FilterByAuditPlanType,
-		"filter_audit_plan_instance_name":    req.FilterByInstanceName,
+		"filter_audit_plan_instance_id":      req.FilterByInstanceID,
 		"filter_by_business":                 req.FilterByBusiness,
 		"filter_project_id":                  projectUid,
 		"current_user_id":                    userId,
@@ -455,12 +447,9 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		"offset":                             offset,
 	}
 	if !up.IsAdmin() {
-		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(v1.OpPermissionTypeViewOtherAuditPlan))
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if len(instanceNames) > 0 {
-			data["accessible_instances_name"] = fmt.Sprintf("\"%s\"", strings.Join(instanceNames, "\",\""))
+		accessinstanceId := up.GetInstancesByOP(v1.OpPermissionTypeViewOtherAuditPlan)
+		if len(accessinstanceId) > 0 {
+			data["accessible_instances_id"] = fmt.Sprintf("\"%s\"", strings.Join(accessinstanceId, "\",\""))
 		}
 	}
 
@@ -475,15 +464,16 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		typeBases := make([]AuditPlanTypeResBase, 0, len(apTypes))
 		for _, apType := range apTypes {
 			if apType != "" {
-				typeBase := ConvertAuditPlanTypeToRes(apType)
+				typeBase := ConvertAuditPlanTypeToRes(v.Id, apType)
 				typeBases = append(typeBases, typeBase)
+
 			}
 		}
-
+		inst := dms.GetInstancesByIdWithoutError(v.InstanceID)
 		resData[i] = InstanceAuditPlanResV1{
 			InstanceAuditPlanId: v.Id,
-			InstanceName:        v.InstanceName,
-			Business:            v.Business,
+			InstanceName:        inst.Name,
+			Business:            inst.Business,
 			InstanceType:        v.DBType,
 			AuditPlanTypes:      typeBases,
 			ActiveStatus:        v.ActiveStatus,
@@ -498,12 +488,13 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	})
 }
 
-func ConvertAuditPlanTypeToRes(auditPlanType string) AuditPlanTypeResBase {
+func ConvertAuditPlanTypeToRes(id uint, auditPlanType string) AuditPlanTypeResBase {
 	for _, meta := range auditplan.Metas {
 		if meta.Type == auditPlanType {
 			return AuditPlanTypeResBase{
 				AuditPlanType:     auditPlanType,
 				AuditPlanTypeDesc: meta.Desc,
+				AuditPlanId:       id,
 			}
 		}
 	}
@@ -557,11 +548,12 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", detail.InstanceID))
 	resData := InstanceAuditPlanDetailResV1{
-		Business:     detail.Business,
+		Business:     inst.Business,
 		InstanceType: detail.DBType,
-		InstanceName: detail.InstanceName,
-		InstanceID:   fmt.Sprintf("%d", detail.InstanceID),
+		InstanceName: inst.Name,
+		InstanceID:   inst.GetIDStr(),
 		AuditPlans:   auditPlans,
 	}
 	return c.JSON(http.StatusOK, &GetInstanceAuditPlanDetailResV1{
@@ -573,7 +565,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, error) {
 	resAuditPlans := make([]AuditPlanRes, 0, len(auditPlans))
 	for _, v := range auditPlans {
-		typeBase := ConvertAuditPlanTypeToRes(v.Type)
+		typeBase := ConvertAuditPlanTypeToRes(v.ID, v.Type)
 		resAuditPlan := AuditPlanRes{
 			RuleTemplateName: v.RuleTemplateName,
 			Type:             typeBase,
@@ -654,6 +646,8 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
 	s := model.GetStorage()
+
+	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", detail.InstanceID))
 	resAuditPlans := make([]InstanceAuditPlanInfo, 0, len(detail.AuditPlans))
 	for _, v := range detail.AuditPlans {
 		execCmd := GetAuditPlanExecCmd(projectName, detail, v)
@@ -677,12 +671,12 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 			ruleTemplate.IsGlobalRuleTemplate = (template.ProjectId == model.ProjectIdForGlobalRuleTemplate)
 		}
 
-		typeBase := ConvertAuditPlanTypeToRes(v.Type)
+		typeBase := ConvertAuditPlanTypeToRes(v.ID, v.Type)
 		resAuditPlan := InstanceAuditPlanInfo{
 			ID:                 v.ID,
 			Type:               typeBase,
 			DBType:             detail.DBType,
-			InstanceName:       detail.InstanceName,
+			InstanceName:       inst.Name,
 			ExecCmd:            execCmd,
 			RuleTemplate:       ruleTemplate,
 			TotalSQLNums:       totalSQLNums,
@@ -700,7 +694,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 }
 
 func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *model.AuditPlanV2) string {
-	logger := log.NewEntry().WithField("get audit plan exec cmd", fmt.Sprintf("inst name:%s,audit plan type : %s", iap.InstanceName, ap.Type))
+	logger := log.NewEntry().WithField("get audit plan exec cmd", fmt.Sprintf("inst name:%s,audit plan type : %s", iap.InstanceID, ap.Type))
 	_, ok := auditplan.GetSupportedScannerAuditPlanType()[ap.Type]
 	if !ok {
 		return ""
@@ -752,7 +746,12 @@ func DeleteAuditPlanById(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
 	s := model.GetStorage()
-	err = s.DeleteAuditPlan(instanceAuditPlanID, c.Param("audit_plan_type"))
+
+	audit_plan_id, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	err = s.DeleteAuditPlan(audit_plan_id)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -796,8 +795,12 @@ func UpdateAuditPlanStatus(c echo.Context) error {
 	if deatil.ActiveStatus != model.ActiveStatusNormal && req.Active == model.ActiveStatusNormal {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("instance audit plan active status not normal")))
 	}
+	audit_plan_id, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
 	s := model.GetStorage()
-	auditPlan, exist, err := s.GetAuditPlanByInstanceIdAndType(instanceAuditPlanID, c.Param("audit_plan_type"))
+	auditPlan, exist, err := s.GetAuditPlanByID(audit_plan_id)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -842,15 +845,15 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
-	apType := c.Param("audit_plan_type")
-
-	s := model.GetStorage()
-	ap, exist, err := s.GetAuditPlanDetailByType(instanceAuditPlanID, apType)
+	apID, err := strconv.Atoi(c.Param("audit_plan_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+
+	s := model.GetStorage()
+	ap, err := s.GetAuditPlanDetailByID(uint(apID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)

@@ -207,7 +207,7 @@ func GetInstanceAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, insta
 			return nil, false, errors.NewUserNotPermissionError(string(opType))
 		}
 		for _, instance := range instances {
-			if ap.InstanceName == instance.Name {
+			if ap.InstanceID == instance.ID {
 				return ap, true, nil
 			}
 		}
