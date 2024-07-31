@@ -11,7 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 )
 
-func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, instAPID, auditPlanType string) error {
+func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, auditPlanID string) error {
 	// key=fingerPrint val=count
 	counterMap := make(map[string]uint, len(sqls))
 
@@ -34,7 +34,7 @@ func Upload(ctx context.Context, sqls []scanners.SQL, c *scanner.Client, instAPI
 		})
 	}
 
-	err := c.UploadReq(scanner.UploadSQL, instAPID, auditPlanType, reqBody)
+	err := c.UploadReq(scanner.UploadSQL, auditPlanID, reqBody)
 	return err
 }
 
