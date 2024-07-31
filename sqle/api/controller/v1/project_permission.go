@@ -157,7 +157,10 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 	}
 
 	if opType != "" {
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, "", projectId, opType)
+		dbServiceReq := &dmsV1.ListDBServiceReq{
+			ProjectUid: projectId,
+		}
+		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
 		if err != nil {
 			return nil, false, errors.NewUserNotPermissionError(string(opType))
 		}
@@ -196,12 +199,15 @@ func GetInstanceAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, insta
 	}
 
 	if opType != "" {
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, "", projectId, opType)
+		dbServiceReq := &dmsV1.ListDBServiceReq{
+			ProjectUid: projectId,
+		}
+		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
 		if err != nil {
 			return nil, false, errors.NewUserNotPermissionError(string(opType))
 		}
 		for _, instance := range instances {
-			if ap.InstanceName == instance.Name {
+			if ap.InstanceID == instance.ID {
 				return ap, true, nil
 			}
 		}
@@ -318,14 +324,14 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 }
 
 // 根据用户权限获取能访问/操作的实例列表
-func GetCanOperationInstances(ctx context.Context, user *model.User, dbType, projectUid string, operationType v1.OpPermissionType) ([]*model.Instance, error) {
+func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV1.ListDBServiceReq, operationType v1.OpPermissionType) ([]*model.Instance, error) {
 	// 获取当前项目下指定数据库类型的全部实例
-	instances, err := dms.GetInstancesInProjectByType(ctx, projectUid, dbType)
+	instances, err := dms.GetInstancesInProjectByTypeAndBusiness(ctx, req.ProjectUid, req.FilterByDBType, req.FilterByBusiness)
 	if err != nil {
 		return nil, err
 	}
 
-	userOpPermissions, isAdmin, err := dmsobject.GetUserOpPermission(ctx, projectUid, user.GetIDStr(), controller.GetDMSServerAddress())
+	userOpPermissions, isAdmin, err := dmsobject.GetUserOpPermission(ctx, req.ProjectUid, user.GetIDStr(), controller.GetDMSServerAddress())
 	if err != nil {
 		return nil, err
 	}

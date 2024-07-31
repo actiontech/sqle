@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -334,6 +335,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 
 type InstanceTipReqV1 struct {
 	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
+	FilterByBusiness         string `json:"filter_by_business" query:"filter_by_business"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
 	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage,create_optimization" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage create_optimization"`
 }
@@ -360,6 +362,7 @@ type GetInstanceTipsResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param filter_db_type query string false "filter db type"
+// @Param filter_by_business query string false "filter by business"
 // @Param filter_workflow_template_id query string false "filter workflow template id"
 // @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow,sql_manage,create_optimization)
 // @Success 200 {object} v1.GetInstanceTipsResV1
@@ -389,8 +392,12 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
-
-	instances, err := GetCanOperationInstances(c.Request().Context(), user, req.FilterDBType, projectUid, operationType)
+	dbServiceReq := &dmsV1.ListDBServiceReq{
+		FilterByBusiness: req.FilterByBusiness,
+		ProjectUid:       projectUid,
+		FilterByDBType:   req.FilterDBType,
+	}
+	instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, operationType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

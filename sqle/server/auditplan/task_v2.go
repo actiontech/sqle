@@ -59,9 +59,6 @@ func auditSQLs(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
 		return nil, err
 	}
 	schema := sqls[0].SchemaName
-	if schema == "" {
-		schema = auditPlan.SchemaName
-	}
 
 	task := &model.Task{Instance: auditPlan.Instance, Schema: schema, DBType: auditPlan.DBType}
 
