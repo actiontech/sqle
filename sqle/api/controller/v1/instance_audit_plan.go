@@ -27,9 +27,6 @@ import (
 )
 
 type CreateInstanceAuditPlanReqV1 struct {
-	// 静态审核
-	StaticAudit  bool   `json:"static_audit" form:"static_audit" example:"true"`
-	Business     string `json:"business" form:"business" example:"test"`
 	InstanceType string `json:"instance_type" form:"instance_type" example:"mysql" `
 	InstanceName string `json:"instance_name" form:"instance_name" example:"test_mysql"`
 
@@ -155,7 +152,6 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 
 	ap := &model.InstanceAuditPlan{
 		ProjectId:    model.ProjectUID(projectUid),
-		Business:     req.Business,
 		InstanceName: req.InstanceName,
 		InstanceID:   instanceID,
 		DBType:       instanceType,
@@ -375,6 +371,7 @@ func UpdateInstanceAuditPlanStatus(c echo.Context) error {
 }
 
 type AuditPlanTypeResBase struct {
+	AuditPlanId       uint   `json:"audit_plan_id"`
 	AuditPlanType     string `json:"type"`
 	AuditPlanTypeDesc string `json:"desc"`
 }
@@ -521,8 +518,6 @@ type GetInstanceAuditPlanDetailResV1 struct {
 }
 
 type InstanceAuditPlanDetailResV1 struct {
-	// 静态审核
-	StaticAudit  bool   `json:"static_audit" example:"true"`
 	Business     string `json:"business"     example:"test"`
 	InstanceType string `json:"instance_type" example:"mysql" `
 	InstanceName string `json:"instance_name" example:"test_mysql"`
@@ -560,13 +555,11 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
-	isStaticAudit := (detail.InstanceName == "")
 	auditPlans, err := ConvertAuditPlansToRes(detail.AuditPlans)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	resData := InstanceAuditPlanDetailResV1{
-		StaticAudit:  isStaticAudit,
 		Business:     detail.Business,
 		InstanceType: detail.DBType,
 		InstanceName: detail.InstanceName,
@@ -742,11 +735,11 @@ type UpdateInstanceAuditPlanStatusReqV1 struct {
 // @Tags instance_audit_plan
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param instance_audit_plan_id path string true "instance audit plan type"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_id path string true "audit plan id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/ [delete]
-func DeleteAuditPlanByType(c echo.Context) error {
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/ [delete]
+func DeleteAuditPlanById(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
 	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
@@ -780,10 +773,10 @@ type UpdateAuditPlanStatusReqV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @param audit_plan body v1.UpdateAuditPlanStatusReqV1 true "update audit plan status"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/ [patch]
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/ [patch]
 func UpdateAuditPlanStatus(c echo.Context) error {
 	req := new(UpdateAuditPlanStatusReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -828,11 +821,11 @@ func UpdateAuditPlanStatus(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetAuditPlanSQLsResV1
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sqls [get]
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sqls [get]
 func GetInstanceAuditPlanSQLs(c echo.Context) error {
 	req := new(GetAuditPlanSQLsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
