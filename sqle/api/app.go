@@ -339,7 +339,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// scanner token auth
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-		v2ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	}
 
 	{

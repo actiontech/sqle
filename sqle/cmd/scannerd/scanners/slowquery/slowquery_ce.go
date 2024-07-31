@@ -18,7 +18,7 @@ type SlowQuery struct{}
 
 type Params struct {
 	LogFilePath    string
-	InstAPID       string
+	AuditPlanID    string
 	AuditPlanType  string
 	IncludeUsers   string
 	ExcludeUsers   string

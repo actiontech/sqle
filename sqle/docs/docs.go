@@ -7899,6 +7899,54 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "upload intance audit plan SQLs",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "同步SQL到扫描任务",
+                "operationId": "UploadInstanceAuditPlanSQLsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "upload instance audit plan SQLs request",
+                        "name": "sqls",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls": {
             "get": {
                 "security": [
@@ -8095,61 +8143,6 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v2.PartialSyncAuditPlanSQLsReqV2"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "upload intance audit plan SQLs",
-                "tags": [
-                    "instance_audit_plan"
-                ],
-                "summary": "同步SQL到扫描任务",
-                "operationId": "UploadInstanceAuditPlanSQLsV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "instance audit plan id",
-                        "name": "instance_audit_plan_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "audit plan type",
-                        "name": "audit_plan_type",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "upload instance audit plan SQLs request",
-                        "name": "sqls",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2"
                         }
                     }
                 ],

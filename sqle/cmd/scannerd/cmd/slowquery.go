@@ -28,7 +28,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &slowquery.Params{
 				LogFilePath:    logFilePath,
-				InstAPID:       rootCmdFlags.instanceAuditPlanId,
+				AuditPlanID:    rootCmdFlags.auditPlanID,
 				IncludeUsers:   includeUsers,
 				ExcludeUsers:   excludeUsers,
 				IncludeSchemas: includeSchemas,

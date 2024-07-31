@@ -9783,6 +9783,37 @@ paths:
       summary: 获取扫描任务信息列表
       tags:
       - audit_plan
+  /v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload:
+    post:
+      description: upload intance audit plan SQLs
+      operationId: UploadInstanceAuditPlanSQLsV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      - description: upload instance audit plan SQLs request
+        in: body
+        name: sqls
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 同步SQL到扫描任务
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/sqls:
     get:
       description: get audit plan report SQLs
@@ -9920,42 +9951,6 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
-  /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload:
-    post:
-      description: upload intance audit plan SQLs
-      operationId: UploadInstanceAuditPlanSQLsV2
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: integer
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      - description: upload instance audit plan SQLs request
-        in: body
-        name: sqls
-        required: true
-        schema:
-          $ref: '#/definitions/v2.UploadInstanceAuditPlanSQLsReqV2'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 同步SQL到扫描任务
-      tags:
-      - instance_audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
