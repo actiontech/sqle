@@ -530,25 +530,22 @@ type UploadInstanceAuditPlanSQLsReqV2 struct {
 // @Tags instance_audit_plan
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param instance_audit_plan_id path int true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @Param sqls body v2.UploadInstanceAuditPlanSQLsReqV2 true "upload instance audit plan SQLs request"
 // @Success 200 {object} controller.BaseRes
-// @router /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plan_type/{audit_plan_type}/sqls/upload [post]
+// @router /v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload [post]
 func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	req := new(UploadInstanceAuditPlanSQLsReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	iapID, err := strconv.Atoi(c.Param("instance_audit_plan_id"))
+	apID, err := strconv.Atoi(c.Param("audit_plan_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	apType := c.Param("audit_plan_type")
-
 	s := model.GetStorage()
 
-	ap, err := s.GetAuditPlanDetailByIDType(iapID, apType)
+	ap, err := s.GetAuditPlanDetailByID(uint(apID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
