@@ -891,6 +891,11 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 	})
 }
 
+type GetAuditPlanSQLMetaResV1 struct {
+	controller.BaseRes
+	Data AuditPlanSQLMetaResV1 `json:"data"`
+}
+
 type AuditPlanSQLMetaResV1 struct {
 	Head           []AuditPlanSQLHeadV1 `json:"head"`
 	FilterMetaList []FilterMeta         `json:"filter_meta_list"`
@@ -929,7 +934,7 @@ type FilterBetweenValue struct {
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
 // @Param audit_plan_type path string true "audit plan type"
-// @Success 200 {object} v1.AuditPlanSQLMetaResV1
+// @Success 200 {object} v1.GetAuditPlanSQLMetaResV1
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta [get]
 func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	return nil

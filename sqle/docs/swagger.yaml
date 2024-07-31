@@ -1119,6 +1119,18 @@ definitions:
       order_by:
         type: string
     type: object
+  v1.GetAuditPlanSQLMetaResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AuditPlanSQLMetaResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetAuditPlanSQLsResV1:
     properties:
       code:
@@ -2212,6 +2224,9 @@ definitions:
         type: array
       business:
         example: test
+        type: string
+      instance_id:
+        example: instance_id
         type: string
       instance_name:
         example: test_mysql
@@ -6364,7 +6379,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.AuditPlanSQLMetaResV1'
+            $ref: '#/definitions/v1.GetAuditPlanSQLMetaResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取指定扫描任务的SQL列表元信息

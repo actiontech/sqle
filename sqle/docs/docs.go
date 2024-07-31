@@ -2678,7 +2678,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.AuditPlanSQLMetaResV1"
+                            "$ref": "#/definitions/v1.GetAuditPlanSQLMetaResV1"
                         }
                     }
                 }
@@ -10794,6 +10794,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetAuditPlanSQLMetaResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AuditPlanSQLMetaResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetAuditPlanSQLsResV1": {
             "type": "object",
             "properties": {
@@ -12371,6 +12388,10 @@ var doc = `{
                 "business": {
                     "type": "string",
                     "example": "test"
+                },
+                "instance_id": {
+                    "type": "string",
+                    "example": "instance_id"
                 },
                 "instance_name": {
                     "type": "string",
