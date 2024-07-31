@@ -27,9 +27,7 @@ import (
 )
 
 type CreateInstanceAuditPlanReqV1 struct {
-	InstanceType string `json:"instance_type" form:"instance_type" example:"mysql" `
-	InstanceName string `json:"instance_name" form:"instance_name" example:"test_mysql"`
-
+	InstanceId string `json:"instance_id" form:"instance_id"`
 	// 扫描类型
 	AuditPlans []AuditPlan `json:"audit_plans" form:"audit_plans" valid:"required"`
 }
