@@ -694,7 +694,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 }
 
 func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *model.AuditPlanV2) string {
-	logger := log.NewEntry().WithField("get audit plan exec cmd", fmt.Sprintf("inst name:%s,audit plan type : %s", iap.InstanceID, ap.Type))
+	logger := log.NewEntry().WithField("get audit plan exec cmd", fmt.Sprintf("inst id:%d,audit plan type : %s", iap.InstanceID, ap.Type))
 	_, ok := auditplan.GetSupportedScannerAuditPlanType()[ap.Type]
 	if !ok {
 		return ""
