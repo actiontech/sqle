@@ -545,9 +545,12 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	}
 	s := model.GetStorage()
 
-	ap, err := s.GetAuditPlanDetailByID(uint(apID))
+	ap, exist, err := s.GetActiveAuditPlanDetail(uint(apID))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
 	}
 
 	l := log.NewEntry()
