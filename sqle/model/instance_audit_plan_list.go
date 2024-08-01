@@ -13,7 +13,7 @@ type InstanceAuditPlanListDetail struct {
 	ActiveStatus string         `json:"active_status"`
 	CreateUserId string         `json:"create_user_id"`
 	CreateTime   string         `json:"created_at"`
-	Types        sql.NullString `json:"types"`
+	AuditPlanIds sql.NullString `json:"audit_plan_ids"`
 }
 
 var instanceAuditPlanQueryTpl = `
@@ -25,7 +25,7 @@ SELECT
     instance_audit_plans.active_status,
     instance_audit_plans.create_user_id,
     instance_audit_plans.created_at,
-    audit_plans.types
+    audit_plans.audit_plan_ids
 
  
 {{- template "body" . -}} 
@@ -47,7 +47,7 @@ var instanceAuditPlanBodyTpl = `
 FROM 
     instance_audit_plans 
 LEFT JOIN 
-    (SELECT instance_audit_plan_id, GROUP_CONCAT(audit_plans_v2.type) AS types 
+    (SELECT instance_audit_plan_id, GROUP_CONCAT(audit_plans_v2.id) AS audit_plan_ids 
      FROM audit_plans_v2 
 	 WHERE audit_plans_v2.deleted_at IS NULL
      GROUP BY instance_audit_plan_id) AS audit_plans 
