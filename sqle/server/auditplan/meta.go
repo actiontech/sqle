@@ -68,11 +68,6 @@ var MetaBuilderList = []MetaBuilder{
 		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
-		Type:          TypeMySQLMybatis,
-		Desc:          "Mybatis 扫描",
-		TaskHandlerFn: NewDefaultTaskV2Fn(),
-	},
-	{
 		Type:          TypeMySQLSchemaMeta,
 		Desc:          "库表元数据",
 		TaskHandlerFn: NewMySQLSchemaMetaTaskV2Fn(),
@@ -116,11 +111,6 @@ var MetaBuilderList = []MetaBuilder{
 		Type:          TypeTiDBAuditLog,
 		Desc:          "TiDB审计日志",
 		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
-	},
-	{
-		Type:          TypeSQLFile,
-		Desc:          "SQL文件",
-		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 }
 
