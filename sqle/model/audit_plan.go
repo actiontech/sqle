@@ -170,9 +170,9 @@ func (s *Storage) GetAuditPlanSQLs(auditPlanId uint) ([]*AuditPlanSQLV2, error) 
 	err := s.db.Model(AuditPlanSQLV2{}).Where("audit_plan_id = ?", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
-func (s *Storage) GetAuditPlanSQLsV2Unaudit(auditPlanId uint) ([]*OriginManageSQL, error) {
-	var sqls []*OriginManageSQL
-	err := s.db.Model(&OriginManageSQL{}).Where("source_id = ? AND audit_level IS NULL", auditPlanId).Find(&sqls).Error
+func (s *Storage) GetAuditPlanSQLsV2Unaudit(auditPlanId uint) ([]*SQLManageRecord, error) {
+	var sqls []*SQLManageRecord
+	err := s.db.Model(&SQLManageRecord{}).Where("source_id = ? AND audit_level IS NULL", auditPlanId).Find(&sqls).Error
 	return sqls, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -185,7 +185,7 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQL(auditPlanId uint) (string, erro
 	return info.StartTime, err
 }
 
-func (s *Storage) OverrideAuditPlanSQLsV2(auditPlanId uint, sqls []*OriginManageSQL) error {
+func (s *Storage) OverrideAuditPlanSQLsV2(auditPlanId uint, sqls []*SQLManageRecord) error {
 	err := s.db.Unscoped().
 		Model(AuditPlanSQLV2{}).
 		Where("audit_plan_id = ?", auditPlanId).
@@ -295,7 +295,7 @@ func (s *Storage) UpdateSlowLogAuditPlanSQLs(auditPlanId uint, sqls []*AuditPlan
 	return errors.New(errors.ConnectStorageError, s.db.Exec(raw, args...).Error)
 }
 
-func (s *Storage) UpdateSlowLogCollectAuditPlanSQLsV2(auditPlanId uint, sqls []*OriginManageSQL) error {
+func (s *Storage) UpdateSlowLogCollectAuditPlanSQLsV2(auditPlanId uint, sqls []*SQLManageRecord) error {
 	raw, args := getBatchInsertRawSQLV2(auditPlanId, sqls)
 	// counter column is a accumulate value when update.
 	raw += `
@@ -369,13 +369,13 @@ ON DUPLICATE KEY UPDATE sql_content = VALUES(sql_content),
 
 }
 
-func getBatchInsertRawSQLV2(auditPlanId uint, sqls []*OriginManageSQL) (raw string, args []interface{}) {
+func getBatchInsertRawSQLV2(auditPlanId uint, sqls []*SQLManageRecord) (raw string, args []interface{}) {
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
 		pattern = append(pattern, "(?, ?, ?, ?, ?, ?,?, ?, ?)")
-		args = append(args, "audit_plan", auditPlanId, sql.ProjectId, sql.InstanceName, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.GetFingerprintMD5())
+		args = append(args, "audit_plan", auditPlanId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.GetFingerprintMD5())
 	}
-	raw = fmt.Sprintf("INSERT INTO `origin_manage_sqls` (`source`,`source_id`,`project_id`,`instance_name`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`,`proj_fp_source_inst_schema_md5`) VALUES %s",
+	raw = fmt.Sprintf("INSERT INTO `sql_manage_records` (`source`,`source_id`,`project_id`,`instance_name`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`,`proj_fp_source_inst_schema_md5`) VALUES %s",
 		strings.Join(pattern, ", "))
 	return
 }

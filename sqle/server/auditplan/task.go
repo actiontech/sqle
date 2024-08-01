@@ -127,7 +127,7 @@ func (at *baseTask) audit(task *model.Task) (*AuditResultResp, error) {
 	}, nil
 }
 
-func filterSQLsByPeriodV2(params params.Params, sqls []*model.OriginManageSQL) (filteredSqls []*model.OriginManageSQL, err error) {
+func filterSQLsByPeriodV2(params params.Params, sqls []*model.SQLManageRecord) (filteredSqls []*model.SQLManageRecord, err error) {
 	period := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute).Int()
 	if period <= 0 {
 		return sqls, nil
@@ -361,12 +361,12 @@ func baseTaskGetSQLs(args map[string]interface{}, persist *model.Storage) ([]Hea
 
 func getTaskWithInstanceByAuditPlan(ap *AuditPlan, persist *model.Storage) (*model.Task, error) {
 	var task *model.Task
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		task = &model.Task{
 			DBType: ap.DBType,
 		}
 	} else {
-		instance, _, err := dms.GetInstanceInProjectByName(context.TODO(), ap.ProjectId, ap.InstanceName)
+		instance, _, err := dms.GetInstancesById(context.TODO(), ap.InstanceID)
 		if err != nil {
 			return nil, err
 		}

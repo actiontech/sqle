@@ -139,7 +139,7 @@ SELECT COUNT(*)
 var instanceAuditPlanSQLBodyTpl = `
 {{ define "body" }}
 
-FROM origin_manage_sqls AS audit_plan_sqls
+FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
@@ -164,9 +164,6 @@ func (s *Storage) GetInstanceAuditPlanSQLsByReq(data map[string]interface{}) (
 	return
 }
 
-type InstanceAuditPlanInstanceList struct {
-}
-
 type SQLManagerList struct {
 	Model
 
@@ -174,7 +171,7 @@ type SQLManagerList struct {
 	Source               string       `json:"source"`
 	SourceId             string       `json:"source_id"`
 	ProjectId            string       `json:"project_id"`
-	InstanceName         string       `json:"instance_name"`
+	InstanceID           string       `json:"instance_id"`
 	SchemaName           string       `json:"schema_name"`
 	SqlFingerprint       string       `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
 	SqlText              string       `json:"sql_text" gorm:"type:mediumtext;not null"`
@@ -189,43 +186,4 @@ type SQLManagerList struct {
 	Assignees string `json:"assignees"`
 	Status    string `json:"status" gorm:"default:\"unhandled\""`
 	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
-}
-
-// list
-func ListSQLManagers(db *sql.DB) []SQLManagerList {
-	/*
-			SELECT
-		   oms.proj_fp_source_inst_schema_md5,
-		   COUNT(sm.id) AS sql_managers_count,
-		   MIN(sm.created_at) AS first_appear_timestamp,
-		   MAX(sm.created_at) AS last_receive_timestamp,
-		   sm.project_id,
-		   sm.sql_fingerprint,
-		   sm.audit_level,
-		   sm.assignees,
-		   sm.status,
-		   sm.remark,
-		   JSON_OBJECTAGG(sm.audit_results) AS grouped_audit_results
-		FROM
-		   origin_manage_sqls oms
-		JOIN
-		   sql_managers sm
-		ON
-		   oms.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
-		WHERE
-		   sm.created_at BETWEEN '2024-01-01 00:00:00' AND '2024-06-30 23:59:59'  -- 指定时间段内
-		   AND sm.status = 'unhandled'  -- 筛选status为'unhandled'
-		   AND sm.assignees = 'user1'  -- 筛选assignees为'user1'
-		GROUP BY
-		   oms.proj_fp_source_inst_schema_md5,
-		   sm.project_id,
-		   sm.sql_fingerprint,
-		   sm.audit_level,
-		   sm.assignees,
-		   sm.status,
-		   sm.remark;
-
-
-	*/
-	return nil
 }

@@ -22,7 +22,7 @@ type AuditPlan struct {
 	CronExpression   string
 	DBType           string
 	Token            string
-	InstanceName     string
+	InstanceID       string
 	CreateUserID     string
 	Type             string
 	RuleTemplateName string
@@ -31,6 +31,7 @@ type AuditPlan struct {
 	Instance *model.Instance
 }
 
+// Deprecated
 func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
 	return &AuditPlan{
 		ID:               a.ID,
@@ -39,7 +40,7 @@ func ConvertModelToAuditPlan(a *model.AuditPlan) *AuditPlan {
 		CronExpression:   a.CronExpression,
 		DBType:           a.DBType,
 		Token:            a.Token,
-		InstanceName:     a.InstanceName,
+		InstanceID:       a.InstanceName,
 		CreateUserID:     a.CreateUserID,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
@@ -54,7 +55,7 @@ func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
 		ProjectId:        a.ProjectId,
 		DBType:           a.DBType,
 		Token:            a.Token,
-		InstanceName:     dms.GetInstancesByIdWithoutError(a.InstanceID).Name,
+		InstanceID:       a.InstanceID,
 		CreateUserID:     a.CreateUserID,
 		Type:             a.Type,
 		RuleTemplateName: a.RuleTemplateName,
@@ -235,7 +236,7 @@ func (mgr *Manager) Stop() {
 }
 
 func (mgr *Manager) syncTask(auditPlanId uint) error {
-	ap, exist, err := mgr.persist.GetAuditPlanDetailByIDExist(auditPlanId)
+	ap, exist, err := mgr.persist.GetActiveAuditPlanDetail(auditPlanId)
 	if err != nil {
 		return err
 	}
