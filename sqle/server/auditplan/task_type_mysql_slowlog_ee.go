@@ -42,12 +42,6 @@ func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-		{
 			Key:   paramKeySlowLogCollectInput,
 			Desc:  "采集来源",
 			Value: "0",
