@@ -460,11 +460,14 @@ func GetInstanceAuditPlans(c echo.Context) error {
 
 	resData := make([]InstanceAuditPlanResV1, len(instanceAuditPlans))
 	for i, v := range instanceAuditPlans {
-		apTypes := strings.Split(v.Types.String, ",")
-		typeBases := make([]AuditPlanTypeResBase, 0, len(apTypes))
-		for _, apType := range apTypes {
-			if apType != "" {
-				typeBase := ConvertAuditPlanTypeToRes(v.Id, apType)
+		auditPlanIds := strings.Split(v.AuditPlanIds.String, ",")
+		typeBases := make([]AuditPlanTypeResBase, 0, len(auditPlanIds))
+		for _, auditPlanId := range auditPlanIds {
+			if auditPlanId != "" {
+				typeBase, err := ConvertAuditPlanTypeToResByID(auditPlanId)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
 				typeBases = append(typeBases, typeBase)
 
 			}
@@ -486,6 +489,31 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		Data:      resData,
 		TotalNums: count,
 	})
+}
+
+func ConvertAuditPlanTypeToResByID(id string) (AuditPlanTypeResBase, error) {
+	auditPlanID, err := strconv.Atoi(id)
+	if err != nil {
+		return AuditPlanTypeResBase{}, err
+	}
+	s := model.GetStorage()
+	auditPlan, exist, err := s.GetAuditPlanByID(auditPlanID)
+	if err != nil {
+		return AuditPlanTypeResBase{}, err
+	}
+	if !exist {
+		return AuditPlanTypeResBase{}, nil
+	}
+	for _, meta := range auditplan.Metas {
+		if meta.Type == auditPlan.Type {
+			return AuditPlanTypeResBase{
+				AuditPlanType:     auditPlan.Type,
+				AuditPlanTypeDesc: meta.Desc,
+				AuditPlanId:       auditPlan.ID,
+			}, nil
+		}
+	}
+	return AuditPlanTypeResBase{}, nil
 }
 
 func ConvertAuditPlanTypeToRes(id uint, auditPlanType string) AuditPlanTypeResBase {

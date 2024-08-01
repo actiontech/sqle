@@ -310,7 +310,7 @@ func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
-		WHERE  ap.type = ?`, auditPlanID).Error
+		WHERE  ap.id = ?`, auditPlanID).Error
 		if err != nil {
 			return err
 		}
@@ -384,4 +384,8 @@ func (s *Storage) UpdateManagerSQLStatus(sql *SQLManageRecord) error {
 	SELECT oms.id FROM sql_manage_records oms WHERE oms.sql_id = ?
 	ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id);`
 	return s.db.Exec(query, sql.SQLID).Error
+}
+
+func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collectionTime time.Time) error {
+	return s.db.Model(AuditPlanV2{}).Where("id = ?", auditPlanID).Update("last_collection_time", collectionTime).Error
 }
