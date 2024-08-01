@@ -277,9 +277,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/", v1.DeleteAuditPlanById)
 		v1ProjectRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/", v1.UpdateAuditPlanStatus)
 		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/sqls", v1.GetInstanceAuditPlanSQLs) // 弃用
-		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sql_meta", v1.GetInstanceAuditPlanSQLMeta)
-		v1ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sql_data", v1.GetInstanceAuditPlanSQLData)
-		v1ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_type/sql_export", v1.GetInstanceAuditPlanSQLExport)
+		v1ProjectRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/sql_meta", v1.GetInstanceAuditPlanSQLMeta)
+		v1ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/sql_data", v1.GetInstanceAuditPlanSQLData)
+		v1ProjectRouter.POST("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/sql_export", v1.GetInstanceAuditPlanSQLExport)
 
 		// sql manager
 		v1ProjectRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
