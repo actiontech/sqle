@@ -68,16 +68,12 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
-			apn, err := model.GetStorage().GetAuditPlanDetailByID(uint(audit_plan_id))
+			apn, exist, err := model.GetStorage().GetActiveAuditPlanDetail(uint(audit_plan_id))
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 
-			if apidInToken != utils.Md5(fmt.Sprintf("%d", apn.InstanceAuditPlanID)) {
-				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
-			}
-
-			if apn.Token != token {
+			if !exist || apidInToken != utils.Md5(fmt.Sprintf("%d", apn.InstanceAuditPlanID)) || apn.Token != token {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
 
