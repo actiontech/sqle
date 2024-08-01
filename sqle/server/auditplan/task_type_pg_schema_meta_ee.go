@@ -38,10 +38,10 @@ func (at *PGSchemaMetaTaskV2) InstanceType() string {
 }
 
 func (at *PGSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SchemaMetaSQL, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
-	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(ap.ProjectId), ap.InstanceName)
+	instance, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
