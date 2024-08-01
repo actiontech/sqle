@@ -112,7 +112,7 @@ func (at *MySQLSlowLogHuaweiTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) 
 	return nil
 }
 
-func (at *MySQLSlowLogHuaweiTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *MySQLSlowLogHuaweiTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

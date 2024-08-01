@@ -119,7 +119,7 @@ type AuditPlanV2 struct {
 	ActiveStatus        string        `json:"active_status" gorm:"type:varchar(255)"`
 	LastCollectionTime  *time.Time    `json:"last_collection_time" gorm:"type:datetime"`
 
-	AuditPlanSQLs []*OriginManageSQL `gorm:"foreignKey:SourceId"`
+	AuditPlanSQLs []*SQLManageRecord `gorm:"foreignKey:SourceId"`
 }
 
 func (a AuditPlanV2) TableName() string {
@@ -152,11 +152,11 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
 	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time')), '%Y-%m-%dT%H:%i:%s.%fZ')) 
-					AS max_start_time FROM origin_manage_sqls WHERE source_id = ?`, sourceId).Scan(&info).Error
+					AS max_start_time FROM sql_manage_records WHERE source_id = ?`, sourceId).Scan(&info).Error
 	return info.StartTime, err
 }
 
-type OriginManageSQL struct {
+type SQLManageRecord struct {
 	Model
 
 	Source         string       `json:"source" gorm:"type:varchar(255)"`
@@ -172,10 +172,10 @@ type OriginManageSQL struct {
 	EndPoint       string       `json:"endpoint" gorm:"type:varchar(255)"`
 	SQLID          string       `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
 
-	SQLManager SQLManageV2
+	SQLManager SQLManageRecordProcess
 }
 
-func (o OriginManageSQL) GetFingerprintMD5() string {
+func (o SQLManageRecord) GetFingerprintMD5() string {
 	if o.SQLID != "" {
 		return o.SQLID
 	}
@@ -192,8 +192,8 @@ func (o OriginManageSQL) GetFingerprintMD5() string {
 	return utils.Md5String(string(sqlIdentityJSON))
 }
 
-func (s *Storage) GetManageSQLById(sqlId string) (*OriginManageSQL, bool, error) {
-	sql := &OriginManageSQL{}
+func (s *Storage) GetManageSQLById(sqlId string) (*SQLManageRecord, bool, error) {
+	sql := &SQLManageRecord{}
 
 	err := s.db.Where("sql_id = ?", sqlId).First(sql).Error
 	if err == gorm.ErrRecordNotFound {
@@ -204,16 +204,16 @@ func (s *Storage) GetManageSQLById(sqlId string) (*OriginManageSQL, bool, error)
 	return sql, true, nil
 }
 
-func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*OriginManageSQL, error) {
-	sqls := []*OriginManageSQL{}
+func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord, error) {
+	sqls := []*SQLManageRecord{}
 	err := s.db.Where("source_id = ?", apId).Find(&sqls).Error
 	return sqls, err
 }
 
-type SQLManageV2 struct {
+type SQLManageRecordProcess struct {
 	Model
 
-	OriginManageSQLID *uint `json:"origin_manage_sql_id" gorm:"unique;not null"`
+	SQLManageRecordID *uint `json:"sql_manage_record_id" gorm:"unique;not null"`
 	// 任务属性字段
 	Assignees string `json:"assignees" gorm:"type:varchar(255)"`
 	Status    string `json:"status" gorm:"default:\"unhandled\""`
@@ -254,7 +254,7 @@ func (s *Storage) GetInstanceAuditPlanDetail(instanceAuditPlanID string) (*Insta
 
 func (s *Storage) GetAuditPlanTotalSQL(sourceID uint) (int64, error) {
 	var count int64
-	err := s.db.Model(&OriginManageSQL{}).Where("source_id = ?", sourceID).Count(&count).Error
+	err := s.db.Model(&SQLManageRecord{}).Where("source_id = ?", sourceID).Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
 }
 
@@ -272,8 +272,8 @@ func (s *Storage) BatchSaveAuditPlans(auditPlans []*AuditPlanV2) error {
 func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 删除队列表中数据
-		err := txDB.Exec(`DELETE FROM origin_manage_sql_queues USING origin_manage_sql_queues
-		JOIN audit_plans_v2 ap ON ap.id=origin_manage_sql_queues.source_id
+		err := txDB.Exec(`DELETE FROM sql_manage_queues USING sql_manage_queues
+		JOIN audit_plans_v2 ap ON ap.id=sql_manage_queues.source_id
 		JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id
 		WHERE iap.ID = ?`, instanceAuditPlanId).Error
 		if err != nil {
@@ -281,8 +281,8 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 		}
 		err = txDB.Exec(`UPDATE instance_audit_plans iap 
 		LEFT JOIN audit_plans_v2 ap ON iap.id = ap.instance_audit_plan_id
-		LEFT JOIN origin_manage_sqls oms ON oms.source_id = ap.id
-		LEFT JOIN sql_manages_v2 sm ON sm.origin_manage_sql_id = oms.id
+		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.id
+		LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
 		SET iap.deleted_at = now(),
 		ap.deleted_at = now(),
 		oms.deleted_at = now(),
@@ -298,15 +298,15 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 删除队列表中数据
-		err := txDB.Exec(`DELETE FROM origin_manage_sql_queues USING origin_manage_sql_queues
-		JOIN audit_plans_v2 ap ON ap.id=origin_manage_sql_queues.source_id
+		err := txDB.Exec(`DELETE FROM sql_manage_queues USING sql_manage_queues
+		JOIN audit_plans_v2 ap ON ap.id=sql_manage_queues.source_id
 		WHERE ap.id = ?`, auditPlanID).Error
 		if err != nil {
 			return err
 		}
 		err = txDB.Exec(`UPDATE audit_plans_v2 ap 
-		LEFT JOIN origin_manage_sqls oms ON oms.source_id = ap.id
-		LEFT JOIN sql_manages_v2 sm ON sm.origin_manage_sql_id = oms.id
+		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.id
+		LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
@@ -339,7 +339,7 @@ func (s *Storage) GetInstanceAuditPlanByInstanceID(instanceID int64) (*InstanceA
 	return instanceAuditPlan, true, errors.New(errors.ConnectStorageError, err)
 }
 
-type OriginManageSQLQueue struct {
+type SQLManageQueue struct {
 	Model
 
 	Source         string `json:"source" gorm:"type:varchar(255)"` // 智能扫描SQL/快速审核SQL/IDE审核SQL/CB审核SQL
@@ -352,37 +352,36 @@ type OriginManageSQLQueue struct {
 	Info           JSON   `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
 	EndPoint       string `json:"endpoint" gorm:"type:varchar(255)"`
 
-	// 需要将这个MD5实现与SQLManager关联的效果（审核结果也要加入md5，避免修改规则导致结果变化
 	SQLID string `json:"sql_id" gorm:"type:varchar(255);not null"`
 }
 
-func (s *Storage) PushSQLToManagerSQLQueue(sqls []*OriginManageSQLQueue) error {
+func (s *Storage) PushSQLToManagerSQLQueue(sqls []*SQLManageQueue) error {
 	if sqls == nil || len(sqls) == 0 {
 		return nil
 	}
 	return s.db.Create(sqls).Error
 }
 
-func (s *Storage) PullSQLFromManagerSQLQueue() ([]*OriginManageSQLQueue, error) {
-	sqls := []*OriginManageSQLQueue{}
+func (s *Storage) PullSQLFromManagerSQLQueue() ([]*SQLManageQueue, error) {
+	sqls := []*SQLManageQueue{}
 	err := s.db.Find(&sqls).Limit(100).Error
 	return sqls, err
 }
 
-func (s *Storage) RemoveSQLFromQueue(sql *OriginManageSQLQueue) error {
+func (s *Storage) RemoveSQLFromQueue(sql *SQLManageQueue) error {
 	return s.db.Unscoped().Delete(sql).Error
 }
 
-func (s *Storage) UpdateManagerSQL(sql *OriginManageSQL) error {
-	const query = "INSERT INTO `origin_manage_sqls` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`) " +
+func (s *Storage) UpdateManagerSQL(sql *SQLManageRecord) error {
+	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`) " +
 		"VALUES (?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), " +
 		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info), `audit_level`= VALUES(audit_level), `audit_results`= VALUES(audit_results)"
 	return s.db.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults).Error
 }
 
-func (s *Storage) UpdateManagerSQLStatus(sql *OriginManageSQL) error {
-	const query = `	INSERT INTO sql_manages_v2 (origin_manage_sql_id)
-	SELECT oms.id FROM origin_manage_sqls oms WHERE oms.sql_id = ?
-	ON DUPLICATE KEY UPDATE origin_manage_sql_id = VALUES(origin_manage_sql_id);`
+func (s *Storage) UpdateManagerSQLStatus(sql *SQLManageRecord) error {
+	const query = `	INSERT INTO sql_manage_record_processes (sql_manage_record_id)
+	SELECT oms.id FROM sql_manage_records oms WHERE oms.sql_id = ?
+	ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id);`
 	return s.db.Exec(query, sql.SQLID).Error
 }

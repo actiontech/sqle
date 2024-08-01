@@ -259,7 +259,7 @@ func (at *BaseSchemaMetaTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) erro
 	return nil
 }
 
-func (at *BaseSchemaMetaTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *BaseSchemaMetaTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

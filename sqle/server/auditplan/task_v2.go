@@ -12,7 +12,7 @@ import (
 type AuditResultResp struct {
 	AuditPlanID  uint64
 	Task         *model.Task
-	FilteredSqls []*model.OriginManageSQL
+	FilteredSqls []*model.SQLManageRecord
 }
 
 type Head struct {
@@ -41,11 +41,11 @@ type AuditPlanCollector interface {
 
 type AuditPlanHandler interface {
 	AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error // 数据聚合
-	Audit([]*model.OriginManageSQL) (*AuditResultResp, error)
+	Audit([]*model.SQLManageRecord) (*AuditResultResp, error)
 	GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error)
 }
 
-func auditSQLs(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	logger := log.NewEntry()
 	persist := model.GetStorage()
 	if len(sqls) == 0 {

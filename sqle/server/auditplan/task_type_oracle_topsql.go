@@ -164,7 +164,7 @@ func (at *OracleTopSQLTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error 
 	return nil
 }
 
-func (at *OracleTopSQLTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *OracleTopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

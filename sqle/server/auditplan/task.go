@@ -127,7 +127,7 @@ func (at *baseTask) audit(task *model.Task) (*AuditResultResp, error) {
 	}, nil
 }
 
-func filterSQLsByPeriodV2(params params.Params, sqls []*model.OriginManageSQL) (filteredSqls []*model.OriginManageSQL, err error) {
+func filterSQLsByPeriodV2(params params.Params, sqls []*model.SQLManageRecord) (filteredSqls []*model.SQLManageRecord, err error) {
 	period := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute).Int()
 	if period <= 0 {
 		return sqls, nil

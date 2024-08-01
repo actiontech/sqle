@@ -139,7 +139,7 @@ SELECT COUNT(*)
 var instanceAuditPlanSQLBodyTpl = `
 {{ define "body" }}
 
-FROM origin_manage_sqls AS audit_plan_sqls
+FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
