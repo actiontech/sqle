@@ -83,6 +83,9 @@ func (s *Storage) GetAuditPlanDetailByID(id uint) (*AuditPlanDetail, error) {
 	}
 	return ap, errors.New(errors.ConnectStorageError, err)
 }
+func (s *Storage) GetActiveAuditPlanDetail(id uint) (*AuditPlanDetail, bool, error) {
+	return s.getAuditPlanDetailByID(id, ActiveStatusNormal)
+}
 
 func (s *Storage) GetAuditPlanDetailByIDExist(id uint) (*AuditPlanDetail, bool, error) {
 	return s.getAuditPlanDetailByID(id, "")
