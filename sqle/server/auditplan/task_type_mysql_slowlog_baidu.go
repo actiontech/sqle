@@ -56,12 +56,6 @@ func (at *MySQLSlowLogBaiduTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-		{
 			Key:   paramKeyRdsPath,
 			Desc:  "RDS Open API地址",
 			Value: "rds.bj.baidubce.com",

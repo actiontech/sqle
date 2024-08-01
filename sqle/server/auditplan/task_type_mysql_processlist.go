@@ -41,12 +41,6 @@ func (at *MySQLProcessListTaskV2) Params(instanceId ...string) params.Params {
 			Value: "0",
 			Type:  params.ParamTypeInt,
 		},
-		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
 	}
 }
 
