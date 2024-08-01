@@ -212,12 +212,19 @@ func (at *TaskWrapper) stopCollect() error {
 }
 
 func (at *TaskWrapper) extractSQL() {
+	collectionTime := time.Now()
 	sqls, err := at.collect.ExtractSQL(at.logger, at.ap, at.persist)
 	if err != nil {
 		at.logger.Errorf("extract sql failed, %v", err)
 		return
 	}
-	if sqls == nil || len(sqls) == 0 {
+	// todo: 对于mysql慢日志类型，采集来源是scannerd的任务的时间不应该在此处更新
+	err = at.persist.UpdateAuditPlanLastCollectionTime(at.ap.ID, collectionTime)
+	if err != nil {
+		at.logger.Errorf("update audit plan last collection time failed, error : %v", err)
+		return
+	}
+	if len(sqls) == 0 {
 		at.logger.Info("extract sql list is empty, skip")
 		return
 	}

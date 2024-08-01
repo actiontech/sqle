@@ -565,5 +565,9 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	err = s.UpdateAuditPlanLastCollectionTime(ap.ID, time.Now())
+	if err != nil {
+		l.Errorf("update audit plan last collection time failed, error : %v", err)
+	}
 	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLsV2(l, auditplan.ConvertModelToAuditPlanV2(ap), sqls))
 }

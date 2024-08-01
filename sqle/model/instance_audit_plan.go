@@ -403,3 +403,7 @@ func (s *Storage) UpdateManagerSQLStatus(sql *OriginManageSQL) error {
 	ON DUPLICATE KEY UPDATE origin_manage_sql_id = VALUES(origin_manage_sql_id);`
 	return s.db.Exec(query, sql.SQLID).Error
 }
+
+func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collectionTime time.Time) error {
+	return s.db.Model(AuditPlanV2{}).Where("id = ?", auditPlanID).Update("last_collection_time", collectionTime).Error
+}
