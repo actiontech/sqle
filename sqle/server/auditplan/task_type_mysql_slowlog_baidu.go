@@ -108,7 +108,7 @@ func (at *MySQLSlowLogBaiduTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) e
 	return nil
 }
 
-func (at *MySQLSlowLogBaiduTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *MySQLSlowLogBaiduTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 
@@ -117,7 +117,7 @@ func (at *MySQLSlowLogBaiduTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage
 }
 
 func (at *MySQLSlowLogBaiduTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
@@ -195,12 +195,12 @@ func (at *MySQLSlowLogBaiduTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 	cache := NewSQLV2Cache()
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   sql.schema,
-			SQLContent:   sql.sql,
+			Source:     ap.Type,
+			SourceId:   ap.ID,
+			ProjectId:  ap.ProjectId,
+			InstanceID: ap.InstanceID,
+			SchemaName: sql.schema,
+			SQLContent: sql.sql,
 		}
 		fp, err := util.Fingerprint(sql.sql, true)
 		if err != nil {

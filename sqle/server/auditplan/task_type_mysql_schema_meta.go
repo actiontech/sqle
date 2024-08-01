@@ -38,14 +38,14 @@ func (at *MySQLSchemaMetaTaskV2) InstanceType() string {
 }
 
 func (at *BaseSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SchemaMetaSQL, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
 	sqls := []*SchemaMetaSQL{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	instance, _, err := dms.GetInstanceInProjectByName(ctx, ap.ProjectId, ap.InstanceName)
+	instance, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
@@ -159,7 +159,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 		}{
 			ProjectId: sql.ProjectId,
 			Schema:    sql.SchemaName,
-			InstName:  sql.InstanceName,
+			InstName:  sql.InstanceID,
 			Source:    sql.Source,
 			ApID:      sql.SourceId,
 			MetaName:  sql.Info.Get(MetricNameMetaName).String(),
@@ -194,7 +194,7 @@ func (at *BaseSchemaMetaTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 }
 
 func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		logger.Warnf("instance is not configured")
 		return nil, nil
 	}
@@ -225,14 +225,14 @@ func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, 
 	}
 	for _, sql := range sqls {
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   sql.SchemaName,
-			SQLContent:   sql.SQLContent,
-			Fingerprint:  sql.SQLContent, // DDL不能参数化
-			Info:         NewMetrics(),
+			Source:      ap.Type,
+			SourceId:    ap.ID,
+			ProjectId:   ap.ProjectId,
+			InstanceID:  ap.InstanceID,
+			SchemaName:  sql.SchemaName,
+			SQLContent:  sql.SQLContent,
+			Fingerprint: sql.SQLContent, // DDL不能参数化
+			Info:        NewMetrics(),
 		}
 		sqlV2.Info.SetBool(MetricNameRecordDeleted, false)
 		sqlV2.Info.SetString(MetricNameMetaName, sql.MetaName)
@@ -259,7 +259,7 @@ func (at *BaseSchemaMetaTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) erro
 	return nil
 }
 
-func (at *BaseSchemaMetaTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *BaseSchemaMetaTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

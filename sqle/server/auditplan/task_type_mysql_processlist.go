@@ -88,7 +88,7 @@ func (at *MySQLProcessListTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) er
 	return nil
 }
 
-func (at *MySQLProcessListTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *MySQLProcessListTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 
@@ -111,13 +111,13 @@ WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','
 }
 
 func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 
-	instance, _, err := dms.GetInstanceInProjectByName(ctx, ap.ProjectId, ap.InstanceName)
+	instance, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
@@ -146,12 +146,12 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	for i := range res {
 		query := res[i]["info"].String
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   res[i]["db"].String,
-			SQLContent:   query,
+			Source:     ap.Type,
+			SourceId:   ap.ID,
+			ProjectId:  ap.ProjectId,
+			InstanceID: ap.InstanceID,
+			SchemaName: res[i]["db"].String,
+			SQLContent: query,
 		}
 		fp, err := util.Fingerprint(query, true)
 		if err != nil {
