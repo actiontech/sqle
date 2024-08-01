@@ -703,9 +703,8 @@ func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
 				WHERE
 					oms.source_id = ?
 					AND oms.deleted_at IS NULL
-					AND oms.audit_results IS NOT NULL
-					AND ((sm.status IS NULL)
-						OR (sm.status NOT IN(?)));`
+					AND JSON_TYPE(oms.audit_results) <> 'NULL'
+					AND sm.status NOT IN(?);`
 	var count int64
 	err := s.db.Raw(query, id, status).Count(&count).Error
 	if err != nil {
