@@ -3,7 +3,6 @@ package auditplan
 import (
 	"encoding/json"
 
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -114,8 +113,7 @@ func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
 }
 
 func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
-	data, _ := json.Marshal(sql.Info.ToMap())                                                                       // todo: 错误处理
-	log.NewEntry().Infof("convert manager sql, id: %s, fp: %s, data: %s", sql.SQLId, sql.Fingerprint, string(data)) // todo: 去除debug日志
+	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
 	return &model.OriginManageSQL{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,
@@ -131,8 +129,7 @@ func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
 }
 
 func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.OriginManageSQLQueue {
-	data, _ := json.Marshal(sql.Info.ToMap())                                                                             // todo: 错误处理
-	log.NewEntry().Infof("convert manager sql queue, id: %s, fp: %s, data: %s", sql.SQLId, sql.Fingerprint, string(data)) // todo: 去除debug日志
+	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
 	return &model.OriginManageSQLQueue{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,
