@@ -327,7 +327,7 @@ func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
-		WHERE  ap.type = ?`, auditPlanID).Error
+		WHERE  ap.id = ?`, auditPlanID).Error
 		if err != nil {
 			return err
 		}
