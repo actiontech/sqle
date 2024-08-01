@@ -927,9 +927,9 @@ type FilterBetweenValue struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @Success 200 {object} v1.GetAuditPlanSQLMetaResV1
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta [get]
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_meta [get]
 func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	return nil
 }
@@ -959,10 +959,10 @@ type AuditPlanSQLDataResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @param audit_plan_sql_request body v1.GetAuditPlanSQLDataReqV1 true "audit plan sql data request"
 // @Success 200 {object} v1.GetAuditPlanSQLDataResV1
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data [post]
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_data [post]
 func GetInstanceAuditPlanSQLData(c echo.Context) error {
 	return nil
 }
@@ -980,10 +980,10 @@ type GetAuditPlanSQLExportReqV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
-// @Param audit_plan_type path string true "audit plan type"
+// @Param audit_plan_id path string true "audit plan id"
 // @param audit_plan_sql_request body v1.GetAuditPlanSQLExportReqV1 true "audit plan sql export request"
 // @Success 200 {file} file "export audit plan sql report"
-// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_export [post]
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_export [post]
 func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	return nil
 }
