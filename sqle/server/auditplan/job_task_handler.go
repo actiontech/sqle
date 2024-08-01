@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
@@ -121,7 +122,9 @@ func batchAuditSQLs(sqlList []*model.OriginManageSQL) ([]*model.OriginManageSQL,
 		}
 		resp, err := meta.Handler.Audit(sqls)
 		if err != nil {
-			return nil, err
+			log.NewEntry().Errorf("audit sqls in task fail %v,ignore audit result", err)
+			auditSQLs = append(auditSQLs, sqls...)
+			continue
 		}
 
 		// 更新原值
