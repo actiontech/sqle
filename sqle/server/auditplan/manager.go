@@ -235,7 +235,7 @@ func (mgr *Manager) Stop() {
 }
 
 func (mgr *Manager) syncTask(auditPlanId uint) error {
-	ap, exist, err := mgr.persist.GetAuditPlanDetailByIDExist(auditPlanId)
+	ap, exist, err := mgr.persist.GetActiveAuditPlanDetail(auditPlanId)
 	if err != nil {
 		return err
 	}
