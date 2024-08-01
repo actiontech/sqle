@@ -469,7 +469,10 @@ func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnaly
 
 func getUnsolvedSQLCountByManagerStatus(id uint) (int64, error) {
 	s := model.GetStorage()
-	count, err := s.GetUnsolvedSQLCount(id, []string{model.SQLManageStatusIgnored, model.SQLManageStatusSolved})
+	count, err := s.GetUnsolvedSQLCount(id,
+		[]string{model.SQLManageStatusIgnored,
+			model.SQLManageStatusSolved,
+			model.SQLManageStatusManualAudited})
 	if err != nil {
 		return count, err
 	}
