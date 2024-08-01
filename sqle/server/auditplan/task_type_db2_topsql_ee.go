@@ -174,11 +174,11 @@ ORDER BY %s DESC
 }
 
 func (at *DB2TopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	inst, _, err := dms.GetInstanceInProjectByName(context.Background(), string(ap.ProjectId), ap.InstanceName)
+	inst, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
@@ -226,12 +226,12 @@ func (at *DB2TopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persi
 		row := result.Rows[i]
 		info := NewMetrics()
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   "", // todo: top sql 未采集schema, 需要填充
-			Info:         info,
+			Source:     ap.Type,
+			SourceId:   ap.ID,
+			ProjectId:  ap.ProjectId,
+			InstanceID: ap.InstanceID,
+			SchemaName: "", // todo: top sql 未采集schema, 需要填充
+			Info:       info,
 		}
 
 		info.SetString(MetricNameLastReceiveTimestamp, time.Now().Format(time.RFC3339)) // todo: 没啥大用
@@ -322,7 +322,7 @@ func (at *DB2TopSQLTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error {
 	return nil
 }
 
-func (at *DB2TopSQLTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *DB2TopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

@@ -95,7 +95,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		sqlMgr.Id = uint64(sqlManage.ID)
 		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint
 		sqlMgr.Sql = sqlManage.SqlText
-		sqlMgr.InstanceName = sqlManage.InstanceName
+		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name
 		sqlMgr.SchemaName = sqlManage.SchemaName
 
 		for i := range sqlManage.AuditResults {
@@ -256,7 +256,7 @@ func exportSqlManagesV1(c echo.Context) error {
 			sqlManage.SqlFingerprint,
 			sqlManage.SqlText,
 			ConvertAuditPlanDescByType(sqlManage.Source),
-			sqlManage.InstanceName,
+			dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name,
 			sqlManage.SchemaName,
 			spliceAuditResults(sqlManage.AuditResults),
 			sqlManage.Endpoints.String,
@@ -335,7 +335,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v not exist", mgID)))
 	}
 
-	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), omg.ProjectId, omg.InstanceName)
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), omg.ProjectId, omg.InstanceID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

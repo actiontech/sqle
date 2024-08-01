@@ -96,7 +96,7 @@ func (at *TBaseSlowLogTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error 
 	return nil
 }
 
-func (at *TBaseSlowLogTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *TBaseSlowLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

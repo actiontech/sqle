@@ -111,7 +111,7 @@ WHERE sm.deleted_at IS NULL  AND sm.project_id = ?
 
 func (s *Storage) GetSqlManagerRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
-	err := s.db.Table("origin_manage_sqls oms").
+	err := s.db.Table("sql_manage_records oms").
 		Joins("LEFT JOIN audit_plans_v2 ap ON ap.id = oms.source_id").
 		Joins("LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
 		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
@@ -149,7 +149,7 @@ type SqlManageDetail struct {
 	FpCount              uint64         `json:"fp_count"`
 	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
 	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
-	InstanceName         string         `json:"instance_name"`
+	InstanceID           string         `json:"instance_id"`
 	SchemaName           string         `json:"schema_name"`
 	Status               sql.NullString `json:"status"`
 	Remark               sql.NullString `json:"remark"`
@@ -190,7 +190,7 @@ SELECT
 	sm.fp_count,
     sm.first_appear_timestamp,
 	sm.last_receive_timestamp,
-	sm.instance_name,
+	sm.instance_id,
 	sm.schema_name,
 	sm.status,
 	sm.remark,
@@ -236,8 +236,8 @@ AND sm.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
 AND sm.assignees REGEXP :filter_assignee
 {{- end }}
 
-{{- if .filter_instance_name }}
-AND sm.instance_name = :filter_instance_name
+{{- if .filter_instance_id }}
+AND sm.instance_id = :filter_instance_id
 {{- end }}
 
 {{- if .filter_source }}
@@ -302,7 +302,7 @@ SELECT
 	oms.source,
 	oms.audit_level,
 	oms.audit_results,
-	oms.instance_name,
+	oms.instance_id,
 	oms.schema_name,
 	oms.end_point as endpoints,
 	sm.status,
@@ -327,8 +327,8 @@ LIMIT :limit OFFSET :offset
 var sqlManagerBodyTpl = `
 {{ define "body" }}
 
-FROM origin_manage_sqls oms
-         LEFT JOIN sql_managers sm ON sm.origin_manage_sql_id = oms.id
+FROM sql_manage_records oms
+         LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
 		 LEFT JOIN audit_plans_v2 ap ON ap.id = oms.source_id
 		 LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id
 
@@ -344,8 +344,8 @@ AND oms.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
 AND sm.assignees REGEXP :filter_assignee
 {{- end }}
 
-{{- if .filter_instance_name }}
-AND oms.instance_name = :filter_instance_name
+{{- if .filter_instance_id }}
+AND oms.instance_id = :filter_instance_id
 {{- end }}
 
 {{- if .filter_source }}
@@ -378,10 +378,6 @@ AND oms.schema_name LIKE '%{{ .fuzzy_search_schema_name }}%'
 
 {{- if .filter_status }}
 AND sm.status = :filter_status
-{{- end }}
-
-{{- if .filter_business }}
-AND iap.business = :filter_business
 {{- end }}
 
 {{- if .count_bad_sql }}
@@ -644,7 +640,7 @@ func (s *Storage) BatchUpdateSqlManager(idList []*uint64, status *string, remark
 			data["assignees"] = strings.Join(assignees, ",")
 		}
 		if len(data) > 0 {
-			err := tx.Model(&SQLManager{}).Where("origin_manage_sql_id in (?)", idList).Updates(data).Error
+			err := tx.Model(&SQLManageRecordProcess{}).Where("sql_manage_record_id in (?)", idList).Updates(data).Error
 			if err != nil {
 				return err
 			}
@@ -666,8 +662,8 @@ func (s *Storage) GetSqlManageByID(id string) (*SqlManage, bool, error) {
 	return sqlManage, true, nil
 }
 
-func (s *Storage) GetOriginManageSqlByID(id string) (*OriginManageSQL, bool, error) {
-	originManageSQL := new(OriginManageSQL)
+func (s *Storage) GetOriginManageSqlByID(id string) (*SQLManageRecord, bool, error) {
+	originManageSQL := new(SQLManageRecord)
 	err := s.db.Where("id = ?", id).First(&originManageSQL).Error
 	if err != nil {
 		if e.Is(gorm.ErrRecordNotFound, err) {
@@ -687,9 +683,9 @@ func (s *Storage) GetSqlManageListByIDs(ids []*uint64) ([]*SqlManage, error) {
 	return sqlManageList, nil
 }
 
-func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManager, error) {
-	sqlManagerList := []*SQLManager{}
-	err := s.db.Model(SQLManager{}).Where("origin_manage_sql_id IN (?)", ids).Find(&sqlManagerList).Error
+func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManageRecordProcess, error) {
+	sqlManagerList := []*SQLManageRecordProcess{}
+	err := s.db.Model(SQLManageRecordProcess{}).Where("sql_manage_record_id IN (?)", ids).Find(&sqlManagerList).Error
 	if err != nil {
 		return nil, err
 	}
@@ -700,9 +696,9 @@ func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
 	query := `SELECT
 					count(oms.id)
 				FROM
-					origin_manage_sqls AS oms
-				LEFT JOIN sql_managers AS sm ON
-					sm.origin_manage_sql_id = oms.id 
+					sql_manage_records AS oms
+				LEFT JOIN sql_manage_record_processes AS sm ON
+					sm.sql_manage_record_id = oms.id 
 					AND sm.deleted_at IS NULL
 				WHERE
 					oms.source_id = ?

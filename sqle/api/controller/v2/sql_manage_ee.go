@@ -89,7 +89,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		sqlMgr.Id = uint64(sqlManage.ID)
 		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint
 		sqlMgr.Sql = sqlManage.SqlText
-		sqlMgr.InstanceName = sqlManage.InstanceName
+		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name
 		sqlMgr.SchemaName = sqlManage.SchemaName
 
 		for i := range sqlManage.AuditResults {

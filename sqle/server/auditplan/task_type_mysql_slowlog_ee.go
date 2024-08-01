@@ -119,12 +119,12 @@ func (at *SlowLogTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 func (at *SlowLogTaskV2) genSQLV2FromRow(ap *AuditPlan, row map[string]sql.NullString) (*SQLV2, error) {
 	query := row["sql_text"].String
 	sqlV2 := &SQLV2{
-		Source:       ap.Type,
-		SourceId:     ap.ID,
-		ProjectId:    ap.ProjectId,
-		InstanceName: ap.InstanceName,
-		SQLContent:   query,
-		SchemaName:   row["db"].String,
+		Source:     ap.Type,
+		SourceId:   ap.ID,
+		ProjectId:  ap.ProjectId,
+		InstanceID: ap.InstanceID,
+		SQLContent: query,
+		SchemaName: row["db"].String,
 	}
 
 	fp, err := util.Fingerprint(query, true)
@@ -168,11 +168,11 @@ func (at *SlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist
 	if ap.Params.GetParam(paramKeySlowLogCollectInput).Int() != slowlogCollectInputTable {
 		return nil, nil
 	}
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	instance, _, err := dms.GetInstanceInProjectByName(context.Background(), string(ap.ProjectId), ap.InstanceName)
+	instance, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
@@ -241,7 +241,7 @@ func (at *SlowLogTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error {
 	return nil
 }
 
-func (at *SlowLogTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *SlowLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

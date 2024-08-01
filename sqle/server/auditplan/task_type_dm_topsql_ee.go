@@ -191,13 +191,13 @@ func (at *DmTopSQLTaskV2) queryTopSQLsForDm(inst *model.Instance, database strin
 }
 
 func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
-	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(ap.ProjectId), ap.InstanceName)
+	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(ap.ProjectId), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
@@ -217,14 +217,14 @@ func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 	for _, sql := range sqls {
 		info := NewMetrics()
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   "", // todo: top sql 未采集schema, 需要填充
-			Info:         info,
-			SQLContent:   sql.SQLFullText,
-			Fingerprint:  sql.SQLFullText,
+			Source:      ap.Type,
+			SourceId:    ap.ID,
+			ProjectId:   ap.ProjectId,
+			InstanceID:  ap.InstanceID,
+			SchemaName:  "", // todo: top sql 未采集schema, 需要填充
+			Info:        info,
+			SQLContent:  sql.SQLFullText,
+			Fingerprint: sql.SQLFullText,
 		}
 		info.SetInt(MetricNameCounter, int64(sql.Executions))
 		info.SetFloat(MetricNameQueryTimeTotal, sql.TotalExecTime)
@@ -251,7 +251,7 @@ func (at *DmTopSQLTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error {
 	return nil
 }
 
-func (at *DmTopSQLTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *DmTopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 
