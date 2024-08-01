@@ -2131,8 +2131,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter by instance name",
-                        "name": "filter_by_instance_name",
+                        "description": "filter by instance id",
+                        "name": "filter_by_instance_id",
                         "in": "query"
                     },
                     {

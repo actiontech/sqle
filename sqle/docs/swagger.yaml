@@ -6007,9 +6007,9 @@ paths:
         in: query
         name: filter_by_db_type
         type: string
-      - description: filter by instance name
+      - description: filter by instance id
         in: query
-        name: filter_by_instance_name
+        name: filter_by_instance_id
         type: string
       - description: filter instance audit plan type
         in: query
