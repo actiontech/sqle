@@ -6270,6 +6270,108 @@ paths:
       summary: 更新扫描任务状态
       tags:
       - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_data:
+    post:
+      description: get audit plan SQLs
+      operationId: getInstanceAuditPlanSQLDataV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      - description: audit plan sql data request
+        in: body
+        name: audit_plan_sql_request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetAuditPlanSQLDataReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLDataResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQL列表
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_export:
+    post:
+      description: export audit plan SQL report as CSV
+      operationId: getInstanceAuditPlanSQLExportV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      - description: audit plan sql export request
+        in: body
+        name: audit_plan_sql_request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetAuditPlanSQLExportReqV1'
+      responses:
+        "200":
+          description: export audit plan sql report
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出指定扫描任务的 SQL CSV 列表
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_meta:
+    get:
+      description: get audit plan SQL meta
+      operationId: getInstanceAuditPlanSQLMetaV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAuditPlanSQLMetaResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取指定扫描任务的SQL列表元信息
+      tags:
+      - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sqls:
     get:
       description: get audit plan SQLs
@@ -6308,108 +6410,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取指定扫描任务的SQLs信息
-      tags:
-      - instance_audit_plan
-  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_data:
-    post:
-      description: get audit plan SQLs
-      operationId: getInstanceAuditPlanSQLDataV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: string
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      - description: audit plan sql data request
-        in: body
-        name: audit_plan_sql_request
-        required: true
-        schema:
-          $ref: '#/definitions/v1.GetAuditPlanSQLDataReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditPlanSQLDataResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取指定扫描任务的SQL列表
-      tags:
-      - instance_audit_plan
-  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_export:
-    post:
-      description: export audit plan SQL report as CSV
-      operationId: getInstanceAuditPlanSQLExportV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: string
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      - description: audit plan sql export request
-        in: body
-        name: audit_plan_sql_request
-        required: true
-        schema:
-          $ref: '#/definitions/v1.GetAuditPlanSQLExportReqV1'
-      responses:
-        "200":
-          description: export audit plan sql report
-          schema:
-            type: file
-      security:
-      - ApiKeyAuth: []
-      summary: 导出指定扫描任务的 SQL CSV 列表
-      tags:
-      - instance_audit_plan
-  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_type}/sql_meta:
-    get:
-      description: get audit plan SQL meta
-      operationId: getInstanceAuditPlanSQLMetaV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: string
-      - description: audit plan type
-        in: path
-        name: audit_plan_type
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetAuditPlanSQLMetaResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取指定扫描任务的SQL列表元信息
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
