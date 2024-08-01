@@ -209,12 +209,12 @@ func (at *MySQLSlowLogHuaweiTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPl
 	cache := NewSQLV2Cache()
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   sql.schema,
-			SQLContent:   sql.sql,
+			Source:     ap.Type,
+			SourceId:   ap.ID,
+			ProjectId:  ap.ProjectId,
+			InstanceID: ap.InstanceID,
+			SchemaName: sql.schema,
+			SQLContent: sql.sql,
 		}
 		fp, err := util.Fingerprint(sql.sql, true)
 		if err != nil {
