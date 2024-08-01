@@ -162,7 +162,7 @@ var autoMigrateList = []interface{}{
 	&InstanceAuditPlan{},
 	&AuditPlanV2{},
 	&OriginManageSQL{},
-	&SQLManager{},
+	&SQLManageV2{},
 	&OriginManageSQLQueue{},
 }
 

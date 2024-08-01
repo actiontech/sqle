@@ -373,7 +373,7 @@ func getBatchInsertRawSQLV2(auditPlanId uint, sqls []*OriginManageSQL) (raw stri
 	pattern := make([]string, 0, len(sqls))
 	for _, sql := range sqls {
 		pattern = append(pattern, "(?, ?, ?, ?, ?, ?,?, ?, ?)")
-		args = append(args, "audit_plan", auditPlanId, sql.ProjectId, sql.InstanceName, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.GetFingerprintMD5())
+		args = append(args, "audit_plan", auditPlanId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.GetFingerprintMD5())
 	}
 	raw = fmt.Sprintf("INSERT INTO `origin_manage_sqls` (`source`,`source_id`,`project_id`,`instance_name`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`,`proj_fp_source_inst_schema_md5`) VALUES %s",
 		strings.Join(pattern, ", "))

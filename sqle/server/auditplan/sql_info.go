@@ -7,14 +7,13 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
-// todo: 换名称
 type SQLV2 struct {
 	SQLId string
 	// from audit plan
-	Source       string
-	SourceId     uint
-	ProjectId    string
-	InstanceName string
+	Source     string
+	SourceId   uint
+	ProjectId  string
+	InstanceID string
 
 	// from collect
 	SQLContent  string
@@ -29,14 +28,14 @@ func (s *SQLV2) GenSQLId() {
 			ProjectId   string
 			Fingerprint string
 			Schema      string
-			InstName    string
+			InstID      string
 			Source      string
 			ApID        uint
 		}{
 			ProjectId:   s.ProjectId,
 			Fingerprint: s.Fingerprint,
 			Schema:      s.SchemaName,
-			InstName:    s.InstanceName,
+			InstID:      s.InstanceID,
 			Source:      s.Source,
 			ApID:        s.SourceId,
 		},
@@ -48,6 +47,7 @@ func (s *SQLV2) GenSQLId() {
 	}
 }
 
+// Deprecated
 func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 	metrics := []string{}
 	meta, err := GetMeta(ap.Type)
@@ -55,13 +55,13 @@ func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 		metrics = meta.Metrics
 	}
 	s := &SQLV2{
-		Source:       ap.Type,
-		SourceId:     ap.ID,
-		ProjectId:    ap.ProjectId,
-		InstanceName: ap.InstanceName,
-		SchemaName:   sql.Schema,
-		SQLContent:   sql.SQLContent,
-		Fingerprint:  sql.Fingerprint,
+		Source:      ap.Type,
+		SourceId:    ap.ID,
+		ProjectId:   ap.ProjectId,
+		InstanceID:  ap.InstanceID,
+		SchemaName:  sql.Schema,
+		SQLContent:  sql.SQLContent,
+		Fingerprint: sql.Fingerprint,
 	}
 	s.Info = LoadMetrics(sql.Info, metrics)
 	s.GenSQLId()
@@ -77,15 +77,15 @@ func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) *SQLV2 {
 	// todo: 错误处理
 	info, _ := sql.Info.OriginValue()
 	s := &SQLV2{
-		SQLId:        sql.SQLID,
-		Source:       sql.Source,
-		SourceId:     sql.SourceId,
-		ProjectId:    sql.ProjectId,
-		InstanceName: sql.InstanceName,
-		SchemaName:   sql.SchemaName,
-		SQLContent:   sql.SqlText,
-		Fingerprint:  sql.SqlFingerprint,
-		Info:         LoadMetrics(info, metrics),
+		SQLId:       sql.SQLID,
+		Source:      sql.Source,
+		SourceId:    sql.SourceId,
+		ProjectId:   sql.ProjectId,
+		InstanceID:  sql.InstanceID,
+		SchemaName:  sql.SchemaName,
+		SQLContent:  sql.SqlText,
+		Fingerprint: sql.SqlFingerprint,
+		Info:        LoadMetrics(info, metrics),
 	}
 	return s
 }
@@ -99,15 +99,15 @@ func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
 	// todo: 错误处理
 	info, _ := sql.Info.OriginValue()
 	s := &SQLV2{
-		SQLId:        sql.SQLID,
-		Source:       sql.Source,
-		SourceId:     sql.SourceId,
-		ProjectId:    sql.ProjectId,
-		InstanceName: sql.InstanceName,
-		SchemaName:   sql.SchemaName,
-		SQLContent:   sql.SqlText,
-		Fingerprint:  sql.SqlFingerprint,
-		Info:         LoadMetrics(info, metrics),
+		SQLId:       sql.SQLID,
+		Source:      sql.Source,
+		SourceId:    sql.SourceId,
+		ProjectId:   sql.ProjectId,
+		InstanceID:  sql.InstanceID,
+		SchemaName:  sql.SchemaName,
+		SQLContent:  sql.SqlText,
+		Fingerprint: sql.SqlFingerprint,
+		Info:        LoadMetrics(info, metrics),
 	}
 	return s
 }
@@ -119,7 +119,7 @@ func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
 		Source:         sql.Source,
 		SourceId:       sql.SourceId,
 		ProjectId:      sql.ProjectId,
-		InstanceName:   sql.InstanceName,
+		InstanceID:     sql.InstanceID,
 		SchemaName:     sql.SchemaName,
 		SqlFingerprint: sql.Fingerprint,
 		SqlText:        sql.SQLContent,
@@ -135,7 +135,7 @@ func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.OriginManageSQLQueue {
 		Source:         sql.Source,
 		SourceId:       sql.SourceId,
 		ProjectId:      sql.ProjectId,
-		InstanceName:   sql.InstanceName,
+		InstanceID:     sql.InstanceID,
 		SchemaName:     sql.SchemaName,
 		SqlFingerprint: sql.Fingerprint,
 		SqlText:        sql.SQLContent,

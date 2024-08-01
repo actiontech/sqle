@@ -117,7 +117,7 @@ func (at *MySQLSlowLogAliTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, 
 }
 
 func (at *MySQLSlowLogAliTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	if ap.InstanceName == "" {
+	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
@@ -190,12 +190,12 @@ func (at *MySQLSlowLogAliTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan,
 	cache := NewSQLV2Cache()
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
-			Source:       ap.Type,
-			SourceId:     ap.ID,
-			ProjectId:    ap.ProjectId,
-			InstanceName: ap.InstanceName,
-			SchemaName:   sql.schema,
-			SQLContent:   sql.sql,
+			Source:     ap.Type,
+			SourceId:   ap.ID,
+			ProjectId:  ap.ProjectId,
+			InstanceID: ap.InstanceID,
+			SchemaName: sql.schema,
+			SQLContent: sql.sql,
 		}
 		fp, err := util.Fingerprint(sql.sql, true)
 		if err != nil {
