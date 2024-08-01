@@ -10,9 +10,9 @@ import (
 )
 
 type AuditResultResp struct {
-	AuditPlanID  uint64
-	Task         *model.Task
-	FilteredSqls []*model.SQLManageRecord
+	AuditPlanID uint64
+	Task        *model.Task
+	AuditedSqls []*model.SQLManageRecord
 }
 
 type Head struct {
@@ -83,8 +83,8 @@ func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	}
 
 	return &AuditResultResp{
-		AuditPlanID:  uint64(auditPlan.ID),
-		Task:         task,
-		FilteredSqls: sqls,
+		AuditPlanID: uint64(auditPlan.ID),
+		Task:        task,
+		AuditedSqls: sqls,
 	}, nil
 }

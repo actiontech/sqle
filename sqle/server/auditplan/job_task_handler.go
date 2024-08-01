@@ -128,7 +128,7 @@ func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 		}
 
 		// 更新原值
-		auditSQLs = append(auditSQLs, resp.FilteredSqls...)
+		auditSQLs = append(auditSQLs, resp.AuditedSqls...)
 
 	}
 	return auditSQLs, nil
