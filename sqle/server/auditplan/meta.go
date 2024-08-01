@@ -49,28 +49,22 @@ const (
 )
 
 const (
-	paramKeyCollectIntervalSecond               = "collect_interval_second"
-	paramKeyCollectIntervalMinute               = "collect_interval_minute"
-	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
-	paramKeySQLMinSecond                        = "sql_min_second"
-	paramKeyDBInstanceId                        = "db_instance_id"
-	paramKeyAccessKeyId                         = "access_key_id"
-	paramKeyAccessKeySecret                     = "access_key_secret"
-	paramKeyRdsPath                             = "rds_path"
-	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
-	paramKeyProjectId                           = "project_id"
-	paramKeyRegion                              = "region"
+	paramKeyCollectIntervalSecond              = "collect_interval_second"
+	paramKeyCollectIntervalMinute              = "collect_interval_minute"
+	paramKeySQLMinSecond                       = "sql_min_second"
+	paramKeyDBInstanceId                       = "db_instance_id"
+	paramKeyAccessKeyId                        = "access_key_id"
+	paramKeyAccessKeySecret                    = "access_key_secret"
+	paramKeyRdsPath                            = "rds_path"
+	paramKeyFirstSqlsScrappedInLastPeriodHours = "first_sqls_scrapped_in_last_period_hours"
+	paramKeyProjectId                          = "project_id"
+	paramKeyRegion                             = "region"
 )
 
 var MetaBuilderList = []MetaBuilder{
 	{
 		Type:          TypeDefault,
 		Desc:          "自定义",
-		TaskHandlerFn: NewDefaultTaskV2Fn(),
-	},
-	{
-		Type:          TypeMySQLMybatis,
-		Desc:          "Mybatis 扫描",
 		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
@@ -117,11 +111,6 @@ var MetaBuilderList = []MetaBuilder{
 		Type:          TypeTiDBAuditLog,
 		Desc:          "TiDB审计日志",
 		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
-	},
-	{
-		Type:          TypeSQLFile,
-		Desc:          "SQL文件",
-		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 }
 

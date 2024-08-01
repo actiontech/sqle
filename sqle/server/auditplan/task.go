@@ -12,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 
 	"github.com/sirupsen/logrus"
@@ -97,16 +96,7 @@ func (at *baseTask) audit(task *model.Task) (*AuditResultResp, error) {
 		return nil, errNoSQLInAuditPlan
 	}
 
-	filteredSqls, err := filterSQLsByPeriodV2(at.ap.Params, auditPlanSQLs)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(filteredSqls) == 0 {
-		return nil, errNoSQLNeedToBeAudited
-	}
-
-	for i, sql := range filteredSqls {
+	for i, sql := range auditPlanSQLs {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(i),
@@ -121,37 +111,10 @@ func (at *baseTask) audit(task *model.Task) (*AuditResultResp, error) {
 	}
 
 	return &AuditResultResp{
-		AuditPlanID:  uint64(at.ap.ID),
-		Task:         task,
-		FilteredSqls: filteredSqls,
+		AuditPlanID: uint64(at.ap.ID),
+		Task:        task,
+		AuditedSqls: auditPlanSQLs,
 	}, nil
-}
-
-func filterSQLsByPeriodV2(params params.Params, sqls []*model.SQLManageRecord) (filteredSqls []*model.SQLManageRecord, err error) {
-	period := params.GetParam(paramKeyAuditSQLsScrappedInLastPeriodMinute).Int()
-	if period <= 0 {
-		return sqls, nil
-	}
-
-	t := time.Now()
-	minus := -1
-	startTime := t.Add(time.Minute * time.Duration(minus*period))
-	for _, sql := range sqls {
-		var info = struct {
-			LastReceiveTimestamp time.Time `json:"last_receive_timestamp"`
-		}{}
-		err := json.Unmarshal(sql.Info, &info)
-		if err != nil {
-			return nil, fmt.Errorf("parse last_receive_timestamp failed: %v", err)
-		}
-
-		if info.LastReceiveTimestamp.Before(startTime) {
-			continue
-		}
-		newSql := *sql
-		filteredSqls = append(filteredSqls, &newSql)
-	}
-	return filteredSqls, nil
 }
 
 // func filterSQLsByPeriod(params params.Params, sqls []*model.AuditPlanSQLV2) (filteredSqls []*model.AuditPlanSQLV2, err error) {
