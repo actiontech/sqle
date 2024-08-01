@@ -68,7 +68,7 @@ func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 	return s
 }
 
-func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) *SQLV2 {
+func ConvertMangerSQLQueueToSQLV2(sql *model.SQLManageQueue) *SQLV2 {
 	metrics := []string{}
 	meta, err := GetMeta(sql.Source)
 	if err == nil {
@@ -90,7 +90,7 @@ func ConvertMangerSQLQueueToSQLV2(sql *model.OriginManageSQLQueue) *SQLV2 {
 	return s
 }
 
-func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
+func ConvertMangerSQLToSQLV2(sql *model.SQLManageRecord) *SQLV2 {
 	metrics := []string{}
 	meta, err := GetMeta(sql.Source)
 	if err == nil {
@@ -112,9 +112,9 @@ func ConvertMangerSQLToSQLV2(sql *model.OriginManageSQL) *SQLV2 {
 	return s
 }
 
-func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
+func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.SQLManageRecord {
 	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
-	return &model.OriginManageSQL{
+	return &model.SQLManageRecord{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,
 		SourceId:       sql.SourceId,
@@ -128,9 +128,9 @@ func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.OriginManageSQL {
 	}
 }
 
-func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.OriginManageSQLQueue {
+func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.SQLManageQueue {
 	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
-	return &model.OriginManageSQLQueue{
+	return &model.SQLManageQueue{
 		SQLID:          sql.SQLId,
 		Source:         sql.Source,
 		SourceId:       sql.SourceId,

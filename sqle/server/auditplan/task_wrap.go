@@ -168,7 +168,7 @@ func (at *TaskWrapper) FullSyncSQLs(sqls []*SQL) error {
 			continue
 		}
 	}
-	sqlList := make([]*model.OriginManageSQLQueue, 0, len(cache.GetSQLs()))
+	sqlList := make([]*model.SQLManageQueue, 0, len(cache.GetSQLs()))
 	for _, sql := range cache.GetSQLs() {
 		sqlList = append(sqlList, ConvertSQLV2ToMangerSQLQueue(sql))
 	}
@@ -222,7 +222,7 @@ func (at *TaskWrapper) extractSQL() {
 		return
 	}
 	// 转换类型
-	sqlQueues := make([]*model.OriginManageSQLQueue, 0, len(sqls))
+	sqlQueues := make([]*model.SQLManageQueue, 0, len(sqls))
 	for _, sql := range sqls {
 		sqlQueues = append(sqlQueues, ConvertSQLV2ToMangerSQLQueue(sql))
 	}

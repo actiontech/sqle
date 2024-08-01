@@ -108,7 +108,7 @@ func (at *MySQLSlowLogBaiduTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) e
 	return nil
 }
 
-func (at *MySQLSlowLogBaiduTaskV2) Audit(sqls []*model.OriginManageSQL) (*AuditResultResp, error) {
+func (at *MySQLSlowLogBaiduTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }
 

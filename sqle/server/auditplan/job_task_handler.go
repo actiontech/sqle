@@ -51,7 +51,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 
 	}
 
-	sqlList := make([]*model.OriginManageSQL, 0, len(cache.GetSQLs()))
+	sqlList := make([]*model.SQLManageRecord, 0, len(cache.GetSQLs()))
 	for _, sql := range cache.GetSQLs() {
 		sqlList = append(sqlList, ConvertSQLV2ToMangerSQL(sql))
 	}
@@ -91,10 +91,10 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	}
 }
 
-func batchAuditSQLs(sqlList []*model.OriginManageSQL) ([]*model.OriginManageSQL, error) {
+func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
 
 	// SQL聚合
-	sqlMap := make(map[string][]*model.OriginManageSQL)
+	sqlMap := make(map[string][]*model.SQLManageRecord)
 	for _, sql := range sqlList {
 		// skip audited sql
 		if sql.AuditLevel != "" {
@@ -104,13 +104,13 @@ func batchAuditSQLs(sqlList []*model.OriginManageSQL) ([]*model.OriginManageSQL,
 		key := fmt.Sprintf("%d:%s", sql.SourceId, sql.SchemaName)
 		_, ok := sqlMap[key]
 		if !ok {
-			sqlMap[key] = make([]*model.OriginManageSQL, 0)
+			sqlMap[key] = make([]*model.SQLManageRecord, 0)
 		}
 		sqlMap[key] = append(sqlMap[key], sql)
 
 	}
 
-	auditSQLs := make([]*model.OriginManageSQL, 0)
+	auditSQLs := make([]*model.SQLManageRecord, 0)
 	// 聚合的SQL批量审核
 	for _, sqls := range sqlMap {
 		// get audit plan by source id
