@@ -107,7 +107,7 @@ func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	logger := log.NewEntry()
 	persist := model.GetStorage()
 	if len(sqls) == 0 {
-		return nil, errNoSQLNeedToBeAudited
+		return nil, ErrNoSQLNeedToBeAudited
 	}
 	// 同一批sql都属于同一个任务
 	auditPlanID := sqls[0].SourceId

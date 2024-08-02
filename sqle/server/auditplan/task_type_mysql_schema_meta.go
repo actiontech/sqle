@@ -302,14 +302,14 @@ func (at *BaseSchemaMetaTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, per
 			Desc:            "审核规则",
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      getSqlManagerRuleTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
 		},
 		{
 			Name:            "schema_name",
 			Desc:            "schema",
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      getSqlManagerSchemaNameTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerSchemaNameTips(logger, ap.ID, persist),
 		},
 	}
 }

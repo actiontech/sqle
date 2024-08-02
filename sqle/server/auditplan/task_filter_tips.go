@@ -5,9 +5,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func getSqlManagerRuleTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
+func GetSqlManagerRuleTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
 	var ruleFilterTips []FilterTip
-	rules, err := persist.GetManagerSqlRuleTipsByAuditPlan(uint(auditPlanId))
+	rules, err := persist.GetManagerSqlRuleTipsByAuditPlan(auditPlanId)
 	if err != nil {
 		logger.Warnf("get sql manager rule tips failed, error: %v", err)
 		return []FilterTip{}
@@ -24,7 +24,7 @@ func getSqlManagerRuleTips(logger *logrus.Entry, auditPlanId uint, persist *mode
 	return ruleFilterTips
 }
 
-func getSqlManagerSchemaNameTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
+func GetSqlManagerSchemaNameTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
 	schemaNames, err := persist.GetManagerSqlSchemaNameByAuditPlan(auditPlanId)
 	if err != nil {
 		logger.Warnf("get sql manager schema name tips failed, error: %v", err)
@@ -41,7 +41,7 @@ func getSqlManagerSchemaNameTips(logger *logrus.Entry, auditPlanId uint, persist
 	}
 }
 
-func getSqlManagerMetricTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage, metricName string) []FilterTip {
+func GetSqlManagerMetricTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage, metricName string) []FilterTip {
 	metricNames, err := persist.GetManagerSqlMetricTipsByAuditPlan(auditPlanId, metricName)
 	if err != nil {
 		logger.Warnf("get sql manager metric tips failed, error: %v", err)
