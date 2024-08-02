@@ -48,7 +48,9 @@ var instanceAuditPlanBodyTpl = `
 FROM 
     instance_audit_plans 
 LEFT JOIN 
-    (SELECT instance_audit_plan_id, GROUP_CONCAT(audit_plans_v2.id) AS audit_plan_ids 
+    (SELECT instance_audit_plan_id, 
+		GROUP_CONCAT(audit_plans_v2.id) AS audit_plan_ids,
+		GROUP_CONCAT(audit_plans_v2.type) AS types
      FROM audit_plans_v2 
 	 WHERE audit_plans_v2.deleted_at IS NULL
      GROUP BY instance_audit_plan_id) AS audit_plans 
