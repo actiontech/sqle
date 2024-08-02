@@ -407,7 +407,7 @@ type InstanceAuditPlanResV1 struct {
 // @Param filter_by_db_type query string false "filter by db type"
 // @Param filter_by_instance_id query string false "filter by instance id"
 // @Param filter_by_audit_plan_type query string false "filter instance audit plan type"
-// @Param filter_by_active_status query bool false "filter instance audit plan active status"
+// @Param filter_by_active_status query string false "filter instance audit plan active status"
 // @Param fuzzy_search query string false "fuzzy search"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
