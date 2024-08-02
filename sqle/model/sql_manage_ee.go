@@ -348,6 +348,12 @@ AND sm.assignees REGEXP :filter_assignee
 AND oms.instance_id = :filter_instance_id
 {{- end }}
 
+
+{{- if .filter_business_instance_ids }}
+AND oms.instance_id in ( {{ .filter_business_instance_ids}} )
+{{- end }}
+
+
 {{- if .filter_source }}
 AND oms.source = :filter_source
 {{- end }}

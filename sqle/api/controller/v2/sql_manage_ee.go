@@ -5,6 +5,7 @@ package v2
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -39,7 +40,7 @@ func getSqlManageList(c echo.Context) error {
 	data := map[string]interface{}{
 		"fuzzy_search_sql_fingerprint":      searchSqlFingerprint,
 		"filter_assignee":                   req.FilterAssignee,
-		"filter_instance_name":              req.FilterInstanceName,
+		"filter_instance_id":                req.FilterInstanceID,
 		"filter_source":                     req.FilterSource,
 		"filter_audit_level":                req.FilterAuditLevel,
 		"filter_last_audit_start_time_from": req.FilterLastAuditStartTimeFrom,
@@ -55,6 +56,18 @@ func getSqlManageList(c echo.Context) error {
 		"sort_order":                        req.SortOrder,
 		"limit":                             req.PageSize,
 		"offset":                            offset,
+	}
+	if req.FilterBusiness != nil && *req.FilterBusiness != "" {
+		insts, err := dms.GetInstancesInProjectByTypeAndBusiness(c.Request().Context(), projectUid, "", *req.FilterBusiness)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instIds := make([]string, len(insts))
+		for i, v := range insts {
+			instIds[i] = v.GetIDStr()
+		}
+
+		data["filter_business_instance_ids"] = fmt.Sprintf("\"%s\"", strings.Join(instIds, "\",\""))
 	}
 
 	s := model.GetStorage()
