@@ -263,13 +263,8 @@ func (at *BaseSchemaMetaTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResu
 	return auditSQLs(sqls)
 }
 
-func (at *BaseSchemaMetaTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, count, err
-	}
-	head := []Head{
+func (at *BaseSchemaMetaTaskV2) Head(ap *AuditPlan) []Head {
+	return []Head{
 		{
 			Name: "sql",
 			Desc: "SQL语句",
@@ -292,11 +287,59 @@ func (at *BaseSchemaMetaTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, a
 			Desc: "对象类型",
 		},
 	}
+}
+
+func (at *BaseSchemaMetaTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{
+		{
+			Name:            "sql", // 模糊筛选
+			Desc:            "SQL",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            "rule_name",
+			Desc:            "审核规则",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      getSqlManagerRuleTips(logger, ap.ID, persist),
+		},
+		{
+			Name:            "schema_name",
+			Desc:            "schema",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      getSqlManagerSchemaNameTips(logger, ap.ID, persist),
+		},
+	}
+}
+
+func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
+	args := make(map[model.FilterName]interface{}, len(filters))
+	for _, filter := range filters {
+		switch filter.Name {
+		case "sql":
+			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "schema_name":
+			args[model.FilterSchemaName] = filter.FilterComparisonValue
+
+		case "rule_name":
+			args[model.FilterRuleName] = filter.FilterComparisonValue
+		}
+	}
+
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
+	if err != nil {
+		return nil, count, err
+	}
+
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
 		data, err := sql.Info.OriginValue()
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
@@ -307,5 +350,5 @@ func (at *BaseSchemaMetaTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, a
 			model.AuditResultName: sql.AuditResult.String,
 		})
 	}
-	return head, rows, count, nil
+	return rows, count, nil
 }

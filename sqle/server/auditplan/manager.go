@@ -7,6 +7,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -117,10 +118,33 @@ func UploadSQLs(entry *logrus.Entry, ap *AuditPlan, sqls []*SQL, isPartialSync b
 	}
 }
 
+// todo: 弃用
 func GetSQLs(entry *logrus.Entry, ap *AuditPlan, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	args["audit_plan_id"] = ap.ID
-	task := NewTask(entry, ap)
-	return task.GetSQLs(args)
+	return []Head{}, []map[string]string{}, 0, nil
+}
+
+func GetSQLHead(ap *AuditPlan, persist *model.Storage) ([]Head, error) {
+	meta, err := GetMeta(ap.Type)
+	if err != nil {
+		return nil, err
+	}
+	return meta.Handler.Head(ap), nil
+}
+
+func GetSQLFilterMeta(ap *AuditPlan, persist *model.Storage) ([]FilterMeta, error) {
+	meta, err := GetMeta(ap.Type)
+	if err != nil {
+		return nil, err
+	}
+	return meta.Handler.Filters(log.NewEntry(), ap, persist), nil
+}
+
+func GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	meta, err := GetMeta(ap.Type)
+	if err != nil {
+		return nil, 0, err
+	}
+	return meta.Handler.GetSQLData(ap, persist, filters, orderBy, isAsc, limit, offset)
 }
 
 func init() {

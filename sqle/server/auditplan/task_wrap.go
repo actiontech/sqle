@@ -142,9 +142,9 @@ func (at *TaskWrapper) Audit() (*AuditResultResp, error) {
 	return at.handler.Audit(nil)
 }
 
-func (at *TaskWrapper) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	return at.handler.GetSQLs(at.ap, at.persist, args)
-}
+// func (at *TaskWrapper) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+// 	return at.handler.GetSQLs(at.ap, at.persist, args)
+// }
 
 func (at *TaskWrapper) FullSyncSQLs(sqls []*SQL) error {
 	cache := NewSQLV2Cache()
