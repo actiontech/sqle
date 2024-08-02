@@ -74,12 +74,6 @@ WHERE s.proj_fp_source_inst_schema_md5 = smr.proj_fp_source_inst_schema_md5
 	})
 }
 
-type SqlManageRuleTips struct {
-	DbType   string `json:"db_type"`
-	RuleName string `json:"rule_name"`
-	Desc     string `json:"desc"`
-}
-
 func (s *Storage) GetSqlManageRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Raw(`SELECT DISTINCT t.db_type, r.name rule_name, r.desc

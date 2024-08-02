@@ -16,8 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ObForMysqlTopSQLTaskV2 struct {
-}
+type ObForMysqlTopSQLTaskV2 struct{}
 
 func NewObForMysqlTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
@@ -383,31 +382,7 @@ func (at *ObForMysqlTopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditRe
 	return auditSQLs(sqls)
 }
 
-func (at *ObForMysqlTopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	result := []map[string]string{}
-	for _, planSQL := range auditPlanSQLs {
-		mp := map[string]string{
-			"sql":                 planSQL.SQLContent,
-			model.AuditResultName: planSQL.AuditResult.String,
-		}
-
-		origin, err := planSQL.Info.OriginValue()
-		if err != nil {
-			return nil, nil, 0, err
-		}
-		for k, v := range origin {
-			mp[k] = fmt.Sprintf("%v", v)
-		}
-		result = append(result, mp)
-	}
-	return at.getHead(ap), result, count, nil
-}
-
-func (at *ObForMysqlTopSQLTaskV2) getHead(ap *AuditPlan) []Head {
+func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	switch ap.Params.GetParam(paramKeyIndicator).String() {
 	case OBMySQLIndicatorElapsedTime:
 		return []Head{
@@ -492,4 +467,32 @@ func (at *ObForMysqlTopSQLTaskV2) getHead(ap *AuditPlan) []Head {
 		}
 	}
 	return []Head{}
+}
+
+func (at *ObForMysqlTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{}
+}
+
+func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	if err != nil {
+		return nil, count, err
+	}
+	result := []map[string]string{}
+	for _, planSQL := range auditPlanSQLs {
+		mp := map[string]string{
+			"sql":                 planSQL.SQLContent,
+			model.AuditResultName: planSQL.AuditResult.String,
+		}
+
+		origin, err := planSQL.Info.OriginValue()
+		if err != nil {
+			return nil, 0, err
+		}
+		for k, v := range origin {
+			mp[k] = fmt.Sprintf("%v", v)
+		}
+		result = append(result, mp)
+	}
+	return result, count, nil
 }

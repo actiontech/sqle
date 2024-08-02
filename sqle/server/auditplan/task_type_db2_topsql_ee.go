@@ -326,7 +326,7 @@ func (at *DB2TopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultRes
 	return auditSQLs(sqls)
 }
 
-func (at *DB2TopSQLTaskV2) getSQLHead() []Head {
+func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "sql",
@@ -372,11 +372,16 @@ func (at *DB2TopSQLTaskV2) getSQLHead() []Head {
 	}
 }
 
-func (at *DB2TopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
+func (at *DB2TopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{}
+}
+
+func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, count, err
 	}
+
 	result := []map[string]string{}
 
 	for i := range auditPlanSQLs {
@@ -387,12 +392,12 @@ func (at *DB2TopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args m
 
 		origin, err := auditPlanSQLs[i].Info.OriginValue()
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		for k := range origin {
 			mp[k] = fmt.Sprintf("%v", origin[k])
 		}
 		result = append(result, mp)
 	}
-	return at.getSQLHead(), result, count, nil
+	return result, count, nil
 }
