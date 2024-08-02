@@ -57,17 +57,17 @@ var EEMetaBuilderList = []MetaBuilder{
 	},
 	{
 		Type:          TypeDB2SchemaMeta,
-		Desc:          "DB2库表元数据",
+		Desc:          "库表元数据",
 		TaskHandlerFn: NewDB2SchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypeTDSQLSchemaMeta,
-		Desc:          "TDSQL库表元数据",
+		Desc:          "库表元数据",
 		TaskHandlerFn: NewTDMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypePostgreSQLSchemaMeta,
-		Desc:          "PostgreSQL库表元数据",
+		Desc:          "库表元数据",
 		TaskHandlerFn: NewPGSchemaMetaTaskV2Fn(),
 	},
 	{
