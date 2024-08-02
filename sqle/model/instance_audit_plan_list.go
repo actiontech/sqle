@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -113,6 +114,47 @@ const (
 	AuditResultDesc = "审核结果"
 )
 
+type FilterName string
+
+const (
+	FilterNameDBUser               FilterName = "db_user"
+	FilterLastReceiveTimestampFrom FilterName = "last_receive_timestamp_from"
+	FilterLastReceiveTimestampTo   FilterName = "last_receive_timestamp_to"
+	FilterRuleName                 FilterName = "rule_name"
+	FilterSchemaName               FilterName = "schema_name"
+	FilterSQL                      FilterName = "sql"
+	FilterCounter                  FilterName = "counter"
+	FilterQueryTimeAvg             FilterName = "query_time_avg"
+	FilterRowExaminedAvg           FilterName = "row_examined_avg"
+)
+
+type FilterType string
+
+const (
+	FilterTypeCommon FilterType = "common"
+	FilterTypeLike   FilterType = "like"
+)
+
+var FilterMap = map[FilterName]FilterType{
+	FilterNameDBUser:               FilterTypeCommon,
+	FilterLastReceiveTimestampFrom: FilterTypeCommon,
+	FilterLastReceiveTimestampTo:   FilterTypeCommon,
+	FilterRuleName:                 FilterTypeCommon,
+	FilterSchemaName:               FilterTypeCommon,
+	FilterCounter:                  FilterTypeCommon,
+	FilterSQL:                      FilterTypeLike,
+	FilterQueryTimeAvg:             FilterTypeCommon,
+	FilterRowExaminedAvg:           FilterTypeCommon,
+}
+
+var OrderByMap = map[string] /* field name */ string /* field name with table*/ {
+	"counter":                "audit_plan_sqls.info->'$.counter'",
+	"last_receive_timestamp": "audit_plan_sqls.info->'$.last_receive_timestamp'",
+	"query_time_avg":         "audit_plan_sqls.info->'$.query_time_avg'",
+	"query_time_max":         "audit_plan_sqls.info->'$.query_time_max'",
+	"row_examined_avg":       "audit_plan_sqls.info->'$.row_examined_avg'",
+}
+
 var instanceAuditPlanSQLQueryTpl = `
 SELECT
 audit_plan_sqls.sql_fingerprint,
@@ -123,7 +165,16 @@ audit_plan_sqls.audit_results
 
 {{- template "body" . -}} 
 
-order by audit_plan_sqls.id
+{{- if .order_by -}}
+ORDER BY {{.order_by}}
+{{- if .is_asc }}
+ASC
+{{- else}}
+DESC
+{{- end -}}
+{{else}}
+ORDER BY audit_plan_sqls.id
+{{- end -}}
 
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
@@ -147,9 +198,50 @@ WHERE audit_plan_sqls.deleted_at IS NULL
 AND instance_audit_plans.deleted_at IS NULL
 AND audit_plans_v2.id = :audit_plan_id
 
+{{- if .schema_name }}
+AND audit_plan_sqls.schema_name = :schema_name
+{{- end }}
+
+{{- if .last_receive_timestamp_from }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.last_receive_timestamp') >= :last_receive_timestamp_from
+{{- end }}
+
+{{- if .last_receive_timestamp_to }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.last_receive_timestamp') <= :last_receive_timestamp_to
+{{- end }}
+
+{{- if .rule_name }}
+AND JSON_CONTAINS(JSON_EXTRACT(audit_plan_sqls.audit_results,'$[*].rule_name'), '"{{ .rule_name }}"') > 0
+{{- end }}
+
+{{- if .db_user }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.db_user') = :db_user
+{{- end }}
+
+{{- if .schema_meta_name }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.schema_meta_name') = :schema_meta_name
+{{- end }}
+
+{{- if .sql }}
+AND audit_plan_sqls.sql_fingerprint LIKE :sql
+{{- end}}
+
+{{- if .counter }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.counter') >= :counter
+{{- end}}
+
+{{- if .query_time_avg }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.query_time_avg') >= :query_time_avg
+{{- end}}
+
+{{- if .row_examined_avg }}
+AND JSON_EXTRACT(audit_plan_sqls.info, '$.row_examined_avg') >= :row_examined_avg
+{{- end}}
+
 {{ end }}
 `
 
+// todo: 删除
 func (s *Storage) GetInstanceAuditPlanSQLsByReq(data map[string]interface{}) (
 	list []*InstanceAuditPlanSQLListDetail, count uint64, err error) {
 
@@ -158,6 +250,49 @@ func (s *Storage) GetInstanceAuditPlanSQLsByReq(data map[string]interface{}) (
 		return nil, 0, err
 	}
 	count, err = s.getCountResult(instanceAuditPlanSQLBodyTpl, instanceAuditPlanSQLCountTpl, data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return
+}
+
+// todo: 等 GetInstanceAuditPlanSQLsByReq 方法删除后替换它
+func (s *Storage) GetInstanceAuditPlanSQLsByReqV2(apId uint, apType string, limit, offset int, orderBy string, isAsc bool, filters map[FilterName]interface{}) (
+	list []*InstanceAuditPlanSQLListDetail, count uint64, err error) {
+	args := map[string]interface{}{}
+
+	args["audit_plan_id"] = apId
+	args["audit_plan_type"] = apType
+	args["is_asc"] = isAsc
+	if limit > 0 {
+		args["limit"] = limit
+		args["offset"] = offset
+	}
+
+	// order by 无法预编译，使用map定义预期的排序字段，非预期值则跳过防止SQL注入
+	if v, ok := OrderByMap[orderBy]; ok {
+		args["order_by"] = v
+	}
+
+	for filterName, filterValue := range filters {
+		v, ok := FilterMap[filterName]
+		// 非预期的筛选条件跳过
+		if !ok {
+			continue
+		}
+		switch v {
+		case FilterTypeLike:
+			args[string(filterName)] = fmt.Sprintf("%%%s%%", filterValue)
+		default:
+			args[string(filterName)] = filterValue
+		}
+
+	}
+	err = s.getListResult(instanceAuditPlanSQLBodyTpl, instanceAuditPlanSQLQueryTpl, args, &list)
+	if err != nil {
+		return nil, 0, err
+	}
+	count, err = s.getCountResult(instanceAuditPlanSQLBodyTpl, instanceAuditPlanSQLCountTpl, args)
 	if err != nil {
 		return nil, 0, err
 	}

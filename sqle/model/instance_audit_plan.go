@@ -210,6 +210,34 @@ func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord,
 	return sqls, err
 }
 
+func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string, error) {
+	var metricValueTips []string
+	err := s.db.Table("sql_manage_records").Where("sql_manage_records.source_id = ?", auditPlanId).
+		Select("DISTINCT sql_manage_records.schema_name as schema_name").
+		Scan(&metricValueTips).Error
+	return metricValueTips, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricName string) ([]string, error) {
+	var metricValueTips []string
+	err := s.db.Table("sql_manage_records").Where("sql_manage_records.source_id = ?", auditPlanId).
+		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
+		Scan(&metricValueTips).Error
+	return metricValueTips, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
+	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
+	err := s.db.Table("sql_manage_records smr").
+		Joins("LEFT JOIN audit_plans_v2 ap ON ap.id = smr.source_id").
+		Joins("LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
+		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
+		Where("smr.audit_results LIKE CONCAT('%' , rules.name , '%') AND smr.source_id = ?", auditPlanId).
+		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Scan(&sqlManageRuleTips).Error
+	return sqlManageRuleTips, errors.New(errors.ConnectStorageError, err)
+}
+
 type SQLManageRecordProcess struct {
 	Model
 

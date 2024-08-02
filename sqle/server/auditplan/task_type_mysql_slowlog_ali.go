@@ -16,6 +16,7 @@ import (
 )
 
 type MySQLSlowLogAliTaskV2 struct {
+	DefaultTaskV2
 	lastEndTime *time.Time
 }
 
@@ -71,43 +72,8 @@ func (at *MySQLSlowLogAliTaskV2) Metrics() []string {
 	}
 }
 
-func (at *MySQLSlowLogAliTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
-	if originSQL.SQLId != mergedSQL.SQLId {
-		return
-	}
-
-	originSQL.SQLContent = mergedSQL.SQLContent
-
-	// counter
-	originCounter := originSQL.Info.Get(MetricNameCounter).Int()
-	mergedCounter := mergedSQL.Info.Get(MetricNameCounter).Int()
-	counter := originCounter + mergedCounter
-	originSQL.Info.SetInt(MetricNameCounter, counter)
-
-	// last_receive_timestamp
-	originSQL.Info.SetString(MetricNameLastReceiveTimestamp, mergedSQL.Info.Get(MetricNameLastReceiveTimestamp).String())
-	return
-}
-
-func (at *MySQLSlowLogAliTaskV2) AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error {
-	originSQL, exist, err := cache.GetSQL(sql.SQLId)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		cache.CacheSQL(sql)
-		return nil
-	}
-	at.mergeSQL(originSQL, sql)
-	return nil
-}
-
 func (at *MySQLSlowLogAliTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
-}
-
-func (at *MySQLSlowLogAliTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	return baseTaskGetSQLs(args, persist)
 }
 
 func (at *MySQLSlowLogAliTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
