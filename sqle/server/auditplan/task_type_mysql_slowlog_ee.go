@@ -393,21 +393,21 @@ func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *m
 			Desc:            "审核规则",
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      getSqlManagerRuleTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
 		},
 		{
 			Name:            MetricNameDBUser,
 			Desc:            "用户",
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      getSqlManagerMetricTips(logger, ap.ID, persist, MetricNameDBUser),
+			FilterTips:      GetSqlManagerMetricTips(logger, ap.ID, persist, MetricNameDBUser),
 		},
 		{
 			Name:            "schema_name",
 			Desc:            "schema",
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      getSqlManagerSchemaNameTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerSchemaNameTips(logger, ap.ID, persist),
 		},
 		{
 			Name:            MetricNameCounter, // 阈值查询
