@@ -162,10 +162,6 @@ func (at *PGSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 	return sqls, nil
 }
 
-type PostgreSQLSchemaMetaTask struct {
-	*sqlCollector
-}
-
 type PostgreSQLSchema struct {
 	schemaName string
 }
@@ -424,43 +420,4 @@ func (at *PGSchemaMetaTaskV2) GetResult(logger *logrus.Entry, plugin driver.Plug
 		ret = append(ret, valueArr)
 	}
 	return ret, nil
-}
-
-func (at *PostgreSQLSchemaMetaTask) Audit() (*AuditResultResp, error) {
-	task, err := getTaskWithInstanceByAuditPlan(at.ap, at.persist)
-	if err != nil {
-		return nil, err
-	}
-	return at.baseTask.audit(task)
-}
-
-func (at *PostgreSQLSchemaMetaTask) GetSQLs(args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := at.persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, count, err
-	}
-	head, rows := buildPostgreSQLSchemaMetaSQLsResult(auditPlanSQLs)
-	return head, rows, count, nil
-}
-
-func buildPostgreSQLSchemaMetaSQLsResult(auditPlanSQLs []*model.InstanceAuditPlanSQLListDetail) ([]Head, []map[string] /* head name */ string) {
-	head := []Head{
-		{
-			Name: "sql",
-			Desc: "SQL语句",
-			Type: "sql",
-		},
-		{
-			Name: model.AuditResultName,
-			Desc: model.AuditResultDesc,
-		},
-	}
-	rows := make([]map[string]string, 0, len(auditPlanSQLs))
-	for _, sql := range auditPlanSQLs {
-		rows = append(rows, map[string]string{
-			"sql":                 sql.SQLContent,
-			model.AuditResultName: sql.AuditResult.String,
-		})
-	}
-	return head, rows
 }

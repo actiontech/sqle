@@ -321,12 +321,8 @@ func (at *ObForOracleTopSQLTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditR
 	return auditSQLs(sqls)
 }
 
-func (at *ObForOracleTopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, count, err
-	}
-	heads := []Head{
+func (at *ObForOracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
+	return []Head{
 		{
 			Name: "sql",
 			Desc: "SQL语句",
@@ -361,11 +357,22 @@ func (at *ObForOracleTopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage
 			Desc: "I/O等待时间(s)",
 		},
 	}
+}
+
+func (at *ObForOracleTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{}
+}
+
+func (at *ObForOracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	if err != nil {
+		return nil, count, err
+	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
 		data, err := sql.Info.OriginValue()
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
@@ -379,5 +386,5 @@ func (at *ObForOracleTopSQLTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage
 			model.AuditResultName:         sql.AuditResult.String,
 		})
 	}
-	return heads, rows, count, nil
+	return rows, count, nil
 }

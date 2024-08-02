@@ -100,12 +100,12 @@ func (at *TBaseSlowLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResult
 	return auditSQLs(sqls)
 }
 
-func (at *TBaseSlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, count, err
-	}
-	head := []Head{
+func (at *TBaseSlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
+	return nil, nil
+}
+
+func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
+	return []Head{
 		{
 			Name: "fingerprint",
 			Desc: "SQL指纹",
@@ -149,6 +149,17 @@ func (at *TBaseSlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, arg
 			Desc: "Schema",
 		},
 	}
+}
+
+func (at *TBaseSlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{}
+}
+
+func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	if err != nil {
+		return nil, count, err
+	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
 		var info = struct {
@@ -161,7 +172,7 @@ func (at *TBaseSlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, arg
 		}{}
 		err := json.Unmarshal(sql.Info, &info)
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		row := map[string]string{
 			"sql":                    sql.SQLContent,
@@ -185,9 +196,5 @@ func (at *TBaseSlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, arg
 		}
 		rows = append(rows, row)
 	}
-	return head, rows, count, nil
-}
-
-func (at *TBaseSlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
-	return nil, nil
+	return rows, count, nil
 }

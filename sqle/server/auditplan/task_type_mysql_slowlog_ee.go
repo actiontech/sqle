@@ -18,6 +18,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -325,4 +326,183 @@ func (at *SlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 		rows = append(rows, row)
 	}
 	return head, rows, count, nil
+}
+
+func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
+	return []Head{
+		{
+			Name: "fingerprint",
+			Desc: "SQL指纹",
+			Type: "sql",
+		},
+		{
+			Name: "sql",
+			Desc: "SQL",
+			Type: "sql",
+		},
+		{
+			Name: model.AuditResultName,
+			Desc: model.AuditResultDesc,
+		},
+		{
+			Name:     MetricNameCounter,
+			Desc:     "出现次数",
+			Sortable: true,
+		},
+		{
+			Name:     MetricNameLastReceiveTimestamp,
+			Desc:     "最后匹配时间",
+			Sortable: true,
+		},
+		{
+			Name:     MetricNameQueryTimeAvg,
+			Desc:     "平均执行时间",
+			Sortable: true,
+		},
+		{
+			Name:     MetricNameQueryTimeMax,
+			Desc:     "最长执行时间",
+			Sortable: true,
+		},
+		{
+			Name:     MetricNameRowExaminedAvg,
+			Desc:     "平均扫描行数",
+			Sortable: true,
+		},
+		{
+			Name: MetricNameDBUser,
+			Desc: "用户",
+		},
+		{
+			Name: "schema_name",
+			Desc: "Schema",
+		},
+	}
+}
+
+func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{
+		{
+			Name:            "sql", // 模糊筛选
+			Desc:            "SQL",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            "rule_name",
+			Desc:            "审核规则",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      getSqlManagerRuleTips(logger, ap.ID, persist),
+		},
+		{
+			Name:            MetricNameDBUser,
+			Desc:            "用户",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      getSqlManagerMetricTips(logger, ap.ID, persist, MetricNameDBUser),
+		},
+		{
+			Name:            "schema_name",
+			Desc:            "schema",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      getSqlManagerSchemaNameTips(logger, ap.ID, persist),
+		},
+		{
+			Name:            MetricNameCounter, // 阈值查询
+			Desc:            "出现次数 > ",
+			FilterInputType: FilterInputTypeInt,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            MetricNameQueryTimeAvg, // 阈值查询
+			Desc:            "平均执行时间 > ",
+			FilterInputType: FilterInputTypeInt,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            MetricNameRowExaminedAvg, // 阈值查询
+			Desc:            "平均扫描行数 > ",
+			FilterInputType: FilterInputTypeInt,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            MetricNameLastReceiveTimestamp,
+			Desc:            "最后匹配时间",
+			FilterInputType: FilterInputTypeDateTime,
+			FilterOpType:    FilterOpTypeBetween,
+		},
+	}
+}
+
+func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
+	args := make(map[model.FilterName]interface{}, len(filters))
+	for _, filter := range filters {
+		switch filter.Name {
+		case "sql":
+			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "rule_name":
+			args[model.FilterRuleName] = filter.FilterComparisonValue
+
+		case "schema_name":
+			args[model.FilterSchemaName] = filter.FilterComparisonValue
+
+		case MetricNameDBUser:
+			args[model.FilterNameDBUser] = filter.FilterComparisonValue
+
+		case MetricNameCounter:
+			counter, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterCounter] = counter
+
+		case MetricNameQueryTimeAvg:
+			value, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterQueryTimeAvg] = value
+
+		case MetricNameRowExaminedAvg:
+			value, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterRowExaminedAvg] = value
+
+		case MetricNameLastReceiveTimestamp:
+			args[model.FilterLastReceiveTimestampFrom] = filter.FilterBetweenValue.From
+			args[model.FilterLastReceiveTimestampTo] = filter.FilterBetweenValue.To
+		}
+	}
+
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
+	if err != nil {
+		return nil, count, err
+	}
+	rows := make([]map[string]string, 0, len(auditPlanSQLs))
+	for _, sql := range auditPlanSQLs {
+		data, err := sql.Info.OriginValue()
+		if err != nil {
+			return nil, 0, err
+		}
+		info := LoadMetrics(data, at.Metrics())
+		rows = append(rows, map[string]string{
+			"fingerprint":                  sql.Fingerprint,
+			"sql":                          sql.SQLContent,
+			model.AuditResultName:          sql.AuditResult.String,
+			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
+			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
+			MetricNameQueryTimeAvg:         fmt.Sprint(utils.Round(info.Get(MetricNameQueryTimeAvg).Float(), 2)),
+			MetricNameQueryTimeMax:         fmt.Sprint(utils.Round(info.Get(MetricNameQueryTimeMax).Float(), 2)),
+			MetricNameRowExaminedAvg:       fmt.Sprint(utils.Round(info.Get(MetricNameRowExaminedAvg).Float(), 2)),
+			MetricNameDBUser:               info.Get(MetricNameDBUser).String(),
+			"schema_name":                  sql.Schema,
+		})
+	}
+	return rows, count, nil
 }
