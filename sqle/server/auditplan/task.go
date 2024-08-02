@@ -8,8 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var errNoSQLInAuditPlan = errors.New(errors.DataConflict, fmt.Errorf("there is no SQLs in audit plan"))
-var errNoSQLNeedToBeAudited = errors.New(errors.DataConflict, fmt.Errorf("there is no SQLs need to be audited in audit plan"))
+var ErrNoSQLNeedToBeAudited = errors.New(errors.DataConflict, fmt.Errorf("there is no SQLs need to be audited in audit plan"))
 
 type Task interface {
 	Start() error
@@ -92,7 +91,7 @@ func NewTask(entry *logrus.Entry, ap *AuditPlan) Task {
 // 	}
 
 // 	if len(filteredSqls) == 0 {
-// 		return nil, errNoSQLNeedToBeAudited
+// 		return nil, ErrNoSQLNeedToBeAudited
 // 	}
 
 // 	for i, sql := range filteredSqls {

@@ -210,10 +210,6 @@ func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord,
 	return sqls, err
 }
 
-type MetricValueTip struct {
-	Value string `json:"metric_value"`
-}
-
 func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string, error) {
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").Where("sql_manage_records.source_id = ?", auditPlanId).
