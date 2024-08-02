@@ -2142,7 +2142,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "boolean",
+                        "type": "string",
                         "description": "filter instance audit plan active status",
                         "name": "filter_by_active_status",
                         "in": "query"
@@ -4047,8 +4047,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "instance name",
-                        "name": "filter_instance_name",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
                         "in": "query"
                     },
                     {
@@ -8230,8 +8230,8 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "instance name",
-                        "name": "filter_instance_name",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
                         "in": "query"
                     },
                     {
