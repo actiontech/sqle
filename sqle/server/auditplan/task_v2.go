@@ -16,9 +16,60 @@ type AuditResultResp struct {
 }
 
 type Head struct {
-	Name string
-	Desc string
-	Type string
+	Name     string
+	Desc     string
+	Type     string
+	Sortable bool
+}
+
+// checkAndGetOrderByName: 对传入的order by 进行校验, 如果非定义的类型则返回空
+func checkAndGetOrderByName(head []Head, orderByName string) string {
+	for _, v := range head {
+		if v.Sortable && v.Name == orderByName {
+			return orderByName
+		}
+	}
+	return ""
+}
+
+type FilterInputType string
+
+const (
+	FilterInputTypeInt      FilterInputType = "int"
+	FilterInputTypeString   FilterInputType = "string"
+	FilterInputTypeDateTime FilterInputType = "date_time"
+)
+
+type FilterOpType string
+
+const (
+	FilterOpTypeEqual   = "equal"
+	FilterOpTypeBetween = "between"
+)
+
+type FilterMeta struct {
+	Name            string
+	Desc            string
+	FilterInputType FilterInputType
+	FilterOpType    FilterOpType
+	FilterTips      []FilterTip
+}
+
+type FilterTip struct {
+	Value string `json:"value"`
+	Desc  string `json:"desc"`
+	Group string `json:"group"`
+}
+
+type Filter struct {
+	Name                  string             `json:"filter_name"`
+	FilterComparisonValue string             `json:"filter_compare_value"`
+	FilterBetweenValue    FilterBetweenValue `json:"filter_between_value"`
+}
+
+type FilterBetweenValue struct {
+	From string
+	To   string
 }
 
 // todo: 弃用
@@ -42,14 +93,21 @@ type AuditPlanCollector interface {
 type AuditPlanHandler interface {
 	AggregateSQL(cache SQLV2Cacher, sql *SQLV2) error // 数据聚合
 	Audit([]*model.SQLManageRecord) (*AuditResultResp, error)
-	GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error)
+	// GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) // todo: 弃用
+
+	// todo: 放到 AuditPlanMeta 里, 原因是meta里未保存 AuditPlanMeta, 其他开发者也在改造等合并后在处理。
+	Head(ap *AuditPlan) []Head
+
+	// todo: 放到 AuditPlanMeta 里, 原因是meta里未保存 AuditPlanMeta, 其他开发者也在改造等合并后在处理。
+	Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta
+	GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error)
 }
 
 func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	logger := log.NewEntry()
 	persist := model.GetStorage()
 	if len(sqls) == 0 {
-		return nil, errNoSQLNeedToBeAudited
+		return nil, ErrNoSQLNeedToBeAudited
 	}
 	// 同一批sql都属于同一个任务
 	auditPlanID := sqls[0].SourceId

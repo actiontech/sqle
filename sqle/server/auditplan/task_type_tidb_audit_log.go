@@ -86,7 +86,7 @@ func (at *TiDBAuditLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResult
 	// }
 
 	// if len(filteredSqls) == 0 {
-	// 	return nil, errNoSQLNeedToBeAudited
+	// 	return nil, ErrNoSQLNeedToBeAudited
 	// }
 
 	// for i, sql := range filteredSqls {

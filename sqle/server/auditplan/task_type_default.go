@@ -10,10 +10,10 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/sirupsen/logrus"
 )
 
-type DefaultTaskV2 struct {
-}
+type DefaultTaskV2 struct{}
 
 func NewDefaultTaskV2Fn() func() interface{} {
 	return func() interface{} {
@@ -69,12 +69,8 @@ func (at *DefaultTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp,
 	return auditSQLs(sqls)
 }
 
-func (at *DefaultTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
-	if err != nil {
-		return nil, nil, count, err
-	}
-	head := []Head{
+func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
+	return []Head{
 		{
 			Name: "fingerprint",
 			Desc: "SQL指纹",
@@ -98,11 +94,22 @@ func (at *DefaultTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 			Desc: "最后一次匹配到该指纹的时间",
 		},
 	}
+}
+
+func (at *DefaultTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{}
+}
+
+func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	if err != nil {
+		return nil, count, err
+	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
 	for _, sql := range auditPlanSQLs {
 		data, err := sql.Info.OriginValue()
 		if err != nil {
-			return nil, nil, 0, err
+			return nil, 0, err
 		}
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
@@ -113,7 +120,7 @@ func (at *DefaultTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 			model.AuditResultName:          sql.AuditResult.String,
 		})
 	}
-	return head, rows, count, nil
+	return rows, count, nil
 }
 
 func ShowSchemaEnumsByInstanceId(instanceId string) (enumsValues []params.EnumsValue) {

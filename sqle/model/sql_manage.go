@@ -46,3 +46,9 @@ type SqlManageEndpoint struct {
 func (sm SqlManageEndpoint) TableName() string {
 	return "sql_manage_endpoints"
 }
+
+type SqlManageRuleTips struct {
+	DbType   string `json:"db_type"`
+	RuleName string `json:"rule_name"`
+	Desc     string `json:"desc"`
+}
