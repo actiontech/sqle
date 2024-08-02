@@ -45,14 +45,7 @@ func (at *TiDBAuditLogTaskV2) InstanceType() string {
 }
 
 func (at *TiDBAuditLogTaskV2) Params(instanceId ...string) params.Params {
-	return []*params.Param{
-		{
-			Key:   paramKeyAuditSQLsScrappedInLastPeriodMinute,
-			Desc:  "审核过去时间段内抓取的SQL（分钟）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
-		},
-	}
+	return []*params.Param{}
 }
 
 // todo: tidb 审核部分与其他类型的不太一样
