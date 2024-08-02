@@ -1,7 +1,12 @@
 package v1
 
 import (
+	"bytes"
+	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -21,10 +26,10 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-	dry "github.com/ungerik/go-dry"
 
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
+	dry "github.com/ungerik/go-dry"
 )
 
 type CreateInstanceAuditPlanReqV1 struct {
@@ -959,12 +964,66 @@ type FilterBetweenValue struct {
 // @Success 200 {object} v1.GetAuditPlanSQLMetaResV1
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_meta [get]
 func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
-	return nil
+	instanceAuditPlanID := c.Param("instance_audit_plan_id")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// check current user instance audit plan permission
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	s := model.GetStorage()
+	auditPlanId, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
+	}
+	apDetail, err := s.GetAuditPlanDetailByID(uint(auditPlanId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ap := auditplan.ConvertModelToAuditPlanV2(apDetail)
+	head, err := auditplan.GetSQLHead(ap, s)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	filter, err := auditplan.GetSQLFilterMeta(ap, s)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	data := AuditPlanSQLMetaResV1{}
+	for _, v := range head {
+		data.Head = append(data.Head, AuditPlanSQLHeadV1{
+			Name:     v.Name,
+			Desc:     v.Desc,
+			Type:     v.Type,
+			Sortable: v.Sortable,
+		})
+	}
+	for _, v := range filter {
+		data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
+			Name:            v.Name,
+			Desc:            v.Desc,
+			FilterInputType: string(v.FilterInputType),
+			FilterOpType:    string(v.FilterOpType),
+			FilterTips:      ConvertFilterTipsToRes(v.FilterTips),
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanSQLMetaResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    data,
+	})
 }
 
 type GetAuditPlanSQLDataReqV1 struct {
-	PageIndex uint32   `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32   `json:"page_size" query:"page_size" valid:"required"`
+	PageIndex uint32   `json:"page_index" valid:"required"`
+	PageSize  uint32   `json:"page_size" valid:"required"`
 	OrderBy   string   `json:"order_by"`
 	IsAsc     bool     `json:"is_asc"`
 	Filters   []Filter `json:"filter_list"`
@@ -992,7 +1051,52 @@ type AuditPlanSQLDataResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanSQLDataResV1
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_data [post]
 func GetInstanceAuditPlanSQLData(c echo.Context) error {
-	return nil
+	req := new(GetAuditPlanSQLDataReqV1)
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if err = json.Unmarshal(body, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if err = controller.Validate(req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceAuditPlanID := c.Param("instance_audit_plan_id")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// check current user instance audit plan permission
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	s := model.GetStorage()
+	auditPlanId, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
+	}
+	apDetail, err := s.GetAuditPlanDetailByID(uint(auditPlanId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ap := auditplan.ConvertModelToAuditPlanV2(apDetail)
+
+	data, count, err := auditplan.GetSQLData(ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, int(req.PageSize), int((req.PageIndex-1)*req.PageSize))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &GetAuditPlanSQLDataResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      AuditPlanSQLDataResV1{Rows: data},
+		TotalNums: count,
+	})
 }
 
 type GetAuditPlanSQLExportReqV1 struct {
@@ -1013,5 +1117,99 @@ type GetAuditPlanSQLExportReqV1 struct {
 // @Success 200 {file} file "export audit plan sql report"
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_export [post]
 func GetInstanceAuditPlanSQLExport(c echo.Context) error {
-	return nil
+	req := new(GetAuditPlanSQLExportReqV1)
+	body, err := io.ReadAll(c.Request().Body)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if err = json.Unmarshal(body, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if err = controller.Validate(req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	instanceAuditPlanID := c.Param("instance_audit_plan_id")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// check current user instance audit plan permission
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	s := model.GetStorage()
+	auditPlanId, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
+	}
+	apDetail, err := s.GetAuditPlanDetailByID(uint(auditPlanId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ap := auditplan.ConvertModelToAuditPlanV2(apDetail)
+	head, err := auditplan.GetSQLHead(ap, s)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	rows, _, err := auditplan.GetSQLData(ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, 0, 0)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	buff := new(bytes.Buffer)
+	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
+	csvWriter := csv.NewWriter(buff)
+	toWrite := make([]string, len(head))
+	for col, h := range head {
+		toWrite[col] = h.Desc
+	}
+	if err = csvWriter.Write(toWrite); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	for _, rowMap := range rows {
+		for col, h := range head {
+			toWrite[col] = rowMap[h.Name]
+		}
+		if err = csvWriter.Write(toWrite); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	csvWriter.Flush()
+
+	fileName := fmt.Sprintf("sql_export_%s_%s.csv", ap.Type, time.Now().Format("20060102150405"))
+	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
+
+	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+}
+
+func ConvertFilterTipsToRes(fts []auditplan.FilterTip) []FilterTip {
+	resAuditPlans := make([]FilterTip, 0, len(fts))
+	for _, v := range fts {
+		resAuditPlans = append(resAuditPlans, FilterTip{
+			Value: v.Value,
+			Desc:  v.Desc,
+			Group: v.Group,
+		})
+	}
+	return resAuditPlans
+}
+
+func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
+	filters := make([]auditplan.Filter, 0, len(fs))
+	for _, v := range fs {
+		filters = append(filters, auditplan.Filter{
+			Name:                  v.Name,
+			FilterComparisonValue: v.FilterComparisonValue,
+			FilterBetweenValue: auditplan.FilterBetweenValue{
+				From: v.FilterBetweenValue.From,
+				To:   v.FilterBetweenValue.To,
+			},
+		})
+	}
+	return filters
 }
