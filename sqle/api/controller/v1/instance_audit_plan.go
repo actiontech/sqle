@@ -1173,7 +1173,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	}
 	for _, rowMap := range rows {
 		for col, h := range head {
-			toWrite[col] = rowMap[h.Name]
+			toWrite[col] = utils.TruncateAndMarkForExcelCell(rowMap[h.Name])
 		}
 		if err = csvWriter.Write(toWrite); err != nil {
 			return controller.JSONBaseErrorReq(c, err)

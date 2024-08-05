@@ -364,3 +364,39 @@ func GenerateRandomString(halfLength int) string {
 	rand.Read(bytes)
 	return fmt.Sprintf("%x", bytes)
 }
+
+// TruncateStringByChars 按字符数截取字符串
+func TruncateStringByChars(s string, maxChars uint) string {
+	// 字节数不大于 maxChars ，那字符数肯定不大于 maxChars
+	if uint(len(s)) <= maxChars {
+		return s
+	}
+
+	// 逐个rune遍历s，i为每个rune起始的字节索引
+	// 如: s="a一b二c"，汉字为多字节字符，len(s)=9
+	//     i依次为　0　　1　　4　　5　　8
+	//           　^ａ　^一　^ｂ　^二　^ｃ
+	var charsCount uint
+	for i := range s {
+		if charsCount == maxChars {
+			// 达到截取的字符数了，将字符截取至此时rune的字节索引
+			return s[:i]
+		}
+		// 未达到要截取的字符数，继续获取下一个rune
+		charsCount++
+	}
+	// 字符串字符数不足 maxChars
+	return s
+}
+
+const excelCellMaxChars = 32766
+
+// TruncateAndMarkForExcelCell 对超长字符串进行截取，以符合Excel类工具对单元格字符数上限的限制
+func TruncateAndMarkForExcelCell(s string) string {
+	truncated := TruncateStringByChars(s, excelCellMaxChars-4)
+	if truncated != s {
+		// 截取了的话，做标记
+		return truncated + " ..."
+	}
+	return s
+}
