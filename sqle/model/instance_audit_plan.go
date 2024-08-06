@@ -107,7 +107,8 @@ func (s *Storage) UpdateInstanceAuditPlanByID(id uint, attrs map[string]interfac
 // 影响：会查出所有被删除的任务，在syncTask时做一次额外的删除操作
 func (s *Storage) GetLatestAuditPlanRecordsV2() ([]*AuditPlanDetail, error) {
 	var aps []*AuditPlanDetail
-	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at,audit_plans_v2.last_collection_time").Where("audit_plans_v2.updated_at > audit_plans_v2.last_collection_time").Order("updated_at").Scan(&aps).Error
+	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at,audit_plans_v2.last_collection_time").
+		Where("(audit_plans_v2.updated_at > audit_plans_v2.last_collection_time OR last_collection_time IS NULL)").Order("updated_at").Scan(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -153,7 +154,7 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 	var info = struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
-	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time')), '%Y-%m-%dT%H:%i:%s.%f')) 
+	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%dT%H:%i:%s.%f')) 
 					AS max_start_time FROM sql_manage_records WHERE source_id = ?`, sourceId).Scan(&info).Error
 	return info.StartTime, err
 }
