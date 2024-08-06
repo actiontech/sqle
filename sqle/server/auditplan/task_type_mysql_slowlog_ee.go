@@ -63,6 +63,7 @@ func (at *SlowLogTaskV2) Metrics() []string {
 		MetricNameRowExaminedAvg,
 		MetricNameDBUser,
 		MetricNameEndpoints,
+		MetricNameStartTimeOfLastScrapedSQL,
 	}
 }
 
@@ -108,6 +109,9 @@ func (at *SlowLogTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 	// endpoints
 	originSQL.Info.SetString(MetricNameEndpoints, mergedSQL.Info.Get(MetricNameEndpoints).String())
 
+	// start_time
+	originSQL.Info.SetString(MetricNameStartTimeOfLastScrapedSQL, mergedSQL.Info.Get(MetricNameStartTimeOfLastScrapedSQL).String())
+
 	return
 }
 
@@ -137,6 +141,9 @@ func (at *SlowLogTaskV2) genSQLV2FromRow(ap *AuditPlan, row map[string]sql.NullS
 
 	// latest query time, todo: 是否可以从数据库取
 	info.SetString(MetricNameLastReceiveTimestamp, time.Now().Format(time.RFC3339))
+
+	// start time
+	info.SetString(MetricNameStartTimeOfLastScrapedSQL, row["start_time"].String)
 
 	// query time avg and max
 	queryTime, err := strconv.Atoi(row["query_time"].String)
