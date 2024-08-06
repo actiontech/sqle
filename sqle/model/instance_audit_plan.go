@@ -103,9 +103,11 @@ func (s *Storage) UpdateInstanceAuditPlanByID(id uint, attrs map[string]interfac
 }
 
 // GetLatestAuditPlanIds 获取所有变更过的记录，包括删除
-func (s *Storage) GetLatestAuditPlanRecordsV2(after time.Time) ([]*AuditPlanDetail, error) {
+// 采集时会更新last_collection_time，此处获取updated_at <> last_collection_time的任务，即为配置变更过的任务
+// 影响：会查出所有被删除的任务，在syncTask时做一次额外的删除操作
+func (s *Storage) GetLatestAuditPlanRecordsV2() ([]*AuditPlanDetail, error) {
 	var aps []*AuditPlanDetail
-	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at").Where("audit_plans_v2.updated_at > ?", after).Order("updated_at").Scan(&aps).Error
+	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at,audit_plans_v2.last_collection_time").Where("audit_plans_v2.updated_at <> audit_plans_v2.last_collection_time").Order("updated_at").Scan(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -117,7 +119,7 @@ type AuditPlanV2 struct {
 	RuleTemplateName    string        `json:"rule_template_name" gorm:"type:varchar(255)"`
 	Params              params.Params `json:"params" gorm:"type:varchar(1000)"`
 	ActiveStatus        string        `json:"active_status" gorm:"type:varchar(255)"`
-	LastCollectionTime  *time.Time    `json:"last_collection_time" gorm:"type:datetime"`
+	LastCollectionTime  *time.Time    `json:"last_collection_time" gorm:"type:datetime(3)"`
 
 	AuditPlanSQLs []*SQLManageRecord `gorm:"foreignKey:SourceId"`
 }
@@ -415,5 +417,6 @@ func (s *Storage) UpdateManagerSQLStatus(sql *SQLManageRecord) error {
 }
 
 func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collectionTime time.Time) error {
-	return s.db.Model(AuditPlanV2{}).Where("id = ?", auditPlanID).Update("last_collection_time", collectionTime).Error
+	const query = `UPDATE audit_plans_v2 SET last_collection_time = now(3) WHERE id = ?;`
+	return s.db.Exec(query, auditPlanID).Error
 }
