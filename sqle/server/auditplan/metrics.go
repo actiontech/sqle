@@ -1,6 +1,9 @@
 package auditplan
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const MetricNameCounter string = "counter" // 总次数
 const MetricNameLastReceiveTimestamp string = "last_receive_timestamp"
@@ -34,6 +37,12 @@ const MetricNameIoWaitTimeAvg = "io_wait_time_avg"
 const MetricNameDiskReadAvg = "disk_read_avg"
 const MetricNameBufferReadAvg = "buffer_read_avg"
 
+const MetricNameLockTimeAvg string = "lock_time_avg"         // 平均锁等待时间
+const MetricNameLockTimeMax string = "lock_time_max"         // 最大锁等待时间
+const MetricNameRowsAffectedMax string = "rows_affected_max" // 最大影响的行数
+const MetricNameRowsAffectedAvg string = "rows_affected_avg" // 平均影响的行数
+const MetricNameChecksum string = "checksum"                 // 校验和
+
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:              MetricTypeInt,    // MySQL slow log
 	MetricNameLastReceiveTimestamp: MetricTypeString, // MySQL slow log
@@ -63,6 +72,12 @@ var ALLMetric = map[string]MetricType{
 
 	MetricNameLastQueryAt:   MetricTypeString, // OB MySQL TOP SQL
 	MetricNameIoWaitTimeAvg: MetricTypeFloat,  // OB MySQL TOP SQL
+
+	MetricNameLockTimeAvg:     MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameLockTimeMax:     MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameRowsAffectedMax: MetricTypeInt,    // TD MYSQL Monitor DB Slow Log
+	MetricNameRowsAffectedAvg: MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameChecksum:        MetricTypeString, // TD MYSQL Monitor DB Slow Log
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {
@@ -177,10 +192,17 @@ func (m *Metric) Float() float64 {
 }
 
 func (m *Metric) String() string {
-	if m == nil || m.typ != MetricTypeString {
+	if m == nil {
 		return ""
 	}
-	return m.s
+	switch m.typ {
+	default:
+		return ""
+	case MetricTypeString:
+		return m.s
+	case MetricTypeInt:
+		return fmt.Sprintf("%v", m.Int())
+	}
 }
 
 func (m *Metric) Time() *time.Time {
