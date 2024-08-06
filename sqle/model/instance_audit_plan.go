@@ -103,11 +103,11 @@ func (s *Storage) UpdateInstanceAuditPlanByID(id uint, attrs map[string]interfac
 }
 
 // GetLatestAuditPlanIds 获取所有变更过的记录，包括删除
-// 采集时会更新last_collection_time，此处获取updated_at <> last_collection_time的任务，即为配置变更过的任务
+// 采集时会更新last_collection_time会同步更新updated_at，此处获取updated_at > last_collection_time的任务，即为配置变更过的任务
 // 影响：会查出所有被删除的任务，在syncTask时做一次额外的删除操作
 func (s *Storage) GetLatestAuditPlanRecordsV2() ([]*AuditPlanDetail, error) {
 	var aps []*AuditPlanDetail
-	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at,audit_plans_v2.last_collection_time").Where("audit_plans_v2.updated_at <> audit_plans_v2.last_collection_time").Order("updated_at").Scan(&aps).Error
+	err := s.db.Unscoped().Model(AuditPlanV2{}).Select("audit_plans_v2.id, audit_plans_v2.updated_at,audit_plans_v2.last_collection_time").Where("audit_plans_v2.updated_at > audit_plans_v2.last_collection_time").Order("updated_at").Scan(&aps).Error
 	return aps, errors.New(errors.ConnectStorageError, err)
 }
 
