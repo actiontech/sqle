@@ -148,12 +148,30 @@ func (a *AuditPlanV2) GetBaseInfo() BaseAuditPlan {
 }
 
 func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error) {
+		// TODO start time 已失效，需要修复
 	var info = struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
 	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time')), '%Y-%m-%dT%H:%i:%s.%fZ')) 
 					AS max_start_time FROM sql_manage_records WHERE source_id = ?`, sourceId).Scan(&info).Error
 	return info.StartTime, err
+}
+
+
+func (s *Storage) GetLastReceiveTimeAuditPlanSQLV2(sourceId uint) (string, error) {
+	var info = struct {
+		LastReceivedTime string `gorm:"column:last_received_time"`
+	}{}
+	err := s.db.Raw(`
+	SELECT
+		MAX(
+			JSON_UNQUOTE(JSON_EXTRACT(info, '$.last_receive_timestamp'))
+		)
+  		AS last_received_time 
+  	FROM sqle.sql_manage_records 
+  	WHERE source_id = ?
+	`, sourceId).Scan(&info).Error
+	return info.LastReceivedTime, err
 }
 
 type SQLManageRecord struct {
