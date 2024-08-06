@@ -10,6 +10,7 @@ const MetricNameRowExaminedAvg string = "row_examined_avg" // 平均扫描行数
 const MetricNameFirstQueryAt string = "first_query_at"
 const MetricNameDBUser string = "db_user"
 const MetricNameEndpoints string = "endpoints"
+const MetricNameStartTime string = "start_time"
 
 const MetricNameMetaName string = "schema_meta_name"    // 表或者视图的名字
 const MetricNameMetaType string = "schema_meta_type"    // 表或者视图等等
@@ -43,6 +44,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameFirstQueryAt:         MetricTypeString, // MySQL slow log, 好像没用上 | OB MySQL TOP SQL
 	MetricNameDBUser:               MetricTypeString, // MySQL slow log
 	MetricNameEndpoints:            MetricTypeString, // MySQL slow log
+	MetricNameStartTime:            MetricTypeString, // MySQL slow log
 	MetricNameMetaName:             MetricTypeString, // MySQL schema meta
 	MetricNameMetaType:             MetricTypeString, // MySQL schema meta
 	MetricNameRecordDeleted:        MetricTypeBool,   // MySQL schema meta
