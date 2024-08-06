@@ -49,16 +49,18 @@ const (
 )
 
 const (
-	paramKeyCollectIntervalSecond              = "collect_interval_second"
-	paramKeyCollectIntervalMinute              = "collect_interval_minute"
-	paramKeySQLMinSecond                       = "sql_min_second"
-	paramKeyDBInstanceId                       = "db_instance_id"
-	paramKeyAccessKeyId                        = "access_key_id"
-	paramKeyAccessKeySecret                    = "access_key_secret"
-	paramKeyRdsPath                            = "rds_path"
-	paramKeyFirstSqlsScrappedInLastPeriodHours = "first_sqls_scrapped_in_last_period_hours"
-	paramKeyProjectId                          = "project_id"
-	paramKeyRegion                             = "region"
+	paramKeyCollectIntervalSecond               = "collect_interval_second"
+	paramKeyCollectIntervalMinute               = "collect_interval_minute"
+	paramKeySQLMinSecond                        = "sql_min_second"
+	paramKeyDBInstanceId                        = "db_instance_id"
+	paramKeyAccessKeyId                         = "access_key_id"
+	paramKeyAccessKeySecret                     = "access_key_secret"
+	paramKeyRdsPath                             = "rds_path"
+	paramKeyFirstSqlsScrappedInLastPeriodHours  = "first_sqls_scrapped_in_last_period_hours"
+	paramKeyProjectId                           = "project_id"
+	paramKeyRegion                              = "region"
+	paramKeyAuditSQLsScrappedInLastPeriodMinute = "audit_sqls_scrapped_in_last_period_minute"
+	paramKeyScrappedStartTime                   = "scrapped_start_time"
 )
 
 var MetaBuilderList = []MetaBuilder{
