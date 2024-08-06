@@ -155,6 +155,11 @@ var OrderByMap = map[string] /* field name */ string /* field name with table*/ 
 	"query_time_avg":         "audit_plan_sqls.info->'$.query_time_avg'",
 	"query_time_max":         "audit_plan_sqls.info->'$.query_time_max'",
 	"row_examined_avg":       "audit_plan_sqls.info->'$.row_examined_avg'",
+	"first_query_at":         "audit_plan_sqls.info->'$.first_query_at'",
+	"lock_time_avg":          "audit_plan_sqls.info->'$.lock_time_avg'",
+	"lock_time_max":          "audit_plan_sqls.info->'$.lock_time_max'",
+	"rows_affected_max":      "audit_plan_sqls.info->'$.rows_affected_max'",
+	"rows_affected_avg":      "audit_plan_sqls.info->'$.rows_affected_avg'",
 }
 
 var instanceAuditPlanSQLQueryTpl = `
