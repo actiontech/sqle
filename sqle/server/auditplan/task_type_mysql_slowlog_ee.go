@@ -51,6 +51,12 @@ func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 				{Value: "0", Desc: "从slow.log 文件采集,需要适配scanner"}, {Value: "1", Desc: "从mysql.slow_log 表采集"},
 			},
 		},
+		{
+			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
+			Desc:  "启动任务时拉取慢日志时间范围(单位:小时，仅对 mysql.slow_log 有效)",
+			Value: "",
+			Type:  params.ParamTypeInt,
+		},
 	}
 }
 
@@ -63,6 +69,7 @@ func (at *SlowLogTaskV2) Metrics() []string {
 		MetricNameRowExaminedAvg,
 		MetricNameDBUser,
 		MetricNameEndpoints,
+		MetricNameStartTimeOfLastScrapedSQL,
 	}
 }
 
@@ -108,6 +115,9 @@ func (at *SlowLogTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 	// endpoints
 	originSQL.Info.SetString(MetricNameEndpoints, mergedSQL.Info.Get(MetricNameEndpoints).String())
 
+	// start_time
+	originSQL.Info.SetString(MetricNameStartTimeOfLastScrapedSQL, mergedSQL.Info.Get(MetricNameStartTimeOfLastScrapedSQL).String())
+
 	return
 }
 
@@ -137,6 +147,9 @@ func (at *SlowLogTaskV2) genSQLV2FromRow(ap *AuditPlan, row map[string]sql.NullS
 
 	// latest query time, todo: 是否可以从数据库取
 	info.SetString(MetricNameLastReceiveTimestamp, time.Now().Format(time.RFC3339))
+
+	// start time
+	info.SetString(MetricNameStartTimeOfLastScrapedSQL, row["start_time"].String)
 
 	// query time avg and max
 	queryTime, err := strconv.Atoi(row["query_time"].String)
@@ -188,6 +201,12 @@ func (at *SlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist
 	if err != nil {
 		return nil, fmt.Errorf("get start time failed, error: %v", err)
 	}
+
+	if queryStartTime == "" {
+		firstScrapInLastHours := ap.Params.GetParam(paramKeyFirstSqlsScrappedInLastPeriodHours).Int()
+		queryStartTime = time.Now().Add(time.Duration(-1*firstScrapInLastHours) * time.Hour).Format("2006-01-02 15:04:05")
+	}
+
 	querySQL := `
 	SELECT sql_text,db,TIME_TO_SEC(query_time) AS query_time, start_time, rows_examined
 	FROM mysql.slow_log
