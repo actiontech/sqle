@@ -14,9 +14,9 @@ type GetReportPushConfigsListResV1 struct {
 
 type ReportPushConfigList struct {
 	Type              string    `json:"type"`
-	Status            string    `json:"status"`
-	PushFrequencyType string    `json:"push_frequency_type"`
-	PushFrequencyCron string    `json:"PushFrequency_cron"`
+	Enabled           string    `json:"enabled"`
+	TriggerType       string    `json:"trigger_type "`
+	PushFrequencyCron string    `json:"push_frequency_cron"`
 	PushUserType      string    `json:"push_user_Type"`
 	PushUserList      []string  `json:"push_user_list"`
 	LastPushTime      time.Time `json:"last_push_time"`
@@ -35,11 +35,11 @@ func GetReportPushConfigList(c echo.Context) error {
 }
 
 type UpdateReportPushConfigReqV1 struct {
-	PushFrequencyType string   `json:"push_frequency_type"`
-	PushFrequencyCron string   `json:"PushFrequency_cron"`
+	TriggerType       string   `json:"trigger_type "`
+	PushFrequencyCron string   `json:"push_frequency_cron"`
 	PushUserType      string   `json:"push_user_Type"`
 	PushUserList      []string `json:"push_user_list"`
-	Status            string   `json:"status"`
+	Enabled           string   `json:"enabled"`
 }
 
 // @Summary 更新消息推送配置
