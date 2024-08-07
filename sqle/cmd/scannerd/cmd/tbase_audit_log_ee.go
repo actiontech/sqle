@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/tbase_audit_log"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
+	"github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ var (
 	fileFormat     string
 
 	tbaseLogCmd = &cobra.Command{
-		Use:   "tbase-audit-log",
+		Use:   auditplan.TypeTBaseSlowLog,
 		Short: "Parse tbase pg_log",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tbase_audit_log.Params{
@@ -31,7 +32,7 @@ var (
 				AuditPlanID:    rootCmdFlags.auditPlanID,
 				FileNameFormat: fileFormat,
 			}
-			log := logrus.WithField("scanner", "tbase-audit-log")
+			log := logrus.WithField("scanner", auditplan.TypeTBaseSlowLog)
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
 			scanner, err := tbase_audit_log.New(param, log, client)
 			if err != nil {
