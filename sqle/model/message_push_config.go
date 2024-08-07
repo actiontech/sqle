@@ -17,7 +17,7 @@ func (t Strings) Value() (driver.Value, error) {
 	return json.Marshal(t)
 }
 
-type MessagePushConfig struct {
+type ReportPushConfig struct {
 	Model
 	ProjectId         string    `json:"project_id" gorm:"type:varchar(255)"`
 	Type              string    `json:"type" gorm:"type:varchar(255)"`

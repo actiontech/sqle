@@ -7,12 +7,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type GetMessagePushConfigsListResV1 struct {
+type GetReportPushConfigsListResV1 struct {
 	controller.BaseRes
-	Data []MessagePushConfigList `json:"data"`
+	Data []ReportPushConfigList `json:"data"`
 }
 
-type MessagePushConfigList struct {
+type ReportPushConfigList struct {
 	Type              string    `json:"type"`
 	Status            string    `json:"status"`
 	PushFrequencyType string    `json:"push_frequency_type"`
@@ -22,19 +22,19 @@ type MessagePushConfigList struct {
 	LastPushTime      time.Time `json:"last_push_time"`
 }
 
-// GetMessagePushConfigList
+// GetReportPushConfigList
 // @Summary 获取消息推送配置列表
-// @Description Get message push config list
-// @Id GetMessagePushConfigList
-// @Tags MessagePushConfig
+// @Description Get report push config list
+// @Id GetReportPushConfigList
+// @Tags ReportPushConfig
 // @Security ApiKeyAuth
-// @Success 200 {object} GetMessagePushConfigsListResV1
-// @Router /v1/project/{project_name}/message_push_configs [get]
-func GetMessagePushConfigList(c echo.Context) error {
+// @Success 200 {object} GetReportPushConfigsListResV1
+// @Router /v1/project/{project_name}/report_push_configs [get]
+func GetReportPushConfigList(c echo.Context) error {
 	return nil
 }
 
-type UpdateMessagePushConfigReqV1 struct {
+type UpdateReportPushConfigReqV1 struct {
 	PushFrequencyType string   `json:"push_frequency_type"`
 	PushFrequencyCron string   `json:"PushFrequency_cron"`
 	PushUserType      string   `json:"push_user_Type"`
@@ -43,14 +43,14 @@ type UpdateMessagePushConfigReqV1 struct {
 }
 
 // @Summary 更新消息推送配置
-// @Description update message push config
-// @Id UpdateMessagePushConfig
-// @Tags message_push_config
+// @Description update report push config
+// @Id UpdateReportPushConfig
+// @Tags report_push_config
 // @Security ApiKeyAuth
-// @Param message_push_config_id path string true "message push config id"
-// @Param req body v1.UpdateMessagePushConfigReqV1 true "update message push config request"
+// @Param report_push_config_id path string true "report push config id"
+// @Param req body v1.UpdateReportPushConfigReqV1 true "update report push config request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_name}/message_push_configs/{message_push_config_id} [put]
-func UpdateMessagePushConfig(c echo.Context) error {
+// @router /v1/project/{project_name}/report_push_configs/{report_push_config_id} [put]
+func UpdateReportPushConfig(c echo.Context) error {
 	return nil
 }
