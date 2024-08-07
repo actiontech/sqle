@@ -1113,6 +1113,70 @@ var doc = `{
                 }
             }
         },
+        "/v1/project/{project_name}/report_push_configs": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get report push config list",
+                "tags": [
+                    "ReportPushConfig"
+                ],
+                "summary": "获取消息推送配置列表",
+                "operationId": "GetReportPushConfigList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetReportPushConfigsListResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/project/{project_name}/report_push_configs/{report_push_config_id}/": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update report push config",
+                "tags": [
+                    "report_push_config"
+                ],
+                "summary": "更新消息推送配置",
+                "operationId": "UpdateReportPushConfig",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "report push config id",
+                        "name": "report_push_config_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update report push config request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateReportPushConfigReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [
@@ -4043,6 +4107,12 @@ var doc = `{
                         "type": "string",
                         "description": "assignee",
                         "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "business",
+                        "name": "filter_business",
                         "in": "query"
                     },
                     {
@@ -11553,6 +11623,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetReportPushConfigsListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ReportPushConfigList"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRiskAuditPlanResV1": {
             "type": "object",
             "properties": {
@@ -13091,6 +13180,35 @@ var doc = `{
                 }
             }
         },
+        "v1.ReportPushConfigList": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "string"
+                },
+                "last_push_time": {
+                    "type": "string"
+                },
+                "push_frequency_cron": {
+                    "type": "string"
+                },
+                "push_user_Type": {
+                    "type": "string"
+                },
+                "push_user_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "trigger_type ": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RewriteRule": {
             "type": "object",
             "properties": {
@@ -14268,6 +14386,29 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.RuleReqV1"
                     }
+                }
+            }
+        },
+        "v1.UpdateReportPushConfigReqV1": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "string"
+                },
+                "push_frequency_cron": {
+                    "type": "string"
+                },
+                "push_user_Type": {
+                    "type": "string"
+                },
+                "push_user_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "trigger_type ": {
+                    "type": "string"
                 }
             }
         },

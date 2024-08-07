@@ -1644,6 +1644,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetReportPushConfigsListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.ReportPushConfigList'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRiskAuditPlanResV1:
     properties:
       code:
@@ -2694,6 +2707,25 @@ definitions:
       reason:
         type: string
     type: object
+  v1.ReportPushConfigList:
+    properties:
+      enabled:
+        type: string
+      last_push_time:
+        type: string
+      push_frequency_cron:
+        type: string
+      push_user_Type:
+        type: string
+      push_user_list:
+        items:
+          type: string
+        type: array
+      'trigger_type ':
+        type: string
+      type:
+        type: string
+    type: object
   v1.RewriteRule:
     properties:
       message:
@@ -3488,6 +3520,21 @@ definitions:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
+    type: object
+  v1.UpdateReportPushConfigReqV1:
+    properties:
+      enabled:
+        type: string
+      push_frequency_cron:
+        type: string
+      push_user_Type:
+        type: string
+      push_user_list:
+        items:
+          type: string
+        type: array
+      'trigger_type ':
+        type: string
     type: object
   v1.UpdateRuleKnowledgeReq:
     properties:
@@ -5348,6 +5395,46 @@ paths:
       summary: 获取权限动作列表
       tags:
       - operation
+  /v1/project/{project_name}/report_push_configs:
+    get:
+      description: Get report push config list
+      operationId: GetReportPushConfigList
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetReportPushConfigsListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取消息推送配置列表
+      tags:
+      - ReportPushConfig
+  /v1/project/{project_name}/report_push_configs/{report_push_config_id}/:
+    put:
+      description: update report push config
+      operationId: UpdateReportPushConfig
+      parameters:
+      - description: report push config id
+        in: path
+        name: report_push_config_id
+        required: true
+        type: string
+      - description: update report push config request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateReportPushConfigReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新消息推送配置
+      tags:
+      - report_push_config
   /v1/projects/{project_name}/audit_plans:
     get:
       description: get audit plan info list
@@ -7292,6 +7379,10 @@ paths:
       - description: assignee
         in: query
         name: filter_assignee
+        type: string
+      - description: business
+        in: query
+        name: filter_business
         type: string
       - description: instance id
         in: query
