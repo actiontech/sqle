@@ -29,8 +29,7 @@ type StmtInfo struct {
 	SQL       string
 }
 
-func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
-	ctx := NewContext()
+func (s *Mappers) GetStmts(ctx Context) ([]StmtInfo, error) {
 	stmts := []StmtInfo{}
 	for _, m := range s.mappers {
 		for id, node := range m.SqlNodes {
@@ -40,7 +39,7 @@ func (s *Mappers) GetStmts(skipErrorQuery bool) ([]StmtInfo, error) {
 
 	for _, m := range s.mappers {
 		ctx.DefaultNamespace = m.NameSpace
-		stmt, err := m.GetStmts(ctx, skipErrorQuery)
+		stmt, err := m.GetStmts(&ctx)
 		if err != nil {
 			return nil, fmt.Errorf("get sqls from mapper failed, namespace: %v, err: %v", m.NameSpace, err)
 		}

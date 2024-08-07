@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/dms v0.0.0-20240426094735-693e797b6293
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
@@ -42,7 +42,6 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jackc/pgx/v4 v4.13.0
-	github.com/jinzhu/gorm v1.9.15
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
@@ -168,7 +167,7 @@ require (
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
