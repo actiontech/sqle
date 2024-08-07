@@ -50,7 +50,7 @@ type UpdateReportPushConfigReqV1 struct {
 // @Param report_push_config_id path string true "report push config id"
 // @Param req body v1.UpdateReportPushConfigReqV1 true "update report push config request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_name}/report_push_configs/{report_push_config_id} [put]
+// @router /v1/project/{project_name}/report_push_configs/{report_push_config_id}/ [put]
 func UpdateReportPushConfig(c echo.Context) error {
 	return nil
 }
