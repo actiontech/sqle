@@ -2,6 +2,9 @@ package model
 
 import (
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
+	"gorm.io/gorm"
 )
 
 type ReportPushConfig struct {
@@ -18,7 +21,7 @@ type ReportPushConfig struct {
 
 func (s Storage) GetReportPushConfigListInProject(projectID string) ([]ReportPushConfig, error) {
 	reportPushConfigs := make([]ReportPushConfig, 0)
-	err := s.db.Model(ReportPushConfig{}).Where("project_uid = ?", projectID).Find(&reportPushConfigs).Error
+	err := s.db.Model(ReportPushConfig{}).Where("project_id = ?", projectID).Find(&reportPushConfigs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -50,6 +53,7 @@ func (s Storage) InitReportPushConfigInProject(projectID string) error {
 			PushUserType:      PushUserTypePermissionMatch,
 			PushUserList:      []string{},
 			Enabled:           true,
+			LastPushTime:      time.Now(),
 		}, {
 			ProjectId:         projectID,
 			Type:              TypeSQLManage,
@@ -58,6 +62,7 @@ func (s Storage) InitReportPushConfigInProject(projectID string) error {
 			PushUserType:      PushUserTypeFixed,
 			PushUserList:      []string{},
 			Enabled:           false,
+			LastPushTime:      time.Now(),
 		},
 	}
 	err := s.db.Save(defaultPushConfigs).Error
@@ -65,4 +70,13 @@ func (s Storage) InitReportPushConfigInProject(projectID string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Storage) GetReportPushConfigByProjectId(projectId ProjectUID) (*ReportPushConfig, bool, error) {
+	ReportPushConfig := &ReportPushConfig{}
+	err := s.db.Where("project_id = ?", projectId).First(ReportPushConfig).Error
+	if err == gorm.ErrRecordNotFound {
+		return ReportPushConfig, false, nil
+	}
+	return ReportPushConfig, true, errors.New(errors.ConnectStorageError, err)
 }
