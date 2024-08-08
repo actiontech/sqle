@@ -1,9 +1,14 @@
 package v1
 
 import (
+	"context"
+	"net/http"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,7 +19,7 @@ type GetReportPushConfigsListResV1 struct {
 
 type ReportPushConfigList struct {
 	Type              string    `json:"type"`
-	Enabled           string    `json:"enabled"`
+	Enabled           bool      `json:"enabled"`
 	TriggerType       string    `json:"trigger_type "`
 	PushFrequencyCron string    `json:"push_frequency_cron"`
 	PushUserType      string    `json:"push_user_Type"`
@@ -28,10 +33,34 @@ type ReportPushConfigList struct {
 // @Id GetReportPushConfigList
 // @Tags ReportPushConfig
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Success 200 {object} GetReportPushConfigsListResV1
 // @Router /v1/project/{project_name}/report_push_configs [get]
 func GetReportPushConfigList(c echo.Context) error {
-	return nil
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	reportPushConfigs, err := model.GetStorage().GetReportPushConfigListInProject(projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+
+	ret := make([]ReportPushConfigList, len(reportPushConfigs))
+	for _, reportPushConfig := range reportPushConfigs {
+		ret = append(ret, ReportPushConfigList{
+			Type:              reportPushConfig.Type,
+			Enabled:           reportPushConfig.Enabled,
+			TriggerType:       reportPushConfig.TriggerType,
+			PushFrequencyCron: reportPushConfig.PushFrequencyCron,
+			PushUserType:      reportPushConfig.PushUserType,
+			PushUserList:      reportPushConfig.PushUserList,
+			LastPushTime:      reportPushConfig.LastPushTime,
+		})
+	}
+	return c.JSON(http.StatusOK, GetReportPushConfigsListResV1{
+		Data: ret,
+	})
 }
 
 type UpdateReportPushConfigReqV1 struct {
@@ -47,6 +76,7 @@ type UpdateReportPushConfigReqV1 struct {
 // @Id UpdateReportPushConfig
 // @Tags report_push_config
 // @Security ApiKeyAuth
+// @Param project_name path string true "project name"
 // @Param report_push_config_id path string true "report push config id"
 // @Param req body v1.UpdateReportPushConfigReqV1 true "update report push config request"
 // @Success 200 {object} controller.BaseRes
