@@ -125,6 +125,7 @@ const (
 
 // inspector DML rules
 const (
+	DMLNotAllowInsertAutoincrement            = "dml_not_allow_insert_autoincrement"
 	DMLCheckWithLimit                         = "dml_check_with_limit"
 	DMLCheckSelectLimit                       = "dml_check_select_limit"
 	DMLCheckWithOrderBy                       = "dml_check_with_order_by"
@@ -5989,6 +5990,71 @@ func checkCharLength(input *RuleHandlerInput) error {
 	}
 	if charLength > max {
 		addResult(input.Res, input.Rule, input.Rule.Name, max)
+	}
+	return nil
+}
+
+func notAllowInsertAutoincrement(input *RuleHandlerInput) error {
+	// 获取插值字段和表名
+	colNames := make(map[string]struct{})
+	var tableRef ast.ResultSetNode
+	isInsert := false
+	switch stmt := input.Node.(type) {
+	// 获取两种语句的指定了值的字段以及表名
+	case *ast.InsertStmt:
+		isInsert = true
+		// INSERT tb(v1,v2) VALUES (1,2)
+		for _, col := range stmt.Columns {
+			colNames[col.Name.L] = struct{}{}
+		}
+		// INSERT tb SET v1=?,v2=?
+		if len(colNames) == 0 {
+			for _, assign := range stmt.Setlist {
+				colNames[assign.Column.Name.L] = struct{}{}
+			}
+		}
+		tableRef = stmt.Table.TableRefs.Left
+	case *ast.UpdateStmt:
+		for _, assignment := range stmt.List {
+			colNames[assignment.Column.Name.L] = struct{}{}
+		}
+		tableRef = stmt.TableRefs.TableRefs.Left
+	default:
+		// 其他类型语句直接退出
+		return nil
+	}
+	source, ok := tableRef.(*ast.TableSource)
+	if !ok || source == nil {
+		return nil
+	}
+	table, ok := source.Source.(*ast.TableName)
+	if !ok || table == nil {
+		return nil
+	}
+	// 在线获取表的信息
+	tableInfo, tableExist, err := input.Ctx.GetCreateTableStmt(table)
+	if !tableExist || err != nil {
+		return err
+	}
+	if len(colNames) == 0 && isInsert {
+		// 如果INSERT没有指定字段，则默认向所有字段插值
+		// INSERT tb VALUES(1,2)
+		for _, c := range tableInfo.Cols {
+			colNames[c.Name.Name.L] = struct{}{}
+		}
+	}
+	// MySQL中每张表最多一个自增字段
+	incrName := ""
+	// 获取自增字段
+	for _, c := range tableInfo.Cols {
+		if util.HasOneInOptions(c.Options, ast.ColumnOptionAutoIncrement) {
+			incrName = c.Name.Name.L
+			break
+		}
+	}
+	// 查看是否包含自增字段
+	if _, exist := colNames[incrName]; exist {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
