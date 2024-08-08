@@ -80,3 +80,12 @@ func (s *Storage) GetReportPushConfigByProjectId(projectId ProjectUID) (*ReportP
 	}
 	return ReportPushConfig, true, errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) GetReportPushConfigById(id uint) (*ReportPushConfig, bool, error) {
+	ReportPushConfig := &ReportPushConfig{}
+	err := s.db.Where("id = ?", id).First(ReportPushConfig).Error
+	if err == gorm.ErrRecordNotFound {
+		return ReportPushConfig, false, nil
+	}
+	return ReportPushConfig, true, errors.New(errors.ConnectStorageError, err)
+}

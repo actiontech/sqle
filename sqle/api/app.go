@@ -310,7 +310,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// report push
 		v1ProjectAdminRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
-		v1ProjectAdminRouter.GET("/:project_name/report_push_configs", v1.GetReportPushConfigList)
+		v1ProjectRouter.GET("/:project_name/report_push_configs", v1.GetReportPushConfigList)
 	}
 
 	// project member router
