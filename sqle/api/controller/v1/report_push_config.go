@@ -23,9 +23,9 @@ type ReportPushConfigList struct {
 	Id                string    `json:"report_push_config_id"`
 	Type              string    `json:"type"`
 	Enabled           bool      `json:"enabled"`
-	TriggerType       string    `json:"trigger_type "`
+	TriggerType       string    `json:"trigger_type" enums:"immediately,timing"`
 	PushFrequencyCron string    `json:"push_frequency_cron"`
-	PushUserType      string    `json:"push_user_Type"`
+	PushUserType      string    `json:"push_user_Type"  enums:"fixed,permission_match"`
 	PushUserList      []string  `json:"push_user_list"`
 	LastPushTime      time.Time `json:"last_push_time"`
 }
