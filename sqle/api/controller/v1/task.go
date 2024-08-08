@@ -48,18 +48,20 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id             uint            `json:"task_id"`
-	InstanceName   string          `json:"instance_name"`
-	InstanceDbType string          `json:"instance_db_type"`
-	InstanceSchema string          `json:"instance_schema" example:"db1"`
-	AuditLevel     string          `json:"audit_level" enums:"normal,notice,warn,error,"`
-	Score          int32           `json:"score"`
-	PassRate       float64         `json:"pass_rate"`
-	Status         string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
-	SQLSource      string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
-	ExecStartTime  *time.Time      `json:"exec_start_time,omitempty"`
-	ExecEndTime    *time.Time      `json:"exec_end_time,omitempty"`
-	AuditFiles     []AuditFileResp `json:"audit_files,omitempty"`
+	Id              uint            `json:"task_id"`
+	InstanceName    string          `json:"instance_name"`
+	InstanceDbType  string          `json:"instance_db_type"`
+	InstanceSchema  string          `json:"instance_schema" example:"db1"`
+	AuditLevel      string          `json:"audit_level" enums:"normal,notice,warn,error,"`
+	Score           int32           `json:"score"`
+	PassRate        float64         `json:"pass_rate"`
+	Status          string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
+	SQLSource       string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
+	ExecStartTime   *time.Time      `json:"exec_start_time,omitempty"`
+	ExecEndTime     *time.Time      `json:"exec_end_time,omitempty"`
+	FileOrderMethod string          `json:"file_order_method,omitempty"`
+	ExecMode        string          `json:"exec_mode,omitempty"`
+	AuditFiles      []AuditFileResp `json:"audit_files,omitempty"`
 }
 
 type AuditFileResp struct {
@@ -68,18 +70,20 @@ type AuditFileResp struct {
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
-		Id:             task.ID,
-		InstanceName:   task.InstanceName(),
-		InstanceDbType: task.DBType,
-		InstanceSchema: task.Schema,
-		AuditLevel:     task.AuditLevel,
-		Score:          task.Score,
-		PassRate:       task.PassRate,
-		Status:         task.Status,
-		SQLSource:      task.SQLSource,
-		ExecStartTime:  task.ExecStartAt,
-		ExecEndTime:    task.ExecEndAt,
-		AuditFiles:     convertToAuditFileResp(task.AuditFiles),
+		Id:              task.ID,
+		InstanceName:    task.InstanceName(),
+		InstanceDbType:  task.DBType,
+		InstanceSchema:  task.Schema,
+		AuditLevel:      task.AuditLevel,
+		Score:           task.Score,
+		PassRate:        task.PassRate,
+		Status:          task.Status,
+		SQLSource:       task.SQLSource,
+		ExecStartTime:   task.ExecStartAt,
+		ExecEndTime:     task.ExecEndAt,
+		ExecMode:        task.ExecMode,
+		FileOrderMethod: task.FileOrderMethod,
+		AuditFiles:      convertToAuditFileResp(task.AuditFiles),
 	}
 }
 func convertToAuditFileResp(files []*model.AuditFile) []AuditFileResp {
@@ -1031,7 +1035,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 		}
 	}
 
-	if err := s.Save(taskGroup); err != nil {
+	if err := s.Save(taskGroup.Tasks); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
