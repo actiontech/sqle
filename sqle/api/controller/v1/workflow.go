@@ -4,16 +4,20 @@ import (
 	"context"
 	e "errors"
 	"fmt"
+	"mime"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -1115,8 +1119,46 @@ func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param workflow_id path string true "workflow id"
+// @Param task_id path string true "task id"
 // @Success 200 {file} file "get workflow attachment"
-// @Router /v1/projects/{project_name}/workflows/{workflow_id}/attachment [get]
+// @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment [get]
 func GetWorkflowAttachment(c echo.Context) error {
-	return nil
+	taskId := c.Param("task_id")
+	task, err := getTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = CheckCurrentUserCanViewTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	attachment, exist, err := s.GetParentFileByTaskId(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("can not find any file in this task"))
+	}
+
+	if attachment.FileHost != config.GetOptions().SqleOptions.ReportHost {
+		log.NewEntry().Infof("try to reverse to sqle due to file.FileHost %v this host %v", attachment.FileHost, config.GetOptions().SqleOptions.ReportHost)
+		err = ReverseToSqle(c, c.Request().URL.Path, attachment.FileHost)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		filePath := model.DefaultFilePath(attachment.UniqueName)
+		fileData, err := os.ReadFile(filePath)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("inline", map[string]string{"filename": attachment.FileName}))
+		err = c.Blob(http.StatusOK, echo.MIMEOctetStream, fileData)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return c.NoContent(http.StatusOK)
 }
