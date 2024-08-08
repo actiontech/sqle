@@ -35,7 +35,7 @@ type ReportPushConfigList struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Success 200 {object} GetReportPushConfigsListResV1
-// @Router /v1/project/{project_name}/report_push_configs [get]
+// @Router /v1/projects/{project_name}/report_push_configs [get]
 func GetReportPushConfigList(c echo.Context) error {
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
@@ -46,7 +46,7 @@ func GetReportPushConfigList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
 
-	ret := make([]ReportPushConfigList, len(reportPushConfigs))
+	ret := make([]ReportPushConfigList, 0, len(reportPushConfigs))
 	for _, reportPushConfig := range reportPushConfigs {
 		ret = append(ret, ReportPushConfigList{
 			Type:              reportPushConfig.Type,
@@ -74,13 +74,13 @@ type UpdateReportPushConfigReqV1 struct {
 // @Summary 更新消息推送配置
 // @Description update report push config
 // @Id UpdateReportPushConfig
-// @Tags report_push_config
+// @Tags ReportPushConfig
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param report_push_config_id path string true "report push config id"
 // @Param req body v1.UpdateReportPushConfigReqV1 true "update report push config request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/project/{project_name}/report_push_configs/{report_push_config_id}/ [put]
+// @router /v1/projects/{project_name}/report_push_configs/{report_push_config_id}/ [put]
 func UpdateReportPushConfig(c echo.Context) error {
 	return nil
 }
