@@ -109,6 +109,7 @@ type InstanceAuditPlanSQLListDetail struct {
 	Schema      string         `json:"schema_name"`
 	Info        JSON           `json:"info"`
 	AuditResult sql.NullString `json:"audit_results"`
+	Priority    sql.NullString `json:"priority"`
 }
 
 const (
@@ -128,6 +129,7 @@ const (
 	FilterCounter                  FilterName = "counter"
 	FilterQueryTimeAvg             FilterName = "query_time_avg"
 	FilterRowExaminedAvg           FilterName = "row_examined_avg"
+	FilterPriority                 FilterName = "priority"
 )
 
 type FilterType string
@@ -147,6 +149,7 @@ var FilterMap = map[FilterName]FilterType{
 	FilterSQL:                      FilterTypeLike,
 	FilterQueryTimeAvg:             FilterTypeCommon,
 	FilterRowExaminedAvg:           FilterTypeCommon,
+	FilterPriority:                 FilterTypeCommon,
 }
 
 var OrderByMap = map[string] /* field name */ string /* field name with table*/ {
@@ -163,7 +166,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 {{- template "body" . -}} 
 
@@ -238,6 +242,11 @@ AND JSON_EXTRACT(audit_plan_sqls.info, '$.query_time_avg') >= :query_time_avg
 
 {{- if .row_examined_avg }}
 AND JSON_EXTRACT(audit_plan_sqls.info, '$.row_examined_avg') >= :row_examined_avg
+{{- end}}
+
+
+{{- if .priority }}
+AND audit_plan_sqls.priority = :priority
 {{- end}}
 
 {{ end }}
