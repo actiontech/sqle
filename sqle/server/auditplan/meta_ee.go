@@ -97,4 +97,6 @@ func init() {
 		Metas = append(Metas, meta)
 		MetaMap[b.Type] = meta
 	}
+
+	supportedCmdTypeList[TypeTBaseSlowLog] = struct{}{}
 }
