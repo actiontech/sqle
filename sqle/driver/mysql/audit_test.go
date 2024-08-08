@@ -160,6 +160,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckSelectRows:                          {},
 		rulepkg.DMLCheckMathComputationOrFuncOnIndex:        {},
 		rulepkg.DDLCheckCharLength:                          {},
+		rulepkg.DMLNotAllowInsertAutoincrement:              {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -7708,4 +7709,50 @@ func Test_CheckMybatisSQLIndex(t *testing.T) {
 		"", inspect1, `update exist_tb_2 set v1=? where id=?`, newTestResult())
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule, t,
 		"", inspect1, `update exist_tb_2 set v1=? where v2=?`, newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
+}
+
+func TestNotAllowInsertAutoincrement(t *testing.T) {
+	rule := rulepkg.RuleHandlerMap[rulepkg.DMLNotAllowInsertAutoincrement].Rule
+	// 触犯规则
+	bad_sqls := []string{
+		// 主键自增
+		`INSERT INTO exist_tb_1(id,v1) VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_1 VALUES(1,"sqle","action")`,
+		`INSERT INTO exist_tb_1(id) SELECT id FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_1 SET id=1 WHERE id=2`,
+		`INSERT exist_tb_1 SET id=1,v1="sqle"`,
+		// 没有主键的自增
+		`INSERT INTO exist_tb_12(id,v1) VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_12 VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_12(id) SELECT id FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_12 SET id=1 WHERE id=2`,
+		`INSERT exist_tb_12 SET id=1`,
+		// 大写字段
+		`INSERT exist_tb_12 SET ID=1`,
+	}
+	for _, sql := range bad_sqls {
+		runSingleRuleInspectCase(rule, t, sql,
+			DefaultMysqlInspect(), sql,
+			newTestResult().addResult(rulepkg.DMLNotAllowInsertAutoincrement),
+		)
+	}
+	good_sqls := []string{
+		// 主键自增
+		`INSERT INTO exist_tb_1(v1,v2) VALUES("sqle","mysql")`,
+		`INSERT INTO exist_tb_1(v1,v2) SELECT v1,v2 FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_1 SET v1="sqle" WHERE id=2`,
+		`INSERT exist_tb_1 SET v1="sqle",v2="mysql"`,
+		// 没有主键的自增
+		`INSERT INTO exist_tb_12(v1) VALUES("sqle")`,
+		`INSERT INTO exist_tb_12(v1) SELECT v1 FROM exist_tb_2 WHERE id=1`,
+		`UPDATE exist_tb_12 SET v1="sqle" WHERE id=2`,
+		`INSERT exist_tb_12 SET v1="sqle"`,
+	}
+	// 不触犯的
+	for _, sql := range good_sqls {
+		runSingleRuleInspectCase(rule, t, sql,
+			DefaultMysqlInspect(), sql,
+			newTestResult(),
+		)
+	}
 }
