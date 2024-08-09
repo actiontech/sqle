@@ -18,12 +18,10 @@ import (
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
-	"github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -109,7 +107,7 @@ const (
 	ZIPFileExtension        = ".zip"
 )
 
-func getSQLFromFile(c echo.Context, dbType string) (getSQLFromFileResp, error) {
+func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	// Read it from sql file.
 	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
@@ -130,13 +128,7 @@ func getSQLFromFile(c echo.Context, dbType string) (getSQLFromFileResp, error) {
 		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		var sqls []ast.StmtInfo
-		var err error
-		if dbType == driverV2.DriverTypePostgreSQL || dbType == driverV2.DriverTypeTBase {
-			sqls, err = mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery, mybatis_parser.RestoreOriginSql)
-		} else {
-			sqls, err = mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery)
-		}
+		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery, mybatis_parser.RestoreOriginSql)
 		if err != nil {
 			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
@@ -155,7 +147,7 @@ func getSQLFromFile(c echo.Context, dbType string) (getSQLFromFileResp, error) {
 	}
 
 	// If mybatis xml file is not exist, read it from zip file.
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c, dbType)
+	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
@@ -168,7 +160,7 @@ func getSQLFromFile(c echo.Context, dbType string) (getSQLFromFileResp, error) {
 	}
 
 	// If zip file is not exist, read it from git repository
-	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c, dbType)
+	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
@@ -314,12 +306,6 @@ func CreateAndAuditTask(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
-	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
-	} else if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-	}
 
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
@@ -327,7 +313,7 @@ func CreateAndAuditTask(c echo.Context) error {
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c, instance.DbType)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1001,7 +987,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c, dbType)
+		sqls, err = getSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
