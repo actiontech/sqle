@@ -1112,7 +1112,7 @@ func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
 }
 
 // GetWorkflowAttachment
-// @Summary 获取工单附件
+// @Summary 获取工单的task附件
 // @Description get workflow attachment
 // @Tags workflow
 // @Id getWorkflowAttachment
@@ -1122,7 +1122,7 @@ func UpdateSqlFileOrderByWorkflowV1(c echo.Context) error {
 // @Param task_id path string true "task id"
 // @Success 200 {file} file "get workflow attachment"
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment [get]
-func GetWorkflowAttachment(c echo.Context) error {
+func GetWorkflowTaskAuditFile(c echo.Context) error {
 	taskId := c.Param("task_id")
 	task, err := getTaskById(c.Request().Context(), taskId)
 	if err != nil {
