@@ -245,7 +245,7 @@ func ConvertXmlFileContentToSQLs(fileContent []string) (sqls string, err error) 
 	for i, content := range fileContent {
 		data[i] = parser.XmlFile{Content: content}
 	}
-	sqlsInfo, err := parser.ParseXMLs(data, true)
+	sqlsInfo, err := parser.ParseXMLs(data, parser.SkipErrorQuery)
 	if err != nil {
 		return "", err
 	}

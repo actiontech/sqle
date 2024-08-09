@@ -301,7 +301,7 @@ func (d *IBatisData) scanVariable() error {
 		if err != nil {
 			return err
 		}
-		if r == '$' {
+		if r == '$' || r == '}' {
 			break
 		}
 	}
