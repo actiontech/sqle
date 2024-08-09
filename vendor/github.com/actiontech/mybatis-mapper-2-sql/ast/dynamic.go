@@ -347,6 +347,40 @@ func (n *IterateStmt) GetStmt(ctx *Context) (string, error) {
 	return buff.String(), nil
 }
 
+type StrStmt struct {
+	*ChildrenNode
+}
+
+func NewStrStmt() *StrStmt {
+	n := &StrStmt{}
+	n.ChildrenNode = NewNode()
+	return n
+}
+
+func (s *StrStmt) Scan(start *xml.StartElement) error {
+	return nil
+}
+
+func (s *StrStmt) GetStmt(ctx *Context) (string, error) {
+	buff := bytes.Buffer{}
+	for _, a := range s.Children {
+		data, err := a.GetStmt(ctx)
+		if err != nil {
+			return "", err
+		}
+		// 如果解析出来的语句仅仅只有一个变量,不处理,直接跳过,因为没有意义
+		// <str type="Str"><![CDATA[${setID}]]></str>
+		if data == "?" {
+			continue
+		}
+
+		buff.WriteString(" ")
+		buff.WriteString(data)
+		buff.WriteString(" ")
+	}
+	return buff.String(), nil
+}
+
 type DynamicStmt struct {
 	*ChildrenNode
 	prepEnd string
@@ -395,4 +429,74 @@ func (n *DynamicStmt) GetStmt(ctx *Context) (string, error) {
 		buff.WriteString(data)
 	}
 	return buff.String(), nil
+}
+
+type AndNodeStmt struct {
+	*ChildrenNode
+}
+
+func NewAndNode() *AndNodeStmt {
+	n := &AndNodeStmt{}
+	n.ChildrenNode = NewNode()
+	return n
+}
+
+func (a *AndNodeStmt) Scan(start *xml.StartElement) error {
+	return nil
+}
+
+func (a *AndNodeStmt) AddChildren(ns ...Node) error {
+	a.Children = append(a.Children, ns...)
+	return nil
+}
+
+func (a *AndNodeStmt) GetStmt(ctx *Context) (string, error) {
+	andList := make([]string, 0, len(a.Children))
+	for _, a := range a.Children {
+		data, err := a.GetStmt(ctx)
+		if err != nil {
+			return "", err
+		}
+		buff := bytes.Buffer{}
+		buff.WriteString("(")
+		buff.WriteString(data)
+		buff.WriteString(")")
+		andList = append(andList, buff.String())
+	}
+	return strings.Join(andList, "AND"), nil
+}
+
+type OrNodeStmt struct {
+	*ChildrenNode
+}
+
+func NewOrNode() *OrNodeStmt {
+	n := &OrNodeStmt{}
+	n.ChildrenNode = NewNode()
+	return n
+}
+
+func (a *OrNodeStmt) Scan(start *xml.StartElement) error {
+	return nil
+}
+
+func (a *OrNodeStmt) AddChildren(ns ...Node) error {
+	a.Children = append(a.Children, ns...)
+	return nil
+}
+
+func (a *OrNodeStmt) GetStmt(ctx *Context) (string, error) {
+	orList := make([]string, 0, len(a.Children))
+	for _, a := range a.Children {
+		data, err := a.GetStmt(ctx)
+		if err != nil {
+			return "", err
+		}
+		buff := bytes.Buffer{}
+		buff.WriteString("(")
+		buff.WriteString(data)
+		buff.WriteString(")")
+		orList = append(orList, buff.String())
+	}
+	return strings.Join(orList, "OR"), nil
 }
