@@ -11,7 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/utils"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 var relAse = utils.NewEncryptor(config.RelAesKey)
