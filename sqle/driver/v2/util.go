@@ -29,6 +29,7 @@ const (
 	DriverTypeDB2            = "DB2"
 	DriverTypeOceanBase      = "OceanBase For MySQL"
 	DriverTypeTDSQLForInnoDB = "TDSQL For InnoDB"
+	DriverTypeTBase          = "TBase"
 )
 
 type DriverNotSupportedError struct {

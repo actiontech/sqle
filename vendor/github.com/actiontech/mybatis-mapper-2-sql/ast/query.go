@@ -42,5 +42,8 @@ func (s *QueryNode) GetStmt(ctx *Context) (string, error) {
 		}
 		buff.WriteString(data)
 	}
+	if ctx.Config != nil && ctx.Config.RestoreOriginSql {
+		return buff.String(), nil
+	}
 	return sqlfmt.FormatSQL(buff.String()), nil
 }

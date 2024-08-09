@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/actiontech/dms v0.0.0-20240426094735-693e797b6293
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
-	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240119100929-4c4ddc90b1c2
+	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/alibabacloud-go/darabonba-openapi v0.1.18
@@ -46,7 +46,6 @@ require (
 	github.com/hashicorp/go-hclog v0.14.1
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jackc/pgx/v4 v4.13.0
-	github.com/jinzhu/gorm v1.9.15
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
@@ -77,10 +76,11 @@ require (
 	vitess.io/vitess v0.12.0
 )
 
-require golang.org/x/sys v0.13.0
+require golang.org/x/sys v0.15.0
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/guregu/null v0.0.0-20160228005316-41961cea0328
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/pganalyze/pg_query_go/v4 v4.2.1
@@ -129,7 +129,6 @@ require (
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/guregu/null v0.0.0-20160228005316-41961cea0328 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
