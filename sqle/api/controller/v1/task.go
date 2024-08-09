@@ -128,7 +128,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, true)
+		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery, mybatis_parser.RestoreOriginSql)
 		if err != nil {
 			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
@@ -301,6 +301,12 @@ func CreateAndAuditTask(c echo.Context) error {
 	var sqls getSQLFromFileResp
 	var err error
 	var fileRecords []*model.AuditFile
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -315,11 +321,6 @@ func CreateAndAuditTask(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-	}
-
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
@@ -951,6 +952,35 @@ func AuditTaskGroupV1(c echo.Context) error {
 	var err error
 	var sqls getSQLFromFileResp
 	var fileRecords []*model.AuditFile
+	s := model.GetStorage()
+	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	tasks := taskGroup.Tasks
+	instanceIds := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIds = append(instanceIds, task.InstanceId)
+	}
+
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
+	projectId := instances[0].ProjectId
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+	}
+
+	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
+	dbType := instances[0].DbType
+
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
@@ -966,39 +996,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	s := model.GetStorage()
-	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	tasks := taskGroup.Tasks
 
 	{
-		instanceIds := make([]uint64, 0, len(tasks))
-		for _, task := range tasks {
-			instanceIds = append(instanceIds, task.InstanceId)
-		}
-
-		instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-
-		// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
-		projectId := instances[0].ProjectId
-		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !can {
-			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-		}
-
 		l := log.NewEntry()
 
-		// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
-		dbType := instances[0].DbType
 		plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)

@@ -56,7 +56,13 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []dr
 	}
 	switch fileSuffix {
 	case utils.MybatisFileSuffix:
-		sqls, err := mybatisParser.ParseXMLQuery(content, skipErrorQuery)
+		var sqls []string
+		var err error
+		if skipErrorQuery {
+			sqls, err = mybatisParser.ParseXMLQuery(content, mybatisParser.SkipErrorQuery)
+		} else {
+			sqls, err = mybatisParser.ParseXMLQuery(content)
+		}
 		if err != nil {
 			return nil, err
 		}
