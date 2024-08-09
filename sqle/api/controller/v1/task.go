@@ -18,10 +18,12 @@ import (
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	mybatis_parser "github.com/actiontech/mybatis-mapper-2-sql"
+	"github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -107,7 +109,7 @@ const (
 	ZIPFileExtension        = ".zip"
 )
 
-func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
+func getSQLFromFile(c echo.Context, dbType string) (getSQLFromFileResp, error) {
 	// Read it from sql file.
 	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
@@ -128,7 +130,13 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 		return getSQLFromFileResp{}, err
 	}
 	if exist {
-		sqls, err := mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, true)
+		var sqls []ast.StmtInfo
+		var err error
+		if dbType == driverV2.DriverTypePostgreSQL || dbType == driverV2.DriverTypeTBase {
+			sqls, err = mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery, mybatis_parser.RestoreOriginSql)
+		} else {
+			sqls, err = mybatis_parser.ParseXMLs([]mybatis_parser.XmlFile{{Content: data}}, mybatis_parser.SkipErrorQuery)
+		}
 		if err != nil {
 			return getSQLFromFileResp{}, errors.New(errors.ParseMyBatisXMLFileError, err)
 		}
@@ -147,7 +155,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	}
 
 	// If mybatis xml file is not exist, read it from zip file.
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
+	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c, dbType)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
@@ -160,7 +168,7 @@ func getSQLFromFile(c echo.Context) (getSQLFromFileResp, error) {
 	}
 
 	// If zip file is not exist, read it from git repository
-	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c)
+	sqlsFromSQLFiles, sqlsFromJavaFiles, sqlsFromXMLs, exist, err := getSqlsFromGit(c, dbType)
 	if err != nil {
 		return getSQLFromFileResp{}, err
 	}
@@ -301,13 +309,25 @@ func CreateAndAuditTask(c echo.Context) error {
 	var sqls getSQLFromFileResp
 	var err error
 	var fileRecords []*model.AuditFile
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, req.InstanceName)
+	if !exist {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+	} else if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c, instance.DbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -315,11 +335,6 @@ func CreateAndAuditTask(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-	}
-
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	s := model.GetStorage()
@@ -951,13 +966,42 @@ func AuditTaskGroupV1(c echo.Context) error {
 	var err error
 	var sqls getSQLFromFileResp
 	var fileRecords []*model.AuditFile
+	s := model.GetStorage()
+	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	tasks := taskGroup.Tasks
+	instanceIds := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIds = append(instanceIds, task.InstanceId)
+	}
+
+	instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
+	projectId := instances[0].ProjectId
+	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !can {
+		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
+	}
+
+	// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
+	dbType := instances[0].DbType
+
 	if req.Sql != "" {
 		sqls = getSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
 			SQLsFromFormData: req.Sql,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c, dbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -966,39 +1010,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	s := model.GetStorage()
-	taskGroup, err := s.GetTaskGroupByGroupId(req.TaskGroupId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	tasks := taskGroup.Tasks
 
 	{
-		instanceIds := make([]uint64, 0, len(tasks))
-		for _, task := range tasks {
-			instanceIds = append(instanceIds, task.InstanceId)
-		}
-
-		instances, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-
-		// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
-		projectId := instances[0].ProjectId
-		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !can {
-			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
-		}
-
 		l := log.NewEntry()
 
-		// 因为这个接口数据源必然相同，所以只取第一个实例的DbType即可
-		dbType := instances[0].DbType
 		plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
