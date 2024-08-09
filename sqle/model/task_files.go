@@ -55,6 +55,15 @@ func (s *Storage) GetFileByTaskId(taskId string) ([]*AuditFile, error) {
 	return auditFiles, errors.New(errors.ConnectStorageError, result.Error)
 }
 
+func (s *Storage) GetParentFileByTaskId(taskId string) (*AuditFile, bool, error) {
+	auditFile := &AuditFile{}
+	err := s.db.Where("parent_id = 0 AND task_id = ?", taskId).First(auditFile).Error
+	if err == gorm.ErrRecordNotFound {
+		return auditFile, false, nil
+	}
+	return auditFile, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetFileByIds(fileIds []uint) ([]*AuditFile, error) {
 	auditFiles := []*AuditFile{}
 	result := s.db.Where("id in (?)", fileIds).Find(&auditFiles)
