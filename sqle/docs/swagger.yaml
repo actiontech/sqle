@@ -351,7 +351,11 @@ definitions:
         type: string
       exec_end_time:
         type: string
+      exec_mode:
+        type: string
       exec_start_time:
+        type: string
+      file_order_method:
         type: string
       instance_db_type:
         type: string
@@ -7293,6 +7297,10 @@ paths:
         in: query
         name: filter_assignee
         type: string
+      - description: business
+        in: query
+        name: filter_business
+        type: string
       - description: instance id
         in: query
         name: filter_instance_id
@@ -8105,7 +8113,7 @@ paths:
       summary: 创建工单
       tags:
       - workflow
-  /v1/projects/{project_name}/workflows/{workflow_id}/attachment:
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment:
     get:
       description: get workflow attachment
       operationId: getWorkflowAttachment
@@ -8118,6 +8126,11 @@ paths:
       - description: workflow id
         in: path
         name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
         required: true
         type: string
       responses:

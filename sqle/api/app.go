@@ -241,7 +241,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.PATCH("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
 		v1ProjectRouter.GET("/:project_name/workflows/exports", v1.ExportWorkflowV1)
 		v1ProjectRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/order_file", v1.UpdateSqlFileOrderByWorkflowV1)
-		v1ProjectRouter.GET("/:project_name/workflows/:workflow_id/attachment", v1.GetWorkflowAttachment)
+		v1ProjectRouter.GET("/:project_name/workflows/:workflow_id/tasks/:task_id/attachment", v1.GetWorkflowTaskAuditFile)
 
 		// audit plan; 智能扫描任务
 		v1ProjectRouter.POST("/:project_name/audit_plans", v1.CreateAuditPlan)
