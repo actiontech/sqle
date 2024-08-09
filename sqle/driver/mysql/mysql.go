@@ -103,6 +103,10 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 		if rule.Name == rulepkg.ConfigSQLIsExecuted {
 			inspect.cnf.isExecutedSQL = true
 		}
+		if rule.Name == rulepkg.ConfigParsingSQLFailure {
+			inspect.cnf.parsingSQLFailureCheckEnable = true
+			inspect.cnf.parsingSQLFailureLevel = rule.Level
+		}
 	}
 
 	return inspect, nil
@@ -515,11 +519,13 @@ type Config struct {
 	DDLOSCMinSize      int64
 	DDLGhostMinSize    int64
 
-	optimizeIndexEnabled     bool
-	dmlExplainPreCheckEnable bool
-	compositeIndexMaxColumn  int
-	indexSelectivityMinValue float64
-	isExecutedSQL            bool
+	optimizeIndexEnabled         bool
+	dmlExplainPreCheckEnable     bool
+	compositeIndexMaxColumn      int
+	indexSelectivityMinValue     float64
+	isExecutedSQL                bool
+	parsingSQLFailureCheckEnable bool
+	parsingSQLFailureLevel       driverV2.RuleLevel
 }
 
 func (i *MysqlDriverImpl) Context() *session.Context {

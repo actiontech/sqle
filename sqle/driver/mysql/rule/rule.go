@@ -208,6 +208,7 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+	ConfigParsingSQLFailure        = "parsing_sql_failure"
 )
 
 // 计算单位
