@@ -4047,6 +4047,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "business",
+                        "name": "filter_business",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "instance id",
                         "name": "filter_instance_id",
                         "in": "query"
@@ -5500,45 +5506,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/attachment": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get workflow attachment",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取工单附件",
-                "operationId": "getWorkflowAttachment",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "get workflow attachment",
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate": {
             "post": {
                 "security": [
@@ -5573,6 +5540,52 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow attachment",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单附件",
+                "operationId": "getWorkflowAttachment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "get workflow attachment",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -9671,7 +9684,13 @@ var doc = `{
                 "exec_end_time": {
                     "type": "string"
                 },
+                "exec_mode": {
+                    "type": "string"
+                },
                 "exec_start_time": {
+                    "type": "string"
+                },
+                "file_order_method": {
                     "type": "string"
                 },
                 "instance_db_type": {
