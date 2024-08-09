@@ -94,7 +94,6 @@ func Run(options *config.SqleOptions) error {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
 		}
-
 		err := s.CreateDefaultWorkflowTemplateIfNotExist()
 		if err != nil {
 			return fmt.Errorf("create workflow template failed: %v", err)
@@ -109,6 +108,12 @@ func Run(options *config.SqleOptions) error {
 
 		if err := s.CreateDefaultTemplateIfNotExist(model.ProjectIdForGlobalRuleTemplate, driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
+		}
+
+	}
+	{
+		if err := s.CreateDefaultReportPushConfigIfNotExist(); err != nil {
+			return fmt.Errorf("create default report push config failed: %v", err)
 		}
 	}
 	exitChan := make(chan struct{})
