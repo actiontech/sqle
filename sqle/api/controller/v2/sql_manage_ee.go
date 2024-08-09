@@ -141,7 +141,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		sqlMgr.Status = sqlManage.Status.String
 		sqlMgr.Remark = sqlManage.Remark.String
 		sqlMgr.Endpoints = sqlManage.Endpoints.String
-
+		sqlMgr.Priority = sqlManage.Priority.String
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
