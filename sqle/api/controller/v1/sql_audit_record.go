@@ -16,10 +16,12 @@ import (
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
+	"github.com/actiontech/mybatis-mapper-2-sql/ast"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -104,7 +106,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			SQLsFromFormData: req.Sqls,
 		}
 	} else {
-		sqls, err = getSQLFromFile(c)
+		sqls, err = getSQLFromFile(c, req.DbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -322,7 +324,7 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileR
 }
 
 // todo 此处跳过了不支持的编码格式文件
-func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+func getSqlsFromZip(c echo.Context, dbType string) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
 		return nil, nil, false, nil
@@ -388,7 +390,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	// parse xml content
 	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
 	{
-		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
+		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents, dbType)
 		if err != nil {
 			return nil, nil, false, err
 		}
@@ -397,8 +399,14 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
 }
-func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
-	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, true)
+func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile, dbType string) ([]SQLFromXML, error) {
+	var allStmtsFromXml []ast.StmtInfo
+	var err error
+	if dbType == driverV2.DriverTypePostgreSQL || dbType == driverV2.DriverTypeTBase {
+		allStmtsFromXml, err = xmlParser.ParseXMLs(xmlContents, xmlParser.SkipErrorQuery, xmlParser.RestoreOriginSql)
+	} else {
+		allStmtsFromXml, err = xmlParser.ParseXMLs(xmlContents, xmlParser.SkipErrorQuery)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("parse sqls from xml failed: %v", err)
 	}
@@ -415,7 +423,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 }
 
 // todo 此处跳过了不支持的编码格式文件
-func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
+func getSqlsFromGit(c echo.Context, dbType string) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
 	// make a temp dir and clean up befor return
 	dir, err := os.MkdirTemp("./", "git-repo-")
 	if err != nil {
@@ -520,7 +528,7 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 
 	// parse xml content
 	// xml文件需要把所有文件内容同时解析，否则会无法解析跨namespace引用的SQL
-	sqlsFromXMLs, err = parseXMLsWithFilePath(xmlContents)
+	sqlsFromXMLs, err = parseXMLsWithFilePath(xmlContents, dbType)
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
