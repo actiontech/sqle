@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -162,18 +163,19 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 type SQLManageRecord struct {
 	Model
 
-	Source         string       `json:"source" gorm:"type:varchar(255)"`
-	SourceId       uint         `json:"source_id" gorm:"type:varchar(255)"`
-	ProjectId      string       `json:"project_id" gorm:"type:varchar(255)"`
-	InstanceID     string       `json:"instance_id" gorm:"type:varchar(255)"`
-	SchemaName     string       `json:"schema_name" gorm:"type:varchar(255)"`
-	SqlFingerprint string       `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
-	SqlText        string       `json:"sql_text" gorm:"type:mediumtext;not null"`
-	Info           JSON         `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
-	AuditLevel     string       `json:"audit_level" gorm:"type:varchar(255)"`
-	AuditResults   AuditResults `json:"audit_results" gorm:"type:json"`
-	EndPoint       string       `json:"endpoint" gorm:"type:varchar(255)"`
-	SQLID          string       `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
+	Source         string         `json:"source" gorm:"type:varchar(255)"`
+	SourceId       uint           `json:"source_id" gorm:"type:varchar(255)"`
+	ProjectId      string         `json:"project_id" gorm:"type:varchar(255)"`
+	InstanceID     string         `json:"instance_id" gorm:"type:varchar(255)"`
+	SchemaName     string         `json:"schema_name" gorm:"type:varchar(255)"`
+	SqlFingerprint string         `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
+	SqlText        string         `json:"sql_text" gorm:"type:mediumtext;not null"`
+	Info           JSON           `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
+	AuditLevel     string         `json:"audit_level" gorm:"type:varchar(255)"`
+	AuditResults   AuditResults   `json:"audit_results" gorm:"type:json"`
+	EndPoint       string         `json:"endpoint" gorm:"type:varchar(255)"`
+	SQLID          string         `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
+	Priority       sql.NullString `json:"priority" gorm:"type:varchar(255)"`
 
 	SQLManager SQLManageRecordProcess
 }
