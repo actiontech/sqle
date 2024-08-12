@@ -31,7 +31,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
@@ -56,7 +57,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
@@ -82,7 +84,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
@@ -108,7 +111,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
@@ -135,7 +139,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
@@ -161,7 +166,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results
+audit_plan_sqls.audit_results,
+audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
 JOIN audit_plans_v2 ON audit_plans_v2.id = audit_plan_sqls.source_id
