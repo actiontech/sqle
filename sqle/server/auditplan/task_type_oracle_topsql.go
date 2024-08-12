@@ -23,7 +23,7 @@ func NewOracleTopSQLTaskV2Fn() func() interface{} {
 }
 
 func (at *OracleTopSQLTaskV2) InstanceType() string {
-	return TypeOracleTopSQL
+	return InstanceTypeOracle
 }
 
 func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
