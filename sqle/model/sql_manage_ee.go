@@ -151,6 +151,7 @@ type SqlManageDetail struct {
 	ApName               *string        `json:"ap_name"`
 	SqlAuditRecordIDs    RowList        `json:"sql_audit_record_ids"`
 	Endpoints            sql.NullString `json:"endpoints"`
+	Priority             sql.NullString `json:"priority"`
 }
 
 func (sm *SqlManageDetail) FirstAppearTime() string {
@@ -302,7 +303,8 @@ SELECT
 	sm.status,
 	sm.remark,
 	sm.assignees as assignees,
-	iap.id as source_id
+	iap.id as source_id,
+	oms.priority
 
 {{- template "body" . -}} 
 
