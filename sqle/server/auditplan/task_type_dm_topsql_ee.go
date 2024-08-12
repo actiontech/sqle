@@ -197,7 +197,7 @@ func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
-	inst, _, err := dms.GetInstanceInProjectByName(ctx, string(ap.ProjectId), ap.InstanceID)
+	inst, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
