@@ -1154,6 +1154,21 @@ func TriggerAuditPlan(c echo.Context) error {
 	})
 }
 
+// @Summary 扫描任务触发sql审核
+// @Description audit plan trigger sql audit
+// @Id auditPlanTriggerSqlAuditV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_id path string true "audit plan id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit [post]
+func AuditPlanTriggerSqlAudit(c echo.Context) error {
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
 type UpdateAuditPlanNotifyConfigReqV1 struct {
 	NotifyInterval      *int    `json:"notify_interval" default:"10"`
 	NotifyLevel         *string `json:"notify_level" default:"warn" enums:"normal,notice,warn,error" valid:"oneof=normal notice warn error"`
