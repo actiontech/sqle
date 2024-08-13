@@ -62,7 +62,7 @@ func NewInspectWithExecutor(log *logrus.Entry, cfg *driverV2.Config, conn *execu
 func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, error) {
 	var inspect = &MysqlDriverImpl{}
 
-	if cfg.DSN != nil { 
+	if cfg.DSN != nil {
 		conn, err := executor.NewExecutor(log, cfg.DSN, cfg.DSN.DatabaseName)
 		if err != nil {
 			return nil, errors.Wrap(err, "new executor in inspect")
@@ -127,10 +127,6 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 			inspect.cnf.isExecutedSQL = true
 		}
 	}
-}
-
-func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
-	i.dbConn = dbConn
 }
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
