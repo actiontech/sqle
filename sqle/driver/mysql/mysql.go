@@ -48,6 +48,17 @@ type MysqlDriverImpl struct {
 	isOfflineAudit bool
 }
 
+func NewInspectWithExecutor(log *logrus.Entry, cfg *driverV2.Config, conn *executor.Executor) (*MysqlDriverImpl, error) {
+	var inspect = &MysqlDriverImpl{}
+
+	if conn != nil {
+		inspect.initializeInspectWithConn(conn, log, cfg)
+	} else {
+		inspect.initializeInspectWithoutConn(log, cfg)
+	}
+	return inspect, nil
+}
+
 func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, error) {
 	var inspect = &MysqlDriverImpl{}
 
@@ -56,20 +67,32 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 		if err != nil {
 			return nil, errors.Wrap(err, "new executor in inspect")
 		}
-		inspect.isConnected = true
-		inspect.dbConn = conn
-		inspect.inst = cfg.DSN
-
-		ctx := session.NewContext(nil, session.WithExecutor(conn))
-		ctx.SetCurrentSchema(cfg.DSN.DatabaseName)
-
-		inspect.Ctx = ctx
+		inspect.initializeInspectWithConn(conn, log, cfg)
 	} else {
-		ctx := session.NewContext(nil)
-		inspect.Ctx = ctx
+		inspect.initializeInspectWithoutConn(log, cfg)
 	}
 
+	return inspect, nil
+}
+
+func (inspect *MysqlDriverImpl) initializeInspectWithConn(conn *executor.Executor, log *logrus.Entry, cfg *driverV2.Config) {
 	inspect.log = log
+	inspect.isConnected = true
+	inspect.dbConn = conn
+	inspect.inst = cfg.DSN
+	inspect.Ctx = session.NewContext(nil, session.WithExecutor(conn))
+	inspect.Ctx.SetCurrentSchema(cfg.DSN.DatabaseName)
+	inspect.applyConfig(cfg)
+}
+
+func (inspect *MysqlDriverImpl) initializeInspectWithoutConn(log *logrus.Entry, cfg *driverV2.Config) {
+	inspect.Ctx = session.NewContext(nil)
+	inspect.log = log
+	inspect.applyConfig(cfg)
+}
+
+func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
+
 	inspect.rules = cfg.Rules
 	inspect.result = driverV2.NewAuditResults()
 	inspect.isOfflineAudit = cfg.DSN == nil
@@ -104,12 +127,6 @@ func NewInspect(log *logrus.Entry, cfg *driverV2.Config) (*MysqlDriverImpl, erro
 			inspect.cnf.isExecutedSQL = true
 		}
 	}
-
-	return inspect, nil
-}
-
-func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
-	i.dbConn = dbConn
 }
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
