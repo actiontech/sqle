@@ -298,6 +298,24 @@ func GetAuditPlanAnalysisData(c echo.Context) error {
 	})
 }
 
+// GetSqlManageRecordAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取扫描任务相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getSqlManageRecordAnalysisDataV2
+// @Tags instance_audit_plan
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param sql_manage_record_id path string true "sql manage record id"
+// @Security ApiKeyAuth
+// @Success 200 {object} v2.GetAuditPlanAnalysisDataResV2
+// @router /v2/projects/{project_name}/audit_plans/{instance_audit_plan_id}/sqls/{sql_manage_record_id}/analysis [get]
+func GetSqlManageRecordAnalysisData(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    nil,
+	})
+}
+
 type AuditPlanSQLReqV2 struct {
 	Fingerprint          string    `json:"audit_plan_sql_fingerprint" form:"audit_plan_sql_fingerprint" example:"select * from t1 where id = ?"`
 	Counter              string    `json:"audit_plan_sql_counter" form:"audit_plan_sql_counter" example:"6" valid:"required"`
