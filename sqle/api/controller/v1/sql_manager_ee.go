@@ -347,7 +347,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v not exist", mgID)))
 	}
 
-	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), omg.ProjectId, omg.InstanceID)
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), omg.InstanceID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
