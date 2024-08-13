@@ -164,6 +164,7 @@ var autoMigrateList = []interface{}{
 	&SQLManageRecord{},
 	&SQLManageRecordProcess{},
 	&SQLManageQueue{},
+	&ReportPushConfig{},
 }
 
 func (s *Storage) AutoMigrate() error {
@@ -453,6 +454,20 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
 	return fmt.Sprintf("default_%v", dbType)
+}
+
+func (s *Storage) CreateDefaultReportPushConfigIfNotExist() error {
+	_, exist, err := s.GetReportPushConfigByProjectId(ProjectUID(DefaultProjectUid))
+	if err != nil {
+		return err
+	}
+	if !exist {
+		err = s.InitReportPushConfigInProject(DefaultProjectUid)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // func (s *Storage) CreateAdminUser() error {
