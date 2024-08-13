@@ -2528,6 +2528,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "audit plan trigger sql audit",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "扫描任务触发sql审核",
+                "operationId": "auditPlanTriggerSqlAuditV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan id",
+                        "name": "audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_data": {
             "post": {
                 "security": [
@@ -3058,6 +3104,86 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTableMetadataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/report_push_configs": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get report push config list",
+                "tags": [
+                    "ReportPushConfig"
+                ],
+                "summary": "获取消息推送配置列表",
+                "operationId": "GetReportPushConfigList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetReportPushConfigsListResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/report_push_configs/{report_push_config_id}/": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update report push config",
+                "tags": [
+                    "ReportPushConfig"
+                ],
+                "summary": "更新消息推送配置",
+                "operationId": "UpdateReportPushConfig",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "report push config id",
+                        "name": "report_push_config_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update report push config request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateReportPushConfigReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -5556,7 +5682,7 @@ var doc = `{
                 "tags": [
                     "workflow"
                 ],
-                "summary": "获取工单附件",
+                "summary": "获取工单的task附件",
                 "operationId": "getWorkflowAttachment",
                 "parameters": [
                     {
@@ -8164,6 +8290,52 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/audit_plans/{instance_audit_plan_id}/sqls/{sql_manage_record_id}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取扫描任务相关的SQL执行计划和表元数据",
+                "operationId": "getSqlManageRecordAnalysisDataV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql manage record id",
+                        "name": "sql_manage_record_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetAuditPlanAnalysisDataResV2"
                         }
                     }
                 }
@@ -11572,6 +11744,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetReportPushConfigsListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ReportPushConfigList"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetRiskAuditPlanResV1": {
             "type": "object",
             "properties": {
@@ -13110,6 +13301,46 @@ var doc = `{
                 }
             }
         },
+        "v1.ReportPushConfigList": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "last_push_time": {
+                    "type": "string"
+                },
+                "push_frequency_cron": {
+                    "type": "string"
+                },
+                "push_user_Type": {
+                    "type": "string",
+                    "enum": [
+                        "fixed",
+                        "permission_match"
+                    ]
+                },
+                "push_user_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "report_push_config_id": {
+                    "type": "string"
+                },
+                "trigger_type": {
+                    "type": "string",
+                    "enum": [
+                        "immediately",
+                        "timing"
+                    ]
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.RewriteRule": {
             "type": "object",
             "properties": {
@@ -14287,6 +14518,37 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.RuleReqV1"
                     }
+                }
+            }
+        },
+        "v1.UpdateReportPushConfigReqV1": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "push_frequency_cron": {
+                    "type": "string"
+                },
+                "push_user_Type": {
+                    "type": "string",
+                    "enum": [
+                        "fixed",
+                        "permission_match"
+                    ]
+                },
+                "push_user_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "trigger_type": {
+                    "type": "string",
+                    "enum": [
+                        "immediately",
+                        "timing"
+                    ]
                 }
             }
         },
@@ -15782,6 +16044,9 @@ var doc = `{
                     "type": "string"
                 },
                 "last_receive_timestamp": {
+                    "type": "string"
+                },
+                "priority": {
                     "type": "string"
                 },
                 "remark": {

@@ -1648,6 +1648,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetReportPushConfigsListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.ReportPushConfigList'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetRiskAuditPlanResV1:
     properties:
       code:
@@ -2698,6 +2711,33 @@ definitions:
       reason:
         type: string
     type: object
+  v1.ReportPushConfigList:
+    properties:
+      enabled:
+        type: boolean
+      last_push_time:
+        type: string
+      push_frequency_cron:
+        type: string
+      push_user_Type:
+        enum:
+        - fixed
+        - permission_match
+        type: string
+      push_user_list:
+        items:
+          type: string
+        type: array
+      report_push_config_id:
+        type: string
+      trigger_type:
+        enum:
+        - immediately
+        - timing
+        type: string
+      type:
+        type: string
+    type: object
   v1.RewriteRule:
     properties:
       message:
@@ -3492,6 +3532,27 @@ definitions:
         items:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
+    type: object
+  v1.UpdateReportPushConfigReqV1:
+    properties:
+      enabled:
+        type: boolean
+      push_frequency_cron:
+        type: string
+      push_user_Type:
+        enum:
+        - fixed
+        - permission_match
+        type: string
+      push_user_list:
+        items:
+          type: string
+        type: array
+      trigger_type:
+        enum:
+        - immediately
+        - timing
+        type: string
     type: object
   v1.UpdateRuleKnowledgeReq:
     properties:
@@ -4509,6 +4570,8 @@ definitions:
       instance_name:
         type: string
       last_receive_timestamp:
+        type: string
+      priority:
         type: string
       remark:
         type: string
@@ -6274,6 +6337,36 @@ paths:
       summary: 更新扫描任务状态
       tags:
       - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit:
+    post:
+      description: audit plan trigger sql audit
+      operationId: auditPlanTriggerSqlAuditV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan id
+        in: path
+        name: audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 扫描任务触发sql审核
+      tags:
+      - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_data:
     post:
       description: get audit plan SQLs
@@ -6623,6 +6716,57 @@ paths:
       summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
+  /v1/projects/{project_name}/report_push_configs:
+    get:
+      description: Get report push config list
+      operationId: GetReportPushConfigList
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetReportPushConfigsListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取消息推送配置列表
+      tags:
+      - ReportPushConfig
+  /v1/projects/{project_name}/report_push_configs/{report_push_config_id}/:
+    put:
+      description: update report push config
+      operationId: UpdateReportPushConfig
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: report push config id
+        in: path
+        name: report_push_config_id
+        required: true
+        type: string
+      - description: update report push config request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateReportPushConfigReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新消息推送配置
+      tags:
+      - ReportPushConfig
   /v1/projects/{project_name}/rule_template_tips:
     get:
       description: get rule template tips in project
@@ -8140,7 +8284,7 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 获取工单附件
+      summary: 获取工单的task附件
       tags:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file:
@@ -9964,6 +10108,36 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
+  /v2/projects/{project_name}/audit_plans/{instance_audit_plan_id}/sqls/{sql_manage_record_id}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getSqlManageRecordAnalysisDataV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: sql manage record id
+        in: path
+        name: sql_manage_record_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetAuditPlanAnalysisDataResV2'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务相关的SQL执行计划和表元数据
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
