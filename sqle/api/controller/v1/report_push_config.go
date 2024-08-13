@@ -116,6 +116,7 @@ func UpdateReportPushConfig(c echo.Context) error {
 		config.PushUserType = req.PushUserType
 		config.PushUserList = req.PushUserList
 	}
+	config.UpdateTime = time.Now()
 	err = s.Save(config)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

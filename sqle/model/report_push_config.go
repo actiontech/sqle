@@ -17,6 +17,7 @@ type ReportPushConfig struct {
 	PushUserList      Strings   `json:"push_user_list"`
 	LastPushTime      time.Time `json:"last_push_time" gorm:"type:datetime(3)"`
 	Enabled           bool      `json:"enabled" gorm:"type:varchar(255)"`
+	UpdateTime        time.Time `json:"update_time" gorm:"type:datetime(3)"`
 }
 
 func (s Storage) GetReportPushConfigListInProject(projectID string) ([]ReportPushConfig, error) {
@@ -54,6 +55,7 @@ func (s Storage) InitReportPushConfigInProject(projectID string) error {
 			PushUserList:      []string{},
 			Enabled:           true,
 			LastPushTime:      time.Now(),
+			UpdateTime:        time.Now(),
 		}, {
 			ProjectId:         projectID,
 			Type:              TypeSQLManage,
@@ -63,6 +65,7 @@ func (s Storage) InitReportPushConfigInProject(projectID string) error {
 			PushUserList:      []string{},
 			Enabled:           false,
 			LastPushTime:      time.Now(),
+			UpdateTime:        time.Now(),
 		},
 	}
 	err := s.db.Save(defaultPushConfigs).Error
@@ -88,4 +91,13 @@ func (s *Storage) GetReportPushConfigById(id uint) (*ReportPushConfig, bool, err
 		return ReportPushConfig, false, nil
 	}
 	return ReportPushConfig, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s Storage) GetLastUpdateReportPushConfig(lastSyncTime time.Time) ([]*ReportPushConfig, error) {
+	rpcList := make([]*ReportPushConfig, 0)
+	err := s.db.Model(&ReportPushConfig{}).Where("update_time > ? AND trigger_type = 'timing'", lastSyncTime).Find(&rpcList).Error
+	if err != nil {
+		return nil, err
+	}
+	return rpcList, nil
 }
