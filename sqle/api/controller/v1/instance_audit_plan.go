@@ -1213,3 +1213,37 @@ func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
 	}
 	return filters
 }
+
+// GetAuditPlanSqlAnalysisData get SQL explain and related table metadata for analysis
+// @Summary 获取扫描任务相关的SQL执行计划和表元数据
+// @Description get SQL explain and related table metadata for analysis
+// @Id getAuditPlanSqlAnalysisDataV1
+// @Tags instance_audit_plan
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param id path string true "audit plan sql id"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSqlManageSqlAnalysisResp
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis [get]
+func GetAuditPlanSqlAnalysisData(c echo.Context) error {
+
+	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    nil,
+	})
+}
+
+// @Summary 扫描任务触发sql审核
+// @Description audit plan trigger sql audit
+// @Id auditPlanTriggerSqlAuditV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Param audit_plan_id path string true "audit plan id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit [post]
+func AuditPlanTriggerSqlAudit(c echo.Context) error {
+
+	return controller.JSONBaseErrorReq(c, nil)
+}
