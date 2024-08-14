@@ -48,7 +48,6 @@ func (a *SQLmanageRecordNotification) NotificationBody() string {
 	}
 	for _, sqlManagerRecord := range a.SQLmanageRecords {
 		db := dms.GetInstancesByIdWithoutError(sqlManagerRecord.InstanceID)
-		dms.GetProjects()
 		builder.WriteString(fmt.Sprintf(`
 - SQLID	%v
 - 所在数据源名称 %v
