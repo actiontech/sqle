@@ -6509,6 +6509,36 @@ paths:
       summary: 获取指定扫描任务的SQLs信息
       tags:
       - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis:
+    get:
+      description: get SQL explain and related table metadata for analysis
+      operationId: getAuditPlanSqlAnalysisDataV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      - description: audit plan sql id
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlAnalysisResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取扫描任务相关的SQL执行计划和表元数据
+      tags:
+      - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
     get:
       description: get instance tip list
@@ -10108,36 +10138,6 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
-  /v2/projects/{project_name}/audit_plans/{instance_audit_plan_id}/sqls/{sql_manage_record_id}/analysis:
-    get:
-      description: get SQL explain and related table metadata for analysis
-      operationId: getSqlManageRecordAnalysisDataV2
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance audit plan id
-        in: path
-        name: instance_audit_plan_id
-        required: true
-        type: string
-      - description: sql manage record id
-        in: path
-        name: sql_manage_record_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetAuditPlanAnalysisDataResV2'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取扫描任务相关的SQL执行计划和表元数据
-      tags:
-      - instance_audit_plan
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
