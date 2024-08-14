@@ -199,6 +199,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		"project_id":                        projectUid,
 		"filter_db_type":                    req.FilterDbType,
 		"filter_rule_name":                  req.FilterRuleName,
+		"filter_priority":                   req.FilterPriority,
 		"fuzzy_search_endpoint":             req.FuzzySearchEndpoint,
 		"fuzzy_search_schema_name":          req.FuzzySearchSchemaName,
 		"sort_field":                        req.SortField,
