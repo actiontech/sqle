@@ -2790,6 +2790,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get SQL explain and related table metadata for analysis",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取扫描任务相关的SQL执行计划和表元数据",
+                "operationId": "getAuditPlanSqlAnalysisDataV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "audit plan sql id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlAnalysisResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_tips": {
             "get": {
                 "security": [
@@ -8290,52 +8336,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v2/projects/{project_name}/audit_plans/{instance_audit_plan_id}/sqls/{sql_manage_record_id}/analysis": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get SQL explain and related table metadata for analysis",
-                "tags": [
-                    "instance_audit_plan"
-                ],
-                "summary": "获取扫描任务相关的SQL执行计划和表元数据",
-                "operationId": "getSqlManageRecordAnalysisDataV2",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance audit plan id",
-                        "name": "instance_audit_plan_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql manage record id",
-                        "name": "sql_manage_record_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetAuditPlanAnalysisDataResV2"
                         }
                     }
                 }
