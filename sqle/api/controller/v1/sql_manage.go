@@ -17,6 +17,7 @@ type GetSqlManageListReq struct {
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
+	FilterPriority               *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"hight,low"`
 	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
 	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
@@ -127,6 +128,7 @@ type ExportSqlManagesReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
+	FilterPriority               *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"hight,low"`
 	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
 	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
@@ -143,6 +145,7 @@ type ExportSqlManagesReq struct {
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_assignee query string false "assignee"
 // @Param filter_business query string false "business"
+// @Param filter_priority query string false "priority" Enums(hight,low)
 // @Param filter_instance_id query string false "instance id"
 // @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
