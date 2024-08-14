@@ -145,7 +145,7 @@ type ExportSqlManagesReq struct {
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_assignee query string false "assignee"
 // @Param filter_business query string false "business"
-// @Param filter_priority query string false "priority"
+// @Param filter_priority query string false "priority" Enums(hight,low)
 // @Param filter_instance_id query string false "instance id"
 // @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
