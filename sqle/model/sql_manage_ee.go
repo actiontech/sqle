@@ -354,6 +354,10 @@ AND oms.instance_id in ( {{ .filter_business_instance_ids}} )
 AND oms.source = :filter_source
 {{- end }}
 
+{{- if .filter_priority }}
+AND oms.priority = :filter_priority
+{{- end }}
+
 {{- if .filter_audit_level }}
 AND oms.audit_level in ({{range $index, $element := .filter_audit_level}}{{if $index}}, {{end}}'{{$element}}'{{end}})
 {{- end }}
@@ -713,4 +717,13 @@ func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
 		return count, errors.New(errors.ConnectStorageError, err)
 	}
 	return count, errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetLastHightLevelSQLs(projectId string, fromTime time.Time) ([]*SQLManageRecord, error) {
+	sqlManageList := []*SQLManageRecord{}
+	err := s.db.Model(SQLManageRecord{}).Where("updated_at > ? AND priority = 'hight'", fromTime).Find(&sqlManageList).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqlManageList, nil
 }
