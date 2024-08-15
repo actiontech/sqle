@@ -1353,6 +1353,34 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit [post]
 func AuditPlanTriggerSqlAudit(c echo.Context) error {
-
+	insAuditPlanID := c.Param("instance_audit_plan_id")
+	auditPlanID, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
+	}
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	s := model.GetStorage()
+	auditPlanSqls, err := s.GetManagerSQLListByAuditPlanId(uint(auditPlanID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	report, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.Save(report)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return controller.JSONBaseErrorReq(c, nil)
 }

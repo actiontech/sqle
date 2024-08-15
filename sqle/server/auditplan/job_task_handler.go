@@ -62,7 +62,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		return
 	}
 	// 审核
-	sqlList, err = batchAuditSQLs(sqlList)
+	sqlList, err = BatchAuditSQLs(sqlList, true)
 	if err != nil {
 		entry.Warnf("batch audit origin manager sql failed, error: %v", err)
 		return
@@ -97,15 +97,17 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	}
 }
 
-func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
+func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]*model.SQLManageRecord, error) {
 
 	// SQL聚合
 	sqlMap := make(map[string][]*model.SQLManageRecord)
 	for _, sql := range sqlList {
-		// skip audited sql
-		if sql.AuditLevel != "" {
-			continue
+		if isSkipAuditedSql {
+			if sql.AuditLevel != "" {
+				continue
+			}
 		}
+
 		// 根据source id和schema name 聚合sqls，避免task内需要切换schema上下文审核
 		key := fmt.Sprintf("%d:%s", sql.SourceId, sql.SchemaName)
 		_, ok := sqlMap[key]
