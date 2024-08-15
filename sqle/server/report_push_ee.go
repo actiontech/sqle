@@ -43,7 +43,7 @@ func (p SQLManageRecordPushJob) Run() {
 	logger := log.NewEntry()
 	s := model.GetStorage()
 
-	sqls, err := s.GetLastHightLevelSQLs(p.Config.ProjectId, p.Config.LastPushTime)
+	sqls, err := s.GetLastHightLevelSQLs(p.Config.ProjectId, p.Config.ReportPushConfigRecord.LastPushTime)
 	if err != nil {
 		logger.Error(err)
 		return
@@ -65,7 +65,7 @@ func (p SQLManageRecordPushJob) Run() {
 	notify := notification.NewSQLmanageRecordNotification(notification.SQLmanageRecordNotifyConfig{
 		SQLEUrl:     url,
 		ProjectName: project.Name,
-		StartTime:   p.Config.LastPushTime.Format(time.RFC3339),
+		StartTime:   p.Config.ReportPushConfigRecord.LastPushTime.Format(time.RFC3339),
 		EndTime:     time.Now().Format(time.RFC3339),
 	}, sqls)
 	err = notification.Notify(notify, p.Config.PushUserList)
@@ -73,8 +73,8 @@ func (p SQLManageRecordPushJob) Run() {
 		logger.Error(err)
 		return
 	}
-	p.Config.LastPushTime = time.Now()
-	err = s.Save(p.Config)
+	p.Config.ReportPushConfigRecord.LastPushTime = time.Now()
+	err = s.Save(&p.Config.ReportPushConfigRecord)
 	if err != nil {
 		logger.Error(err)
 		return
