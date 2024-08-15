@@ -149,7 +149,7 @@ func GetProjectByID(ProjectId string) (project dmsV1.ListProject, err error) {
 	if err != nil {
 		return project, err
 	}
-	if len(ret) > 0 {
+	if len(ret) > 0 && ret[0] != nil {
 		project = *ret[0]
 	}
 	return project, nil
