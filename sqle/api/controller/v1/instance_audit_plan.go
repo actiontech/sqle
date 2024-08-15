@@ -1329,9 +1329,8 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	var schema string
 
-	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, schema, originSQL.SqlText)
+	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1362,7 +1361,7 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
