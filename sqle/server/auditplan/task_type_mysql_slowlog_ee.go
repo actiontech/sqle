@@ -60,6 +60,93 @@ func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{
+		{
+			Param: params.Param{
+				Key:   MetricNameQueryTimeAvg,
+				Value: "10",
+				Desc:  "平均查询时间",
+				Type:  params.ParamTypeInt,
+			},
+			BooleanOperatorParam: params.BooleanOperator{
+				Value: ">",
+				EnumsValue: []params.EnumsValue{
+					{
+						Value: ">",
+						Desc:  "大于",
+					}, {
+						Value: "=",
+						Desc:  "等于",
+					}, {
+						Value: "<",
+						Desc:  "小于",
+					},
+				},
+			},
+		},
+		{
+			Param: params.Param{
+				Key:   MetricNameRowExaminedAvg,
+				Value: "100",
+				Desc:  "平均扫描行数",
+				Type:  params.ParamTypeInt,
+			},
+			BooleanOperatorParam: params.BooleanOperator{
+				Value: ">",
+				EnumsValue: []params.EnumsValue{
+					{
+						Value: ">",
+						Desc:  "大于",
+					}, {
+						Value: "=",
+						Desc:  "等于",
+					}, {
+						Value: "<",
+						Desc:  "小于",
+					},
+				},
+			},
+		},
+		{
+			Param: params.Param{
+				Key:   "audit_level",
+				Value: "warn",
+				Desc:  "告警级别",
+				Type:  params.ParamTypeString,
+				Enums: []params.EnumsValue{
+					{
+						Value: "info",
+						Desc:  "提示",
+					}, {
+						Value: "warn",
+						Desc:  "告警",
+					},
+					{
+						Value: "error",
+						Desc:  "错误",
+					},
+				},
+			},
+			BooleanOperatorParam: params.BooleanOperator{
+				Value: ">",
+				EnumsValue: []params.EnumsValue{
+					{
+						Value: ">",
+						Desc:  "大于",
+					}, {
+						Value: "=",
+						Desc:  "等于",
+					}, {
+						Value: "<",
+						Desc:  "小于",
+					},
+				},
+			},
+		},
+	}
+}
+
 func (at *SlowLogTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

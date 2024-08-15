@@ -34,6 +34,10 @@ func (at *TBaseSlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
 }
 
+func (at *TBaseSlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *TBaseSlowLogTaskV2) Metrics() []string {
 	return []string{}
 }
