@@ -9,20 +9,25 @@ import (
 
 type ReportPushConfig struct {
 	Model
-	ProjectId         string    `json:"project_id" gorm:"type:varchar(255)"`
-	Type              string    `json:"type" gorm:"type:varchar(255)"`
-	TriggerType       string    `json:"trigger_type"  gorm:"type:varchar(255)"`
-	PushFrequencyCron string    `json:"cron" gorm:"type:varchar(255)"`
-	PushUserType      string    `json:"push_user_Type" gorm:"type:varchar(255)"`
-	PushUserList      Strings   `json:"push_user_list"`
-	LastPushTime      time.Time `json:"last_push_time" gorm:"type:datetime(3)"`
-	Enabled           bool      `json:"enabled" gorm:"type:varchar(255)"`
-	UpdateTime        time.Time `json:"update_time" gorm:"type:datetime(3)"`
+	ProjectId              string  `json:"project_id" gorm:"type:varchar(255)"`
+	Type                   string  `json:"type" gorm:"type:varchar(255)"`
+	TriggerType            string  `json:"trigger_type"  gorm:"type:varchar(255)"`
+	PushFrequencyCron      string  `json:"cron" gorm:"type:varchar(255)"`
+	PushUserType           string  `json:"push_user_Type" gorm:"type:varchar(255)"`
+	PushUserList           Strings `json:"push_user_list"`
+	Enabled                bool    `json:"enabled" gorm:"type:varchar(255)"`
+	ReportPushConfigRecord ReportPushConfigRecord
+}
+
+type ReportPushConfigRecord struct {
+	Model
+	ReportPushConfigID uint      `json:"report_push_cofig_id" gorm:"not null"`
+	LastPushTime       time.Time `json:"last_push_time" gorm:"type:datetime(3)"`
 }
 
 func (s Storage) GetReportPushConfigListInProject(projectID string) ([]ReportPushConfig, error) {
 	reportPushConfigs := make([]ReportPushConfig, 0)
-	err := s.db.Model(ReportPushConfig{}).Where("project_id = ?", projectID).Find(&reportPushConfigs).Error
+	err := s.db.Model(ReportPushConfig{}).Where("project_id = ?", projectID).Preload("ReportPushConfigRecord").Find(&reportPushConfigs).Error
 	if err != nil {
 		return nil, err
 	}
@@ -47,25 +52,23 @@ const (
 func (s Storage) InitReportPushConfigInProject(projectID string) error {
 	var defaultPushConfigs = []ReportPushConfig{
 		{
-			ProjectId:         projectID,
-			Type:              TypeWorkflow,
-			TriggerType:       TriggerTypeImmediately,
-			PushFrequencyCron: "",
-			PushUserType:      PushUserTypePermissionMatch,
-			PushUserList:      []string{},
-			Enabled:           true,
-			LastPushTime:      time.Now(),
-			UpdateTime:        time.Now(),
+			ProjectId:              projectID,
+			Type:                   TypeWorkflow,
+			TriggerType:            TriggerTypeImmediately,
+			PushFrequencyCron:      "",
+			PushUserType:           PushUserTypePermissionMatch,
+			PushUserList:           []string{},
+			Enabled:                true,
+			ReportPushConfigRecord: ReportPushConfigRecord{},
 		}, {
-			ProjectId:         projectID,
-			Type:              TypeSQLManage,
-			TriggerType:       TriggerTypeTiming,
-			PushFrequencyCron: "",
-			PushUserType:      PushUserTypeFixed,
-			PushUserList:      []string{},
-			Enabled:           false,
-			LastPushTime:      time.Now(),
-			UpdateTime:        time.Now(),
+			ProjectId:              projectID,
+			Type:                   TypeSQLManage,
+			TriggerType:            TriggerTypeTiming,
+			PushFrequencyCron:      "",
+			PushUserType:           PushUserTypeFixed,
+			PushUserList:           []string{},
+			Enabled:                false,
+			ReportPushConfigRecord: ReportPushConfigRecord{},
 		},
 	}
 	err := s.db.Save(defaultPushConfigs).Error

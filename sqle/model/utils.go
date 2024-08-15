@@ -165,6 +165,7 @@ var autoMigrateList = []interface{}{
 	&SQLManageRecordProcess{},
 	&SQLManageQueue{},
 	&ReportPushConfig{},
+	&ReportPushConfigRecord{},
 }
 
 func (s *Storage) AutoMigrate() error {
