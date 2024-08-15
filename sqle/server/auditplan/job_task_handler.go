@@ -1,6 +1,7 @@
 package auditplan
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -60,14 +61,18 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		return
 	}
 	// 审核
-	auditSQLs, err := batchAuditSQLs(sqlList)
+	sqlList, err = batchAuditSQLs(sqlList)
 	if err != nil {
 		entry.Warnf("batch audit origin manager sql failed, error: %v", err)
 		return
 	}
-
+	sqlList, err = CheckSQLPriority(sqlList)
+	if err != nil {
+		entry.Warnf("check sql priority sql failed, error: %v", err)
+		return
+	}
 	// todo: 保证事务和错误处理
-	for _, sql := range auditSQLs {
+	for _, sql := range sqlList {
 		err := s.UpdateManagerSQL(sql)
 		if err != nil {
 			entry.Warnf("update manager sql failed, error: %v", err)
@@ -132,4 +137,63 @@ func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 
 	}
 	return auditSQLs, nil
+}
+
+func CheckSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
+	var err error
+	s := model.GetStorage()
+	// SQL聚合
+	sqlMap := make(map[uint]*model.AuditPlanV2, 0)
+
+	for i, sql_ := range sqlList {
+		sourceId := sql_.SourceId
+
+		auditPlan, ok := sqlMap[sourceId]
+		if !ok {
+			var exist bool
+			auditPlan, exist, err = s.GetAuditPlanByID(int(sourceId))
+			if err != nil {
+				return nil, err
+			}
+			if !exist {
+				continue
+			}
+			sqlMap[sourceId] = auditPlan
+		}
+
+		info, err := sql_.Info.OriginValue()
+		if err != nil {
+			return nil, err
+		}
+		highPriorityConditions := auditPlan.HighPriorityParams
+		for _, highPriorityCondition := range highPriorityConditions {
+			var cpmpareParamVale string
+			// 审核级别特殊处理
+			if highPriorityCondition.Key == "audit_level" {
+				switch sql_.AuditLevel {
+				case "notice":
+					cpmpareParamVale = "1"
+				case "warn":
+					cpmpareParamVale = "2"
+				case "error":
+					cpmpareParamVale = "3"
+				default:
+					cpmpareParamVale = "0"
+				}
+			} else {
+				infoV, ok := info[highPriorityCondition.Key]
+				if !ok {
+					continue
+				}
+				cpmpareParamVale = fmt.Sprintf("%v", infoV)
+			}
+			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, cpmpareParamVale); err == nil && high {
+				sqlList[i].Priority = sql.NullString{
+					String: "high",
+					Valid:  true,
+				}
+			}
+		}
+	}
+	return sqlList, nil
 }
