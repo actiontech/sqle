@@ -28,6 +28,9 @@ func (at *DefaultTaskV2) InstanceType() string {
 func (at *DefaultTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
 }
+func (at *DefaultTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
 
 func (at *DefaultTaskV2) Metrics() []string {
 	return []string{
