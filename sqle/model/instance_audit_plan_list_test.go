@@ -27,6 +27,7 @@ func TestAuditPlanListQuery(t *testing.T) {
 			args: map[string]interface{}{},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
@@ -53,6 +54,7 @@ ORDER BY audit_plan_sqls.id`,
 			},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
@@ -80,6 +82,7 @@ LIMIT :limit OFFSET :offset`,
 			},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
@@ -107,6 +110,7 @@ DESC`,
 			},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
@@ -135,6 +139,7 @@ ASC`,
 			},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
@@ -162,6 +167,7 @@ ASC`,
 			},
 			expectQuery: `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
