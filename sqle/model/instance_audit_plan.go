@@ -116,12 +116,14 @@ func (s *Storage) GetLatestAuditPlanRecordsV2() ([]*AuditPlanDetail, error) {
 type AuditPlanV2 struct {
 	Model
 
-	InstanceAuditPlanID uint          `json:"instance_audit_plan_id" gorm:"not null"`
-	Type                string        `json:"type" gorm:"type:varchar(255)"`
-	RuleTemplateName    string        `json:"rule_template_name" gorm:"type:varchar(255)"`
-	Params              params.Params `json:"params" gorm:"type:varchar(1000)"`
-	ActiveStatus        string        `json:"active_status" gorm:"type:varchar(255)"`
-	LastCollectionTime  *time.Time    `json:"last_collection_time" gorm:"type:datetime(3)"`
+	InstanceAuditPlanID uint                      `json:"instance_audit_plan_id" gorm:"not null"`
+	Type                string                    `json:"type" gorm:"type:varchar(255)"`
+	RuleTemplateName    string                    `json:"rule_template_name" gorm:"type:varchar(255)"`
+	Params              params.Params             `json:"params" gorm:"type:varchar(1000)"`
+	HighPriorityParams  params.ParamsWithOperator `json:"high_priority_params" gorm:"type:varchar(1000)"`
+	MarkHighPrioritySQL bool                      `json:"mark_high_priority_sql"`
+	ActiveStatus        string                    `json:"active_status" gorm:"type:varchar(255)"`
+	LastCollectionTime  *time.Time                `json:"last_collection_time" gorm:"type:datetime(3)"`
 
 	AuditPlanSQLs []*SQLManageRecord `gorm:"foreignKey:SourceId"`
 }
