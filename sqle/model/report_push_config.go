@@ -21,7 +21,7 @@ type ReportPushConfig struct {
 
 type ReportPushConfigRecord struct {
 	Model
-	ReportPushConfigID uint      `json:"report_push_cofig_id" gorm:"not null"`
+	ReportPushConfigID uint
 	LastPushTime       time.Time `json:"last_push_time" gorm:"type:datetime(3)"`
 }
 
@@ -98,7 +98,7 @@ func (s *Storage) GetReportPushConfigById(id uint) (*ReportPushConfig, bool, err
 
 func (s Storage) GetLastUpdateReportPushConfig(lastSyncTime time.Time) ([]*ReportPushConfig, error) {
 	rpcList := make([]*ReportPushConfig, 0)
-	err := s.db.Model(&ReportPushConfig{}).Where("update_time > ? AND trigger_type = 'timing'", lastSyncTime).Find(&rpcList).Error
+	err := s.db.Model(&ReportPushConfig{}).Where("updated_at > ? AND trigger_type = 'timing'", lastSyncTime).Preload("ReportPushConfigRecord").Find(&rpcList).Error
 	if err != nil {
 		return nil, err
 	}
