@@ -187,3 +187,109 @@ func (r *Params) Copy() Params {
 	}
 	return ps
 }
+
+type ParamsWithOperator []*ParamWithOperator
+type ParamWithOperator struct {
+	Param
+	BooleanOperatorParam BooleanOperator `json:"boolean_operator"`
+}
+
+// Scan impl sql.Scanner interface
+func (r *ParamsWithOperator) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal json value: %v", value)
+	}
+	if len(bytes) == 0 {
+		return nil
+	}
+	result := ParamsWithOperator{}
+	err := json.Unmarshal(bytes, &result)
+
+	for _, p := range result {
+		if p.Type == ParamTypePassword {
+			p.Value, err = dmsCommonAes.AesDecrypt(p.Value)
+			if err != nil {
+				return fmt.Errorf("param %s value decrypt err: %v", p.Key, err)
+			}
+		}
+	}
+
+	*r = result
+	return err
+}
+
+// Value impl sql.driver.Valuer interface
+func (r ParamsWithOperator) Value() (driver.Value, error) {
+	if len(r) == 0 {
+		return nil, nil
+	}
+
+	params := make([]ParamWithOperator, 0, len(r))
+
+	for _, p := range r {
+		param := ParamWithOperator{
+			Param: Param{
+				Key:   p.Key,
+				Value: p.Value,
+				Desc:  p.Desc,
+				Type:  p.Type,
+			},
+			BooleanOperatorParam: BooleanOperator{
+				Value:      p.BooleanOperatorParam.Value,
+				EnumsValue: p.BooleanOperatorParam.EnumsValue,
+			},
+		}
+
+		if param.Type == ParamTypePassword {
+			val, err := dmsCommonAes.AesEncrypt(p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("param %s value encrypt err: %v", p.Key, err)
+			}
+
+			param.Value = val
+		}
+
+		params = append(params, param)
+	}
+
+	v, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal json value: %v", v)
+	}
+	return v, err
+}
+
+func (r *ParamsWithOperator) GetParam(key string) *ParamWithOperator {
+	if r == nil {
+		return nil
+	}
+	for _, p := range *r {
+		if p.Key == key {
+			return p
+		}
+	}
+	return nil
+}
+
+type BooleanOperator struct {
+	Value      BooleanOperatorValue `json:"boolean_operator_value"`
+	EnumsValue []EnumsValue         `json:"boolean_operator_enums_value"`
+}
+
+type BooleanOperatorValue string
+
+const (
+	LessThanOperator             BooleanOperatorValue = "<"
+	GreaterThanOperator          BooleanOperatorValue = ">"
+	LessThanOrEqualToOperator    BooleanOperatorValue = "<="
+	GreaterThanOrEqualToOperator BooleanOperatorValue = ">="
+	EqualToOperator              BooleanOperatorValue = "="
+	NotEqualToOperator           BooleanOperatorValue = "<>"
+	InOperator                   BooleanOperatorValue = "IN"
+	IsOperator                   BooleanOperatorValue = "IS"
+	ContainsOperator             BooleanOperatorValue = "CONTAINS"
+)
