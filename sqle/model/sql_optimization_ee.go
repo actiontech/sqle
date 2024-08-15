@@ -36,7 +36,7 @@ type SQLOptimizationRecord struct {
 	NumberOfQueryIndex     int       `json:"number_of_query_index"`
 	IndexRecommendations   DBStrings `json:"index_recommendations" gorm:"type:json"`
 
-	OptimizationSQLs []*OptimizationSQL `json:"-" gorm:"foreignkey:OptimizationId;association_foreignkey:OptimizationId"`
+	OptimizationSQLs []*OptimizationSQL `json:"-" gorm:"foreignkey:OptimizationId;references:OptimizationId"`
 }
 
 func (sm SQLOptimizationRecord) TableName() string {
