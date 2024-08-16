@@ -67,7 +67,7 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Key:   MetricNameQueryTimeAvg,
 				Value: "10",
 				Desc:  "平均查询时间",
-				Type:  params.ParamTypeInt,
+				Type:  params.ParamTypeFloat64,
 			},
 			BooleanOperatorParam: params.BooleanOperator{
 				Value: ">",
@@ -90,7 +90,7 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Key:   MetricNameRowExaminedAvg,
 				Value: "100",
 				Desc:  "平均扫描行数",
-				Type:  params.ParamTypeInt,
+				Type:  params.ParamTypeFloat64,
 			},
 			BooleanOperatorParam: params.BooleanOperator{
 				Value: ">",

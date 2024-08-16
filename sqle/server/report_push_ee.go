@@ -71,7 +71,6 @@ func (p SQLManageRecordPushJob) Run() {
 	err = notification.Notify(notify, p.Config.PushUserList)
 	if err != nil {
 		logger.Error(err)
-		return
 	}
 	p.Config.ReportPushConfigRecord.LastPushTime = time.Now()
 	err = s.Save(&p.Config.ReportPushConfigRecord)
