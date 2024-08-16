@@ -62,6 +62,12 @@ const (
 	paramKeyRegion                             = "region"
 )
 
+const (
+	OperationParamAuditLevel     = "audit_level"
+	OperationParamQueryTimeAvg   = MetricNameQueryTimeAvg
+	OperationParamRowExaminedAvg = MetricNameRowExaminedAvg
+)
+
 var MetaBuilderList = []MetaBuilder{
 	{
 		Type:          TypeDefault,

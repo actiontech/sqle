@@ -67,17 +67,17 @@ type AuditPlanParamResV1 struct {
 }
 
 type HighPriorityCondition struct {
-	Key             string              `json:"key"`
-	Desc            string              `json:"desc"`
-	Value           string              `json:"value"`
-	Type            string              `json:"type" enums:"string,int,bool,password"`
-	EnumsValues     []params.EnumsValue `json:"enums_value"`
-	BooleanOperator BooleanOperator     `json:"boolean_operator"`
+	Key         string              `json:"key"`
+	Desc        string              `json:"desc"`
+	Value       string              `json:"value"`
+	Type        string              `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []params.EnumsValue `json:"enums_value"`
+	Operator    Operator            `json:"operator"`
 }
 
-type BooleanOperator struct {
-	Value      string              `json:"boolean_operator_value"`
-	EnumsValue []params.EnumsValue `json:"boolean_operator_enums_value"`
+type Operator struct {
+	Value      string              `json:"operator_value"`
+	EnumsValue []params.EnumsValue `json:"operator_enums_value"`
 }
 
 func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
@@ -104,7 +104,7 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 		res.Params = paramsRes
 	}
 	// 高优先级参数
-	if meta.HighPriorityParams != nil && len(meta.HighPriorityParams) > 0 {
+	if len(meta.HighPriorityParams) > 0 {
 		highPriorityparamsRes := make([]HighPriorityCondition, 0, len(meta.HighPriorityParams))
 		for _, hpc := range meta.HighPriorityParams {
 			highPriorityparamsRes = append(highPriorityparamsRes, HighPriorityCondition{
@@ -113,9 +113,9 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 				Type:        string(hpc.Type),
 				Value:       hpc.Value,
 				EnumsValues: hpc.Enums,
-				BooleanOperator: BooleanOperator{
-					string(hpc.BooleanOperatorParam.Value),
-					hpc.BooleanOperatorParam.EnumsValue,
+				Operator: Operator{
+					string(hpc.Operator.Value),
+					hpc.Operator.EnumsValue,
 				},
 			})
 		}

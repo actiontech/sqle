@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -66,7 +67,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		entry.Warnf("batch audit origin manager sql failed, error: %v", err)
 		return
 	}
-	sqlList, err = CheckSQLPriority(sqlList)
+	sqlList, err = SetSQLPriority(sqlList)
 	if err != nil {
 		entry.Warnf("check sql priority sql failed, error: %v", err)
 		return
@@ -139,7 +140,7 @@ func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 	return auditSQLs, nil
 }
 
-func CheckSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
+func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
 	var err error
 	s := model.GetStorage()
 	// SQL聚合
@@ -167,29 +168,29 @@ func CheckSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecor
 		}
 		highPriorityConditions := auditPlan.HighPriorityParams
 		for _, highPriorityCondition := range highPriorityConditions {
-			var cpmpareParamVale string
+			var compareParamVale string
 			// 审核级别特殊处理
-			if highPriorityCondition.Key == "audit_level" {
+			if highPriorityCondition.Key == OperationParamAuditLevel {
 				switch sql_.AuditLevel {
-				case "notice":
-					cpmpareParamVale = "1"
-				case "warn":
-					cpmpareParamVale = "2"
-				case "error":
-					cpmpareParamVale = "3"
+				case string(driverV2.RuleLevelNotice):
+					compareParamVale = "1"
+				case string(driverV2.RuleLevelWarn):
+					compareParamVale = "2"
+				case string(driverV2.RuleLevelError):
+					compareParamVale = "3"
 				default:
-					cpmpareParamVale = "0"
+					compareParamVale = "0"
 				}
 			} else {
 				infoV, ok := info[highPriorityCondition.Key]
 				if !ok {
 					continue
 				}
-				cpmpareParamVale = fmt.Sprintf("%v", infoV)
+				compareParamVale = fmt.Sprintf("%v", infoV)
 			}
-			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, cpmpareParamVale); err == nil && high {
+			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
 				sqlList[i].Priority = sql.NullString{
-					String: "high",
+					String: model.PriorityHigh,
 					Valid:  true,
 				}
 			}
