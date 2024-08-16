@@ -319,6 +319,7 @@ func (at *PGTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filt
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
 			"sql":                         sql.SQLContent,
+			"id":                          sql.AuditPlanSqlId,
 			MetricNameCounter:             strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameQueryTimeTotal:      fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameQueryTimeTotal).Float())/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
 			MetricNameDiskReadTotal:       strconv.Itoa(int(info.Get(MetricNameDiskReadTotal).Int())),
