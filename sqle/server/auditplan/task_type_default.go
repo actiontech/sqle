@@ -45,9 +45,9 @@ var defaultOperatorEnums = []params.EnumsValue{
 var defaultAuditLevelOperateParams = &params.ParamWithOperator{
 	Param: params.Param{
 		Key:   OperationParamAuditLevel,
-		Value: "warn",
+		Value: "2",
 		Desc:  "触发审核级别",
-		Type:  params.ParamTypeString,
+		Type:  params.ParamTypeInt,
 		Enums: []params.EnumsValue{
 			{
 				Value: "1",
