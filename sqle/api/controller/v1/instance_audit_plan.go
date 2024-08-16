@@ -39,9 +39,16 @@ type CreateInstanceAuditPlanReqV1 struct {
 }
 
 type AuditPlan struct {
-	RuleTemplateName string                `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
-	Type             string                `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
-	Params           []AuditPlanParamReqV1 `json:"audit_plan_params" valid:"dive,required"`
+	RuleTemplateName        string                     `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
+	Type                    string                     `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
+	Params                  []AuditPlanParamReqV1      `json:"audit_plan_params" valid:"dive,required"`
+	HighPriorityConditions  []HighPriorityConditionReq `json:"high_priority_conditions" valid:"dive,required"`
+	NeedMarkHighPrioritySQL bool                       `json:"need_mark_high_priority_sql"`
+}
+type HighPriorityConditionReq struct {
+	Key      string `json:"key" form:"key" valid:"required"`
+	Value    string `json:"value" form:"value" valid:"required"`
+	Operator string `json:"operator" form:"operator" default:">" enums:">,=,<" valid:"oneof=> = <"`
 }
 
 type CreatInstanceAuditPlanResV1 struct {
@@ -51,6 +58,31 @@ type CreatInstanceAuditPlanResV1 struct {
 
 type CreatInstanceAuditPlanRes struct {
 	InstanceAuditPlanID string `json:"instance_audit_plan_id"`
+}
+
+func checkAndGenerateHighPriorityParams(auditPlanType, instanceType string, hpcParamsReq []HighPriorityConditionReq) (params.ParamsWithOperator, error) {
+	meta, err := auditplan.GetMeta(auditPlanType)
+	if err != nil {
+		return nil, err
+	}
+	if meta.InstanceType != auditplan.InstanceTypeAll && meta.InstanceType != instanceType {
+		return nil, fmt.Errorf("audit plan type %s not found", auditPlanType)
+	}
+	resetParams := make([]*params.ParamWithOperator, 0)
+	for _, hpcParam := range hpcParamsReq {
+		for _, p := range meta.HighPriorityParams {
+			if p.Key != hpcParam.Key {
+				continue
+			}
+			// set and valid param.
+			p.Value = hpcParam.Value
+			p.Operator.Value = params.OperatorValue(hpcParam.Operator)
+			resetParams = append(resetParams, p)
+			break
+		}
+
+	}
+	return resetParams, nil
 }
 
 // @Summary 添加实例扫描任务
@@ -64,7 +96,6 @@ type CreatInstanceAuditPlanRes struct {
 // @Success 200 {object} v1.CreatInstanceAuditPlanResV1
 // @router /v1/projects/{project_name}/instance_audit_plans [post]
 func CreateInstanceAuditPlan(c echo.Context) error {
-
 	req := new(CreateInstanceAuditPlanReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -137,11 +168,18 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
 
+		hpc, err := checkAndGenerateHighPriorityParams(auditPlan.Type, inst.DbType, auditPlan.HighPriorityConditions)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+
 		auditPlans = append(auditPlans, &model.AuditPlanV2{
-			Type:             auditPlan.Type,
-			RuleTemplateName: ruleTemplateName,
-			Params:           ps,
-			ActiveStatus:     model.ActiveStatusNormal,
+			Type:                    auditPlan.Type,
+			RuleTemplateName:        ruleTemplateName,
+			Params:                  ps,
+			HighPriorityParams:      hpc,
+			NeedMarkHighPrioritySQL: auditPlan.NeedMarkHighPrioritySQL,
+			ActiveStatus:            model.ActiveStatusNormal,
 		})
 	}
 
@@ -288,17 +326,25 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
+		hpc, err := checkAndGenerateHighPriorityParams(auditPlan.Type, dbAuditPlans.DBType, auditPlan.HighPriorityConditions)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
 		res := &model.AuditPlanV2{
-			Type:                auditPlan.Type,
-			RuleTemplateName:    ruleTemplateName,
-			Params:              ps,
-			InstanceAuditPlanID: dbAuditPlans.ID,
+			Type:                    auditPlan.Type,
+			RuleTemplateName:        ruleTemplateName,
+			Params:                  ps,
+			HighPriorityParams:      hpc,
+			NeedMarkHighPrioritySQL: auditPlan.NeedMarkHighPrioritySQL,
+			InstanceAuditPlanID:     dbAuditPlans.ID,
 		}
 
 		// if the data exists in the database, update the data; if it does not exist, insert the data.
 		if dbAuditPlan, ok := dbAuditPlansMap[auditPlan.Type]; ok {
 			dbAuditPlan.RuleTemplateName = res.RuleTemplateName
 			dbAuditPlan.Params = res.Params
+			dbAuditPlan.HighPriorityParams = res.HighPriorityParams
+			dbAuditPlan.NeedMarkHighPrioritySQL = res.NeedMarkHighPrioritySQL
 			result := dbAuditPlan
 			resultAuditPlans = append(resultAuditPlans, result)
 		} else {
@@ -549,9 +595,11 @@ type InstanceAuditPlanDetailResV1 struct {
 }
 
 type AuditPlanRes struct {
-	RuleTemplateName string                `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
-	Type             AuditPlanTypeResBase  `json:"audit_plan_type" form:"audit_plan_type"`
-	Params           []AuditPlanParamResV1 `json:"audit_plan_params" valid:"dive,required"`
+	RuleTemplateName        string                  `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
+	Type                    AuditPlanTypeResBase    `json:"audit_plan_type" form:"audit_plan_type"`
+	Params                  []AuditPlanParamResV1   `json:"audit_plan_params" valid:"dive,required"`
+	NeedMarkHighPrioritySQL bool                    `json:"need_mark_high_priority_sql"`
+	HighPriorityConditions  []HighPriorityCondition `json:"high_priority_conditions"`
 }
 
 // @Summary 获取实例扫描任务详情
@@ -624,6 +672,31 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 				paramsRes = append(paramsRes, paramRes)
 			}
 			resAuditPlan.Params = paramsRes
+		}
+
+		if v.HighPriorityParams != nil && len(v.HighPriorityParams) > 0 {
+			hppParamsRes := make([]HighPriorityCondition, len(v.HighPriorityParams))
+			for i, hpp := range v.HighPriorityParams {
+				for _, metaHpp := range meta.HighPriorityParams {
+					if metaHpp.Key != hpp.Key {
+						continue
+					}
+					highParamRes := HighPriorityCondition{
+						Key:   metaHpp.Key,
+						Desc:  metaHpp.Desc,
+						Value: hpp.Value,
+						Type:  string(metaHpp.Type),
+						Operator: Operator{
+							Value:      string(hpp.Operator.Value),
+							EnumsValue: metaHpp.Operator.EnumsValue,
+						},
+					}
+					hppParamsRes[i] = highParamRes
+					break
+				}
+			}
+			resAuditPlan.HighPriorityConditions = hppParamsRes
+			resAuditPlan.NeedMarkHighPrioritySQL = v.NeedMarkHighPrioritySQL
 		}
 
 		resAuditPlans = append(resAuditPlans, resAuditPlan)

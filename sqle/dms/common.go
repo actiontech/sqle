@@ -140,6 +140,20 @@ func GetPorjectUIDByName(ctx context.Context, projectName string, needActive ...
 	}
 	return project.ProjectUid, nil
 }
+func GetProjectByID(ProjectId string) (project dmsV1.ListProject, err error) {
+	ret, _, err := dmsobject.ListProjects(context.TODO(), GetDMSServerAddress(), dmsV1.ListProjectReq{
+		PageSize:    1,
+		PageIndex:   1,
+		FilterByUID: ProjectId,
+	})
+	if err != nil {
+		return project, err
+	}
+	if len(ret) > 0 && ret[0] != nil {
+		project = *ret[0]
+	}
+	return project, nil
+}
 
 func GetPorjectByName(ctx context.Context, projectName string) (project *dmsV1.ListProject, err error) {
 	ret, total, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
