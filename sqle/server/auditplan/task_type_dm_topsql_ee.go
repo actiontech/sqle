@@ -54,6 +54,10 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *DmTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *DmTopSQLTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

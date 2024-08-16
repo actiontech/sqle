@@ -56,6 +56,10 @@ func (at *ObForOracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *ObForOracleTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *ObForOracleTopSQLTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

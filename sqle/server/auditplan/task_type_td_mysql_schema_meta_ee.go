@@ -35,3 +35,7 @@ func (at *TDMySQLSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 		},
 	}
 }
+
+func (at *TDMySQLSchemaMetaTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}

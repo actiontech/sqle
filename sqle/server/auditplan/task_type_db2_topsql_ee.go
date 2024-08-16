@@ -53,6 +53,10 @@ func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *DB2TopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *DB2TopSQLTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

@@ -719,9 +719,9 @@ func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
 	return count, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetLastHightLevelSQLs(projectId string, fromTime time.Time) ([]*SQLManageRecord, error) {
+func (s *Storage) GetHighLevelSQLsByTime(projectId string, fromTime time.Time) ([]*SQLManageRecord, error) {
 	sqlManageList := []*SQLManageRecord{}
-	err := s.db.Model(SQLManageRecord{}).Where("updated_at > ? AND priority = 'hight'", fromTime).Find(&sqlManageList).Error
+	err := s.db.Model(SQLManageRecord{}).Where("project_id = ? AND updated_at > ? AND priority = 'high'", projectId, fromTime).Find(&sqlManageList).Error
 	if err != nil {
 		return nil, err
 	}

@@ -51,6 +51,10 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *ObForMysqlTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *ObForMysqlTopSQLTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,
