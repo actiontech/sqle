@@ -143,12 +143,12 @@ func CheckSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecor
 	var err error
 	s := model.GetStorage()
 	// SQL聚合
-	sqlMap := make(map[uint]*model.AuditPlanV2, 0)
+	auditPlanMap := make(map[uint]*model.AuditPlanV2, 0)
 
 	for i, sql_ := range sqlList {
 		sourceId := sql_.SourceId
 
-		auditPlan, ok := sqlMap[sourceId]
+		auditPlan, ok := auditPlanMap[sourceId]
 		if !ok {
 			var exist bool
 			auditPlan, exist, err = s.GetAuditPlanByID(int(sourceId))
@@ -158,7 +158,7 @@ func CheckSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecor
 			if !exist {
 				continue
 			}
-			sqlMap[sourceId] = auditPlan
+			auditPlanMap[sourceId] = auditPlan
 		}
 
 		info, err := sql_.Info.OriginValue()
