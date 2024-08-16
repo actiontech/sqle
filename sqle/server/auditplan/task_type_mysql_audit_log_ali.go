@@ -63,6 +63,10 @@ func (at *MySQLAuditLogAliTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *MySQLAuditLogAliTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *MySQLAuditLogAliTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

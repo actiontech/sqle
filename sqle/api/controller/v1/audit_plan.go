@@ -51,10 +51,11 @@ type GetAuditPlanMetasResV1 struct {
 }
 
 type AuditPlanMetaV1 struct {
-	Type         string                `json:"audit_plan_type"`
-	Desc         string                `json:"audit_plan_type_desc"`
-	InstanceType string                `json:"instance_type"`
-	Params       []AuditPlanParamResV1 `json:"audit_plan_params,omitempty"`
+	Type                   string                  `json:"audit_plan_type"`
+	Desc                   string                  `json:"audit_plan_type_desc"`
+	InstanceType           string                  `json:"instance_type"`
+	Params                 []AuditPlanParamResV1   `json:"audit_plan_params,omitempty"`
+	HighPriorityConditions []HighPriorityCondition `json:"high_priority_conditions"`
 }
 
 type AuditPlanParamResV1 struct {
@@ -63,6 +64,20 @@ type AuditPlanParamResV1 struct {
 	Value       string              `json:"value"`
 	Type        string              `json:"type" enums:"string,int,bool,password"`
 	EnumsValues []params.EnumsValue `json:"enums_value"`
+}
+
+type HighPriorityCondition struct {
+	Key         string              `json:"key"`
+	Desc        string              `json:"desc"`
+	Value       string              `json:"value"`
+	Type        string              `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []params.EnumsValue `json:"enums_value"`
+	Operator    Operator            `json:"operator"`
+}
+
+type Operator struct {
+	Value      string              `json:"operator_value"`
+	EnumsValue []params.EnumsValue `json:"operator_enums_value"`
 }
 
 func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
@@ -87,6 +102,24 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 			})
 		}
 		res.Params = paramsRes
+	}
+	// 高优先级参数
+	if len(meta.HighPriorityParams) > 0 {
+		highPriorityparamsRes := make([]HighPriorityCondition, 0, len(meta.HighPriorityParams))
+		for _, hpc := range meta.HighPriorityParams {
+			highPriorityparamsRes = append(highPriorityparamsRes, HighPriorityCondition{
+				Key:         hpc.Key,
+				Desc:        hpc.Desc,
+				Type:        string(hpc.Type),
+				Value:       hpc.Value,
+				EnumsValues: hpc.Enums,
+				Operator: Operator{
+					string(hpc.Operator.Value),
+					hpc.Operator.EnumsValue,
+				},
+			})
+		}
+		res.HighPriorityConditions = highPriorityparamsRes
 	}
 	return res
 }

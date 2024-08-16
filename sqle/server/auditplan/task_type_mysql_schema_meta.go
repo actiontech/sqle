@@ -138,6 +138,12 @@ func (at *BaseSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
+func (at *BaseSchemaMetaTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
+}
+
 func (at *BaseSchemaMetaTaskV2) Metrics() []string {
 	return []string{
 		MetricNameMetaType,

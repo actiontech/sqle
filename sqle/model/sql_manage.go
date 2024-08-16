@@ -52,3 +52,5 @@ type SqlManageRuleTips struct {
 	RuleName string `json:"rule_name"`
 	Desc     string `json:"desc"`
 }
+
+const PriorityHigh = "high"

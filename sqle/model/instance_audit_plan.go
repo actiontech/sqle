@@ -116,12 +116,14 @@ func (s *Storage) GetLatestAuditPlanRecordsV2() ([]*AuditPlanDetail, error) {
 type AuditPlanV2 struct {
 	Model
 
-	InstanceAuditPlanID uint          `json:"instance_audit_plan_id" gorm:"not null"`
-	Type                string        `json:"type" gorm:"type:varchar(255)"`
-	RuleTemplateName    string        `json:"rule_template_name" gorm:"type:varchar(255)"`
-	Params              params.Params `json:"params" gorm:"type:varchar(1000)"`
-	ActiveStatus        string        `json:"active_status" gorm:"type:varchar(255)"`
-	LastCollectionTime  *time.Time    `json:"last_collection_time" gorm:"type:datetime(3)"`
+	InstanceAuditPlanID     uint                      `json:"instance_audit_plan_id" gorm:"not null"`
+	Type                    string                    `json:"type" gorm:"type:varchar(255)"`
+	RuleTemplateName        string                    `json:"rule_template_name" gorm:"type:varchar(255)"`
+	Params                  params.Params             `json:"params" gorm:"type:varchar(1000)"`
+	HighPriorityParams      params.ParamsWithOperator `json:"high_priority_params" gorm:"type:varchar(1000)"`
+	NeedMarkHighPrioritySQL bool                      `json:"need_mark_high_priority_sql"`
+	ActiveStatus            string                    `json:"active_status" gorm:"type:varchar(255)"`
+	LastCollectionTime      *time.Time                `json:"last_collection_time" gorm:"type:datetime(3)"`
 
 	AuditPlanSQLs []*SQLManageRecord `gorm:"foreignKey:SourceId"`
 }
@@ -406,10 +408,10 @@ func (s *Storage) RemoveSQLFromQueue(sql *SQLManageQueue) error {
 }
 
 func (s *Storage) UpdateManagerSQL(sql *SQLManageRecord) error {
-	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`) " +
-		"VALUES (?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), " +
+	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`,`priority`) " +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), `priority` = VALUES(priority), " +
 		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info), `audit_level`= VALUES(audit_level), `audit_results`= VALUES(audit_results)"
-	return s.db.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults).Error
+	return s.db.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults, sql.Priority).Error
 }
 
 func (s *Storage) UpdateManagerSQLStatus(sql *SQLManageRecord) error {
