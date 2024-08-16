@@ -13,10 +13,11 @@ type Meta struct {
 	Desc         string `json:"audit_plan_type_desc"`
 	InstanceType string `json:"instance_type"`
 	// instanceId means gen `enums` by db conn, default is a constant definition
-	Params     func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
-	Metrics    []string
-	CreateTask func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
-	Handler    AuditPlanHandler
+	Params             func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
+	HighPriorityParams params.ParamsWithOperator                `json:"high_priority_params,omitempty"`
+	Metrics            []string
+	CreateTask         func(entry *logrus.Entry, ap *AuditPlan) Task `json:"-"`
+	Handler            AuditPlanHandler
 }
 
 type MetaBuilder struct {
@@ -59,6 +60,12 @@ const (
 	paramKeyFirstSqlsScrappedInLastPeriodHours = "first_sqls_scrapped_in_last_period_hours"
 	paramKeyProjectId                          = "project_id"
 	paramKeyRegion                             = "region"
+)
+
+const (
+	OperationParamAuditLevel     = "audit_level"
+	OperationParamQueryTimeAvg   = MetricNameQueryTimeAvg
+	OperationParamRowExaminedAvg = MetricNameRowExaminedAvg
 )
 
 var MetaBuilderList = []MetaBuilder{
@@ -135,9 +142,10 @@ func buildMeta(b MetaBuilder) Meta {
 		Params: func(instanceId ...string) params.Params {
 			return taskMeta.Params(instanceId...)
 		},
-		Metrics:    taskMeta.Metrics(),
-		Handler:    handler,
-		CreateTask: NewTaskWrap(b.TaskHandlerFn),
+		HighPriorityParams: taskMeta.HighPriorityParams(),
+		Metrics:            taskMeta.Metrics(),
+		Handler:            handler,
+		CreateTask:         NewTaskWrap(b.TaskHandlerFn),
 	}
 }
 
@@ -158,13 +166,14 @@ func GetMeta(typ string) (Meta, error) {
 		return Meta{}, fmt.Errorf("audit plan type %s not found", typ)
 	}
 	return Meta{
-		Type:         meta.Type,
-		Desc:         meta.Desc,
-		InstanceType: meta.InstanceType,
-		Params:       meta.Params,
-		Metrics:      meta.Metrics,
-		CreateTask:   meta.CreateTask,
-		Handler:      meta.Handler,
+		Type:               meta.Type,
+		Desc:               meta.Desc,
+		InstanceType:       meta.InstanceType,
+		Params:             meta.Params,
+		HighPriorityParams: meta.HighPriorityParams,
+		Metrics:            meta.Metrics,
+		CreateTask:         meta.CreateTask,
+		Handler:            meta.Handler,
 	}, nil
 }
 

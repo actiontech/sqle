@@ -83,6 +83,7 @@ type SQL struct {
 type AuditPlanMeta interface {
 	InstanceType() string
 	Params(instanceId ...string) params.Params
+	HighPriorityParams() params.ParamsWithOperator
 	Metrics() []string
 }
 

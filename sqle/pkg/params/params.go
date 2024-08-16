@@ -187,3 +187,216 @@ func (r *Params) Copy() Params {
 	}
 	return ps
 }
+
+type ParamsWithOperator []*ParamWithOperator
+type ParamWithOperator struct {
+	Param
+	Operator Operator `json:"operator"`
+}
+
+// Scan impl sql.Scanner interface
+func (r *ParamsWithOperator) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal json value: %v", value)
+	}
+	if len(bytes) == 0 {
+		return nil
+	}
+	result := ParamsWithOperator{}
+	err := json.Unmarshal(bytes, &result)
+
+	for _, p := range result {
+		if p.Type == ParamTypePassword {
+			p.Value, err = dmsCommonAes.AesDecrypt(p.Value)
+			if err != nil {
+				return fmt.Errorf("param %s value decrypt err: %v", p.Key, err)
+			}
+		}
+	}
+
+	*r = result
+	return err
+}
+
+// Value impl sql.driver.Valuer interface
+func (r ParamsWithOperator) Value() (driver.Value, error) {
+	if len(r) == 0 {
+		return nil, nil
+	}
+
+	params := make([]ParamWithOperator, 0, len(r))
+
+	for _, p := range r {
+		param := ParamWithOperator{
+			Param: Param{
+				Key:   p.Key,
+				Value: p.Value,
+				Desc:  p.Desc,
+				Type:  p.Type,
+			},
+			Operator: Operator{
+				Value:      p.Operator.Value,
+				EnumsValue: p.Operator.EnumsValue,
+			},
+		}
+
+		if param.Type == ParamTypePassword {
+			val, err := dmsCommonAes.AesEncrypt(p.Value)
+			if err != nil {
+				return nil, fmt.Errorf("param %s value encrypt err: %v", p.Key, err)
+			}
+
+			param.Value = val
+		}
+
+		params = append(params, param)
+	}
+
+	v, err := json.Marshal(params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal json value: %v", v)
+	}
+	return v, err
+}
+
+func (r *ParamsWithOperator) GetParam(key string) *ParamWithOperator {
+	if r == nil {
+		return nil
+	}
+	for _, p := range *r {
+		if p.Key == key {
+			return p
+		}
+	}
+	return nil
+}
+
+type Operator struct {
+	Value      OperatorValue `json:"boolean_operator_value"`
+	EnumsValue []EnumsValue  `json:"boolean_operator_enums_value"`
+}
+
+type OperatorValue string
+
+const (
+	LessThanOperator             OperatorValue = "<"
+	GreaterThanOperator          OperatorValue = ">"
+	LessThanOrEqualToOperator    OperatorValue = "<="
+	GreaterThanOrEqualToOperator OperatorValue = ">="
+	EqualToOperator              OperatorValue = "="
+	NotEqualToOperator           OperatorValue = "<>"
+	InOperator                   OperatorValue = "IN"
+	IsOperator                   OperatorValue = "IS"
+	ContainsOperator             OperatorValue = "CONTAINS"
+)
+
+func (r *ParamsWithOperator) CompareParamValue(key string, inputValue string) (bool, error) {
+	paramNotFoundErrMsg := "param %s not found"
+	if r == nil {
+		return false, fmt.Errorf(paramNotFoundErrMsg, key)
+	}
+
+	param := r.GetParam(key)
+	if param == nil {
+		return false, fmt.Errorf(paramNotFoundErrMsg, key)
+	}
+
+	// Perform comparison based on the type of the parameter
+	switch param.Type {
+	case ParamTypeInt:
+		paramValue, err := strconv.Atoi(param.Value)
+		if err != nil {
+			return false, fmt.Errorf("failed to convert param value to int: %v", err)
+		}
+		inputIntValue, err := strconv.Atoi(inputValue)
+		if err != nil {
+			return false, fmt.Errorf("failed to convert input value to int: %v", err)
+		}
+		return compareInt(paramValue, inputIntValue, param.Operator.Value), nil
+
+	case ParamTypeFloat64:
+		paramValue, err := strconv.ParseFloat(param.Value, 64)
+		if err != nil {
+			return false, fmt.Errorf("failed to convert param value to float64: %v", err)
+		}
+		inputFloatValue, err := strconv.ParseFloat(inputValue, 64)
+		if err != nil {
+			return false, fmt.Errorf("failed to convert input value to float64: %v", err)
+		}
+		return compareFloat64(paramValue, inputFloatValue, param.Operator.Value), nil
+
+	case ParamTypeString:
+		return compareString(param.Value, inputValue, param.Operator.Value), nil
+
+	default:
+		return false, fmt.Errorf("unsupported ParamType: %s", param.Type)
+	}
+}
+
+// Helper functions to perform comparison based on Operator
+func compareInt(paramValue, inputValue int, operator OperatorValue) bool {
+	switch operator {
+	case LessThanOperator:
+		return inputValue < paramValue
+	case GreaterThanOperator:
+		return inputValue > paramValue
+	case LessThanOrEqualToOperator:
+		return inputValue <= paramValue
+	case GreaterThanOrEqualToOperator:
+		return inputValue >= paramValue
+	case EqualToOperator:
+		return inputValue == paramValue
+	case NotEqualToOperator:
+		return inputValue != paramValue
+	default:
+		return false
+	}
+}
+
+func compareFloat64(paramValue, inputValue float64, operator OperatorValue) bool {
+	switch operator {
+	case LessThanOperator:
+		return inputValue < paramValue
+	case GreaterThanOperator:
+		return inputValue > paramValue
+	case LessThanOrEqualToOperator:
+		return inputValue <= paramValue
+	case GreaterThanOrEqualToOperator:
+		return inputValue >= paramValue
+	case EqualToOperator:
+		return inputValue == paramValue
+	case NotEqualToOperator:
+		return inputValue != paramValue
+	default:
+		return false
+	}
+}
+
+func compareString(paramValue, inputValue string, operator OperatorValue) bool {
+	switch operator {
+	case LessThanOperator:
+		return inputValue < paramValue
+	case GreaterThanOperator:
+		return inputValue > paramValue
+	case LessThanOrEqualToOperator:
+		return inputValue <= paramValue
+	case GreaterThanOrEqualToOperator:
+		return inputValue >= paramValue
+	case EqualToOperator:
+		return inputValue == paramValue
+	case NotEqualToOperator:
+		return inputValue != paramValue
+	case ContainsOperator:
+		return contains(paramValue, inputValue)
+	default:
+		return false
+	}
+}
+
+func contains(paramValue, inputValue string) bool {
+	return paramValue == inputValue
+}

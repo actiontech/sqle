@@ -59,7 +59,7 @@ func GetReportPushConfigList(c echo.Context) error {
 			PushFrequencyCron: reportPushConfig.PushFrequencyCron,
 			PushUserType:      reportPushConfig.PushUserType,
 			PushUserList:      reportPushConfig.PushUserList,
-			LastPushTime:      reportPushConfig.LastPushTime,
+			LastPushTime:      reportPushConfig.ReportPushConfigRecord.LastPushTime,
 		})
 	}
 	return c.JSON(http.StatusOK, GetReportPushConfigsListResV1{

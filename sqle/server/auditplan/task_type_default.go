@@ -29,6 +29,49 @@ func (at *DefaultTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
 }
 
+var defaultOperatorEnums = []params.EnumsValue{
+	{
+		Value: ">",
+		Desc:  "大于",
+	}, {
+		Value: "=",
+		Desc:  "等于",
+	}, {
+		Value: "<",
+		Desc:  "小于",
+	},
+}
+
+var defaultAuditLevelOperateParams = &params.ParamWithOperator{
+	Param: params.Param{
+		Key:   OperationParamAuditLevel,
+		Value: "warn",
+		Desc:  "触发审核级别",
+		Type:  params.ParamTypeString,
+		Enums: []params.EnumsValue{
+			{
+				Value: "1",
+				Desc:  string(driverV2.RuleLevelNotice),
+			}, {
+				Value: "2",
+				Desc:  string(driverV2.RuleLevelWarn),
+			},
+			{
+				Value: "3",
+				Desc:  string(driverV2.RuleLevelError),
+			},
+		},
+	},
+	Operator: params.Operator{
+		Value:      ">",
+		EnumsValue: defaultOperatorEnums,
+	},
+}
+
+func (at *DefaultTaskV2) HighPriorityParams() params.ParamsWithOperator {
+	return []*params.ParamWithOperator{}
+}
+
 func (at *DefaultTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

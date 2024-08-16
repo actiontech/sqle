@@ -1,9 +1,11 @@
 package auditplan
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -60,14 +62,18 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		return
 	}
 	// 审核
-	auditSQLs, err := batchAuditSQLs(sqlList)
+	sqlList, err = batchAuditSQLs(sqlList)
 	if err != nil {
 		entry.Warnf("batch audit origin manager sql failed, error: %v", err)
 		return
 	}
-
+	sqlList, err = SetSQLPriority(sqlList)
+	if err != nil {
+		entry.Warnf("check sql priority sql failed, error: %v", err)
+		return
+	}
 	// todo: 保证事务和错误处理
-	for _, sql := range auditSQLs {
+	for _, sql := range sqlList {
 		err := s.UpdateManagerSQL(sql)
 		if err != nil {
 			entry.Warnf("update manager sql failed, error: %v", err)
@@ -132,4 +138,63 @@ func batchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 
 	}
 	return auditSQLs, nil
+}
+
+func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
+	var err error
+	s := model.GetStorage()
+	// SQL聚合
+	auditPlanMap := make(map[uint]*model.AuditPlanV2, 0)
+
+	for i, sql_ := range sqlList {
+		sourceId := sql_.SourceId
+
+		auditPlan, ok := auditPlanMap[sourceId]
+		if !ok {
+			var exist bool
+			auditPlan, exist, err = s.GetAuditPlanByID(int(sourceId))
+			if err != nil {
+				return nil, err
+			}
+			if !exist {
+				continue
+			}
+			auditPlanMap[sourceId] = auditPlan
+		}
+
+		info, err := sql_.Info.OriginValue()
+		if err != nil {
+			return nil, err
+		}
+		highPriorityConditions := auditPlan.HighPriorityParams
+		for _, highPriorityCondition := range highPriorityConditions {
+			var compareParamVale string
+			// 审核级别特殊处理
+			if highPriorityCondition.Key == OperationParamAuditLevel {
+				switch sql_.AuditLevel {
+				case string(driverV2.RuleLevelNotice):
+					compareParamVale = "1"
+				case string(driverV2.RuleLevelWarn):
+					compareParamVale = "2"
+				case string(driverV2.RuleLevelError):
+					compareParamVale = "3"
+				default:
+					compareParamVale = "0"
+				}
+			} else {
+				infoV, ok := info[highPriorityCondition.Key]
+				if !ok {
+					continue
+				}
+				compareParamVale = fmt.Sprintf("%v", infoV)
+			}
+			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
+				sqlList[i].Priority = sql.NullString{
+					String: model.PriorityHigh,
+					Valid:  true,
+				}
+			}
+		}
+	}
+	return sqlList, nil
 }
