@@ -43,7 +43,7 @@ func (p SQLManageRecordPushJob) Run() {
 	logger := log.NewEntry()
 	s := model.GetStorage()
 
-	sqls, err := s.GetLastHightLevelSQLs(p.Config.ProjectId, p.Config.ReportPushConfigRecord.LastPushTime)
+	sqls, err := s.GetHighLevelSQLsByTime(p.Config.ProjectId, p.Config.ReportPushConfigRecord.LastPushTime)
 	if err != nil {
 		logger.Error(err)
 		return
