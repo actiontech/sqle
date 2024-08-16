@@ -69,20 +69,9 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Desc:  "平均查询时间",
 				Type:  params.ParamTypeFloat64,
 			},
-			BooleanOperatorParam: params.BooleanOperator{
-				Value: ">",
-				EnumsValue: []params.EnumsValue{
-					{
-						Value: ">",
-						Desc:  "大于",
-					}, {
-						Value: "=",
-						Desc:  "等于",
-					}, {
-						Value: "<",
-						Desc:  "小于",
-					},
-				},
+			Operator: params.Operator{
+				Value:      ">",
+				EnumsValue: defaultOperatorEnums,
 			},
 		},
 		{
@@ -92,58 +81,12 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Desc:  "平均扫描行数",
 				Type:  params.ParamTypeFloat64,
 			},
-			BooleanOperatorParam: params.BooleanOperator{
-				Value: ">",
-				EnumsValue: []params.EnumsValue{
-					{
-						Value: ">",
-						Desc:  "大于",
-					}, {
-						Value: "=",
-						Desc:  "等于",
-					}, {
-						Value: "<",
-						Desc:  "小于",
-					},
-				},
+			Operator: params.Operator{
+				Value:      ">",
+				EnumsValue: defaultOperatorEnums,
 			},
 		},
-		{
-			Param: params.Param{
-				Key:   "audit_level",
-				Value: "warn",
-				Desc:  "告警级别",
-				Type:  params.ParamTypeString,
-				Enums: []params.EnumsValue{
-					{
-						Value: "info",
-						Desc:  "提示",
-					}, {
-						Value: "warn",
-						Desc:  "告警",
-					},
-					{
-						Value: "error",
-						Desc:  "错误",
-					},
-				},
-			},
-			BooleanOperatorParam: params.BooleanOperator{
-				Value: ">",
-				EnumsValue: []params.EnumsValue{
-					{
-						Value: ">",
-						Desc:  "大于",
-					}, {
-						Value: "=",
-						Desc:  "等于",
-					}, {
-						Value: "<",
-						Desc:  "小于",
-					},
-				},
-			},
-		},
+		defaultAuditLevelOperateParams,
 	}
 }
 
