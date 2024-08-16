@@ -140,41 +140,7 @@ func (at *BaseSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 
 func (at *BaseSchemaMetaTaskV2) HighPriorityParams() params.ParamsWithOperator {
 	return []*params.ParamWithOperator{
-		{
-			Param: params.Param{
-				Key:   "audit_level",
-				Value: "warn",
-				Desc:  "告警级别",
-				Type:  params.ParamTypeInt,
-				Enums: []params.EnumsValue{
-					{
-						Value: "0",
-						Desc:  "notice",
-					}, {
-						Value: "1",
-						Desc:  "warn",
-					}, {
-						Value: "2",
-						Desc:  "error",
-					},
-				},
-			},
-			BooleanOperatorParam: params.BooleanOperator{
-				Value: ">",
-				EnumsValue: []params.EnumsValue{
-					{
-						Value: ">",
-						Desc:  "大于",
-					}, {
-						Value: "=",
-						Desc:  "等于",
-					}, {
-						Value: "<",
-						Desc:  "小于",
-					},
-				},
-			},
-		},
+		defaultAuditLevelOperateParams,
 	}
 }
 

@@ -191,7 +191,7 @@ func (r *Params) Copy() Params {
 type ParamsWithOperator []*ParamWithOperator
 type ParamWithOperator struct {
 	Param
-	BooleanOperatorParam BooleanOperator `json:"boolean_operator"`
+	Operator Operator `json:"operator"`
 }
 
 // Scan impl sql.Scanner interface
@@ -238,9 +238,9 @@ func (r ParamsWithOperator) Value() (driver.Value, error) {
 				Desc:  p.Desc,
 				Type:  p.Type,
 			},
-			BooleanOperatorParam: BooleanOperator{
-				Value:      p.BooleanOperatorParam.Value,
-				EnumsValue: p.BooleanOperatorParam.EnumsValue,
+			Operator: Operator{
+				Value:      p.Operator.Value,
+				EnumsValue: p.Operator.EnumsValue,
 			},
 		}
 
@@ -275,23 +275,23 @@ func (r *ParamsWithOperator) GetParam(key string) *ParamWithOperator {
 	return nil
 }
 
-type BooleanOperator struct {
-	Value      BooleanOperatorValue `json:"boolean_operator_value"`
-	EnumsValue []EnumsValue         `json:"boolean_operator_enums_value"`
+type Operator struct {
+	Value      OperatorValue `json:"boolean_operator_value"`
+	EnumsValue []EnumsValue  `json:"boolean_operator_enums_value"`
 }
 
-type BooleanOperatorValue string
+type OperatorValue string
 
 const (
-	LessThanOperator             BooleanOperatorValue = "<"
-	GreaterThanOperator          BooleanOperatorValue = ">"
-	LessThanOrEqualToOperator    BooleanOperatorValue = "<="
-	GreaterThanOrEqualToOperator BooleanOperatorValue = ">="
-	EqualToOperator              BooleanOperatorValue = "="
-	NotEqualToOperator           BooleanOperatorValue = "<>"
-	InOperator                   BooleanOperatorValue = "IN"
-	IsOperator                   BooleanOperatorValue = "IS"
-	ContainsOperator             BooleanOperatorValue = "CONTAINS"
+	LessThanOperator             OperatorValue = "<"
+	GreaterThanOperator          OperatorValue = ">"
+	LessThanOrEqualToOperator    OperatorValue = "<="
+	GreaterThanOrEqualToOperator OperatorValue = ">="
+	EqualToOperator              OperatorValue = "="
+	NotEqualToOperator           OperatorValue = "<>"
+	InOperator                   OperatorValue = "IN"
+	IsOperator                   OperatorValue = "IS"
+	ContainsOperator             OperatorValue = "CONTAINS"
 )
 
 func (r *ParamsWithOperator) CompareParamValue(key string, inputValue string) (bool, error) {
@@ -316,7 +316,7 @@ func (r *ParamsWithOperator) CompareParamValue(key string, inputValue string) (b
 		if err != nil {
 			return false, fmt.Errorf("failed to convert input value to int: %v", err)
 		}
-		return compareInt(paramValue, inputIntValue, param.BooleanOperatorParam.Value), nil
+		return compareInt(paramValue, inputIntValue, param.Operator.Value), nil
 
 	case ParamTypeFloat64:
 		paramValue, err := strconv.ParseFloat(param.Value, 64)
@@ -327,19 +327,18 @@ func (r *ParamsWithOperator) CompareParamValue(key string, inputValue string) (b
 		if err != nil {
 			return false, fmt.Errorf("failed to convert input value to float64: %v", err)
 		}
-		return compareFloat64(paramValue, inputFloatValue, param.BooleanOperatorParam.Value), nil
+		return compareFloat64(paramValue, inputFloatValue, param.Operator.Value), nil
 
 	case ParamTypeString:
-		return compareString(param.Value, inputValue, param.BooleanOperatorParam.Value), nil
+		return compareString(param.Value, inputValue, param.Operator.Value), nil
 
 	default:
 		return false, fmt.Errorf("unsupported ParamType: %s", param.Type)
 	}
 }
 
-// Helper functions to perform comparison based on BooleanOperator
-
-func compareInt(paramValue, inputValue int, operator BooleanOperatorValue) bool {
+// Helper functions to perform comparison based on Operator
+func compareInt(paramValue, inputValue int, operator OperatorValue) bool {
 	switch operator {
 	case LessThanOperator:
 		return inputValue < paramValue
@@ -358,7 +357,7 @@ func compareInt(paramValue, inputValue int, operator BooleanOperatorValue) bool 
 	}
 }
 
-func compareFloat64(paramValue, inputValue float64, operator BooleanOperatorValue) bool {
+func compareFloat64(paramValue, inputValue float64, operator OperatorValue) bool {
 	switch operator {
 	case LessThanOperator:
 		return inputValue < paramValue
@@ -377,7 +376,7 @@ func compareFloat64(paramValue, inputValue float64, operator BooleanOperatorValu
 	}
 }
 
-func compareString(paramValue, inputValue string, operator BooleanOperatorValue) bool {
+func compareString(paramValue, inputValue string, operator OperatorValue) bool {
 	switch operator {
 	case LessThanOperator:
 		return inputValue < paramValue

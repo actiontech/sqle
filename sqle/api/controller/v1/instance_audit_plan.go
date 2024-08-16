@@ -39,16 +39,16 @@ type CreateInstanceAuditPlanReqV1 struct {
 }
 
 type AuditPlan struct {
-	RuleTemplateName       string                     `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
-	Type                   string                     `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
-	Params                 []AuditPlanParamReqV1      `json:"audit_plan_params" valid:"dive,required"`
-	HighPriorityConditions []HighPriorityConditionReq `json:"high_priority_conditions" valid:"dive,required"`
-	MarkHighPrioritySQL    bool                       `json:"mark_high_priority_sql"`
+	RuleTemplateName        string                     `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
+	Type                    string                     `json:"audit_plan_type" form:"audit_plan_type" example:"slow log"`
+	Params                  []AuditPlanParamReqV1      `json:"audit_plan_params" valid:"dive,required"`
+	HighPriorityConditions  []HighPriorityConditionReq `json:"high_priority_conditions" valid:"dive,required"`
+	NeedMarkHighPrioritySQL bool                       `json:"need_mark_high_priority_sql"`
 }
 type HighPriorityConditionReq struct {
-	Key             string `json:"key" form:"key" valid:"required"`
-	Value           string `json:"value" form:"value" valid:"required"`
-	BooleanOperator string `json:"boolean_operator" form:"boolean_operator" default:">" enums:">,=,<" valid:"oneof=> = <"`
+	Key      string `json:"key" form:"key" valid:"required"`
+	Value    string `json:"value" form:"value" valid:"required"`
+	Operator string `json:"operator" form:"operator" default:">" enums:">,=,<" valid:"oneof=> = <"`
 }
 
 type CreatInstanceAuditPlanResV1 struct {
@@ -76,7 +76,7 @@ func checkAndGenerateHighPriorityParams(auditPlanType, instanceType string, hpcP
 			}
 			// set and valid param.
 			p.Value = hpcParam.Value
-			p.BooleanOperatorParam.Value = params.BooleanOperatorValue(hpcParam.BooleanOperator)
+			p.Operator.Value = params.OperatorValue(hpcParam.Operator)
 			resetParams = append(resetParams, p)
 			break
 		}
@@ -174,12 +174,12 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		}
 
 		auditPlans = append(auditPlans, &model.AuditPlanV2{
-			Type:                auditPlan.Type,
-			RuleTemplateName:    ruleTemplateName,
-			Params:              ps,
-			HighPriorityParams:  hpc,
-			MarkHighPrioritySQL: auditPlan.MarkHighPrioritySQL,
-			ActiveStatus:        model.ActiveStatusNormal,
+			Type:                    auditPlan.Type,
+			RuleTemplateName:        ruleTemplateName,
+			Params:                  ps,
+			HighPriorityParams:      hpc,
+			NeedMarkHighPrioritySQL: auditPlan.NeedMarkHighPrioritySQL,
+			ActiveStatus:            model.ActiveStatusNormal,
 		})
 	}
 
@@ -331,12 +331,12 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
 		res := &model.AuditPlanV2{
-			Type:                auditPlan.Type,
-			RuleTemplateName:    ruleTemplateName,
-			Params:              ps,
-			HighPriorityParams:  hpc,
-			MarkHighPrioritySQL: auditPlan.MarkHighPrioritySQL,
-			InstanceAuditPlanID: dbAuditPlans.ID,
+			Type:                    auditPlan.Type,
+			RuleTemplateName:        ruleTemplateName,
+			Params:                  ps,
+			HighPriorityParams:      hpc,
+			NeedMarkHighPrioritySQL: auditPlan.NeedMarkHighPrioritySQL,
+			InstanceAuditPlanID:     dbAuditPlans.ID,
 		}
 
 		// if the data exists in the database, update the data; if it does not exist, insert the data.
@@ -344,7 +344,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			dbAuditPlan.RuleTemplateName = res.RuleTemplateName
 			dbAuditPlan.Params = res.Params
 			dbAuditPlan.HighPriorityParams = res.HighPriorityParams
-			dbAuditPlan.MarkHighPrioritySQL = res.MarkHighPrioritySQL
+			dbAuditPlan.NeedMarkHighPrioritySQL = res.NeedMarkHighPrioritySQL
 			result := dbAuditPlan
 			resultAuditPlans = append(resultAuditPlans, result)
 		} else {
@@ -595,11 +595,11 @@ type InstanceAuditPlanDetailResV1 struct {
 }
 
 type AuditPlanRes struct {
-	RuleTemplateName       string                  `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
-	Type                   AuditPlanTypeResBase    `json:"audit_plan_type" form:"audit_plan_type"`
-	Params                 []AuditPlanParamResV1   `json:"audit_plan_params" valid:"dive,required"`
-	MarkHighPrioritySQL    bool                    `json:"mark_high_priority_sql"`
-	HighPriorityConditions []HighPriorityCondition `json:"high_priority_conditions"`
+	RuleTemplateName        string                  `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
+	Type                    AuditPlanTypeResBase    `json:"audit_plan_type" form:"audit_plan_type"`
+	Params                  []AuditPlanParamResV1   `json:"audit_plan_params" valid:"dive,required"`
+	NeedMarkHighPrioritySQL bool                    `json:"need_mark_high_priority_sql"`
+	HighPriorityConditions  []HighPriorityCondition `json:"high_priority_conditions"`
 }
 
 // @Summary 获取实例扫描任务详情
@@ -686,9 +686,9 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 						Desc:  metaHpp.Desc,
 						Value: hpp.Value,
 						Type:  string(metaHpp.Type),
-						BooleanOperator: BooleanOperator{
-							Value:      string(hpp.BooleanOperatorParam.Value),
-							EnumsValue: metaHpp.BooleanOperatorParam.EnumsValue,
+						Operator: Operator{
+							Value:      string(hpp.Operator.Value),
+							EnumsValue: metaHpp.Operator.EnumsValue,
 						},
 					}
 					hppParamsRes[i] = highParamRes
@@ -696,7 +696,7 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 				}
 			}
 			resAuditPlan.HighPriorityConditions = hppParamsRes
-			resAuditPlan.MarkHighPrioritySQL = v.MarkHighPrioritySQL
+			resAuditPlan.NeedMarkHighPrioritySQL = v.NeedMarkHighPrioritySQL
 		}
 
 		resAuditPlans = append(resAuditPlans, resAuditPlan)
