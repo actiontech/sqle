@@ -96,7 +96,7 @@ func (s *Storage) GetReportPushConfigById(id uint) (*ReportPushConfig, bool, err
 	return ReportPushConfig, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s Storage) GetLastUpdateReportPushConfig(lastSyncTime time.Time) ([]*ReportPushConfig, error) {
+func (s Storage) GetUpdatedReportPushConfigByTime(lastSyncTime time.Time) ([]*ReportPushConfig, error) {
 	rpcList := make([]*ReportPushConfig, 0)
 	err := s.db.Model(&ReportPushConfig{}).Where("updated_at > ? AND trigger_type = 'timing'", lastSyncTime).Preload("ReportPushConfigRecord").Find(&rpcList).Error
 	if err != nil {

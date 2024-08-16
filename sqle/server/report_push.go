@@ -28,7 +28,7 @@ func (j *ReportPushJob) SyncReportPushJob(entry *logrus.Entry) {
 	logger := log.NewEntry()
 	s := model.GetStorage()
 
-	configs, err := s.GetLastUpdateReportPushConfig(j.LastSyncTime)
+	configs, err := s.GetUpdatedReportPushConfigByTime(j.LastSyncTime)
 	if err != nil {
 		logger.Errorf("get last update report push config failed: %v", err)
 		return
