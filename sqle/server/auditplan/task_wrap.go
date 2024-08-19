@@ -60,7 +60,7 @@ func (c *SQLV2CacheWithPersist) GetSQL(sqlId string) (*SQLV2, bool, error) {
 	if sql, ok := c.sqlMap[sqlId]; ok {
 		return sql, true, nil
 	}
-	originSQL, exist, err := c.persist.GetManageSQLById(sqlId)
+	originSQL, exist, err := c.persist.GetManageSQLBySQLId(sqlId)
 	if err != nil {
 		return nil, false, err
 	}
