@@ -1301,10 +1301,43 @@ func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
 // @Success 200 {object} v1.GetSqlManageSqlAnalysisResp
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis [get]
 func GetAuditPlanSqlAnalysisData(c echo.Context) error {
+	insAuditPlanID := c.Param("instance_audit_plan_id")
+	sqlManageRecordId := c.Param("id")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), strconv.FormatUint(detail.InstanceID, 10))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceNoExistErr())
+	}
+	s := model.GetStorage()
+	originSQL, exist, err := s.GetManageSQLById(sqlManageRecordId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    nil,
+		Data:    convertSQLAnalysisResultToRes(res, originSQL.SqlText),
 	})
 }
 
@@ -1319,6 +1352,34 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/audit [post]
 func AuditPlanTriggerSqlAudit(c echo.Context) error {
-
+	insAuditPlanID := c.Param("instance_audit_plan_id")
+	auditPlanID, err := strconv.Atoi(c.Param("audit_plan_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
+	}
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeSaveAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	s := model.GetStorage()
+	auditPlanSqls, err := s.GetManagerSQLListByAuditPlanId(uint(auditPlanID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	auditedSqls, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = s.Save(auditedSqls)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
