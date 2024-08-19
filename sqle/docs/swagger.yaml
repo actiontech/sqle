@@ -37,6 +37,12 @@ definitions:
       audit_plan_type:
         example: slow log
         type: string
+      high_priority_conditions:
+        items:
+          $ref: '#/definitions/v1.HighPriorityConditionReq'
+        type: array
+      need_mark_high_priority_sql:
+        type: boolean
       rule_template_name:
         example: default_MySQL
         type: string
@@ -60,6 +66,10 @@ definitions:
         type: string
       audit_plan_type_desc:
         type: string
+      high_priority_conditions:
+        items:
+          $ref: '#/definitions/v1.HighPriorityCondition'
+        type: array
       instance_type:
         type: string
     type: object
@@ -132,6 +142,12 @@ definitions:
       audit_plan_type:
         $ref: '#/definitions/v1.AuditPlanTypeResBase'
         type: object
+      high_priority_conditions:
+        items:
+          $ref: '#/definitions/v1.HighPriorityCondition'
+        type: array
+      need_mark_high_priority_sql:
+        type: boolean
       rule_template_name:
         example: default_MySQL
         type: string
@@ -2208,6 +2224,43 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.HighPriorityCondition:
+    properties:
+      desc:
+        type: string
+      enums_value:
+        items:
+          $ref: '#/definitions/params.EnumsValue'
+        type: array
+      key:
+        type: string
+      operator:
+        $ref: '#/definitions/v1.Operator'
+        type: object
+      type:
+        enum:
+        - string
+        - int
+        - bool
+        - password
+        type: string
+      value:
+        type: string
+    type: object
+  v1.HighPriorityConditionReq:
+    properties:
+      key:
+        type: string
+      operator:
+        default: '>'
+        enum:
+        - '>'
+        - =
+        - <
+        type: string
+      value:
+        type: string
+    type: object
   v1.InstanceAdditionalParamResV1:
     properties:
       description:
@@ -2293,6 +2346,8 @@ definitions:
       creator:
         type: string
       instance_audit_plan_id:
+        type: integer
+      instance_id:
         type: integer
       instance_name:
         type: string
@@ -2492,6 +2547,15 @@ definitions:
       ip:
         type: string
       user_name:
+        type: string
+    type: object
+  v1.Operator:
+    properties:
+      operator_enums_value:
+        items:
+          $ref: '#/definitions/params.EnumsValue'
+        type: array
+      operator_value:
         type: string
     type: object
   v1.OptimizationDetail:
@@ -7475,6 +7539,13 @@ paths:
         in: query
         name: filter_business
         type: string
+      - description: priority
+        enum:
+        - high
+        - low
+        in: query
+        name: filter_priority
+        type: string
       - description: instance id
         in: query
         name: filter_instance_id
@@ -10229,6 +10300,13 @@ paths:
       - description: business
         in: query
         name: filter_business
+        type: string
+      - description: priority
+        enum:
+        - high
+        - low
+        in: query
+        name: filter_priority
         type: string
       - description: fuzzy search endpoint
         in: query
