@@ -199,7 +199,7 @@ func (o SQLManageRecord) GetFingerprintMD5() string {
 	return utils.Md5String(string(sqlIdentityJSON))
 }
 
-func (s *Storage) GetManageSQLById(sqlId string) (*SQLManageRecord, bool, error) {
+func (s *Storage) GetManageSQLBySQLId(sqlId string) (*SQLManageRecord, bool, error) {
 	sql := &SQLManageRecord{}
 
 	err := s.db.Where("sql_id = ?", sqlId).First(sql).Error
