@@ -180,6 +180,7 @@ func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 		}
 		row := map[string]string{
 			"sql":                    sql.SQLContent,
+			"id":                     sql.AuditPlanSqlId,
 			"fingerprint":            sql.Fingerprint,
 			"counter":                strconv.FormatUint(info.Counter, 10),
 			"last_receive_timestamp": info.LastReceiveTimestamp,

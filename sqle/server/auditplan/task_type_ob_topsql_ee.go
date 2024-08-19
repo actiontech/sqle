@@ -486,6 +486,7 @@ func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Stora
 	for _, planSQL := range auditPlanSQLs {
 		mp := map[string]string{
 			"sql":                 planSQL.SQLContent,
+			"id":                  planSQL.AuditPlanSqlId,
 			model.AuditResultName: planSQL.AuditResult.String,
 		}
 

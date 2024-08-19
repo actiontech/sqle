@@ -391,6 +391,7 @@ func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, fil
 	for i := range auditPlanSQLs {
 		mp := map[string]string{
 			"sql":                 auditPlanSQLs[i].SQLContent,
+			"id":                  auditPlanSQLs[i].AuditPlanSqlId,
 			model.AuditResultName: auditPlanSQLs[i].AuditResult.String,
 		}
 

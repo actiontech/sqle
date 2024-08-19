@@ -543,6 +543,7 @@ func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 		rows = append(rows, map[string]string{
 			"fingerprint":                  sql.Fingerprint,
 			"sql":                          sql.SQLContent,
+			"id":                           sql.AuditPlanSqlId,
 			model.AuditResultName:          sql.AuditResult.String,
 			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
