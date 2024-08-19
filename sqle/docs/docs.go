@@ -4224,6 +4224,16 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "high",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "priority",
+                        "name": "filter_priority",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "instance id",
                         "name": "filter_instance_id",
@@ -8484,6 +8494,16 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "high",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "priority",
+                        "name": "filter_priority",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "fuzzy search endpoint",
                         "name": "fuzzy_search_endpoint",
@@ -9399,6 +9419,15 @@ var doc = `{
                     "type": "string",
                     "example": "slow log"
                 },
+                "high_priority_conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.HighPriorityConditionReq"
+                    }
+                },
+                "need_mark_high_priority_sql": {
+                    "type": "boolean"
+                },
                 "rule_template_name": {
                     "type": "string",
                     "example": "default_MySQL"
@@ -9433,6 +9462,12 @@ var doc = `{
                 },
                 "audit_plan_type_desc": {
                     "type": "string"
+                },
+                "high_priority_conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.HighPriorityCondition"
+                    }
                 },
                 "instance_type": {
                     "type": "string"
@@ -9537,6 +9572,15 @@ var doc = `{
                 "audit_plan_type": {
                     "type": "object",
                     "$ref": "#/definitions/v1.AuditPlanTypeResBase"
+                },
+                "high_priority_conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.HighPriorityCondition"
+                    }
+                },
+                "need_mark_high_priority_sql": {
+                    "type": "boolean"
                 },
                 "rule_template_name": {
                     "type": "string",
@@ -12552,6 +12596,59 @@ var doc = `{
                 }
             }
         },
+        "v1.HighPriorityCondition": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "enums_value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/params.EnumsValue"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Operator"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "int",
+                        "bool",
+                        "password"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.HighPriorityConditionReq": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "string",
+                    "default": "\u003e",
+                    "enum": [
+                        "\u003e",
+                        "=",
+                        "\u003c"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceAdditionalParamResV1": {
             "type": "object",
             "properties": {
@@ -12672,6 +12769,9 @@ var doc = `{
                     "type": "string"
                 },
                 "instance_audit_plan_id": {
+                    "type": "integer"
+                },
+                "instance_id": {
                     "type": "integer"
                 },
                 "instance_name": {
@@ -12976,6 +13076,20 @@ var doc = `{
                     "type": "string"
                 },
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.Operator": {
+            "type": "object",
+            "properties": {
+                "operator_enums_value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/params.EnumsValue"
+                    }
+                },
+                "operator_value": {
                     "type": "string"
                 }
             }
