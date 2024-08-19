@@ -437,6 +437,7 @@ type GetInstanceAuditPlansResV1 struct {
 
 type InstanceAuditPlanResV1 struct {
 	InstanceAuditPlanId uint                   `json:"instance_audit_plan_id"`
+	InstanceID          uint64                 `json:"instance_id"`
 	InstanceName        string                 `json:"instance_name"`
 	Business            string                 `json:"business"`
 	InstanceType        string                 `json:"instance_type"`
@@ -526,6 +527,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		inst := dms.GetInstancesByIdWithoutError(v.InstanceID)
 		resData[i] = InstanceAuditPlanResV1{
 			InstanceAuditPlanId: v.Id,
+			InstanceID:          inst.ID,
 			InstanceName:        inst.Name,
 			Business:            inst.Business,
 			InstanceType:        v.DBType,
