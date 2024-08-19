@@ -1373,11 +1373,11 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	report, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
+	auditedSqls, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.Save(report)
+	err = s.Save(auditedSqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -102,10 +102,8 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]
 	// SQL聚合
 	sqlMap := make(map[string][]*model.SQLManageRecord)
 	for _, sql := range sqlList {
-		if isSkipAuditedSql {
-			if sql.AuditLevel != "" {
-				continue
-			}
+		if isSkipAuditedSql && sql.AuditLevel != "" {
+			continue
 		}
 
 		// 根据source id和schema name 聚合sqls，避免task内需要切换schema上下文审核
