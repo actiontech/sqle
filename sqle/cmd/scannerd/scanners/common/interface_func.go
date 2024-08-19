@@ -55,6 +55,9 @@ func DirectAudit(ctx context.Context, c *scanner.Client, sqlList []driverV2.Node
 	var sb strings.Builder
 	for _, sql := range sqlList {
 		sb.WriteString(sql.Text)
+		if !strings.HasSuffix(sql.Text, ";") {
+			sb.WriteString(";")
+		}
 	}
 	sqlAuditReq.Sqls = sb.String()
 
