@@ -104,12 +104,13 @@ func (s *Storage) GetInstanceAuditPlansByReq(data map[string]interface{}) (
 }
 
 type InstanceAuditPlanSQLListDetail struct {
-	Fingerprint string         `json:"sql_fingerprint"`
-	SQLContent  string         `json:"sql_text"`
-	Schema      string         `json:"schema_name"`
-	Info        JSON           `json:"info"`
-	AuditResult sql.NullString `json:"audit_results"`
-	Priority    sql.NullString `json:"priority"`
+	AuditPlanSqlId string         `json:"id"`
+	Fingerprint    string         `json:"sql_fingerprint"`
+	SQLContent     string         `json:"sql_text"`
+	Schema         string         `json:"schema_name"`
+	Info           JSON           `json:"info"`
+	AuditResult    sql.NullString `json:"audit_results"`
+	Priority       sql.NullString `json:"priority"`
 }
 
 const (
@@ -162,6 +163,7 @@ var OrderByMap = map[string] /* field name */ string /* field name with table*/ 
 
 var instanceAuditPlanSQLQueryTpl = `
 SELECT
+audit_plan_sqls.id,
 audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,

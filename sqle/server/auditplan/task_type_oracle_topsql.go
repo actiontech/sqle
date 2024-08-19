@@ -227,6 +227,7 @@ func (at *OracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
 			"sql":                         sql.SQLContent,
+			"id":                          sql.AuditPlanSqlId,
 			MetricNameCounter:             strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameQueryTimeTotal:      fmt.Sprintf("%v", utils.Round(info.Get(MetricNameQueryTimeTotal).Float()/1000/1000, 3)),
 			MetricNameCPUTimeTotal:        fmt.Sprintf("%v", utils.Round(info.Get(MetricNameCPUTimeTotal).Float()/1000/1000, 3)),
