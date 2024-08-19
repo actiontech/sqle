@@ -1943,6 +1943,18 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "fuzzy value",
+                        "name": "fuzzy_search_value",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "match type",
+                        "name": "filter_match_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "page index",
                         "name": "page_index",
                         "in": "query",
@@ -2083,6 +2095,199 @@ var doc = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/v1.UpdateAuditWhitelistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/blacklist": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get blacklist",
+                "tags": [
+                    "blacklist"
+                ],
+                "summary": "获取黑名单列表",
+                "operationId": "getBlacklistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "sql",
+                            "fp_sql",
+                            "endpoint",
+                            "instance"
+                        ],
+                        "type": "string",
+                        "description": "filter type",
+                        "name": "filter_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search content",
+                        "name": "fuzzy_search_content",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetBlacklistResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a blacklist",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "blacklist"
+                ],
+                "summary": "添加黑名单",
+                "operationId": "createBlacklistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add blacklist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateBlacklistReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/blacklist/{blacklist_id}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete a blacklist",
+                "tags": [
+                    "blacklist"
+                ],
+                "operationId": "deleteBlackList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "blacklist id",
+                        "name": "blacklist_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update a blacklist",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "blacklist"
+                ],
+                "summary": "更新黑名单",
+                "operationId": "updateBlacklistV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "blacklist id",
+                        "name": "blacklist_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update blacklist req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateBlacklistReqV1"
                         }
                     }
                 ],
@@ -10010,8 +10215,14 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "last_match_time": {
+                    "type": "string"
+                },
                 "match_type": {
                     "type": "string"
+                },
+                "match_type_count": {
+                    "type": "integer"
                 },
                 "value": {
                     "type": "string"
@@ -10105,6 +10316,35 @@ var doc = `{
                         "solved",
                         "ignored",
                         "manual_audited"
+                    ]
+                }
+            }
+        },
+        "v1.BlacklistResV1": {
+            "type": "object",
+            "properties": {
+                "blacklist_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "last_match_time": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "fp_sql",
+                        "endpoint",
+                        "instance"
                     ]
                 }
             }
@@ -10308,6 +10548,29 @@ var doc = `{
                 "value": {
                     "type": "string",
                     "example": "create table"
+                }
+            }
+        },
+        "v1.CreateBlacklistReqV1": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "select * from t1"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "used for rapid release"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "fp_sql",
+                        "endpoint",
+                        "instance"
+                    ],
+                    "example": "sql"
                 }
             }
         },
@@ -11162,6 +11425,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.AuditWhitelistResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetBlacklistResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BlacklistResV1"
                     }
                 },
                 "message": {
@@ -14517,6 +14802,29 @@ var doc = `{
                 "value": {
                     "type": "string",
                     "example": "create table"
+                }
+            }
+        },
+        "v1.UpdateBlacklistReqV1": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "select * from t1"
+                },
+                "desc": {
+                    "type": "string",
+                    "example": "used for rapid release"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "fp_sql",
+                        "endpoint",
+                        "instance"
+                    ],
+                    "example": "sql"
                 }
             }
         },
