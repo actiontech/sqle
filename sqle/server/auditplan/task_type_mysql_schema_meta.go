@@ -351,6 +351,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage
 		rows = append(rows, map[string]string{
 			"sql":                 sql.SQLContent,
 			"schema_name":         sql.Schema,
+			"id":                  sql.AuditPlanSqlId,
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
 			MetricNameMetaType:    info.Get(MetricNameMetaType).String(),
 			model.AuditResultName: sql.AuditResult.String,
