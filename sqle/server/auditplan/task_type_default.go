@@ -158,6 +158,7 @@ func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 		rows = append(rows, map[string]string{
 			"sql":                          sql.SQLContent,
 			"fingerprint":                  sql.Fingerprint,
+			"id":                           sql.AuditPlanSqlId,
 			MetricNameCounter:              strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
 			model.AuditResultName:          sql.AuditResult.String,

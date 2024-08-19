@@ -1301,10 +1301,44 @@ func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
 // @Success 200 {object} v1.GetSqlManageSqlAnalysisResp
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis [get]
 func GetAuditPlanSqlAnalysisData(c echo.Context) error {
+	insAuditPlanID := c.Param("instance_audit_plan_id")
+	sqlManageRecordId := c.Param("id")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanAccess(c, projectUID, insAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), strconv.FormatUint(detail.InstanceID, 10))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceNoExistErr())
+	}
+	s := model.GetStorage()
+	originSQL, exist, err := s.GetManageSQLById(sqlManageRecordId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	var schema string
+
+	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, schema, originSQL.SqlText)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    nil,
+		Data:    convertSQLAnalysisResultToRes(res, originSQL.SqlText),
 	})
 }
 

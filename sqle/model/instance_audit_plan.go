@@ -211,6 +211,18 @@ func (s *Storage) GetManageSQLBySQLId(sqlId string) (*SQLManageRecord, bool, err
 	return sql, true, nil
 }
 
+func (s *Storage) GetManageSQLById(sqlId string) (*SQLManageRecord, bool, error) {
+	sql := &SQLManageRecord{}
+
+	err := s.db.Where("id = ?", sqlId).First(sql).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return sql, true, nil
+}
+
 func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord, error) {
 	sqls := []*SQLManageRecord{}
 	err := s.db.Where("source_id = ?", apId).Find(&sqls).Error
