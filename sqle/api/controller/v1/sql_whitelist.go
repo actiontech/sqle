@@ -166,12 +166,12 @@ type GetAuditWhitelistResV1 struct {
 }
 
 type AuditWhitelistResV1 struct {
-	Id             uint       `json:"audit_whitelist_id"`
-	Value          string     `json:"value"`
-	MatchType      string     `json:"match_type"`
-	MatchTypeCount uint       `json:"match_type_count"`
-	LastMatchTime  *time.Time `json:"last_match_time"`
-	Desc           string     `json:"desc"`
+	Id            uint       `json:"audit_whitelist_id"`
+	Value         string     `json:"value"`
+	MatchType     string     `json:"match_type"`
+	MatchedCount  uint       `json:"matched_count"`
+	LastMatchTime *time.Time `json:"last_match_time"`
+	Desc          string     `json:"desc"`
 }
 
 // @Summary 获取Sql审核白名单

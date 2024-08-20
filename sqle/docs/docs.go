@@ -2133,7 +2133,9 @@ var doc = `{
                         "enum": [
                             "sql",
                             "fp_sql",
-                            "endpoint",
+                            "ip",
+                            "cidr",
+                            "host",
                             "instance"
                         ],
                         "type": "string",
@@ -10221,7 +10223,7 @@ var doc = `{
                 "match_type": {
                     "type": "string"
                 },
-                "match_type_count": {
+                "matched_count": {
                     "type": "integer"
                 },
                 "value": {
@@ -10329,21 +10331,23 @@ var doc = `{
                 "content": {
                     "type": "string"
                 },
-                "count": {
-                    "type": "integer"
-                },
                 "desc": {
                     "type": "string"
                 },
                 "last_match_time": {
                     "type": "string"
                 },
+                "matched_count": {
+                    "type": "integer"
+                },
                 "type": {
                     "type": "string",
                     "enum": [
                         "sql",
                         "fp_sql",
-                        "endpoint",
+                        "ip",
+                        "cidr",
+                        "host",
                         "instance"
                     ]
                 }
@@ -10567,7 +10571,9 @@ var doc = `{
                     "enum": [
                         "sql",
                         "fp_sql",
-                        "endpoint",
+                        "ip",
+                        "cidr",
+                        "host",
                         "instance"
                     ],
                     "example": "sql"
@@ -14821,7 +14827,9 @@ var doc = `{
                     "enum": [
                         "sql",
                         "fp_sql",
-                        "endpoint",
+                        "ip",
+                        "cidr",
+                        "host",
                         "instance"
                     ],
                     "example": "sql"

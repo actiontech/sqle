@@ -8,7 +8,7 @@ import (
 )
 
 type CreateBlacklistReqV1 struct {
-	Type    string `json:"type" example:"sql" enums:"sql,fp_sql,endpoint,instance" valid:"required,oneof=sql fp_sql endpoint instance"`
+	Type    string `json:"type" example:"sql" enums:"sql,fp_sql,ip,cidr,host,instance" valid:"required,oneof=sql fp_sql ip cidr host instance"`
 	Desc    string `json:"desc" example:"used for rapid release"`
 	Content string `json:"content" example:"select * from t1" valid:"required"`
 }
@@ -42,7 +42,7 @@ func DeleteBlacklist(c echo.Context) error {
 }
 
 type UpdateBlacklistReqV1 struct {
-	Type    *string `json:"type" example:"sql" enums:"sql,fp_sql,endpoint,instance"`
+	Type    *string `json:"type" example:"sql" enums:"sql,fp_sql,ip,cidr,host,instance"`
 	Desc    *string `json:"desc" example:"used for rapid release"`
 	Content *string `json:"content" example:"select * from t1"`
 }
@@ -64,7 +64,7 @@ func UpdateBlacklist(c echo.Context) error {
 }
 
 type GetBlacklistReqV1 struct {
-	FilterType         string `json:"filter_type" query:"filter_type" valid:"omitempty,oneof=sql fp_sql endpoint instance" enums:"sql,fp_sql,endpoint,instance"`
+	FilterType         string `json:"filter_type" query:"filter_type" enums:"sql,fp_sql,ip,cidr,host,instance"  valid:"omitempty,oneof=sql fp_sql ip cidr host instance"`
 	FuzzySearchContent string `json:"fuzzy_search_content" query:"fuzzy_search_content" valid:"omitempty"`
 	PageIndex          uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize           uint32 `json:"page_size" query:"page_size" valid:"required"`
@@ -80,8 +80,8 @@ type BlacklistResV1 struct {
 	BlacklistID   uint       `json:"blacklist_id"`
 	Content       string     `json:"content"`
 	Desc          string     `json:"desc"`
-	Type          string     `json:"type" enums:"sql,fp_sql,endpoint,instance"`
-	Count         uint64     `json:"count"`
+	Type          string     `json:"type" enums:"sql,fp_sql,ip,cidr,host,instance"`
+	MatchedCount  uint       `json:"matched_count"`
 	LastMatchTime *time.Time `json:"last_match_time"`
 }
 
@@ -92,7 +92,7 @@ type BlacklistResV1 struct {
 // @Tags blacklist
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param filter_type query string false "filter type" Enums(sql,fp_sql,endpoint,instance)
+// @Param filter_type query string false "filter type" Enums(sql,fp_sql,ip,cidr,host,instance)
 // @Param fuzzy_search_content query string false "fuzzy search content"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
