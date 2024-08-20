@@ -14,11 +14,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type OracleTopSQLTaskV2 struct{}
+type OracleTopSQLTaskV2 struct{ DefaultTaskV2 }
 
 func NewOracleTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &OracleTopSQLTaskV2{}
+		return &OracleTopSQLTaskV2{
+			DefaultTaskV2: DefaultTaskV2{},
+		}
 	}
 }
 
@@ -47,10 +49,6 @@ func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeString,
 		},
 	}
-}
-
-func (at *OracleTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *OracleTopSQLTaskV2) Metrics() []string {
@@ -179,6 +177,10 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -209,12 +211,21 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *OracleTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *OracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	args := make(map[model.FilterName]interface{}, len(filters))
+	for _, filter := range filters {
+		switch filter.Name {
+		case "sql":
+			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "priority":
+			args[model.FilterPriority] = filter.FilterComparisonValue
+
+		case "rule_name":
+			args[model.FilterRuleName] = filter.FilterComparisonValue
+		}
+	}
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
 	if err != nil {
 		return nil, count, err
 	}
@@ -228,6 +239,7 @@ func (at *OracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 		rows = append(rows, map[string]string{
 			"sql":                         sql.SQLContent,
 			"id":                          sql.AuditPlanSqlId,
+			"priority":                    sql.Priority.String,
 			MetricNameCounter:             strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameQueryTimeTotal:      fmt.Sprintf("%v", utils.Round(info.Get(MetricNameQueryTimeTotal).Float()/1000/1000, 3)),
 			MetricNameCPUTimeTotal:        fmt.Sprintf("%v", utils.Round(info.Get(MetricNameCPUTimeTotal).Float()/1000/1000, 3)),

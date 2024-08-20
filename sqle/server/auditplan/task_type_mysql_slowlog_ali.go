@@ -65,10 +65,6 @@ func (at *MySQLSlowLogAliTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
-func (at *MySQLSlowLogAliTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
-}
-
 func (at *MySQLSlowLogAliTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,

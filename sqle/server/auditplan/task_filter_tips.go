@@ -57,3 +57,12 @@ func GetSqlManagerMetricTips(logger *logrus.Entry, auditPlanId uint, persist *mo
 		return metricNameTips
 	}
 }
+
+func GetSqlManagerPriorityTips(logger *logrus.Entry) []FilterTip {
+	return []FilterTip{
+		{
+			Value: model.PriorityHigh,
+			Desc:  "高优先级",
+		},
+	}
+}
