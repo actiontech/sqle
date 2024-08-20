@@ -390,6 +390,10 @@ func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -445,6 +449,13 @@ func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *m
 			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
 		},
 		{
+			Name:            "priority",
+			Desc:            "SQL优先级",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerPriorityTips(logger),
+		},
+		{
 			Name:            MetricNameDBUser,
 			Desc:            "用户",
 			FilterInputType: FilterInputTypeString,
@@ -492,6 +503,9 @@ func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 		switch filter.Name {
 		case "sql":
 			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "priority":
+			args[model.FilterPriority] = filter.FilterComparisonValue
 
 		case "rule_name":
 			args[model.FilterRuleName] = filter.FilterComparisonValue
@@ -544,6 +558,7 @@ func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 			"fingerprint":                  sql.Fingerprint,
 			"sql":                          sql.SQLContent,
 			"id":                           sql.AuditPlanSqlId,
+			"priority":                     sql.Priority.String,
 			model.AuditResultName:          sql.AuditResult.String,
 			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
