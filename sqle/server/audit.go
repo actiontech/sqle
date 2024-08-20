@@ -175,7 +175,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		}
 		if whitelistMatch {
 			result := driverV2.NewAuditResults()
-			result.Add(driverV2.RuleLevelNormal, "", "白名单")
+			result.Add(driverV2.RuleLevelNormal, "", "审核SQL例外")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
