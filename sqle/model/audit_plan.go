@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	e "errors"
 	"fmt"
 	"strings"
 	"time"
@@ -54,27 +55,62 @@ type AuditPlanSQLV2 struct {
 	Schema         string `json:"schema" gorm:"type:varchar(512);not null"`
 }
 
+type BlacklistFilterType string
+
 const (
-	FilterTypeSQL  string = "SQL"
-	FilterTypeIP   string = "IP"
-	FilterTypeCIDR string = "CIDR"
-	FilterTypeHost string = "HOST"
+	FilterTypeSQL      BlacklistFilterType = "SQL"
+	FilterTypeFpSQL    BlacklistFilterType = "FP_SQL"
+	FilterTypeIP       BlacklistFilterType = "IP"
+	FilterTypeCIDR     BlacklistFilterType = "CIDR"
+	FilterTypeHost     BlacklistFilterType = "HOST"
+	FilterTypeInstance BlacklistFilterType = "INSTANCE"
 )
 
 type BlackListAuditPlanSQL struct {
 	Model
-	FilterContent string `json:"filter_content" gorm:"type:varchar(512);not null;"`
-	FilterType    string `json:"filter_type" gorm:"type:enum('SQL','IP','CIDR','HOST');default:'SQL';not null;"`
+	ProjectId     ProjectUID          `gorm:"index; not null"`
+	FilterContent string              `json:"filter_content" gorm:"type:varchar(512);not null;"`
+	Desc          string              `json:"desc" gorm:"type:varchar(512)"`
+	FilterType    BlacklistFilterType `json:"filter_type" gorm:"type:enum('SQL','FP_SQL','IP','CIDR','HOST','INSTANCE');default:'SQL';not null;"`
+	MatchedCount  uint                `json:"matched_count" gorm:"default:0"`
+	LastMatchTime *time.Time          `json:"last_match_time"`
 }
 
 func (a BlackListAuditPlanSQL) TableName() string {
 	return "black_list_audit_plan_sqls"
 }
 
+func (s *Storage) GetBlacklistByID(projectID ProjectUID, id string) (*BlackListAuditPlanSQL, bool, error) {
+	bl := &BlackListAuditPlanSQL{}
+	err := s.db.Model(BlackListAuditPlanSQL{}).Where("project_id = ? AND id = ?", projectID, id).First(bl).Error
+	if e.Is(err, gorm.ErrRecordNotFound) {
+		return bl, false, nil
+	}
+	return bl, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
 	var blackListAPS []*BlackListAuditPlanSQL
 	err := s.db.Model(BlackListAuditPlanSQL{}).Find(&blackListAPS).Error
 	return blackListAPS, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetBlacklistList(projectID ProjectUID, FilterType BlacklistFilterType, fuzzySearchContent string, pageIndex, pageSize uint32) ([]*BlackListAuditPlanSQL, uint64, error) {
+	var count int64
+	var blackListAPS []*BlackListAuditPlanSQL
+	query := s.db.Model(BlackListAuditPlanSQL{}).Where("project_id = ?", projectID)
+	if FilterType != "" {
+		query = query.Where("filter_type = ?", FilterType)
+	}
+	if fuzzySearchContent != "" {
+		query = query.Where("filter_content LIKE ?", "%"+fuzzySearchContent+"%")
+	}
+	err := query.Count(&count).Error
+	if err != nil {
+		return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
+	}
+	err = query.Offset(int((pageIndex - 1) * pageSize)).Limit(int(pageSize)).Order("id desc").Find(&blackListAPS).Error
+	return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
 }
 
 func (a AuditPlanSQLV2) TableName() string {
