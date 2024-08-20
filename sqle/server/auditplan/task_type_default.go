@@ -169,6 +169,54 @@ func (at *DefaultTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *m
 		}}
 }
 
+func genArgsByFilters(filters []Filter) map[model.FilterName]interface{} {
+	args := make(map[model.FilterName]interface{}, len(filters))
+	for _, filter := range filters {
+		switch filter.Name {
+		case "sql":
+			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "priority":
+			args[model.FilterPriority] = filter.FilterComparisonValue
+
+		case "rule_name":
+			args[model.FilterRuleName] = filter.FilterComparisonValue
+
+		case "schema_name":
+			args[model.FilterSchemaName] = filter.FilterComparisonValue
+
+		case MetricNameDBUser:
+			args[model.FilterNameDBUser] = filter.FilterComparisonValue
+
+		case MetricNameCounter:
+			counter, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterCounter] = counter
+
+		case MetricNameQueryTimeAvg:
+			value, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterQueryTimeAvg] = value
+
+		case MetricNameRowExaminedAvg:
+			value, err := strconv.Atoi(filter.FilterComparisonValue)
+			if err != nil {
+				continue
+			}
+			args[model.FilterRowExaminedAvg] = value
+
+		case MetricNameLastReceiveTimestamp:
+			args[model.FilterLastReceiveTimestampFrom] = filter.FilterBetweenValue.From
+			args[model.FilterLastReceiveTimestampTo] = filter.FilterBetweenValue.To
+		}
+	}
+	return args
+}
+
 func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	args := make(map[model.FilterName]interface{}, len(filters))
 	for _, filter := range filters {
