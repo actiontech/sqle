@@ -298,20 +298,7 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 }
 
 func (at *DmTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	args := make(map[model.FilterName]interface{}, len(filters))
-	for _, filter := range filters {
-		switch filter.Name {
-		case "sql":
-			args[model.FilterSQL] = filter.FilterComparisonValue
-
-		case "priority":
-			args[model.FilterPriority] = filter.FilterComparisonValue
-
-		case "rule_name":
-			args[model.FilterRuleName] = filter.FilterComparisonValue
-		}
-	}
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
