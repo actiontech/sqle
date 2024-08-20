@@ -16,11 +16,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ObForMysqlTopSQLTaskV2 struct{}
+type ObForMysqlTopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewObForMysqlTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &ObForMysqlTopSQLTaskV2{}
+		return &ObForMysqlTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -48,12 +50,6 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Value: OBMySQLIndicatorElapsedTime,
 			Type:  params.ParamTypeString,
 		},
-	}
-}
-
-func (at *ObForMysqlTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{
-		defaultAuditLevelOperateParams,
 	}
 }
 
@@ -477,30 +473,6 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		}
 	}
 	return []Head{}
-}
-
-func (at *ObForMysqlTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{
-		{
-			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-		},
-		{
-			Name:            "rule_name",
-			Desc:            "审核规则",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
-		},
-		{
-			Name:            "priority",
-			Desc:            "SQL优先级",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
-		}}
 }
 
 func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {

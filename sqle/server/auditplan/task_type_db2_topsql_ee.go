@@ -18,11 +18,13 @@ import (
 	dry "github.com/ungerik/go-dry"
 )
 
-type DB2TopSQLTaskV2 struct{}
+type DB2TopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewDB2TopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &DB2TopSQLTaskV2{}
+		return &DB2TopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -50,12 +52,6 @@ func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Value: DB2IndicatorAverageElapsedTime,
 			Type:  params.ParamTypeString,
 		},
-	}
-}
-
-func (at *DB2TopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{
-		defaultAuditLevelOperateParams,
 	}
 }
 
@@ -380,30 +376,6 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Desc: "活动总时间(ms)",
 		},
 	}
-}
-
-func (at *DB2TopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{
-		{
-			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-		},
-		{
-			Name:            "rule_name",
-			Desc:            "审核规则",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
-		},
-		{
-			Name:            "priority",
-			Desc:            "SQL优先级",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
-		}}
 }
 
 func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {

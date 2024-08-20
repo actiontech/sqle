@@ -21,11 +21,12 @@ import (
 
 type ObForOracleTopSQLTaskV2 struct {
 	obVersion string
+	DefaultTaskV2
 }
 
 func NewObForOracleTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &ObForOracleTopSQLTaskV2{}
+		return &ObForOracleTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -53,12 +54,6 @@ func (at *ObForOracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Value: DynPerformanceViewObForOracleColumnElapsedTime,
 			Type:  params.ParamTypeString,
 		},
-	}
-}
-
-func (at *ObForOracleTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{
-		defaultAuditLevelOperateParams,
 	}
 }
 
@@ -367,30 +362,6 @@ func (at *ObForOracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Desc: "I/O等待时间(s)",
 		},
 	}
-}
-
-func (at *ObForOracleTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{
-		{
-			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-		},
-		{
-			Name:            "rule_name",
-			Desc:            "审核规则",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
-		},
-		{
-			Name:            "priority",
-			Desc:            "SQL优先级",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
-		}}
 }
 
 func (at *ObForOracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {

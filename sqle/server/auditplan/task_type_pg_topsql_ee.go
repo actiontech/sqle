@@ -19,11 +19,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PGTopSQLTaskV2 struct{}
+type PGTopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewPGTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &PGTopSQLTaskV2{}
+		return &PGTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -62,12 +64,6 @@ func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeString,
 			Enums: ShowSchemaEnumsByInstanceId(id),
 		},
-	}
-}
-
-func (at *PGTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{
-		defaultAuditLevelOperateParams,
 	}
 }
 
@@ -305,30 +301,6 @@ func (at *PGTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Desc: "I/O等待时间(s)",
 		},
 	}
-}
-
-func (at *PGTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{
-		{
-			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-		},
-		{
-			Name:            "rule_name",
-			Desc:            "审核规则",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
-		},
-		{
-			Name:            "priority",
-			Desc:            "SQL优先级",
-			FilterInputType: FilterInputTypeString,
-			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
-		}}
 }
 
 func (at *PGTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
