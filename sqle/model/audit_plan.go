@@ -89,9 +89,9 @@ func (s *Storage) GetBlacklistByID(projectID ProjectUID, id string) (*BlackListA
 	return bl, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetBlackListAuditPlanSQLs() ([]*BlackListAuditPlanSQL, error) {
+func (s *Storage) GetBlackListAuditPlanSQLsByProjectID(projectID ProjectUID) ([]*BlackListAuditPlanSQL, error) {
 	var blackListAPS []*BlackListAuditPlanSQL
-	err := s.db.Model(BlackListAuditPlanSQL{}).Find(&blackListAPS).Error
+	err := s.db.Model(BlackListAuditPlanSQL{}).Where("project_id = ?", projectID).Find(&blackListAPS).Error
 	return blackListAPS, errors.New(errors.ConnectStorageError, err)
 }
 

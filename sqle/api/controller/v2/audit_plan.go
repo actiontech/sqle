@@ -448,7 +448,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
 	if err == nil {
 		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
@@ -502,7 +502,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
 	if err == nil {
 		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
@@ -543,6 +543,12 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	s := model.GetStorage()
 
 	ap, exist, err := s.GetActiveAuditPlanDetail(uint(apID))
@@ -555,7 +561,7 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
 	if err == nil {
 		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {

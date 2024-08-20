@@ -989,7 +989,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
 	if err == nil {
 		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
@@ -1045,7 +1045,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLs()
+	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
 	if err == nil {
 		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
 	} else {
