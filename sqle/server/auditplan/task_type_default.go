@@ -125,6 +125,10 @@ func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -140,11 +144,44 @@ func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
 }
 
 func (at *DefaultTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
+	return []FilterMeta{
+		{
+			Name:            "sql", // 模糊筛选
+			Desc:            "SQL",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            "rule_name",
+			Desc:            "审核规则",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
+		},
+		{
+			Name:            "priority",
+			Desc:            "SQL优先级",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerPriorityTips(logger),
+		}}
 }
 
 func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	args := make(map[model.FilterName]interface{}, len(filters))
+	for _, filter := range filters {
+		switch filter.Name {
+		case "sql":
+			args[model.FilterSQL] = filter.FilterComparisonValue
+
+		case "priority":
+			args[model.FilterPriority] = filter.FilterComparisonValue
+
+		case "rule_name":
+			args[model.FilterRuleName] = filter.FilterComparisonValue
+		}
+	}
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
 	if err != nil {
 		return nil, count, err
 	}
@@ -159,6 +196,7 @@ func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 			"sql":                          sql.SQLContent,
 			"fingerprint":                  sql.Fingerprint,
 			"id":                           sql.AuditPlanSqlId,
+			"priority":                     sql.Priority.String,
 			MetricNameCounter:              strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
 			model.AuditResultName:          sql.AuditResult.String,
