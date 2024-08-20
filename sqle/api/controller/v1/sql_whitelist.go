@@ -3,8 +3,8 @@ package v1
 import (
 	"context"
 	"fmt"
-
 	"net/http"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -153,8 +153,10 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 }
 
 type GetAuditWhitelistReqV1 struct {
-	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FuzzySearchValue string `json:"fuzzy_value" query:"fuzzy_value" valid:"omitempty"`
+	FilterMatchType  string `json:"filter_match_type" query:"filter_match_type" valid:"omitempty,oneof=exact_match fp_match" enums:"exact_match,fp_match"`
+	PageIndex        uint32 `json:"page_index" query:"page_index" valid:"required"`
+	PageSize         uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetAuditWhitelistResV1 struct {
@@ -164,10 +166,12 @@ type GetAuditWhitelistResV1 struct {
 }
 
 type AuditWhitelistResV1 struct {
-	Id        uint   `json:"audit_whitelist_id"`
-	Value     string `json:"value"`
-	MatchType string `json:"match_type"`
-	Desc      string `json:"desc"`
+	Id            uint       `json:"audit_whitelist_id"`
+	Value         string     `json:"value"`
+	MatchType     string     `json:"match_type"`
+	MatchedCount  uint       `json:"matched_count"`
+	LastMatchTime *time.Time `json:"last_match_time"`
+	Desc          string     `json:"desc"`
 }
 
 // @Summary 获取Sql审核白名单
@@ -176,6 +180,8 @@ type AuditWhitelistResV1 struct {
 // @Tags audit_whitelist
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param fuzzy_search_value query string false "fuzzy value"
+// @Param filter_match_type query string false "match type"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
 // @Success 200 {object} v1.GetAuditWhitelistResV1

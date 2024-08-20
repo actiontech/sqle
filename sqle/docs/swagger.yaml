@@ -443,8 +443,12 @@ definitions:
         type: integer
       desc:
         type: string
+      last_match_time:
+        type: string
       match_type:
         type: string
+      matched_count:
+        type: integer
       value:
         type: string
     type: object
@@ -506,6 +510,28 @@ definitions:
         - solved
         - ignored
         - manual_audited
+        type: string
+    type: object
+  v1.BlacklistResV1:
+    properties:
+      blacklist_id:
+        type: integer
+      content:
+        type: string
+      desc:
+        type: string
+      last_match_time:
+        type: string
+      matched_count:
+        type: integer
+      type:
+        enum:
+        - sql
+        - fp_sql
+        - ip
+        - cidr
+        - host
+        - instance
         type: string
     type: object
   v1.CheckLicenseResV1:
@@ -645,6 +671,25 @@ definitions:
         type: string
       value:
         example: create table
+        type: string
+    type: object
+  v1.CreateBlacklistReqV1:
+    properties:
+      content:
+        example: select * from t1
+        type: string
+      desc:
+        example: used for rapid release
+        type: string
+      type:
+        enum:
+        - sql
+        - fp_sql
+        - ip
+        - cidr
+        - host
+        - instance
+        example: sql
         type: string
     type: object
   v1.CreateCustomRuleReqV1:
@@ -1231,6 +1276,21 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.AuditWhitelistResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetBlacklistResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.BlacklistResV1'
         type: array
       message:
         example: ok
@@ -3516,6 +3576,25 @@ definitions:
         type: string
       value:
         example: create table
+        type: string
+    type: object
+  v1.UpdateBlacklistReqV1:
+    properties:
+      content:
+        example: select * from t1
+        type: string
+      desc:
+        example: used for rapid release
+        type: string
+      type:
+        enum:
+        - sql
+        - fp_sql
+        - ip
+        - cidr
+        - host
+        - instance
+        example: sql
         type: string
     type: object
   v1.UpdateCompanyNoticeReq:
@@ -6016,6 +6095,14 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: fuzzy value
+        in: query
+        name: fuzzy_search_value
+        type: string
+      - description: match type
+        in: query
+        name: filter_match_type
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -6120,6 +6207,134 @@ paths:
       summary: 更新SQL白名单
       tags:
       - audit_whitelist
+  /v1/projects/{project_name}/blacklist:
+    get:
+      description: get blacklist
+      operationId: getBlacklistV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter type
+        enum:
+        - sql
+        - fp_sql
+        - ip
+        - cidr
+        - host
+        - instance
+        in: query
+        name: filter_type
+        type: string
+      - description: fuzzy search content
+        in: query
+        name: fuzzy_search_content
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetBlacklistResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取黑名单列表
+      tags:
+      - blacklist
+    post:
+      consumes:
+      - application/json
+      description: create a blacklist
+      operationId: createBlacklistV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: add blacklist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateBlacklistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加黑名单
+      tags:
+      - blacklist
+  /v1/projects/{project_name}/blacklist/{blacklist_id}/:
+    delete:
+      description: delete a blacklist
+      operationId: deleteBlackList
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: blacklist id
+        in: path
+        name: blacklist_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      tags:
+      - blacklist
+    patch:
+      consumes:
+      - application/json
+      description: update a blacklist
+      operationId: updateBlacklistV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: blacklist id
+        in: path
+        name: blacklist_id
+        required: true
+        type: string
+      - description: update blacklist req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateBlacklistReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新黑名单
+      tags:
+      - blacklist
   /v1/projects/{project_name}/instance_audit_plans:
     get:
       description: get instance audit plan info list
