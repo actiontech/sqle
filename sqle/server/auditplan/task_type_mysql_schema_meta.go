@@ -333,21 +333,7 @@ func (at *BaseSchemaMetaTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, per
 
 func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
-	args := make(map[model.FilterName]interface{}, len(filters))
-	for _, filter := range filters {
-		switch filter.Name {
-		case "sql":
-			args[model.FilterSQL] = filter.FilterComparisonValue
-
-		case "schema_name":
-			args[model.FilterSchemaName] = filter.FilterComparisonValue
-
-		case "rule_name":
-			args[model.FilterRuleName] = filter.FilterComparisonValue
-		}
-	}
-
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
