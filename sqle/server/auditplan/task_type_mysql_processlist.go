@@ -45,10 +45,6 @@ func (at *MySQLProcessListTaskV2) Params(instanceId ...string) params.Params {
 	}
 }
 
-func (at *MySQLProcessListTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
-}
-
 func (at *MySQLProcessListTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return auditSQLs(sqls)
 }

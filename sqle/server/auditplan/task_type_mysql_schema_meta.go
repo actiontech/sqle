@@ -277,6 +277,10 @@ func (at *BaseSchemaMetaTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -309,6 +313,13 @@ func (at *BaseSchemaMetaTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, per
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
+		},
+		{
+			Name:            "priority",
+			Desc:            "SQL优先级",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerPriorityTips(logger),
 		},
 		{
 			Name:            "schema_name",
@@ -350,6 +361,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage
 		info := LoadMetrics(data, at.Metrics())
 		rows = append(rows, map[string]string{
 			"sql":                 sql.SQLContent,
+			"priority":            sql.Priority.String,
 			"schema_name":         sql.Schema,
 			"id":                  sql.AuditPlanSqlId,
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
