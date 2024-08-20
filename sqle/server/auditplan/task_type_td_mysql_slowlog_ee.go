@@ -24,5 +24,7 @@ func (at *TDMySQLSlowLogTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *TDMySQLSlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }

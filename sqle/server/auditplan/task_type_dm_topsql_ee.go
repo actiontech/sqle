@@ -55,7 +55,9 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *DmTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *DmTopSQLTaskV2) Metrics() []string {

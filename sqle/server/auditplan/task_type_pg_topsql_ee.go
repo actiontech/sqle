@@ -66,7 +66,9 @@ func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *PGTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *PGTopSQLTaskV2) Metrics() []string {
