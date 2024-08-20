@@ -18,11 +18,14 @@ import (
 
 type TBaseSlowLogTaskV2 struct {
 	lastEndTime *time.Time
+	DefaultTaskV2
 }
 
 func NewTBaseSlowLogTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &TBaseSlowLogTaskV2{}
+		return &TBaseSlowLogTaskV2{
+			DefaultTaskV2: DefaultTaskV2{},
+		}
 	}
 }
 
@@ -32,10 +35,6 @@ func (at *TBaseSlowLogTaskV2) InstanceType() string {
 
 func (at *TBaseSlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
-}
-
-func (at *TBaseSlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *TBaseSlowLogTaskV2) Metrics() []string {
@@ -121,6 +120,10 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -155,12 +158,8 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *TBaseSlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -182,6 +181,7 @@ func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 			"sql":                    sql.SQLContent,
 			"id":                     sql.AuditPlanSqlId,
 			"fingerprint":            sql.Fingerprint,
+			"priority":               sql.Priority.String,
 			"counter":                strconv.FormatUint(info.Counter, 10),
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,

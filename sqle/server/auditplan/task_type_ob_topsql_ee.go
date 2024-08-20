@@ -16,11 +16,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ObForMysqlTopSQLTaskV2 struct{}
+type ObForMysqlTopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewObForMysqlTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &ObForMysqlTopSQLTaskV2{}
+		return &ObForMysqlTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -49,10 +51,6 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeString,
 		},
 	}
-}
-
-func (at *ObForMysqlTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *ObForMysqlTopSQLTaskV2) Metrics() []string {
@@ -394,6 +392,10 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 				Name: "sql",
 				Desc: "SQL指纹",
 				Type: "sql",
+			},
+			{
+				Name: "priority",
+				Desc: "优先级",
 			}, {
 				Name: model.AuditResultName,
 				Desc: model.AuditResultDesc,
@@ -473,12 +475,8 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{}
 }
 
-func (at *ObForMysqlTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -487,6 +485,7 @@ func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Stora
 		mp := map[string]string{
 			"sql":                 planSQL.SQLContent,
 			"id":                  planSQL.AuditPlanSqlId,
+			"priority":            planSQL.Priority.String,
 			model.AuditResultName: planSQL.AuditResult.String,
 		}
 

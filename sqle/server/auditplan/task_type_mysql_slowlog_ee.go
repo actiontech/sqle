@@ -390,6 +390,10 @@ func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -445,6 +449,13 @@ func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *m
 			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
 		},
 		{
+			Name:            "priority",
+			Desc:            "SQL优先级",
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerPriorityTips(logger),
+		},
+		{
 			Name:            MetricNameDBUser,
 			Desc:            "用户",
 			FilterInputType: FilterInputTypeString,
@@ -487,49 +498,7 @@ func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *m
 
 func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
-	args := make(map[model.FilterName]interface{}, len(filters))
-	for _, filter := range filters {
-		switch filter.Name {
-		case "sql":
-			args[model.FilterSQL] = filter.FilterComparisonValue
-
-		case "rule_name":
-			args[model.FilterRuleName] = filter.FilterComparisonValue
-
-		case "schema_name":
-			args[model.FilterSchemaName] = filter.FilterComparisonValue
-
-		case MetricNameDBUser:
-			args[model.FilterNameDBUser] = filter.FilterComparisonValue
-
-		case MetricNameCounter:
-			counter, err := strconv.Atoi(filter.FilterComparisonValue)
-			if err != nil {
-				continue
-			}
-			args[model.FilterCounter] = counter
-
-		case MetricNameQueryTimeAvg:
-			value, err := strconv.Atoi(filter.FilterComparisonValue)
-			if err != nil {
-				continue
-			}
-			args[model.FilterQueryTimeAvg] = value
-
-		case MetricNameRowExaminedAvg:
-			value, err := strconv.Atoi(filter.FilterComparisonValue)
-			if err != nil {
-				continue
-			}
-			args[model.FilterRowExaminedAvg] = value
-
-		case MetricNameLastReceiveTimestamp:
-			args[model.FilterLastReceiveTimestampFrom] = filter.FilterBetweenValue.From
-			args[model.FilterLastReceiveTimestampTo] = filter.FilterBetweenValue.To
-		}
-	}
-
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, args)
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -544,6 +513,7 @@ func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 			"fingerprint":                  sql.Fingerprint,
 			"sql":                          sql.SQLContent,
 			"id":                           sql.AuditPlanSqlId,
+			"priority":                     sql.Priority.String,
 			model.AuditResultName:          sql.AuditResult.String,
 			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),

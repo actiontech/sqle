@@ -19,11 +19,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type PGTopSQLTaskV2 struct{}
+type PGTopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewPGTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &PGTopSQLTaskV2{}
+		return &PGTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -63,10 +65,6 @@ func (at *PGTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Enums: ShowSchemaEnumsByInstanceId(id),
 		},
 	}
-}
-
-func (at *PGTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *PGTopSQLTaskV2) Metrics() []string {
@@ -275,6 +273,10 @@ func (at *PGTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -301,12 +303,8 @@ func (at *PGTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *PGTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *PGTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -320,6 +318,7 @@ func (at *PGTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filt
 		rows = append(rows, map[string]string{
 			"sql":                         sql.SQLContent,
 			"id":                          sql.AuditPlanSqlId,
+			"priority":                    sql.Priority.String,
 			MetricNameCounter:             strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameQueryTimeTotal:      fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameQueryTimeTotal).Float())/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
 			MetricNameDiskReadTotal:       strconv.Itoa(int(info.Get(MetricNameDiskReadTotal).Int())),

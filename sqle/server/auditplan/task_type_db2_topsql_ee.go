@@ -18,11 +18,13 @@ import (
 	dry "github.com/ungerik/go-dry"
 )
 
-type DB2TopSQLTaskV2 struct{}
+type DB2TopSQLTaskV2 struct {
+	DefaultTaskV2
+}
 
 func NewDB2TopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &DB2TopSQLTaskV2{}
+		return &DB2TopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -51,10 +53,6 @@ func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeString,
 		},
 	}
-}
-
-func (at *DB2TopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *DB2TopSQLTaskV2) Metrics() []string {
@@ -342,6 +340,10 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Desc: model.AuditResultDesc,
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: MetricNameQueryTimeTotal,
 			Desc: "总执行时间(ms)",
 		},
@@ -376,12 +378,8 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *DB2TopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -392,6 +390,7 @@ func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, fil
 		mp := map[string]string{
 			"sql":                 auditPlanSQLs[i].SQLContent,
 			"id":                  auditPlanSQLs[i].AuditPlanSqlId,
+			"priority":            auditPlanSQLs[i].Priority.String,
 			model.AuditResultName: auditPlanSQLs[i].AuditResult.String,
 		}
 

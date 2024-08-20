@@ -22,7 +22,3 @@ func (at *TDMySQLSlowLogTaskV2) InstanceType() string {
 func (at *TDMySQLSlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
 }
-
-func (at *TDMySQLSlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
-}

@@ -19,11 +19,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type DmTopSQLTaskV2 struct{}
+type DmTopSQLTaskV2 struct{ DefaultTaskV2 }
 
 func NewDmTopSQLTaskV2Fn() func() interface{} {
 	return func() interface{} {
-		return &DmTopSQLTaskV2{}
+		return &DmTopSQLTaskV2{DefaultTaskV2: DefaultTaskV2{}}
 	}
 }
 
@@ -52,10 +52,6 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeString,
 		},
 	}
-}
-
-func (at *DmTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
 }
 
 func (at *DmTopSQLTaskV2) Metrics() []string {
@@ -267,6 +263,10 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Type: "sql",
 		},
 		{
+			Name: "priority",
+			Desc: "优先级",
+		},
+		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
 		},
@@ -297,12 +297,8 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *DmTopSQLTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
-	return []FilterMeta{}
-}
-
 func (at *DmTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
-	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, map[model.FilterName]interface{}{})
+	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
 	}
@@ -316,6 +312,7 @@ func (at *DmTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filt
 		rows = append(rows, map[string]string{
 			"sql":                        sql.SQLContent,
 			"id":                         sql.AuditPlanSqlId,
+			"priority":                   sql.Priority.String,
 			MetricNameCounter:            strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameQueryTimeTotal:     fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameQueryTimeTotal).Float())/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
 			MetricNameQueryTimeAvg:       fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameQueryTimeAvg).Float())/1000, 3)),   //视图中时间单位是毫秒，所以除以1000得到秒
