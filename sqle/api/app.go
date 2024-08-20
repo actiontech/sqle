@@ -175,6 +175,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectAdminRouter.PATCH("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById)
 		v1ProjectAdminRouter.DELETE("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById)
 
+		// blacklist
+		v1ProjectAdminRouter.POST("/:project_name/blacklist", v1.CreateBlacklist)
+		v1ProjectAdminRouter.DELETE("/:project_name/blacklist/:blacklist_id/", v1.DeleteBlacklist)
+		v1ProjectAdminRouter.PATCH("/:project_name/blacklist/:blacklist_id/", v1.UpdateBlacklist)
+		v1ProjectAdminRouter.GET("/:project_name/blacklist", v1.GetBlacklist)
+
 		// rule template
 		v1ProjectAdminRouter.POST("/:project_name/rule_templates", v1.CreateProjectRuleTemplate)
 		v1ProjectAdminRouter.PATCH("/:project_name/rule_templates/:rule_template_name/", v1.UpdateProjectRuleTemplate)
