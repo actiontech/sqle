@@ -50,7 +50,9 @@ func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *OracleTopSQLTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *OracleTopSQLTaskV2) Metrics() []string {
