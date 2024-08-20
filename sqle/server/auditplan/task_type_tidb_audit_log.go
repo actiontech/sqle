@@ -48,12 +48,6 @@ func (at *TiDBAuditLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{}
 }
 
-func (at *TiDBAuditLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{
-		defaultAuditLevelOperateParams,
-	}
-}
-
 // todo: tidb 审核部分与其他类型的不太一样
 func (at *TiDBAuditLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 	return nil, nil
