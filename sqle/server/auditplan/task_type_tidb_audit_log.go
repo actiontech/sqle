@@ -49,7 +49,9 @@ func (at *TiDBAuditLogTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *TiDBAuditLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 // todo: tidb 审核部分与其他类型的不太一样

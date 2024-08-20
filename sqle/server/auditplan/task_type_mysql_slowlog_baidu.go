@@ -66,7 +66,9 @@ func (at *MySQLSlowLogBaiduTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *MySQLSlowLogBaiduTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *MySQLSlowLogBaiduTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {

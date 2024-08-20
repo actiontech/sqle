@@ -76,7 +76,9 @@ func (at *MySQLSlowLogHuaweiTaskV2) Params(instanceId ...string) params.Params {
 }
 
 func (at *MySQLSlowLogHuaweiTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *MySQLSlowLogHuaweiTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {

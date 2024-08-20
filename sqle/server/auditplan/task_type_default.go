@@ -69,7 +69,9 @@ var defaultAuditLevelOperateParams = &params.ParamWithOperator{
 }
 
 func (at *DefaultTaskV2) HighPriorityParams() params.ParamsWithOperator {
-	return []*params.ParamWithOperator{}
+	return []*params.ParamWithOperator{
+		defaultAuditLevelOperateParams,
+	}
 }
 
 func (at *DefaultTaskV2) Metrics() []string {
