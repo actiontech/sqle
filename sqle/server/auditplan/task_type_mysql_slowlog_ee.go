@@ -54,7 +54,7 @@ func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 		{
 			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
 			Desc:  "启动任务时拉取慢日志时间范围(单位:小时，仅对 mysql.slow_log 有效)",
-			Value: "",
+			Value: "24",
 			Type:  params.ParamTypeInt,
 		},
 	}
