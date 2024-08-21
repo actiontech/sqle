@@ -631,7 +631,7 @@ func (s *Storage) BatchUpdateSqlManage(idList []*uint64, status *string, remark 
 	})
 }
 
-func (s *Storage) BatchUpdateSqlManager(idList []*uint64, status *string, remark *string, assignees []string) error {
+func (s *Storage) BatchUpdateSqlManager(idList []*uint64, status, remark, priority *string, assignees []string) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		data := map[string]interface{}{}
 		if status != nil {
@@ -647,6 +647,14 @@ func (s *Storage) BatchUpdateSqlManager(idList []*uint64, status *string, remark
 		}
 		if len(data) > 0 {
 			err := tx.Model(&SQLManageRecordProcess{}).Where("sql_manage_record_id in (?)", idList).Updates(data).Error
+			if err != nil {
+				return err
+			}
+		}
+
+		// update priority
+		if priority != nil {
+			err := tx.Model(&SQLManageRecord{}).Where("id in (?)", idList).Updates(map[string]interface{}{"priority": *priority}).Error
 			if err != nil {
 				return err
 			}

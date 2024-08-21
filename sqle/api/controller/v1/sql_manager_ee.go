@@ -161,7 +161,7 @@ func batchUpdateSqlManage(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, e.New("sql manage record not exist")))
 	}
 
-	err = s.BatchUpdateSqlManager(distinctSqlManageIDs, req.Status, req.Remark, req.Assignees)
+	err = s.BatchUpdateSqlManager(distinctSqlManageIDs, req.Status, req.Remark, req.Priority, req.Assignees)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
