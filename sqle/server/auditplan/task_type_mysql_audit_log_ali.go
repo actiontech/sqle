@@ -51,7 +51,7 @@ func (at *MySQLAuditLogAliTaskV2) Params(instanceId ...string) params.Params {
 		{
 			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
 			Desc:  "启动任务时拉取日志时间范围(单位:小时,最大31天)",
-			Value: "",
+			Value: "24",
 			Type:  params.ParamTypeInt,
 		},
 		{
