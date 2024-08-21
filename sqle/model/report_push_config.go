@@ -104,3 +104,12 @@ func (s Storage) GetUpdatedReportPushConfigByTime(lastSyncTime time.Time) ([]*Re
 	}
 	return rpcList, nil
 }
+
+func (s Storage) GetReportPushConfigInProjectByType(projectID, typ string) (*ReportPushConfig, error) {
+	reportPushConfig := new(ReportPushConfig)
+	err := s.db.Model(ReportPushConfig{}).Where("project_id = ? AND `type` = ?", projectID, typ).Preload("ReportPushConfigRecord").First(&reportPushConfig).Error
+	if err != nil {
+		return nil, err
+	}
+	return reportPushConfig, nil
+}
