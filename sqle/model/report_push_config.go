@@ -113,3 +113,14 @@ func (s Storage) GetReportPushConfigInProjectByType(projectID, typ string) (*Rep
 	}
 	return reportPushConfig, nil
 }
+
+func (s Storage) DeleteReportPushConfigInProject(projectID string) error {
+	configs, err := s.GetReportPushConfigListInProject(projectID)
+	if err != nil {
+		return err
+	}
+	if len(configs) != 0 {
+		return s.Delete(configs)
+	}
+	return nil
+}

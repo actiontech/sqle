@@ -112,7 +112,7 @@ func Run(options *config.SqleOptions) error {
 
 	}
 	{
-		if err := s.CreateDefaultReportPushConfigIfNotExist(); err != nil {
+		if err := s.CreateDefaultReportPushConfigIfNotExist(model.DefaultProjectUid); err != nil {
 			return fmt.Errorf("create default report push config failed: %v", err)
 		}
 	}

@@ -457,13 +457,13 @@ func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
 	return fmt.Sprintf("default_%v", dbType)
 }
 
-func (s *Storage) CreateDefaultReportPushConfigIfNotExist() error {
-	_, exist, err := s.GetReportPushConfigByProjectId(ProjectUID(DefaultProjectUid))
+func (s *Storage) CreateDefaultReportPushConfigIfNotExist(projectUId string) error {
+	_, exist, err := s.GetReportPushConfigByProjectId(ProjectUID(projectUId))
 	if err != nil {
 		return err
 	}
 	if !exist {
-		err = s.InitReportPushConfigInProject(DefaultProjectUid)
+		err = s.InitReportPushConfigInProject(projectUId)
 		if err != nil {
 			return err
 		}
