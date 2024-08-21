@@ -1,10 +1,17 @@
 package auditplan
 
 import (
+	"context"
+	e "errors"
+	"net"
+	"regexp"
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -173,10 +180,11 @@ func (at *TaskWrapper) FullSyncSQLs(sqls []*SQL) error {
 		sqlList = append(sqlList, ConvertSQLV2ToMangerSQLQueue(sql))
 	}
 
-	err := at.persist.PushSQLToManagerSQLQueue(sqlList)
+	err := at.pushSQLToManagerSQLQueue(sqlList)
 	if err != nil {
 		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
 	}
+
 	return err
 }
 
@@ -233,10 +241,10 @@ func (at *TaskWrapper) extractSQL() {
 	for _, sql := range sqls {
 		sqlQueues = append(sqlQueues, ConvertSQLV2ToMangerSQLQueue(sql))
 	}
-	err = at.persist.PushSQLToManagerSQLQueue(sqlQueues)
+
+	err = at.pushSQLToManagerSQLQueue(sqlQueues)
 	if err != nil {
 		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
-		return
 	}
 }
 
@@ -258,4 +266,259 @@ func (at *TaskWrapper) loop(cancel chan struct{}, interval time.Duration) {
 			at.extractSQL()
 		}
 	}
+}
+
+func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue) error {
+	if len(sqlList) == 0 {
+		return nil
+	}
+
+	matchedCount, SqlQueueList, err := at.filterSqlManageQueue(sqlList)
+	if err != nil {
+		return err
+	}
+
+	err = at.updateBlacklistInfo(matchedCount)
+	if err != nil {
+		return err
+	}
+
+	err = at.persist.PushSQLToManagerSQLQueue(SqlQueueList)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (map[uint]uint, []*model.SQLManageQueue, error) {
+	blackListMap := make(map[string][]*model.BlackListAuditPlanSQL)
+	instanceMap := make(map[string]string)
+	var err error
+	matchedCount := make(map[uint]uint)
+	SqlQueueList := make([]*model.SQLManageQueue, 0)
+	for _, sql := range sqlList {
+		blacklist, ok := blackListMap[sql.ProjectId]
+		if !ok {
+			blacklist, err = at.persist.GetBlackListByProjectID(model.ProjectUID(sql.ProjectId))
+			if err != nil {
+				return nil, nil, err
+			}
+			blackListMap[sql.ProjectId] = blacklist
+		}
+
+		instName, ok := instanceMap[sql.InstanceID]
+		if !ok {
+			instance, exist, err := dms.GetInstancesById(context.TODO(), sql.InstanceID)
+			if err != nil {
+				return nil, nil, err
+			}
+			if !exist {
+				return nil, nil, e.New("instance not exist")
+			}
+			instName = instance.Name
+			instanceMap[sql.InstanceID] = instName
+		}
+
+		matchedID, isInBlacklist := filterSQLsByBlackList(sql.EndPoint, sql.SqlText, sql.SqlFingerprint, instName, blacklist)
+		if isInBlacklist {
+			matchedCount[matchedID]++
+			continue
+		}
+
+		SqlQueueList = append(SqlQueueList, sql)
+	}
+
+	return matchedCount, SqlQueueList, nil
+}
+
+func filterSQLsByBlackList(endpoint, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
+	if len(blacklist) == 0 {
+		return 0, false
+	}
+
+	filter := ConvertToBlackFilter(blacklist)
+
+	matchedID, hasEndpointInBlacklist := filter.HasEndpointInBlackList([]string{endpoint})
+	if hasEndpointInBlacklist {
+		return matchedID, true
+	}
+
+	matchedID, isSqlInBlackList := filter.IsSqlInBlackList(sqlText)
+	if isSqlInBlackList {
+		return matchedID, true
+	}
+
+	matchedID, isFpInBlackList := filter.IsFpInBlackList(sqlFp)
+	if isFpInBlackList {
+		return matchedID, true
+	}
+
+	matchedID, isInstNameInBlackList := filter.IsInstNameInBlackList(instName)
+	if isInstNameInBlackList {
+		return matchedID, true
+	}
+
+	return 0, false
+}
+
+func (at *TaskWrapper) updateBlacklistInfo(matchedCount map[uint]uint) error {
+	m := make(map[uint] /*count*/ []uint /*blacklist id list*/)
+	for id, count := range matchedCount {
+		m[count] = append(m[count], id)
+	}
+
+	lastMatchedTime := time.Now()
+	for count, idList := range m {
+		err := at.persist.BatchUpdateBlackListCount(idList, count, lastMatchedTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func ConvertToBlackFilter(blackList []*model.BlackListAuditPlanSQL) *BlackFilter {
+	var blackFilter BlackFilter
+	for _, filter := range blackList {
+		switch filter.FilterType {
+		case model.FilterTypeSQL:
+			blackFilter.BlackSqlList = append(blackFilter.BlackSqlList, BlackSqlList{
+				ID:     filter.ID,
+				Regexp: utils.FullFuzzySearchRegexp(filter.FilterContent),
+			})
+		case model.FilterTypeFpSQL:
+			blackFilter.BlackFpList = append(blackFilter.BlackFpList, BlackFpList{
+				ID:     filter.ID,
+				Regexp: utils.FullFuzzySearchRegexp(filter.FilterContent),
+			})
+		case model.FilterTypeHost:
+			blackFilter.BlackHostList = append(blackFilter.BlackHostList, BlackHostList{
+				ID:     filter.ID,
+				Regexp: utils.FullFuzzySearchRegexp(filter.FilterContent),
+			})
+		case model.FilterTypeIP:
+			ip := net.ParseIP(filter.FilterContent)
+			if ip == nil {
+				log.Logger().Errorf("wrong ip in black list,ip:%s", filter.FilterContent)
+				continue
+			}
+			blackFilter.BlackIpList = append(blackFilter.BlackIpList, BlackIpList{
+				ID: filter.ID,
+				Ip: ip,
+			})
+		case model.FilterTypeCIDR:
+			_, cidr, err := net.ParseCIDR(filter.FilterContent)
+			if err != nil {
+				log.Logger().Errorf("wrong cidr in black list,cidr:%s,err:%v", filter.FilterContent, err)
+				continue
+			}
+			blackFilter.BlackCidrList = append(blackFilter.BlackCidrList, BlackCidrList{
+				ID:   filter.ID,
+				Cidr: cidr,
+			})
+		case model.FilterTypeInstance:
+			blackFilter.BlackInstList = append(blackFilter.BlackInstList, BlackInstList{
+				ID:       filter.ID,
+				InstName: filter.FilterContent,
+			})
+		}
+	}
+	return &blackFilter
+}
+
+type BlackFilter struct {
+	BlackSqlList  []BlackSqlList
+	BlackFpList   []BlackFpList
+	BlackIpList   []BlackIpList
+	BlackHostList []BlackHostList
+	BlackCidrList []BlackCidrList
+	BlackInstList []BlackInstList
+}
+
+type BlackSqlList struct {
+	ID     uint
+	Regexp *regexp.Regexp
+}
+
+type BlackFpList struct {
+	ID     uint
+	Regexp *regexp.Regexp
+}
+
+type BlackIpList struct {
+	ID uint
+	Ip net.IP
+}
+
+type BlackHostList struct {
+	ID     uint
+	Regexp *regexp.Regexp
+}
+
+type BlackCidrList struct {
+	ID   uint
+	Cidr *net.IPNet
+}
+
+type BlackInstList struct {
+	ID       uint
+	InstName string
+}
+
+func (f BlackFilter) IsSqlInBlackList(checkSql string) (uint, bool) {
+	for _, blackSql := range f.BlackSqlList {
+		if blackSql.Regexp.MatchString(checkSql) {
+			return blackSql.ID, true
+		}
+	}
+	return 0, false
+}
+
+func (f BlackFilter) IsFpInBlackList(fp string) (uint, bool) {
+	for _, blackFp := range f.BlackFpList {
+		if blackFp.Regexp.MatchString(fp) {
+			return blackFp.ID, true
+		}
+	}
+	return 0, false
+}
+
+func (f BlackFilter) IsInstNameInBlackList(instName string) (uint, bool) {
+	for _, blackInstName := range f.BlackInstList {
+		if blackInstName.InstName == instName {
+			return blackInstName.ID, true
+		}
+	}
+	return 0, false
+}
+
+// 输入一组ip若其中有一个ip在黑名单中则返回true
+func (f BlackFilter) HasEndpointInBlackList(checkIps []string) (uint, bool) {
+	var checkNetIp net.IP
+	for _, checkIp := range checkIps {
+		checkNetIp = net.ParseIP(checkIp)
+		if checkNetIp == nil {
+			// 无法解析IP，可能是域名，需要正则匹配
+			for _, blackHost := range f.BlackHostList {
+				if blackHost.Regexp.MatchString(checkIp) {
+					return blackHost.ID, true
+				}
+			}
+		} else {
+			for _, blackIp := range f.BlackIpList {
+				if blackIp.Ip.Equal(checkNetIp) {
+					return blackIp.ID, true
+				}
+			}
+			for _, blackCidr := range f.BlackCidrList {
+				if blackCidr.Cidr.Contains(checkNetIp) {
+					return blackCidr.ID, true
+				}
+			}
+		}
+	}
+
+	return 0, false
 }

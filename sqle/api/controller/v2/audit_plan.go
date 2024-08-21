@@ -312,21 +312,6 @@ type AuditPlanSQLReqV2 struct {
 	Endpoints            []string  `json:"endpoints" from:"endpoints"`
 }
 
-func filterSQLsByBlackList(sqls []*AuditPlanSQLReqV2, blackList []*model.BlackListAuditPlanSQL) []*AuditPlanSQLReqV2 {
-	if len(blackList) == 0 {
-		return sqls
-	}
-	filteredSQLs := []*AuditPlanSQLReqV2{}
-	filter := v1.ConvertToBlackFilter(blackList)
-	for _, sql := range sqls {
-		if filter.HasEndpointInBlackList(sql.Endpoints) || filter.IsSqlInBlackList(sql.LastReceiveText) {
-			continue
-		}
-		filteredSQLs = append(filteredSQLs, sql)
-	}
-	return filteredSQLs
-}
-
 func convertToModelAuditPlanSQL(dbType string, reqSQLs []*AuditPlanSQLReqV2) ([]*auditplan.SQL, error) {
 	var p driver.Plugin
 	var err error
@@ -448,12 +433,6 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
-	if err == nil {
-		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
-	} else {
-		l.Warnf("blacklist is not used, err:%v", err)
-	}
 	if len(reqSQLs) == 0 {
 		return controller.JSONBaseErrorReq(c, nil)
 	}
@@ -502,12 +481,6 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	l := log.NewEntry()
 	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
-	if err == nil {
-		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
-	} else {
-		l.Warnf("blacklist is not used, err:%v", err)
-	}
 	if len(reqSQLs) == 0 {
 		return controller.JSONBaseErrorReq(c, nil)
 	}
@@ -544,11 +517,6 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	s := model.GetStorage()
 
 	ap, exist, err := s.GetActiveAuditPlanDetail(uint(apID))
@@ -560,13 +528,17 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	reqSQLs := req.SQLs
-	blackList, err := s.GetBlackListAuditPlanSQLsByProjectID(model.ProjectUID(projectUid))
-	if err == nil {
-		reqSQLs = filterSQLsByBlackList(reqSQLs, blackList)
-	} else {
-		l.Warnf("blacklist is not used, err:%v", err)
+	instance, exist, err := dms.GetInstancesById(c.Request().Context(), ap.InstanceID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
+	if exist {
+		ap.Instance = instance
+	} else {
+		l.Errorf("instance not found, instance id: %s", ap.InstanceID)
+	}
+
+	reqSQLs := req.SQLs
 	if len(reqSQLs) == 0 {
 		return controller.JSONBaseErrorReq(c, nil)
 	}

@@ -58,20 +58,20 @@ type AuditPlanSQLV2 struct {
 type BlacklistFilterType string
 
 const (
-	FilterTypeSQL      BlacklistFilterType = "SQL"
-	FilterTypeFpSQL    BlacklistFilterType = "FP_SQL"
-	FilterTypeIP       BlacklistFilterType = "IP"
-	FilterTypeCIDR     BlacklistFilterType = "CIDR"
-	FilterTypeHost     BlacklistFilterType = "HOST"
-	FilterTypeInstance BlacklistFilterType = "INSTANCE"
+	FilterTypeSQL      BlacklistFilterType = "sql"
+	FilterTypeFpSQL    BlacklistFilterType = "fp_sql"
+	FilterTypeIP       BlacklistFilterType = "ip"
+	FilterTypeCIDR     BlacklistFilterType = "cidr"
+	FilterTypeHost     BlacklistFilterType = "host"
+	FilterTypeInstance BlacklistFilterType = "instance"
 )
 
 type BlackListAuditPlanSQL struct {
 	Model
 	ProjectId     ProjectUID          `gorm:"index; not null"`
-	FilterContent string              `json:"filter_content" gorm:"type:varchar(512);not null;"`
+	FilterContent string              `json:"filter_content" gorm:"type:varchar(3000);not null;"`
 	Desc          string              `json:"desc" gorm:"type:varchar(512)"`
-	FilterType    BlacklistFilterType `json:"filter_type" gorm:"type:enum('SQL','FP_SQL','IP','CIDR','HOST','INSTANCE');default:'SQL';not null;"`
+	FilterType    BlacklistFilterType `json:"filter_type" gorm:"type:enum('sql','fp_sql','ip','cidr','host','instance');default:'SQL';not null;"`
 	MatchedCount  uint                `json:"matched_count" gorm:"default:0"`
 	LastMatchTime *time.Time          `json:"last_match_time"`
 }
@@ -89,7 +89,7 @@ func (s *Storage) GetBlacklistByID(projectID ProjectUID, id string) (*BlackListA
 	return bl, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetBlackListAuditPlanSQLsByProjectID(projectID ProjectUID) ([]*BlackListAuditPlanSQL, error) {
+func (s *Storage) GetBlackListByProjectID(projectID ProjectUID) ([]*BlackListAuditPlanSQL, error) {
 	var blackListAPS []*BlackListAuditPlanSQL
 	err := s.db.Model(BlackListAuditPlanSQL{}).Where("project_id = ?", projectID).Find(&blackListAPS).Error
 	return blackListAPS, errors.New(errors.ConnectStorageError, err)
@@ -111,6 +111,16 @@ func (s *Storage) GetBlacklistList(projectID ProjectUID, FilterType BlacklistFil
 	}
 	err = query.Offset(int((pageIndex - 1) * pageSize)).Limit(int(pageSize)).Order("id desc").Find(&blackListAPS).Error
 	return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) BatchUpdateBlackListCount(IdList []uint, matchedCount uint, lastMatchTime time.Time) error {
+	m := map[string]interface{}{
+		"matched_count":   gorm.Expr("matched_count + ?", matchedCount),
+		"last_match_time": lastMatchTime,
+	}
+
+	err := s.db.Model(BlackListAuditPlanSQL{}).Where("id in (?)", IdList).Updates(m).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (a AuditPlanSQLV2) TableName() string {

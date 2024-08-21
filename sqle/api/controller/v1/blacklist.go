@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -41,7 +40,6 @@ func CreateBlacklist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	s := model.GetStorage()
 	err = s.Save(&model.BlackListAuditPlanSQL{
 		ProjectId:     model.ProjectUID(projectUid),
@@ -134,7 +132,7 @@ func UpdateBlacklist(c echo.Context) error {
 		blacklist.FilterContent = *req.Content
 	}
 	if req.Type != nil {
-		blacklist.FilterType = model.BlacklistFilterType(strings.ToUpper(*req.Type))
+		blacklist.FilterType = model.BlacklistFilterType(*req.Type)
 	}
 	if req.Desc != nil {
 		blacklist.Desc = *req.Desc
@@ -195,7 +193,7 @@ func GetBlacklist(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	blacklistList, count, err := s.GetBlacklistList(model.ProjectUID(projectUid), model.BlacklistFilterType(strings.ToUpper(req.FilterType)), req.FuzzySearchContent, req.PageIndex, req.PageSize)
+	blacklistList, count, err := s.GetBlacklistList(model.ProjectUID(projectUid), model.BlacklistFilterType(req.FilterType), req.FuzzySearchContent, req.PageIndex, req.PageSize)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
