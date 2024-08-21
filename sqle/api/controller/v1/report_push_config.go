@@ -104,18 +104,12 @@ func UpdateReportPushConfig(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("report push configs %v not exist ,can't updatede", reportPushConfigId))
 	}
 
-	// 启停作为单独的行为，推送开关不一致，只做启停变更
-	if req.Enabled != config.Enabled {
-		config.Enabled = req.Enabled
-	} else {
-		if config.Type == model.TypeWorkflow {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("report push configs %v update is not supported", config.Type))
-		}
-		config.TriggerType = req.TriggerType
-		config.PushFrequencyCron = req.PushFrequencyCron
-		config.PushUserType = req.PushUserType
-		config.PushUserList = req.PushUserList
-	}
+	config.Enabled = req.Enabled
+	config.TriggerType = req.TriggerType
+	config.PushFrequencyCron = req.PushFrequencyCron
+	config.PushUserType = req.PushUserType
+	config.PushUserList = req.PushUserList
+
 	err = s.Save(config)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
