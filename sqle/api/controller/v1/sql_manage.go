@@ -98,7 +98,7 @@ func GetSqlManageList(c echo.Context) error {
 type BatchUpdateSqlManageReq struct {
 	SqlManageIdList []*uint64 `json:"sql_manage_id_list"`
 	Status          *string   `json:"status" enums:"solved,ignored,manual_audited"`
-	Priority        *string   `json:"priority" enums:"high,''"`
+	Priority        *string   `json:"priority" enums:",high"`
 	Assignees       []string  `json:"assignees"`
 	Remark          *string   `json:"remark"`
 }
