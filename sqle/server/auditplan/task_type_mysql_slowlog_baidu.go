@@ -53,7 +53,7 @@ func (at *MySQLSlowLogBaiduTaskV2) Params(instanceId ...string) params.Params {
 			// 百度云RDS慢日志只能拉取最近7天的数据
 			// https://cloud.baidu.com/doc/RDS/s/Tjwvz046g
 			Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大7天)",
-			Value: "",
+			Value: "24",
 			Type:  params.ParamTypeInt,
 		},
 		{
