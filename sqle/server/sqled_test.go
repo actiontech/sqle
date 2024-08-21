@@ -174,6 +174,11 @@ func Test_action_audit_UpdateTask(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"value", "match_type"}).AddRow(whitelist.Value, whitelist.MatchType))
 
 	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `sql_whitelist` SET `last_matched_time`=?,`matched_count`=matched_count + ? WHERE sql_whitelist.id = ? AND `sql_whitelist`.`deleted_at` IS NULL")).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `execute_sql_detail`")).
 		// WithArgs(model.MockTime, model.MockTime, nil, 0, 0, act.task.ExecuteSQLs[0].Content, "", "", 0, "", 0, 0, "", "", "", 0, "", model.SQLAuditStatusFinished, `[{"level":"normal","message":"白名单","rule_name":""}]`, "2882fdbb7d5bcda7b49ea0803493467e", "normal").
 		WillReturnResult(sqlmock.NewResult(1, 1))
