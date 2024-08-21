@@ -10303,6 +10303,13 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "priority": {
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "''"
+                    ]
+                },
                 "remark": {
                     "type": "string"
                 },

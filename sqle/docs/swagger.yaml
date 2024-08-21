@@ -499,6 +499,11 @@ definitions:
         items:
           type: string
         type: array
+      priority:
+        enum:
+        - high
+        - ''''''
+        type: string
       remark:
         type: string
       sql_manage_id_list:
