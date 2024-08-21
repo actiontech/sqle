@@ -63,7 +63,7 @@ func (at *MySQLSlowLogHuaweiTaskV2) Params(instanceId ...string) params.Params {
 		{
 			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
 			Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
-			Value: "",
+			Value: "24",
 			Type:  params.ParamTypeInt,
 		},
 		{
