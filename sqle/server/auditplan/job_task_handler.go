@@ -167,6 +167,7 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 			return nil, err
 		}
 		highPriorityConditions := auditPlan.HighPriorityParams
+		priority := sql.NullString{}
 		for _, highPriorityCondition := range highPriorityConditions {
 			var compareParamVale string
 			// 审核级别特殊处理
@@ -189,12 +190,13 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 				compareParamVale = fmt.Sprintf("%v", infoV)
 			}
 			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
-				sqlList[i].Priority = sql.NullString{
+				priority = sql.NullString{
 					String: model.PriorityHigh,
 					Valid:  true,
 				}
 			}
 		}
+		sqlList[i].Priority = priority
 	}
 	return sqlList, nil
 }
