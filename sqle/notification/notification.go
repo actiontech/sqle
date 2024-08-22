@@ -280,10 +280,19 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 }
 
 func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
+	logger := log.NewEntry()
 	s := model.GetStorage()
+	// 确认推送功能是否开启
+	config, err := s.GetReportPushConfigInProjectByType(projectId, model.TypeWorkflow)
+	if err != nil {
+		logger.Errorf("get report push config failed: %v", err)
+	}
+	if !config.Enabled {
+		return
+	}
 	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
-		log.NewEntry().Error("notify workflow error, workflow not exits")
+		logger.Error("notify workflow error, workflow not exits")
 		return
 	}
 
@@ -291,10 +300,17 @@ func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 
 	sqleUrl, err := s.GetSqleUrl()
 	if err != nil {
-		log.NewEntry().Errorf("get sqle url error, %v", err)
+		logger.Errorf("get sqle url error, %v", err)
 		return
 	}
 	notifyWorkflow(sqleUrl, workflow, wt)
+	// 更新最新推送时间
+	config.ReportPushConfigRecord.ReportPushConfigID = config.ID
+	config.ReportPushConfigRecord.LastPushTime = time.Now()
+	err = s.Save(&config.ReportPushConfigRecord)
+	if err != nil {
+		logger.Errorf("update report push config time failed: %v", err)
+	}
 }
 
 type AuditPlanNotification struct {
