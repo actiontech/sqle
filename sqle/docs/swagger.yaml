@@ -501,8 +501,8 @@ definitions:
         type: array
       priority:
         enum:
+        - ""
         - high
-        - ''''''
         type: string
       remark:
         type: string
@@ -2413,7 +2413,7 @@ definitions:
       instance_audit_plan_id:
         type: integer
       instance_id:
-        type: integer
+        type: string
       instance_name:
         type: string
       instance_type:
