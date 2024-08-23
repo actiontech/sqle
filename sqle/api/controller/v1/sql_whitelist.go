@@ -153,10 +153,10 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 }
 
 type GetAuditWhitelistReqV1 struct {
-	FuzzySearchValue string `json:"fuzzy_value" query:"fuzzy_value" valid:"omitempty"`
-	FilterMatchType  string `json:"filter_match_type" query:"filter_match_type" valid:"omitempty,oneof=exact_match fp_match" enums:"exact_match,fp_match"`
-	PageIndex        uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize         uint32 `json:"page_size" query:"page_size" valid:"required"`
+	FuzzySearchValue *string `json:"fuzzy_value" query:"fuzzy_value" valid:"omitempty"`
+	FilterMatchType  *string `json:"filter_match_type" query:"filter_match_type" valid:"omitempty,oneof=exact_match fp_match" enums:"exact_match,fp_match"`
+	PageIndex        uint32  `json:"page_index" query:"page_index" valid:"required"`
+	PageSize         uint32  `json:"page_size" query:"page_size" valid:"required"`
 }
 
 type GetAuditWhitelistResV1 struct {
@@ -197,17 +197,19 @@ func GetSqlWhitelist(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectUID(req.PageIndex, req.PageSize, model.ProjectUID(projectUid))
+	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectUID(req.PageIndex, req.PageSize, model.ProjectUID(projectUid), req.FuzzySearchValue, req.FilterMatchType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	whitelistRes := make([]*AuditWhitelistResV1, 0, len(sqlWhitelist))
 	for _, v := range sqlWhitelist {
 		whitelistRes = append(whitelistRes, &AuditWhitelistResV1{
-			Id:        v.ID,
-			Value:     v.Value,
-			Desc:      v.Desc,
-			MatchType: v.MatchType,
+			Id:            v.ID,
+			Value:         v.Value,
+			Desc:          v.Desc,
+			MatchType:     v.MatchType,
+			MatchedCount:  uint(v.MatchedCount),
+			LastMatchTime: v.LastMatchedTime,
 		})
 	}
 	return c.JSON(http.StatusOK, &GetAuditWhitelistResV1{

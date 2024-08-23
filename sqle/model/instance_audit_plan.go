@@ -50,6 +50,13 @@ type AuditPlanDetail struct {
 	Instance *Instance `gorm:"-"`
 }
 
+func (a AuditPlanDetail) GetInstanceName() string {
+	if a.Instance == nil {
+		return ""
+	}
+	return a.Instance.Name
+}
+
 func (s *Storage) ListActiveAuditPlanDetail() ([]*AuditPlanDetail, error) {
 	var aps []*AuditPlanDetail
 	err := s.db.Model(AuditPlanV2{}).Joins("JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id").
@@ -95,6 +102,7 @@ func (s *Storage) getAuditPlanDetailByID(id uint, status string) (*AuditPlanDeta
 	if ap == nil {
 		return nil, false, nil
 	}
+
 	return ap, true, nil
 }
 

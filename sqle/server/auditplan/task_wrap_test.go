@@ -1,23 +1,22 @@
-package v1_test
+package auditplan
 
 import (
 	"testing"
 
-	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
 func TestIsSqlInBlackList(t *testing.T) {
-	filter := v1.ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
+	filter := ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
 		{
 			FilterContent: "SELECT",
-			FilterType:    "SQL",
+			FilterType:    "sql",
 		}, {
 			FilterContent: "table_1",
-			FilterType:    "SQL",
-		},{
+			FilterType:    "sql",
+		}, {
 			FilterContent: "ignored_service",
-			FilterType:    "SQL",
+			FilterType:    "sql",
 		},
 	})
 
@@ -30,7 +29,7 @@ func TestIsSqlInBlackList(t *testing.T) {
 		`/* this is a comment, Service: ignored_service */ update * from table_ignored where id < 123;`,
 	}
 	for _, matchSql := range matchSqls {
-		if !filter.IsSqlInBlackList(matchSql) {
+		if _, isSqlInBlackList := filter.IsSqlInBlackList(matchSql); !isSqlInBlackList {
 			t.Error("Expected SQL to match blacklist")
 		}
 	}
@@ -42,20 +41,20 @@ func TestIsSqlInBlackList(t *testing.T) {
 		service */ update * from table_ignored where id < 123;`,
 	}
 	for _, notMatchSql := range notMatchSqls {
-		if filter.IsSqlInBlackList(notMatchSql) {
+		if _, isSqlInBlackList := filter.IsSqlInBlackList(notMatchSql); isSqlInBlackList {
 			t.Error("Did not expect SQL to match blacklist")
 		}
 	}
 }
 
 func TestIsIpInBlackList(t *testing.T) {
-	filter := v1.ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
+	filter := ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
 		{
 			FilterContent: "192.168.1.23",
-			FilterType:    "IP",
+			FilterType:    "ip",
 		}, {
 			FilterContent: "10.0.5.67",
-			FilterType:    "IP",
+			FilterType:    "ip",
 		},
 	})
 
@@ -64,7 +63,7 @@ func TestIsIpInBlackList(t *testing.T) {
 		"192.168.1.23",
 	}
 	for _, matchIp := range matchIps {
-		if !filter.HasEndpointInBlackList([]string{matchIp}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{matchIp}); !hasEndpointInBlackList {
 			t.Error("Expected Ip to match blacklist")
 		}
 	}
@@ -75,20 +74,20 @@ func TestIsIpInBlackList(t *testing.T) {
 		"50.67.89.12",
 	}
 	for _, notMatchIp := range notMatchIps {
-		if filter.HasEndpointInBlackList([]string{notMatchIp}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{notMatchIp}); hasEndpointInBlackList {
 			t.Error("Did not expect Ip to match blacklist")
 		}
 	}
 }
 
 func TestIsCidrInBlackList(t *testing.T) {
-	filter := v1.ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
+	filter := ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
 		{
 			FilterContent: "192.168.0.0/24",
-			FilterType:    "CIDR",
+			FilterType:    "cidr",
 		}, {
 			FilterContent: "10.100.0.0/16",
-			FilterType:    "CIDR",
+			FilterType:    "cidr",
 		},
 	})
 
@@ -99,7 +98,7 @@ func TestIsCidrInBlackList(t *testing.T) {
 		"192.168.0.45",
 	}
 	for _, matchIp := range matchIps {
-		if !filter.HasEndpointInBlackList([]string{matchIp}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{matchIp}); !hasEndpointInBlackList {
 			t.Error("Expected CIDR to match blacklist")
 		}
 	}
@@ -112,20 +111,20 @@ func TestIsCidrInBlackList(t *testing.T) {
 		"172.30.30.45",
 	}
 	for _, notMatchIp := range notMatchIps {
-		if filter.HasEndpointInBlackList([]string{notMatchIp}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{notMatchIp}); hasEndpointInBlackList {
 			t.Error("Did not expect CIDR to match blacklist")
 		}
 	}
 }
 
 func TestIsHostInBlackList(t *testing.T) {
-	filter := v1.ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
+	filter := ConvertToBlackFilter([]*model.BlackListAuditPlanSQL{
 		{
 			FilterContent: "host",
-			FilterType:    "HOST",
+			FilterType:    "host",
 		}, {
 			FilterContent: "some_site",
-			FilterType:    "HOST",
+			FilterType:    "host",
 		},
 	})
 
@@ -138,7 +137,7 @@ func TestIsHostInBlackList(t *testing.T) {
 	}
 
 	for _, matchHost := range matchHosts {
-		if !filter.HasEndpointInBlackList([]string{matchHost}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{matchHost}); !hasEndpointInBlackList {
 			t.Error("Expected HOST to match blacklist")
 		}
 	}
@@ -148,7 +147,7 @@ func TestIsHostInBlackList(t *testing.T) {
 		"any_other_site/local",
 	}
 	for _, noMatchHost := range notMatchHosts {
-		if filter.HasEndpointInBlackList([]string{noMatchHost}) {
+		if _, hasEndpointInBlackList := filter.HasEndpointInBlackList([]string{noMatchHost}); hasEndpointInBlackList {
 			t.Error("Did not expect HOST to match blacklist")
 		}
 	}
