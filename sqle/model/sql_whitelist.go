@@ -2,6 +2,7 @@ package model
 
 import (
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
 
@@ -21,8 +22,10 @@ type SqlWhitelist struct {
 	CapitalizedValue string `json:"-" gorm:"-"`
 	Desc             string `json:"desc" gorm:"type:varchar(255)"`
 	// MessageDigest deprecated after 1.1.0, keep it for compatibility.
-	MessageDigest string `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
-	MatchType     string `json:"match_type" gorm:"default:\"exact_match\""`
+	MessageDigest   string     `json:"message_digest" gorm:"type:char(32) not null comment 'md5 data';" `
+	MatchType       string     `json:"match_type" gorm:"default:\"exact_match\""`
+	MatchedCount    int        `json:"matched_count" gorm:"default:0"`
+	LastMatchedTime *time.Time `json:"last_matched_time"`
 }
 
 // BeforeSave is a hook implement gorm model before exec create
@@ -84,11 +87,20 @@ func (s *Storage) GetSqlWhitelistByIdAndProjectUID(sqlWhiteId string, projectUID
 // 	return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
 // }
 
-func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID) ([]SqlWhitelist, int64, error) {
+func (s *Storage) GetSqlWhitelistByProjectUID(pageIndex, pageSize uint32, projectUID ProjectUID, fuzzyValue, matchType *string) ([]SqlWhitelist, int64, error) {
 	var count int64
 	sqlWhitelist := []SqlWhitelist{}
 	query := s.db.Table("sql_whitelist").
 		Where("project_id = ?", projectUID).Where("deleted_at IS NULL")
+
+	if fuzzyValue != nil {
+		query = query.Where("value LIKE ?", "%"+*fuzzyValue+"%")
+	}
+
+	if matchType != nil {
+		query = query.Where("match_type = ?", *matchType)
+	}
+
 	if pageSize == 0 {
 		err := query.Order("id desc").Find(&sqlWhitelist).Count(&count).Error
 		return sqlWhitelist, count, errors.New(errors.ConnectStorageError, err)
@@ -107,6 +119,16 @@ func (s *Storage) GetSqlWhitelistByProjectId(projectId string) ([]SqlWhitelist, 
 		Where("sql_whitelist.project_id = ?", projectId).
 		Find(&sqlWhitelist).Error
 	return sqlWhitelist, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateSqlWhitelistMatchedInfo(id uint, count int, lastMatchedTime time.Time) error {
+	m := map[string]interface{}{
+		"matched_count":     gorm.Expr("matched_count + ?", count),
+		"last_matched_time": lastMatchedTime,
+	}
+
+	err := s.db.Model(&SqlWhitelist{}).Where("sql_whitelist.id = ?", id).UpdateColumns(m).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 // func (s *Storage) GetSqlWhitelistTotalByProjectName(projectName string) (uint64, error) {

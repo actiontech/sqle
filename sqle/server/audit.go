@@ -6,6 +6,7 @@ import (
 	"math"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -158,6 +159,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			return err
 		}
 		var whitelistMatch bool
+		var matchedWhitelistID uint
 		for _, wl := range whitelist {
 			if wl.MatchType == model.SQLWhitelistFPMatch {
 				wlNode, err := parse(l, p, wl.Value)
@@ -165,21 +167,26 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 					l.Errorf("parse whitelist sql error: %v,please check the accuracy of whitelist SQL: %s", err, wl.Value)
 				}
 				if node.Fingerprint == wlNode.Fingerprint {
+					matchedWhitelistID = wl.ID
 					whitelistMatch = true
 				}
 			} else {
 				if wl.CapitalizedValue == strings.ToUpper(node.Text) {
+					matchedWhitelistID = wl.ID
 					whitelistMatch = true
 				}
 			}
 		}
 		if whitelistMatch {
 			result := driverV2.NewAuditResults()
-			result.Add(driverV2.RuleLevelNormal, "", "白名单")
+			result.Add(driverV2.RuleLevelNormal, "", "审核SQL例外")
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
 			appendExecuteSqlResults(executeSQL, result)
+			if err := st.UpdateSqlWhitelistMatchedInfo(matchedWhitelistID, 1, time.Now()); err != nil {
+				l.Errorf("update sql whitelist matched info error: %v", err)
+			}
 		} else {
 			auditSqls = append(auditSqls, executeSQL)
 			sqls = append(sqls, executeSQL.Content)
