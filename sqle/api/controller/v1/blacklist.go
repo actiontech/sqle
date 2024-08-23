@@ -1,9 +1,15 @@
 package v1
 
 import (
+	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -25,7 +31,27 @@ type CreateBlacklistReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/blacklist [post]
 func CreateBlacklist(c echo.Context) error {
-	return nil
+	req := new(CreateBlacklistReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	err = s.Save(&model.BlackListAuditPlanSQL{
+		ProjectId:     model.ProjectUID(projectUid),
+		FilterType:    model.BlacklistFilterType(req.Type),
+		FilterContent: req.Content,
+		Desc:          req.Desc,
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 // DeleteBlacklist
@@ -38,7 +64,28 @@ func CreateBlacklist(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/blacklist/{blacklist_id}/ [delete]
 func DeleteBlacklist(c echo.Context) error {
-	return nil
+	blacklistId := c.Param("blacklist_id")
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	blacklist, exist, err := s.GetBlacklistByID(model.ProjectUID(projectUid), blacklistId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("blacklist is not exist")))
+	}
+
+	if err := s.Delete(blacklist); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type UpdateBlacklistReqV1 struct {
@@ -60,7 +107,43 @@ type UpdateBlacklistReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/blacklist/{blacklist_id}/ [patch]
 func UpdateBlacklist(c echo.Context) error {
-	return nil
+	req := new(UpdateBlacklistReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	blacklistId := c.Param("blacklist_id")
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	blacklist, exist, err := s.GetBlacklistByID(model.ProjectUID(projectUid), blacklistId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
+			fmt.Errorf("blacklist is not exist")))
+	}
+
+	if req.Content != nil {
+		blacklist.FilterContent = *req.Content
+	}
+	if req.Type != nil {
+		blacklist.FilterType = model.BlacklistFilterType(*req.Type)
+	}
+	if req.Desc != nil {
+		blacklist.Desc = *req.Desc
+	}
+
+	err = s.Save(blacklist)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
 type GetBlacklistReqV1 struct {
@@ -99,5 +182,37 @@ type BlacklistResV1 struct {
 // @Success 200 {object} v1.GetBlacklistResV1
 // @router /v1/projects/{project_name}/blacklist [get]
 func GetBlacklist(c echo.Context) error {
-	return nil
+	req := new(GetBlacklistReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	blacklistList, count, err := s.GetBlacklistList(model.ProjectUID(projectUid), model.BlacklistFilterType(req.FilterType), req.FuzzySearchContent, req.PageIndex, req.PageSize)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	res := make([]*BlacklistResV1, 0, len(blacklistList))
+	for _, blacklist := range blacklistList {
+		res = append(res, &BlacklistResV1{
+			BlacklistID:   blacklist.ID,
+			Content:       blacklist.FilterContent,
+			Desc:          blacklist.Desc,
+			Type:          string(blacklist.FilterType),
+			MatchedCount:  blacklist.MatchedCount,
+			LastMatchTime: blacklist.LastMatchTime,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetBlacklistResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      res,
+		TotalNums: count,
+	})
 }
