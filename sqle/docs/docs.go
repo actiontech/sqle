@@ -10306,8 +10306,8 @@ var doc = `{
                 "priority": {
                     "type": "string",
                     "enum": [
-                        "high",
-                        "''"
+                        "",
+                        "high"
                     ]
                 },
                 "remark": {
@@ -13070,7 +13070,7 @@ var doc = `{
                     "type": "integer"
                 },
                 "instance_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "instance_name": {
                     "type": "string"
