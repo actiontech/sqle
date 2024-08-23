@@ -109,6 +109,11 @@ func (s *Storage) GetBlacklistList(projectID ProjectUID, FilterType BlacklistFil
 	if err != nil {
 		return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
 	}
+
+	if count == 0 {
+		return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
+	}
+
 	err = query.Offset(int((pageIndex - 1) * pageSize)).Limit(int(pageSize)).Order("id desc").Find(&blackListAPS).Error
 	return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
 }
