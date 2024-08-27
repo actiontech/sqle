@@ -115,13 +115,26 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		md5SqlManageMap[sqlManage.ProjFpSourceInstSchemaMd5] = sqlManage
 	}
 
+	blacklist, err := s.GetBlackListByProjectID(model.ProjectUID(sa.ProjectId))
+	if err != nil {
+		return fmt.Errorf("get blacklist failed, error: %v", err)
+	}
+
 	var newSqlManageList []*model.SqlManage
+	matchedCount := make(map[uint] /*blacklist id*/ uint /*count*/)
 	for _, executeSQL := range sa.Task.ExecuteSQLs {
 		sql := executeSQL.Content
 		fp := sa.SqlFpMap[sql]
 		schemaName := sa.Task.Schema
 		instName := sa.Task.InstanceName()
 		source := model.SQLManageSourceSqlAuditRecord
+		instHost := sa.Task.InstanceHost()
+
+		matchedID, isInBlacklist := filterSQLsByBlackList(instHost, sql, fp, instName, blacklist)
+		if isInBlacklist {
+			matchedCount[matchedID]++
+			continue
+		}
 
 		sqlManage, err := NewSqlManage(fp, sql, schemaName, instName, source, executeSQL.AuditLevel, sa.ProjectId, 0, &executeSQL.CreatedAt, &executeSQL.CreatedAt, 0, executeSQL.AuditResults, md5SqlManageMap)
 		if err != nil {
@@ -129,6 +142,11 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		}
 
 		newSqlManageList = append(newSqlManageList, sqlManage)
+	}
+
+	lastMatchedTime := time.Now()
+	if err := s.BatchUpdateBlackListCount(matchedCount, lastMatchedTime); err != nil {
+		return fmt.Errorf("update blacklist failed, error: %v", err)
 	}
 
 	if err := s.InsertOrUpdateSqlManage(newSqlManageList, sa.SqlAuditRecordID); err != nil {
