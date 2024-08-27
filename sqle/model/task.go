@@ -70,6 +70,13 @@ func (t *Task) InstanceName() string {
 	return ""
 }
 
+func (t *Task) InstanceHost() string {
+	if t.Instance != nil {
+		return t.Instance.Host
+	}
+	return ""
+}
+
 func (t *Task) TaskExecStartAt() string {
 	if t.ExecStartAt == nil {
 		return ""
