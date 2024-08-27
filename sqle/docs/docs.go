@@ -3456,7 +3456,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/pipelines/{pipeline_id}": {
+        "/v1/projects/{project_name}/pipelines/{pipeline_id}/": {
             "get": {
                 "security": [
                     {
@@ -10871,7 +10871,7 @@ var doc = `{
                     "description": "节点信息，必填，支持多个节点",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.PipelineNodeBase"
+                        "$ref": "#/definitions/v1.pipelineNodeBase"
                     }
                 }
             }
@@ -12265,7 +12265,7 @@ var doc = `{
                     "description": "流水线节点信息",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.PipelineNode"
+                        "$ref": "#/definitions/v1.pipelineNodeDetail"
                     }
                 }
             }
@@ -12281,7 +12281,7 @@ var doc = `{
                     "description": "流水线列表数据",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.Pipeline"
+                        "$ref": "#/definitions/v1.pipelineDetail"
                     }
                 },
                 "message": {
@@ -13973,125 +13973,6 @@ var doc = `{
                 }
             }
         },
-        "v1.Pipeline": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "description": "关联流水线地址",
-                    "type": "string"
-                },
-                "description": {
-                    "description": "流水线描述",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "流水线的唯一标识符",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "流水线名称",
-                    "type": "string"
-                },
-                "node_count": {
-                    "description": "节点个数",
-                    "type": "integer"
-                }
-            }
-        },
-        "v1.PipelineNode": {
-            "type": "object",
-            "properties": {
-                "audit_method": {
-                    "description": "审核方式，必选，可选项为离线审核、在线审核",
-                    "type": "string",
-                    "enum": [
-                        "offline",
-                        "online"
-                    ]
-                },
-                "id": {
-                    "description": "节点的唯一标识符，在更新时必填",
-                    "type": "string"
-                },
-                "instance_name": {
-                    "description": "数据源名称，在线审核时必填",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
-                    "type": "string"
-                },
-                "object_type": {
-                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
-                    "type": "string",
-                    "enum": [
-                        "sql",
-                        "mybatis"
-                    ]
-                },
-                "rule_template_name": {
-                    "description": "审核规则模板，必填",
-                    "type": "string"
-                },
-                "script_path": {
-                    "description": "审核脚本路径，必填，用户填写文件路径",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "节点类型，必填，选项为“审核”或“上线”",
-                    "type": "string",
-                    "enum": [
-                        "audit",
-                        "release"
-                    ]
-                }
-            }
-        },
-        "v1.PipelineNodeBase": {
-            "type": "object",
-            "properties": {
-                "audit_method": {
-                    "description": "审核方式，必选，可选项为离线审核、在线审核",
-                    "type": "string",
-                    "enum": [
-                        "offline",
-                        "online"
-                    ]
-                },
-                "instance_name": {
-                    "description": "数据源名称，在线审核时必填",
-                    "type": "string"
-                },
-                "name": {
-                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
-                    "type": "string"
-                },
-                "object_type": {
-                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
-                    "type": "string",
-                    "enum": [
-                        "sql",
-                        "mybatis"
-                    ]
-                },
-                "rule_template_name": {
-                    "description": "审核规则模板，必填",
-                    "type": "string"
-                },
-                "script_path": {
-                    "description": "审核脚本路径，必填，用户填写文件路径",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "节点类型，必填，选项为“审核”或“上线”",
-                    "type": "string",
-                    "enum": [
-                        "audit",
-                        "release"
-                    ]
-                }
-            }
-        },
         "v1.ProjectRuleTemplateResV1": {
             "type": "object",
             "properties": {
@@ -15386,7 +15267,7 @@ var doc = `{
                     "description": "节点信息，非必填，若提供则需支持多个节点",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.PipelineNode"
+                        "$ref": "#/definitions/v1.pipelineNodeDetail"
                     }
                 }
             }
@@ -16006,6 +15887,125 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.pipelineDetail": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "流水线的唯一标识符",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "node_count": {
+                    "description": "节点个数",
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.pipelineNodeBase": {
+            "type": "object",
+            "properties": {
+                "audit_method": {
+                    "description": "审核方式，必选，可选项为离线审核、在线审核",
+                    "type": "string",
+                    "enum": [
+                        "offline",
+                        "online"
+                    ]
+                },
+                "instance_name": {
+                    "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
+                    "type": "string"
+                },
+                "object_path": {
+                    "description": "审核脚本路径，必填，用户填写文件路径",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis"
+                    ]
+                },
+                "rule_template_name": {
+                    "description": "审核规则模板，必填",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "节点类型，必填，选项为“审核”或“上线”",
+                    "type": "string",
+                    "enum": [
+                        "audit",
+                        "release"
+                    ]
+                }
+            }
+        },
+        "v1.pipelineNodeDetail": {
+            "type": "object",
+            "properties": {
+                "audit_method": {
+                    "description": "审核方式，必选，可选项为离线审核、在线审核",
+                    "type": "string",
+                    "enum": [
+                        "offline",
+                        "online"
+                    ]
+                },
+                "id": {
+                    "description": "节点的唯一标识符，在更新时必填",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
+                    "type": "string"
+                },
+                "object_path": {
+                    "description": "审核脚本路径，必填，用户填写文件路径",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis"
+                    ]
+                },
+                "rule_template_name": {
+                    "description": "审核规则模板，必填",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "节点类型，必填，选项为“审核”或“上线”",
+                    "type": "string",
+                    "enum": [
+                        "audit",
+                        "release"
+                    ]
                 }
             }
         },
