@@ -118,14 +118,25 @@ func (s *Storage) GetBlacklistList(projectID ProjectUID, FilterType BlacklistFil
 	return blackListAPS, uint64(count), errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) BatchUpdateBlackListCount(IdList []uint, matchedCount uint, lastMatchTime time.Time) error {
-	m := map[string]interface{}{
-		"matched_count":   gorm.Expr("matched_count + ?", matchedCount),
-		"last_match_time": lastMatchTime,
+func (s *Storage) BatchUpdateBlackListCount(matchedIdCount map[uint]uint, lastMatchedTime time.Time) error {
+	countIdList := make(map[uint] /*count*/ []uint /*blacklist id list*/)
+	for id, count := range matchedIdCount {
+		countIdList[count] = append(countIdList[count], id)
 	}
 
-	err := s.db.Model(BlackListAuditPlanSQL{}).Where("id in (?)", IdList).Updates(m).Error
-	return errors.New(errors.ConnectStorageError, err)
+	for count, idList := range countIdList {
+		m := map[string]interface{}{
+			"matched_count":   gorm.Expr("matched_count + ?", count),
+			"last_match_time": lastMatchedTime,
+		}
+
+		err := s.db.Model(BlackListAuditPlanSQL{}).Where("id in (?)", idList).Updates(m).Error
+		if err != nil {
+			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
+
+	return nil
 }
 
 func (a AuditPlanSQLV2) TableName() string {

@@ -278,7 +278,8 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue)
 		return err
 	}
 
-	err = at.updateBlacklistInfo(matchedCount)
+	lastMatchedTime := time.Now()
+	err = at.persist.BatchUpdateBlackListCount(matchedCount, lastMatchedTime)
 	if err != nil {
 		return err
 	}
@@ -360,23 +361,6 @@ func filterSQLsByBlackList(endpoint, sqlText, sqlFp, instName string, blacklist 
 	}
 
 	return 0, false
-}
-
-func (at *TaskWrapper) updateBlacklistInfo(matchedCount map[uint]uint) error {
-	m := make(map[uint] /*count*/ []uint /*blacklist id list*/)
-	for id, count := range matchedCount {
-		m[count] = append(m[count], id)
-	}
-
-	lastMatchedTime := time.Now()
-	for count, idList := range m {
-		err := at.persist.BatchUpdateBlackListCount(idList, count, lastMatchedTime)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func ConvertToBlackFilter(blackList []*model.BlackListAuditPlanSQL) *BlackFilter {
